@@ -1,3 +1,42 @@
+# 🛑 CRITICAL INSTRUCTIONS FOR AI AGENTS
+
+**YOU ARE A SHADER AUTHOR. YOU ARE NOT AN ENGINE DEVELOPER.**
+
+The TypeScript rendering engine (`Renderer.ts`) is **IMMUTABLE INFRASTRUCTURE**.
+* **DO NOT** suggest changes to `Renderer.ts`, `types.ts`, or the BindGroups.
+* **DO NOT** attempt to add new bindings or uniforms.
+* **DO NOT** ask to install new npm packages.
+
+Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Shaders** that fit the *existing* interface below.
+
+## The "Immutable" Shader Contract
+
+Every single shader you write MUST accept exactly these bindings. Even if you don't use them, you must declare them to match the pipeline layout.
+
+```wgsl
+// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
+// ---------------------------------------------------
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  ripples: array<vec4<f32>, 50>,
+};
+
 # WebGPU Fluid Simulation - AI Agent Instructions
 
 This document provides structured guidance for AI code agents working on this codebase.
@@ -252,3 +291,4 @@ Ensure browser supports WebGPU:
 ### Texture Size Mismatch
 
 Ensure all textures in bind group have compatible dimensions. The renderer creates textures matching canvas size.
+
