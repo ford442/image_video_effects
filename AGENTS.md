@@ -37,6 +37,20 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+### Important: Treat `zoom_params` as a Generic Float Vector
+
+Historically the renderer wrote values like `fgSpeed`, `bgSpeed`, `parallaxStrength`, and `fogDensity` into `zoom_params`. To make shaders and future UI changes robust and generic, treat `zoom_params` as a generic vec4 of floats whose components are semantic-free parameters:
+
+- `zoom_params.x` -> param1
+- `zoom_params.y` -> param2
+- `zoom_params.z` -> param3
+- `zoom_params.w` -> param4
+
+Notes for shader authors and AI agents:
+- Assume each component is a generic scalar float. Don't hard-code engine-specific names in new shaders.
+- You may document what the current UI maps into these params (e.g., param1=fgSpeed) but design shaders to work if the mapping changes.
+- If you need more parameters, prefer packing them into `dataTextureA/B/C` or `extraBuffer` rather than altering the uniform layout.
+
 # WebGPU Fluid Simulation - AI Agent Instructions
 
 This document provides structured guidance for AI code agents working on this codebase.
@@ -267,7 +281,6 @@ this.device.queue.writeBuffer(this.computeUniformBuffer, 0, uniformArray);
 | Package | Purpose |
 |---------|---------|
 | react, react-dom | UI framework |
-| @webgpu/types | WebGPU TypeScript types |
 | @xenova/transformers | AI depth estimation model |
 | typescript | Type checking |
 | react-scripts | Build tooling |
@@ -291,4 +304,3 @@ Ensure browser supports WebGPU:
 ### Texture Size Mismatch
 
 Ensure all textures in bind group have compatible dimensions. The renderer creates textures matching canvas size.
-

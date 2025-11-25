@@ -108,7 +108,6 @@ npm test     # Run tests
 }
 ```
 
-```markdown
 ## ⚡️ Hot-Swap Shader Workflow (No Recompile Needed)
 
 This engine uses a "Universal BindGroup" architecture. You can drop in new `.wgsl` files without restarting the dev server or recompiling the TypeScript host.
