@@ -246,7 +246,7 @@ Check browser DevTools console for WGSL compilation errors. Common issues:
 
 Ensure browser supports WebGPU:
 - Chrome 113+
-- Edge 113+  
+- Edge 113+
 - Firefox Nightly with `dom.webgpu.enabled` flag
 
 ### Texture Size Mismatch

@@ -19,7 +19,7 @@ A React-based web application that applies interactive fluid-like effects to ima
 
 ```bash
 # Clone the repository
-git clone https://github.com/ford442/image_video_effects.git
+git clone <repository-url>
 cd image_video_effects
 
 # Install dependencies
