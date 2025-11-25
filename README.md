@@ -108,6 +108,21 @@ npm test     # Run tests
 }
 ```
 
+```markdown
+## ⚡️ Hot-Swap Shader Workflow (No Recompile Needed)
+
+This engine uses a "Universal BindGroup" architecture. You can drop in new `.wgsl` files without restarting the dev server or recompiling the TypeScript host.
+
+1.  **Create File:** Add `public/shaders/my-cool-effect.wgsl`.
+2.  **Paste Header:** Copy the standard uniform header from `AGENTS.md`.
+3.  **Register:** Add one line to `public/shader-list.json`:
+    ```json
+    { "id": "cool-effect", "name": "My Cool Effect", "url": "shaders/my-cool-effect.wgsl" }
+    ```
+4.  **Test:** Refresh the browser. The new effect appears in the dropdown immediately.
+
+**Note to AI Copilots:** If asked to create a shader, output *only* the WGSL file and the JSON snippet. Do not modify the rendering engine.
+
 ## Technical Details
 
 - **Rendering Pipeline**: Uses a ping-pong texture system where compute shaders read previous frame state and write new state
