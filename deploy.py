@@ -13,7 +13,7 @@ USERNAME = "ford442"
 # The local directory to upload from.
 LOCAL_DIRECTORY = "build"
 # The directory on the server where the files should go (e.g., 'public_html/wasm-game').
-REMOTE_DIRECTORY = "test.1ink.us/webgputs"
+REMOTE_DIRECTORY = "test.1ink.us/image_video_effects"
 
 def upload_directory(sftp_client, local_path, remote_path):
     """
@@ -77,3 +77,4 @@ if __name__ == "__main__":
         print(f"Error: Local directory '{LOCAL_DIRECTORY}' not found. Did you run 'npm run build' first?")
     else:
         main()
+
