@@ -27,7 +27,11 @@ canvas {
     border: 2px solid #61dafb;
     border-radius: 8px;
     margin-top: 20px;
-    cursor: crosshair;
+    cursor: url(%PUBLIC_URL%/b3cursor.gif), auto;
+}
+
+canvas.pointer-locked {
+    cursor: url(%PUBLIC_URL%/cursor.cur), crosshair;
 }
 
 .controls {
