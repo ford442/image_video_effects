@@ -2,6 +2,8 @@ export type RenderMode = string;
 
 export type ShaderCategory = 'shader' | 'image' | 'video';
 
+export type InputSource = 'image' | 'video';
+
 export interface ShaderEntry {
     id: string;
     name: string;
