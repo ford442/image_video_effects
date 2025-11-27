@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Renderer } from '../renderer/Renderer';
-import { RenderMode } from '../renderer/types';
+import { RenderMode, InputSource } from '../renderer/types';
 
 interface WebGPUCanvasProps {
     mode: RenderMode;
@@ -14,9 +14,18 @@ interface WebGPUCanvasProps {
     isMouseDown: boolean;
     setIsMouseDown: (down: boolean) => void;
     onInit?: () => void;
+    // New Props
+    inputSource: InputSource;
+    selectedVideo: string;
+    isMuted: boolean;
 }
 
-const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, rendererRef, farthestPoint, mousePosition, setMousePosition, isMouseDown, setIsMouseDown, onInit }) => {
+const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
+    mode, zoom, panX, panY, rendererRef,
+    farthestPoint, mousePosition, setMousePosition,
+    isMouseDown, setIsMouseDown, onInit,
+    inputSource, selectedVideo, isMuted
+}) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const animationFrameId = useRef<number>(0);
@@ -43,6 +52,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, ren
         };
     }, []);
 
+    // Initialize Renderer and Video Element
     useEffect(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -54,14 +64,23 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, ren
                  if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<Renderer | null>).current = renderer;
                 }
+
+                // Initialize Video Element
                 videoRef.current = document.createElement('video');
-                videoRef.current.src = 'https://test.1ink.us/webgputs/big_buck_bunny_720p_surround.mp4';
                 videoRef.current.crossOrigin = 'anonymous';
-                videoRef.current.muted = true;
+                videoRef.current.muted = isMuted; // Use prop
                 videoRef.current.loop = true;
                 videoRef.current.autoplay = true;
                 videoRef.current.playsInline = true;
-                await videoRef.current.play().catch(console.error);
+
+                // If selectedVideo is already available (unlikely on first render but possible)
+                if (selectedVideo) {
+                    videoRef.current.src = `videos/${selectedVideo}`;
+                    if (inputSource === 'video') {
+                        videoRef.current.play().catch(console.error);
+                    }
+                }
+
                 if (onInit) onInit();
             }
         })();
@@ -69,21 +88,53 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, ren
             cancelAnimationFrame(animationFrameId.current);
             renderer.destroy();
         };
-    }, [rendererRef, onInit]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rendererRef, onInit]); // Removed other deps to avoid re-init
+
+    // Handle Selected Video Change
+    useEffect(() => {
+        if (videoRef.current && selectedVideo) {
+            videoRef.current.src = `videos/${selectedVideo}`;
+            if (inputSource === 'video') {
+                videoRef.current.play().catch(e => console.log("Video play failed:", e));
+            }
+        }
+    }, [selectedVideo]);
+
+    // Handle Mute Change
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.muted = isMuted;
+        }
+    }, [isMuted]);
+
+    // Handle Input Source Change (Play/Pause)
+    useEffect(() => {
+        if (videoRef.current) {
+            if (inputSource === 'video') {
+                // Try to play if we have a source
+                if (videoRef.current.src) {
+                    videoRef.current.play().catch(() => {});
+                }
+            } else {
+                videoRef.current.pause();
+            }
+        }
+    }, [inputSource]);
 
  useEffect(() => {
         let active = true;
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
-                // --- THIS IS THE CORRECTED LINE ---
+                // Pass video element to render
                 rendererRef.current.render(mode, videoRef.current, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown);
             }
             animationFrameId.current = requestAnimationFrame(animate);
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef]); // Added isMouseDown and rendererRef
+    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef]);
 
      const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!canvasRef.current) return;

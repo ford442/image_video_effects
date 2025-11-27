@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
 import { Renderer } from './renderer/Renderer';
-import { RenderMode, ShaderEntry, ShaderCategory } from './renderer/types';
+import { RenderMode, ShaderEntry, ShaderCategory, InputSource } from './renderer/types';
 import { pipeline, env } from '@xenova/transformers';
 import './style.css';
 
@@ -26,6 +26,12 @@ function App() {
   const [mousePosition, setMousePosition] = useState({ x: -1, y: -1 });
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
+
+  // Video Input State
+  const [inputSource, setInputSource] = useState<InputSource>('image');
+  const [videoList, setVideoList] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<string>('');
+  const [isMuted, setIsMuted] = useState(true);
 
   const rendererRef = useRef<Renderer | null>(null);
   const debugCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -114,11 +120,11 @@ function App() {
 
   useEffect(() => {
       let intervalId: NodeJS.Timeout | null = null;
-      if (autoChangeEnabled) {
+      if (autoChangeEnabled && inputSource === 'image') {
           intervalId = setInterval(handleNewImage, autoChangeDelay * 1000);
       }
       return () => { if (intervalId) clearInterval(intervalId); };
-  }, [autoChangeEnabled, autoChangeDelay, handleNewImage]);
+  }, [autoChangeEnabled, autoChangeDelay, handleNewImage, inputSource]);
 
   useEffect(() => {
       if (depthMapResult?.predicted_depth && debugCanvasRef.current) {
@@ -152,8 +158,56 @@ function App() {
   const handleInit = useCallback(() => {
     if (rendererRef.current) {
         setAvailableModes(rendererRef.current.getAvailableModes());
+        // Initial sync of input source
+        rendererRef.current.setInputSource(inputSource);
     }
-  }, []);
+  }, [inputSource]);
+
+  // Sync input source when changed
+  useEffect(() => {
+      if (rendererRef.current) {
+          rendererRef.current.setInputSource(inputSource);
+      }
+  }, [inputSource]);
+
+  // Fetch video list
+  useEffect(() => {
+      const fetchVideos = async () => {
+          try {
+              // Try to list files in public/videos
+              // Note: This relies on server directory listing which might be disabled.
+              // If so, we might need a manual list or a server endpoint.
+              // For now, let's try to fetch the index page of /videos/
+              const response = await fetch('videos/');
+              if (response.ok) {
+                  const text = await response.text();
+                  // Parse HTML to find links
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(text, 'text/html');
+                  const links = Array.from(doc.querySelectorAll('a'));
+                  const videos = links
+                      .map(link => link.getAttribute('href'))
+                      .filter(href => href && /\.(mp4|webm|mov)$/i.test(href))
+                      .map(href => {
+                          // Clean up href: remove leading /videos/ if present or just take the filename
+                          const parts = href!.split('/');
+                          return parts[parts.length - 1];
+                      });
+
+                  // Filter valid unique names
+                  const uniqueVideos = Array.from(new Set(videos));
+                  if (uniqueVideos.length > 0) {
+                      setVideoList(uniqueVideos as string[]);
+                      if (!selectedVideo) setSelectedVideo(uniqueVideos[0]);
+                  }
+              }
+          } catch (e) {
+              console.error("Failed to fetch video list", e);
+          }
+      };
+
+      fetchVideos();
+  }, []); // Run once
 
   return (
     <div id="app-container">
@@ -175,6 +229,14 @@ function App() {
             onLoadModel={loadModel}
             isModelLoaded={!!depthEstimator}
             availableModes={availableModes}
+            // New Props
+            inputSource={inputSource}
+            setInputSource={setInputSource}
+            videoList={videoList}
+            selectedVideo={selectedVideo}
+            setSelectedVideo={setSelectedVideo}
+            isMuted={isMuted}
+            setIsMuted={setIsMuted}
         />
         <WebGPUCanvas
             rendererRef={rendererRef}
@@ -188,6 +250,10 @@ function App() {
             isMouseDown={isMouseDown}
             setIsMouseDown={setIsMouseDown}
             onInit={handleInit}
+            // New Props
+            inputSource={inputSource}
+            selectedVideo={selectedVideo}
+            isMuted={isMuted}
         />
         {depthMapResult && (
             <div className="debug-container">

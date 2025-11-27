@@ -1,4 +1,4 @@
-import {RenderMode, ShaderEntry} from './types';
+import {RenderMode, ShaderEntry, InputSource} from './types';
 
 export class Renderer {
     private canvas: HTMLCanvasElement;
@@ -30,6 +30,7 @@ export class Renderer {
     private parallaxStrength: number = 2.0;
     private fogDensity: number = 0.7;
     private shaderList: ShaderEntry[] = [];
+    private inputSource: InputSource = 'image';
 
     // Plasma Mode State
     private plasmaBalls: {
@@ -46,6 +47,11 @@ export class Renderer {
 
     public getAvailableModes(): ShaderEntry[] {
         return this.shaderList;
+    }
+
+    public setInputSource(source: InputSource) {
+        this.inputSource = source;
+        this.createBindGroups();
     }
 
     public addRipplePoint(x: number, y: number) {
@@ -457,12 +463,17 @@ export class Renderer {
                  break;
              }
         }
-        
+
         if (!computePipeline) return;
+
+        let inputTextureView = this.imageTexture.createView();
+        if (this.inputSource === 'video' && this.videoTexture) {
+            inputTextureView = this.videoTexture.createView();
+        }
 
         const computeEntries = [
             {binding: 0, resource: this.filteringSampler},
-            {binding: 1, resource: this.imageTexture.createView()},
+            {binding: 1, resource: inputTextureView},
             {binding: 2, resource: this.writeTexture.createView()},
             {binding: 3, resource: {buffer: this.computeUniformBuffer}},
             {binding: 4, resource: this.depthTextureRead.createView()},
