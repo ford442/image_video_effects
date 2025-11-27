@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Renderer } from '../renderer/Renderer';
 import { RenderMode } from '../renderer/types';
 
@@ -21,16 +21,33 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, ren
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const animationFrameId = useRef<number>(0);
     const lastMouseAddTime = useRef(0);
+    const [isPointerLocked, setIsPointerLocked] = useState(false);
 
     // Plasma Interaction Refs
     const dragStartPos = useRef<{x: number, y: number} | null>(null);
     const dragStartTime = useRef<number>(0);
 
     useEffect(() => {
+        const handlePointerLockChange = () => {
+            if (document.pointerLockElement === canvasRef.current) {
+                setIsPointerLocked(true);
+            } else {
+                setIsPointerLocked(false);
+            }
+        };
+
+        document.addEventListener('pointerlockchange', handlePointerLockChange, false);
+
+        return () => {
+            document.removeEventListener('pointerlockchange', handlePointerLockChange, false);
+        };
+    }, []);
+
+    useEffect(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
         const renderer = new Renderer(canvas);
-        
+
         (async () => {
             const success = await renderer.init();
             if (success) {
@@ -53,7 +70,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, ren
             renderer.destroy();
         };
     }, [rendererRef, onInit]);
-    
+
  useEffect(() => {
         let active = true;
         const animate = () => {
@@ -81,7 +98,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, ren
         setIsMouseDown(false);
         setMousePosition({ x: -1, y: -1 });
     };
-    
+
     const addRippleAtMouseEvent = (event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!rendererRef.current) return;
         const canvas = canvasRef.current!;
@@ -150,8 +167,14 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({ mode, zoom, panX, panY, ren
         }
     };
 
+    const handleCanvasClick = () => {
+        if (canvasRef.current) {
+            canvasRef.current.requestPointerLock();
+        }
+    };
+
    return (
-        <canvas ref={canvasRef} width="2048" height="2048" onMouseMove={handleCanvasMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} />
+        <canvas ref={canvasRef} width="2048" height="2048" onMouseMove={handleCanvasMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} onClick={handleCanvasClick} className={isPointerLocked ? 'pointer-locked' : ''} />
     );
 };
 

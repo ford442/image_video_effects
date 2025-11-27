@@ -2,76 +2,97 @@
   {
     "id": "liquid",
     "name": "Liquid (Interactive)",
-    "url": "shaders/liquid.wgsl"
+    "url": "shaders/liquid.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-v1",
     "name": "Liquid (Ambient)",
-    "url": "shaders/liquid-v1.wgsl"
+    "url": "shaders/liquid-v1.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
-    "url": "shaders/liquid-zoom.wgsl"
+    "url": "shaders/liquid-zoom.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-perspective",
     "name": "Liquid Perspective",
-    "url": "shaders/liquid-perspective.wgsl"
+    "url": "shaders/liquid-perspective.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
-    "url": "shaders/liquid-viscous.wgsl"
+    "url": "shaders/liquid-viscous.wgsl",
+    "category": "image"
   },
   {
     "id": "vortex",
     "name": "Clean Vortex",
-    "url": "shaders/vortex.wgsl"
+    "url": "shaders/vortex.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-fast",
     "name": "Liquid Fast",
-    "url": "shaders/liquid-fast.wgsl"
+    "url": "shaders/liquid-fast.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-rgb",
     "name": "Liquid RGB",
-    "url": "shaders/liquid-rgb.wgsl"
+    "url": "shaders/liquid-rgb.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-metal",
     "name": "Liquid Metal",
-    "url": "shaders/liquid-metal.wgsl"
+    "url": "shaders/liquid-metal.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-jelly",
     "name": "Liquid Jelly",
-    "url": "shaders/liquid-jelly.wgsl"
+    "url": "shaders/liquid-jelly.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-rainbow",
     "name": "Liquid Rainbow",
-    "url": "shaders/liquid-rainbow.wgsl"
+    "url": "shaders/liquid-rainbow.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-oil",
     "name": "Liquid Oil",
-    "url": "shaders/liquid-oil.wgsl"
+    "url": "shaders/liquid-oil.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-glitch",
     "name": "Liquid Glitch",
-    "url": "shaders/liquid-glitch.wgsl"
+    "url": "shaders/liquid-glitch.wgsl",
+    "category": "image"
   },
   {
     "id": "liquid-viscous-simple",
     "name": "Liquid Viscous (Simple)",
-    "url": "shaders/liquid-viscous-simple.wgsl"
+    "url": "shaders/liquid-viscous-simple.wgsl",
+    "category": "image"
   },
   {
     "id": "plasma",
     "name": "Plasma Ball",
-    "url": "shaders/plasma.wgsl"
+    "url": "shaders/plasma.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "galaxy",
+    "name": "Galaxy",
+    "url": "shaders/galaxy.wgsl",
+    "category": "shader"
   }
 ]
