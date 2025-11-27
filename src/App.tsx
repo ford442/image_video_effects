@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
 import { Renderer } from './renderer/Renderer';
-import { RenderMode, ShaderEntry } from './renderer/types';
+import { RenderMode, ShaderEntry, ShaderCategory } from './renderer/types';
 import { pipeline, env } from '@xenova/transformers';
 import './style.css';
 
@@ -12,6 +12,7 @@ env.backends.onnx.logLevel = 'warning';
 const model_loc = 'Xenova/dpt-hybrid-midas'
 
 function App() {
+  const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
   const [mode, setMode] = useState<RenderMode>('liquid');
   const [zoom, setZoom] = useState(1.0);
   const [panX, setPanX] = useState(0.5);
@@ -161,6 +162,8 @@ function App() {
         <Controls
             mode={mode}
             setMode={setMode}
+            shaderCategory={shaderCategory}
+            setShaderCategory={setShaderCategory}
             zoom={zoom} setZoom={setZoom}
             panX={panX} setPanX={setPanX}
             panY={panY} setPanY={setPanY}
