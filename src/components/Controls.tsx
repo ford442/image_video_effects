@@ -41,19 +41,22 @@ const Controls: React.FC<ControlsProps> = ({
     const handleCategoryChange = (newCategory: ShaderCategory) => {
         setShaderCategory(newCategory);
         // Set default shader for the category
-        let defaultMode: string;
+        let modes: ShaderEntry[];
         switch (newCategory) {
             case 'shader':
-                defaultMode = shaderModes.length > 0 ? shaderModes[0].id : 'shader';
+                modes = shaderModes;
                 break;
             case 'image':
-                defaultMode = imageModes.length > 0 ? imageModes[0].id : 'image';
+                modes = imageModes;
                 break;
             case 'video':
-                defaultMode = videoModes.length > 0 ? videoModes[0].id : 'video';
+                modes = videoModes;
                 break;
         }
-        setMode(defaultMode);
+        // Only change mode if there are shaders available in this category
+        if (modes.length > 0) {
+            setMode(modes[0].id);
+        }
     };
 
     const getCurrentCategoryModes = () => {
@@ -106,22 +109,16 @@ const Controls: React.FC<ControlsProps> = ({
                 </button>
                 <button onClick={onNewImage}>Load New Random Image</button>
             </div>
-            <>
+            <div className="control-group">
+                <label htmlFor="auto-change-toggle">Auto Change:</label>
+                <input type="checkbox" id="auto-change-toggle" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} />
+            </div>
+            {autoChangeEnabled && (
                 <div className="control-group">
-                    <label></label>
-                    <button onClick={onNewImage}>New Random Image</button>
+                    <label htmlFor="delay-slider">Delay ({autoChangeDelay}s):</label>
+                    <input type="range" id="delay-slider" min="1" max="10" step="1" value={autoChangeDelay} onChange={(e) => setAutoChangeDelay(Number(e.target.value))} />
                 </div>
-                <div className="control-group">
-                    <label htmlFor="auto-change-toggle">Auto Change:</label>
-                    <input type="checkbox" id="auto-change-toggle" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} />
-                </div>
-                {autoChangeEnabled && (
-                    <div className="control-group">
-                        <label htmlFor="delay-slider">Delay ({autoChangeDelay}s):</label>
-                        <input type="range" id="delay-slider" min="1" max="10" step="1" value={autoChangeDelay} onChange={(e) => setAutoChangeDelay(Number(e.target.value))} />
-                    </div>
-                )}
-            </>
+            )}
             <div className="control-group">
                 <label htmlFor="zoom-slider">Zoom:</label>
                 <input type="range" id="zoom-slider" min="50" max="200" value={zoom * 100} onChange={(e) => setZoom(parseFloat(e.target.value) / 100)} />
