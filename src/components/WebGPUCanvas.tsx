@@ -108,6 +108,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
+                // Special handling for Galaxy mode to pass zoom/pan via uniforms
+                if (mode === 'galaxy') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoom,
+                        bgSpeed: panX,
+                        parallaxStrength: panY
+                    });
+                } else {
+                    // Reset to defaults when not in galaxy mode
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: 0.08,
+                        bgSpeed: 0.0,
+                        parallaxStrength: 2.0
+                    });
+                }
+
                 // Pass video element to render
                 rendererRef.current.render(mode, videoRef.current, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown);
             }

@@ -92,7 +92,7 @@
   {
     "id": "galaxy",
     "name": "Galaxy",
-    "url": "shaders/galaxy.wgsl",
+    "url": "shaders/galaxy-compute.wgsl",
     "category": "shader"
   }
 ]
