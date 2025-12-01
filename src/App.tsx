@@ -27,6 +27,13 @@ function App() {
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
 
+  // Infinite Zoom Parameters
+  const [lightStrength, setLightStrength] = useState(1.0);
+  const [ambient, setAmbient] = useState(0.2);
+  const [normalStrength, setNormalStrength] = useState(0.1);
+  const [fogFalloff, setFogFalloff] = useState(4.0);
+  const [depthThreshold, setDepthThreshold] = useState(0.5);
+
   // Video Input State
   const [inputSource, setInputSource] = useState<InputSource>('image');
   const [videoList, setVideoList] = useState<string[]>([]);
@@ -237,10 +244,22 @@ function App() {
             setSelectedVideo={setSelectedVideo}
             isMuted={isMuted}
             setIsMuted={setIsMuted}
+            // Infinite Zoom
+            lightStrength={lightStrength} setLightStrength={setLightStrength}
+            ambient={ambient} setAmbient={setAmbient}
+            normalStrength={normalStrength} setNormalStrength={setNormalStrength}
+            fogFalloff={fogFalloff} setFogFalloff={setFogFalloff}
+            depthThreshold={depthThreshold} setDepthThreshold={setDepthThreshold}
         />
         <WebGPUCanvas
             rendererRef={rendererRef}
             mode={mode}
+            // Infinite Zoom
+            lightStrength={lightStrength}
+            ambient={ambient}
+            normalStrength={normalStrength}
+            fogFalloff={fogFalloff}
+            depthThreshold={depthThreshold}
             zoom={zoom}
             panX={panX}
             panY={panY}
