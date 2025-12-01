@@ -28,6 +28,17 @@ interface ControlsProps {
     setSelectedVideo: (video: string) => void;
     isMuted: boolean;
     setIsMuted: (muted: boolean) => void;
+    // Infinite Zoom
+    lightStrength?: number;
+    setLightStrength?: (val: number) => void;
+    ambient?: number;
+    setAmbient?: (val: number) => void;
+    normalStrength?: number;
+    setNormalStrength?: (val: number) => void;
+    fogFalloff?: number;
+    setFogFalloff?: (val: number) => void;
+    depthThreshold?: number;
+    setDepthThreshold?: (val: number) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -43,7 +54,12 @@ const Controls: React.FC<ControlsProps> = ({
     availableModes = [],
     inputSource, setInputSource,
     videoList, selectedVideo, setSelectedVideo,
-    isMuted, setIsMuted
+    isMuted, setIsMuted,
+    lightStrength, setLightStrength,
+    ambient, setAmbient,
+    normalStrength, setNormalStrength,
+    fogFalloff, setFogFalloff,
+    depthThreshold, setDepthThreshold
 }) => {
     const shaderModes = availableModes.filter(entry => entry.category === 'shader');
     const imageModes = availableModes.filter(entry => entry.category === 'image');
@@ -188,6 +204,33 @@ const Controls: React.FC<ControlsProps> = ({
                 <label htmlFor="pan-y-slider">Pan Y:</label>
                 <input type="range" id="pan-y-slider" min="0" max="200" value={panY * 100} onChange={(e) => setPanY(parseFloat(e.target.value) / 100)} />
             </div>
+
+            {mode === 'infinite-zoom' && (
+                <>
+                    <hr style={{borderColor: '#444', margin: '15px 0'}} />
+                    <div style={{fontWeight: 'bold', marginBottom: '10px'}}>Lighting & Depth</div>
+                    <div className="control-group">
+                        <label>Light Strength: {lightStrength?.toFixed(1)}</label>
+                        <input type="range" min="0" max="5" step="0.1" value={lightStrength || 1.0} onChange={(e) => setLightStrength && setLightStrength(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Ambient: {ambient?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.05" value={ambient || 0.2} onChange={(e) => setAmbient && setAmbient(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Normal Strength: {normalStrength?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={normalStrength || 0.1} onChange={(e) => setNormalStrength && setNormalStrength(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Fog Falloff: {fogFalloff?.toFixed(1)}</label>
+                        <input type="range" min="0.1" max="10" step="0.1" value={fogFalloff || 4.0} onChange={(e) => setFogFalloff && setFogFalloff(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Depth Threshold: {depthThreshold?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={depthThreshold || 0.5} onChange={(e) => setDepthThreshold && setDepthThreshold(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
         </div>
     );
 };

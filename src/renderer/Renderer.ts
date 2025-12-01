@@ -29,6 +29,13 @@ export class Renderer {
     private bgSpeed: number = 0.0;
     private parallaxStrength: number = 2.0;
     private fogDensity: number = 0.7;
+    // Infinite Zoom Parameters
+    private lightStrength: number = 1.0;
+    private ambient: number = 0.2;
+    private normalStrength: number = 0.1;
+    private fogFalloff: number = 4.0;
+    private depthThreshold: number = 0.5;
+
     private shaderList: ShaderEntry[] = [];
     private inputSource: InputSource = 'image';
 
@@ -161,6 +168,20 @@ export class Renderer {
         if (params.bgSpeed !== undefined) this.bgSpeed = params.bgSpeed;
         if (params.parallaxStrength !== undefined) this.parallaxStrength = params.parallaxStrength;
         if (params.fogDensity !== undefined) this.fogDensity = params.fogDensity;
+    }
+
+    public updateLightingParams(params: {
+        lightStrength?: number,
+        ambient?: number,
+        normalStrength?: number,
+        fogFalloff?: number,
+        depthThreshold?: number
+    }): void {
+        if (params.lightStrength !== undefined) this.lightStrength = params.lightStrength;
+        if (params.ambient !== undefined) this.ambient = params.ambient;
+        if (params.normalStrength !== undefined) this.normalStrength = params.normalStrength;
+        if (params.fogFalloff !== undefined) this.fogFalloff = params.fogFalloff;
+        if (params.depthThreshold !== undefined) this.depthThreshold = params.depthThreshold;
     }
 
     public destroy(): void {
@@ -574,7 +595,10 @@ export class Renderer {
 
                 const uniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
                 uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
-                uniformArray.set([currentTime, farthestPoint.x, farthestPoint.y, 0], 4); // Re-using this slot for mouse info if needed?
+
+                // Infinite Zoom uses w for depthThreshold
+                const zoomConfigW = mode === 'infinite-zoom' ? this.depthThreshold : 0;
+                uniformArray.set([currentTime, farthestPoint.x, farthestPoint.y, zoomConfigW], 4);
 
                 // For plasma mode, we might want to pass the number of active balls or other config
                 // But we can just deduce it from the buffer (age > maxAge is dead)
@@ -588,7 +612,19 @@ export class Renderer {
                     this.fogDensity
                 ]);
                 uniformArray.set(zoomParams, 8);
-                uniformArray.set(rippleDataArr, 12);
+
+                if (mode === 'infinite-zoom') {
+                    // Overwrite ripples[0] with lighting params
+                    const lightingParams = new Float32Array([
+                        this.lightStrength,
+                        this.ambient,
+                        this.normalStrength,
+                        this.fogFalloff
+                    ]);
+                    uniformArray.set(lightingParams, 12);
+                } else {
+                    uniformArray.set(rippleDataArr, 12);
+                }
 
                 this.device.queue.writeBuffer(this.computeUniformBuffer, 0, uniformArray);
 
