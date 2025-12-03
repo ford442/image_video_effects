@@ -34,6 +34,12 @@ function App() {
   const [fogFalloff, setFogFalloff] = useState(4.0);
   const [depthThreshold, setDepthThreshold] = useState(0.5);
 
+  // Generic Params (Rain, etc.)
+  const [zoomParam1, setZoomParam1] = useState(0.5);
+  const [zoomParam2, setZoomParam2] = useState(0.5);
+  const [zoomParam3, setZoomParam3] = useState(0.5);
+  const [zoomParam4, setZoomParam4] = useState(0.5);
+
   // Video Input State
   const [inputSource, setInputSource] = useState<InputSource>('image');
   const [videoList, setVideoList] = useState<string[]>([]);
@@ -177,6 +183,16 @@ function App() {
       }
   }, [inputSource]);
 
+  // Set default params for Rain mode
+  useEffect(() => {
+      if (mode === 'rain') {
+          setZoomParam1(0.08); // Speed
+          setZoomParam2(0.5);  // Density
+          setZoomParam3(2.0);  // Wind
+          setZoomParam4(0.7);  // Splash
+      }
+  }, [mode]);
+
   // Fetch video list
   useEffect(() => {
       const fetchVideos = async () => {
@@ -250,6 +266,11 @@ function App() {
             normalStrength={normalStrength} setNormalStrength={setNormalStrength}
             fogFalloff={fogFalloff} setFogFalloff={setFogFalloff}
             depthThreshold={depthThreshold} setDepthThreshold={setDepthThreshold}
+            // Generic Params
+            zoomParam1={zoomParam1} setZoomParam1={setZoomParam1}
+            zoomParam2={zoomParam2} setZoomParam2={setZoomParam2}
+            zoomParam3={zoomParam3} setZoomParam3={setZoomParam3}
+            zoomParam4={zoomParam4} setZoomParam4={setZoomParam4}
         />
         <WebGPUCanvas
             rendererRef={rendererRef}
@@ -260,6 +281,11 @@ function App() {
             normalStrength={normalStrength}
             fogFalloff={fogFalloff}
             depthThreshold={depthThreshold}
+            // Generic Params
+            zoomParam1={zoomParam1}
+            zoomParam2={zoomParam2}
+            zoomParam3={zoomParam3}
+            zoomParam4={zoomParam4}
             zoom={zoom}
             panX={panX}
             panY={panY}

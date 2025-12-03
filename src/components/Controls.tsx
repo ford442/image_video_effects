@@ -39,6 +39,15 @@ interface ControlsProps {
     setFogFalloff?: (val: number) => void;
     depthThreshold?: number;
     setDepthThreshold?: (val: number) => void;
+    // Generic Params
+    zoomParam1?: number;
+    setZoomParam1?: (val: number) => void;
+    zoomParam2?: number;
+    setZoomParam2?: (val: number) => void;
+    zoomParam3?: number;
+    setZoomParam3?: (val: number) => void;
+    zoomParam4?: number;
+    setZoomParam4?: (val: number) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -59,7 +68,11 @@ const Controls: React.FC<ControlsProps> = ({
     ambient, setAmbient,
     normalStrength, setNormalStrength,
     fogFalloff, setFogFalloff,
-    depthThreshold, setDepthThreshold
+    depthThreshold, setDepthThreshold,
+    zoomParam1, setZoomParam1,
+    zoomParam2, setZoomParam2,
+    zoomParam3, setZoomParam3,
+    zoomParam4, setZoomParam4
 }) => {
     const shaderModes = availableModes.filter(entry => entry.category === 'shader');
     const imageModes = availableModes.filter(entry => entry.category === 'image');
@@ -204,6 +217,29 @@ const Controls: React.FC<ControlsProps> = ({
                 <label htmlFor="pan-y-slider">Pan Y:</label>
                 <input type="range" id="pan-y-slider" min="0" max="200" value={panY * 100} onChange={(e) => setPanY(parseFloat(e.target.value) / 100)} />
             </div>
+
+            {mode === 'rain' && (
+                <>
+                    <hr style={{borderColor: '#444', margin: '15px 0'}} />
+                    <div style={{fontWeight: 'bold', marginBottom: '10px'}}>Rain Controls</div>
+                    <div className="control-group">
+                        <label>Rain Speed: {zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Rain Density: {zoomParam2?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Wind: {zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="4" step="0.1" value={zoomParam3 || 2.0} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Splash/Flow: {zoomParam4?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.5} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
 
             {mode === 'infinite-zoom' && (
                 <>
