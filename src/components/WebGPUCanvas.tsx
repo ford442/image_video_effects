@@ -18,13 +18,20 @@ interface WebGPUCanvasProps {
     inputSource: InputSource;
     selectedVideo: string;
     isMuted: boolean;
+    // Infinite Zoom
+    lightStrength?: number;
+    ambient?: number;
+    normalStrength?: number;
+    fogFalloff?: number;
+    depthThreshold?: number;
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     mode, zoom, panX, panY, rendererRef,
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
-    inputSource, selectedVideo, isMuted
+    inputSource, selectedVideo, isMuted,
+    lightStrength, ambient, normalStrength, fogFalloff, depthThreshold
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -124,6 +131,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     });
                 }
 
+                // Update Lighting Params
+                rendererRef.current.updateLightingParams({
+                    lightStrength,
+                    ambient,
+                    normalStrength,
+                    fogFalloff,
+                    depthThreshold
+                });
+
                 // Pass video element to render
                 rendererRef.current.render(mode, videoRef.current, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown);
             }
@@ -131,7 +147,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef]);
+    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, lightStrength, ambient, normalStrength, fogFalloff, depthThreshold]);
 
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!canvasRef.current) return;
