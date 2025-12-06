@@ -448,7 +448,7 @@
     "name": "Radiating Haze",
     "url": "shaders/radiating-haze.wgsl",
     "category": "image",
-    "description": "Animated aura that radiates from strong colours; browns, greys & blacks are ignored. Depth-aware, pulsating, and temporally persistent.",
+    "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
     "params": [
       {
         "id": "speed",
@@ -477,9 +477,7 @@
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
-      }
-    ],
-    "advanced_params": [
+      },
       {
         "id": "pulseSpd",
         "name": "Pulse Speed",
@@ -496,8 +494,186 @@
       },
       {
         "id": "hueBias",
+        "name": "Hue Bias / Fixed Hue",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colourMode",
+        "name": "Colour Mode",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": [
+          "Shifted",
+          "Original",
+          "Fixed"
+        ]
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "multi-mode"
+    ]
+  },
+  {
+    "id": "radiating-displacement",
+    "name": "Radiating Displacement",
+    "url": "shaders/radiating-displacement.wgsl",
+    "category": "image",
+    "description": "Rippling displacement waves emanate only from strong colours; neutrals stay sharp. Mouse-click to seed ripples.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "strength",
+        "name": "Displace Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Wave Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pulseSpd",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "colour-masking"
+    ]
+  },
+  {
+    "id": "chromatic-infection",
+    "name": "Chromatic Infection",
+    "url": "shaders/chromatic-infection.wgsl",
+    "category": "image",
+    "description": "Strong colours spread like a living organism, infecting neutral regions with organic, pulsing tendrils. Watch vibrant hues consume the dull!",
+    "params": [
+      {
+        "id": "spreadSpeed",
+        "name": "Spread Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Infection Intensity",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "tendrilScale",
+        "name": "Tendril Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hueShift",
         "name": "Hue Shift",
         "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mutationRate",
+        "name": "Mutation Rate",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "organic-growth"
+    ]
+  },
+  {
+    "id": "prismatic-mosaic",
+    "name": "Prismatic Mosaic",
+    "url": "shaders/prismatic-mosaic.wgsl",
+    "category": "image",
+    "description": "Color tiles break apart and reassemble into shifting prisms, turning strong colors into a kaleidoscopic mosaic that ripples across the image.",
+    "params": [
+      {
+        "id": "tileSize",
+        "name": "Tile Size",
+        "default": 0.05,
+        "min": 0.01,
+        "max": 0.2
+      },
+      {
+        "id": "speed",
+        "name": "Mosaic Speed",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satBoost",
+        "name": "Saturation Boost",
+        "default": 0.2,
         "min": 0.0,
         "max": 1.0
       }
