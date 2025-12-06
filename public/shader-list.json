@@ -148,29 +148,29 @@
         "id": "speed",
         "name": "Scan Speed",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "width",
         "name": "Beam Width",
         "default": 0.3,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "contours",
         "name": "Contour Density",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "edges",
         "name": "Edge Sensitivity",
         "default": 0.3,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       }
     ],
     "features": [
@@ -190,29 +190,29 @@
         "id": "spread",
         "name": "Spread Speed",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "density",
         "name": "Branch Density",
         "default": 0.6,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "glow",
         "name": "Glow Intensity",
         "default": 0.7,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "spores",
         "name": "Spore Count",
         "default": 0.3,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       }
     ],
     "advanced_params": [
@@ -220,29 +220,29 @@
         "id": "growth_rate",
         "name": "Growth Rate",
         "default": 0.8,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "color_mode",
         "name": "Color Mode",
         "default": 0.25,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "pulse",
         "name": "Pulse Speed",
         "default": 0.4,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "depth_influence",
         "name": "Depth Influence",
         "default": 0.7,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       }
     ],
     "features": [
@@ -263,29 +263,29 @@
         "id": "speed",
         "name": "Flow Speed",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "scale",
         "name": "Pattern Scale",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "intensity",
         "name": "Glow Intensity",
         "default": 0.6,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "color_shift",
         "name": "Color Phase",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0
+        "default": 0,
+        "min": 0,
+        "max": 1
       }
     ],
     "advanced_params": [
@@ -293,29 +293,29 @@
         "id": "distortion",
         "name": "Chromatic Distortion",
         "default": 0.3,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "color_mode",
         "name": "Color Mode",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0
+        "default": 0,
+        "min": 0,
+        "max": 1
       },
       {
         "id": "pulse",
         "name": "Pulse Rhythm",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       },
       {
         "id": "depth_influence",
         "name": "Depth Interaction",
         "default": 0.6,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1
       }
     ],
     "features": [
