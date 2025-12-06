@@ -442,5 +442,70 @@
       "temporal-persistence",
       "interactive"
     ]
+  },
+  {
+    "id": "radiating-haze",
+    "name": "Radiating Haze",
+    "url": "shaders/radiating-haze.wgsl",
+    "category": "image",
+    "description": "Animated aura that radiates from strong colours; browns, greys & blacks are ignored. Depth-aware, pulsating, and temporally persistent.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Aura Intensity",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Aura Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "pulseSpd",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hueBias",
+        "name": "Hue Shift",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking"
+    ]
   }
 ]
