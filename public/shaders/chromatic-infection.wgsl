@@ -234,7 +234,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  9️⃣  Temporal persistence (infection memory)
     // -----------------------------------------------------------------
-    let prev = textureSampleLevel(infectionBuf, depthSampler, uv, 0.0).rgb;
+    let prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).rgb;
     let persist = max(prev * 0.95, outCol * finalSpread);
     textureStore(infectionBuf, gid.xy, vec4<f32>(persist, 1.0));
     

@@ -42,14 +42,15 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     let h6 = h * 6.0;
     let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
-    if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
+    if (h6 < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
     else if (h6 < 3.0) { rgb = vec3<f32>(0.0, c, x); }
     else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, c); }
     else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-    else               { rgb = vec3<f32>(c, 0.0, x); }
+    else { rgb = vec3<f32>(c, 0.0, x); }
     return rgb + vec3<f32>(v - c);
 }
+
 
 // ---------------------------------------------------------------
 //  Hash for sparkle
@@ -140,7 +141,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  8️⃣  Temporal persistence (soft glow trail)
     // -----------------------------------------------------------------
-    let prev = textureSampleLevel(auraBuf, depthSampler, uv, 0.0).r;
+    let prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).r;
     let persist = max(prev * 0.92, aura);
     textureStore(auraBuf, gid.xy, vec4<f32>(persist,0.0,0.0,1.0));
 
