@@ -100,5 +100,11 @@
     "name": "Galaxy",
     "url": "shaders/galaxy-compute.wgsl",
     "category": "shader"
+  },
+  {
+    "id": "rain",
+    "name": "Rain",
+    "url": "shaders/rain.wgsl",
+    "category": "image"
   }
 ]

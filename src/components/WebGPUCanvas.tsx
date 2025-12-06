@@ -24,6 +24,11 @@ interface WebGPUCanvasProps {
     normalStrength?: number;
     fogFalloff?: number;
     depthThreshold?: number;
+    // Generic Params
+    zoomParam1?: number;
+    zoomParam2?: number;
+    zoomParam3?: number;
+    zoomParam4?: number;
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
@@ -31,7 +36,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, isMuted,
-    lightStrength, ambient, normalStrength, fogFalloff, depthThreshold
+    lightStrength, ambient, normalStrength, fogFalloff, depthThreshold,
+    zoomParam1, zoomParam2, zoomParam3, zoomParam4
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -122,6 +128,13 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         bgSpeed: panX,
                         parallaxStrength: panY
                     });
+                } else if (mode === 'rain') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.08,
+                        bgSpeed: zoomParam2 ?? 0.5,
+                        parallaxStrength: zoomParam3 ?? 2.0,
+                        fogDensity: zoomParam4 ?? 0.7
+                    });
                 } else {
                     // Reset to defaults when not in galaxy mode
                     rendererRef.current.updateZoomParams({
@@ -147,7 +160,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, lightStrength, ambient, normalStrength, fogFalloff, depthThreshold]);
+    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, lightStrength, ambient, normalStrength, fogFalloff, depthThreshold, zoomParam1, zoomParam2, zoomParam3, zoomParam4]);
 
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!canvasRef.current) return;
