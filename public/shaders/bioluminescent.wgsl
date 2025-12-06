@@ -2,7 +2,6 @@
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
@@ -20,6 +19,7 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=SpreadSpeed, y=BranchDensity, z=GlowIntensity, w=SporeCount
   ripples: array<vec4<f32>, 50>,
 };
+@group(0) @binding(3) var<uniform> u: Uniforms;
 
 // Hash for randomness
 fn hash(p: vec2<f32>) -> f32 {
@@ -83,10 +83,10 @@ fn growth_step(uv: vec2<f32>, current: f32, normal: vec3<f32>, time: f32,
     
     let noise_offset = vec2<f32>(noise_val * 0.5, noise_val2 * 0.5) * texel * 2.0; // Scale offset by texel
     
-    let n1 = textureSampleLevel(dataTextureA, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0) + noise_offset, 0.0).r;
-    let n2 = textureSampleLevel(dataTextureA, non_filtering_sampler, uv - vec2<f32>(texel.x, 0.0) + noise_offset, 0.0).r;
-    let n3 = textureSampleLevel(dataTextureA, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y) + noise_offset, 0.0).r;
-    let n4 = textureSampleLevel(dataTextureA, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y) + noise_offset, 0.0).r;
+    let n1 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0) + noise_offset, 0.0).r;
+    let n2 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(texel.x, 0.0) + noise_offset, 0.0).r;
+    let n3 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y) + noise_offset, 0.0).r;
+    let n4 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y) + noise_offset, 0.0).r;
     
     // Average neighbor growth
     var neighbor_avg = (n1 + n2 + n3 + n4) * 0.25;
@@ -155,7 +155,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let normal = calculate_normal(uv, depth, texel);
 
     // --- Initialize or load growth state ---
-    var growth = textureSampleLevel(dataTextureA, non_filtering_sampler, uv, 0.0).r;
+    var growth = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
     
     // --- Interactive Spore Placement ---
     // Each ripple becomes a growth seed

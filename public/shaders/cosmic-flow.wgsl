@@ -2,7 +2,7 @@
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(3) var <uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
@@ -155,7 +155,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // --- Temporal Persistence (Trails) ---
     var trail = 0.0;
     if (intensity > 0.5) {
-        let prev_trail = textureSampleLevel(dataTextureA, non_filtering_sampler, uv - flow_direction, 0.0).r;
+        let prev_trail = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - flow_direction, 0.0).r;
         trail = max(prev_trail * 0.95, f * f * intensity);
         textureStore(dataTextureA, global_id.xy, vec4<f32>(trail, 0.0, 0.0, 1.0));
     }
