@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  8️⃣  Composite
     // -----------------------------------------------------------------
     var outCol = greenWorld + glowCol + grain;
-    outCol = clamp(outCol, 0.0, 1.0);
+    outCol = clamp(outCol, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Depth influence can modulate overall intensity
     outCol *= 1.0 - depthInf * depth * 0.3;
