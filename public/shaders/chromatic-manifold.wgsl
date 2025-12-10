@@ -207,7 +207,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let smearCol = textureSampleLevel(readTexture, u_sampler, smearUV, 0.0);
         outColor = mix(outColor, smearCol, 0.6);
         // add localized HDR bloom
-        outColor.rgb += (maxRGB - 1.0) * 0.5;
+        outColor = vec4<f32>(outColor.rgb + (maxRGB - 1.0) * 0.5, outColor.a);
     }
 
     // Combine with persistence (feedback): 90% previous frame
