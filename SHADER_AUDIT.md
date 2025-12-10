@@ -166,7 +166,7 @@ fn pcg_hash(n: u32) -> u32 {
 | 🟢 Low | Add `flashIntensity` param to `chromatic-crawler.wgsl` | 15 min | ✅ Done |
 | 🟢 Low | Make `quantum-smear.wgsl` void frequency controllable | 10 min | ✅ Done |
 | 🟢 Low | Optimize `neural-resonance.wgsl` texture samples | 30 min | ✅ Done (16→4 samples) |
-| 🟢 Low | Standardize hash functions across all shaders | 2 hours | ⏳ Pending |
+| 🟢 Low | Standardize hash functions across all shaders | 2 hours | ✅ Library created (`_hash_library.wgsl`) |
 
 ---
 
