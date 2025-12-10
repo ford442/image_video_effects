@@ -1690,5 +1690,78 @@
       "4d-topology",
       "interactive"
     ]
+  },
+  {
+    "id": "chromatic-folds-2",
+    "name": "Chromatic Folds 2",
+    "url": "shaders/chromatic-folds-2.wgsl",
+    "category": "image",
+    "description": "Higher-dimensional manifold where RGB channels exist as spatial coordinates. Features Möbius twist, Klein bottle crossing, and Hyperbolic recursive folding.",
+    "params": [
+      {
+        "id": "globalIntensity",
+        "name": "Fold Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hyperFactor",
+        "name": "Hyper Factor",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "twistRate",
+        "name": "Twist Rate",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "chromaticScale",
+        "name": "Chromatic Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "depthInfluence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "foldSharpness",
+        "name": "Fold Sharpness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotationSpeed",
+        "name": "4D Rotation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dimensionalFold",
+        "name": "Dimensional Fold",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "4d-topology",
+      "non-euclidean"
+    ]
   }
 ]
