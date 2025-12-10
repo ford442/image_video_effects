@@ -1763,5 +1763,78 @@
       "4d-topology",
       "non-euclidean"
     ]
+  },
+  {
+    "id": "nebulous-dream",
+    "name": "Nebulous Dream",
+    "url": "shaders/nebulous-dream.wgsl",
+    "category": "image",
+    "description": "Swirling vortex of rainbow candy clouds. Fractal noise creates billowy clouds warped by a flow field and colored by shifting rainbow gradients with smoky trails.",
+    "params": [
+      {
+        "id": "cloudScale",
+        "name": "Cloud Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorSpeed",
+        "name": "Color Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "persistence",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "cloudSharpness",
+        "name": "Cloud Sharpness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satBoost",
+        "name": "Saturation Boost",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blendStrength",
+        "name": "Blend Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "fbm-clouds",
+      "rainbow"
+    ]
   }
 ]
