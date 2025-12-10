@@ -165,7 +165,7 @@ fn pcg_hash(n: u32) -> u32 {
 | 🟡 Medium | Test all new psychedelic shaders | 30 min | ⏳ Pending |
 | 🟢 Low | Add `flashIntensity` param to `chromatic-crawler.wgsl` | 15 min | ✅ Done |
 | 🟢 Low | Make `quantum-smear.wgsl` void frequency controllable | 10 min | ✅ Done |
-| 🟢 Low | Optimize `neural-resonance.wgsl` texture samples | 30 min | ⏳ Pending |
+| 🟢 Low | Optimize `neural-resonance.wgsl` texture samples | 30 min | ✅ Done (16→4 samples) |
 | 🟢 Low | Standardize hash functions across all shaders | 2 hours | ⏳ Pending |
 
 ---
