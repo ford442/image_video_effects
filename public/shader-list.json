@@ -1617,5 +1617,78 @@
       "kaleidoscope",
       "chromatic-aberration"
     ]
+  },
+  {
+    "id": "chromatic-manifold-2",
+    "name": "Chromatic Manifold 2",
+    "url": "shaders/chromatic-manifold-2.wgsl",
+    "category": "image",
+    "description": "Enhanced 4D color-as-dimension topology with Möbius-like hue folding, depth curvature tensor, and growing feedback folds that build over time.",
+    "params": [
+      {
+        "id": "foldStrength",
+        "name": "Fold Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pivotHue",
+        "name": "Hue Pivot",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satScale",
+        "name": "Saturation Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInfluence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "noiseAmount",
+        "name": "Noise Amount",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feedbackPersist",
+        "name": "Feedback Persist",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rippleAmp",
+        "name": "Ripple Amplitude",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "curvePower",
+        "name": "Curve Power",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "4d-topology",
+      "interactive"
+    ]
   }
 ]
