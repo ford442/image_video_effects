@@ -36,8 +36,9 @@ struct Uniforms {
 //  Utility – simple hash & value‑noise (fast, good enough for art)
 // ---------------------------------------------------------------
 fn hash(p: vec2<f32>) -> f32 {
-    var h = fract(vec3<f32>(p.xyx) * 0.1031);
-    h += dot(h, h.yzx + 33.33);
+    var h = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
+    let d = dot(h, vec3<f32>(h.y, h.z, h.x) + vec3<f32>(33.33));
+    h = h + vec3<f32>(d);
     return fract((h.x + h.y) * h.z);
 }
 fn noise(p: vec2<f32>) -> f32 {
