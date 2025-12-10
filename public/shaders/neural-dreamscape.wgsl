@@ -39,9 +39,7 @@ fn sigmoid(x: f32) -> f32 {
   return 1.0 / (1.0 + exp(-x));
 }
 
-fn tanh_activation(x: f32) -> f32 {
-  return tanh(x);
-}
+// Use built-in tanh directly
 
 // ---------------------------------------------------------------
 //  Generate pseudo-random values for neural noise
@@ -174,7 +172,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let totalActivation = (act1 + act2 + act3 + synapse1 + synapse2 + synapse3 + noise) * depthBoost;
   
   // Apply non-linear activation function
-  let processedActivation = tanh_activation(totalActivation * activationStr);
+  let processedActivation = tanh(totalActivation * activationStr);
   
   // -----------------------------------------------------------------
   //  Create color based on activations (each neuron has distinct hue)
