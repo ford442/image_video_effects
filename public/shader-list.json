@@ -1836,5 +1836,78 @@
       "fbm-clouds",
       "rainbow"
     ]
+  },
+  {
+    "id": "ethereal-swirl",
+    "name": "Ethereal Swirl",
+    "url": "shaders/ethereal-swirl.wgsl",
+    "category": "image",
+    "description": "4D color-space vortex with multi-layer FBM clouds, swirling flow field, and depth as a curvature tensor. Creates silky trails like a living dreamscape.",
+    "params": [
+      {
+        "id": "cloudScale",
+        "name": "Cloud Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorSpeed",
+        "name": "Color Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "persistence",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "depthWarpStr",
+        "name": "Depth Warp",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "turbulenceAmt",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "detailMix",
+        "name": "Detail Mix",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blendStr",
+        "name": "Blend Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "fbm-clouds",
+      "4d-topology"
+    ]
   }
 ]
