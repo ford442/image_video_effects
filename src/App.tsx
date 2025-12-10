@@ -191,6 +191,31 @@ function App() {
           setZoomParam3(2.0);  // Wind
           setZoomParam4(0.7);  // Splash
       }
+      if (mode === 'chromatic-manifold') {
+          // manifoldScale, curvatureStr, hueWeight, feedbackStr
+          setZoomParam1(0.5); // manifoldScale
+          setZoomParam2(0.5); // curvature
+          setZoomParam3(0.9); // hueWeight
+          setZoomParam4(0.9); // feedback
+      }
+      if (mode === 'digital-decay') {
+          setZoomParam1(0.5); // Decay Intensity
+          setZoomParam2(0.5); // Block Size
+          setZoomParam3(0.5); // Corruption Speed
+          setZoomParam4(0.5); // Depth Focus
+      }
+      if (mode === 'spectral-vortex') {
+          setZoomParam1(2.0); // Twist Strength
+          setZoomParam2(0.02); // Distortion Step
+          setZoomParam3(0.1); // Color Shift
+          setZoomParam4(0.0); // Unused
+      }
+      if (mode === 'quantum-fractal') {
+          setZoomParam1(3.0); // Scale
+          setZoomParam2(100.0); // Iterations
+          setZoomParam3(1.0); // Entanglement
+          setZoomParam4(0.0); // Unused
+      }
   }, [mode]);
 
   // Fetch video list
