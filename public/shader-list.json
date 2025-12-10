@@ -178,8 +178,20 @@
     "url": "shaders/neon-edges.wgsl",
     "category": "image",
     "params": [
-      { "id": "edgeThreshold", "name": "Edge Threshold", "default": 0.3, "min": 0.0, "max": 1.0 },
-      { "id": "neonIntensity", "name": "Neon Intensity", "default": 1.0, "min": 0.0, "max": 2.0 }
+      {
+        "id": "edgeThreshold",
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "neonIntensity",
+        "name": "Neon Intensity",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 2.0
+      }
     ]
   },
   {
@@ -188,9 +200,27 @@
     "url": "shaders/digital-glitch.wgsl",
     "category": "image",
     "params": [
-      { "id": "blockIntensity", "name": "Block Intensity", "default": 0.4, "min": 0.0, "max": 1.0 },
-      { "id": "channelShift", "name": "Channel Shift", "default": 0.4, "min": 0.0, "max": 1.0 },
-      { "id": "scanline", "name": "Scanline Tears", "default": 0.2, "min": 0.0, "max": 1.0 }
+      {
+        "id": "blockIntensity",
+        "name": "Block Intensity",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "channelShift",
+        "name": "Channel Shift",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "scanline",
+        "name": "Scanline Tears",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
     ]
   },
   {
@@ -199,9 +229,27 @@
     "url": "shaders/halftone.wgsl",
     "category": "image",
     "params": [
-      { "id": "dotScale", "name": "Dot Scale", "default": 0.5, "min": 0.0, "max": 1.0 },
-      { "id": "contrast", "name": "Contrast", "default": 1.0, "min": 0.0, "max": 2.0 },
-      { "id": "colorMode", "name": "Color Mode", "default": 1.0, "min": 0.0, "max": 1.0 }
+      {
+        "id": "dotScale",
+        "name": "Dot Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 2.0
+      },
+      {
+        "id": "colorMode",
+        "name": "Color Mode",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 1.0
+      }
     ]
   },
   {
@@ -211,9 +259,27 @@
     "category": "image",
     "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature.",
     "params": [
-      { "id": "warpStrength", "name": "Warp Strength", "default": 0.5, "min": 0.0, "max": 1.0 },
-      { "id": "tearThreshold", "name": "Tear Threshold", "default": 0.8, "min": 0.0, "max": 3.0 },
-      { "id": "curvature", "name": "Curvature Strength", "default": 0.5, "min": 0.0, "max": 1.0 }
+      {
+        "id": "warpStrength",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "tearThreshold",
+        "name": "Tear Threshold",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 3.0
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
     ]
   },
   {
@@ -222,10 +288,34 @@
     "url": "shaders/digital-decay.wgsl",
     "category": "image",
     "params": [
-      { "id": "decayIntensity", "name": "Decay Intensity", "default": 0.5, "min": 0.0, "max": 1.0 },
-      { "id": "blockSize", "name": "Block Size", "default": 0.5, "min": 0.0, "max": 1.0 },
-      { "id": "corruptionSpeed", "name": "Corruption Speed", "default": 0.5, "min": 0.0, "max": 1.0 },
-      { "id": "depthFocus", "name": "Depth Focus", "default": 0.5, "min": 0.0, "max": 1.0 }
+      {
+        "id": "decayIntensity",
+        "name": "Decay Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blockSize",
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "corruptionSpeed",
+        "name": "Corruption Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthFocus",
+        "name": "Depth Focus",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
     ]
   },
   {
@@ -868,7 +958,6 @@
     ]
   },
   {
-<<<<<<< HEAD
     "id": "fractal-kaleidoscope",
     "name": "Fractal Kaleidoscope",
     "url": "shaders/fractal-kaleidoscope.wgsl",
@@ -893,15 +982,35 @@
       "interactive",
       "glitch",
       "cyberpunk"
-=======
+    ]
+  },
+  {
     "id": "spectral-vortex",
     "name": "Spectral Vortex",
     "url": "shaders/spectral-vortex.wgsl",
     "category": "image",
     "params": [
-      { "id": "twist", "name": "Twist Strength", "default": 2.0, "min": 0.0, "max": 10.0 },
-      { "id": "distort", "name": "Distortion Step", "default": 0.02, "min": 0.0, "max": 0.1 },
-      { "id": "shift", "name": "Color Shift", "default": 0.1, "min": 0.0, "max": 1.0 }
+      {
+        "id": "twist",
+        "name": "Twist Strength",
+        "default": 2.0,
+        "min": 0.0,
+        "max": 10.0
+      },
+      {
+        "id": "distort",
+        "name": "Distortion Step",
+        "default": 0.02,
+        "min": 0.0,
+        "max": 0.1
+      },
+      {
+        "id": "shift",
+        "name": "Color Shift",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
     ]
   },
   {
@@ -910,10 +1019,27 @@
     "url": "shaders/quantum-fractal.wgsl",
     "category": "image",
     "params": [
-      { "id": "scale", "name": "Fractal Scale", "default": 3.0, "min": 0.1, "max": 10.0 },
-      { "id": "iter", "name": "Iterations", "default": 100.0, "min": 10.0, "max": 200.0 },
-      { "id": "entangle", "name": "Entanglement", "default": 1.0, "min": 0.0, "max": 2.0 }
->>>>>>> main
+      {
+        "id": "scale",
+        "name": "Fractal Scale",
+        "default": 3.0,
+        "min": 0.1,
+        "max": 10.0
+      },
+      {
+        "id": "iter",
+        "name": "Iterations",
+        "default": 100.0,
+        "min": 10.0,
+        "max": 200.0
+      },
+      {
+        "id": "entangle",
+        "name": "Entanglement",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 2.0
+      }
     ]
   }
 ]

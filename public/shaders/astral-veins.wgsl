@@ -70,9 +70,9 @@ fn fbm(p: vec2<f32>) -> f32 {
 //  HSV → RGB (used for colour cycling)
 // ---------------------------------------------------------------
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    const c = v * s;
-    const h6 = h * 6.0;
-    const x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    let c = v * s;
+    let h6 = h * 6.0;
+    let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
     if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
