@@ -1041,5 +1041,362 @@
         "max": 2.0
       }
     ]
+  },
+  {
+    "id": "neural-dreamscape",
+    "name": "Neural Dreamscape",
+    "url": "shaders/neural-dreamscape.wgsl",
+    "category": "image",
+    "description": "Simulates a neural network's dream state with cascading activations, pulsing neurons, and glowing synaptic connections. Creates surreal, ever-morphing landscapes.",
+    "params": [
+      {
+        "id": "neuronScale",
+        "name": "Neuron Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "synapseGlow",
+        "name": "Synapse Glow",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "morphSpeed",
+        "name": "Morph Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feedbackStr",
+        "name": "Feedback",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "distortionAmt",
+        "name": "Distortion",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "activationStr",
+        "name": "Activation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorSpeed",
+        "name": "Color Cycle",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "neural-network"
+    ]
+  },
+  {
+    "id": "quantum-wormhole",
+    "name": "Quantum Chromatic Wormhole",
+    "url": "shaders/quantum-wormhole.wgsl",
+    "category": "image",
+    "description": "4D hypersphere color topology with curl-field flow, HSV phase rotation, and feedback-driven trails. Bright areas explode into rainbow fire, dark areas become void pockets.",
+    "params": [
+      {
+        "id": "twistScale",
+        "name": "Twist Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flowStrength",
+        "name": "Flow Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "trailLength",
+        "name": "Trail Length",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "persistence",
+        "name": "Persistence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "burstIntensity",
+        "name": "Burst Intensity",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "voidThreshold",
+        "name": "Void Threshold",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotationSpeed",
+        "name": "4D Rotation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "4d-topology",
+      "hdr"
+    ]
+  },
+  {
+    "id": "chromatic-folds",
+    "name": "Chromatic Folds",
+    "url": "shaders/chromatic-folds.wgsl",
+    "category": "image",
+    "description": "Mind-bending psychedelic topology where color is a physical dimension. Warps image along hue gradients with depth curvature and self-reinforcing feedback.",
+    "params": [
+      {
+        "id": "foldStrength",
+        "name": "Fold Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pivotHue",
+        "name": "Hue Pivot",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satScale",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInfluence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "noiseAmount",
+        "name": "Noise Amount",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feedbackStrength",
+        "name": "Feedback",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rippleStrength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "4d-topology"
+    ]
+  },
+  {
+    "id": "neural-resonance",
+    "name": "Neural Resonance",
+    "url": "shaders/neural-resonance.wgsl",
+    "category": "image",
+    "description": "Pareidolia feedback loop with unsharp masking, curl-noise domain warping, and chromatic aberration. Creates breathing fractals, watching eyes, and spiraling vortices.",
+    "params": [
+      {
+        "id": "amplification",
+        "name": "Amplification",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "curlStrength",
+        "name": "Curl Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feedbackMix",
+        "name": "Feedback Mix",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "chromaticDrift",
+        "name": "Chromatic Drift",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "contrastBoost",
+        "name": "Contrast Boost",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "evolutionSpeed",
+        "name": "Evolution Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "seedStrength",
+        "name": "Video Seed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthMod",
+        "name": "Depth Modulation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "pareidolia",
+      "hallucinogenic"
+    ]
+  },
+  {
+    "id": "quantum-smear",
+    "name": "Quantum Smear",
+    "url": "shaders/quantum-smear.wgsl",
+    "category": "image",
+    "description": "Quantum particle disintegration with stochastic advection and entropy injection. Objects dissolve into pointillist particle clouds that reassemble when motion stops.",
+    "params": [
+      {
+        "id": "scatterRadius",
+        "name": "Scatter Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "entropyScale",
+        "name": "Entropy Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "coherenceStr",
+        "name": "Coherence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "densityBoost",
+        "name": "Density Boost",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "voidStrength",
+        "name": "Void Strength",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "foamIntensity",
+        "name": "Quantum Foam",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "shimmerAmt",
+        "name": "Shimmer",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthMod",
+        "name": "Depth Modulation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "granular-physics",
+      "hdr"
+    ]
   }
 ]
