@@ -1544,5 +1544,78 @@
       "fbm-clouds",
       "hdr"
     ]
+  },
+  {
+    "id": "astral-kaleidoscope",
+    "name": "Astral Kaleidoscope",
+    "url": "shaders/astral-kaleidoscope.wgsl",
+    "category": "image",
+    "description": "Depth-aware spiraling tunnel of light. Foreground rotates faster than background with kaleidoscope mirroring, chromatic separation, and glowing feedback trails.",
+    "params": [
+      {
+        "id": "segments",
+        "name": "Mirror Segments",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "spiralStr",
+        "name": "Spiral Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "trails",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "hueShift",
+        "name": "Hue Shift",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Chromatic Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "centerOsc",
+        "name": "Center Oscillation",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pulsePower",
+        "name": "Pulse Power",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "kaleidoscope",
+      "chromatic-aberration"
+    ]
   }
 ]
