@@ -1909,5 +1909,224 @@
       "fbm-clouds",
       "4d-topology"
     ]
+  },
+  {
+    "id": "quantum-foam",
+    "name": "Quantum Foam",
+    "url": "shaders/quantum-foam.wgsl",
+    "category": "image",
+    "description": "Chromatic parallax diffusion with 4D gradient noise, curl advection, Voronoi-FBM hybrid, quaternion rotation, and anisotropic diffusion trails.",
+    "params": [
+      {
+        "id": "foamScale",
+        "name": "Foam Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "diffusionRate",
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "octaveCount",
+        "name": "FBM Octaves",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthParallax",
+        "name": "Depth Parallax",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "emissionThreshold",
+        "name": "Emission Threshold",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "chromaticSpread",
+        "name": "Chromatic Spread",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "4d-topology",
+      "curl-flow"
+    ]
+  },
+  {
+    "id": "aurora-rift",
+    "name": "Aurora Rift",
+    "url": "shaders/aurora-rift.wgsl",
+    "category": "image",
+    "description": "Self-organising aurora in 4D colour-space with curl-driven flow, quaternion RGB rotation, multi-layer parallax, and anisotropic diffusion trails.",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Foam Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "diffusionRate",
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "fbmOctaves",
+        "name": "FBM Octaves",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthParallax",
+        "name": "Depth Parallax",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "emitThresh",
+        "name": "Emission Threshold",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "chromaticSpread",
+        "name": "Chromatic Spread",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "4d-topology",
+      "quaternion-rotation"
+    ]
+  },
+  {
+    "id": "aurora-rift-2",
+    "name": "Aurora Rift 2",
+    "url": "shaders/aurora-rift-2.wgsl",
+    "category": "image",
+    "description": "Enhanced aurora with refined 4D hyper-noise, improved Voronoi-FBM foam, spectral power post-processing, and emissive plasma on cell borders.",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Foam Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "diffusionRate",
+        "name": "Diffusion Rate",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "fbmOctaves",
+        "name": "FBM Octaves",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthParallax",
+        "name": "Depth Parallax",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "emitThresh",
+        "name": "Emission Threshold",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "chromaticSpread",
+        "name": "Chromatic Spread",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "4d-topology",
+      "spectral-power"
+    ]
   }
 ]
