@@ -42,6 +42,12 @@ fn hash13(p: vec3<f32>) -> f32 {
 }
 
 // ---------------------------------------------------------------
+//  Constants
+// ---------------------------------------------------------------
+const GLITCH_BLOCK_FREQUENCY: f32 = 5.0;  // How often glitch blocks change per second
+const GRID_SIZE: f32 = 50.0;  // Size of the wireframe grid overlay
+
+// ---------------------------------------------------------------
 //  Main compute shader
 // ---------------------------------------------------------------
 @compute @workgroup_size(8, 8, 1)
@@ -60,7 +66,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let flicker = u.zoom_params.w;          // Flicker intensity (0-1)
     
     // Random glitch blocks that change over time
-    let blockTime = floor(time * 5.0);
+    let blockTime = floor(time * GLITCH_BLOCK_FREQUENCY);
     let blockY = floor(uv.y * 20.0);
     let glitchBlock = hash(vec2<f32>(blockY, blockTime));
     
@@ -116,8 +122,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color.rgb += vec3<f32>(0.0, 0.15, 0.25) * (1.0 - depth * 0.5);
     
     // Grid overlay
-    let gridSize = 50.0;
-    let grid = abs(fract(uv.x * gridSize) - 0.5) < 0.05 || abs(fract(uv.y * gridSize) - 0.5) < 0.05;
+    let grid = abs(fract(uv.x * GRID_SIZE) - 0.5) < 0.05 || abs(fract(uv.y * GRID_SIZE) - 0.5) < 0.05;
     if (grid) {
         color.rgb += vec3<f32>(0.0, 0.2, 0.3) * 0.1;
     }

@@ -50,6 +50,11 @@ fn noise(p: vec2<f32>) -> f32 {
 }
 
 // ---------------------------------------------------------------
+//  Constants
+// ---------------------------------------------------------------
+const PIXEL_SIZE_SCALE: f32 = 100.0;  // Scaling factor for pixel size parameter
+
+// ---------------------------------------------------------------
 //  Main compute shader
 // ---------------------------------------------------------------
 @compute @workgroup_size(8, 8, 1)
@@ -62,7 +67,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
     // Parameters from uniform
-    let basePixelSize = max(u.zoom_params.x, 0.01) * 100.0;  // Base pixel size (1-100)
+    let basePixelSize = max(u.zoom_params.x, 0.01) * PIXEL_SIZE_SCALE;  // Base pixel size (1-100)
     let driftSpeed = u.zoom_params.y;  // Drift speed (0-1)
     let colorBleed = u.zoom_params.z;  // Color bleeding (0-1)
     let depthInfluence = u.zoom_params.w;  // How much depth affects pixel size (0-1)

@@ -4,7 +4,7 @@
 
 This is a WebGPU-powered real-time image and video effects application built with React and TypeScript. The project features:
 
-- **39+ shader effects** for images and videos
+- **35+ shader effects** for images and videos (and growing)
 - **AI-powered depth estimation** using DPT-Hybrid-MIDAS model
 - **Real-time WebGPU compute shaders** for high-performance rendering
 - **Interactive effects** with mouse/touch input for ripples and particles
@@ -21,7 +21,7 @@ The project uses an elegant "Universal BindGroup" architecture where:
 
 ## Current Challenge: UI Scalability
 
-With **39 shaders** (and growing), the current dropdown selection interface has become:
+With **35+ shaders** (and growing), the current dropdown selection interface has become:
 - **Non-descriptive**: Users can't preview effects before selecting
 - **Overwhelming**: Long list with no visual organization
 - **Inefficient**: Trial-and-error to find desired effect
