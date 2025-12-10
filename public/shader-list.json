@@ -810,5 +810,32 @@
       "temporal-persistence",
       "cyberpunk"
     ]
+  },
+  {
+    "id": "fractal-kaleidoscope",
+    "name": "Fractal Kaleidoscope",
+    "url": "shaders/fractal-kaleidoscope.wgsl",
+    "category": "image",
+    "description": "Mesmerizing fractal kaleidoscope with depth-aware multi-level zoom and rotating symmetry. Creates infinite mirrored patterns with chromatic aberration and interactive ripples.",
+    "features": [
+      "depth-aware",
+      "interactive",
+      "fractal",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "digital-waves",
+    "name": "Digital Waves",
+    "url": "shaders/digital-waves.wgsl",
+    "category": "image",
+    "description": "Cyberpunk digital wave distortion with RGB split, scanlines, glitch blocks, and color quantization. Features depth-aware pixelation and digital pulse effects on click.",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "glitch",
+      "cyberpunk"
+    ]
   }
 ]
