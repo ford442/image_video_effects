@@ -1398,5 +1398,151 @@
       "granular-physics",
       "hdr"
     ]
+  },
+  {
+    "id": "chromatic-crawler",
+    "name": "Chromatic Crawler",
+    "url": "shaders/chromatic-crawler.wgsl",
+    "category": "image",
+    "description": "Chaotic color-swapping regions that crawl across the screen with Voronoi-based patterns. 6 different color transformation patterns that change rapidly.",
+    "params": [
+      {
+        "id": "crawlSpeed",
+        "name": "Crawl Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "swapIntensity",
+        "name": "Swap Intensity",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feedbackMix",
+        "name": "Feedback Mix",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flashRate",
+        "name": "Flash Rate",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "regionSize",
+        "name": "Region Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glowAmount",
+        "name": "Glow Amount",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorModSpeed",
+        "name": "Color Mod Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "color-swapping",
+      "voronoi"
+    ]
+  },
+  {
+    "id": "rainbow-cloud",
+    "name": "Rainbow Cloud",
+    "url": "shaders/rainbow-cloud.wgsl",
+    "category": "image",
+    "description": "Swirling rainbow-colored clouds with fbm density, HDR bursts, negative color voids, and curl-field feedback trails. A living psychedelic sky.",
+    "params": [
+      {
+        "id": "cloudScale",
+        "name": "Cloud Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "twistSpeed",
+        "name": "Twist Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feedbackStep",
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "persistence",
+        "name": "Persistence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "densityPower",
+        "name": "Density Power",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "octaves",
+        "name": "FBM Octaves",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "fbm-clouds",
+      "hdr"
+    ]
   }
 ]
