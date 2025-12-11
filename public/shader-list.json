@@ -1040,6 +1040,111 @@
       "temporal-persistence",
       "chromatic-aberration",
       "sci-fi"
-    ]
+    ],
+  },
+  {
+    "id": "melting-oil",
+    "name": "Melting Oil",
+    "url": "shaders/melting-oil.wgsl",
+    "category": "simulation",
+    "description": "Sobel gradient-driven oil-paint flow with viscosity and hue shifts."
+  },
+  {
+    "id": "physarum",
+    "name": "Physarum Slime Mold",
+    "url": "shaders/physarum.wgsl",
+    "category": "simulation",
+    "description": "Agent-based slime mold texture feeder that creates trails and networks."
+  },
+  {
+    "id": "pixel-sand",
+    "name": "Pixel Sand",
+    "url": "shaders/pixel-sand.wgsl",
+    "category": "simulation",
+    "description": "Falling granular automata with RGB gravity and diagonal movement."
+  },
+  {
+    "id": "navier-stokes-dye",
+    "name": "Navier-Stokes Dye",
+    "url": "shaders/navier-stokes-dye.wgsl",
+    "category": "simulation",
+    "description": "Velocity advection and dye injection with a pressure-like solve placeholder."
+  },
+  {
+    "id": "temporal-echo",
+    "name": "Temporal Echo",
+    "url": "shaders/temporal-echo.wgsl",
+    "category": "feedback",
+    "description": "Feedback buffer and history texture for temporally offset echoes."
+  },
+  {
+    "id": "reaction-diffusion",
+    "name": "Reaction-Diffusion",
+    "url": "shaders/reaction-diffusion.wgsl",
+    "category": "simulation",
+    "description": "Grey-Scott style color bleed with cross-channel inhibition."
+  },
+  {
+    "id": "lenia",
+    "name": "Lenia Cellular Automata",
+    "url": "shaders/lenia.wgsl",
+    "category": "simulation",
+    "description": "Continuous cellular automata (Lenia) with ring kernel growth functions."
+  },
+  {
+    "id": "bitonic-sort",
+    "name": "Bitonic Pixel Sort",
+    "url": "shaders/bitonic-sort.wgsl",
+    "category": "sorting",
+    "description": "Workgroup bitonic sort skeleton for pixel sorting and glitch effects."
+  },
+  {
+    "id": "julia-warp",
+    "name": "Julia Warp",
+    "url": "shaders/julia-warp.wgsl",
+    "category": "warp",
+    "description": "Julia fractal-based warping with orbit traps for psychedelic coloring."
+  },
+  {
+    "id": "voronoi",
+    "name": "Voronoi Tessellation",
+    "url": "shaders/voronoi.wgsl",
+    "category": "tessellation",
+    "description": "Animated Voronoi reconstruction (simplified feature detection)."
+  },
+  {
+    "id": "spectrogram-displace",
+    "name": "Spectrogram Displace",
+    "url": "shaders/spectrogram-displace.wgsl",
+    "category": "audio",
+    "description": "Audio-driven per-pixel displacements from an FFT texture."
+  },
+  {
+    "id": "datamosh",
+    "name": "Datamosh",
+    "url": "shaders/datamosh.wgsl",
+    "category": "video",
+    "description": "Motion-vector driven datamoshing and smear accumulation."
+  },
+  {
+    "id": "ascii-glyph",
+    "name": "ASCII Glyphs",
+    "url": "shaders/ascii-glyph.wgsl",
+    "category": "glyph",
+    "description": "ASCII / SDF glyph morphing and atlas-based rendering."
+  },
+  {
+    "id": "neon-edge-diffusion",
+    "name": "Neon Edge Diffusion",
+    "url": "shaders/neon-edge-diffusion.wgsl",
+    "category": "edge",
+    "description": "Sobel edge detection with neon-diffusion and color bleeding."
+  },
+  {
+    "id": "boids",
+    "name": "Boids Reveal",
+    "url": "shaders/boids.wgsl",
+    "category": "simulation",
+    "description": "Flocking boids with reveal masking and simple attraction mechanics."
   }
 ]
