@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
+  zoom_config: vec4<f32>,  // x=zoomTime, y=mouseX, z=mouseY, w=unused
+  zoom_params: vec4<f32>,  // x=param1, y=param2, z=param3, w=param4
+  ripples: array<vec4<f32>, 50>,
+};
+
 const DT: f32 = 0.016;
 @compute @workgroup_size(8, 8, 1)
 fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {

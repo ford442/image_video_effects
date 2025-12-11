@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
+  zoom_config: vec4<f32>,  // x=zoomTime, y=mouseX, z=mouseY, w=unused
+  zoom_params: vec4<f32>,  // x=param1, y=param2, z=param3, w=param4
+  ripples: array<vec4<f32>, 50>,
+};
+
 const GRID_SIZE: u32 = 512u;
 const FEED_RATE: f32 = 0.055;
 const KILL_RATE: f32 = 0.062;
