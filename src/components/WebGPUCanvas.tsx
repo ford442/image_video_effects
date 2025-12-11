@@ -143,6 +143,38 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         parallaxStrength: 2.0
                     });
                 }
+                if (mode === 'chromatic-manifold') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.5, // hueWeight
+                        bgSpeed: zoomParam2 ?? 0.5, // warpStrength
+                        parallaxStrength: zoomParam3 ?? 0.8, // tearThreshold
+                        fogDensity: zoomParam4 ?? 0.5 // curvatureStrength
+                    });
+                }
+                if (mode === 'digital-decay') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.5, // decayIntensity
+                        bgSpeed: zoomParam2 ?? 0.5, // blockSize
+                        parallaxStrength: zoomParam3 ?? 0.5, // corruptionSpeed
+                        fogDensity: zoomParam4 ?? 0.5 // depthFocus
+                    });
+                }
+                if (mode === 'spectral-vortex') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 2.0, // Twist Strength
+                        bgSpeed: zoomParam2 ?? 0.02, // Distortion Step
+                        parallaxStrength: zoomParam3 ?? 0.1, // Color Shift
+                        fogDensity: zoomParam4 ?? 0.0 // Unused
+                    });
+                }
+                if (mode === 'quantum-fractal') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 3.0, // Scale
+                        bgSpeed: zoomParam2 ?? 100.0, // Iterations
+                        parallaxStrength: zoomParam3 ?? 1.0, // Entanglement
+                        fogDensity: zoomParam4 ?? 0.0 // Unused
+                    });
+                }
 
                 // Update Lighting Params
                 rendererRef.current.updateLightingParams({

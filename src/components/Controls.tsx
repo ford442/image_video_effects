@@ -114,10 +114,10 @@ const Controls: React.FC<ControlsProps> = ({
 
     return (
         <div className="controls">
-             <div className="control-group">
+            <div className="control-group">
                 <label>Input Source:</label>
-                <div style={{display: 'inline-block', marginLeft: '10px'}}>
-                    <label style={{marginRight: '10px', cursor: 'pointer'}}>
+                <div style={{ display: 'inline-block', marginLeft: '10px' }}>
+                    <label style={{ marginRight: '10px', cursor: 'pointer' }}>
                         <input
                             type="radio"
                             name="inputSource"
@@ -126,7 +126,7 @@ const Controls: React.FC<ControlsProps> = ({
                             onChange={() => setInputSource('image')}
                         /> Image
                     </label>
-                    <label style={{cursor: 'pointer'}}>
+                    <label style={{ cursor: 'pointer' }}>
                         <input
                             type="radio"
                             name="inputSource"
@@ -138,7 +138,7 @@ const Controls: React.FC<ControlsProps> = ({
                 </div>
             </div>
 
-             <div className="control-group">
+            <div className="control-group">
                 <label htmlFor="category-select">Effect Type:</label>
                 <select
                     id="category-select"
@@ -174,11 +174,11 @@ const Controls: React.FC<ControlsProps> = ({
                         value={selectedVideo}
                         onChange={(e) => setSelectedVideo(e.target.value)}
                     >
-                         {videoList.length === 0 ? <option value="" disabled>No videos found</option> :
+                        {videoList.length === 0 ? <option value="" disabled>No videos found</option> :
                             videoList.map(v => <option key={v} value={v}>{v}</option>)
-                         }
+                        }
                     </select>
-                    <label style={{marginLeft: '10px'}}>
+                    <label style={{ marginLeft: '10px' }}>
                         <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} /> Mute
                     </label>
                 </div>
@@ -186,22 +186,22 @@ const Controls: React.FC<ControlsProps> = ({
 
             {inputSource === 'image' && (
                 <>
-                <div className="control-group">
-                    <button onClick={onLoadModel} disabled={isModelLoaded}>
-                        {isModelLoaded ? 'AI Model Loaded' : 'Load AI Model'}
-                    </button>
-                    <button onClick={onNewImage}>Load New Random Image</button>
-                </div>
-                <div className="control-group">
-                    <label htmlFor="auto-change-toggle">Auto Change:</label>
-                    <input type="checkbox" id="auto-change-toggle" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} />
-                </div>
-                {autoChangeEnabled && (
                     <div className="control-group">
-                        <label htmlFor="delay-slider">Delay ({autoChangeDelay}s):</label>
-                        <input type="range" id="delay-slider" min="1" max="10" step="1" value={autoChangeDelay} onChange={(e) => setAutoChangeDelay(Number(e.target.value))} />
+                        <button onClick={onLoadModel} disabled={isModelLoaded}>
+                            {isModelLoaded ? 'AI Model Loaded' : 'Load AI Model'}
+                        </button>
+                        <button onClick={onNewImage}>Load New Random Image</button>
                     </div>
-                )}
+                    <div className="control-group">
+                        <label htmlFor="auto-change-toggle">Auto Change:</label>
+                        <input type="checkbox" id="auto-change-toggle" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} />
+                    </div>
+                    {autoChangeEnabled && (
+                        <div className="control-group">
+                            <label htmlFor="delay-slider">Delay ({autoChangeDelay}s):</label>
+                            <input type="range" id="delay-slider" min="1" max="10" step="1" value={autoChangeDelay} onChange={(e) => setAutoChangeDelay(Number(e.target.value))} />
+                        </div>
+                    )}
                 </>
             )}
 
@@ -220,8 +220,8 @@ const Controls: React.FC<ControlsProps> = ({
 
             {mode === 'rain' && (
                 <>
-                    <hr style={{borderColor: '#444', margin: '15px 0'}} />
-                    <div style={{fontWeight: 'bold', marginBottom: '10px'}}>Rain Controls</div>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Rain Controls</div>
                     <div className="control-group">
                         <label>Rain Speed: {zoomParam1?.toFixed(2)}</label>
                         <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
@@ -241,10 +241,94 @@ const Controls: React.FC<ControlsProps> = ({
                 </>
             )}
 
+            {mode === 'chromatic-manifold' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Chromatic Manifold Controls</div>
+                    <div className="control-group">
+                        <label>Warp Strength: {zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Curvature Strength: {zoomParam2?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Hue Weight: {zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="2" step="0.01" value={zoomParam3 || 1.0} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Feedback Strength: {zoomParam4?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.9} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+
+            {mode === 'digital-decay' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Digital Decay Controls</div>
+                    <div className="control-group">
+                        <label>Decay Intensity: {zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Block Size: {zoomParam2?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Corruption Speed: {zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam3 || 0.5} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Depth Focus: {zoomParam4?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.5} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+
+            {mode === 'spectral-vortex' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Spectral Vortex Controls</div>
+                    <div className="control-group">
+                        <label>Twist Strength: {zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="10" step="0.1" value={zoomParam1 || 2.0} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Distortion Step: {zoomParam2?.toFixed(3)}</label>
+                        <input type="range" min="0" max="0.1" step="0.001" value={zoomParam2 || 0.02} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Color Shift: {zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam3 || 0.1} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+
+            {mode === 'quantum-fractal' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Quantum Fractal Controls</div>
+                    <div className="control-group">
+                        <label>Fractal Scale: {zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0.1" max="10" step="0.1" value={zoomParam1 || 3.0} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Iterations: {zoomParam2?.toFixed(0)}</label>
+                        <input type="range" min="10" max="200" step="1" value={zoomParam2 || 100} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Entanglement: {zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="2" step="0.01" value={zoomParam3 || 1.0} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+
             {mode === 'infinite-zoom' && (
                 <>
-                    <hr style={{borderColor: '#444', margin: '15px 0'}} />
-                    <div style={{fontWeight: 'bold', marginBottom: '10px'}}>Lighting & Depth</div>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Lighting & Depth</div>
                     <div className="control-group">
                         <label>Light Strength: {lightStrength?.toFixed(1)}</label>
                         <input type="range" min="0" max="5" step="0.1" value={lightStrength || 1.0} onChange={(e) => setLightStrength && setLightStrength(parseFloat(e.target.value))} />
@@ -264,6 +348,28 @@ const Controls: React.FC<ControlsProps> = ({
                     <div className="control-group">
                         <label>Depth Threshold: {depthThreshold?.toFixed(2)}</label>
                         <input type="range" min="0" max="1" step="0.01" value={depthThreshold || 0.5} onChange={(e) => setDepthThreshold && setDepthThreshold(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+            {mode === 'chromatic-manifold' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Chromatic Manifold Controls</div>
+                    <div className="control-group">
+                        <label>Hue Weight: {(zoomParam1 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="2" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Warp Strength: {(zoomParam2 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Tear Threshold: {(zoomParam3 || 0.8).toFixed(2)}</label>
+                        <input type="range" min="0" max="3" step="0.01" value={zoomParam3 || 0.8} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Curvature Strength: {(zoomParam4 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="2" step="0.01" value={zoomParam4 || 0.5} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
                     </div>
                 </>
             )}
