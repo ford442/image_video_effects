@@ -32,8 +32,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let smeared_x = i32(i32(coord_i.x) - i32(motion.x));
   let smeared_y = i32(i32(coord_i.y) - i32(motion.y));
   let dim = textureDimensions(readTexture);
-  let x = (smeared_x + dim.x) % dim.x;
-  let y = (smeared_y + dim.y) % dim.y;
+  let x = (smeared_x + i32(dim.x)) % i32(dim.x);
+  let y = (smeared_y + i32(dim.y)) % i32(dim.y);
   let smeared = textureLoad(readTexture, vec2<i32>(x, y), 0);
   let mixed = mix(cur, smeared, 0.1);
   textureStore(dataTextureB, coord_i, mixed);

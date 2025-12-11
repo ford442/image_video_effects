@@ -21,8 +21,7 @@ struct Uniforms {
 };
 
 const DT: f32 = 0.016;
-@compute @workgroup_size(8, 8, 1)
-fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn advect_velocity(gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
     let vel = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
   let pos = vec2<f32>(f32(coord.x), f32(coord.y));
@@ -33,8 +32,7 @@ fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureA, coord, vec4<f32>(res, 0.0, 0.0));
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn inject_dye(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn inject_dye(gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let src = textureLoad(readTexture, coord, 0);
   // Simple dye injection: shift saturation by velocity curl approximate
@@ -48,4 +46,10 @@ fn inject_dye(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   textureStore(dataTextureB, coord, vec4<f32>(mix(cur.rgb, shifted_color, 0.1), 1.0));
   textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(shifted_color, 1.0));
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  advect_velocity(gid);
+  inject_dye(gid);
 }
