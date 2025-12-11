@@ -21,25 +21,21 @@ struct Uniforms {
 };
 
 @compute @workgroup_size(8, 8, 1)
-fn optical_flow(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let coord = vec2<u32>(gid.xy);
-  let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let coord_i = vec2<i32>(i32(gid.x), i32(gid.y));
+  let cur = textureLoad(readTexture, coord_i, 0);
   // placeholder motion vector: small shift based on time
   let motion = vec2<f32>(sin(u.config.x * 0.1) * 2.0, cos(u.config.x * 0.1) * 2.0);
-  textureStore(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), vec4<f32>(motion, 0.0, 0.0));
-}
+  textureStore(dataTextureA, coord_i, vec4<f32>(motion, 0.0, 0.0));
 
-@compute @workgroup_size(8, 8, 1)
-fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let coord = vec2<u32>(gid.xy);
-  let motion = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
-  let smeared_coord = vec2<i32>(i32(coord.x) - i32(motion.x), i32(coord.y) - i32(motion.y));
+  // smear using the motion vector
+  let smeared_x = i32(i32(coord_i.x) - i32(motion.x));
+  let smeared_y = i32(i32(coord_i.y) - i32(motion.y));
   let dim = textureDimensions(readTexture);
-  let x = (smeared_coord.x + i32(dim.x)) % i32(dim.x);
-  let y = (smeared_coord.y + i32(dim.y)) % i32(dim.y);
+  let x = (smeared_x + dim.x) % dim.x;
+  let y = (smeared_y + dim.y) % dim.y;
   let smeared = textureLoad(readTexture, vec2<i32>(x, y), 0);
-  let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let mixed = mix(cur, smeared, 0.1);
-  textureStore(dataTextureB, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);
-  textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);
+  textureStore(dataTextureB, coord_i, mixed);
+  textureStore(writeTexture, coord_i, mixed);
 }

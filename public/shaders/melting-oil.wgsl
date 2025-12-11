@@ -24,13 +24,14 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let id = vec2<u32>(gid.xy);
   let coord = vec2<i32>(i32(id.x), i32(id.y));
-  let dim = textureDimensions(dataTextureA);
+  let dim_i = textureDimensions(readTexture);
+  let dim = vec2<f32>(f32(dim_i.x), f32(dim_i.y));
   // 3x3 Sobel gradient sample adapted to dataTextureA
   var h: array<f32, 9>;
   var k: u32 = 0u;
   for (var y: i32 = -1; y <= 1; y = y + 1) {
     for (var x: i32 = -1; x <= 1; x = x + 1) {
-      let sample = textureLoad(readTexture, vec2<i32>(i32(coord.x + vec2<i32>(i,i).x), i32(coord.y + vec2<i32>(j,j).y)), 0).r;
+      let sample = textureLoad(readTexture, vec2<i32>(coord.x + x, coord.y + y), 0).r;
       h[k] = sample;
       k = k + 1u;
     }
@@ -38,14 +39,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gx = (h[2] + 2.0*h[5] + h[8]) - (h[0] + 2.0*h[3] + h[6]);
   let gy = (h[6] + 2.0*h[7] + h[8]) - (h[0] + 2.0*h[1] + h[2]);
   let flow_dir = normalize(vec2<f32>(gx, gy));
-  let viscosity = 0.92;
+  let viscosity: f32 = 0.92;
   let last_pos = vec2<f32>(f32(coord.x), f32(coord.y)) - flow_dir * viscosity;
-  let color = textureSampleLevel(readTexture, u_sampler, last_pos / vec2<f32>(dim), 0.0);
+  let color = textureSampleLevel(readTexture, u_sampler, last_pos / dim, 0.0);
   let flow_speed = length(vec2<f32>(gx, gy));
   let hue_shift = flow_speed * 0.1 + u.config.x * 0.01;
   let shifted = vec4<f32>(color.rgb * vec3<f32>(sin(hue_shift), cos(hue_shift), 1.0), color.a);
   textureStore(dataTextureB, coord, shifted);
   let current_height = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).r;
   textureStore(dataTextureA, coord, vec4<f32>(current_height * 0.999, 0.0, 0.0, 0.0));
-  textureStore(writeTexture, id, shifted);
+  textureStore(writeTexture, coord, shifted);
 }

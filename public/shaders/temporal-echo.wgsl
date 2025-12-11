@@ -34,9 +34,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let brightness = dot(current.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let history_offset = i32(brightness * 59.0);
   let past_y = clamp(slice_y - history_offset, 0, 59);
-  let past = textureLoad(readTexture, vec2<i32>(coord.x, (coord.y + past_y) % textureDimensions(readTexture).y), 0);
+  let tex_h = i32(textureDimensions(readTexture).y);
+  let past = textureLoad(readTexture, vec2<i32>(coord.x, (coord.y + past_y) % tex_h), 0);
   let feedback = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let new_feedback = mix(past, current, 0.05);
   textureStore(dataTextureA, coord, new_feedback);
-  textureStore(writeTexture, id, new_feedback);
+  textureStore(writeTexture, coord, new_feedback);
 }

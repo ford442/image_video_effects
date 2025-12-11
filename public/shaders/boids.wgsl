@@ -24,7 +24,7 @@ const BOID_COUNT: u32 = 8192u;
 const BOID_SPEED: f32 = 2.0;
 
 @compute @workgroup_size(64, 1, 1)
-fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let idx = gid.x;
   if (idx >= BOID_COUNT) { return; }
   let base = idx * 4u;
@@ -33,7 +33,8 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
   var vx = extraBuffer[base + 2u];
   var vy = extraBuffer[base + 3u];
   let pos = vec2<f32>(px, py);
-  let tex_size = vec2<f32>(textureDimensions(readTexture));
+  let dim_i = textureDimensions(readTexture);
+  let tex_size = vec2<f32>(f32(dim_i.x), f32(dim_i.y));
   let brightness = textureSampleLevel(readTexture, u_sampler, pos / tex_size, 0.0).r;
   let attraction = vec2<f32>(0.0);
   // simple move towards brighter areas
@@ -65,8 +66,4 @@ fn reveal_texture(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), revealed);
 }
 
-// Required module entry point wrapper (calls the update pass)
-@compute @workgroup_size(64, 1, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  update_boids(gid);
-}
+// (No extra wrapper — `main` performs the update pass)

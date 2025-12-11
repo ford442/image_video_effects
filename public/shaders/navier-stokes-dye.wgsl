@@ -27,8 +27,9 @@ fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vel = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
   let pos = vec2<f32>(f32(coord.x), f32(coord.y));
   let sourcePos = pos - vel * DT;
-  let dim = textureDimensions(dataTextureA);
-  let res = textureSampleLevel(dataTextureA, u_sampler, sourcePos / vec2<f32>(dim), 0.0).rg;
+  let dim_i = textureDimensions(readTexture);
+  let dim = vec2<f32>(f32(dim_i.x), f32(dim_i.y));
+  let res = textureSampleLevel(readTexture, u_sampler, sourcePos / dim, 0.0).rg;
   textureStore(dataTextureA, coord, vec4<f32>(res, 0.0, 0.0));
 }
 

@@ -20,9 +20,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
-fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+fn compute_edge(coord: vec2<i32>) {
   let center = textureLoad(readTexture, coord, 0).rgb;
   let left = textureLoad(readTexture, coord + vec2<i32>(-1, 0), 0).rgb;
   let right = textureLoad(readTexture, coord + vec2<i32>(1, 0), 0).rgb;
@@ -31,21 +29,26 @@ fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gx = length(right - left);
   let gy = length(bottom - top);
   let edge = sqrt(gx*gx + gy*gy);
-  let light = vec4<f32>(edge * 10.0);
+  let light = vec4<f32>(edge * 10.0, edge * 10.0, edge * 10.0, 1.0);
   textureStore(dataTextureA, coord, light);
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn diffuse_light(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-  let center = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).r;
-  let left = textureLoad(readTexture, vec2<i32>(i32(coord.x - 1), i32(coord.y)), 0).r;
-  let right = textureLoad(readTexture, vec2<i32>(i32(coord.x + 1), i32(coord.y)), 0).r;
-  let top = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y - 1)), 0).r;
-  let bottom = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y + 1)), 0).r;
+fn compute_diffuse(coord: vec2<i32>, gid: vec3<u32>) {
+  let center = textureLoad(readTexture, coord, 0).r;
+  let left = textureLoad(readTexture, coord + vec2<i32>(-1, 0), 0).r;
+  let right = textureLoad(readTexture, coord + vec2<i32>(1, 0), 0).r;
+  let top = textureLoad(readTexture, coord + vec2<i32>(0, -1), 0).r;
+  let bottom = textureLoad(readTexture, coord + vec2<i32>(0, 1), 0).r;
   let diffused = (center + left + right + top + bottom) * 0.2;
   let shift = diffused * 0.1;
   let color = vec3<f32>(diffused * (1.0 - shift), diffused * (1.0 - abs(shift - 0.5)), diffused * shift);
   textureStore(dataTextureB, coord, vec4<f32>(color, 1.0));
-  textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(color, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+  compute_edge(coord);
+  compute_diffuse(coord, gid);
 }
