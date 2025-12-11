@@ -23,7 +23,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var k: u32 = 0u;
   for (var y: i32 = -1; y <= 1; y = y + 1) {
     for (var x: i32 = -1; x <= 1; x = x + 1) {
-      let sample = textureLoad(dataTextureA, coord + vec2<i32>(x, y), 0).r;
+      let sample = textureLoad(readTexture, vec2<i32>(i32(coord.x + vec2<i32>(i,i).x), i32(coord.y + vec2<i32>(j,j).y)), 0).r;
       h[k] = sample;
       k = k + 1u;
     }
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hue_shift = flow_speed * 0.1 + u.config.x * 0.01;
   let shifted = vec4<f32>(color.rgb * vec3<f32>(sin(hue_shift), cos(hue_shift), 1.0), color.a);
   textureStore(dataTextureB, coord, shifted);
-  let current_height = textureLoad(dataTextureA, coord, 0).r;
+  let current_height = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).r;
   textureStore(dataTextureA, coord, vec4<f32>(current_height * 0.999, 0.0, 0.0, 0.0));
   textureStore(writeTexture, id, shifted);
 }

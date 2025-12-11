@@ -20,11 +20,11 @@ const GLYPH_SIZE: u32 = 16u;
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cell_coord = vec2<u32>(gid.xy);
   let pixel_in_cell = vec2<u32>(gid.xy % GLYPH_SIZE);
-  let cell_center = vec2<f32>(vec2<u32>(cell_coord) + vec2<u32>(0u)) * vec2<f32>(GLYPH_SIZE);
+  let cell_center = vec2<f32>(f32(cell_coord.x) * f32(GLYPH_SIZE), f32(cell_coord.y) * f32(GLYPH_SIZE));
   let src = textureLoad(readTexture, vec2<i32>(i32(cell_center.x), i32(cell_center.y)), 0);
   let saturation = max(src.r, max(src.g, src.b)) - min(src.r, min(src.g, src.b));
   let glyph_index = u32(saturation * 255.0) % 16u;
-  let atlas_uv = (vec2<f32>(pixel_in_cell) + vec2<f32>(f32(glyph_index * GLYPH_SIZE), 0.0)) / vec2<f32>(256.0, 16.0);
+  let atlas_uv = (vec2<f32>(f32(pixel_in_cell.x), f32(pixel_in_cell.y)) + vec2<f32>(f32(glyph_index) * f32(GLYPH_SIZE), 0.0)) / vec2<f32>(256.0, 16.0);
   let sdf = textureSampleLevel(dataTextureC, u_sampler, atlas_uv, 0.0).r;
   let morph_amount = saturation * 2.0;
   let morphed_sdf = sdf + sin(f32(pixel_in_cell.x) * 0.5) * morph_amount;

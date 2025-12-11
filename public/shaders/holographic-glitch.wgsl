@@ -88,12 +88,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Holographic scanlines
     let scanlinePos = fract(uv.y * 200.0 - time * scanlineSpeed * 2.0);
     let scanline = smoothstep(0.3, 0.5, scanlinePos) - smoothstep(0.5, 0.7, scanlinePos);
-    color.rgb += vec3<f32>(0.0, 0.3, 0.5) * scanline * 0.3;
-    
+    color = vec4<f32>(color.rgb + vec3<f32>(0.0, 0.3, 0.5) * scanline * 0.3, color.a);
+
     // Horizontal scan interference
     let interference = sin(uv.y * 100.0 + time * 10.0 * scanlineSpeed) * 0.5 + 0.5;
-    color.rgb *= 1.0 - interference * 0.05;
-    
+    color = vec4<f32>(color.rgb * (1.0 - interference * 0.05), color.a);
+
     // Vertical sync glitch
     let vsyncGlitch = step(0.98, hash(vec2<f32>(floor(time * 2.0), 0.0)));
     if (vsyncGlitch > 0.5) {
@@ -101,30 +101,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         glitchedUV.y += offset;
         color = textureSampleLevel(readTexture, u_sampler, glitchedUV, 0.0);
     }
-    
+
     // Digital artifact noise
     let noise = hash13(vec3<f32>(uv * resolution, time * 10.0));
     if (noise > (1.0 - glitchIntensity * 0.1)) {
-        color.rgb = vec3<f32>(noise);
+        color = vec4<f32>(vec3<f32>(noise), color.a);
     }
-    
+
     // Flicker effect
     let flickerValue = 1.0 - flicker * 0.3 * (sin(time * 30.0) * 0.5 + 0.5);
-    color.rgb *= flickerValue;
+    color = vec4<f32>(color.rgb * flickerValue, color.a);
     
     // Edge hologram effect - brighter edges
     let edgeX = smoothstep(0.0, 0.05, uv.x) * smoothstep(1.0, 0.95, uv.x);
     let edgeY = smoothstep(0.0, 0.05, uv.y) * smoothstep(1.0, 0.95, uv.y);
     let edgeFade = edgeX * edgeY;
-    color.rgb *= 0.5 + edgeFade * 0.5;
-    
+    color = vec4<f32>(color.rgb * (0.5 + edgeFade * 0.5), color.a);
+
     // Holographic tint
-    color.rgb += vec3<f32>(0.0, 0.15, 0.25) * (1.0 - depth * 0.5);
-    
+    color = vec4<f32>(color.rgb + vec3<f32>(0.0, 0.15, 0.25) * (1.0 - depth * 0.5), color.a);
+
     // Grid overlay
     let grid = abs(fract(uv.x * GRID_SIZE) - 0.5) < 0.05 || abs(fract(uv.y * GRID_SIZE) - 0.5) < 0.05;
     if (grid) {
-        color.rgb += vec3<f32>(0.0, 0.2, 0.3) * 0.1;
+        color = vec4<f32>(color.rgb + vec3<f32>(0.0, 0.2, 0.3) * 0.1, color.a);
     }
     
     // Temporal persistence for trail effect
@@ -133,7 +133,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     textureStore(dataTextureA, gid.xy, blended);
     
     // Add subtle scan interference to persistence
-    color.rgb = max(color.rgb, prev.rgb * 0.5);
+    color = vec4<f32>(max(color.rgb, prev.rgb * 0.5), color.a);
     
     // Output
     textureStore(writeTexture, gid.xy, color);

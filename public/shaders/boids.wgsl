@@ -57,3 +57,9 @@ fn reveal_texture(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), revealed);
 }
+
+// Required module entry point wrapper (calls the update pass)
+@compute @workgroup_size(64, 1, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  update_boids(gid);
+}

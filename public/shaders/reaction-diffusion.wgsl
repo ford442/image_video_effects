@@ -26,7 +26,7 @@ fn laplacian(coord: vec2<u32>, channel: u32) -> f32 {
       let sx = min(GRID_SIZE - 1u, max(0u, u32(i) + coord.x));
       let sy = min(GRID_SIZE - 1u, max(0u, u32(j) + coord.y));
       let idx = vec2<u32>(sx, sy);
-      let sample = textureLoad(dataTextureA, vec2<i32>(i32(idx.x), i32(idx.y)), 0);
+      let sample = textureLoad(readTexture, vec2<i32>(i32(idx.x), i32(idx.y)), 0);
       sum = sum + sample[channel] * kernel[k];
       k = k + 1u;
     }
@@ -39,7 +39,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   if (coord.x >= GRID_SIZE || coord.y >= GRID_SIZE) { return; }
   let idx = coord.y * GRID_SIZE + coord.x;
-  let cur = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
   let lap = vec3<f32>(laplacian(coord, 0u), laplacian(coord, 1u), laplacian(coord, 2u));
   let reaction = cur * cur * cur; // placeholder
   let dA = lap * 0.2 - reaction + FEED_RATE * (vec3<f32>(1.0) - cur);

@@ -31,11 +31,11 @@ fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
 @compute @workgroup_size(8, 8, 1)
 fn diffuse_light(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-  let center = textureLoad(dataTextureA, coord, 0).r;
-  let left = textureLoad(dataTextureA, coord + vec2<i32>(-1,0), 0).r;
-  let right = textureLoad(dataTextureA, coord + vec2<i32>(1,0), 0).r;
-  let top = textureLoad(dataTextureA, coord + vec2<i32>(0,-1), 0).r;
-  let bottom = textureLoad(dataTextureA, coord + vec2<i32>(0,1), 0).r;
+  let center = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).r;
+  let left = textureLoad(readTexture, vec2<i32>(i32(coord.x - 1), i32(coord.y)), 0).r;
+  let right = textureLoad(readTexture, vec2<i32>(i32(coord.x + 1), i32(coord.y)), 0).r;
+  let top = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y - 1)), 0).r;
+  let bottom = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y + 1)), 0).r;
   let diffused = (center + left + right + top + bottom) * 0.2;
   let shift = diffused * 0.1;
   let color = vec3<f32>(diffused * (1.0 - shift), diffused * (1.0 - abs(shift - 0.5)), diffused * shift);

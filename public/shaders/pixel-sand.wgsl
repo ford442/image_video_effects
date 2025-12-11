@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let y = gid.y;
   if (x >= GRID_WIDTH || y >= GRID_HEIGHT) { return; }
   let idx = cell_index(x, y);
-  let cell = textureLoad(dataTextureA, vec2<i32>(i32(x), i32(y)), 0);
+  let cell = textureLoad(readTexture, vec2<i32>(i32(x), i32(y)), 0);
   if (cell.a == 0.0) { // treat as empty
     textureStore(dataTextureB, vec2<i32>(i32(x), i32(y)), cell);
     textureStore(writeTexture, vec2<i32>(i32(x), i32(y)), cell);
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var newY = i32(y) + i32(round(gravity));
   var targetX = i32(x);
   var targetY = clamp(newY, 0, i32(GRID_HEIGHT) - 1);
-  let targetCell = textureLoad(dataTextureA, vec2<i32>(targetX, targetY), 0);
+  let targetCell = textureLoad(readTexture, vec2<i32>(targetX, targetY), 0);
   if (targetCell.a == 0.0) {
     textureStore(dataTextureB, vec2<i32>(targetX, targetY), cell);
     textureStore(dataTextureB, vec2<i32>(i32(x), i32(y)), vec4<f32>(0.0));

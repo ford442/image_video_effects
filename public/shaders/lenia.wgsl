@@ -19,7 +19,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   if (coord.x >= GRID_SIZE || coord.y >= GRID_SIZE) { return; }
   let idx = coord.y * GRID_SIZE + coord.x;
-  let center = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  let center = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
   var ring_sum: vec3<f32> = vec3<f32>(0.0);
   var ring_count: f32 = 0.0;
   for (var dx: i32 = -4; dx <= 4; dx = dx + 1) {
@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       if (dist >= 2.0 && dist <= 4.0) {
         let sx = min(GRID_SIZE - 1u, max(0u, u32(i32(coord.x) + dx)));
         let sy = min(GRID_SIZE - 1u, max(0u, u32(i32(coord.y) + dy)));
-        let s = textureLoad(dataTextureA, vec2<i32>(i32(sx), i32(sy)), 0).rgb;
+        let s = textureLoad(readTexture, vec2<i32>(i32(sx), i32(sy)), 0).rgb;
         let weight = exp(-dist * 0.5);
         ring_sum = ring_sum + s * weight;
         ring_count = ring_count + weight;
