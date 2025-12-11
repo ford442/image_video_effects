@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 // GRID dimensions (tunable)
 const GRID_WIDTH: u32 = 1280u;
 const GRID_HEIGHT: u32 = 720u;
@@ -27,7 +34,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let y = gid.y;
   if (x >= GRID_WIDTH || y >= GRID_HEIGHT) { return; }
   let idx = cell_index(x, y);
-  let cell = textureLoad(dataTextureA, vec2<i32>(i32(x), i32(y)), 0);
+  let time = u.config.x;
+  let uv = vec2<f32>(f32(x) / f32(GRID_WIDTH), f32(y) / f32(GRID_HEIGHT));
+  
+  var cell = textureLoad(dataTextureA, vec2<i32>(i32(x), i32(y)), 0);
+  
+  // Spawn grains at mouse position
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let dist_to_mouse = distance(uv, mouse_pos);
+  if (dist_to_mouse < 0.02) {
+    cell = vec4<f32>(0.8, 0.6, 0.3, 1.0);
+  }
+  
+  // Spawn grains at ripples
+  for (var i = 0; i < 50; i++) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 0.5) {
+        let dist_to_ripple = distance(uv, ripple.xy);
+        if (dist_to_ripple < 0.03) {
+          cell = vec4<f32>(0.9, 0.7, 0.4, 1.0);
+        }
+      }
+    }
+  }
+  
   if (cell.a == 0.0) { // treat as empty
     textureStore(dataTextureB, vec2<i32>(i32(x), i32(y)), cell);
     textureStore(writeTexture, vec2<i32>(i32(x), i32(y)), cell);

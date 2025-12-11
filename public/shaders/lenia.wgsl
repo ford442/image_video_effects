@@ -13,13 +13,45 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 const GRID_SIZE: u32 = 512u;
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   if (coord.x >= GRID_SIZE || coord.y >= GRID_SIZE) { return; }
   let idx = coord.y * GRID_SIZE + coord.x;
-  let center = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  let time = u.config.x;
+  let uv = vec2<f32>(coord) / f32(GRID_SIZE);
+  
+  var center = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  
+  // Inject seeds at mouse position
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let dist_to_mouse = distance(uv, mouse_pos);
+  if (dist_to_mouse < 0.05) {
+    center += vec3<f32>(0.3);
+  }
+  
+  // Spawn seeds via ripples
+  for (var i = 0; i < 50; i++) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 1.0) {
+        let dist_to_ripple = distance(uv, ripple.xy);
+        if (dist_to_ripple < 0.04) {
+          center += vec3<f32>(0.5) * (1.0 - ripple_age);
+        }
+      }
+    }
+  }
+  
   var ring_sum: vec3<f32> = vec3<f32>(0.0);
   var ring_count: f32 = 0.0;
   for (var dx: i32 = -4; dx <= 4; dx = dx + 1) {

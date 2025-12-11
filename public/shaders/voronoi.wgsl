@@ -13,13 +13,51 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let size = textureDimensions(readTexture);
+  let uv = vec2<f32>(coord) / vec2<f32>(size);
+  let time = u.config.x;
+  
+  // Mouse position as seed point
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  
   // Simple feature detection near pixel; fill features with first bright pixel
   var nearest = vec2<u32>(coord);
   var min_dist: f32 = 1e6;
+  
+  // Add mouse position as a feature point
+  let mouse_coord = vec2<f32>(mouse_pos * vec2<f32>(size));
+  let dist_to_mouse = distance(vec2<f32>(coord), mouse_coord);
+  if (dist_to_mouse < min_dist) {
+    min_dist = dist_to_mouse;
+    nearest = vec2<u32>(u32(mouse_coord.x), u32(mouse_coord.y));
+  }
+  
+  // Add ripple positions as dynamic feature centers
+  for (var r = 0; r < 50; r++) {
+    let ripple = u.ripples[r];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 4.0) {
+        let ripple_coord = ripple.xy * vec2<f32>(size);
+        let dist_to_ripple = distance(vec2<f32>(coord), ripple_coord);
+        if (dist_to_ripple < min_dist) {
+          min_dist = dist_to_ripple;
+          nearest = vec2<u32>(u32(ripple_coord.x), u32(ripple_coord.y));
+        }
+      }
+    }
+  }
+  
   for (var dy: i32 = -2; dy <= 2; dy = dy + 1) {
     for (var dx: i32 = -2; dx <= 2; dx = dx + 1) {
       let sx = clamp(i32(coord.x) + dx, 0, i32(size.x) - 1);
