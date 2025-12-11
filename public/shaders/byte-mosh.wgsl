@@ -35,14 +35,17 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-// Convert float (0-1) to u32 representation
+// Maximum value for 8-bit color channel (255)
+const MAX_CHANNEL_VALUE: f32 = 255.0;
+
+// Convert float (0-1) to u32 representation for 8-bit channel
 fn floatToU32(x: f32) -> u32 {
-  return u32(clamp(x, 0.0, 1.0) * 255.0);
+  return u32(clamp(x, 0.0, 1.0) * MAX_CHANNEL_VALUE);
 }
 
-// Convert u32 back to float
+// Convert u32 back to float (0-1 range)
 fn u32ToFloat(x: u32) -> f32 {
-  return f32(x & 0xFFu) / 255.0;
+  return f32(x & 0xFFu) / MAX_CHANNEL_VALUE;
 }
 
 // Pack RGB to single u32

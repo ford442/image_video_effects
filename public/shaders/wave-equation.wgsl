@@ -22,9 +22,13 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// Sum of absolute positive weights in 5x5 Laplacian kernel: 1+2+4+2+1+4+4+4+2+4+2+1+2+4+2+1 = 24
+// Used to normalize the Laplacian computation to prevent numerical instability
+const LAPLACIAN_5X5_NORM: f32 = 24.0;
+
 // 5x5 Laplacian kernel for better stability
 fn laplacian5x5(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
-  // 5x5 Laplacian kernel weights
+  // 5x5 Laplacian kernel weights (center weight = -24 balances positive neighbors)
   let kernel = array<f32, 25>(
     0.0, 0.0, 1.0, 0.0, 0.0,
     0.0, 2.0, 4.0, 2.0, 0.0,
@@ -43,7 +47,7 @@ fn laplacian5x5(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
       idx = idx + 1;
     }
   }
-  return sum / 24.0;  // Normalize
+  return sum / LAPLACIAN_5X5_NORM;
 }
 
 // 3x3 Laplacian for faster computation

@@ -44,11 +44,17 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+// Species classification thresholds for ecosystem balance
+const SPECIES_EMPTY_MAX: f32 = 0.1;      // 0.0 - 0.1 = Empty
+const SPECIES_PLANT_MAX: f32 = 0.35;     // 0.1 - 0.35 = Plant
+const SPECIES_HERBIVORE_MAX: f32 = 0.65; // 0.35 - 0.65 = Herbivore
+                                          // 0.65+ = Carnivore
+
 // Get species type from encoded value
 fn getSpeciesType(value: f32) -> i32 {
-  if (value < 0.1) { return 0; } // Empty
-  if (value < 0.35) { return 1; } // Plant
-  if (value < 0.65) { return 2; } // Herbivore
+  if (value < SPECIES_EMPTY_MAX) { return 0; } // Empty
+  if (value < SPECIES_PLANT_MAX) { return 1; } // Plant
+  if (value < SPECIES_HERBIVORE_MAX) { return 2; } // Herbivore
   return 3; // Carnivore
 }
 
