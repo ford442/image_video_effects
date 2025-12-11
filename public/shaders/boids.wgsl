@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 const BOID_COUNT: u32 = 8192u;
 const BOID_SPEED: f32 = 2.0;
 
@@ -28,7 +35,35 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pos = vec2<f32>(px, py);
   let tex_size = vec2<f32>(textureDimensions(readTexture));
   let brightness = textureSampleLevel(readTexture, u_sampler, pos / tex_size, 0.0).r;
-  let attraction = vec2<f32>(0.0);
+  let time = u.config.x;
+  
+  // Mouse position as attractor
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let to_mouse = mouse_pos - pos;
+  let dist_to_mouse = length(to_mouse);
+  if (dist_to_mouse > 0.01) {
+    let mouse_force = normalize(to_mouse) * 0.05;
+    vx += mouse_force.x;
+    vy += mouse_force.y;
+  }
+  
+  // Ripples as attractor seeds
+  for (var i = 0; i < 50; i++) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 4.0) {
+        let to_ripple = ripple.xy - pos;
+        let dist_to_ripple = length(to_ripple);
+        if (dist_to_ripple > 0.01 && dist_to_ripple < 0.3) {
+          let ripple_force = normalize(to_ripple) * 0.02 * (1.0 - ripple_age / 4.0);
+          vx += ripple_force.x;
+          vy += ripple_force.y;
+        }
+      }
+    }
+  }
+  
   // simple move towards brighter areas
   if (brightness > 0.5) { vx += 0.01; vy += 0.01; }
   var vel = normalize(vec2<f32>(vx, vy)) * BOID_SPEED;

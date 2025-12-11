@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 const DT: f32 = 0.016;
 @compute @workgroup_size(8, 8, 1)
 fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -29,6 +36,39 @@ fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
 fn inject_dye(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let src = textureLoad(readTexture, coord, 0);
+  let time = u.config.x;
+  let dim = textureDimensions(dataTextureA);
+  let uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(dim);
+  
+  // Inject dye and energy at ripple locations
+  var added_energy = vec2<f32>(0.0);
+  for (var i = 0; i < 50; i++) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 2.0) {
+        let dist_to_ripple = distance(uv, ripple.xy);
+        if (dist_to_ripple < 0.05) {
+          let dir = normalize(uv - ripple.xy);
+          added_energy += dir * 20.0 * (1.0 - ripple_age / 2.0);
+        }
+      }
+    }
+  }
+  
+  // Mouse as continuous inflow source
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let dist_to_mouse = distance(uv, mouse_pos);
+  if (dist_to_mouse < 0.03) {
+    let dir = normalize(uv - mouse_pos);
+    added_energy += dir * 10.0;
+  }
+  
+  // Apply added energy to velocity
+  var vel = textureLoad(dataTextureA, coord, 0).rg;
+  vel += added_energy;
+  textureStore(dataTextureA, coord, vec4<f32>(vel, 0.0, 0.0));
+  
   // Simple dye injection: shift saturation by velocity curl approximate
   let velL = textureLoad(dataTextureA, coord + vec2<i32>(-1,0), 0).rg;
   let velR = textureLoad(dataTextureA, coord + vec2<i32>(1,0), 0).rg;

@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 // Minimal agent update: extraBuffer encodes packed agent state triples [x, y, angle]
 @compute @workgroup_size(64, 1, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -22,6 +29,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let y = extraBuffer[idx * 3u + 1u];
   var angle = extraBuffer[idx * 3u + 2u];
   let tex_size = vec2<f32>(textureDimensions(readTexture));
+  let time = u.config.x;
+  
+  // Mouse position influence
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let to_mouse = mouse_pos - vec2<f32>(x, y);
+  let dist_to_mouse = length(to_mouse);
+  if (dist_to_mouse > 0.01 && dist_to_mouse < 0.3) {
+    let mouse_angle = atan2(to_mouse.y, to_mouse.x);
+    angle = mix(angle, mouse_angle, 0.1);
+  }
+  
+  // Ripple-based spawning/biasing
+  for (var i = 0; i < 50; i++) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 2.0) {
+        let dist_to_ripple = distance(vec2<f32>(x, y), ripple.xy);
+        if (dist_to_ripple < 0.05) {
+          angle += (ripple_age - 1.0) * 0.5;
+        }
+      }
+    }
+  }
+  
   let dir = vec2<f32>(cos(angle), sin(angle));
   let sensor_pos = vec2<f32>(x, y) + dir * 5.0;
   let front_color = textureSampleLevel(readTexture, u_sampler, sensor_pos / tex_size, 0.0);

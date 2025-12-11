@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 const GRID_SIZE: u32 = 512u;
 const FEED_RATE: f32 = 0.055;
 const KILL_RATE: f32 = 0.062;
@@ -39,7 +46,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   if (coord.x >= GRID_SIZE || coord.y >= GRID_SIZE) { return; }
   let idx = coord.y * GRID_SIZE + coord.x;
-  let cur = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  let time = u.config.x;
+  let uv = vec2<f32>(coord) / f32(GRID_SIZE);
+  
+  var cur = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  
+  // Inject chemicals at mouse position
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let dist_to_mouse = distance(uv, mouse_pos);
+  if (dist_to_mouse < 0.05) {
+    cur += vec3<f32>(0.1, 0.0, 0.0);
+  }
+  
+  // Spawn seeds via ripples
+  for (var i = 0; i < 50; i++) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 1.0) {
+        let dist_to_ripple = distance(uv, ripple.xy);
+        if (dist_to_ripple < 0.03) {
+          cur += vec3<f32>(0.0, 0.1, 0.0) * (1.0 - ripple_age);
+        }
+      }
+    }
+  }
+  
   let lap = vec3<f32>(laplacian(coord, 0u), laplacian(coord, 1u), laplacian(coord, 2u));
   let reaction = cur * cur * cur; // placeholder
   let dA = lap * 0.2 - reaction + FEED_RATE * (vec3<f32>(1.0) - cur);
