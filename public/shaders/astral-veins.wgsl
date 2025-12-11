@@ -36,8 +36,9 @@ struct Uniforms {
 //  Utility – simple hash & value‑noise (fast, good enough for art)
 // ---------------------------------------------------------------
 fn hash(p: vec2<f32>) -> f32 {
-    var h = fract(vec3<f32>(p.xyx) * 0.1031);
-    h += dot(h, h.yzx + 33.33);
+    var h = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
+    let d = dot(h, vec3<f32>(h.y, h.z, h.x) + vec3<f32>(33.33));
+    h = h + vec3<f32>(d);
     return fract((h.x + h.y) * h.z);
 }
 fn noise(p: vec2<f32>) -> f32 {
@@ -70,9 +71,9 @@ fn fbm(p: vec2<f32>) -> f32 {
 //  HSV → RGB (used for colour cycling)
 // ---------------------------------------------------------------
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    const c = v * s;
-    const h6 = h * 6.0;
-    const x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    let c = v * s;
+    let h6 = h * 6.0;
+    let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
     if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }

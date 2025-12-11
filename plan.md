@@ -1,419 +1,311 @@
-# Image/Video Effects Project - Strategic Plan
+# Image/Video Effects Project Evolution Plan
 
 ## Project Overview
 
-This WebGPU-based image and video effects application provides real-time shader-based visual effects using compute shaders. The project currently supports 41 different shader effects ranging from liquid simulations to kaleidoscopes to cyberpunk glitch effects.
+This is a WebGPU-powered real-time image and video effects application built with React and TypeScript. The project features:
 
-### Current State (December 2024)
+- **35+ shader effects** for images and videos (and growing)
+- **AI-powered depth estimation** using DPT-Hybrid-MIDAS model
+- **Real-time WebGPU compute shaders** for high-performance rendering
+- **Interactive effects** with mouse/touch input for ripples and particles
+- **Depth-aware effects** that respond to 3D scene geometry
+- **Temporal persistence** for trail and motion blur effects
 
-- **39 existing shaders** (before this update)
-- **2 new shaders added**: Fractal Kaleidoscope, Digital Waves
-- **Total: 41 shader effects**
-- Simple dropdown-based selection UI
-- AI-powered depth estimation for depth-aware effects
-- Support for both image and video inputs
-- Interactive effects with mouse/click interactions
+### Architecture Strengths
 
-### Core Technology Stack
+The project uses an elegant "Universal BindGroup" architecture where:
+- All shaders share the same uniform interface
+- New effects can be added by simply dropping in a `.wgsl` file
+- No TypeScript recompilation needed for new shaders
+- Hot-reload workflow supports rapid effect development
 
-- **WebGPU**: High-performance GPU compute and rendering
-- **React + TypeScript**: UI framework
-- **WGSL**: WebGPU Shading Language for compute shaders
-- **@xenova/transformers**: AI depth estimation (DPT-Hybrid-MIDAS model)
-- **Dynamic shader loading**: Runtime shader loading from configuration
+## Current Challenge: UI Scalability
 
-## Current Challenges
+With **35+ shaders** (and growing), the current dropdown selection interface has become:
+- **Non-descriptive**: Users can't preview effects before selecting
+- **Overwhelming**: Long list with no visual organization
+- **Inefficient**: Trial-and-error to find desired effect
+- **Not discoverable**: New users don't know what effects look like
 
-### 1. UI/UX Scalability Issues
+## Proposed UI Improvements
 
-With 41+ shaders, the current dropdown interface has significant limitations:
+### Phase 1: Grid Gallery View (Short-term)
 
-- **Non-descriptive**: Users can't preview effects before selection
-- **Poor discoverability**: Hard to browse and find desired effects
-- **No visual context**: Text-only names don't convey the visual style
-- **No categorization**: Effects are mixed together without clear grouping
-- **Cognitive overload**: Long dropdown lists are difficult to scan
-
-### 2. Shader Management
-
-- No preview images or thumbnails
-- Limited metadata (only name, description, features)
-- No advanced filtering or search capabilities
-- Difficult to compare similar effects
-
-## Strategic Solutions & Roadmap
-
-### Phase 1: Visual Selection Interface (Immediate Priority)
-
-#### 1.1 Screenshot-Based Shader Selection
-
-**Goal**: Replace text dropdown with visual thumbnail grid
-
-**Implementation Plan**:
+Transform the shader selection from a dropdown to a **visual grid gallery**:
 
 ```
-Step 1: Generate Preview Screenshots
-- Create automated screenshot system
-- Run each shader for 3-5 seconds
-- Capture representative frame(s) at multiple time points
-- Store in /public/shader-previews/ directory
-- Name convention: {shader-id}-preview.png
-
-Step 2: Update shader-list.json
-- Add "preview" field to each shader entry
-- Add "tags" array for better categorization
-- Add "complexity" rating (simple/medium/complex)
-- Example:
-  {
-    "id": "fractal-kaleidoscope",
-    "name": "Fractal Kaleidoscope",
-    "preview": "shader-previews/fractal-kaleidoscope-preview.png",
-    "tags": ["fractal", "geometric", "colorful", "interactive"],
-    "complexity": "medium"
-  }
-
-Step 3: Create ShaderGallery Component
-- Grid layout with thumbnail cards
-- Hover to play short preview animation (optional)
-- Click to select shader
-- Display name, description, and tags on hover
-- Responsive grid (3-4 columns desktop, 2 mobile)
-
-Step 4: Enhanced Controls Component
-- Add view mode toggle: Grid/List
-- Add search/filter bar
-- Add category filters (liquid, geometric, glitch, depth-aware, etc.)
-- Add sorting options (alphabetical, complexity, recently added)
+┌─────────────────────────────────────────────────────────┐
+│  Effect Gallery                           [Image] [Video]│
+├─────────────────────────────────────────────────────────┤
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐│
+│  │ 🌊   │ │ 🌀   │ │ ⚡   │ │ 🎨   │ │ 🔮   │ │ 👁️   ││
+│  │Liquid│ │Vortex│ │Plasma│ │Kaleid│ │Cosmic│ │LiDAR ││
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘│
+│                                                          │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐│
+│  │ 🎭   │ │ 📺   │ │ 🧊   │ │ 🌈   │ │ 🔥   │ │ ...  ││
+│  │Holo  │ │CRT TV│ │Pixel │ │Spectr│ │Neon  │ │      ││
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘│
+│                                                          │
+│  Search: [____________]  Category: [All ▼]               │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**Technologies**:
-- **Puppeteer** or **Playwright**: Automated screenshot generation
-- **React Grid Layout**: Responsive thumbnail grid
-- **Intersection Observer API**: Lazy loading of preview images
-- **CSS Grid/Flexbox**: Layout system
+**Benefits:**
+- Visual browsing with thumbnail previews
+- Emoji/icon indicators for quick identification
+- Searchable and filterable
+- Shows 6-12 effects at once
+- Hover for description tooltip
 
-**Benefits**:
-- Visual browsing - see what you get
-- Faster shader discovery
-- Better UX for non-technical users
-- Easier comparison of similar effects
+**Implementation:**
+- Create new `ShaderGallery.tsx` component
+- Use CSS Grid for responsive layout
+- Generate thumbnail placeholders (Phase 2: real screenshots)
+- Add search/filter functionality
+- Maintain backward compatibility with existing controls
 
-#### 1.2 Automatic Screenshot Generation System
+### Phase 2: Automatic Screenshot Generation (Mid-term)
 
-**Architecture**:
+Generate preview thumbnails automatically for each shader:
 
+**Automatic Capture System:**
 ```typescript
-// tools/screenshot-generator.ts
-interface ScreenshotConfig {
-  shaderId: string;
-  captureTime: number; // When to capture (in seconds)
-  captureCount: number; // How many frames to capture
-  waitForStability: boolean; // Wait for shader to stabilize
-}
-
-class ShaderScreenshotGenerator {
-  async generateScreenshots(config: ScreenshotConfig[]): Promise<void> {
-    // 1. Start headless browser
-    // 2. Navigate to app with specific shader
-    // 3. Load default test image
-    // 4. Wait for shader to initialize
-    // 5. Capture screenshot(s) at specified time(s)
-    // 6. Save to preview directory
-    // 7. Generate thumbnail variants (small/medium/large)
-  }
-  
-  async generateAllPreviews(): Promise<void> {
-    // Load shader-list.json
-    // Generate preview for each shader
-    // Update shader-list.json with preview paths
+// Pseudo-code approach
+class ThumbnailGenerator {
+  async generateAllThumbnails() {
+    for (shader of shaderList) {
+      1. Load shader
+      2. Apply to test image (canonical scene)
+      3. Wait for render stabilization (~2 seconds)
+      4. Capture canvas as PNG
+      5. Resize to 200x150px thumbnail
+      6. Save to public/thumbnails/{shader-id}.png
+      7. Update shader-list.json with thumbnail path
+    }
   }
 }
 ```
 
-**Integration with Development Workflow**:
+**Technical Implementation:**
+- **Build-time generation**: Run as npm script before deployment
+- **Test scene**: Use a canonical reference image (colorful, geometric shapes)
+- **Canvas capture**: Use `canvas.toBlob()` or `canvas.toDataURL()`
+- **Automation**: Puppeteer/Playwright for headless browser testing
+- **CI/CD integration**: Auto-generate on new shader commits
 
-```bash
-# npm scripts to add:
-npm run generate-previews        # Generate all missing previews
-npm run update-preview <shader>  # Update specific shader preview
-npm run preview-watch           # Watch mode for shader changes
-```
+**Alternative: Manual Curation**
+- Developer captures representative screenshots
+- Curated for best visual representation
+- Consistent timing/composition across all effects
 
-**CI/CD Integration**:
-- Automated preview generation on new shader addition
-- PR checks to ensure previews exist for new shaders
-- Deploy previews with the application
-
-### Phase 2: Enhanced Categorization & Navigation
-
-#### 2.1 Multi-Level Category System
-
-Current: Single category ("image" vs "shader")
-
-**Proposed**: Hierarchical tagging system
-
-```javascript
-// Enhanced shader metadata
+**Data Structure Update:**
+```json
 {
-  "id": "fractal-kaleidoscope",
-  "name": "Fractal Kaleidoscope",
-  "category": "image",
-  "primaryTag": "geometric",
-  "tags": [
-    "fractal",
-    "kaleidoscope", 
-    "geometric",
-    "colorful",
-    "interactive",
-    "depth-aware"
+  "id": "liquid",
+  "name": "Liquid (Interactive)",
+  "url": "shaders/liquid.wgsl",
+  "thumbnail": "thumbnails/liquid.png",
+  "category": "image"
+}
+```
+
+### Phase 3: Enhanced Organization (Mid-term)
+
+**Categorization System:**
+```
+Categories:
+├── Liquid & Flow (15 shaders)
+├── Distortion & Warp (8 shaders)
+├── Color & Light (7 shaders)
+├── Geometric & Pattern (5 shaders)
+├── Glitch & Digital (4 shaders)
+└── Procedural Generation (3 shaders)
+```
+
+**Tagging System:**
+```json
+{
+  "id": "cosmic-flow",
+  "tags": ["animated", "depth-aware", "colorful", "abstract", "sci-fi"],
+  "difficulty": "advanced",
+  "performance": "medium"
+}
+```
+
+**Advanced Filters:**
+- Performance level (light/medium/heavy)
+- Interactive vs. Passive
+- Depth-aware vs. Flat
+- Color-based vs. Geometric
+- Beginner/Advanced complexity
+
+### Phase 4: Interactive Preview (Long-term)
+
+**Live Preview on Hover:**
+- Small preview window shows effect in real-time
+- 10-second looping animation
+- No need to switch main view
+- Reduces friction in effect discovery
+
+**Quick Compare Mode:**
+- Select 2-4 effects to compare side-by-side
+- A/B testing different parameters
+- Export comparisons as video/GIF
+
+## Path to More Complex Effects
+
+### Current Effect Complexity Levels
+
+**Level 1: Basic Effects** (Examples: liquid-fast, vortex)
+- Single-pass compute shader
+- Simple UV distortion or color manipulation
+- ~100-200 lines of WGSL
+
+**Level 2: Intermediate Effects** (Examples: rain, kaleidoscope, plasma)
+- Multi-pass rendering or temporal persistence
+- Noise functions and procedural generation
+- Depth-aware parallax
+- ~200-400 lines of WGSL
+
+**Level 3: Advanced Effects** (Examples: lidar, bioluminescent, cosmic-flow)
+- Complex state management across frames
+- Multiple textures for persistence/trails
+- Interactive particle systems
+- Advanced depth integration
+- ~400-600 lines of WGSL
+
+### Future Complexity Pathways
+
+#### Path A: Multi-Pass Effect Chains
+
+Allow combining multiple shaders in sequence:
+```
+Image → Liquid → Chromatic Aberration → Vortex → Output
+```
+
+**Implementation:**
+- Effect pipeline builder UI
+- Each shader outputs to next shader's input
+- Save/load effect chains as presets
+
+#### Path B: Shader Parameters UI
+
+Currently most shaders have hardcoded parameters. Next steps:
+1. ✅ **Done**: Generic `zoom_params` vec4 for 4 float sliders
+2. **In Progress**: Some shaders expose params via Controls.tsx
+3. **Future**: Auto-generate UI from shader metadata
+
+**Enhanced Metadata System:**
+```json
+{
+  "id": "lidar",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Scan Speed",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Controls how fast the scanner moves"
+    }
   ],
-  "visualStyle": "psychedelic",
-  "interactionType": "click",
-  "complexity": "medium",
-  "performanceLevel": "high", // high/medium/low GPU usage
+  "advanced_params": [
+    {
+      "id": "mode",
+      "name": "Scan Pattern",
+      "type": "enum",
+      "values": ["linear", "radial", "spiral"],
+      "default": "linear"
+    }
+  ]
 }
 ```
 
-**UI Enhancements**:
-- Multi-select tag filtering
-- Tag cloud visualization
-- Category/tag breadcrumb navigation
-- "Similar effects" recommendations
+#### Path C: Compute Shader Enhancements
 
-#### 2.2 Smart Search & Filtering
+Leverage more advanced WebGPU features:
+- **Indirect dispatch**: Dynamic workgroup sizes based on scene complexity
+- **Atomic operations**: Better particle systems and collision detection
+- **Shared memory**: Faster neighborhood sampling for convolution effects
+- **Multi-draw indirect**: Render thousands of interactive particles
 
-```typescript
-interface FilterOptions {
-  searchQuery: string;
-  tags: string[];
-  categories: string[];
-  features: string[]; // depth-aware, interactive, etc.
-  complexity: string[];
-  performance: string[];
-}
+#### Path D: AI/ML Integration
 
-// Search features:
-// - Fuzzy text search on name/description
-// - Tag-based filtering (AND/OR logic)
-// - Feature-based filtering
-// - Exclude filters (NOT logic)
-// - Save filter presets
-```
+Beyond depth estimation:
+- **Semantic segmentation**: Apply effects only to people, objects, or backgrounds
+- **Pose estimation**: Effects that follow body movements
+- **Style transfer**: Real-time artistic style application
+- **Object tracking**: Effects locked to moving objects in video
 
-### Phase 3: Advanced Features
+#### Path E: 3D Effects & Camera
 
-#### 3.1 Shader Favorites & History
+- **Real 3D meshes**: Displace vertices based on depth map
+- **Camera controls**: Orbit, pan, zoom through 3D scene
+- **Lighting systems**: Dynamic shadows and reflections
+- **Particle emitters**: 3D particle systems that respect depth
 
-```typescript
-// LocalStorage-based persistence
-interface UserPreferences {
-  favorites: string[];        // Shader IDs
-  recentlyUsed: string[];     // Last 10 shaders
-  customPresets: {
-    shaderId: string;
-    params: Record<string, number>;
-    name: string;
-  }[];
-}
-```
+## Implementation Roadmap
 
-#### 3.2 Shader Comparison Mode
+### Immediate (Week 1-2)
+- [x] Add 2 new shader effects
+- [x] Create this plan.md document
+- [ ] Prototype grid gallery layout (CSS only)
+- [ ] Add emoji/icon indicators to shader-list.json
 
-- Side-by-side comparison of 2-4 shaders
-- Synchronized controls
-- Export comparison screenshots
+### Short-term (Month 1)
+- [ ] Implement ShaderGallery.tsx component
+- [ ] Add search and category filtering
+- [ ] Manual screenshot capture for top 10 shaders
+- [ ] Deploy gallery view as default UI
 
-#### 3.3 Preset Management
+### Mid-term (Month 2-3)
+- [ ] Build automatic screenshot generator script
+- [ ] Generate thumbnails for all 39+ shaders
+- [ ] Implement tagging and metadata system
+- [ ] Add performance indicators
+- [ ] Create "Featured" and "New" badges
 
-- Save/load shader parameter presets
-- Share presets via URL
-- Community preset library
+### Long-term (Month 4-6)
+- [ ] Live preview on hover
+- [ ] Effect comparison mode
+- [ ] Effect chain builder (combine multiple shaders)
+- [ ] Advanced parameter UI generation
+- [ ] Mobile-optimized gallery
+- [ ] Share/export gallery snapshots
 
-#### 3.4 Performance Indicators
+## Technical Considerations
 
-- Real-time FPS display
-- GPU usage indicators
-- Performance tier badges on shaders
-- Automatic quality adjustment for low-end devices
+### Performance
+- **Thumbnail loading**: Lazy load thumbnails as user scrolls
+- **Preview generation**: Debounce hover previews
+- **Caching**: Cache rendered previews in IndexedDB
+- **Optimization**: Use WebP format for smaller thumbnail sizes
 
-### Phase 4: Content Creation Features
+### Accessibility
+- **Keyboard navigation**: Grid navigation with arrow keys
+- **Screen readers**: Proper ARIA labels for all effects
+- **Reduced motion**: Respect prefers-reduced-motion for animations
+- **Color contrast**: Ensure text readable on all thumbnails
 
-#### 4.1 Export & Recording
+### Backward Compatibility
+- Keep dropdown as fallback option
+- Settings to switch between gallery/list view
+- URL parameters to deep-link to specific shaders
 
-- Screenshot capture (current frame)
-- Video recording (WebCodecs API)
-- GIF export for sharing
-- Sequence export for animation
-
-#### 4.2 Shader Sequencing
-
-- Timeline-based shader switching
-- Smooth transitions between shaders
-- Parameter automation/keyframing
-
-#### 4.3 Batch Processing
-
-- Apply effect to multiple images
-- Video processing with selected shader
-- Batch export functionality
-
-## Technical Architecture Improvements
-
-### Code Organization
-
-```
-src/
-├── components/
-│   ├── controls/
-│   │   ├── ShaderGallery.tsx        # NEW: Grid view
-│   │   ├── ShaderCard.tsx           # NEW: Thumbnail card
-│   │   ├── ShaderFilters.tsx        # NEW: Filter controls
-│   │   ├── ShaderSearch.tsx         # NEW: Search bar
-│   │   └── Controls.tsx             # Existing
-│   ├── comparison/
-│   │   └── ShaderComparison.tsx     # NEW: Side-by-side
-│   └── export/
-│       └── ExportDialog.tsx         # NEW: Export UI
-├── hooks/
-│   ├── useShaderFiltering.ts        # NEW: Filter logic
-│   ├── useShaderPreview.ts          # NEW: Preview loading
-│   └── useUserPreferences.ts        # NEW: Favorites/history
-├── services/
-│   ├── shaderRegistry.ts            # NEW: Shader metadata API
-│   └── screenshotService.ts         # NEW: Screenshot generation
-└── utils/
-    ├── shaderSearch.ts              # NEW: Search algorithms
-    └── performanceMonitor.ts        # NEW: FPS tracking
-```
-
-### Data Model Evolution
-
-```typescript
-// Current: Simple list
-export interface ShaderEntry {
-  id: string;
-  name: string;
-  url: string;
-  category: ShaderCategory;
-}
-
-// Proposed: Rich metadata
-export interface EnhancedShaderEntry extends ShaderEntry {
-  preview: string;              // Preview image path
-  previewAnimation?: string;    // Optional animated preview
-  tags: string[];               // Searchable tags
-  primaryTag: string;           // Main category
-  visualStyle: VisualStyle;     // Art style classification
-  description: string;          // Detailed description
-  features: string[];           // Technical features
-  complexity: 'simple' | 'medium' | 'complex';
-  performanceLevel: 'high' | 'medium' | 'low';
-  interactionType?: 'click' | 'drag' | 'passive';
-  author?: string;              // Shader creator
-  dateAdded: string;            // ISO date
-  version: string;              // Semantic version
-  params?: ShaderParam[];       // Configurable parameters
-  relatedShaders?: string[];    // Similar effect IDs
-}
-```
-
-## Migration Strategy
-
-### Step-by-Step Implementation
-
-**Week 1-2: Foundation**
-1. ✅ Create plan.md (this document)
-2. ✅ Add 2 new shaders as proof of concept
-3. Set up screenshot generation infrastructure
-4. Create initial previews for all shaders
-
-**Week 3-4: UI Overhaul**
-5. Implement ShaderGallery component
-6. Add filtering and search
-7. Update Controls.tsx for hybrid mode
-8. Add responsive layouts
-
-**Week 5-6: Enhanced Metadata**
-9. Expand shader-list.json with full metadata
-10. Tag all existing shaders
-11. Add performance profiling
-12. Implement favorites/history
-
-**Week 7-8: Polish & Advanced Features**
-13. Add shader comparison mode
-14. Implement export functionality
-15. Add parameter presets
-16. Performance optimizations
-
-**Week 9+: Continuous Improvement**
-17. Community features (sharing, voting)
-18. Shader marketplace/gallery
-19. Advanced editing tools
-20. Plugin system for custom shaders
-
-## Performance Considerations
-
-### Optimization Strategies
-
-1. **Lazy Loading**: Load preview images on-demand
-2. **Image Optimization**: WebP format, multiple sizes
-3. **Virtual Scrolling**: Render only visible thumbnails
-4. **Shader Compilation Cache**: Cache compiled pipelines
-5. **Progressive Enhancement**: Fallback for older browsers
-6. **Worker Threads**: Offload filtering/search to Web Workers
-
-### Memory Management
-
-- Limit concurrent shader instances in comparison mode
-- Dispose GPU resources properly
-- Implement texture pooling for previews
-- Progressive image loading (blur-up technique)
-
-## Future Vision: AI-Powered Features
-
-### Phase 5: Machine Learning Integration
-
-1. **Style Transfer**: Combine multiple shaders intelligently
-2. **Auto-Recommendations**: Suggest shaders based on input content
-3. **Parameter Optimization**: Auto-tune parameters for best results
-4. **Content-Aware Processing**: Adjust effects based on image analysis
-5. **Custom Shader Generation**: AI-assisted shader creation
+### Scalability
+- Support for 100+ shaders without performance degradation
+- Pagination or infinite scroll for large galleries
+- Cloud storage for thumbnails (CDN)
 
 ## Conclusion
 
-This strategic plan outlines a comprehensive evolution of the image/video effects application from a simple dropdown-based interface to a sophisticated visual effects platform. The key focus areas are:
+This project has excellent foundations with its Universal BindGroup architecture. The path forward focuses on:
 
-1. **User Experience**: Visual selection, intuitive navigation
-2. **Scalability**: Support for 100+ shaders
-3. **Discoverability**: Smart search, categorization, recommendations
-4. **Performance**: Optimized rendering and preview generation
-5. **Extensibility**: Easy addition of new shaders and features
+1. **Improving discoverability** through visual gallery UI
+2. **Reducing friction** with automatic thumbnail generation
+3. **Enabling complexity** through better organization and tooling
+4. **Future-proofing** with extensible metadata and parameter systems
 
-By implementing these improvements incrementally, the application will transform from a technical demo into a professional-grade creative tool suitable for artists, designers, and content creators.
-
-## Next Steps
-
-**Immediate Actions**:
-1. ✅ Document current state and vision (this file)
-2. ✅ Add 2 new shader effects
-3. Set up automated screenshot generation tool
-4. Create proof-of-concept gallery UI
-5. Gather user feedback on proposed changes
-
-**Get Started**:
-```bash
-# Generate previews for all shaders
-npm run generate-previews
-
-# Start development with new gallery UI
-npm run dev:gallery
-
-# Run with performance monitoring
-npm run dev:perf
-```
-
----
-
-*Last Updated: December 2024*  
-*Version: 1.0*  
-*Contributors: AI Development Team*
+The modular shader system allows for rapid experimentation, and with proper UI/UX improvements, this can become a powerful creative tool for artists and developers exploring real-time GPU-accelerated effects.

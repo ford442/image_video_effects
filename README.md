@@ -1,12 +1,12 @@
-# WebGPU Fluid Simulation
+# WebGPU Shader Effects & Visual Library
 
-A React-based web application that applies interactive fluid-like effects to images using WebGPU compute shaders. Features include real-time ripple effects, AI-powered depth estimation, and multiple visual effect modes.
+A React-based web application that runs a wide variety of GPU shader effects (compute + fragment) — not only fluid simulations. Effects range from particle-based simulations and cellular automata to audio-driven spectrogram displacement, Voronoi tessellations, and fractal warping. Features include real-time interactive effects, AI-powered depth estimation, and dozens of shader modes.
 
 ## Features
 
 - **Interactive Fluid Effects**: Click on images to create ripples and fluid-like distortions
 - **AI Depth Estimation**: Uses the DPT-Hybrid-MIDAS model for depth map generation
-- **Multiple Shader Effects**: 15+ visual effect modes including liquid, vortex, plasma, and more
+- **Multiple Shader Effects**: Dozens of shader modes across multiple categories (fluid, simulation, audio-driven, feedback, sorting, distortion, and abstract visuals)
 - **Dynamic Shader Loading**: Shaders are loaded from a configuration file for easy extensibility
 - **WebGPU Powered**: High-performance compute shaders for real-time rendering
 
@@ -39,7 +39,7 @@ The application will open at `http://localhost:3000`.
 4. Select different effect modes from the dropdown
 5. Click and drag on the image to create interactive ripples
 
-## Available Effect Modes
+## Available Effect Modes (Selected)
 
 | Mode | Description |
 |------|-------------|
@@ -57,6 +57,21 @@ The application will open at `http://localhost:3000`.
 | Liquid Oil | Oil-on-water iridescence |
 | Liquid Glitch | Digital glitch artifacts |
 | Plasma Ball | Animated plasma ball effect |
+| Melting Oil | Sobel gradient-driven oil painting flow |
+| Physarum Slime Mold | Agent-based slime mold texture feeder |
+| Pixel Sand | Falling granular cellular automata |
+| Navier-Stokes Dye | Velocity advection and dye injection |
+| Temporal Echo | Feedback buffer time-slicing and history |
+| Reaction-Diffusion | Grey-Scott multi-channel color bleed |
+| Lenia CA | Continuous Lenia-style cellular automata |
+| Bitonic Pixel Sort | Workgroup-enabled pixel sorting |
+| Julia Warp | Complex fractal warp with orbit traps |
+| Voronoi | Animated tessellation and feature-driven cells |
+| Spectrogram Displace | Audio FFT-driven displacement |
+| Datamosh | Optical-flow datamosh and smear accumulation |
+| ASCII Glyphs | Atlas-based glyph morphing and SDF render |
+| Neon Edge Diffusion | Edge detection with neon diffusion |
+| Boids | Flocking masks to reveal textures |
 
 ## Project Structure
 
@@ -65,7 +80,7 @@ image_video_effects/
 ├── public/
 │   ├── index.html           # HTML entry point
 │   ├── shader-list.json     # Shader configuration
-│   └── shaders/             # WGSL compute shaders
+│   └── shaders/             # WGSL compute shaders (dozens)
 │       ├── liquid.wgsl
 │       ├── liquid-*.wgsl    # Various liquid effects
 │       ├── plasma.wgsl
@@ -93,6 +108,13 @@ npm start    # Start development server
 npm run build   # Build for production
 npm test     # Run tests
 ```
+
+## Shader Categories
+
+- **Fluid & Physics Simulations** — Navier-Stokes dye, Melting Oil, Pixel Sand, Physarum
+- **Iterative & Feedback Systems** — Temporal Echo, Reaction-Diffusion, Lenia
+- **Distortion & Sorting** — Bitonic Pixel Sort, Julia Warp, Voronoi
+- **Data-Driven & Abstract** — Spectrogram Displace, Datamosh, ASCII/Glyph, Neon Edge
 
 ## Adding New Shaders
 

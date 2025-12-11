@@ -25,8 +25,8 @@ struct Uniforms {
 // Utility: rgb->hsv
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    var p = mix(vec3<f32>(K.x, K.y, K.z), vec3<f32>(K.y, K.z, K.x), step(c.b, c.g));
-    var q = mix(vec3<f32>(p.x, p.y, p.z), vec3<f32>(c.b, c.g, c.r), step(p.x, c.r));
+    var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
+    var q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
     let d = q.x - min(q.w, q.y);
     let h = abs((q.w - q.y) / (6.0 * d + 1e-10) + K.x);
     return vec3<f32>(h, d, q.x);
@@ -207,7 +207,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let smearCol = textureSampleLevel(readTexture, u_sampler, smearUV, 0.0);
         outColor = mix(outColor, smearCol, 0.6);
         // add localized HDR bloom
-        outColor.rgb += (maxRGB - 1.0) * 0.5;
+        outColor = vec4<f32>(outColor.rgb + (maxRGB - 1.0) * 0.5, outColor.a);
     }
 
     // Combine with persistence (feedback): 90% previous frame

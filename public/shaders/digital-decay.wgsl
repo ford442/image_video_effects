@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let blockSizePx = floor(mix(5.0, 150.0, rawBlock));
     let blockUV = vec2<i32>(i32(floor(uv.x * resolution.x / blockSizePx)), i32(floor(uv.y * resolution.y / blockSizePx)));
 
-    let id = f32(blockUV.x * 73856093u ^ blockUV.y * 19349663u);
+    let id = f32((blockUV.x * 73856093) ^ (blockUV.y * 19349663));
     let blockHashTime = floor(time * corruptionSpeed * hash11(id + 1.0));
     let blockHash = hash21(vec2<f32>(f32(blockUV.x), f32(blockUV.y)) + blockHashTime);
 
