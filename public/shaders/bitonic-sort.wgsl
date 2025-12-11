@@ -13,6 +13,13 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
+};
+
 // bitonic sort per workgroup skeleton: use dataTextureA as pixel buffer
 @compute @workgroup_size(256, 1, 1)
 fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(workgroup_id) group_id: vec3<u32>) {
@@ -22,7 +29,38 @@ fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(workgroup_id
   let dim = textureDimensions(readTexture);
   let x = pixel_idx % dim.x;
   let y = pixel_idx / dim.x;
+  let uv = vec2<f32>(f32(x), f32(y)) / vec2<f32>(dim);
+  let time = u.config.x;
+  
+  // Mouse position determines sort region center
+  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let dist_to_mouse = distance(uv, mouse_pos);
+  
+  // Ripple-triggered sort threshold
+  var sort_threshold = 0.5;
+  for (var i = 0; i < 50; i++) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let ripple_age = time - ripple.z;
+      if (ripple_age > 0.0 && ripple_age < 4.0) {
+        let dist_to_ripple = distance(uv, ripple.xy);
+        if (dist_to_ripple < 0.2) {
+          sort_threshold = 0.3 * (1.0 - ripple_age / 4.0);
+        }
+      }
+    }
+  }
+  
   var a = textureLoad(readTexture, vec2<i32>(i32(x), i32(y)), 0);
+  
+  // Only apply sorting in local regions near mouse
+  if (dist_to_mouse < 0.3) {
+    let brightness = dot(a.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    if (brightness > sort_threshold) {
+      a = vec4<f32>(a.rgb * 1.2, a.a);
+    }
+  }
+  
   // Store directly to output (placeholder) - full bitonic implementation would use workgroup memory
   textureStore(writeTexture, vec2<i32>(i32(x), i32(y)), a);
 }
