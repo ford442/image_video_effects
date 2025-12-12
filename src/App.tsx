@@ -185,6 +185,15 @@ function App() {
 
   // Set default params for Rain mode
   useEffect(() => {
+      // Generic Default Loading
+      const activeShader = availableModes.find(s => s.id === mode);
+      if (activeShader && activeShader.params) {
+          if (activeShader.params.length > 0) setZoomParam1(activeShader.params[0].default);
+          if (activeShader.params.length > 1) setZoomParam2(activeShader.params[1].default);
+          if (activeShader.params.length > 2) setZoomParam3(activeShader.params[2].default);
+          if (activeShader.params.length > 3) setZoomParam4(activeShader.params[3].default);
+      }
+
       if (mode === 'rain') {
           setZoomParam1(0.08); // Speed
           setZoomParam2(0.5);  // Density
@@ -216,7 +225,7 @@ function App() {
           setZoomParam3(1.0); // Entanglement
           setZoomParam4(0.0); // Unused
       }
-  }, [mode]);
+  }, [mode, availableModes]);
 
   // Fetch video list
   useEffect(() => {

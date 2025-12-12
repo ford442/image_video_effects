@@ -597,8 +597,26 @@ export class Renderer {
                 uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
 
                 // Infinite Zoom uses w for depthThreshold
-                const zoomConfigW = mode === 'infinite-zoom' ? this.depthThreshold : 0;
-                uniformArray.set([currentTime, farthestPoint.x, farthestPoint.y, zoomConfigW], 4);
+                let zoomConfigW = mode === 'infinite-zoom' ? this.depthThreshold : 0;
+
+                // Determine target point (Depth vs Mouse)
+                let targetX = farthestPoint.x;
+                let targetY = farthestPoint.y;
+
+                const shaderEntry = this.shaderList.find(s => s.id === mode);
+                if (shaderEntry?.features?.includes('mouse-driven')) {
+                    // For mouse-driven shaders, use mouse position if available (>= 0)
+                    if (mousePosition.x >= 0) {
+                        targetX = mousePosition.x;
+                        targetY = mousePosition.y;
+                    }
+                    // Also pass isMouseDown via W channel if not infinite-zoom
+                    if (mode !== 'infinite-zoom') {
+                         zoomConfigW = isMouseDown ? 1.0 : 0.0;
+                    }
+                }
+
+                uniformArray.set([currentTime, targetX, targetY, zoomConfigW], 4);
 
                 // For plasma mode, we might want to pass the number of active balls or other config
                 // But we can just deduce it from the buffer (age > maxAge is dead)
