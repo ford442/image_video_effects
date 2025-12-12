@@ -105,7 +105,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var outCol = mix(src, finalCol, blendFactor);
 
     // 7️⃣ Temporal persistence (memory of previous frame)
-    let prev = textureSampleLevel(bleedBuf, depthSampler, uv, 0.0).rgb;
+    let prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).rgb;
     let persist = max(prev * 0.93, outCol);
     textureStore(bleedBuf, gid.xy, vec4<f32>(persist, 1.0));
     outCol = max(outCol, persist * 0.2);
