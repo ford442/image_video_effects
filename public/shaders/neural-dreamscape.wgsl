@@ -65,15 +65,15 @@ fn neuralActivation(uv: vec2<f32>, center: vec2<f32>, strength: f32, radius: f32
 // ---------------------------------------------------------------
 //  Create synaptic connections visualization (pulsing line)
 // ---------------------------------------------------------------
-fn synapticFlow(uv: vec2<f32>, from: vec2<f32>, to: vec2<f32>, time: f32, timeOffset: f32) -> f32 {
-  let direction = to - from;
+fn synapticFlow(uv: vec2<f32>, frm: vec2<f32>, to: vec2<f32>, time: f32, timeOffset: f32) -> f32 {
+  let direction = to - frm;
   let lengthDir = length(direction);
   if (lengthDir < 0.001) {
     return 0.0;
   }
   
   let normDir = direction / lengthDir;
-  let toUV = uv - from;
+  let toUV = uv - frm;
   let projection = dot(toUV, normDir);
   
   if (projection < 0.0 || projection > lengthDir) {
