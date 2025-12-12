@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
 import { Renderer } from './renderer/Renderer';
-import { RenderMode, ShaderEntry, ShaderCategory, InputSource } from './renderer/types';
+import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { pipeline, env } from '@xenova/transformers';
 import './style.css';
 
@@ -11,9 +11,30 @@ env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
 const model_loc = 'Xenova/dpt-hybrid-midas'
 
+const DEFAULT_SLOT_PARAMS: SlotParams = {
+    zoomParam1: 0.5,
+    zoomParam2: 0.5,
+    zoomParam3: 0.5,
+    zoomParam4: 0.5,
+    lightStrength: 1.0,
+    ambient: 0.2,
+    normalStrength: 0.1,
+    fogFalloff: 4.0,
+    depthThreshold: 0.5,
+};
+
 function App() {
   const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
-  const [mode, setMode] = useState<RenderMode>('liquid');
+
+  // Stacking State
+  const [modes, setModes] = useState<RenderMode[]>(['liquid', 'none', 'none']);
+  const [activeSlot, setActiveSlot] = useState<number>(0);
+  const [slotParams, setSlotParams] = useState<SlotParams[]>([
+      { ...DEFAULT_SLOT_PARAMS },
+      { ...DEFAULT_SLOT_PARAMS },
+      { ...DEFAULT_SLOT_PARAMS }
+  ]);
+
   const [zoom, setZoom] = useState(1.0);
   const [panX, setPanX] = useState(0.5);
   const [panY, setPanY] = useState(0.5);
@@ -26,19 +47,6 @@ function App() {
   const [mousePosition, setMousePosition] = useState({ x: -1, y: -1 });
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
-
-  // Infinite Zoom Parameters
-  const [lightStrength, setLightStrength] = useState(1.0);
-  const [ambient, setAmbient] = useState(0.2);
-  const [normalStrength, setNormalStrength] = useState(0.1);
-  const [fogFalloff, setFogFalloff] = useState(4.0);
-  const [depthThreshold, setDepthThreshold] = useState(0.5);
-
-  // Generic Params (Rain, etc.)
-  const [zoomParam1, setZoomParam1] = useState(0.5);
-  const [zoomParam2, setZoomParam2] = useState(0.5);
-  const [zoomParam3, setZoomParam3] = useState(0.5);
-  const [zoomParam4, setZoomParam4] = useState(0.5);
 
   // Video Input State
   const [inputSource, setInputSource] = useState<InputSource>('image');
@@ -183,53 +191,69 @@ function App() {
       }
   }, [inputSource]);
 
-  // Set default params for Rain mode
-  useEffect(() => {
+  // Helper to update params for a specific slot
+  const updateSlotParam = (slotIndex: number, updates: Partial<SlotParams>) => {
+      setSlotParams(prev => {
+          const next = [...prev];
+          next[slotIndex] = { ...next[slotIndex], ...updates };
+          return next;
+      });
+  };
+
+  // Helper for mode specific defaults
+  const applyModeDefaults = (mode: string, slotIndex: number) => {
       if (mode === 'rain') {
-          setZoomParam1(0.08); // Speed
-          setZoomParam2(0.5);  // Density
-          setZoomParam3(2.0);  // Wind
-          setZoomParam4(0.7);  // Splash
+          updateSlotParam(slotIndex, {
+              zoomParam1: 0.08, zoomParam2: 0.5, zoomParam3: 2.0, zoomParam4: 0.7
+          });
+      } else if (mode === 'chromatic-manifold') {
+           updateSlotParam(slotIndex, {
+              zoomParam1: 0.5, zoomParam2: 0.5, zoomParam3: 0.9, zoomParam4: 0.9
+          });
+      } else if (mode === 'digital-decay') {
+           updateSlotParam(slotIndex, {
+              zoomParam1: 0.5, zoomParam2: 0.5, zoomParam3: 0.5, zoomParam4: 0.5
+          });
+      } else if (mode === 'spectral-vortex') {
+           updateSlotParam(slotIndex, {
+              zoomParam1: 2.0, zoomParam2: 0.02, zoomParam3: 0.1, zoomParam4: 0.0
+          });
+      } else if (mode === 'quantum-fractal') {
+           updateSlotParam(slotIndex, {
+              zoomParam1: 3.0, zoomParam2: 100.0, zoomParam3: 1.0, zoomParam4: 0.0
+          });
       }
-      if (mode === 'chromatic-manifold') {
-          // manifoldScale, curvatureStr, hueWeight, feedbackStr
-          setZoomParam1(0.5); // manifoldScale
-          setZoomParam2(0.5); // curvature
-          setZoomParam3(0.9); // hueWeight
-          setZoomParam4(0.9); // feedback
-      }
-      if (mode === 'digital-decay') {
-          setZoomParam1(0.5); // Decay Intensity
-          setZoomParam2(0.5); // Block Size
-          setZoomParam3(0.5); // Corruption Speed
-          setZoomParam4(0.5); // Depth Focus
-      }
-      if (mode === 'spectral-vortex') {
-          setZoomParam1(2.0); // Twist Strength
-          setZoomParam2(0.02); // Distortion Step
-          setZoomParam3(0.1); // Color Shift
-          setZoomParam4(0.0); // Unused
-      }
-      if (mode === 'quantum-fractal') {
-          setZoomParam1(3.0); // Scale
-          setZoomParam2(100.0); // Iterations
-          setZoomParam3(1.0); // Entanglement
-          setZoomParam4(0.0); // Unused
-      }
-  }, [mode]);
+  };
+
+  // Watch for mode changes to apply defaults
+  useEffect(() => {
+      modes.forEach((m, i) => {
+           // This is a bit tricky because we don't want to reset params every time if the user is tweaking them.
+           // However, simple dependency tracking on 'modes' works if we assume 'modes' only changes when the user selects a new shader.
+           // To be safe, we might check if the mode actually changed from previous, but React effects run on change.
+           // But this effect runs if *any* mode changes, so we need to be careful not to reset unrelated slots.
+           // For now, this is acceptable as the 'modes' state is updated atomically.
+           // A better approach would be to only run this when the user explicitly changes the mode in the UI, which we can do in the setMode handler.
+           // So I will move this logic to the handleModeChange function.
+      });
+  }, [modes]); // Keeping empty or removed to avoid unwanted resets
+
+  const handleModeChange = (index: number, newMode: RenderMode) => {
+      setModes(prev => {
+          const next = [...prev];
+          next[index] = newMode;
+          return next;
+      });
+      applyModeDefaults(newMode, index);
+  };
 
   // Fetch video list
   useEffect(() => {
       const fetchVideos = async () => {
           try {
-              // Try to list files in public/videos
-              // Note: This relies on server directory listing which might be disabled.
-              // If so, we might need a manual list or a server endpoint.
-              // For now, let's try to fetch the index page of /videos/
               const response = await fetch('videos/');
               if (response.ok) {
                   const text = await response.text();
-                  // Parse HTML to find links
                   const parser = new DOMParser();
                   const doc = parser.parseFromString(text, 'text/html');
                   const links = Array.from(doc.querySelectorAll('a'));
@@ -237,12 +261,10 @@ function App() {
                       .map(link => link.getAttribute('href'))
                       .filter(href => href && /\.(mp4|webm|mov)$/i.test(href))
                       .map(href => {
-                          // Clean up href: remove leading /videos/ if present or just take the filename
                           const parts = href!.split('/');
                           return parts[parts.length - 1];
                       });
 
-                  // Filter valid unique names
                   const uniqueVideos = Array.from(new Set(videos));
                   if (uniqueVideos.length > 0) {
                       setVideoList(uniqueVideos as string[]);
@@ -255,15 +277,19 @@ function App() {
       };
 
       fetchVideos();
-  }, []); // Run once
+  }, []);
 
   return (
     <div id="app-container">
         <h1>WebGPU Liquid + Depth Effect</h1>
         <p><strong>Status:</strong> {status}</p>
         <Controls
-            mode={mode}
-            setMode={setMode}
+            modes={modes}
+            setMode={handleModeChange}
+            activeSlot={activeSlot}
+            setActiveSlot={setActiveSlot}
+            slotParams={slotParams}
+            updateSlotParam={updateSlotParam}
             shaderCategory={shaderCategory}
             setShaderCategory={setShaderCategory}
             zoom={zoom} setZoom={setZoom}
@@ -277,7 +303,6 @@ function App() {
             onLoadModel={loadModel}
             isModelLoaded={!!depthEstimator}
             availableModes={availableModes}
-            // New Props
             inputSource={inputSource}
             setInputSource={setInputSource}
             videoList={videoList}
@@ -285,32 +310,11 @@ function App() {
             setSelectedVideo={setSelectedVideo}
             isMuted={isMuted}
             setIsMuted={setIsMuted}
-            // Infinite Zoom
-            lightStrength={lightStrength} setLightStrength={setLightStrength}
-            ambient={ambient} setAmbient={setAmbient}
-            normalStrength={normalStrength} setNormalStrength={setNormalStrength}
-            fogFalloff={fogFalloff} setFogFalloff={setFogFalloff}
-            depthThreshold={depthThreshold} setDepthThreshold={setDepthThreshold}
-            // Generic Params
-            zoomParam1={zoomParam1} setZoomParam1={setZoomParam1}
-            zoomParam2={zoomParam2} setZoomParam2={setZoomParam2}
-            zoomParam3={zoomParam3} setZoomParam3={setZoomParam3}
-            zoomParam4={zoomParam4} setZoomParam4={setZoomParam4}
         />
         <WebGPUCanvas
             rendererRef={rendererRef}
-            mode={mode}
-            // Infinite Zoom
-            lightStrength={lightStrength}
-            ambient={ambient}
-            normalStrength={normalStrength}
-            fogFalloff={fogFalloff}
-            depthThreshold={depthThreshold}
-            // Generic Params
-            zoomParam1={zoomParam1}
-            zoomParam2={zoomParam2}
-            zoomParam3={zoomParam3}
-            zoomParam4={zoomParam4}
+            modes={modes}
+            slotParams={slotParams}
             zoom={zoom}
             panX={panX}
             panY={panY}
@@ -320,7 +324,6 @@ function App() {
             isMouseDown={isMouseDown}
             setIsMouseDown={setIsMouseDown}
             onInit={handleInit}
-            // New Props
             inputSource={inputSource}
             selectedVideo={selectedVideo}
             isMuted={isMuted}

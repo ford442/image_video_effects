@@ -1,9 +1,14 @@
 import React from 'react';
-import { RenderMode, ShaderEntry, ShaderCategory, InputSource } from '../renderer/types';
+import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 
 interface ControlsProps {
-    mode: RenderMode;
-    setMode: (mode: RenderMode) => void;
+    modes: RenderMode[];
+    setMode: (index: number, mode: RenderMode) => void;
+    activeSlot: number;
+    setActiveSlot: (index: number) => void;
+    slotParams: SlotParams[];
+    updateSlotParam: (slotIndex: number, updates: Partial<SlotParams>) => void;
+
     shaderCategory: ShaderCategory;
     setShaderCategory: (category: ShaderCategory) => void;
     zoom: number;
@@ -28,30 +33,12 @@ interface ControlsProps {
     setSelectedVideo: (video: string) => void;
     isMuted: boolean;
     setIsMuted: (muted: boolean) => void;
-    // Infinite Zoom
-    lightStrength?: number;
-    setLightStrength?: (val: number) => void;
-    ambient?: number;
-    setAmbient?: (val: number) => void;
-    normalStrength?: number;
-    setNormalStrength?: (val: number) => void;
-    fogFalloff?: number;
-    setFogFalloff?: (val: number) => void;
-    depthThreshold?: number;
-    setDepthThreshold?: (val: number) => void;
-    // Generic Params
-    zoomParam1?: number;
-    setZoomParam1?: (val: number) => void;
-    zoomParam2?: number;
-    setZoomParam2?: (val: number) => void;
-    zoomParam3?: number;
-    setZoomParam3?: (val: number) => void;
-    zoomParam4?: number;
-    setZoomParam4?: (val: number) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
-    mode, setMode,
+    modes, setMode,
+    activeSlot, setActiveSlot,
+    slotParams, updateSlotParam,
     shaderCategory, setShaderCategory,
     zoom, setZoom,
     panX, setPanX,
@@ -64,53 +51,37 @@ const Controls: React.FC<ControlsProps> = ({
     inputSource, setInputSource,
     videoList, selectedVideo, setSelectedVideo,
     isMuted, setIsMuted,
-    lightStrength, setLightStrength,
-    ambient, setAmbient,
-    normalStrength, setNormalStrength,
-    fogFalloff, setFogFalloff,
-    depthThreshold, setDepthThreshold,
-    zoomParam1, setZoomParam1,
-    zoomParam2, setZoomParam2,
-    zoomParam3, setZoomParam3,
-    zoomParam4, setZoomParam4
 }) => {
-    const shaderModes = availableModes.filter(entry => entry.category === 'shader');
-    const imageModes = availableModes.filter(entry => entry.category === 'image');
-    // const videoModes = availableModes.filter(entry => entry.category === 'video');
+    const shaderModes = availableModes.filter(entry => entry.category !== 'image'); // Assuming 'image' category is for filters vs generators? Or vice versa?
+    // Actually, based on previous code: shaderModes = category=='shader', imageModes = category=='image'.
+    // Let's stick to that logic but allow user to pick any shader for the slots?
+    // User said "3 slots to stack shaders".
+    // Usually stacking implies image filters.
+    // Let's allow all modes in the dropdown for flexibility, or filter based on category.
+    // The previous UI had a Category selector.
+    // Maybe we keep the Category selector to filter the options in the dropdowns?
 
-    const handleCategoryChange = (newCategory: ShaderCategory) => {
-        setShaderCategory(newCategory);
-        // Set default shader for the category
-        let modes: ShaderEntry[];
-        switch (newCategory) {
-            case 'shader':
-                modes = shaderModes;
-                break;
-            case 'image':
-                modes = imageModes;
-                break;
-            default:
-                modes = imageModes;
-                break;
-        }
-        // Only change mode if there are shaders available in this category
-        if (modes.length > 0) {
-            setMode(modes[0].id);
-        }
-    };
+    const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
+    const imageEntries = availableModes.filter(entry => entry.category === 'image'); // Most effects seem to be here
+    // const videoEntries = availableModes.filter(entry => entry.category === 'video');
 
     const getCurrentCategoryModes = () => {
+        // If the user selects a category, should it filter ALL 3 dropdowns? Yes, simplest.
         switch (shaderCategory) {
             case 'shader':
-                return shaderModes;
+                return shaderEntries;
             case 'image':
-                return imageModes;
+                return imageEntries;
             default:
-                return [];
+                return imageEntries; // Default to image effects which are the stackable ones
         }
     };
 
     const currentModes = getCurrentCategoryModes();
+
+    // Helper to get params for active slot
+    const currentParams = slotParams[activeSlot];
+    const currentMode = modes[activeSlot];
 
     return (
         <div className="controls">
@@ -139,31 +110,41 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
 
             <div className="control-group">
-                <label htmlFor="category-select">Effect Type:</label>
+                <label htmlFor="category-select">Effect Filter:</label>
                 <select
                     id="category-select"
                     value={shaderCategory}
-                    onChange={(e) => handleCategoryChange(e.target.value as ShaderCategory)}
+                    onChange={(e) => setShaderCategory(e.target.value as ShaderCategory)}
                 >
                     <option value="image">Effects / Filters</option>
                     <option value="shader">Procedural Generation</option>
                 </select>
             </div>
 
-            <div className="control-group">
-                <label htmlFor="shader-select">Shader:</label>
-                <select
-                    id="shader-select"
-                    value={mode}
-                    onChange={(e) => setMode(e.target.value as RenderMode)}
-                >
-                    {currentModes.map(entry => (
-                        <option key={entry.id} value={entry.id}>{entry.name}</option>
-                    ))}
-                    {currentModes.length === 0 && (
-                        <option value="" disabled>No shaders available</option>
-                    )}
-                </select>
+            <div className="stack-controls" style={{border: '1px solid #444', padding: '10px', margin: '10px 0', borderRadius: '5px'}}>
+                <div style={{fontWeight: 'bold', marginBottom: '5px'}}>Effect Stack</div>
+                {[0, 1, 2].map(index => (
+                    <div key={index} className="control-group" style={{ display: 'flex', alignItems: 'center', backgroundColor: activeSlot === index ? '#334' : 'transparent', padding: '5px', borderRadius: '4px' }}>
+                        <input
+                            type="radio"
+                            name="activeSlot"
+                            checked={activeSlot === index}
+                            onChange={() => setActiveSlot(index)}
+                            style={{marginRight: '10px'}}
+                        />
+                        <label style={{width: '60px'}}>Slot {index + 1}:</label>
+                        <select
+                            value={modes[index]}
+                            onChange={(e) => setMode(index, e.target.value as RenderMode)}
+                            style={{flexGrow: 1}}
+                        >
+                            <option value="none">None</option>
+                            {currentModes.map(entry => (
+                                <option key={entry.id} value={entry.id}>{entry.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                ))}
             </div>
 
             {inputSource === 'video' && (
@@ -218,160 +199,153 @@ const Controls: React.FC<ControlsProps> = ({
                 <input type="range" id="pan-y-slider" min="0" max="200" value={panY * 100} onChange={(e) => setPanY(parseFloat(e.target.value) / 100)} />
             </div>
 
-            {mode === 'rain' && (
+            <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+            <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>
+                Slot {activeSlot + 1} Controls ({modes[activeSlot] === 'none' ? 'Empty' : modes[activeSlot]})
+            </div>
+
+            {currentMode === 'rain' && (
                 <>
-                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Rain Controls</div>
                     <div className="control-group">
-                        <label>Rain Speed: {zoomParam1?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                        <label>Rain Speed: {currentParams.zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam1} onChange={(e) => updateSlotParam(activeSlot, { zoomParam1: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Rain Density: {zoomParam2?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                        <label>Rain Density: {currentParams.zoomParam2?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam2} onChange={(e) => updateSlotParam(activeSlot, { zoomParam2: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Wind: {zoomParam3?.toFixed(2)}</label>
-                        <input type="range" min="0" max="4" step="0.1" value={zoomParam3 || 2.0} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                        <label>Wind: {currentParams.zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="4" step="0.1" value={currentParams.zoomParam3} onChange={(e) => updateSlotParam(activeSlot, { zoomParam3: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Splash/Flow: {zoomParam4?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.5} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                        <label>Splash/Flow: {currentParams.zoomParam4?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam4} onChange={(e) => updateSlotParam(activeSlot, { zoomParam4: parseFloat(e.target.value) })} />
                     </div>
                 </>
             )}
 
-            {mode === 'chromatic-manifold' && (
+            {currentMode === 'chromatic-manifold' && (
                 <>
-                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Chromatic Manifold Controls</div>
                     <div className="control-group">
-                        <label>Warp Strength: {zoomParam1?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                        <label>Warp Strength: {currentParams.zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam1} onChange={(e) => updateSlotParam(activeSlot, { zoomParam1: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Curvature Strength: {zoomParam2?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                        <label>Curvature Strength: {currentParams.zoomParam2?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam2} onChange={(e) => updateSlotParam(activeSlot, { zoomParam2: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Hue Weight: {zoomParam3?.toFixed(2)}</label>
-                        <input type="range" min="0" max="2" step="0.01" value={zoomParam3 || 1.0} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                        <label>Hue Weight: {currentParams.zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="2" step="0.01" value={currentParams.zoomParam3} onChange={(e) => updateSlotParam(activeSlot, { zoomParam3: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Feedback Strength: {zoomParam4?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.9} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                        <label>Feedback Strength: {currentParams.zoomParam4?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam4} onChange={(e) => updateSlotParam(activeSlot, { zoomParam4: parseFloat(e.target.value) })} />
                     </div>
                 </>
             )}
 
-            {mode === 'digital-decay' && (
+            {currentMode === 'digital-decay' && (
                 <>
-                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Digital Decay Controls</div>
                     <div className="control-group">
-                        <label>Decay Intensity: {zoomParam1?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                        <label>Decay Intensity: {currentParams.zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam1} onChange={(e) => updateSlotParam(activeSlot, { zoomParam1: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Block Size: {zoomParam2?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                        <label>Block Size: {currentParams.zoomParam2?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam2} onChange={(e) => updateSlotParam(activeSlot, { zoomParam2: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Corruption Speed: {zoomParam3?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam3 || 0.5} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                        <label>Corruption Speed: {currentParams.zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam3} onChange={(e) => updateSlotParam(activeSlot, { zoomParam3: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Depth Focus: {zoomParam4?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.5} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                        <label>Depth Focus: {currentParams.zoomParam4?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam4} onChange={(e) => updateSlotParam(activeSlot, { zoomParam4: parseFloat(e.target.value) })} />
                     </div>
                 </>
             )}
 
-            {mode === 'spectral-vortex' && (
+            {currentMode === 'spectral-vortex' && (
                 <>
-                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Spectral Vortex Controls</div>
                     <div className="control-group">
-                        <label>Twist Strength: {zoomParam1?.toFixed(2)}</label>
-                        <input type="range" min="0" max="10" step="0.1" value={zoomParam1 || 2.0} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                        <label>Twist Strength: {currentParams.zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="10" step="0.1" value={currentParams.zoomParam1} onChange={(e) => updateSlotParam(activeSlot, { zoomParam1: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Distortion Step: {zoomParam2?.toFixed(3)}</label>
-                        <input type="range" min="0" max="0.1" step="0.001" value={zoomParam2 || 0.02} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                        <label>Distortion Step: {currentParams.zoomParam2?.toFixed(3)}</label>
+                        <input type="range" min="0" max="0.1" step="0.001" value={currentParams.zoomParam2} onChange={(e) => updateSlotParam(activeSlot, { zoomParam2: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Color Shift: {zoomParam3?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam3 || 0.1} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                        <label>Color Shift: {currentParams.zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam3} onChange={(e) => updateSlotParam(activeSlot, { zoomParam3: parseFloat(e.target.value) })} />
                     </div>
                 </>
             )}
 
-            {mode === 'quantum-fractal' && (
+            {currentMode === 'quantum-fractal' && (
                 <>
-                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Quantum Fractal Controls</div>
                     <div className="control-group">
-                        <label>Fractal Scale: {zoomParam1?.toFixed(2)}</label>
-                        <input type="range" min="0.1" max="10" step="0.1" value={zoomParam1 || 3.0} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                        <label>Fractal Scale: {currentParams.zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0.1" max="10" step="0.1" value={currentParams.zoomParam1} onChange={(e) => updateSlotParam(activeSlot, { zoomParam1: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Iterations: {zoomParam2?.toFixed(0)}</label>
-                        <input type="range" min="10" max="200" step="1" value={zoomParam2 || 100} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                        <label>Iterations: {currentParams.zoomParam2?.toFixed(0)}</label>
+                        <input type="range" min="10" max="200" step="1" value={currentParams.zoomParam2} onChange={(e) => updateSlotParam(activeSlot, { zoomParam2: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Entanglement: {zoomParam3?.toFixed(2)}</label>
-                        <input type="range" min="0" max="2" step="0.01" value={zoomParam3 || 1.0} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                        <label>Entanglement: {currentParams.zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="2" step="0.01" value={currentParams.zoomParam3} onChange={(e) => updateSlotParam(activeSlot, { zoomParam3: parseFloat(e.target.value) })} />
                     </div>
                 </>
             )}
 
-            {mode === 'infinite-zoom' && (
+            {currentMode === 'infinite-zoom' && (
                 <>
-                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Lighting & Depth</div>
                     <div className="control-group">
-                        <label>Light Strength: {lightStrength?.toFixed(1)}</label>
-                        <input type="range" min="0" max="5" step="0.1" value={lightStrength || 1.0} onChange={(e) => setLightStrength && setLightStrength(parseFloat(e.target.value))} />
+                        <label>Light Strength: {currentParams.lightStrength?.toFixed(1)}</label>
+                        <input type="range" min="0" max="5" step="0.1" value={currentParams.lightStrength} onChange={(e) => updateSlotParam(activeSlot, { lightStrength: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Ambient: {ambient?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.05" value={ambient || 0.2} onChange={(e) => setAmbient && setAmbient(parseFloat(e.target.value))} />
+                        <label>Ambient: {currentParams.ambient?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.05" value={currentParams.ambient} onChange={(e) => updateSlotParam(activeSlot, { ambient: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Normal Strength: {normalStrength?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={normalStrength || 0.1} onChange={(e) => setNormalStrength && setNormalStrength(parseFloat(e.target.value))} />
+                        <label>Normal Strength: {currentParams.normalStrength?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.normalStrength} onChange={(e) => updateSlotParam(activeSlot, { normalStrength: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Fog Falloff: {fogFalloff?.toFixed(1)}</label>
-                        <input type="range" min="0.1" max="10" step="0.1" value={fogFalloff || 4.0} onChange={(e) => setFogFalloff && setFogFalloff(parseFloat(e.target.value))} />
+                        <label>Fog Falloff: {currentParams.fogFalloff?.toFixed(1)}</label>
+                        <input type="range" min="0.1" max="10" step="0.1" value={currentParams.fogFalloff} onChange={(e) => updateSlotParam(activeSlot, { fogFalloff: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Depth Threshold: {depthThreshold?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={depthThreshold || 0.5} onChange={(e) => setDepthThreshold && setDepthThreshold(parseFloat(e.target.value))} />
+                        <label>Depth Threshold: {currentParams.depthThreshold?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.depthThreshold} onChange={(e) => updateSlotParam(activeSlot, { depthThreshold: parseFloat(e.target.value) })} />
                     </div>
                 </>
             )}
-            {mode === 'chromatic-manifold' && (
-                <>
-                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Chromatic Manifold Controls</div>
+
+            {/* Fallback for other modes that use generic params */}
+            {!['rain', 'chromatic-manifold', 'digital-decay', 'spectral-vortex', 'quantum-fractal', 'infinite-zoom', 'none'].includes(currentMode) && modes[activeSlot] !== 'none' && (
+                 <>
                     <div className="control-group">
-                        <label>Hue Weight: {(zoomParam1 || 0.5).toFixed(2)}</label>
-                        <input type="range" min="0" max="2" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                        <label>Param 1: {currentParams.zoomParam1?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam1} onChange={(e) => updateSlotParam(activeSlot, { zoomParam1: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Warp Strength: {(zoomParam2 || 0.5).toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                        <label>Param 2: {currentParams.zoomParam2?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam2} onChange={(e) => updateSlotParam(activeSlot, { zoomParam2: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Tear Threshold: {(zoomParam3 || 0.8).toFixed(2)}</label>
-                        <input type="range" min="0" max="3" step="0.01" value={zoomParam3 || 0.8} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                        <label>Param 3: {currentParams.zoomParam3?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam3} onChange={(e) => updateSlotParam(activeSlot, { zoomParam3: parseFloat(e.target.value) })} />
                     </div>
                     <div className="control-group">
-                        <label>Curvature Strength: {(zoomParam4 || 0.5).toFixed(2)}</label>
-                        <input type="range" min="0" max="2" step="0.01" value={zoomParam4 || 0.5} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                        <label>Param 4: {currentParams.zoomParam4?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam4} onChange={(e) => updateSlotParam(activeSlot, { zoomParam4: parseFloat(e.target.value) })} />
                     </div>
-                </>
+                 </>
             )}
         </div>
     );

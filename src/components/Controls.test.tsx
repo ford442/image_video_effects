@@ -2,21 +2,41 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Controls from './Controls';
-import { ShaderEntry } from '../renderer/types';
+import { ShaderEntry, SlotParams } from '../renderer/types';
 
 const mockSetMode = jest.fn();
 const mockSetShaderCategory = jest.fn();
-const mockSetZoomParam1 = jest.fn();
+const mockSetActiveSlot = jest.fn();
+const mockUpdateSlotParam = jest.fn();
 
 const availableModes: ShaderEntry[] = [
-    { id: 'rain', name: 'Rain', url: 'shaders/rain.wgsl', category: 'image' }
+    { id: 'rain', name: 'Rain', url: 'shaders/rain.wgsl', category: 'image' },
+    { id: 'liquid', name: 'Liquid', url: 'shaders/liquid.wgsl', category: 'image' }
 ];
 
-test('renders Rain controls when mode is rain', () => {
+const defaultSlotParams: SlotParams = {
+    zoomParam1: 0.5,
+    zoomParam2: 0.5,
+    zoomParam3: 0.5,
+    zoomParam4: 0.5,
+    lightStrength: 1.0,
+    ambient: 0.2,
+    normalStrength: 0.1,
+    fogFalloff: 4.0,
+    depthThreshold: 0.5
+};
+
+const mockSlotParams = [defaultSlotParams, defaultSlotParams, defaultSlotParams];
+
+test('renders Rain controls when active slot mode is rain', () => {
     render(
         <Controls
-            mode="rain"
+            modes={['rain', 'none', 'none']}
             setMode={mockSetMode}
+            activeSlot={0}
+            setActiveSlot={mockSetActiveSlot}
+            slotParams={mockSlotParams}
+            updateSlotParam={mockUpdateSlotParam}
             shaderCategory="image"
             setShaderCategory={mockSetShaderCategory}
             zoom={1} setZoom={() => {}}
@@ -31,11 +51,6 @@ test('renders Rain controls when mode is rain', () => {
             inputSource="image" setInputSource={() => {}}
             videoList={[]} selectedVideo="" setSelectedVideo={() => {}}
             isMuted={false} setIsMuted={() => {}}
-            // Generic params
-            zoomParam1={0.5} setZoomParam1={mockSetZoomParam1}
-            zoomParam2={0.5} setZoomParam2={() => {}}
-            zoomParam3={2.0} setZoomParam3={() => {}}
-            zoomParam4={0.7} setZoomParam4={() => {}}
         />
     );
 
@@ -46,11 +61,15 @@ test('renders Rain controls when mode is rain', () => {
     expect(screen.getByText(/Splash\/Flow:/)).toBeInTheDocument();
 });
 
-test('does not render Rain controls when mode is not rain', () => {
+test('does not render Rain controls when active slot mode is not rain', () => {
     render(
         <Controls
-            mode="liquid"
+            modes={['liquid', 'none', 'none']}
             setMode={mockSetMode}
+            activeSlot={0}
+            setActiveSlot={mockSetActiveSlot}
+            slotParams={mockSlotParams}
+            updateSlotParam={mockUpdateSlotParam}
             shaderCategory="image"
             setShaderCategory={mockSetShaderCategory}
             zoom={1} setZoom={() => {}}
@@ -65,11 +84,6 @@ test('does not render Rain controls when mode is not rain', () => {
             inputSource="image" setInputSource={() => {}}
             videoList={[]} selectedVideo="" setSelectedVideo={() => {}}
             isMuted={false} setIsMuted={() => {}}
-             // Generic params
-            zoomParam1={0.5} setZoomParam1={() => {}}
-            zoomParam2={0.5} setZoomParam2={() => {}}
-            zoomParam3={2.0} setZoomParam3={() => {}}
-            zoomParam4={0.7} setZoomParam4={() => {}}
         />
     );
 
