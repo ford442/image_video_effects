@@ -75,8 +75,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
   extraBuffer[base + 3u] = vel.y;
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn reveal_texture(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn reveal_texture_impl(gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let dim = textureDimensions(readTexture);
   var revealed = vec4<f32>(0.0);
@@ -91,4 +90,10 @@ fn reveal_texture(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), revealed);
+}
+
+// Wrapper main entrypoint for host pipeline compatibility
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  reveal_texture_impl(gid);
 }

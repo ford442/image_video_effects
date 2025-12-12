@@ -1040,7 +1040,7 @@
       "temporal-persistence",
       "chromatic-aberration",
       "sci-fi"
-    ],
+    ]
   },
   {
     "id": "melting-oil",
@@ -1146,5 +1146,575 @@
     "url": "shaders/boids.wgsl",
     "category": "simulation",
     "description": "Flocking boids with reveal masking and simple attraction mechanics."
+  },
+  {
+    "id": "fabric-step",
+    "name": "Fabric of Reality",
+    "url": "shaders/fabric-step.wgsl",
+    "category": "simulation",
+    "description": "Mass-spring cloth simulation with Verlet integration, constraint solving, and interactive tearing mechanics.",
+    "params": [
+      {
+        "id": "stiffness",
+        "name": "Stiffness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "tearThreshold",
+        "name": "Tear Threshold",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "gravity",
+        "name": "Gravity",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["depth-aware", "temporal-persistence", "interactive", "physics"]
+  },
+  {
+    "id": "wave-equation",
+    "name": "Wave Tank",
+    "url": "shaders/wave-equation.wgsl",
+    "category": "simulation",
+    "description": "2D wave equation simulation with ripple physics, refraction effects, and rainbow phase coloring.",
+    "params": [
+      {
+        "id": "waveSpeed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "sourceStrength",
+        "name": "Source Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "boundaryReflect",
+        "name": "Boundary Reflect",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["depth-aware", "temporal-persistence", "interactive", "physics"]
+  },
+  {
+    "id": "photonic-caustics",
+    "name": "Photonic Caustics",
+    "url": "shaders/photonic-caustics.wgsl",
+    "category": "simulation",
+    "description": "Light caustics simulation with chromatic dispersion, Fresnel reflections, and refractive surfaces.",
+    "params": [
+      {
+        "id": "ior",
+        "name": "Index of Refraction",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "lightSize",
+        "name": "Light Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dispersion",
+        "name": "Chromatic Dispersion",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["depth-aware", "temporal-persistence", "interactive", "chromatic-aberration"]
+  },
+  {
+    "id": "chromatographic-separation",
+    "name": "Chromatographic Separation",
+    "url": "shaders/chromatographic-separation.wgsl",
+    "category": "simulation",
+    "description": "RGB channel fluid simulation with separate viscosities, wind forces, and inter-layer drag.",
+    "params": [
+      {
+        "id": "viscosityR",
+        "name": "Red Viscosity",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "viscosityG",
+        "name": "Green Viscosity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "viscosityB",
+        "name": "Blue Viscosity",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "temperature",
+        "name": "Temperature",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["depth-aware", "temporal-persistence", "interactive", "fluid-dynamics"]
+  },
+  {
+    "id": "multi-turing",
+    "name": "Multiscale Turing Patterns",
+    "url": "shaders/multi-turing.wgsl",
+    "category": "simulation",
+    "description": "Multiple reaction-diffusion systems at different scales combined for organic pattern generation.",
+    "params": [
+      {
+        "id": "feed1",
+        "name": "Feed Rate 1",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "kill1",
+        "name": "Kill Rate 1",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feed2",
+        "name": "Feed Rate 2",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "kill2",
+        "name": "Kill Rate 2",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["temporal-persistence", "interactive", "organic-growth"]
+  },
+  {
+    "id": "dla-crystals",
+    "name": "DLA Crystal Growth",
+    "url": "shaders/dla-crystals.wgsl",
+    "category": "simulation",
+    "description": "Diffusion-limited aggregation creating fractal crystal structures that grow from click points.",
+    "params": [
+      {
+        "id": "walkerSpeed",
+        "name": "Walker Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "attractStrength",
+        "name": "Attraction Strength",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "stickiness",
+        "name": "Stickiness",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "branchAngle",
+        "name": "Branch Angle",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["temporal-persistence", "interactive", "fractal"]
+  },
+  {
+    "id": "poincare-tile",
+    "name": "Hyperbolic Tiling",
+    "url": "shaders/poincare-tile.wgsl",
+    "category": "geometry",
+    "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
+    "params": [
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "animSpeed",
+        "name": "Animation Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "tileScale",
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["interactive", "mathematical"]
+  },
+  {
+    "id": "log-polar-droste",
+    "name": "Log-Polar Droste",
+    "url": "shaders/log-polar-droste.wgsl",
+    "category": "geometry",
+    "description": "Infinite recursive zoom with spiral distortion creating Droste/Escher-like effects.",
+    "params": [
+      {
+        "id": "zoomSpeed",
+        "name": "Zoom Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "spiralFactor",
+        "name": "Spiral Factor",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "recursionDepth",
+        "name": "Recursion Depth",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "branchCount",
+        "name": "Branch Count",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["interactive", "mathematical", "recursive"]
+  },
+  {
+    "id": "anisotropic-kuwahara",
+    "name": "Van Gogh Flow",
+    "url": "shaders/anisotropic-kuwahara.wgsl",
+    "category": "artistic",
+    "description": "Anisotropic Kuwahara filter creating painterly Van Gogh-style brushstroke effects.",
+    "params": [
+      {
+        "id": "windowSize",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "anisotropy",
+        "name": "Flow Anisotropy",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "sharpness",
+        "name": "Edge Sharpness",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "flowStrength",
+        "name": "Flow Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["depth-aware", "interactive", "painterly"]
+  },
+  {
+    "id": "byte-mosh",
+    "name": "Byte-Mosh Glitch",
+    "url": "shaders/byte-mosh.wgsl",
+    "category": "glitch",
+    "description": "Bitwise XOR, AND, shift, and rotate operations creating digital corruption effects.",
+    "params": [
+      {
+        "id": "operationMix",
+        "name": "Operation Mix",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "bitShift",
+        "name": "Bit Shift",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "errorRate",
+        "name": "Error Rate",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blockSize",
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["interactive", "chromatic-aberration", "glitch"]
+  },
+  {
+    "id": "time-lag-map",
+    "name": "Time-Lag Map",
+    "url": "shaders/time-lag-map.wgsl",
+    "category": "temporal",
+    "description": "Per-pixel temporal delay creating echo, smear, and time-displacement effects.",
+    "params": [
+      {
+        "id": "bufferLength",
+        "name": "Delay Length",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mappingFunction",
+        "name": "Delay Pattern",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "feedbackMix",
+        "name": "Feedback Mix",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "motionSense",
+        "name": "Motion Sensitivity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["temporal-persistence", "interactive", "motion-detection"]
+  },
+  {
+    "id": "flow-sort",
+    "name": "Streamline Pixel Sort",
+    "url": "shaders/flow-sort.wgsl",
+    "category": "sorting",
+    "description": "Pixel sorting along vector field lines derived from luminance gradients.",
+    "params": [
+      {
+        "id": "flowStrength",
+        "name": "Flow Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "sortPasses",
+        "name": "Sort Passes",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "strandPersist",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "threshold",
+        "name": "Sort Threshold",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["temporal-persistence", "interactive", "depth-aware"]
+  },
+  {
+    "id": "magnetic-dipole",
+    "name": "Magnetic Dipole Field",
+    "url": "shaders/magnetic-dipole.wgsl",
+    "category": "simulation",
+    "description": "Magnetic field visualization with iron filing alignment and dipole physics.",
+    "params": [
+      {
+        "id": "chargeStrength",
+        "name": "Charge Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "alignmentInertia",
+        "name": "Alignment Inertia",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "spriteSize",
+        "name": "Filing Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "fieldDensity",
+        "name": "Field Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["temporal-persistence", "interactive", "physics"]
+  },
+  {
+    "id": "voronoi-dynamics",
+    "name": "Voronoi Bubbles",
+    "url": "shaders/voronoi-dynamics.wgsl",
+    "category": "tessellation",
+    "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
+    "params": [
+      {
+        "id": "centroidCount",
+        "name": "Bubble Count",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "repulsion",
+        "name": "Repulsion",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "attraction",
+        "name": "Attraction",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "edgeWidth",
+        "name": "Edge Width",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["interactive", "depth-aware", "physics"]
+  },
+  {
+    "id": "predator-prey",
+    "name": "Pixel Ecology",
+    "url": "shaders/predator-prey.wgsl",
+    "category": "simulation",
+    "description": "Cellular automata ecosystem with plants, herbivores, and carnivores - watch the food chain unfold.",
+    "params": [
+      {
+        "id": "eatProbability",
+        "name": "Eat Probability",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "deathRate",
+        "name": "Death Rate",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mutationRate",
+        "name": "Mutation Rate",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "breedThreshold",
+        "name": "Breed Threshold",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": ["temporal-persistence", "interactive", "ecology"]
   }
 ]
