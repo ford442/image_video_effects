@@ -47,8 +47,7 @@ fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureA, coord, light);
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn diffuse_light(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn diffuse_light_impl(gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let dim = textureDimensions(dataTextureA);
   let uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
@@ -80,4 +79,9 @@ fn diffuse_light(@builtin(global_invocation_id) gid: vec3<u32>) {
   let color = vec3<f32>(diffused * (1.0 - shift), diffused * (1.0 - abs(shift - 0.5)), diffused * shift);
   textureStore(dataTextureB, coord, vec4<f32>(color, 1.0));
   textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(color, 1.0));
+}
+// Main entrypoint for Neon Edge Diffusion - run diffuse_light pass
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  diffuse_light_impl(gid);
 }

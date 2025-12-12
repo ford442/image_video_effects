@@ -32,8 +32,7 @@ fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureA, coord, vec4<f32>(res, 0.0, 0.0));
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn inject_dye(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn inject_dye_impl(gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let src = textureLoad(readTexture, coord, 0);
   let time = u.config.x;
@@ -80,4 +79,10 @@ fn inject_dye(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cur = textureLoad(dataTextureC, coord, 0);
   textureStore(dataTextureB, coord, vec4<f32>(mix(cur.rgb, shifted_color, 0.1), 1.0));
   textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(shifted_color, 1.0));
+}
+
+// Main entrypoint runs the dye injection pass
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  inject_dye_impl(gid);
 }

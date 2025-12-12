@@ -20,8 +20,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
-fn optical_flow(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn optical_flow_impl(gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let dim = textureDimensions(readTexture);
@@ -71,4 +70,10 @@ fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mixed = mix(cur, smeared, smear_strength);
   textureStore(dataTextureB, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);
+}
+
+// Main entrypoint for compatibility - run primary optical flow pass
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  optical_flow_impl(gid);
 }
