@@ -1870,5 +1870,87 @@
     "url": "shaders/chromatic-manifold-2.wgsl",
     "category": "image",
     "description": "Enhanced 4D topological color manifold."
+  },
+  {
+    "id": "crystal-refraction",
+    "name": "Crystal Refraction",
+    "url": "shaders/crystal-refraction.wgsl",
+    "category": "image",
+    "description": "Interactive faceted crystal lens simulation with chromatic aberration and mouse-driven refraction.",
+    "params": [
+      {
+        "id": "facetScale",
+        "name": "Facet Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.05,
+        "min": 0.0,
+        "max": 0.1
+      },
+      {
+        "id": "strength",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "smoothness",
+        "name": "Smoothness",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "data-stream",
+    "name": "Digital Stream",
+    "url": "shaders/data-stream.wgsl",
+    "category": "image",
+    "description": "Digital matrix-style data stream disrupted by mouse interaction.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glow",
+        "name": "Digital Glow",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ]
   }
 ]

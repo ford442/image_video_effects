@@ -111,6 +111,7 @@ const Controls: React.FC<ControlsProps> = ({
     };
 
     const currentModes = getCurrentCategoryModes();
+    const activeShader = availableModes.find(m => m.id === mode);
 
     return (
         <div className="controls">
@@ -217,6 +218,33 @@ const Controls: React.FC<ControlsProps> = ({
                 <label htmlFor="pan-y-slider">Pan Y:</label>
                 <input type="range" id="pan-y-slider" min="0" max="200" value={panY * 100} onChange={(e) => setPanY(parseFloat(e.target.value) / 100)} />
             </div>
+
+            {activeShader?.params && activeShader.params.length > 0 && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>{activeShader.name} Controls</div>
+                    {activeShader.params.map((param, index) => {
+                         let val = 0.5;
+                         let setVal: ((v: number) => void) | undefined = undefined;
+                         if (index === 0) { val = zoomParam1 ?? param.default; setVal = setZoomParam1; }
+                         else if (index === 1) { val = zoomParam2 ?? param.default; setVal = setZoomParam2; }
+                         else if (index === 2) { val = zoomParam3 ?? param.default; setVal = setZoomParam3; }
+                         else if (index === 3) { val = zoomParam4 ?? param.default; setVal = setZoomParam4; }
+
+                         if (!setVal) return null;
+
+                         return (
+                            <div className="control-group" key={param.id}>
+                                <label>{param.name}: {val.toFixed(2)}</label>
+                                <input type="range"
+                                       min={param.min} max={param.max} step={param.step || 0.01}
+                                       value={val}
+                                       onChange={(e) => setVal!(parseFloat(e.target.value))} />
+                            </div>
+                         );
+                    })}
+                </>
+            )}
 
             {mode === 'rain' && (
                 <>
