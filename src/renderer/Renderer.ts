@@ -741,30 +741,24 @@ export class Renderer {
              passEncoder.setPipeline(galaxyPipeline);
              passEncoder.setBindGroup(0, this.bindGroups.get('galaxy')!);
              passEncoder.draw(6);
+        } else if (primaryMode === 'video' && imageVideoPipeline && this.bindGroups.has('video')) {
+            // Render video pass-through if explicitly selected as primary mode
+             const uniformArray = new Float32Array(8);
+             uniformArray.set([this.canvas.width, this.canvas.height, this.videoTexture.width, this.videoTexture.height], 0);
+             uniformArray.set([currentTime, 0, 0, 0], 4);
+             this.device.queue.writeBuffer(this.imageVideoUniformBuffer, 0, uniformArray);
+             passEncoder.setPipeline(imageVideoPipeline);
+             passEncoder.setBindGroup(0, this.bindGroups.get('video')!);
+             passEncoder.draw(4);
         } else if ((primaryMode === 'image' || primaryMode === 'ripple') && imageVideoPipeline && this.bindGroups.has('image')) {
-            // This 'image' mode in the switch was for the basic texture render WITHOUT compute (or simple ripple compute).
-            // Since we handled compute above, we just want to display.
-            // Actually, the old 'ripple' mode was: Compute 'ripple' -> Render 'imageVideo'.
-            // Now 'ripple' is in the compute chain.
-            // So we should just use 'liquid-render' to show the result of the chain.
-            // Only 'galaxy' and maybe strict 'video'/'image' pass-throughs used specific pipelines.
-
-            // If primaryMode is 'video' (and we want raw video bypass?), we use imageVideoPipeline.
-            if (primaryMode === 'video' && this.bindGroups.has('video')) {
-                 const uniformArray = new Float32Array(8);
-                 uniformArray.set([this.canvas.width, this.canvas.height, this.videoTexture.width, this.videoTexture.height], 0);
-                 uniformArray.set([currentTime, 0, 0, 0], 4);
-                 this.device.queue.writeBuffer(this.imageVideoUniformBuffer, 0, uniformArray);
-                 passEncoder.setPipeline(imageVideoPipeline);
-                 passEncoder.setBindGroup(0, this.bindGroups.get('video')!);
-                 passEncoder.draw(4);
-            } else {
-                 // Default: Render the result of the compute chain (writeTexture)
-                 if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
-                    passEncoder.setPipeline(liquidRenderPipeline);
-                    passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
-                    passEncoder.draw(4);
-                }
+            // Legacy handling for 'image' or 'ripple' if they bypass compute logic, though they shouldn't with new chain.
+            // Just treat as fallback to standard liquid render?
+            // Actually, if 'image' is selected, it might mean "Just show the image".
+            // But we handle that via "No active compute shaders" -> Copy input to writeTexture -> liquid-render.
+             if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
+                passEncoder.setPipeline(liquidRenderPipeline);
+                passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
+                passEncoder.draw(4);
             }
         } else {
              // Fallback to liquid-render for all compute shaders
