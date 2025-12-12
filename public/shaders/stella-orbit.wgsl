@@ -1,31 +1,33 @@
 // ---------------------------------------------------------------
-//  Fixed Shader Structure
+//  Stellar Orbit - Compute Shader Version
 // ---------------------------------------------------------------
 
-// Group uniforms to ensure correct memory alignment
-struct CommonUniforms {
-    iResolution : vec2<f32>,
+// 1. UNIFORMS & BINDINGS
+// Adjust these binding numbers to match your specific JS setup if needed.
+// Based on your first prompt, I assumed:
+// Binding 2: Output Texture
+// Binding 3: Uniforms
+
+struct Uniforms {
+    iResolution : vec4<f32>, // xy = width/height
     iTime       : f32,
     iFrame      : f32,
+    padding     : vec2<f32>, // Padding for alignment
 };
 
-@group(0) @binding(0) var<uniform> u : CommonUniforms;
-// Removed unused sampler/texture bindings for clarity if not used, 
-// or you can keep them if your pipeline binds them.
+@group(0) @binding(2) var outTex : texture_storage_2d<rgba16float, write>;
+@group(0) @binding(3) var<uniform> u : Uniforms;
 
+// Global private variables for the accumulation logic
 var<private> g1 : f32;
 var<private> g2 : f32;
 var<private> g3 : f32;
-var<private> fragColor_1 : vec4<f32>;
-var<private> gl_FragCoord : vec4<f32>;
 
 // Constants
-const x_379 = vec3<f32>(0.57735025882720947266f, 0.57735025882720947266f, -0.57735025882720947266f);
-const x_255 = vec3<f32>(0.0f, 0.0f, 0.0f);
-const x_656 = vec3<f32>(1.0f, 1.0f, 1.0f);
+const x_379 = vec3<f32>(0.57735025882720947266, 0.57735025882720947266, -0.57735025882720947266);
 
 // ---------------------------------------------------------------
-//  Helper Functions (Kept mostly original logic, just cleaned up)
+//  MATH & RAYMARCHING FUNCTIONS
 // ---------------------------------------------------------------
 
 fn rot_vf3_vf3_f1_(p_1 : ptr<function, vec3<f32>>, a : ptr<function, vec3<f32>>, t : ptr<function, f32>) {
@@ -100,14 +102,11 @@ fn structure_vf3_(p_6 : ptr<function, vec3<f32>>) -> f32 {
     
     for(var i_2 = 0; i_2 < 12; i_2 = i_2 + 1) {
         var w_1 = vec3<f32>(0.8506508, 0.5257311, 0.0);
-        
-        // Pseudo-random indexing logic simulation from original
         let bit1 = f32((i_2 >> 1u) & 1);
         let bit0 = f32(i_2 & 1);
         let xy = w_1.xy * (vec2<f32>(bit1, bit0) * 2.0 - 1.0);
         w_1 = vec3<f32>(xy.x, xy.y, w_1.z);
         
-        // Swizzle based on index
         if ((i_2 % 3) == 1) { w_1 = w_1.yzx; }
         if ((i_2 % 3) == 2) { w_1 = w_1.zxy; }
         
@@ -138,7 +137,6 @@ fn structure_vf3_(p_6 : ptr<function, vec3<f32>>) -> f32 {
         let d1 = length(q) * 0.7 - 0.05;
         d = min(d, d1);
         
-        // Flash logic
         if (e_1 == (2.0 + floor(u.iTime * 5.0 - 7.0 * floor(u.iTime * 5.0 / 7.0)))) {
              g1 += 0.1 / (0.1 + d1 * d1);
         }
@@ -238,11 +236,12 @@ fn hue_f1_(h : ptr<function, f32>) -> vec3<f32> {
 }
 
 // ---------------------------------------------------------------
-//  Main Fragment Logic
+//  MAIN COMPUTE LOGIC
 // ---------------------------------------------------------------
-fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : ptr<function, vec2<f32>>) {
-    // FIX: Proper aspect ratio correction
-    var p = (*fragCoord * 2.0 - u.iResolution) / u.iResolution.y;
+
+fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
+    // Re-mapped coordinate calculation for Compute
+    var p = (fragCoord * 2.0 - u.iResolution.xy) / u.iResolution.y;
     
     var col = vec3<f32>(0.0, 0.0, 0.05);
     
@@ -302,13 +301,11 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : ptr<function, vec
     col += vec3<f32>(0.5, 0.3, 0.1) * g3 * 0.15;
     
     // Orbit lines loop
-    // (Logic heavily summarized for brevity but functionally identical)
+    var de = vec3<f32>(10000000.0);
     for(var i_5 = 0.0; i_5 < 1.0; i_5 = i_5 + 0.1428) {
-       // ... existing complicated orbit logic ...
-       // Keeping existing structure as it is complex math
-       var de = vec3<f32>(10000000.0);
+       de = vec3<f32>(10000000.0);
        let off_1 = fract(sin(i_5 * 234.6 + 3160448.0));
-       for(var j = 0.0; j < 1.0; j = j + 0.025) { // 1.0/40.0
+       for(var j = 0.0; j < 1.0; j = j + 0.025) { 
            let t_4 = j + off_1 * 0.5;
            var param_38 = t_4; var param_39 = off_1;
            let p1 = orbit_f1_f1_(&param_38, &param_39);
@@ -325,7 +322,10 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : ptr<function, vec
        }
        
        let s_2 = pow(max(0.0, 0.6 - de.z), 2.0) * 0.1;
-       if (de.y > 0.0 && z > de.y) {
+       var cond = de.y > 0.0;
+       if (cond) { cond = z > de.y; }
+       
+       if (cond) {
            var param_46 = i_5;
            let hcol = hue_f1_(&param_46);
            col += mix(vec3<f32>(1.0), hcol, vec3<f32>(0.8)) * (1.0 - de.z * 0.9) * smoothstep(s_2 + 0.17, s_2, de.x) * 0.7;
@@ -339,23 +339,25 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : ptr<function, vec
     *fragColor = vec4<f32>(col, 1.0);
 }
 
-// ---------------------------------------------------------------
-//  Entry Point
-// ---------------------------------------------------------------
-struct main_out {
-  @location(0) fragColor : vec4<f32>,
-  // REMOVED @location(1) to prevent crash
-}
 
-@fragment 
-fn main(@builtin(position) gl_FragCoord_param : vec4<f32>) -> main_out {
-    gl_FragCoord = gl_FragCoord_param;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
+    // 1. Guard check: Ensure we don't write outside texture dimensions
+    let dims = vec2<u32>(u.iResolution.xy);
+    if (gid.x >= dims.x || gid.y >= dims.y) {
+        return;
+    }
+
+    // 2. Initialize globals
     g1 = 0.0; g2 = 0.0; g3 = 0.0;
     
+    // 3. Prepare Logic inputs
     var outColor : vec4<f32>;
-    var coord = gl_FragCoord_param.xy;
+    let coord = vec2<f32>(f32(gid.x), f32(gid.y)); // equivalent to fragCoord
     
-    mainImage(&outColor, &coord);
+    // 4. Run Logic
+    mainImage(&outColor, coord);
     
-    return main_out(outColor);
+    // 5. Write to Storage Texture
+    textureStore(outTex, gid.xy, outColor);
 }
