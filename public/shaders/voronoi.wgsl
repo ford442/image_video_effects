@@ -24,7 +24,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let size = textureDimensions(readTexture);
-  let uv = vec2<f32>(coord) / vec2<f32>(size);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
   // Mouse position as seed point
@@ -35,8 +35,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var min_dist: f32 = 1e6;
   
   // Add mouse position as a feature point
-  let mouse_coord = vec2<f32>(mouse_pos * vec2<f32>(size));
-  let dist_to_mouse = distance(vec2<f32>(coord), mouse_coord);
+  let mouse_coord = mouse_pos * vec2<f32>(f32(size.x), f32(size.y));
+  let dist_to_mouse = distance(vec2<f32>(f32(coord.x), f32(coord.y)), mouse_coord);
   if (dist_to_mouse < min_dist) {
     min_dist = dist_to_mouse;
     nearest = vec2<u32>(u32(mouse_coord.x), u32(mouse_coord.y));
@@ -48,8 +48,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (ripple.z > 0.0) {
       let ripple_age = time - ripple.z;
       if (ripple_age > 0.0 && ripple_age < 4.0) {
-        let ripple_coord = ripple.xy * vec2<f32>(size);
-        let dist_to_ripple = distance(vec2<f32>(coord), ripple_coord);
+        let ripple_coord = ripple.xy * vec2<f32>(f32(size.x), f32(size.y));
+        let dist_to_ripple = distance(vec2<f32>(f32(coord.x), f32(coord.y)), ripple_coord);
         if (dist_to_ripple < min_dist) {
           min_dist = dist_to_ripple;
           nearest = vec2<u32>(u32(ripple_coord.x), u32(ripple_coord.y));

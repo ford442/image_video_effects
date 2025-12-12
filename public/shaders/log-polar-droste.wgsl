@@ -87,7 +87,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(coord) / vec2<f32>(size);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
   // Parameters

@@ -6,7 +6,7 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rg32float, write>; // motion vectors
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // motion vectors
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // smear buffer
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
@@ -24,7 +24,7 @@ fn optical_flow_impl(gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(coord) / vec2<f32>(dim);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   // Mouse-influenced search offsets
@@ -44,7 +44,7 @@ fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let motion = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(coord) / vec2<f32>(dim);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   // Trigger local smear accumulation on ripple events

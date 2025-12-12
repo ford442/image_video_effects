@@ -112,6 +112,21 @@ fn grayScottStep(ab: vec2<f32>, lap: vec2<f32>, feed: f32, kill: f32) -> vec2<f3
   );
 }
 
+// HSV to RGB helper
+fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
+  let c = v * s;
+  let x = c * (1.0 - abs((h % 2.0) - 1.0));
+  let m = v - c;
+  var rgb: vec3<f32>;
+  if (h < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
+  else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
+  else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
+  else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
+  else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
+  else { rgb = vec3<f32>(c, 0.0, x); }
+  return rgb + vec3<f32>(m);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -197,21 +212,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let combinedPattern = patternValue1 * 0.6 + patternValue2 * 0.4;
   
   // Color mapping - organic, natural colors
-
-// Top-level hsv2rgb helper
-fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-  let c = v * s;
-  let x = c * (1.0 - abs((h % 2.0) - 1.0));
-  let m = v - c;
-  var rgb: vec3<f32>;
-  if (h < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
-  else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
-  else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
-  else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
-  else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-  else { rgb = vec3<f32>(c, 0.0, x); }
-  return rgb + vec3<f32>(m);
-}
 
   let hue1 = 0.55 + patternValue1 * 0.1; // Cyan-ish
   let hue2 = 0.15 + patternValue2 * 0.1; // Orange-ish

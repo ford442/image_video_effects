@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (coord.x >= GRID_SIZE || coord.y >= GRID_SIZE) { return; }
   let idx = coord.y * GRID_SIZE + coord.x;
   let time = u.config.x;
-  let uv = vec2<f32>(coord) / f32(GRID_SIZE);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / f32(GRID_SIZE);
   
   var cur = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
   
