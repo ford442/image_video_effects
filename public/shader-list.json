@@ -1870,5 +1870,79 @@
     "url": "shaders/chromatic-manifold-2.wgsl",
     "category": "image",
     "description": "Enhanced 4D topological color manifold."
+  },
+  {
+    "id": "cyber-lens",
+    "name": "Cyber Lens",
+    "url": "shaders/cyber-lens.wgsl",
+    "category": "image",
+    "description": "High-tech lens distortion with grid overlay and chromatic aberration. Mouse hover controls lens position.",
+    "params": [
+      {
+        "id": "lensRadius",
+        "name": "Lens Radius",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "zoomStrength",
+        "name": "Magnification",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "gridIntensity",
+        "name": "Grid Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ]
+  },
+  {
+    "id": "interactive-ripple",
+    "name": "Interactive Ripple",
+    "url": "shaders/interactive-ripple.wgsl",
+    "category": "image",
+    "description": "Realistic water ripples responsive to clicks and mouse movement. Distorts image/video.",
+    "params": [
+      {
+        "id": "waveSpeed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "frequency",
+        "name": "Frequency",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "specular",
+        "name": "Specular",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ]
   }
 ]

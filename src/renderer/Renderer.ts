@@ -598,7 +598,16 @@ export class Renderer {
 
                 // Infinite Zoom uses w for depthThreshold
                 const zoomConfigW = mode === 'infinite-zoom' ? this.depthThreshold : 0;
-                uniformArray.set([currentTime, farthestPoint.x, farthestPoint.y, zoomConfigW], 4);
+
+                // For mouse-responsive shaders, inject mouse position instead of farthestPoint
+                let zoomX = farthestPoint.x;
+                let zoomY = farthestPoint.y;
+                if (mode === 'cyber-lens' || mode === 'interactive-ripple') {
+                    zoomX = mousePosition.x;
+                    zoomY = mousePosition.y;
+                }
+
+                uniformArray.set([currentTime, zoomX, zoomY, zoomConfigW], 4);
 
                 // For plasma mode, we might want to pass the number of active balls or other config
                 // But we can just deduce it from the buffer (age > maxAge is dead)
