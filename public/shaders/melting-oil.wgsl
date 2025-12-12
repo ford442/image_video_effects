@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let id = vec2<u32>(gid.xy);
   let coord = vec2<i32>(i32(id.x), i32(id.y));
   let dim = textureDimensions(dataTextureA);
-  let uv = vec2<f32>(id) / vec2<f32>(dim);
+  let uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   // 3x3 Sobel gradient sample adapted to dataTextureA
@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var k: u32 = 0u;
   for (var y: i32 = -1; y <= 1; y = y + 1) {
     for (var x: i32 = -1; x <= 1; x = x + 1) {
-      let sample = textureLoad(dataTextureA, coord + vec2<i32>(x, y), 0).r;
+      let sample = textureLoad(dataTextureC, coord + vec2<i32>(x, y), 0).r;
       h[k] = sample;
       k = k + 1u;
     }
@@ -69,12 +69,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   let viscosity = 0.92;
   let last_pos = vec2<f32>(f32(coord.x), f32(coord.y)) - flow_dir * viscosity;
-  let color = textureSampleLevel(readTexture, u_sampler, last_pos / vec2<f32>(dim), 0.0);
+  let color = textureSampleLevel(readTexture, u_sampler, last_pos / vec2<f32>(f32(dim.x), f32(dim.y)), 0.0);
   let flow_speed = length(vec2<f32>(gx, gy));
   let hue_shift = flow_speed * 0.1 + time * 0.01;
   let shifted = vec4<f32>(color.rgb * vec3<f32>(sin(hue_shift), cos(hue_shift), 1.0), color.a);
   textureStore(dataTextureB, coord, shifted);
-  let current_height = textureLoad(dataTextureA, coord, 0).r;
+  let current_height = textureLoad(dataTextureC, coord, 0).r;
   textureStore(dataTextureA, coord, vec4<f32>(current_height * 0.999, 0.0, 0.0, 0.0));
   textureStore(writeTexture, id, shifted);
 }

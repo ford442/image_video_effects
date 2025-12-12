@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let uv = vec2<f32>(f32(x) / f32(GRID_WIDTH), f32(y) / f32(GRID_HEIGHT));
   
-  var cell = textureLoad(dataTextureA, vec2<i32>(i32(x), i32(y)), 0);
+  var cell = textureLoad(dataTextureC, vec2<i32>(i32(x), i32(y)), 0);
   
   // Spawn grains at mouse position
   let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -70,7 +70,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var newY = i32(y) + i32(round(gravity));
   var targetX = i32(x);
   var targetY = clamp(newY, 0, i32(GRID_HEIGHT) - 1);
-  let targetCell = textureLoad(dataTextureA, vec2<i32>(targetX, targetY), 0);
+  let targetCell = textureLoad(dataTextureC, vec2<i32>(targetX, targetY), 0);
   if (targetCell.a == 0.0) {
     textureStore(dataTextureB, vec2<i32>(targetX, targetY), cell);
     textureStore(dataTextureB, vec2<i32>(i32(x), i32(y)), vec4<f32>(0.0));

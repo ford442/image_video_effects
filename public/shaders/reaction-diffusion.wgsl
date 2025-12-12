@@ -33,7 +33,7 @@ fn laplacian(coord: vec2<u32>, channel: u32) -> f32 {
       let sx = min(GRID_SIZE - 1u, max(0u, u32(i) + coord.x));
       let sy = min(GRID_SIZE - 1u, max(0u, u32(j) + coord.y));
       let idx = vec2<u32>(sx, sy);
-      let sample = textureLoad(dataTextureA, vec2<i32>(i32(idx.x), i32(idx.y)), 0);
+      let sample = textureLoad(dataTextureC, vec2<i32>(i32(idx.x), i32(idx.y)), 0);
       sum = sum + sample[channel] * kernel[k];
       k = k + 1u;
     }
@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let uv = vec2<f32>(coord) / f32(GRID_SIZE);
   
-  var cur = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  var cur = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
   
   // Inject chemicals at mouse position
   let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);

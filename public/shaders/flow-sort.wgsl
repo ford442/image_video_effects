@@ -57,8 +57,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(coord) / vec2<f32>(size);
-  let texelSize = 1.0 / vec2<f32>(size);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
   // Parameters
@@ -127,8 +127,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var sortedLum = currentLum;
   
   // Look upstream and downstream in flow
-  for (var pass = 0; pass < sortPasses; pass = pass + 1) {
-    let passOffset = f32(pass + 1) * texelSize * flowStrength;
+  for (var passIndex = 0; passIndex < sortPasses; passIndex = passIndex + 1) {
+    let passOffset = f32(passIndex + 1) * texelSize * flowStrength;
     
     // Sample upstream
     let upstreamUV = uv - flow * passOffset;
@@ -143,14 +143,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Sort by luminance - darker flows "down", brighter flows "up"
     if (upstreamLum > sortedLum) {
       // Swap - this pixel should be darker
-      let blend = 0.5 / f32(pass + 1);
+      let blend = 0.5 / f32(passIndex + 1);
       sortedColor = mix(sortedColor, upstreamColor.rgb, blend);
       sortedLum = luminance(sortedColor);
     }
     
     if (downstreamLum < sortedLum) {
       // Swap - this pixel should be brighter
-      let blend = 0.5 / f32(pass + 1);
+      let blend = 0.5 / f32(passIndex + 1);
       sortedColor = mix(sortedColor, downstreamColor.rgb, blend);
       sortedLum = luminance(sortedColor);
     }

@@ -63,7 +63,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let new_pos = fract(vec2<f32>(x, y) + dir * 0.5);
   // deposit trail as inverse-color
   let coord = vec2<u32>(u32(new_pos.x * tex_size.x), u32(new_pos.y * tex_size.y));
-  let current = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
+  let current = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let inverse = vec4<f32>(1.0 - front_color.rgb, 1.0);
   let mixed = mix(current, inverse, 0.05);
   textureStore(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);

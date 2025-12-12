@@ -25,7 +25,7 @@ const SPECTRUM_BANDS: u32 = 128u;
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(coord) / vec2<f32>(dim);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   let freq = f32(coord.y) / f32(dim.y) * f32(SPECTRUM_BANDS);

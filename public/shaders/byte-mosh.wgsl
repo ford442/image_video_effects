@@ -95,7 +95,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   );
   
   // Noise for block-based decisions
-  let blockNoise = hash21(vec2<f32>(blockCoord) + vec2<f32>(floor(time * 2.0)));
+  let blockNoise = hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) + vec2<f32>(floor(time * 2.0)));
   let pixelNoise = hash21(uv * 1000.0 + vec2<f32>(time));
   
   // Sample source
@@ -112,7 +112,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     if (opSelector < 0.15) {
       // XOR with noise pattern
-      let xorPattern = u32(hash21(vec2<f32>(blockCoord) * 123.0) * 16777215.0);
+      let xorPattern = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 123.0) * 16777215.0);
       packedColor = packedColor ^ xorPattern;
     }
     else if (opSelector < 0.3) {
@@ -122,7 +122,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     else if (opSelector < 0.45) {
       // OR with color - creates bright glitches
-      let orPattern = u32(hash21(vec2<f32>(blockCoord) * 456.0) * 16777215.0) & 0x3F3F3Fu;
+      let orPattern = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 456.0) * 16777215.0) & 0x3F3F3Fu;
       packedColor = packedColor | orPattern;
     }
     else if (opSelector < 0.6) {
@@ -135,7 +135,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     else if (opSelector < 0.9) {
       // Rotate bits - psychedelic color swap
-      let rotAmount = u32(hash21(vec2<f32>(blockCoord) * 789.0) * 24.0);
+      let rotAmount = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 789.0) * 24.0);
       packedColor = rotateLeft(packedColor, rotAmount);
     }
     else {
@@ -172,7 +172,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // XOR with distance-based pattern
     let distPattern = u32(mouseDist * 1000.0) * 0x10101u;
-    packedColor = packedColor ^ (distPattern & (mouseGlitch << 16u | mouseGlitch << 8u | mouseGlitch));
+    packedColor = packedColor ^ (distPattern & ((mouseGlitch << 16u) | (mouseGlitch << 8u) | mouseGlitch));
   }
   
   // Ripple glitches

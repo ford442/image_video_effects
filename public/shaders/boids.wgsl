@@ -92,3 +92,9 @@ fn reveal_texture(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), revealed);
 }
+
+// Wrapper main entrypoint for host pipeline compatibility
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  reveal_texture(gid);
+}

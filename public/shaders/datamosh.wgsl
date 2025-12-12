@@ -43,7 +43,7 @@ fn optical_flow(@builtin(global_invocation_id) gid: vec3<u32>) {
 @compute @workgroup_size(8, 8, 1)
 fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
-  let motion = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
+  let motion = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
   let dim = textureDimensions(readTexture);
   let uv = vec2<f32>(coord) / vec2<f32>(dim);
   let time = u.config.x;
@@ -67,7 +67,7 @@ fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
   let x = (smeared_coord.x + i32(dim.x)) % i32(dim.x);
   let y = (smeared_coord.y + i32(dim.y)) % i32(dim.y);
   let smeared = textureLoad(readTexture, vec2<i32>(x, y), 0);
-  let cur = textureLoad(dataTextureB, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
+  let cur = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let mixed = mix(cur, smeared, smear_strength);
   textureStore(dataTextureB, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);

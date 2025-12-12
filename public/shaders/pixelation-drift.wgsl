@@ -107,7 +107,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pixelCenter = (floor(driftedUV * resolution / pixelSize) + 0.5) * pixelSize / resolution;
     let distToCenter = length((driftedUV - pixelCenter) * resolution);
     let edgeGlow = smoothstep(pixelSize * 0.4, pixelSize * 0.5, distToCenter);
-    color.rgb = mix(color.rgb, color.rgb * 1.2, edgeGlow * 0.1);
+    color = vec4<f32>(mix(color.rgb, color.rgb * 1.2, edgeGlow * 0.1), color.a);
     
     // Temporal persistence for smoother transitions
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);

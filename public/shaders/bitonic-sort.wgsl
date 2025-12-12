@@ -29,7 +29,7 @@ fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(workgroup_id
   let dim = textureDimensions(readTexture);
   let x = pixel_idx % dim.x;
   let y = pixel_idx / dim.x;
-  let uv = vec2<f32>(f32(x), f32(y)) / vec2<f32>(dim);
+  let uv = vec2<f32>(f32(x), f32(y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   // Mouse position determines sort region center

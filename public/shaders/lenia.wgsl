@@ -27,9 +27,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (coord.x >= GRID_SIZE || coord.y >= GRID_SIZE) { return; }
   let idx = coord.y * GRID_SIZE + coord.x;
   let time = u.config.x;
-  let uv = vec2<f32>(coord) / f32(GRID_SIZE);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / f32(GRID_SIZE);
   
-  var center = textureLoad(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
+  var center = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
   
   // Inject seeds at mouse position
   let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       if (dist >= 2.0 && dist <= 4.0) {
         let sx = min(GRID_SIZE - 1u, max(0u, u32(i32(coord.x) + dx)));
         let sy = min(GRID_SIZE - 1u, max(0u, u32(i32(coord.y) + dy)));
-        let s = textureLoad(dataTextureA, vec2<i32>(i32(sx), i32(sy)), 0).rgb;
+        let s = textureLoad(dataTextureC, vec2<i32>(i32(sx), i32(sy)), 0).rgb;
         let weight = exp(-dist * 0.5);
         ring_sum = ring_sum + s * weight;
         ring_count = ring_count + weight;

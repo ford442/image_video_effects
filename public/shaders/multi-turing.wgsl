@@ -118,8 +118,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(coord) / vec2<f32>(size);
-  let texelSize = 1.0 / vec2<f32>(size);
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
   // Parameters for different scales
@@ -197,6 +197,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let combinedPattern = patternValue1 * 0.6 + patternValue2 * 0.4;
   
   // Color mapping - organic, natural colors
+
+// Top-level hsv2rgb helper
+fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
+  let c = v * s;
+  let x = c * (1.0 - abs((h % 2.0) - 1.0));
+  let m = v - c;
+  var rgb: vec3<f32>;
+  if (h < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
+  else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
+  else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
+  else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
+  else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
+  else { rgb = vec3<f32>(c, 0.0, x); }
+  return rgb + vec3<f32>(m);
+}
+
   let hue1 = 0.55 + patternValue1 * 0.1; // Cyan-ish
   let hue2 = 0.15 + patternValue2 * 0.1; // Orange-ish
   
@@ -204,22 +220,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let c1 = vec3<f32>(hue1 * 6.0, 0.7, patternValue1);
   let c2 = vec3<f32>(hue2 * 6.0, 0.6, patternValue2);
   
-  // Simple HSV to RGB
-  fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
-    let x = c * (1.0 - abs((h % 2.0) - 1.0));
-    let m = v - c;
-    
-    var rgb: vec3<f32>;
-    if (h < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
-    else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
-    else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
-    else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
-    else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-    else { rgb = vec3<f32>(c, 0.0, x); }
-    
-    return rgb + vec3<f32>(m);
-  }
   
   let color1 = hsv2rgb(hue1 * 6.0, 0.7, patternValue1);
   let color2 = hsv2rgb(hue2 * 6.0, 0.6, patternValue2);

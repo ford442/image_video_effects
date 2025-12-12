@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let id = vec2<u32>(gid.xy);
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(id) / vec2<f32>(dim);
+  let uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   let current = textureLoad(readTexture, coord, 0);
@@ -59,8 +59,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   
   let past_y = clamp(slice_y - history_offset, 0, 59);
-  let past = textureLoad(dataTextureB, vec2<i32>(coord.x, coord.y + past_y), 0);
-  let feedback = textureLoad(dataTextureA, coord, 0);
+  let past = textureLoad(dataTextureC, vec2<i32>(coord.x, coord.y + past_y), 0);
+  let feedback = textureLoad(dataTextureC, coord, 0);
   let new_feedback = mix(past, current, 0.05);
   textureStore(dataTextureA, coord, new_feedback);
   textureStore(writeTexture, id, new_feedback);
