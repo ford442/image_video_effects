@@ -15,7 +15,7 @@ struct Uniforms {
     padding     : vec2<f32>, // Padding for alignment
 };
 
-@group(0) @binding(2) var outTex : texture_storage_2d<rgba16float, write>;
+@group(0) @binding(2) var outTex : texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u : Uniforms;
 
 // Global private variables for the accumulation logic
