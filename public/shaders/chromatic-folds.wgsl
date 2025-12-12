@@ -182,10 +182,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
   // ──────────────────────────────────────────────────────────────────────────
-  //  8. Feedback: blend with previous frame
+  //  8. Feedback: blend with previous frame (higher feedbackStrength = more trails)
   // ──────────────────────────────────────────────────────────────────────────
   let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
-  let finalColor = mix(foldedColor, prev, feedbackStrength);
+  let finalColor = mix(prev, foldedColor, 1.0 - feedbackStrength);
 
   // ──────────────────────────────────────────────────────────────────────────
   //  9. Write outputs
