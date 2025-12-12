@@ -1716,5 +1716,159 @@
       }
     ],
     "features": ["temporal-persistence", "interactive", "ecology"]
+  },
+  {
+    "id": "chromatic-crawler",
+    "name": "Chromatic Crawler",
+    "url": "shaders/chromatic-crawler.wgsl",
+    "category": "image",
+    "description": "Chaotic color-swapping regions that crawl across the screen with Voronoi-based patterns."
+  },
+  {
+    "id": "nebulous-dream",
+    "name": "Nebulous Dream",
+    "url": "shaders/nebulous-dream.wgsl",
+    "category": "image",
+    "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields."
+  },
+  {
+    "id": "quantum-smear",
+    "name": "Quantum Smear",
+    "url": "shaders/quantum-smear.wgsl",
+    "category": "image",
+    "description": "Quantum particle disintegration with stochastic advection and pointillist effects."
+  },
+  {
+    "id": "neural-resonance",
+    "name": "Neural Resonance",
+    "url": "shaders/neural-resonance.wgsl",
+    "category": "image",
+    "description": "Runaway neural feedback loop with hallucinogenic pareidolic effects and breathing fractals."
+  },
+  {
+    "id": "spectrum-bleed",
+    "name": "Spectrum Bleed",
+    "url": "shaders/spectrum-bleed.wgsl",
+    "category": "image",
+    "description": "Color channel separation and bleeding effects."
+  },
+  {
+    "id": "chromatic-folds",
+    "name": "Chromatic Folds",
+    "url": "shaders/chromatic-folds.wgsl",
+    "category": "image",
+    "description": "Geometric color folding and warping effects."
+  },
+  {
+    "id": "chromatic-folds-2",
+    "name": "Chromatic Folds V2",
+    "url": "shaders/chromatic-folds-2.wgsl",
+    "category": "image",
+    "description": "Enhanced geometric color folding with improved warping."
+  },
+  {
+    "id": "aurora-rift",
+    "name": "Aurora Rift",
+    "url": "shaders/aurora-rift.wgsl",
+    "category": "image",
+    "description": "Aurora borealis-inspired lighting effects with atmospheric rifts."
+  },
+  {
+    "id": "aurora-rift-2",
+    "name": "Aurora Rift V2",
+    "url": "shaders/aurora-rift-2.wgsl",
+    "category": "image",
+    "description": "Enhanced aurora effects with improved color gradients."
+  },
+  {
+    "id": "stella-orbit",
+    "name": "Stellar Orbit",
+    "url": "shaders/stella-orbit.wgsl",
+    "category": "image",
+    "description": "Orbital motion patterns with stellar particle systems."
+  },
+  {
+    "id": "ambient-liquid",
+    "name": "Ambient Liquid",
+    "url": "shaders/ambient-liquid.wgsl",
+    "category": "image",
+    "description": "Gentle ambient liquid motion effects."
+  },
+  {
+    "id": "quantum-foam",
+    "name": "Quantum Foam",
+    "url": "shaders/quantum-foam.wgsl",
+    "category": "image",
+    "description": "Quantum foam texture with spacetime fluctuations."
+  },
+  {
+    "id": "quantum-fractal",
+    "name": "Quantum Fractal",
+    "url": "shaders/quantum-fractal.wgsl",
+    "category": "image",
+    "description": "Fractal quantum interference patterns."
+  },
+  {
+    "id": "quantum-wormhole",
+    "name": "Quantum Wormhole",
+    "url": "shaders/quantum-wormhole.wgsl",
+    "category": "image",
+    "description": "Wormhole-like spacetime distortion effects."
+  },
+  {
+    "id": "spectral-vortex",
+    "name": "Spectral Vortex",
+    "url": "shaders/spectral-vortex.wgsl",
+    "category": "image",
+    "description": "Spectral color vortex with twisted distortions."
+  },
+  {
+    "id": "digital-waves",
+    "name": "Digital Waves",
+    "url": "shaders/digital-waves.wgsl",
+    "category": "image",
+    "description": "Digital wave interference patterns."
+  },
+  {
+    "id": "ethereal-swirl",
+    "name": "Ethereal Swirl",
+    "url": "shaders/ethereal-swirl.wgsl",
+    "category": "image",
+    "description": "Ethereal swirling motion with soft gradients."
+  },
+  {
+    "id": "rainbow-cloud",
+    "name": "Rainbow Cloud",
+    "url": "shaders/rainbow-cloud.wgsl",
+    "category": "image",
+    "description": "Colorful cloud formations with rainbow gradients."
+  },
+  {
+    "id": "neural-dreamscape",
+    "name": "Neural Dreamscape",
+    "url": "shaders/neural-dreamscape.wgsl",
+    "category": "image",
+    "description": "Neural network-inspired dreamlike visuals."
+  },
+  {
+    "id": "fractal-kaleidoscope",
+    "name": "Fractal Kaleidoscope",
+    "url": "shaders/fractal-kaleidoscope.wgsl",
+    "category": "image",
+    "description": "Fractal patterns in a kaleidoscope arrangement."
+  },
+  {
+    "id": "astral-kaleidoscope",
+    "name": "Astral Kaleidoscope",
+    "url": "shaders/astral-kaleidoscope.wgsl",
+    "category": "image",
+    "description": "Cosmic kaleidoscope with astral color schemes."
+  },
+  {
+    "id": "chromatic-manifold-2",
+    "name": "Chromatic Manifold V2",
+    "url": "shaders/chromatic-manifold-2.wgsl",
+    "category": "image",
+    "description": "Enhanced 4D topological color manifold."
   }
 ]
