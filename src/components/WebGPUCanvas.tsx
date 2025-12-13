@@ -60,7 +60,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                  if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<Renderer | null>).current = renderer;
                 }
-
                 // Initialize Video Element
                 videoRef.current = document.createElement('video');
                 videoRef.current.crossOrigin = 'anonymous';
@@ -165,6 +164,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         bgSpeed: zoomParam2 ?? 0.02, // Distortion Step
                         parallaxStrength: zoomParam3 ?? 0.1, // Color Shift
                         fogDensity: zoomParam4 ?? 0.0 // Unused
+                    });
+                }
+                if (mode === 'cyber-lens') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.4, // Lens Radius
+                        bgSpeed: zoomParam2 ?? 0.5, // Magnification
+                        parallaxStrength: zoomParam3 ?? 0.5, // Grid Intensity
+                        fogDensity: zoomParam4 ?? 0.2 // Aberration
+                    });
+                }
+                if (mode === 'interactive-ripple') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.5, // Wave Speed
+                        bgSpeed: zoomParam2 ?? 0.5, // Frequency
+                        parallaxStrength: zoomParam3 ?? 0.5, // Decay
+                        fogDensity: zoomParam4 ?? 0.5 // Specular
                     });
                 }
                 if (mode === 'quantum-fractal') {

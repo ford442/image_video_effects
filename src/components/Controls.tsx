@@ -241,6 +241,52 @@ const Controls: React.FC<ControlsProps> = ({
                 </>
             )}
 
+            {mode === 'cyber-lens' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Cyber Lens Controls</div>
+                    <div className="control-group">
+                        <label>Lens Radius: {(zoomParam1 || 0.4).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.4} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Magnification: {(zoomParam2 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Grid Intensity: {(zoomParam3 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam3 || 0.5} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Aberration: {(zoomParam4 || 0.2).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.2} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+
+            {mode === 'interactive-ripple' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Interactive Ripple Controls</div>
+                    <div className="control-group">
+                        <label>Wave Speed: {(zoomParam1 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Frequency: {(zoomParam2 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Decay Rate: {(zoomParam3 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam3 || 0.5} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Specular: {(zoomParam4 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam4 || 0.5} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+
             {mode === 'chromatic-manifold' && (
                 <>
                     <hr style={{ borderColor: '#444', margin: '15px 0' }} />
