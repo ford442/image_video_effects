@@ -216,6 +216,18 @@ function App() {
           setZoomParam3(1.0); // Entanglement
           setZoomParam4(0.0); // Unused
       }
+      if (mode === 'magnetic-field') {
+          setZoomParam1(0.5); // Strength
+          setZoomParam2(0.5); // Radius
+          setZoomParam3(0.2); // Density
+          setZoomParam4(0.0); // Mode (Attract)
+      }
+      if (mode === 'pixel-sorter') {
+          setZoomParam1(0.0); // Direction (Vertical)
+          setZoomParam2(0.0); // Reverse (Off)
+          setZoomParam3(0.0); // Unused
+          setZoomParam4(0.0); // Unused
+      }
   }, [mode]);
 
   // Fetch video list
