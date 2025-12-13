@@ -419,6 +419,45 @@ const Controls: React.FC<ControlsProps> = ({
                     </div>
                 </>
             )}
+
+            {mode === 'magnetic-field' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Magnetic Field Controls</div>
+                    <div className="control-group">
+                        <label>Field Strength: {(zoomParam1 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam1 || 0.5} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Field Radius: {(zoomParam2 || 0.5).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam2 || 0.5} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Line Density: {(zoomParam3 || 0.2).toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.01" value={zoomParam3 || 0.2} onChange={(e) => setZoomParam3 && setZoomParam3(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Mode: {(zoomParam4 || 0) > 0.5 ? "Repel" : "Attract"}</label>
+                        <input type="range" min="0" max="1" step="1" value={zoomParam4 || 0} onChange={(e) => setZoomParam4 && setZoomParam4(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
+
+            {mode === 'pixel-sorter' && (
+                <>
+                    <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Pixel Sorter Controls</div>
+                    <div style={{ fontSize: '0.8em', color: '#aaa', marginBottom: '10px' }}>Move Mouse X to control Sort Threshold.</div>
+                    <div className="control-group">
+                        <label>Direction: {(zoomParam1 || 0) > 0.5 ? "Horizontal" : "Vertical"}</label>
+                        <input type="range" min="0" max="1" step="1" value={zoomParam1 || 0} onChange={(e) => setZoomParam1 && setZoomParam1(parseFloat(e.target.value))} />
+                    </div>
+                    <div className="control-group">
+                        <label>Reverse Sort: {(zoomParam2 || 0) > 0.5 ? "On" : "Off"}</label>
+                        <input type="range" min="0" max="1" step="1" value={zoomParam2 || 0} onChange={(e) => setZoomParam2 && setZoomParam2(parseFloat(e.target.value))} />
+                    </div>
+                </>
+            )}
         </div>
     );
 };

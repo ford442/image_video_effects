@@ -166,6 +166,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         fogDensity: zoomParam4 ?? 0.0 // Unused
                     });
                 }
+                if (mode === 'magnetic-field') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.5,
+                        bgSpeed: zoomParam2 ?? 0.5,
+                        parallaxStrength: zoomParam3 ?? 0.2,
+                        fogDensity: zoomParam4 ?? 0.0
+                    });
+                }
+                if (mode === 'pixel-sorter') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.0,
+                        bgSpeed: zoomParam2 ?? 0.0,
+                        parallaxStrength: zoomParam3 ?? 0.0,
+                        fogDensity: zoomParam4 ?? 0.0
+                    });
+                }
                 if (mode === 'cyber-lens') {
                     rendererRef.current.updateZoomParams({
                         fgSpeed: zoomParam1 ?? 0.4, // Lens Radius

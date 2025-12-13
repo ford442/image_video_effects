@@ -1944,5 +1944,81 @@
         "max": 1.0
       }
     ]
+  },
+  {
+    "id": "magnetic-field",
+    "name": "Magnetic Field",
+    "url": "shaders/magnetic-field.wgsl",
+    "category": "image",
+    "description": "Magnetic field distortion where mouse acts as a magnetic pole. Can attract or repel.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Field Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Field Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "density",
+        "name": "Line Density",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Mode (Attract/Repel)",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": ["Attract", "Repel"]
+      }
+    ]
+  },
+  {
+    "id": "pixel-sorter",
+    "name": "Pixel Sorter",
+    "url": "shaders/pixel-sorter.wgsl",
+    "category": "image",
+    "description": "Glitchy pixel melting/sorting effect controlled by mouse position. Mouse X sets threshold.",
+    "params": [
+      {
+        "id": "direction",
+        "name": "Direction (V/H)",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": ["Vertical", "Horizontal"]
+      },
+      {
+        "id": "reverse",
+        "name": "Reverse Sort",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "unused1",
+        "name": "Unused",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "unused2",
+        "name": "Unused",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ]
   }
 ]
