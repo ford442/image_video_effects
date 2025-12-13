@@ -206,6 +206,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         fogDensity: zoomParam4 ?? 0.0 // Unused
                     });
                 }
+                if (mode === 'cyber-ripples') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.5,
+                        bgSpeed: zoomParam2 ?? 0.1,
+                        parallaxStrength: zoomParam3 ?? 0.2,
+                        fogDensity: zoomParam4 ?? 0.5
+                    });
+                }
+                if (mode === 'cursor-aura') {
+                    rendererRef.current.updateZoomParams({
+                        fgSpeed: zoomParam1 ?? 0.3,
+                        bgSpeed: zoomParam2 ?? 0.8,
+                        parallaxStrength: zoomParam3 ?? 0.7,
+                        fogDensity: zoomParam4 ?? 0.5
+                    });
+                }
 
                 // Update Lighting Params
                 rendererRef.current.updateLightingParams({

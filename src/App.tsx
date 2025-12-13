@@ -228,6 +228,18 @@ function App() {
           setZoomParam3(0.0); // Unused
           setZoomParam4(0.0); // Unused
       }
+      if (mode === 'cyber-ripples') {
+          setZoomParam1(0.5); // Speed
+          setZoomParam2(0.1); // Block Size
+          setZoomParam3(0.2); // Aberration
+          setZoomParam4(0.5); // Frequency
+      }
+      if (mode === 'cursor-aura') {
+          setZoomParam1(0.3); // Radius
+          setZoomParam2(0.8); // Intensity
+          setZoomParam3(0.7); // Mix
+          setZoomParam4(0.5); // Pulse Speed
+      }
   }, [mode]);
 
   // Fetch video list

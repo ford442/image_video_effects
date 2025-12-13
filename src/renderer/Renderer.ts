@@ -602,7 +602,7 @@ export class Renderer {
                 // For mouse-responsive shaders, inject mouse position instead of farthestPoint
                 let zoomX = farthestPoint.x;
                 let zoomY = farthestPoint.y;
-                if (mode === 'cyber-lens' || mode === 'interactive-ripple' || mode === 'magnetic-field' || mode === 'pixel-sorter') {
+                if (mode === 'cyber-lens' || mode === 'interactive-ripple' || mode === 'magnetic-field' || mode === 'pixel-sorter' || mode === 'cyber-ripples' || mode === 'cursor-aura') {
                     zoomX = mousePosition.x;
                     zoomY = mousePosition.y;
                 }
