@@ -144,13 +144,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ──────────────────────────────────────────────────────────────────────────
     //  Anti-matter voids - create negative density in low-motion areas
+<<<<<<< HEAD
     //  voidStrength controls both intensity AND frequency of voids
+=======
+>>>>>>> origin/stack-shaders-13277186508483700298
     // ──────────────────────────────────────────────────────────────────────────
     let voidPotential = max(0.0, 0.1 - motion) * voidStrength;
     if (voidPotential > 0.01) {
         let voidNoise = hash1(uv * 20.0 + vec2<f32>(time * 0.5, 0.0));
+<<<<<<< HEAD
         let voidThreshold = 0.95 - voidStrength * 0.3; // More voids when strength is high (0.65-0.95)
         if (voidNoise > voidThreshold) {
+=======
+        if (voidNoise > 0.85) { // Sparse void distribution
+>>>>>>> origin/stack-shaders-13277186508483700298
             result = result - vec3<f32>(voidPotential * 2.0); // Anti-matter effect
         }
     }
