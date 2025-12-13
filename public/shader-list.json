@@ -529,7 +529,7 @@
     "name": "Astral Veins",
     "url": "shaders/astral-veins.wgsl",
     "category": "image",
-    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
+    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour\u2011cycle. Click to seed new veins.",
     "params": [
       {
         "id": "speed",
@@ -835,7 +835,7 @@
     "name": "Green Tracer World",
     "url": "shaders/green-tracer.wgsl",
     "category": "image",
-    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night‑vision aesthetics.",
+    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night\u2011vision aesthetics.",
     "params": [
       {
         "id": "trailLen",
@@ -888,10 +888,10 @@
       }
     ],
     "features": [
-      "temporal‑persistence",
-      "edge‑glow",
-      "film‑grain",
-      "depth‑aware"
+      "temporal\u2011persistence",
+      "edge\u2011glow",
+      "film\u2011grain",
+      "depth\u2011aware"
     ]
   },
   {
@@ -1183,7 +1183,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "physics"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics"
+    ]
   },
   {
     "id": "wave-equation",
@@ -1221,7 +1226,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "physics"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics"
+    ]
   },
   {
     "id": "photonic-caustics",
@@ -1259,7 +1269,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "chromatic-aberration"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "chromatic-aberration"
+    ]
   },
   {
     "id": "chromatographic-separation",
@@ -1297,7 +1312,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "fluid-dynamics"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "fluid-dynamics"
+    ]
   },
   {
     "id": "multi-turing",
@@ -1335,7 +1355,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "organic-growth"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "organic-growth"
+    ]
   },
   {
     "id": "dla-crystals",
@@ -1373,14 +1397,18 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "fractal"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "fractal"
+    ]
   },
   {
     "id": "poincare-tile",
     "name": "Hyperbolic Tiling",
     "url": "shaders/poincare-tile.wgsl",
     "category": "geometry",
-    "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
+    "description": "Poincar\u00e9 disk hyperbolic geometry with M\u00f6bius transformations and animated tilings.",
     "params": [
       {
         "id": "curvature",
@@ -1411,7 +1439,10 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "mathematical"]
+    "features": [
+      "interactive",
+      "mathematical"
+    ]
   },
   {
     "id": "log-polar-droste",
@@ -1449,7 +1480,11 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "mathematical", "recursive"]
+    "features": [
+      "interactive",
+      "mathematical",
+      "recursive"
+    ]
   },
   {
     "id": "anisotropic-kuwahara",
@@ -1487,7 +1522,11 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "interactive", "painterly"]
+    "features": [
+      "depth-aware",
+      "interactive",
+      "painterly"
+    ]
   },
   {
     "id": "byte-mosh",
@@ -1525,7 +1564,11 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "chromatic-aberration", "glitch"]
+    "features": [
+      "interactive",
+      "chromatic-aberration",
+      "glitch"
+    ]
   },
   {
     "id": "time-lag-map",
@@ -1563,7 +1606,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "motion-detection"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "motion-detection"
+    ]
   },
   {
     "id": "flow-sort",
@@ -1601,7 +1648,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "depth-aware"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "depth-aware"
+    ]
   },
   {
     "id": "magnetic-dipole",
@@ -1639,7 +1690,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "physics"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "physics"
+    ]
   },
   {
     "id": "voronoi-dynamics",
@@ -1677,7 +1732,11 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "depth-aware", "physics"]
+    "features": [
+      "interactive",
+      "depth-aware",
+      "physics"
+    ]
   },
   {
     "id": "predator-prey",
@@ -1715,7 +1774,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "ecology"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "ecology"
+    ]
   },
   {
     "id": "chromatic-crawler",
@@ -1872,227 +1935,85 @@
     "description": "Enhanced 4D topological color manifold."
   },
   {
-    "id": "cyber-lens",
-    "name": "Cyber Lens",
-    "url": "shaders/cyber-lens.wgsl",
+    "id": "crystal-refraction",
+    "name": "Crystal Refraction",
+    "url": "shaders/crystal-refraction.wgsl",
     "category": "image",
-    "description": "High-tech lens distortion with grid overlay and chromatic aberration. Mouse hover controls lens position.",
+    "description": "Interactive faceted crystal lens simulation with chromatic aberration and mouse-driven refraction.",
     "params": [
       {
-        "id": "lensRadius",
-        "name": "Lens Radius",
-        "default": 0.4,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "zoomStrength",
-        "name": "Magnification",
+        "id": "facetScale",
+        "name": "Facet Scale",
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "gridIntensity",
-        "name": "Grid Intensity",
-        "default": 0.5,
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.05,
         "min": 0.0,
-        "max": 1.0
+        "max": 0.1
       },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.2,
-        "min": 0.0,
-        "max": 1.0
-      }
-    ]
-  },
-  {
-    "id": "interactive-ripple",
-    "name": "Interactive Ripple",
-    "url": "shaders/interactive-ripple.wgsl",
-    "category": "image",
-    "description": "Realistic water ripples responsive to clicks and mouse movement. Distorts image/video.",
-    "params": [
-      {
-        "id": "waveSpeed",
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "frequency",
-        "name": "Frequency",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "decay",
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "specular",
-        "name": "Specular",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
-      }
-    ]
-  },
-  {
-    "id": "magnetic-field",
-    "name": "Magnetic Field",
-    "url": "shaders/magnetic-field.wgsl",
-    "category": "image",
-    "description": "Magnetic field distortion where mouse acts as a magnetic pole. Can attract or repel.",
-    "params": [
       {
         "id": "strength",
-        "name": "Field Strength",
+        "name": "Refraction",
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "radius",
-        "name": "Field Radius",
+        "id": "smoothness",
+        "name": "Smoothness",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "data-stream",
+    "name": "Digital Stream",
+    "url": "shaders/data-stream.wgsl",
+    "category": "image",
+    "description": "Digital matrix-style data stream disrupted by mouse interaction.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
       },
       {
         "id": "density",
-        "name": "Line Density",
-        "default": 0.2,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "mode",
-        "name": "Mode (Attract/Repel)",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0,
-        "labels": ["Attract", "Repel"]
-      }
-    ]
-  },
-  {
-    "id": "pixel-sorter",
-    "name": "Pixel Sorter",
-    "url": "shaders/pixel-sorter.wgsl",
-    "category": "image",
-    "description": "Glitchy pixel melting/sorting effect controlled by mouse position. Mouse X sets threshold.",
-    "params": [
-      {
-        "id": "direction",
-        "name": "Direction (V/H)",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0,
-        "labels": ["Vertical", "Horizontal"]
-      },
-      {
-        "id": "reverse",
-        "name": "Reverse Sort",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "unused1",
-        "name": "Unused",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "unused2",
-        "name": "Unused",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0
-      }
-    ]
-  },
-  {
-    "id": "cyber-ripples",
-    "name": "Cyber Ripples",
-    "url": "shaders/cyber-ripples.wgsl",
-    "category": "image",
-    "description": "Digital ripple effect that distorts the image based on mouse position with glitchy artifacts.",
-    "params": [
-      {
-        "id": "speed",
-        "name": "Ripple Speed",
+        "name": "Density",
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "blockSize",
-        "name": "Digital Block",
-        "default": 0.1,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.2,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "frequency",
-        "name": "Frequency",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
-      }
-    ]
-  },
-  {
-    "id": "cursor-aura",
-    "name": "Cursor Aura",
-    "url": "shaders/cursor-aura.wgsl",
-    "category": "image",
-    "description": "Glowing aura around the cursor that reveals a hidden edge-detected version of the image.",
-    "params": [
-      {
-        "id": "radius",
-        "name": "Aura Radius",
-        "default": 0.3,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "intensity",
-        "name": "Glow Intensity",
+        "id": "turbulence",
+        "name": "Turbulence",
         "default": 0.8,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "mix",
-        "name": "Effect Mix",
-        "default": 0.7,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "pulse",
-        "name": "Pulse Speed",
+        "id": "glow",
+        "name": "Digital Glow",
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
       }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch"
     ]
   }
 ]
