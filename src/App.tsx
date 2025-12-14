@@ -2,11 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
 import { Renderer } from './renderer/Renderer';
-<<<<<<< HEAD
-import { RenderMode, ShaderEntry, ShaderCategory, InputSource } from './renderer/types';
-=======
+
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
->>>>>>> origin/stack-shaders-13277186508483700298
 import { pipeline, env } from '@xenova/transformers';
 import './style.css';
 
@@ -15,11 +12,10 @@ env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
 const model_loc = 'Xenova/dpt-hybrid-midas'
 
-<<<<<<< HEAD
 function App() {
   const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
   const [mode, setMode] = useState<RenderMode>('liquid');
-=======
+
 const DEFAULT_SLOT_PARAMS: SlotParams = {
     zoomParam1: 0.5,
     zoomParam2: 0.5,
@@ -32,8 +28,6 @@ const DEFAULT_SLOT_PARAMS: SlotParams = {
     depthThreshold: 0.5,
 };
 
-function App() {
-  const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
 
   // Stacking State
   const [modes, setModes] = useState<RenderMode[]>(['liquid', 'none', 'none']);
@@ -44,7 +38,6 @@ function App() {
       { ...DEFAULT_SLOT_PARAMS }
   ]);
 
->>>>>>> origin/stack-shaders-13277186508483700298
   const [zoom, setZoom] = useState(1.0);
   const [panX, setPanX] = useState(0.5);
   const [panY, setPanY] = useState(0.5);
@@ -58,8 +51,7 @@ function App() {
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
 
-<<<<<<< HEAD
-  // Infinite Zoom Parameters
+
   const [lightStrength, setLightStrength] = useState(1.0);
   const [ambient, setAmbient] = useState(0.2);
   const [normalStrength, setNormalStrength] = useState(0.1);
@@ -72,8 +64,6 @@ function App() {
   const [zoomParam3, setZoomParam3] = useState(0.5);
   const [zoomParam4, setZoomParam4] = useState(0.5);
 
-=======
->>>>>>> origin/stack-shaders-13277186508483700298
   // Video Input State
   const [inputSource, setInputSource] = useState<InputSource>('image');
   const [videoList, setVideoList] = useState<string[]>([]);
@@ -217,7 +207,6 @@ function App() {
       }
   }, [inputSource]);
 
-<<<<<<< HEAD
   // Set default params for Rain mode
   useEffect(() => {
       if (mode === 'rain') {
@@ -276,7 +265,7 @@ function App() {
           setZoomParam4(0.5); // Pulse Speed
       }
   }, [mode]);
-=======
+
   // Helper to update params for a specific slot
   const updateSlotParam = (slotIndex: number, updates: Partial<SlotParams>) => {
       setSlotParams(prev => {
@@ -338,7 +327,6 @@ function App() {
   useEffect(() => {
       const fetchVideos = async () => {
           try {
-<<<<<<< HEAD
               // Try to list files in public/videos
               // Note: This relies on server directory listing which might be disabled.
               // If so, we might need a manual list or a server endpoint.
@@ -347,11 +335,9 @@ function App() {
               if (response.ok) {
                   const text = await response.text();
                   // Parse HTML to find links
-=======
               const response = await fetch('videos/');
               if (response.ok) {
                   const text = await response.text();
->>>>>>> origin/stack-shaders-13277186508483700298
                   const parser = new DOMParser();
                   const doc = parser.parseFromString(text, 'text/html');
                   const links = Array.from(doc.querySelectorAll('a'));
@@ -359,18 +345,12 @@ function App() {
                       .map(link => link.getAttribute('href'))
                       .filter(href => href && /\.(mp4|webm|mov)$/i.test(href))
                       .map(href => {
-<<<<<<< HEAD
                           // Clean up href: remove leading /videos/ if present or just take the filename
-=======
->>>>>>> origin/stack-shaders-13277186508483700298
                           const parts = href!.split('/');
                           return parts[parts.length - 1];
                       });
 
-<<<<<<< HEAD
                   // Filter valid unique names
-=======
->>>>>>> origin/stack-shaders-13277186508483700298
                   const uniqueVideos = Array.from(new Set(videos));
                   if (uniqueVideos.length > 0) {
                       setVideoList(uniqueVideos as string[]);
@@ -383,28 +363,21 @@ function App() {
       };
 
       fetchVideos();
-<<<<<<< HEAD
   }, []); // Run once
-=======
-  }, []);
->>>>>>> origin/stack-shaders-13277186508483700298
 
   return (
     <div id="app-container">
         <h1>WebGPU Liquid + Depth Effect</h1>
         <p><strong>Status:</strong> {status}</p>
         <Controls
-<<<<<<< HEAD
             mode={mode}
             setMode={setMode}
-=======
             modes={modes}
             setMode={handleModeChange}
             activeSlot={activeSlot}
             setActiveSlot={setActiveSlot}
             slotParams={slotParams}
             updateSlotParam={updateSlotParam}
->>>>>>> origin/stack-shaders-13277186508483700298
             shaderCategory={shaderCategory}
             setShaderCategory={setShaderCategory}
             zoom={zoom} setZoom={setZoom}
@@ -418,10 +391,7 @@ function App() {
             onLoadModel={loadModel}
             isModelLoaded={!!depthEstimator}
             availableModes={availableModes}
-<<<<<<< HEAD
             // New Props
-=======
->>>>>>> origin/stack-shaders-13277186508483700298
             inputSource={inputSource}
             setInputSource={setInputSource}
             videoList={videoList}
@@ -429,7 +399,6 @@ function App() {
             setSelectedVideo={setSelectedVideo}
             isMuted={isMuted}
             setIsMuted={setIsMuted}
-<<<<<<< HEAD
             // Infinite Zoom
             lightStrength={lightStrength} setLightStrength={setLightStrength}
             ambient={ambient} setAmbient={setAmbient}
@@ -456,13 +425,11 @@ function App() {
             zoomParam2={zoomParam2}
             zoomParam3={zoomParam3}
             zoomParam4={zoomParam4}
-=======
         />
         <WebGPUCanvas
             rendererRef={rendererRef}
             modes={modes}
             slotParams={slotParams}
->>>>>>> origin/stack-shaders-13277186508483700298
             zoom={zoom}
             panX={panX}
             panY={panY}
@@ -472,10 +439,7 @@ function App() {
             isMouseDown={isMouseDown}
             setIsMouseDown={setIsMouseDown}
             onInit={handleInit}
-<<<<<<< HEAD
             // New Props
-=======
->>>>>>> origin/stack-shaders-13277186508483700298
             inputSource={inputSource}
             selectedVideo={selectedVideo}
             isMuted={isMuted}
