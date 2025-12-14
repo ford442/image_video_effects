@@ -1,5 +1,4 @@
 // Spectral Vortex - Psychedelic Feedback Shader
-<<<<<<< HEAD
 // Accumulates "phase" in the depth buffer and uses it to distort and hue-shift the source image.
 
 @group(0) @binding(0) var videoSampler: sampler;
@@ -18,36 +17,8 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_params: vec4<f32>,  // x=TwistScale, y=DistortionStep, z=ColorShift, w=Unused
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-=======
-// Adapted for Immutable Renderer Infrastructure
-//
-// NOTE: Due to engine constraints (no RGB feedback texture), this shader
-// approximates the effect by accumulating "phase" in the depth buffer
-// and using it to distort and hue-shift the static source image.
-
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=TwistScale, y=DistortionStep, z=ColorShift, w=Unused
->>>>>>> origin/stack-shaders-13277186508483700298
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -101,18 +72,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colorShift = u.zoom_params.z;     // Default ~0.1
     
     // 1. Calculate Curl of Source Image Luminance
-<<<<<<< HEAD
     let l = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r;
     let r = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
     let t = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r;
     let b = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
-=======
-    // We use the source image itself to drive the flow since we don't have a separate depth map input
-    let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
-    let t = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
->>>>>>> origin/stack-shaders-13277186508483700298
     
     let dx = (r - l) * 0.5;
     let dy = (b - t) * 0.5;
@@ -121,23 +84,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vel = vec2<f32>(dy, -dx) * 10.0; // Amplify
     
     // 2. Accumulate Phase in Depth Buffer
-<<<<<<< HEAD
     let prevPhase = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-=======
-    // Read previous phase
-    let prevPhase = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
->>>>>>> origin/stack-shaders-13277186508483700298
     
     // Update phase: rotate based on local curl magnitude
     let curlMag = length(vel);
     let newPhase = prevPhase + curlMag * 0.1 + 0.01; // Constant drift + curl-driven spin
     
     // Write new phase for next frame
-<<<<<<< HEAD
     textureStore(outDepth, global_id.xy, vec4<f32>(newPhase, 0.0, 0.0, 0.0));
-=======
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(newPhase, 0.0, 0.0, 0.0));
->>>>>>> origin/stack-shaders-13277186508483700298
     
     // 3. Distort UVs based on Phase and Velocity
     // We use the accumulated phase to rotate the sampling vector
@@ -151,11 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distortedUV = uv + offset;
     
     // 4. Sample Source with Distortion
-<<<<<<< HEAD
     let srcCol = textureSampleLevel(videoTex, videoSampler, distortedUV, 0.0);
-=======
-    let srcCol = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
->>>>>>> origin/stack-shaders-13277186508483700298
     
     // 5. Apply Hue Rotation
     var hsv = rgb2hsv(srcCol.rgb);
@@ -168,9 +118,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalRGB = 1.0 - finalRGB;
     }
     
-<<<<<<< HEAD
     textureStore(outTex, global_id.xy, vec4<f32>(finalRGB, 1.0));
-=======
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalRGB, 1.0));
->>>>>>> origin/stack-shaders-13277186508483700298
 }

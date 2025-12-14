@@ -23,8 +23,8 @@
 
 struct Uniforms {
   config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=crawlSpeed, y=swapIntensity, z=feedbackMix, w=flashRate
   zoom_config: vec4<f32>,       // x=regionSize, y=glowAmount, z=colorModSpeed, w=depthInf
+  zoom_params: vec4<f32>,       // x=crawlSpeed, y=swapIntensity, z=feedbackMix, w=flashRate
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -216,20 +216,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let modulatedColor = temporalColorMod(swappedColor, uv, time, colorModSpeed);
 
     // ──────────────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
     //  Rapid color flashing effect (intensity controlled by glowAmount)
     // ──────────────────────────────────────────────────────────────────────────
     let flash = step(0.95, fract(time * flashRate + region.x * 10.0 + region.y * 7.0));
     let flashColor = vec3<f32>(flash, flash * 0.5, flash * 0.8);
     let flashIntensity = glowAmount * 1.5; // Use glow param for flash too
     var finalColor = mix(modulatedColor, flashColor, flash * flashIntensity);
-=======
-    //  Rapid color flashing effect
-    // ──────────────────────────────────────────────────────────────────────────
-    let flash = step(0.95, fract(time * flashRate + region.x * 10.0 + region.y * 7.0));
-    let flashColor = vec3<f32>(flash, flash * 0.5, flash * 0.8);
-    var finalColor = mix(modulatedColor, flashColor, flash * 0.3);
->>>>>>> origin/stack-shaders-13277186508483700298
 
     // ──────────────────────────────────────────────────────────────────────────
     //  Crawling glow effect

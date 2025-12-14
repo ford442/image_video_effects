@@ -1,10 +1,6 @@
 export type RenderMode = string;
 
-<<<<<<< HEAD
-export type ShaderCategory = 'shader' | 'image' | 'video';
-=======
 export type ShaderCategory = 'shader' | 'image' | 'video' | 'simulation' | 'feedback' | 'sorting' | 'warp' | 'tessellation' | 'audio' | 'glyph' | 'edge' | 'geometry' | 'artistic' | 'glitch' | 'temporal';
->>>>>>> origin/stack-shaders-13277186508483700298
 
 export type InputSource = 'image' | 'video';
 
@@ -13,8 +9,6 @@ export interface ShaderEntry {
     name: string;
     url: string;
     category: ShaderCategory;
-<<<<<<< HEAD
-=======
     description?: string;
     params?: any[];
     advanced_params?: any[];
@@ -34,5 +28,4 @@ export interface SlotParams {
     normalStrength: number;
     fogFalloff: number;
     depthThreshold: number;
->>>>>>> origin/stack-shaders-13277186508483700298
 }
