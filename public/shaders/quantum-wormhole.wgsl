@@ -23,8 +23,8 @@
 
 struct Uniforms {
   config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=twistScale, y=flowStrength, z=trailLength, w=persistence
   zoom_config: vec4<f32>,       // x=burstIntensity, y=voidThreshold, z=rotationSpeed, w=depthInf
+  zoom_params: vec4<f32>,       // x=twistScale, y=flowStrength, z=trailLength, w=persistence
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -157,12 +157,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  Colour debt (negative channels) in dark regions → "void pockets"
     // -----------------------------------------------------------------
-<<<<<<< HEAD
-    let srcLum = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    if (srcLum < voidThreshold) {
-=======
     if (hsv.z < voidThreshold) {
->>>>>>> origin/stack-shaders-13277186508483700298
         newRGB = -newRGB; // creates "void pockets"
     }
 

@@ -23,8 +23,8 @@
 
 struct Uniforms {
   config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=cloudScale, y=twistSpeed, z=feedbackStep, w=persistence
   zoom_config: vec4<f32>,       // x=densityPower, y=saturation, z=octaves, w=depthInf
+  zoom_params: vec4<f32>,       // x=cloudScale, y=twistSpeed, z=feedbackStep, w=persistence
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -169,15 +169,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let prevCol = textureSampleLevel(feedbackTex, videoSampler, warpedUV, 0.0).rgb;
 
     // ──────────────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
     //  Temporal blend (persistence creates silky trails)
     // ──────────────────────────────────────────────────────────────────────────
     let temporalBlend = 0.7 + persistence * 0.25; // Use persistence param (0.7 - 0.95)
-=======
-    //  Temporal blend (90% persistence creates silky trails)
-    // ──────────────────────────────────────────────────────────────────────────
-    let temporalBlend = 0.9;
->>>>>>> origin/stack-shaders-13277186508483700298
     let outCol = prevCol * temporalBlend + finalRGB * (1.0 - temporalBlend);
 
     // ──────────────────────────────────────────────────────────────────────────

@@ -1,17 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { Renderer } from '../renderer/Renderer';
-<<<<<<< HEAD
-import { RenderMode, InputSource } from '../renderer/types';
-
-interface WebGPUCanvasProps {
-    mode: RenderMode;
-=======
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 
 interface WebGPUCanvasProps {
     modes: RenderMode[]; // Changed from mode to modes
     slotParams: SlotParams[]; // Changed from individual params to array
->>>>>>> origin/stack-shaders-13277186508483700298
     zoom: number;
     panX: number;
     panY: number;
@@ -26,20 +19,12 @@ interface WebGPUCanvasProps {
     inputSource: InputSource;
     selectedVideo: string;
     isMuted: boolean;
-<<<<<<< HEAD
-    // Infinite Zoom
-=======
     // Legacy props for backward compatibility if needed, but we'll try to use slotParams
->>>>>>> origin/stack-shaders-13277186508483700298
     lightStrength?: number;
     ambient?: number;
     normalStrength?: number;
     fogFalloff?: number;
     depthThreshold?: number;
-<<<<<<< HEAD
-    // Generic Params
-=======
->>>>>>> origin/stack-shaders-13277186508483700298
     zoomParam1?: number;
     zoomParam2?: number;
     zoomParam3?: number;
@@ -47,20 +32,11 @@ interface WebGPUCanvasProps {
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
-<<<<<<< HEAD
-    mode, zoom, panX, panY, rendererRef,
-    farthestPoint, mousePosition, setMousePosition,
-    isMouseDown, setIsMouseDown, onInit,
-    inputSource, selectedVideo, isMuted,
-    lightStrength, ambient, normalStrength, fogFalloff, depthThreshold,
-    zoomParam1, zoomParam2, zoomParam3, zoomParam4
-=======
     modes, slotParams, zoom, panX, panY, rendererRef,
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, isMuted,
     // Keep these destructured but unused if we rely on slotParams, or map them for single mode legacy support
->>>>>>> origin/stack-shaders-13277186508483700298
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -83,10 +59,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                  if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<Renderer | null>).current = renderer;
                 }
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/stack-shaders-13277186508483700298
                 // Initialize Video Element
                 videoRef.current = document.createElement('video');
                 videoRef.current.crossOrigin = 'anonymous';
@@ -147,122 +120,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
-<<<<<<< HEAD
-                // Special handling for Galaxy mode to pass zoom/pan via uniforms
-                if (mode === 'galaxy') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoom,
-                        bgSpeed: panX,
-                        parallaxStrength: panY
-                    });
-                } else if (mode === 'rain') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.08,
-                        bgSpeed: zoomParam2 ?? 0.5,
-                        parallaxStrength: zoomParam3 ?? 2.0,
-                        fogDensity: zoomParam4 ?? 0.7
-                    });
-                } else {
-                    // Reset to defaults when not in galaxy mode
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: 0.08,
-                        bgSpeed: 0.0,
-                        parallaxStrength: 2.0
-                    });
-                }
-                if (mode === 'chromatic-manifold') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.5, // hueWeight
-                        bgSpeed: zoomParam2 ?? 0.5, // warpStrength
-                        parallaxStrength: zoomParam3 ?? 0.8, // tearThreshold
-                        fogDensity: zoomParam4 ?? 0.5 // curvatureStrength
-                    });
-                }
-                if (mode === 'digital-decay') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.5, // decayIntensity
-                        bgSpeed: zoomParam2 ?? 0.5, // blockSize
-                        parallaxStrength: zoomParam3 ?? 0.5, // corruptionSpeed
-                        fogDensity: zoomParam4 ?? 0.5 // depthFocus
-                    });
-                }
-                if (mode === 'spectral-vortex') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 2.0, // Twist Strength
-                        bgSpeed: zoomParam2 ?? 0.02, // Distortion Step
-                        parallaxStrength: zoomParam3 ?? 0.1, // Color Shift
-                        fogDensity: zoomParam4 ?? 0.0 // Unused
-                    });
-                }
-                if (mode === 'magnetic-field') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.5,
-                        bgSpeed: zoomParam2 ?? 0.5,
-                        parallaxStrength: zoomParam3 ?? 0.2,
-                        fogDensity: zoomParam4 ?? 0.0
-                    });
-                }
-                if (mode === 'pixel-sorter') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.0,
-                        bgSpeed: zoomParam2 ?? 0.0,
-                        parallaxStrength: zoomParam3 ?? 0.0,
-                        fogDensity: zoomParam4 ?? 0.0
-                    });
-                }
-                if (mode === 'cyber-lens') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.4, // Lens Radius
-                        bgSpeed: zoomParam2 ?? 0.5, // Magnification
-                        parallaxStrength: zoomParam3 ?? 0.5, // Grid Intensity
-                        fogDensity: zoomParam4 ?? 0.2 // Aberration
-                    });
-                }
-                if (mode === 'interactive-ripple') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.5, // Wave Speed
-                        bgSpeed: zoomParam2 ?? 0.5, // Frequency
-                        parallaxStrength: zoomParam3 ?? 0.5, // Decay
-                        fogDensity: zoomParam4 ?? 0.5 // Specular
-                    });
-                }
-                if (mode === 'quantum-fractal') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 3.0, // Scale
-                        bgSpeed: zoomParam2 ?? 100.0, // Iterations
-                        parallaxStrength: zoomParam3 ?? 1.0, // Entanglement
-                        fogDensity: zoomParam4 ?? 0.0 // Unused
-                    });
-                }
-                if (mode === 'cyber-ripples') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.5,
-                        bgSpeed: zoomParam2 ?? 0.1,
-                        parallaxStrength: zoomParam3 ?? 0.2,
-                        fogDensity: zoomParam4 ?? 0.5
-                    });
-                }
-                if (mode === 'cursor-aura') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1 ?? 0.3,
-                        bgSpeed: zoomParam2 ?? 0.8,
-                        parallaxStrength: zoomParam3 ?? 0.7,
-                        fogDensity: zoomParam4 ?? 0.5
-                    });
-                }
-
-                // Update Lighting Params
-                rendererRef.current.updateLightingParams({
-                    lightStrength,
-                    ambient,
-                    normalStrength,
-                    fogFalloff,
-                    depthThreshold
-                });
-
-                // Pass video element to render
-                rendererRef.current.render(mode, videoRef.current, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown);
-=======
                 // Pass video element to render
                 // We need to update the Renderer.render method to accept modes and params
                 // But Renderer.ts hasn't been updated yet.
@@ -279,17 +136,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     videoRef.current,
                     zoom, panX, panY, farthestPoint, mousePosition, isMouseDown
                 );
->>>>>>> origin/stack-shaders-13277186508483700298
             }
             animationFrameId.current = requestAnimationFrame(animate);
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-<<<<<<< HEAD
-    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, lightStrength, ambient, normalStrength, fogFalloff, depthThreshold, zoomParam1, zoomParam2, zoomParam3, zoomParam4]);
-=======
     }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef]);
->>>>>>> origin/stack-shaders-13277186508483700298
 
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!canvasRef.current) return;
@@ -317,13 +169,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
         setIsMouseDown(true);
         updateMousePosition(event);
-<<<<<<< HEAD
-        if (mode === 'ripple' || mode === 'vortex' || mode.startsWith('liquid')) {
-            addRippleAtMouseEvent(event);
-        }
-
-        if (mode === 'plasma') {
-=======
 
         // Simple heuristic for now: trigger ripple on any active mode that supports it
         const hasInteractiveMode = modes.some(m => m === 'ripple' || m === 'vortex' || m.startsWith('liquid'));
@@ -333,7 +178,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         const plasmaMode = modes.includes('plasma');
         if (plasmaMode) {
->>>>>>> origin/stack-shaders-13277186508483700298
             if (!canvasRef.current) return;
             const canvas = canvasRef.current;
             const rect = canvas.getBoundingClientRect();
@@ -347,12 +191,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
         setIsMouseDown(false);
 
-<<<<<<< HEAD
-        if (mode === 'plasma' && dragStartPos.current && rendererRef.current) {
-=======
         const plasmaMode = modes.includes('plasma');
         if (plasmaMode && dragStartPos.current && rendererRef.current) {
->>>>>>> origin/stack-shaders-13277186508483700298
             const canvas = canvasRef.current!;
             const rect = canvas.getBoundingClientRect();
             const currentX = (event.clientX - rect.left) / canvas.width;
@@ -376,12 +216,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
         updateMousePosition(event);
-<<<<<<< HEAD
-        if (isMouseDown && (mode === 'ripple' || mode === 'vortex' || mode.startsWith('liquid'))) {
-=======
         const hasInteractiveMode = modes.some(m => m === 'ripple' || m === 'vortex' || m.startsWith('liquid'));
         if (isMouseDown && hasInteractiveMode) {
->>>>>>> origin/stack-shaders-13277186508483700298
             const now = performance.now();
             if (now - lastMouseAddTime.current < 10) return;
             lastMouseAddTime.current = now;

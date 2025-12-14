@@ -24,12 +24,12 @@
 struct Uniforms {
   // config.x = time, config.y = rippleCount, config.zw = resolution.xy
   config:      vec4<f32>,
-  // zoom_params.x = fold_strength, zoom_params.y = hue_pivot
-  // zoom_params.z = saturation_scale, zoom_params.w = depth_influence
-  zoom_params: vec4<f32>,
   // zoom_config.x = noise_amount, zoom_config.y = feedback_strength
   // zoom_config.z = ripple_strength, zoom_config.w = unused
   zoom_config: vec4<f32>,
+  // zoom_params.x = fold_strength, zoom_params.y = hue_pivot
+  // zoom_params.z = saturation_scale, zoom_params.w = depth_influence
+  zoom_params: vec4<f32>,
   // ripple data: [x, y, startTime, unused] * 50
   ripples:     array<vec4<f32>, 50>,
 };
@@ -182,17 +182,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
   // ──────────────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
-  //  8. Feedback: blend with previous frame (higher feedbackStrength = more trails)
-  // ──────────────────────────────────────────────────────────────────────────
-  let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
-  let finalColor = mix(prev, foldedColor, 1.0 - feedbackStrength);
-=======
   //  8. Feedback: blend with previous frame
   // ──────────────────────────────────────────────────────────────────────────
   let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
   let finalColor = mix(foldedColor, prev, feedbackStrength);
->>>>>>> origin/stack-shaders-13277186508483700298
 
   // ──────────────────────────────────────────────────────────────────────────
   //  9. Write outputs
