@@ -321,7 +321,6 @@ const DEFAULT_SLOT_PARAMS: SlotParams = {
       });
       applyModeDefaults(newMode, index);
   };
->>>>>>> origin/stack-shaders-13277186508483700298
 
   // Fetch video list
   useEffect(() => {
