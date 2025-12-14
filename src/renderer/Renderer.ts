@@ -539,8 +539,6 @@ export class Renderer {
             this.device.queue.copyExternalImageToTexture({source: videoElement}, {texture: this.videoTexture}, [videoElement.videoWidth, videoElement.videoHeight]);
         }
 
-        const commandEncoder = this.device.createCommandEncoder();
-
         // ---------------------------------------------------------
         // COMPUTE SHADER CHAIN
         // ---------------------------------------------------------
