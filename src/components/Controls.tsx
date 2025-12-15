@@ -33,6 +33,9 @@ interface ControlsProps {
     setSelectedVideo: (video: string) => void;
     isMuted: boolean;
     setIsMuted: (muted: boolean) => void;
+    // New Upload Triggers
+    onUploadImageTrigger: () => void;
+    onUploadVideoTrigger: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -51,6 +54,8 @@ const Controls: React.FC<ControlsProps> = ({
     inputSource, setInputSource,
     videoList, selectedVideo, setSelectedVideo,
     isMuted, setIsMuted,
+    onUploadImageTrigger,
+    onUploadVideoTrigger
 }) => {
     const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
     const imageEntries = availableModes.filter(entry => entry.category === 'image');
@@ -67,12 +72,8 @@ const Controls: React.FC<ControlsProps> = ({
     };
 
     const currentModes = getCurrentCategoryModes();
-
-    // Helper to get params for active slot
     const currentParams = slotParams[activeSlot];
     const currentMode = modes[activeSlot];
-
-    // Find the shader entry for the current mode to get parameter definitions
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
 
     return (
@@ -89,7 +90,7 @@ const Controls: React.FC<ControlsProps> = ({
                             onChange={() => setInputSource('image')}
                         /> Image
                     </label>
-                    <label style={{ cursor: 'pointer' }}>
+                    <label style={{ marginRight: '10px', cursor: 'pointer' }}>
                         <input
                             type="radio"
                             name="inputSource"
@@ -97,6 +98,15 @@ const Controls: React.FC<ControlsProps> = ({
                             checked={inputSource === 'video'}
                             onChange={() => setInputSource('video')}
                         /> Video
+                    </label>
+                    <label style={{ cursor: 'pointer' }}>
+                        <input
+                            type="radio"
+                            name="inputSource"
+                            value="webcam"
+                            checked={inputSource === 'webcam'}
+                            onChange={() => setInputSource('webcam')}
+                        /> Webcam
                     </label>
                 </div>
             </div>
@@ -140,30 +150,36 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
 
             {inputSource === 'video' && (
-                <div className="control-group">
-                    <label htmlFor="video-select">Video:</label>
-                    <select
-                        id="video-select"
-                        value={selectedVideo}
-                        onChange={(e) => setSelectedVideo(e.target.value)}
-                    >
-                        {videoList.length === 0 ? <option value="" disabled>No videos found</option> :
-                            videoList.map(v => <option key={v} value={v}>{v}</option>)
-                        }
-                    </select>
-                    <label style={{ marginLeft: '10px' }}>
-                        <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} /> Mute
-                    </label>
+                <div className="control-group" style={{alignItems: 'flex-start', flexDirection: 'column'}}>
+                     <div style={{marginBottom: '5px'}}>
+                        <button onClick={onUploadVideoTrigger} style={{marginRight: '10px'}}>Upload Video</button>
+                        <label style={{ marginLeft: '10px' }}>
+                            <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} /> Mute
+                        </label>
+                    </div>
+                    <div>
+                        <label htmlFor="video-select">Or Select Stock:</label>
+                        <select
+                            id="video-select"
+                            value={selectedVideo}
+                            onChange={(e) => setSelectedVideo(e.target.value)}
+                        >
+                            {videoList.length === 0 ? <option value="" disabled>No videos found</option> :
+                                videoList.map(v => <option key={v} value={v}>{v}</option>)
+                            }
+                        </select>
+                    </div>
                 </div>
             )}
 
             {inputSource === 'image' && (
                 <>
                     <div className="control-group">
+                        <button onClick={onUploadImageTrigger}>Upload Image</button>
+                        <button onClick={onNewImage}>Load Random Image</button>
                         <button onClick={onLoadModel} disabled={isModelLoaded}>
                             {isModelLoaded ? 'AI Model Loaded' : 'Load AI Model'}
                         </button>
-                        <button onClick={onNewImage}>Load New Random Image</button>
                     </div>
                     <div className="control-group">
                         <label htmlFor="auto-change-toggle">Auto Change:</label>
@@ -221,18 +237,15 @@ const Controls: React.FC<ControlsProps> = ({
                 </>
             )}
 
-            {/* Generic Parameter Rendering based on Shader Entry Definition */}
             {currentMode !== 'none' && currentMode !== 'infinite-zoom' && currentShaderEntry && (
                 <>
                     {currentShaderEntry.params && currentShaderEntry.params.map((param, i) => {
-                        // Map 4 potential params to zoomParam1..4
                         let val = 0;
                         if (i === 0) val = currentParams.zoomParam1;
                         if (i === 1) val = currentParams.zoomParam2;
                         if (i === 2) val = currentParams.zoomParam3;
                         if (i === 3) val = currentParams.zoomParam4;
 
-                        // Handler
                         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                             const v = parseFloat(e.target.value);
                             if (i === 0) updateSlotParam(activeSlot, { zoomParam1: v });
@@ -248,21 +261,13 @@ const Controls: React.FC<ControlsProps> = ({
                                     type="range"
                                     min={param.min}
                                     max={param.max}
-                                    step={0.01} // Default step
+                                    step={0.01}
                                     value={val}
                                     onChange={handleChange}
                                 />
                             </div>
                         );
                     })}
-
-                    {/* Fallback if no params defined but we want to show generic sliders?
-                        The previous code showed "Param 1..4".
-                        If we strictly rely on JSON, we might miss some params for shaders that don't have JSON params yet.
-                        But I populated JSON for all known shaders in `stack-shaders` and `new-responsive`.
-                        If a shader is missing params in JSON, it will show nothing here.
-                        Let's add a fallback if `!currentShaderEntry.params`.
-                    */}
                     {(!currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
                          <>
                             <div className="control-group">
