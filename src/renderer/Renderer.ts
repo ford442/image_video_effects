@@ -7,7 +7,7 @@ export class Renderer {
     private presentationFormat!: GPUTextureFormat;
     private pipelines = new Map<string, GPURenderPipeline | GPUComputePipeline>();
     private bindGroups = new Map<string, GPUBindGroup>();
-    private dynamicBindGroups = new Map<string, GPUBindGroup>(); // Cache for dynamic compute bindgroups
+    private dynamicBindGroups = new Map<string, GPUBindGroup>();
     private filteringSampler!: GPUSampler;
     private nonFilteringSampler!: GPUSampler;
     private comparisonSampler!: GPUSampler;
@@ -73,9 +73,6 @@ export class Renderer {
 
     public firePlasma(x: number, y: number, vx: number, vy: number) {
         if (this.plasmaBalls.length >= this.MAX_PLASMA_BALLS) return;
-
-        // Random colors (fire/plasma palette: red, orange, yellow, sometimes blue/purple)
-        // Let's do a mix.
         const r = 0.8 + Math.random() * 0.2;
         const g = Math.random() * 0.6;
         const b = Math.random() * 0.2;
@@ -83,15 +80,14 @@ export class Renderer {
         this.plasmaBalls.push({
             x, y, vx, vy,
             r, g, b,
-            radius: 0.05 + Math.random() * 0.08, // Bigger Base radius (0.05 - 0.13)
+            radius: 0.05 + Math.random() * 0.08,
             age: 0,
-            maxAge: 5.0 + Math.random() * 5.0, // Lives for 5-10 seconds
+            maxAge: 5.0 + Math.random() * 5.0,
             seed: Math.random() * 100.0
         });
     }
 
     private updatePlasma(dt: number) {
-        // 1. Update positions and age
         for (let i = this.plasmaBalls.length - 1; i >= 0; i--) {
             const ball = this.plasmaBalls[i];
             ball.x += ball.vx * dt;
@@ -104,12 +100,10 @@ export class Renderer {
             if (ball.age > ball.maxAge ||
                 ball.x < -0.5 || ball.x > 1.5 ||
                 ball.y < -0.5 || ball.y > 1.5) {
-                // Remove if too old or far off screen
                 this.plasmaBalls.splice(i, 1);
             }
         }
 
-        // 2. Collisions (Ball vs Ball)
         for (let i = 0; i < this.plasmaBalls.length; i++) {
             for (let j = i + 1; j < this.plasmaBalls.length; j++) {
                 const b1 = this.plasmaBalls[i];
@@ -121,29 +115,19 @@ export class Renderer {
                 const minDist = b1.radius + b2.radius;
 
                 if (dist < minDist && dist > 0.0001) {
-                    // Elastic collision approximation
-                    // Normalize normal vector
                     const nx = dx / dist;
                     const ny = dy / dist;
-
-                    // Relative velocity
                     const dvx = b1.vx - b2.vx;
                     const dvy = b1.vy - b2.vy;
-
-                    // Speed along normal
                     const normalVel = dvx * nx + dvy * ny;
-
-                    // If moving away, ignore
                     if (normalVel < 0) continue;
-
-                    const impulse = -normalVel; // restitution 1.0
+                    const impulse = -normalVel;
 
                     b1.vx += impulse * nx;
                     b1.vy += impulse * ny;
                     b2.vx -= impulse * nx;
                     b2.vy -= impulse * ny;
 
-                    // Separate to prevent sticking
                     const overlap = minDist - dist;
                     const separationX = nx * overlap * 0.5;
                     const separationY = ny * overlap * 0.5;
@@ -156,7 +140,6 @@ export class Renderer {
         }
     }
 
-    // Helper to batch update params for legacy support or internal use
     public updateZoomParams(params: {
         fgSpeed?: number,
         bgSpeed?: number,
@@ -248,25 +231,32 @@ export class Renderer {
         }
     }
 
-    public async loadRandomImage(): Promise<string | undefined> {
+    // New Method to load specific image (URL or Blob)
+    public async loadImage(url: string): Promise<string | undefined> {
         try {
-            if (this.imageUrls.length === 0) return;
-            const imageUrl = this.imageUrls[Math.floor(Math.random() * this.imageUrls.length)];
-            const response = await fetch(imageUrl);
-            const imageBitmap = await createImageBitmap(await response.blob());
-            if (this.imageTexture) this.imageTexture.destroy();
-            this.imageTexture = this.device.createTexture({
-                size: [imageBitmap.width, imageBitmap.height],
-                format: 'rgba32float',
-                usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-            });
-            this.device.queue.copyExternalImageToTexture({source: imageBitmap}, {texture: this.imageTexture, colorSpace:"display-p3"}, [imageBitmap.width, imageBitmap.height]);
-            this.createBindGroups();
-            return imageUrl;
-        } catch (e) {
-            console.error("Failed to load image:", e);
+             const response = await fetch(url);
+             const blob = await response.blob();
+             const imageBitmap = await createImageBitmap(blob);
+
+             if (this.imageTexture) this.imageTexture.destroy();
+             this.imageTexture = this.device.createTexture({
+                 size: [imageBitmap.width, imageBitmap.height],
+                 format: 'rgba32float',
+                 usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+             });
+             this.device.queue.copyExternalImageToTexture({source: imageBitmap}, {texture: this.imageTexture, colorSpace:"display-p3"}, [imageBitmap.width, imageBitmap.height]);
+             this.createBindGroups();
+             return url;
+        } catch(e) {
+            console.error("Failed to load image:", url, e);
             return undefined;
         }
+    }
+
+    public async loadRandomImage(): Promise<string | undefined> {
+        if (this.imageUrls.length === 0) return;
+        const imageUrl = this.imageUrls[Math.floor(Math.random() * this.imageUrls.length)];
+        return this.loadImage(imageUrl);
     }
 
     public updateDepthMap(data: Float32Array, width: number, height: number): void {
@@ -365,7 +355,7 @@ export class Renderer {
         this.device.queue.writeBuffer(this.extraBuffer, 0, initialExtraData);
 
         this.plasmaBuffer = this.device.createBuffer({
-            size: this.MAX_PLASMA_BALLS * 48, // 3 * vec4<f32> (16 bytes) = 48 bytes per ball
+            size: this.MAX_PLASMA_BALLS * 48,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
     }
@@ -377,7 +367,6 @@ export class Renderer {
             primitive: {topology: 'triangle-strip' as GPUPrimitiveTopology}
         };
 
-        // 1. Static Render Pipelines
         const staticShaders = ['galaxy.wgsl', 'imageVideo.wgsl', 'texture.wgsl'];
         const staticCodes = await Promise.all(staticShaders.map(name => fetch(`shaders/${name}`).then(r => r.text())));
         const [galaxyCode, imageVideoCode, textureCode] = staticCodes;
@@ -408,7 +397,6 @@ export class Renderer {
         });
         this.pipelines.set('liquid-render', liquidRenderPipeline);
 
-        // 2. Dynamic Compute Pipelines
         const computeBindGroupLayout = this.device.createBindGroupLayout({
             entries: [
                 { binding: 0, visibility: GPUShaderStage.COMPUTE, sampler: { type: 'filtering' as GPUSamplerBindingType } },
@@ -482,16 +470,10 @@ export class Renderer {
             }]
         }));
 
-        // Dynamic bindgroups are now created per-frame/per-pass as needed, clearing cache
         this.dynamicBindGroups.clear();
     }
 
     private getComputeBindGroup(pipeline: GPUComputePipeline, inputView: GPUTextureView, outputView: GPUTextureView): GPUBindGroup {
-        // Create a unique key for this combination if we wanted to cache, but GPU objects don't have IDs readily available in JS without wrappers.
-        // However, we can use a WeakMap or just recreate it if it's not too expensive.
-        // For now, let's just create it. To optimize, we could cache based on texture object references if performance is an issue.
-        // Actually, creating a bind group every frame is usually fine for this number of draw calls (3).
-
         return this.device.createBindGroup({
             layout: pipeline.getBindGroupLayout(0),
             entries: [
@@ -525,7 +507,7 @@ export class Renderer {
         if (!this.device || !this.imageTexture) return;
         const currentTime = performance.now() / 1000.0;
 
-        // Handle Video Input
+        // Handle Video Input (Video or Webcam)
         if (videoElement.readyState >= 2 && videoElement.videoWidth > 0) {
             if (!this.videoTexture || this.videoTexture.width !== videoElement.videoWidth || this.videoTexture.height !== videoElement.videoHeight) {
                 if (this.videoTexture) this.videoTexture.destroy();
@@ -545,24 +527,17 @@ export class Renderer {
 
         // Determine input source texture
         let currentInputTexture = this.imageTexture;
-        if (this.inputSource === 'video' && this.videoTexture) {
+        // Accept 'video' or 'webcam' as valid sources for video texture
+        if ((this.inputSource === 'video' || this.inputSource === 'webcam') && this.videoTexture) {
             currentInputTexture = this.videoTexture;
         }
 
-        // We have 3 slots.
-        // We need to determine the chain of execution.
-        // Ping-ponging between pingPongTexture1 and pingPongTexture2.
-        // Final result must end up in writeTexture.
-
         // Filter out 'none' modes
         const activeChain = modes.map((m, i) => ({ mode: m, params: slotParams[i] })).filter(item => {
-             // Check if it's a valid compute shader
              return item.mode !== 'none' && this.shaderList.some(s => s.id === item.mode);
         });
 
         if (activeChain.length > 0) {
-            // Plasma Update (Global Physics) - Run once if any plasma mode is present?
-            // Or only if plasma is active?
             if (modes.includes('plasma')) {
                  this.updatePlasma(0.016);
                  const plasmaData = new Float32Array(this.MAX_PLASMA_BALLS * 12);
@@ -579,7 +554,6 @@ export class Renderer {
                  this.device.queue.writeBuffer(this.plasmaBuffer, 0, plasmaData);
             }
 
-            // Ripple Update (Shared state)
             const rippleLifetime = 4.0;
             this.ripplePoints = this.ripplePoints.filter(p => (currentTime - p.startTime) < rippleLifetime);
             if (this.ripplePoints.length > this.MAX_RIPPLES) this.ripplePoints.splice(0, this.ripplePoints.length - this.MAX_RIPPLES);
@@ -589,25 +563,20 @@ export class Renderer {
                 rippleDataArr.set([point.x, point.y, point.startTime], i * 4);
             }
 
-            // Execute Chain
             for (let i = 0; i < activeChain.length; i++) {
                 const { mode, params } = activeChain[i];
                 const isLast = i === activeChain.length - 1;
 
-                // Determine Output
                 let targetTexture: GPUTexture;
                 if (isLast) {
                     targetTexture = this.writeTexture;
                 } else {
-                    // Ping pong
                     targetTexture = (i % 2 === 0) ? this.pingPongTexture1 : this.pingPongTexture2;
                 }
 
-                // Update Uniforms for this pass
                 const uniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
                 uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
 
-                // Determine target point (Depth vs Mouse)
                 let targetX = farthestPoint.x;
                 let targetY = farthestPoint.y;
                 let zoomConfigW = mode === 'infinite-zoom' ? params.depthThreshold : 0;
@@ -645,27 +614,6 @@ export class Renderer {
                     uniformArray.set(rippleDataArr, 12);
                 }
 
-                // We must queue write here. Note: If we have multiple passes, we must ensure ordering.
-                // device.queue.writeBuffer happens on CPU timeline submit.
-                // If we submit multiple writes to the same buffer in one frame, the LAST one wins for the whole command buffer unless we split submit.
-                // THIS IS A CRITICAL WEBGPU DETAIL.
-                // A single CommandEncoder recording multiple passes that use the SAME uniform buffer will see the SAME uniform values (the state at submission time)
-                // UNLESS we use `writeBuffer` on the queue which schedules copy operations.
-                // Wait, `queue.writeBuffer` schedules a write. If we call it multiple times, they are serialized.
-                // But the draws/dispatches recorded in the command encoder will pick up the buffer state relative to the queue operations?
-                // Actually, `queue.writeBuffer` operations are executed *before* any subsequently submitted command buffers.
-                // But here we are building ONE command buffer.
-                // So if we writeBuffer, then record pass 1, then writeBuffer, then record pass 2...
-                // The `writeBuffer` is an async queue op. The command buffer is recorded synchronously.
-                // When we `submit([cmdBuf])`, the queue ops submitted *before* it run first.
-                // But we can't interleave `queue.writeBuffer` inside a `commandEncoder` recording block effectively for single-submit.
-                // Solution: We must `submit` the command buffer for EACH pass if we want to change uniforms in between using `writeBuffer`.
-                // OR use a dynamic offset uniform buffer (requires alignment).
-                // OR use separate uniform buffers for each slot.
-
-                // Using separate submits is the easiest fix for now without rewriting buffer management.
-                // So we will create a command encoder, record pass, finish, submit. Then update uniforms, create new encoder...
-
                 this.device.queue.writeBuffer(this.computeUniformBuffer, 0, uniformArray);
 
                 const passEncoder = this.device.createCommandEncoder();
@@ -681,56 +629,19 @@ export class Renderer {
                 computePass.end();
                 this.device.queue.submit([passEncoder.finish()]);
 
-                // Swap Input for next pass
                 currentInputTexture = targetTexture;
             }
 
             this.swapDepthTextures();
-        } else {
-            // No compute shaders active.
-            // Check if we need to copy input to writeTexture manually?
-            // If the render mode is 'image' or 'video' or 'galaxy', those have their own render pipelines that read directly from source.
-            // If the render mode is just 'liquid-render' (default), it reads from `writeTexture`.
-            // If no compute shader ran, `writeTexture` is stale or empty.
-            // We should copy currentInputTexture to writeTexture if we want to see the image.
-
-            // However, the `render` method below handles 'image'/'video'/'galaxy' separately.
-            // If we are in a mode that relies on `liquid-render` (the default switch case), we expect `writeTexture` to have content.
-            // So yes, we should copy input to writeTexture.
-
-            const copyEncoder = this.device.createCommandEncoder();
-            // Copy input to writeTexture
-             copyEncoder.copyTextureToTexture(
-                { texture: currentInputTexture },
-                { texture: this.writeTexture },
-                [this.canvas.width, this.canvas.height]
-            );
-            this.device.queue.submit([copyEncoder.finish()]);
         }
 
+        // REMOVED THE COPYTEXTURE fallback block to prevent crashes on size mismatch
 
         // ---------------------------------------------------------
         // RENDER PASS (To Screen)
         // ---------------------------------------------------------
-        // We use the first active mode to decide "Render Mode" logic if it's special (like Galaxy),
-        // OR we just use a default 'liquid-render' if we are in a compute chain.
-        // Actually, the user selects modes in slots.
-        // If Slot 1 is 'galaxy', we might want to render galaxy?
-        // But 'galaxy' is a rasterizer shader, not compute.
-        // The previous logic allowed 'galaxy' to supersede others.
-        // If ANY slot is 'galaxy', should we render galaxy?
-        // The user said "maybe 3 slots... sequential". Galaxy doesn't chain with compute easily here (it writes to screen).
-        // If the user selects 'galaxy' in Slot 1, and 'ripple' in Slot 2...
-        // Galaxy renders to screen. Ripple computes... then where does Ripple go?
-        // The request implies "Stack Shaders" (Compute).
-        // If a user selects a non-compute shader (Galaxy, Image, Video) in a slot, it breaks the chain logic.
-        // I will assume for now that if the *Primary* (first) slot is a Special Render Mode (Galaxy, Image, Video pipeline), we use that.
-        // Otherwise, we use the `liquid-render` pipeline which displays the result of the Compute Chain.
-
-        // Let's check if the first mode is a "Render Pipeline Mode".
         const primaryMode = modes[0];
 
-        // Final Render Pass
         const renderEncoder = this.device.createCommandEncoder();
         const textureView = this.context.getCurrentTexture().createView();
         const renderPassDescriptor: GPURenderPassDescriptor = {
@@ -746,15 +657,13 @@ export class Renderer {
         const imageVideoPipeline = this.pipelines.get('imageVideo') as GPURenderPipeline;
         const galaxyPipeline = this.pipelines.get('galaxy') as GPURenderPipeline;
 
-        // Legacy handling / Special modes
-        // If modes[0] is 'galaxy', we render galaxy.
         if (primaryMode === 'galaxy' && galaxyPipeline && this.bindGroups.has('galaxy')) {
              this.device.queue.writeBuffer(this.galaxyUniformBuffer, 0, new Float32Array([currentTime, zoom, panX, panY]));
              passEncoder.setPipeline(galaxyPipeline);
              passEncoder.setBindGroup(0, this.bindGroups.get('galaxy')!);
              passEncoder.draw(6);
-        } else if (primaryMode === 'video' && imageVideoPipeline && this.bindGroups.has('video')) {
-            // Render video pass-through if explicitly selected as primary mode
+        } else if ((primaryMode === 'video' || this.inputSource === 'video' || this.inputSource === 'webcam') && primaryMode === 'video' && imageVideoPipeline && this.bindGroups.has('video')) {
+            // Render video pass-through if explicitly selected
              const uniformArray = new Float32Array(8);
              uniformArray.set([this.canvas.width, this.canvas.height, this.videoTexture.width, this.videoTexture.height], 0);
              uniformArray.set([currentTime, 0, 0, 0], 4);
@@ -762,23 +671,39 @@ export class Renderer {
              passEncoder.setPipeline(imageVideoPipeline);
              passEncoder.setBindGroup(0, this.bindGroups.get('video')!);
              passEncoder.draw(4);
-        } else if ((primaryMode === 'image' || primaryMode === 'ripple') && imageVideoPipeline && this.bindGroups.has('image')) {
-            // Legacy handling for 'image' or 'ripple' if they bypass compute logic, though they shouldn't with new chain.
-            // Just treat as fallback to standard liquid render?
-            // Actually, if 'image' is selected, it might mean "Just show the image".
-            // But we handle that via "No active compute shaders" -> Copy input to writeTexture -> liquid-render.
-             if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
-                passEncoder.setPipeline(liquidRenderPipeline);
-                passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
-                passEncoder.draw(4);
-            }
         } else {
-             // Fallback to liquid-render for all compute shaders
-             if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
-                passEncoder.setPipeline(liquidRenderPipeline);
-                passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
-                passEncoder.draw(4);
-            }
+             // If active chain exists, render the output texture
+             if (activeChain.length > 0) {
+                 if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
+                    passEncoder.setPipeline(liquidRenderPipeline);
+                    passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
+                    passEncoder.draw(4);
+                }
+             } else {
+                 // No effects. Draw input directly (scaled).
+                 // Select bind group based on input source
+                 const isVideo = (this.inputSource === 'video' || this.inputSource === 'webcam');
+                 // Ensure texture exists
+                 if (isVideo && !this.videoTexture) {
+                     // Wait for video texture
+                 } else if (!isVideo && !this.imageTexture) {
+                     // Wait for image texture
+                 } else {
+                     const groupName = isVideo ? 'video' : 'image';
+                     const texture = isVideo ? this.videoTexture : this.imageTexture;
+
+                     if (imageVideoPipeline && this.bindGroups.has(groupName) && texture) {
+                         const uniformArray = new Float32Array(8);
+                         uniformArray.set([this.canvas.width, this.canvas.height, texture.width, texture.height], 0);
+                         uniformArray.set([currentTime, 0, 0, 0], 4);
+                         this.device.queue.writeBuffer(this.imageVideoUniformBuffer, 0, uniformArray);
+
+                         passEncoder.setPipeline(imageVideoPipeline);
+                         passEncoder.setBindGroup(0, this.bindGroups.get(groupName)!);
+                         passEncoder.draw(4);
+                     }
+                 }
+             }
         }
 
         passEncoder.end();

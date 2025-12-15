@@ -62,6 +62,8 @@ test('renders Rain controls when active slot mode is rain', () => {
             inputSource="image" setInputSource={() => {}}
             videoList={[]} selectedVideo="" setSelectedVideo={() => {}}
             isMuted={false} setIsMuted={() => {}}
+            onUploadImageTrigger={() => {}}
+            onUploadVideoTrigger={() => {}}
         />
     );
 
@@ -95,6 +97,8 @@ test('does not render Rain controls when active slot mode is not rain', () => {
             inputSource="image" setInputSource={() => {}}
             videoList={[]} selectedVideo="" setSelectedVideo={() => {}}
             isMuted={false} setIsMuted={() => {}}
+            onUploadImageTrigger={() => {}}
+            onUploadVideoTrigger={() => {}}
         />
     );
 
