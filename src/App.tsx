@@ -276,7 +276,8 @@ function App() {
     // ------------------------------------------------------------------------
     // These functions update local state (optimistic UI) AND send message to channel
     
-    const wrapSender = (type: string, localSetter: Function, payload?: any) => {
+    // CHANGED: localSetter type includes 'null' to fix TS error
+    const wrapSender = (type: string, localSetter: Function | null, payload?: any) => {
         if (localSetter) localSetter(payload);
         channelRef.current?.postMessage({ type, payload });
     };
@@ -350,8 +351,6 @@ function App() {
     // Debug Canvas Update (Main Only)
     useEffect(() => {
         if (!isRemote && depthMapResult?.predicted_depth && debugCanvasRef.current) {
-             // ... (Existing debug canvas logic) ...
-             // Simplified for brevity in this snippet, assumes existing logic works
              const { data, dims } = depthMapResult.predicted_depth;
              const [height, width] = [dims[dims.length - 2], dims[dims.length - 1]];
              const canvas = debugCanvasRef.current;
