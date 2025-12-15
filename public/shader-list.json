@@ -2098,77 +2098,78 @@
     ]
   },
   {
-    "id": "thermal-vision",
-    "name": "Thermal Vision",
-    "url": "shaders/thermal-vision.wgsl",
+    "id": "cyber-focus",
+    "name": "Cyber Focus",
+    "url": "shaders/cyber-focus.wgsl",
     "category": "image",
-    "description": "Simulates a thermal camera view. Mouse acts as a heat source.",
+    "description": "High-tech focus mode where the area around the mouse is crisp, while the background suffers from digital interference and chromatic aberration.",
     "params": [
       {
-        "id": "heatIntensity",
-        "name": "Heat Intensity",
+        "id": "radius",
+        "name": "Focus Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blur",
+        "name": "Blur Strength",
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "heatRadius",
-        "name": "Heat Radius",
-        "default": 0.2,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "contrast",
-        "name": "Contrast",
-        "default": 0.2,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "shift",
-        "name": "Color Shift",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ]
-  },
-  {
-    "id": "paper-cutout",
-    "name": "Paper Cutout",
-    "url": "shaders/paper-cutout.wgsl",
-    "category": "image",
-    "description": "Quantizes image into paper layers with drop shadows. Mouse controls light direction.",
-    "params": [
-      {
-        "id": "layers",
-        "name": "Layer Count",
+        "id": "glitch",
+        "name": "Glitch Intensity",
         "default": 0.4,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "shadowStrength",
-        "name": "Shadow Strength",
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "sketch-reveal",
+    "name": "Sketch Reveal",
+    "url": "shaders/sketch-reveal.wgsl",
+    "category": "image",
+    "description": "Transforms the world into a pencil sketch, allowing you to 'paint' the reality back in with your mouse.",
+    "params": [
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "edgeStrength",
+        "name": "Edge Strength",
         "default": 0.5,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "shadowDist",
-        "name": "Shadow Distance",
-        "default": 0.2,
+        "id": "contrast",
+        "name": "Sketch Contrast",
+        "default": 0.5,
         "min": 0.0,
         "max": 1.0
       },
       {
-        "id": "grain",
-        "name": "Paper Grain",
-        "default": 0.3,
+        "id": "softness",
+        "name": "Brush Softness",
+        "default": 0.5,
         "min": 0.0,
         "max": 1.0
       }
