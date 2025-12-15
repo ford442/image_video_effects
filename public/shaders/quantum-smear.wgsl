@@ -73,11 +73,7 @@ fn stochasticAdvect(uv: vec2<f32>, entropy: f32, depth: f32, baseRadius: f32, en
 // ───────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dimsI = textureDimensions(videoTex);
-    let dims = vec2<f32>(f32(dimsI.x), f32(dimsI.y));
-    if (gid.x >= u32(dimsI.x) || gid.y >= u32(dimsI.y)) {
-        return;
-    }
+    let dims = u.config.zw;
 
     let uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;

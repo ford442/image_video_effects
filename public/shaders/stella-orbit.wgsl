@@ -3,20 +3,15 @@
 // ---------------------------------------------------------------
 
 // 1. UNIFORMS & BINDINGS
-// Adjust these binding numbers to match your specific JS setup if needed.
-// Based on your first prompt, I assumed:
-// Binding 2: Output Texture
-// Binding 3: Uniforms
-
-struct Uniforms {
-    iResolution : vec4<f32>, // xy = width/height
-    iTime       : f32,
-    iFrame      : f32,
-    padding     : vec2<f32>, // Padding for alignment
-};
-
 @group(0) @binding(2) var outTex : texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u : Uniforms;
+
+struct Uniforms {
+    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+    ripples: array<vec4<f32>, 50>,
+};
 
 // Global private variables for the accumulation logic
 var<private> g1 : f32;
@@ -61,7 +56,7 @@ fn stella_vf3_f1_(p_4 : ptr<function, vec3<f32>>, s_1 : ptr<function, f32>) -> f
 }
 
 fn stellas_vf3_(p_5 : ptr<function, vec3<f32>>) -> f32 {
-    (*p_5).y = (*p_5).y + u.iTime;
+    (*p_5).y = (*p_5).y + u.config.x;
     let c = 2.0;
     var e = floor(*(p_5) / c);
     e = sin(((e * 2.5 + vec3<f32>(e.y, e.z, e.x) * 3.0) + 1.345) * 11.0);
@@ -70,7 +65,7 @@ fn stellas_vf3_(p_5 : ptr<function, vec3<f32>>) -> f32 {
     
     var param_6 = *(p_5);
     var param_7 = fract(sin(e + 2060303.5)) - 0.5;
-    var param_8 = u.iTime * 1.5;
+    var param_8 = u.config.x * 1.5;
     rot_vf3_vf3_f1_(&param_6, &param_7, &param_8);
     *(p_5) = param_6;
     
@@ -130,14 +125,14 @@ fn structure_vf3_(p_6 : ptr<function, vec3<f32>>) -> f32 {
         pSFold_vf2_f1_(&param_14, &param_15);
         q = vec3<f32>(param_14.x, param_14.y, q.z);
         
-        q.y -= (1.4 - e_1 * 0.2) + sin(u.iTime * 10.0 + e_1 + f32(i_2)) * 0.05;
+        q.y -= (1.4 - e_1 * 0.2) + sin(u.config.x * 10.0 + e_1 + f32(i_2)) * 0.05;
         q.x -= clamp(q.x, -2.0, 2.0);
         q.y -= clamp(q.y, 0.0, 0.2);
         
         let d1 = length(q) * 0.7 - 0.05;
         d = min(d, d1);
         
-        if (e_1 == (2.0 + floor(u.iTime * 5.0 - 7.0 * floor(u.iTime * 5.0 / 7.0)))) {
+        if (e_1 == (2.0 + floor(u.config.x * 5.0 - 7.0 * floor(u.config.x * 5.0 / 7.0)))) {
              g1 += 0.1 / (0.1 + d1 * d1);
         }
     }
@@ -162,14 +157,14 @@ fn randCurve_f1_f1_(t_1 : ptr<function, f32>, n_1 : ptr<function, f32>) -> vec3<
 }
 
 fn rabbit_vf3_(p_7 : ptr<function, vec3<f32>>) -> f32 {
-    var param_16 = u.iTime;
+    var param_16 = u.config.x;
     var param_17 = 2576.0;
     let offset = randCurve_f1_f1_(&param_16, &param_17) * 5.0;
     *p_7 = *p_7 - offset;
     
     var param_18 = *p_7;
     var param_19 = vec3<f32>(1.0);
-    var param_20 = u.iTime;
+    var param_20 = u.config.x;
     rot_vf3_vf3_f1_(&param_18, &param_19, &param_20);
     *p_7 = param_18;
     
@@ -209,13 +204,13 @@ fn doColor_vf3_(p_10 : ptr<function, vec3<f32>>) -> vec3<f32> {
 }
 
 fn orbit_f1_f1_(t_2 : ptr<function, f32>, n_2 : ptr<function, f32>) -> vec3<f32> {
-    var param_1 = -(*t_2) * 1.5 + u.iTime;
+    var param_1 = -(*t_2) * 1.5 + u.config.x;
     var param_2 = 2576.0;
     let p_12 = randCurve_f1_f1_(&param_1, &param_2) * 5.0;
     
     var param_3 = *n_2;
     let off = randVec_f1_(&param_3) * (*t_2 + 0.05) * 0.6;
-    let time = u.iTime + fract(sin(*n_2 * 12345.5)) * 5.0;
+    let time = u.config.x + fract(sin(*n_2 * 12345.5)) * 5.0;
     return p_12 + off * sin(time + 0.5 * sin(0.5 * time));
 }
 
@@ -241,18 +236,19 @@ fn hue_f1_(h : ptr<function, f32>) -> vec3<f32> {
 
 fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
     // Re-mapped coordinate calculation for Compute
-    var p = (fragCoord * 2.0 - u.iResolution.xy) / u.iResolution.y;
+    // u.config.z = width, u.config.w = height
+    var p = (fragCoord * 2.0 - u.config.zw) / u.config.w;
     
     var col = vec3<f32>(0.0, 0.0, 0.05);
     
     // Camera logic
     let camIndices = array<i32, 4>(7, 10, 12, 15);
-    let idx = camIndices[i32(abs(4.0 * sin(u.iTime * 0.3 + 3.0 * sin(u.iTime * 0.2)))) % 4];
+    let idx = camIndices[i32(abs(4.0 * sin(u.config.x * 0.3 + 3.0 * sin(u.config.x * 0.2)))) % 4];
     var ro = vec3<f32>(1.0, 0.0, f32(idx));
     
     var param_28 = ro;
     var param_29 = vec3<f32>(1.0);
-    var param_30 = u.iTime * 0.2;
+    var param_30 = u.config.x * 0.2;
     rot_vf3_vf3_f1_(&param_28, &param_29, &param_30);
     ro = param_28;
     
@@ -333,7 +329,7 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
     }
     
     // Gamma / Tone mapping
-    let gamma = 0.8 + 0.3 * sin(u.iTime * 0.5 + 3.0 * sin(u.iTime * 0.3));
+    let gamma = 0.8 + 0.3 * sin(u.config.x * 0.5 + 3.0 * sin(u.config.x * 0.3));
     col = pow(col, vec3<f32>(gamma));
     
     *fragColor = vec4<f32>(col, 1.0);
@@ -342,11 +338,8 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
-    // 1. Guard check: Ensure we don't write outside texture dimensions
-    let dims = vec2<u32>(u.iResolution.xy);
-    if (gid.x >= dims.x || gid.y >= dims.y) {
-        return;
-    }
+    // 1. Guard check removed, assuming dispatch covers canvas.
+    // Ensure we don't access garbage.
 
     // 2. Initialize globals
     g1 = 0.0; g2 = 0.0; g3 = 0.0;
@@ -359,5 +352,8 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     mainImage(&outColor, coord);
     
     // 5. Write to Storage Texture
-    textureStore(outTex, gid.xy, outColor);
+    // Check output bounds to be safe
+    if (gid.x < u32(u.config.z) && gid.y < u32(u.config.w)) {
+        textureStore(outTex, gid.xy, outColor);
+    }
 }
