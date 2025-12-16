@@ -105,7 +105,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                  if (src && videoRef.current!.src !== src) {
                      videoRef.current!.src = src;
-                     videoRef.current!.play().catch(e => console.log("Video play failed:", e));
+                     videoRef.current!.load(); // Force browser to acknowledge the new source immediately
+                     const playPromise = videoRef.current!.play();
+                     if (playPromise !== undefined) {
+                        playPromise.catch(e => console.log("Video play failed:", e));
+                     }
                  }
              } else {
                  // Image mode: pause video to save resources
@@ -223,6 +227,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 autoPlay
                 playsInline
                 preload="auto"
+                onCanPlay={() => {
+                     console.log("Video can play, forcing play.");
+                     videoRef.current?.play().catch(() => {});
+                }}
+                onLoadStart={() => console.log("Video load start")}
+                onWaiting={() => console.log("Video waiting")}
                 style={{
                     position: 'absolute',
                     width: '1px',

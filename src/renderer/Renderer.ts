@@ -222,7 +222,9 @@ export class Renderer {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error(`API error: ${response.status}`);
             const data = await response.json();
-            this.imageUrls = data.items ? data.items.map((item: {
+            this.imageUrls = data.items ? data.items
+                .filter((item: { name: string }) => /\.(jpg|jpeg|png|webp|gif)$/i.test(item.name))
+                .map((item: {
                 name: string
             }) => `https://storage.googleapis.com/${bucketName}/${item.name}`) : [];
         } catch (e) {
