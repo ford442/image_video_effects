@@ -339,7 +339,7 @@ export class Renderer {
         const dataStorageTextureDescriptor: GPUTextureDescriptor = {
             size: [width, height],
             format: 'rgba32float',
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
         };
         const dataTextureDescriptor: GPUTextureDescriptor = {
             size: [width, height],
@@ -635,6 +635,14 @@ export class Renderer {
             }
 
             this.swapDepthTextures();
+
+            const copyEncoder = this.device.createCommandEncoder();
+            copyEncoder.copyTextureToTexture(
+                { texture: this.dataTextureA },
+                { texture: this.dataTextureC },
+                [this.canvas.width, this.canvas.height]
+            );
+            this.device.queue.submit([copyEncoder.finish()]);
         }
 
         // REMOVED THE COPYTEXTURE fallback block to prevent crashes on size mismatch
