@@ -2261,5 +2261,55 @@
       {"id": "chaos", "name": "Chaos/Noise", "default": 0.2, "min": 0.0, "max": 1.0}
     ],
     "features": ["mouse-driven", "temporal-persistence", "glitch"]
+  },
+  {
+    "id": "radial-blur",
+    "name": "Radial Blur",
+    "url": "shaders/radial-blur.wgsl",
+    "category": "image",
+    "description": "Strong radial blur emanating from the mouse cursor.",
+    "params": [
+      {"id": "strength", "name": "Blur Strength", "default": 0.5, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
+  },
+  {
+    "id": "tile-twist",
+    "name": "Tile Twist",
+    "url": "shaders/tile-twist.wgsl",
+    "category": "image",
+    "description": "Grid tiles twist and rotate based on mouse proximity.",
+    "params": [
+      {"id": "tileSize", "name": "Tile Size", "default": 0.2, "min": 0.0, "max": 1.0},
+      {"id": "twist", "name": "Twist Amount", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Influence Radius", "default": 0.3, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven", "geometry"]
+  },
+  {
+    "id": "chromatic-shockwave",
+    "name": "Chromatic Shockwave",
+    "url": "shaders/chromatic-shockwave.wgsl",
+    "category": "image",
+    "description": "Continuous chromatic ripples emanating from the mouse.",
+    "params": [
+      {"id": "speed", "name": "Wave Speed", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "freq", "name": "Frequency", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "aberration", "name": "Aberration", "default": 0.5, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven", "chromatic-aberration"]
+  },
+  {
+    "id": "dynamic-halftone",
+    "name": "Dynamic Halftone",
+    "url": "shaders/dynamic-halftone.wgsl",
+    "category": "image",
+    "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes.",
+    "params": [
+      {"id": "density", "name": "Dot Density", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Mouse Radius", "default": 0.3, "min": 0.0, "max": 1.0},
+      {"id": "contrast", "name": "Contrast", "default": 0.5, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
   }
 ]
