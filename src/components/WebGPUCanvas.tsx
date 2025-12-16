@@ -30,7 +30,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     setInputSource
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const animationFrameId = useRef<number>(0);
     const lastMouseAddTime = useRef(0);
     const dragStartPos = useRef<{x: number, y: number} | null>(null);
@@ -49,14 +49,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                  if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<Renderer | null>).current = renderer;
                 }
-
-                // Initialize Video Element
-                videoRef.current = document.createElement('video');
-                videoRef.current.crossOrigin = 'anonymous';
-                videoRef.current.muted = isMuted;
-                videoRef.current.loop = true;
-                videoRef.current.autoplay = true;
-                videoRef.current.playsInline = true;
 
                 if (onInit) onInit();
             }
@@ -113,7 +105,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                  if (src && videoRef.current!.src !== src) {
                      videoRef.current!.src = src;
-                     videoRef.current!.play().catch(e => console.log("Video play failed:", e));
+                     videoRef.current!.load(); // Force browser to acknowledge the new source immediately
+                     const playPromise = videoRef.current!.play();
+                     if (playPromise !== undefined) {
+                        playPromise.catch(e => console.log("Video play failed:", e));
+                     }
                  }
              } else {
                  // Image mode: pause video to save resources
@@ -221,7 +217,32 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     };
 
     return (
-        <canvas ref={canvasRef} width="1280" height="1280" onMouseMove={handleCanvasMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} />
+        <>
+            <canvas ref={canvasRef} width="1280" height="1280" onMouseMove={handleCanvasMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} />
+            <video
+                ref={videoRef}
+                crossOrigin="anonymous"
+                muted={isMuted}
+                loop
+                autoPlay
+                playsInline
+                preload="auto"
+                onCanPlay={() => {
+                     console.log("Video can play, forcing play.");
+                     videoRef.current?.play().catch(() => {});
+                }}
+                onLoadStart={() => console.log("Video load start")}
+                onWaiting={() => console.log("Video waiting")}
+                style={{
+                    position: 'absolute',
+                    width: '1px',
+                    height: '1px',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    zIndex: -1
+                }}
+            />
+        </>
     );
 };
 
