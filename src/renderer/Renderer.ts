@@ -439,7 +439,7 @@ export class Renderer {
     }
 
     private createBindGroups(): void {
-        if (!this.imageTexture || !this.nonFilteringSampler || !this.comparisonSampler || !this.depthTextureRead || !this.depthTextureWrite || !this.dataTextureA|| !this.dataTextureB || !this.dataTextureC || !this.extraBuffer || !this.computeUniformBuffer || !this.plasmaBuffer) return;
+        if (!this.imageTexture || !this.filteringSampler || !this.nonFilteringSampler || !this.comparisonSampler || !this.depthTextureRead || !this.depthTextureWrite || !this.dataTextureA|| !this.dataTextureB || !this.dataTextureC || !this.extraBuffer || !this.computeUniformBuffer || !this.plasmaBuffer) return;
 
         if (this.videoTexture) {
             this.bindGroups.set('galaxy', this.device.createBindGroup({
@@ -506,7 +506,7 @@ export class Renderer {
         x: number,
         y: number
     }, mousePosition: { x: number, y: number }, isMouseDown: boolean): void {
-        if (!this.device || !this.imageTexture) return;
+        if (!this.device || !this.imageTexture || !this.filteringSampler) return;
         const currentTime = performance.now() / 1000.0;
 
         // Handle Video Input (Video or Webcam)
