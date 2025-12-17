@@ -2339,5 +2339,33 @@
       {"id": "softness", "name": "Softness", "default": 0.2, "min": 0.0, "max": 1.0}
     ],
     "features": ["mouse-driven", "chromatic-aberration"]
+  },
+  {
+    "id": "sonar-pulse",
+    "name": "Sonar Pulse",
+    "url": "shaders/sonar-pulse.wgsl",
+    "category": "image",
+    "description": "Radial sonar waves emitting from the cursor that distort and scan the image.",
+    "params": [
+      {"id": "speed", "name": "Wave Speed", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "freq", "name": "Frequency", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "intensity", "name": "Intensity", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "width", "name": "Wave Width", "default": 0.3, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
+  },
+  {
+    "id": "hex-mosaic",
+    "name": "Hexagon Mosaic",
+    "url": "shaders/hex-mosaic.wgsl",
+    "category": "image",
+    "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor.",
+    "params": [
+      {"id": "scale", "name": "Tile Density", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Reveal Radius", "default": 0.3, "min": 0.0, "max": 1.0},
+      {"id": "hardness", "name": "Edge Hardness", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "saturation", "name": "Sat Boost", "default": 0.2, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
   }
 ]
