@@ -1,4 +1,4 @@
-@group(0) @binding(0) var u_sampler: sampler;
+8@group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
@@ -58,8 +58,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noise = fract(sin(seed) * 43758.5453);
 
     let shift = intensity * shiftStrength;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(shift, 0.0), 0.0).r;
-    let b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(shift, 0.0), 0.0).b;
+    var r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(shift, 0.0), 0.0).r;
+    var b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(shift, 0.0), 0.0).b;
 
     var g = color.g;
     if (chaos > 0.0 && intensity > 0.5) {
