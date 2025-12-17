@@ -2311,5 +2311,33 @@
       {"id": "contrast", "name": "Contrast", "default": 0.5, "min": 0.0, "max": 1.0}
     ],
     "features": ["mouse-driven"]
+  },
+  {
+    "id": "interactive-glitch",
+    "name": "Interactive Glitch",
+    "url": "shaders/interactive-glitch.wgsl",
+    "category": "image",
+    "description": "Digital glitch artifacts that intensify around the mouse cursor.",
+    "params": [
+      {"id": "intensity", "name": "Base Intensity", "default": 0.1, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Influence Radius", "default": 0.4, "min": 0.0, "max": 1.0},
+      {"id": "speed", "name": "Glitch Speed", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "blockScale", "name": "Block Size", "default": 0.3, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven", "glitch"]
+  },
+  {
+    "id": "liquid-displacement",
+    "name": "Liquid Displacement",
+    "url": "shaders/liquid-displacement.wgsl",
+    "category": "image",
+    "description": "Liquid-like distortion that acts as a lens, pushing or pulling pixels with the mouse.",
+    "params": [
+      {"id": "strength", "name": "Strength", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Radius", "default": 0.3, "min": 0.0, "max": 1.0},
+      {"id": "aberration", "name": "Aberration", "default": 0.4, "min": 0.0, "max": 1.0},
+      {"id": "softness", "name": "Softness", "default": 0.2, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven", "chromatic-aberration"]
   }
 ]
