@@ -2260,6 +2260,112 @@
       {"id": "mouseInfluence", "name": "Mouse Influence", "default": 0.5, "min": 0.0, "max": 1.0},
       {"id": "speed", "name": "Speed", "default": 0.3, "min": 0.0, "max": 1.0}
     ],
+    "features": ["mouse-driven", "temporal-persistence", "glitch"]
+  },
+  {
+    "id": "radial-blur",
+    "name": "Radial Blur",
+    "url": "shaders/radial-blur.wgsl",
+    "category": "image",
+    "description": "Strong radial blur emanating from the mouse cursor.",
+    "params": [
+      {"id": "strength", "name": "Blur Strength", "default": 0.5, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
+  },
+  {
+    "id": "tile-twist",
+    "name": "Tile Twist",
+    "url": "shaders/tile-twist.wgsl",
+    "category": "image",
+    "description": "Grid tiles twist and rotate based on mouse proximity.",
+    "params": [
+      {"id": "tileSize", "name": "Tile Size", "default": 0.2, "min": 0.0, "max": 1.0},
+      {"id": "twist", "name": "Twist Amount", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Influence Radius", "default": 0.3, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven", "geometry"]
+  },
+  {
+    "id": "chromatic-shockwave",
+    "name": "Chromatic Shockwave",
+    "url": "shaders/chromatic-shockwave.wgsl",
+    "category": "image",
+    "description": "Continuous chromatic ripples emanating from the mouse.",
+    "params": [
+      {"id": "speed", "name": "Wave Speed", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "freq", "name": "Frequency", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "aberration", "name": "Aberration", "default": 0.5, "min": 0.0, "max": 1.0}
+    ],
     "features": ["mouse-driven", "chromatic-aberration"]
+  },
+  {
+    "id": "dynamic-halftone",
+    "name": "Dynamic Halftone",
+    "url": "shaders/dynamic-halftone.wgsl",
+    "category": "image",
+    "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes.",
+    "params": [
+      {"id": "density", "name": "Dot Density", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Mouse Radius", "default": 0.3, "min": 0.0, "max": 1.0},
+      {"id": "contrast", "name": "Contrast", "default": 0.5, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
+  },
+  {
+    "id": "interactive-glitch",
+    "name": "Interactive Glitch",
+    "url": "shaders/interactive-glitch.wgsl",
+    "category": "image",
+    "description": "Digital glitch artifacts that intensify around the mouse cursor.",
+    "params": [
+      {"id": "intensity", "name": "Base Intensity", "default": 0.1, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Influence Radius", "default": 0.4, "min": 0.0, "max": 1.0},
+      {"id": "speed", "name": "Glitch Speed", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "blockScale", "name": "Block Size", "default": 0.3, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven", "glitch"]
+  },
+  {
+    "id": "liquid-displacement",
+    "name": "Liquid Displacement",
+    "url": "shaders/liquid-displacement.wgsl",
+    "category": "image",
+    "description": "Liquid-like distortion that acts as a lens, pushing or pulling pixels with the mouse.",
+    "params": [
+      {"id": "strength", "name": "Strength", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Radius", "default": 0.3, "min": 0.0, "max": 1.0},
+      {"id": "aberration", "name": "Aberration", "default": 0.4, "min": 0.0, "max": 1.0},
+      {"id": "softness", "name": "Softness", "default": 0.2, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven", "chromatic-aberration"]
+  },
+  {
+    "id": "sonar-pulse",
+    "name": "Sonar Pulse",
+    "url": "shaders/sonar-pulse.wgsl",
+    "category": "image",
+    "description": "Radial sonar waves emitting from the cursor that distort and scan the image.",
+    "params": [
+      {"id": "speed", "name": "Wave Speed", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "freq", "name": "Frequency", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "intensity", "name": "Intensity", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "width", "name": "Wave Width", "default": 0.3, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
+  },
+  {
+    "id": "hex-mosaic",
+    "name": "Hexagon Mosaic",
+    "url": "shaders/hex-mosaic.wgsl",
+    "category": "image",
+    "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor.",
+    "params": [
+      {"id": "scale", "name": "Tile Density", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "radius", "name": "Reveal Radius", "default": 0.3, "min": 0.0, "max": 1.0},
+      {"id": "hardness", "name": "Edge Hardness", "default": 0.5, "min": 0.0, "max": 1.0},
+      {"id": "saturation", "name": "Sat Boost", "default": 0.2, "min": 0.0, "max": 1.0}
+    ],
+    "features": ["mouse-driven"]
   }
 ]

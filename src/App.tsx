@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
+import RemoteApp from './RemoteApp';
 import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 import { pipeline, env } from '@xenova/transformers';
 import './style.css';
 
@@ -10,7 +12,8 @@ env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
 const model_loc = 'Xenova/dpt-hybrid-midas';
 
-function App() {
+function MainApp() {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
     
     // Default Parameters
@@ -241,6 +244,113 @@ function App() {
         applyModeDefaults(newMode, index);
     };
 
+    // --- Remote Sync Logic ---
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    const latestHandlers = useRef({ handleModeChange, updateSlotParam, handleNewImage, loadModel });
+    latestHandlers.current = { handleModeChange, updateSlotParam, handleNewImage, loadModel };
+
+    const broadcastState = useCallback(() => {
+        if (!channelRef.current) return;
+        const state: FullState = {
+            modes, activeSlot, slotParams, shaderCategory, zoom, panX, panY,
+            inputSource, autoChangeEnabled, autoChangeDelay,
+            isModelLoaded: !!depthEstimator, availableModes,
+            videoList, selectedVideo, isMuted
+        };
+        channelRef.current.postMessage({ type: 'STATE_FULL', payload: state });
+    }, [modes, activeSlot, slotParams, shaderCategory, zoom, panX, panY, inputSource, autoChangeEnabled, autoChangeDelay, depthEstimator, availableModes, videoList, selectedVideo, isMuted]);
+
+    const broadcastStateRef = useRef(broadcastState);
+    broadcastStateRef.current = broadcastState;
+
+    useEffect(() => {
+        broadcastState();
+    }, [broadcastState]);
+
+    useEffect(() => {
+        const channel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+        channelRef.current = channel;
+
+        // Broadcast initial state
+        broadcastStateRef.current();
+
+        channel.onmessage = async (event) => {
+            const msg = event.data as SyncMessage;
+            switch (msg.type) {
+                case 'HELLO':
+                    broadcastStateRef.current();
+                    break;
+                case 'CMD_SET_MODE':
+                    latestHandlers.current.handleModeChange(msg.payload.index, msg.payload.mode);
+                    break;
+                case 'CMD_SET_ACTIVE_SLOT':
+                    setActiveSlot(msg.payload);
+                    break;
+                case 'CMD_UPDATE_SLOT_PARAM':
+                    latestHandlers.current.updateSlotParam(msg.payload.index, msg.payload.updates);
+                    break;
+                case 'CMD_SET_SHADER_CATEGORY':
+                    setShaderCategory(msg.payload);
+                    break;
+                case 'CMD_SET_ZOOM':
+                    setZoom(msg.payload);
+                    break;
+                case 'CMD_SET_PAN_X':
+                    setPanX(msg.payload);
+                    break;
+                case 'CMD_SET_PAN_Y':
+                    setPanY(msg.payload);
+                    break;
+                case 'CMD_SET_INPUT_SOURCE':
+                    setInputSource(msg.payload);
+                    break;
+                case 'CMD_SET_AUTO_CHANGE':
+                    setAutoChangeEnabled(msg.payload);
+                    break;
+                case 'CMD_SET_AUTO_CHANGE_DELAY':
+                    setAutoChangeDelay(msg.payload);
+                    break;
+                case 'CMD_LOAD_RANDOM_IMAGE':
+                    latestHandlers.current.handleNewImage();
+                    break;
+                case 'CMD_LOAD_MODEL':
+                    latestHandlers.current.loadModel();
+                    break;
+                case 'CMD_SELECT_VIDEO':
+                    setSelectedVideo(msg.payload);
+                    setVideoSourceUrl(undefined);
+                    break;
+                case 'CMD_SET_MUTED':
+                    setIsMuted(msg.payload);
+                    break;
+                case 'CMD_UPLOAD_FILE':
+                    const { type, mimeType, data } = msg.payload;
+                    const blob = new Blob([data], { type: mimeType });
+                    const url = URL.createObjectURL(blob);
+                    if (type === 'image') {
+                        if (rendererRef.current) {
+                           rendererRef.current.loadImage(url);
+                           setInputSource('image');
+                        }
+                    } else if (type === 'video') {
+                        setVideoSourceUrl(url);
+                        setInputSource('video');
+                    }
+                    break;
+            }
+        };
+
+        const heartbeatInterval = setInterval(() => {
+             channel.postMessage({ type: 'HEARTBEAT' });
+        }, 1000);
+
+        return () => {
+            channel.close();
+            channelRef.current = null;
+            clearInterval(heartbeatInterval);
+        };
+    }, []);
+
     useEffect(() => {
         const fetchVideos = async () => {
             try {
@@ -272,6 +382,12 @@ function App() {
         fetchVideos();
     }, []);
 
+    const openRemote = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', 'remote');
+        window.open(url.toString(), 'remote_control', 'width=450,height=900,menubar=no,toolbar=no');
+    };
+
     return (
         <div id="app-container">
             {/* Hidden Inputs */}
@@ -290,7 +406,15 @@ function App() {
                 onChange={handleUploadVideo}
             />
 
-            <h1>WebGPU Liquid + Depth Effect</h1>
+            <h1>
+                WebGPU Liquid + Depth Effect
+                <button
+                    onClick={openRemote}
+                    style={{marginLeft: '20px', fontSize: '16px', padding: '5px 10px', cursor: 'pointer', verticalAlign: 'middle', background: '#444', color: 'white', border: '1px solid #666', borderRadius: '4px'}}
+                >
+                    📱 Open Remote
+                </button>
+            </h1>
             <p><strong>Status:</strong> {status}</p>
             <Controls
                 modes={modes}
@@ -351,6 +475,11 @@ function App() {
             )}
         </div>
     );
+}
+
+function App() {
+    const isRemote = new URLSearchParams(window.location.search).get('mode') === 'remote';
+    return isRemote ? <RemoteApp /> : <MainApp />;
 }
 
 export default App;
