@@ -190,6 +190,11 @@ export class Renderer {
         } else {
             console.log("Device does not support 'float32-filterable', using two-sampler workaround.");
         }
+        if (adapter.features.has('float32-blendable')) {
+            requiredFeatures.push('float32-blendable');
+        } else {
+            console.log("Device does not support 'float32-blendable'.");
+        }
         this.device = await adapter.requestDevice({
             requiredFeatures,
         });
