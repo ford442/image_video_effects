@@ -3358,5 +3358,170 @@
       "temporal-persistence",
       "glitch"
     ]
+  },
+  {
+    "id": "hyper-chromatic-delay",
+    "name": "Hyper-Chromatic Delay",
+    "url": "shaders/hyper-chromatic-delay.wgsl",
+    "category": "image",
+    "description": "RGB channels separate and leave temporal trails, reacting to mouse proximity.",
+    "params": [
+      {
+        "id": "sepStrength",
+        "name": "RGB Split",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Shift Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mouseInf",
+        "name": "Mouse Influence",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "liquid-mirror",
+    "name": "Liquid Mirror",
+    "url": "shaders/liquid-mirror.wgsl",
+    "category": "image",
+    "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+    "params": [
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "smooth",
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "reflect",
+        "name": "Reflectivity",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "push",
+        "name": "Push Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "scanline-sorting",
+    "name": "Scanline Sorting",
+    "url": "shaders/scanline-sorting.wgsl",
+    "category": "image",
+    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse.",
+    "params": [
+      {
+        "id": "thresh",
+        "name": "Sort Threshold",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "width",
+        "name": "Scan Width",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Auto Speed",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dir",
+        "name": "Dir (H/V)",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": ["Horizontal", "Vertical"]
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "sorting"
+    ]
+  },
+  {
+    "id": "voronoi-glass",
+    "name": "Voronoi Glass",
+    "url": "shaders/voronoi-glass.wgsl",
+    "category": "image",
+    "description": "Refractive glass cells based on Voronoi patterns that shift with the mouse.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "refract",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "border",
+        "name": "Border Width",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "attract",
+        "name": "Mouse Attract",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ]
   }
 ]
