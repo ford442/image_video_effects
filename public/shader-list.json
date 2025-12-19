@@ -3194,5 +3194,88 @@
     "features": [
       "mouse-driven"
     ]
+  },
+  {
+    "id": "holographic-prism",
+    "name": "Holographic Prism",
+    "url": "shaders/holographic-prism.wgsl",
+    "category": "image",
+    "description": "Splits the image into spectral shards that rotate and shift, creating a holographic lens effect.",
+    "params": [
+      {
+        "id": "facets",
+        "name": "Facet Count",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glitch",
+        "name": "Holo Glitch",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "data-stream-corruption",
+    "name": "Data Stream Corruption",
+    "url": "shaders/data-stream-corruption.wgsl",
+    "category": "image",
+    "description": "Vertical data streams fall like rain; your mouse leaves a trail of corrupted code blocks.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Stream Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "brush",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Glitch Intensity",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "persistence",
+        "name": "Persistence",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "glitch"
+    ]
   }
 ]
