@@ -227,8 +227,8 @@ export class Renderer {
         } else {
             console.log("Device does not support 'shader-f16'.");
         }
-        // --- FIX START ---
-        // Store the device in the class property
+        
+        // Initialize Device
         this.device = await adapter.requestDevice({
             requiredFeatures,
         });
@@ -617,11 +617,15 @@ export class Renderer {
                 }
 
                 const uniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
-                uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
-
+                
+                // Determine target point and zoomConfigW based on Shader Features (Left Side Logic) vs Mode (Right Side Logic)
                 let targetX = farthestPoint.x;
                 let targetY = farthestPoint.y;
-                let zoomConfigW = mode === 'infinite-zoom' ? params.depthThreshold : 0;
+                let zoomConfigW = 0;
+
+                if (mode === 'infinite-zoom') {
+                    zoomConfigW = params.depthThreshold; // Infinite zoom uses W for depth threshold
+                }
 
                 const shaderEntry = this.shaderList.find(s => s.id === mode);
                 if (shaderEntry?.features?.includes('mouse-driven')) {
@@ -629,12 +633,18 @@ export class Renderer {
                         targetX = mousePosition.x;
                         targetY = mousePosition.y;
                     }
+                    // For mouse-driven non-infinite-zoom shaders, use W for interaction state
                     if (mode !== 'infinite-zoom') {
                         zoomConfigW = isMouseDown ? 1.0 : 0.0;
                     }
                 }
 
                 uniformArray.set([currentTime, targetX, targetY, zoomConfigW], 4);
+                uniformArray.set([this.canvas.width, this.canvas.height], 0); // Re-set width/height at index 2,3 (bug fix: index 0 is time/ripple count usually)
+                // Correct Packing:
+                // Vec4 0: [Time, RippleCount, Width, Height]
+                uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0); 
+                // Vec4 1: [TargetX, TargetY, ZoomConfigW, PADDING] -> overwritten by next steps usually, but we set it above
 
                 const zoomParamsArr = new Float32Array([
                     params.zoomParam1,
@@ -685,8 +695,6 @@ export class Renderer {
             this.device.queue.submit([copyEncoder.finish()]);
         }
 
-        // REMOVED THE COPYTEXTURE fallback block to prevent crashes on size mismatch
-
         // ---------------------------------------------------------
         // RENDER PASS (To Screen)
         // ---------------------------------------------------------
@@ -731,14 +739,9 @@ export class Renderer {
                 }
              } else {
                  // No effects. Draw input directly (scaled).
-                 // Select bind group based on input source
                  const isVideo = (this.inputSource === 'video' || this.inputSource === 'webcam');
                  // Ensure texture exists
-                 if (isVideo && !this.videoTexture) {
-                     // Wait for video texture
-                 } else if (!isVideo && !this.imageTexture) {
-                     // Wait for image texture
-                 } else {
+                 if ((isVideo && this.videoTexture) || (!isVideo && this.imageTexture)) {
                      const groupName = isVideo ? 'video' : 'image';
                      const texture = isVideo ? this.videoTexture : this.imageTexture;
 

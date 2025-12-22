@@ -72,12 +72,15 @@ const Controls: React.FC<ControlsProps> = ({
     };
 
     const currentModes = getCurrentCategoryModes();
-    const currentParams = slotParams[activeSlot];
+    
+    // Determine the configuration for the currently active slot
     const currentMode = modes[activeSlot];
+    const currentParams = slotParams[activeSlot];
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
 
     return (
         <div className="controls">
+            {/* --- Input Source Selection --- */}
             <div className="control-group">
                 <label>Input Source:</label>
                 <div style={{ display: 'inline-block', marginLeft: '10px' }}>
@@ -123,6 +126,7 @@ const Controls: React.FC<ControlsProps> = ({
                 </select>
             </div>
 
+            {/* --- Stack / Slot Selection --- */}
             <div className="stack-controls" style={{border: '1px solid #444', padding: '10px', margin: '10px 0', borderRadius: '5px'}}>
                 <div style={{fontWeight: 'bold', marginBottom: '5px'}}>Effect Stack</div>
                 {[0, 1, 2].map(index => (
@@ -149,9 +153,10 @@ const Controls: React.FC<ControlsProps> = ({
                 ))}
             </div>
 
+            {/* --- Source Specific Controls --- */}
             {inputSource === 'video' && (
                 <div className="control-group" style={{alignItems: 'flex-start', flexDirection: 'column'}}>
-                     <div style={{marginBottom: '5px'}}>
+                      <div style={{marginBottom: '5px'}}>
                         <button onClick={onUploadVideoTrigger} style={{marginRight: '10px'}}>Upload Video</button>
                         <label style={{ marginLeft: '10px' }}>
                             <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} /> Mute
@@ -194,6 +199,7 @@ const Controls: React.FC<ControlsProps> = ({
                 </>
             )}
 
+            {/* --- Global View Controls --- */}
             <div className="control-group">
                 <label htmlFor="zoom-slider">Zoom:</label>
                 <input type="range" id="zoom-slider" min="50" max="200" value={zoom * 100} onChange={(e) => setZoom(parseFloat(e.target.value) / 100)} />
@@ -207,6 +213,7 @@ const Controls: React.FC<ControlsProps> = ({
                 <input type="range" id="pan-y-slider" min="0" max="200" value={panY * 100} onChange={(e) => setPanY(parseFloat(e.target.value) / 100)} />
             </div>
 
+            {/* --- Active Slot Parameter Controls --- */}
             <hr style={{ borderColor: '#444', margin: '15px 0' }} />
             <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>
                 Slot {activeSlot + 1} Controls ({modes[activeSlot] === 'none' ? 'Empty' : modes[activeSlot]})
@@ -239,12 +246,13 @@ const Controls: React.FC<ControlsProps> = ({
 
             {currentMode !== 'none' && currentMode !== 'infinite-zoom' && currentShaderEntry && (
                 <>
+                    {/* Dynamic Shader Params based on metadata */}
                     {currentShaderEntry.params && currentShaderEntry.params.map((param, i) => {
                         let val = 0;
-                        if (i === 0) val = currentParams.zoomParam1;
-                        if (i === 1) val = currentParams.zoomParam2;
-                        if (i === 2) val = currentParams.zoomParam3;
-                        if (i === 3) val = currentParams.zoomParam4;
+                        if (i === 0) val = currentParams.zoomParam1 ?? param.default;
+                        if (i === 1) val = currentParams.zoomParam2 ?? param.default;
+                        if (i === 2) val = currentParams.zoomParam3 ?? param.default;
+                        if (i === 3) val = currentParams.zoomParam4 ?? param.default;
 
                         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                             const v = parseFloat(e.target.value);
@@ -261,13 +269,15 @@ const Controls: React.FC<ControlsProps> = ({
                                     type="range"
                                     min={param.min}
                                     max={param.max}
-                                    step={0.01}
+                                    step={param.step || 0.01}
                                     value={val}
                                     onChange={handleChange}
                                 />
                             </div>
                         );
                     })}
+                    
+                    {/* Fallback for shaders without metadata (should not happen often) */}
                     {(!currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
                          <>
                             <div className="control-group">
