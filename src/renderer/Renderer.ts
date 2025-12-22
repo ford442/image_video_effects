@@ -272,7 +272,6 @@ export class Renderer {
             }
             
             this.shaderList = allShaders;
-            console.log(`Loaded ${allShaders.length} shaders from ${categories.length} category files`);
         } catch (e) {
             console.error("Failed to fetch shader list:", e);
             this.shaderList = [];
