@@ -79,8 +79,14 @@ The application will open at `http://localhost:3000`.
 image_video_effects/
 ├── public/
 │   ├── index.html           # HTML entry point
-│   ├── shader-list.json     # Shader configuration
-│   └── shaders/             # WGSL compute shaders (dozens)
+│   ├── shader-lists/        # Shader configurations (category-based)
+│   │   ├── liquid-effects.json       # Liquid shaders (16 entries)
+│   │   ├── interactive-mouse.json    # Mouse-driven shaders (49 entries)
+│   │   ├── visual-effects.json       # Glitch/CRT effects (26 entries)
+│   │   ├── lighting-effects.json     # Plasma/cosmic effects (14 entries)
+│   │   ├── distortion.json           # Spatial distortion (11 entries)
+│   │   └── artistic.json             # Creative effects (28 entries)
+│   └── shaders/             # WGSL compute shaders (144 total)
 │       ├── liquid.wgsl
 │       ├── liquid-*.wgsl    # Various liquid effects
 │       ├── plasma.wgsl
@@ -120,13 +126,20 @@ npm test     # Run tests
 
 1. Create a new `.wgsl` file in `public/shaders/`
 2. Follow the standard shader interface (see `AGENTS.md` for details)
-3. Add an entry to `public/shader-list.json`:
+3. Add an entry to the appropriate category file in `public/shader-lists/`:
+   - `liquid-effects.json` - for liquid-* shaders
+   - `interactive-mouse.json` - for mouse-driven effects
+   - `visual-effects.json` - for glitch/CRT/chromatic effects
+   - `lighting-effects.json` - for plasma/cosmic/glow effects
+   - `distortion.json` - for spatial distortions
+   - `artistic.json` - for creative/artistic effects
 
 ```json
 {
   "id": "my-shader",
   "name": "My Shader",
-  "url": "shaders/my-shader.wgsl"
+  "url": "shaders/my-shader.wgsl",
+  "category": "image"
 }
 ```
 
@@ -136,13 +149,13 @@ This engine uses a "Universal BindGroup" architecture. You can drop in new `.wgs
 
 1.  **Create File:** Add `public/shaders/my-cool-effect.wgsl`.
 2.  **Paste Header:** Copy the standard uniform header from `AGENTS.md`.
-3.  **Register:** Add one line to `public/shader-list.json`:
+3.  **Register:** Add one entry to the appropriate category file in `public/shader-lists/`:
     ```json
-    { "id": "cool-effect", "name": "My Cool Effect", "url": "shaders/my-cool-effect.wgsl" }
+    { "id": "cool-effect", "name": "My Cool Effect", "url": "shaders/my-cool-effect.wgsl", "category": "image" }
     ```
 4.  **Test:** Refresh the browser. The new effect appears in the dropdown immediately.
 
-**Note to AI Copilots:** If asked to create a shader, output *only* the WGSL file and the JSON snippet. Do not modify the rendering engine.
+**Note to AI Copilots:** If asked to create a shader, output *only* the WGSL file and the JSON snippet. Do not modify the rendering engine. Add new shaders to the most appropriate category file to avoid merge conflicts.
 
 ## Technical Details
 
