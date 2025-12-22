@@ -26,10 +26,10 @@ fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(workgroup_id
   let idx = local_id.x;
   let pixel_idx = group_id.x * 256u + idx;
   // Load: for simplicity, read from readTexture
-  let dim = textureDimensions(readTexture);
-  let x = pixel_idx % dim.x;
-  let y = pixel_idx / dim.x;
-  let uv = vec2<f32>(f32(x), f32(y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  let width = u32(u.config.z);
+  let x = pixel_idx % width;
+  let y = pixel_idx / width;
+  let uv = vec2<f32>(f32(x), f32(y)) / u.config.zw;
   let time = u.config.x;
   
   // Mouse position determines sort region center

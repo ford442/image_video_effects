@@ -1,9 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { Renderer } from '../renderer/Renderer';
-import { RenderMode, InputSource } from '../renderer/types';
+import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 
 interface WebGPUCanvasProps {
-    mode: RenderMode;
+    modes: RenderMode[];
+    slotParams: SlotParams[];
     zoom: number;
     panX: number;
     panY: number;
@@ -14,41 +15,29 @@ interface WebGPUCanvasProps {
     isMouseDown: boolean;
     setIsMouseDown: (down: boolean) => void;
     onInit?: () => void;
-    // New Props
     inputSource: InputSource;
-    selectedVideo: string;
+    selectedVideo: string; // Used for "Stock" videos
+    videoSourceUrl?: string; // NEW: Used for "Uploaded" videos (Blob URL)
     isMuted: boolean;
-    // Infinite Zoom
-    lightStrength?: number;
-    ambient?: number;
-    normalStrength?: number;
-    fogFalloff?: number;
-    depthThreshold?: number;
-    // Generic Params
-    zoomParam1?: number;
-    zoomParam2?: number;
-    zoomParam3?: number;
-    zoomParam4?: number;
+    setInputSource?: (source: InputSource) => void; // Added for error handling
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
-    mode, zoom, panX, panY, rendererRef,
+    modes, slotParams, zoom, panX, panY, rendererRef,
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
-    inputSource, selectedVideo, isMuted,
-    lightStrength, ambient, normalStrength, fogFalloff, depthThreshold,
-    zoomParam1, zoomParam2, zoomParam3, zoomParam4
+    inputSource, selectedVideo, videoSourceUrl, isMuted,
+    setInputSource
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const animationFrameId = useRef<number>(0);
     const lastMouseAddTime = useRef(0);
-
-    // Plasma Interaction Refs
     const dragStartPos = useRef<{x: number, y: number} | null>(null);
     const dragStartTime = useRef<number>(0);
+    const streamRef = useRef<MediaStream | null>(null);
 
-    // Initialize Renderer and Video Element
+    // Initialize Renderer
     useEffect(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -61,101 +50,105 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     (rendererRef as React.MutableRefObject<Renderer | null>).current = renderer;
                 }
 
-                // Initialize Video Element
-                videoRef.current = document.createElement('video');
-                videoRef.current.crossOrigin = 'anonymous';
-                videoRef.current.muted = isMuted; // Use prop
-                videoRef.current.loop = true;
-                videoRef.current.autoplay = true;
-                videoRef.current.playsInline = true;
-
-                if (selectedVideo) {
-                    videoRef.current.src = `videos/${selectedVideo}`;
-                    if (inputSource === 'video') {
-                        videoRef.current.play().catch(console.error);
-                    }
-                }
-
                 if (onInit) onInit();
             }
         })();
         return () => {
             cancelAnimationFrame(animationFrameId.current);
             renderer.destroy();
+            // Stop webcam stream if active
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rendererRef, onInit]);
 
-    // Handle Selected Video Change
+    // Handle Input Source & Video Source Changes
     useEffect(() => {
-        if (videoRef.current && selectedVideo) {
-            videoRef.current.src = `videos/${selectedVideo}`;
-            if (inputSource === 'video') {
-                videoRef.current.play().catch(e => console.log("Video play failed:", e));
-            }
-        }
-    }, [selectedVideo]);
+        if (!videoRef.current) return;
 
-    // Handle Mute Change
+        const handleVideoSource = async () => {
+             // Stop previous webcam stream if switching away or re-requesting
+             if (streamRef.current && inputSource !== 'webcam') {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+             }
+
+             if (inputSource === 'webcam') {
+                 try {
+                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                     streamRef.current = stream;
+                     videoRef.current!.srcObject = stream;
+                     videoRef.current!.play().catch(console.error);
+                 } catch (e) {
+                     console.error("Error accessing webcam:", e);
+                     alert("Could not access webcam.");
+                     // Revert to image if webcam fails
+                     if (setInputSource) {
+                         setInputSource('image');
+                     }
+                 }
+             } else if (inputSource === 'video') {
+                 // Clean up srcObject if coming from webcam
+                 if (videoRef.current!.srcObject) {
+                     videoRef.current!.srcObject = null;
+                 }
+
+                 // Determine URL
+                 let src = '';
+                 if (videoSourceUrl) {
+                     src = videoSourceUrl; // Uploaded video (blob:)
+                 } else if (selectedVideo) {
+                     src = `videos/${selectedVideo}`; // Stock video
+                 }
+
+                 if (src && videoRef.current!.src !== src) {
+                     videoRef.current!.src = src;
+                     videoRef.current!.load(); // Force browser to acknowledge the new source immediately
+                     const playPromise = videoRef.current!.play();
+                     if (playPromise !== undefined) {
+                        playPromise.catch(e => console.log("Video play failed:", e));
+                     }
+                 }
+             } else {
+                 // Image mode: pause video to save resources
+                 videoRef.current!.pause();
+             }
+        };
+
+        handleVideoSource();
+
+    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource]);
+
+    // Handle Mute
     useEffect(() => {
         if (videoRef.current) {
             videoRef.current.muted = isMuted;
         }
     }, [isMuted]);
 
-    // Handle Input Source Change (Play/Pause)
+    // Animation Loop
     useEffect(() => {
-        if (videoRef.current) {
-            if (inputSource === 'video') {
-                if (videoRef.current.src) {
-                    videoRef.current.play().catch(() => {});
-                }
-            } else {
-                videoRef.current.pause();
-            }
-        }
-    }, [inputSource]);
-
- useEffect(() => {
         let active = true;
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
-                // Special handling for Galaxy mode to pass zoom/pan via uniforms
-                if (mode === 'galaxy') {
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoom,
-                        bgSpeed: panX,
-                        parallaxStrength: panY
-                    });
-                } else {
-                    // Generic pass-through for all other modes (values managed by App.tsx)
-                    rendererRef.current.updateZoomParams({
-                        fgSpeed: zoomParam1,
-                        bgSpeed: zoomParam2,
-                        parallaxStrength: zoomParam3,
-                        fogDensity: zoomParam4
-                    });
-                }
-
-                // Update Lighting Params
-                rendererRef.current.updateLightingParams({
-                    lightStrength,
-                    ambient,
-                    normalStrength,
-                    fogFalloff,
-                    depthThreshold
-                });
-
-                // Pass video element to render
-                rendererRef.current.render(mode, videoRef.current, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown);
+                // Resolution: Use the stacking render signature from 'main'
+                (rendererRef.current as any).render(
+                    modes,
+                    slotParams,
+                    videoRef.current,
+                    zoom, panX, panY, farthestPoint, mousePosition, isMouseDown
+                );
             }
             animationFrameId.current = requestAnimationFrame(animate);
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [mode, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, lightStrength, ambient, normalStrength, fogFalloff, depthThreshold, zoomParam1, zoomParam2, zoomParam3, zoomParam4]);
+    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef]);
 
+    // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -182,41 +175,35 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
         setIsMouseDown(true);
         updateMousePosition(event);
-        if (mode === 'ripple' || mode === 'vortex' || mode.startsWith('liquid')) {
-            addRippleAtMouseEvent(event);
-        }
-
-        if (mode === 'plasma') {
+        
+        // Check if any active mode supports interaction
+        const hasInteractiveMode = modes.some(m => m === 'ripple' || m === 'vortex' || m.startsWith('liquid'));
+        if (hasInteractiveMode) addRippleAtMouseEvent(event);
+        
+        const plasmaMode = modes.includes('plasma');
+        if (plasmaMode) {
             if (!canvasRef.current) return;
             const canvas = canvasRef.current;
             const rect = canvas.getBoundingClientRect();
-            const x = (event.clientX - rect.left) / canvas.width;
-            const y = (event.clientY - rect.top) / canvas.height;
-            dragStartPos.current = { x, y };
+            dragStartPos.current = { x: (event.clientX - rect.left) / canvas.width, y: (event.clientY - rect.top) / canvas.height };
             dragStartTime.current = performance.now();
         }
     };
 
     const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
         setIsMouseDown(false);
-
-        if (mode === 'plasma' && dragStartPos.current && rendererRef.current) {
+        const plasmaMode = modes.includes('plasma');
+        if (plasmaMode && dragStartPos.current && rendererRef.current) {
             const canvas = canvasRef.current!;
             const rect = canvas.getBoundingClientRect();
             const currentX = (event.clientX - rect.left) / canvas.width;
             const currentY = (event.clientY - rect.top) / canvas.height;
-
             const dt = (performance.now() - dragStartTime.current) / 1000.0;
             const dx = currentX - dragStartPos.current.x;
             const dy = currentY - dragStartPos.current.y;
-
             if (dt > 0.01) {
-                const vx = dx / dt;
-                const vy = dy / dt;
-                const speed = Math.sqrt(vx*vx + vy*vy);
-                if (speed > 0.1) {
-                    rendererRef.current.firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
-                }
+                const vx = dx / dt; const vy = dy / dt;
+                if (Math.sqrt(vx*vx + vy*vy) > 0.1) rendererRef.current.firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
             }
             dragStartPos.current = null;
         }
@@ -224,7 +211,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
         updateMousePosition(event);
-        if (isMouseDown && (mode === 'ripple' || mode === 'vortex' || mode.startsWith('liquid'))) {
+        const hasInteractiveMode = modes.some(m => m === 'ripple' || m === 'vortex' || m.startsWith('liquid'));
+        if (isMouseDown && hasInteractiveMode) {
             const now = performance.now();
             if (now - lastMouseAddTime.current < 10) return;
             lastMouseAddTime.current = now;
@@ -232,8 +220,31 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     };
 
-   return (
-        <canvas ref={canvasRef} width="2048" height="2048" onMouseMove={handleCanvasMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} />
+    return (
+        <>
+            <canvas ref={canvasRef} width="1280" height="1280" onMouseMove={handleCanvasMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} />
+            <video
+                ref={videoRef}
+                crossOrigin="anonymous"
+                muted={isMuted}
+                loop
+                autoPlay
+                playsInline
+                preload="auto"
+                onCanPlay={() => {
+                     // Ensure video plays when loaded
+                     videoRef.current?.play().catch(() => {});
+                }}
+                style={{
+                    position: 'absolute',
+                    width: '1px',
+                    height: '1px',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    zIndex: -1
+                }}
+            />
+        </>
     );
 };
 

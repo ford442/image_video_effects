@@ -72,10 +72,8 @@ fn computeTangentFrame(neighbors: array<vec4<f32>, 4>) -> array<vec4<f32>, 4> {
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dimsI = textureDimensions(readTexture);
-    let dims = vec2<f32>(f32(dimsI.x), f32(dimsI.y));
+    let dims = u.config.zw;
     let gid = global_id.xy;
-    if (gid.x >= u32(dimsI.x) || gid.y >= u32(dimsI.y)) { return; }
 
     let uv = vec2<f32>(f32(gid.x) / dims.x, f32(gid.y) / dims.y);
 

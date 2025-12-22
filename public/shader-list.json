@@ -529,7 +529,7 @@
     "name": "Astral Veins",
     "url": "shaders/astral-veins.wgsl",
     "category": "image",
-    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
+    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour\u2011cycle. Click to seed new veins.",
     "params": [
       {
         "id": "speed",
@@ -835,7 +835,7 @@
     "name": "Green Tracer World",
     "url": "shaders/green-tracer.wgsl",
     "category": "image",
-    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night‑vision aesthetics.",
+    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night\u2011vision aesthetics.",
     "params": [
       {
         "id": "trailLen",
@@ -888,10 +888,10 @@
       }
     ],
     "features": [
-      "temporal‑persistence",
-      "edge‑glow",
-      "film‑grain",
-      "depth‑aware"
+      "temporal\u2011persistence",
+      "edge\u2011glow",
+      "film\u2011grain",
+      "depth\u2011aware"
     ]
   },
   {
@@ -1183,7 +1183,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "physics"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics"
+    ]
   },
   {
     "id": "wave-equation",
@@ -1221,7 +1226,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "physics"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics"
+    ]
   },
   {
     "id": "photonic-caustics",
@@ -1259,7 +1269,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "chromatic-aberration"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "chromatic-aberration"
+    ]
   },
   {
     "id": "chromatographic-separation",
@@ -1297,7 +1312,12 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "temporal-persistence", "interactive", "fluid-dynamics"]
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "fluid-dynamics"
+    ]
   },
   {
     "id": "multi-turing",
@@ -1335,7 +1355,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "organic-growth"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "organic-growth"
+    ]
   },
   {
     "id": "dla-crystals",
@@ -1373,14 +1397,18 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "fractal"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "fractal"
+    ]
   },
   {
     "id": "poincare-tile",
     "name": "Hyperbolic Tiling",
     "url": "shaders/poincare-tile.wgsl",
     "category": "geometry",
-    "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
+    "description": "Poincar\u00e9 disk hyperbolic geometry with M\u00f6bius transformations and animated tilings.",
     "params": [
       {
         "id": "curvature",
@@ -1411,7 +1439,10 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "mathematical"]
+    "features": [
+      "interactive",
+      "mathematical"
+    ]
   },
   {
     "id": "log-polar-droste",
@@ -1449,7 +1480,11 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "mathematical", "recursive"]
+    "features": [
+      "interactive",
+      "mathematical",
+      "recursive"
+    ]
   },
   {
     "id": "anisotropic-kuwahara",
@@ -1487,7 +1522,11 @@
         "max": 1.0
       }
     ],
-    "features": ["depth-aware", "interactive", "painterly"]
+    "features": [
+      "depth-aware",
+      "interactive",
+      "painterly"
+    ]
   },
   {
     "id": "byte-mosh",
@@ -1525,7 +1564,11 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "chromatic-aberration", "glitch"]
+    "features": [
+      "interactive",
+      "chromatic-aberration",
+      "glitch"
+    ]
   },
   {
     "id": "time-lag-map",
@@ -1563,7 +1606,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "motion-detection"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "motion-detection"
+    ]
   },
   {
     "id": "flow-sort",
@@ -1601,7 +1648,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "depth-aware"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "depth-aware"
+    ]
   },
   {
     "id": "magnetic-dipole",
@@ -1639,7 +1690,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "physics"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "physics"
+    ]
   },
   {
     "id": "voronoi-dynamics",
@@ -1677,7 +1732,11 @@
         "max": 1.0
       }
     ],
-    "features": ["interactive", "depth-aware", "physics"]
+    "features": [
+      "interactive",
+      "depth-aware",
+      "physics"
+    ]
   },
   {
     "id": "predator-prey",
@@ -1715,7 +1774,11 @@
         "max": 1.0
       }
     ],
-    "features": ["temporal-persistence", "interactive", "ecology"]
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "ecology"
+    ]
   },
   {
     "id": "chromatic-crawler",
@@ -1951,6 +2014,1799 @@
     "features": [
       "mouse-driven",
       "glitch"
+    ]
+  },
+  {
+    "id": "mouse-gravity",
+    "name": "Interactive Gravity",
+    "url": "shaders/mouse-gravity.wgsl",
+    "category": "image",
+    "description": "Gravitational distortion field that follows the mouse cursor.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Gravity Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Event Radius",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Chrom. Aberration",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "darkness",
+        "name": "Core Darkness",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "pixel-reveal",
+    "name": "Pixel Reveal",
+    "url": "shaders/pixel-reveal.wgsl",
+    "category": "image",
+    "description": "Pixelates the image, with a clear window (or obscuring block) around the mouse.",
+    "params": [
+      {
+        "id": "pixelSize",
+        "name": "Pixel Size",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "softness",
+        "name": "Edge Softness",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "invert",
+        "name": "Invert Mode",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "magnetic-interference",
+    "name": "Magnetic Interference",
+    "url": "shaders/magnetic-interference.wgsl",
+    "category": "image",
+    "description": "Simulates magnetic distortion on a CRT screen, pulling pixels and separating colors.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Strength",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 2.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "scanlines",
+        "name": "Scanlines",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "neon-strings",
+    "name": "Neon Strings",
+    "url": "shaders/neon-strings.wgsl",
+    "category": "image",
+    "description": "Vibrating neon strings generated from edge detection, agitated by the mouse.",
+    "params": [
+      {
+        "id": "thickness",
+        "name": "Edge Threshold",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "vibration",
+        "name": "Vibration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "neon",
+        "name": "Neon Intensity",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 2.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "cyber-focus",
+    "name": "Cyber Focus",
+    "url": "shaders/cyber-focus.wgsl",
+    "category": "image",
+    "description": "High-tech focus mode where the area around the mouse is crisp, while the background suffers from digital interference and chromatic aberration.",
+    "params": [
+      {
+        "id": "radius",
+        "name": "Focus Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blur",
+        "name": "Blur Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch Intensity",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "sketch-reveal",
+    "name": "Sketch Reveal",
+    "url": "shaders/sketch-reveal.wgsl",
+    "category": "image",
+    "description": "Transforms the world into a pencil sketch, allowing you to 'paint' the reality back in with your mouse.",
+    "params": [
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "edgeStrength",
+        "name": "Edge Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "contrast",
+        "name": "Sketch Contrast",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "softness",
+        "name": "Brush Softness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "thermal-touch",
+    "name": "Thermal Touch",
+    "url": "shaders/thermal-touch.wgsl",
+    "category": "image",
+    "description": "False-color thermal vision where the mouse acts as a heat source.",
+    "params": [
+      {
+        "id": "heatIntensity",
+        "name": "Heat Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "ambientTemp",
+        "name": "Ambient Temp",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorMode",
+        "name": "Color Mode",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "blueprint-reveal",
+    "name": "Blueprint Reveal",
+    "url": "shaders/blueprint-reveal.wgsl",
+    "category": "image",
+    "description": "Interactive blueprint schematic that you can erase to reveal reality.",
+    "params": [
+      {
+        "id": "edgeStrength",
+        "name": "Edge Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "gridOpacity",
+        "name": "Grid Opacity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Reveal Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "softness",
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "vortex-drag",
+    "name": "Vortex Drag",
+    "url": "shaders/vortex-drag.wgsl",
+    "category": "image",
+    "description": "Twisting vortex distortion that follows the mouse cursor.",
+    "params": [
+      {
+        "id": "twist",
+        "name": "Twist Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Vortex Radius",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pinch",
+        "name": "Pinch/Bulge",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hardness",
+        "name": "Edge Hardness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "neon-flashlight",
+    "name": "Neon Flashlight",
+    "url": "shaders/neon-flashlight.wgsl",
+    "category": "image",
+    "description": "Dark environment illuminated by a neon-edge detecting flashlight.",
+    "params": [
+      {
+        "id": "radius",
+        "name": "Beam Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Neon Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "threshold",
+        "name": "Edge Threshold",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "ambient",
+        "name": "Ambient Light",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "magnetic-pixels",
+    "name": "Magnetic Pixels",
+    "url": "shaders/magnetic-pixels.wgsl",
+    "category": "image",
+    "description": "Pixels are magnetically repelled by the cursor, creating a void.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Force Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Effect Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hardness",
+        "name": "Edge Hardness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "chaos",
+        "name": "Chaos",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "spectral-distortion",
+    "name": "Spectral Distortion",
+    "url": "shaders/spectral-distortion.wgsl",
+    "category": "image",
+    "description": "RGB channels split and warp based on noise and mouse proximity.",
+    "params": [
+      {
+        "id": "separation",
+        "name": "RGB Separation",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "warpScale",
+        "name": "Warp Scale",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "glitch"
+    ]
+  },
+  {
+    "id": "radial-blur",
+    "name": "Radial Blur",
+    "url": "shaders/radial-blur.wgsl",
+    "category": "image",
+    "description": "Strong radial blur emanating from the mouse cursor.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Blur Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "tile-twist",
+    "name": "Tile Twist",
+    "url": "shaders/tile-twist.wgsl",
+    "category": "image",
+    "description": "Grid tiles twist and rotate based on mouse proximity.",
+    "params": [
+      {
+        "id": "tileSize",
+        "name": "Tile Size",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "twist",
+        "name": "Twist Amount",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Influence Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ]
+  },
+  {
+    "id": "chromatic-shockwave",
+    "name": "Chromatic Shockwave",
+    "url": "shaders/chromatic-shockwave.wgsl",
+    "category": "image",
+    "description": "Continuous chromatic ripples emanating from the mouse.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "freq",
+        "name": "Frequency",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "dynamic-halftone",
+    "name": "Dynamic Halftone",
+    "url": "shaders/dynamic-halftone.wgsl",
+    "category": "image",
+    "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Dot Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Mouse Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "interactive-glitch",
+    "name": "Interactive Glitch",
+    "url": "shaders/interactive-glitch.wgsl",
+    "category": "image",
+    "description": "Digital glitch artifacts that intensify around the mouse cursor.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Base Intensity",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Influence Radius",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Glitch Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blockScale",
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ]
+  },
+  {
+    "id": "liquid-displacement",
+    "name": "Liquid Displacement",
+    "url": "shaders/liquid-displacement.wgsl",
+    "category": "image",
+    "description": "Liquid-like distortion that acts as a lens, pushing or pulling pixels with the mouse.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "softness",
+        "name": "Softness",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "sonar-pulse",
+    "name": "Sonar Pulse",
+    "url": "shaders/sonar-pulse.wgsl",
+    "category": "image",
+    "description": "Radial sonar waves emitting from the cursor that distort and scan the image.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "freq",
+        "name": "Frequency",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "width",
+        "name": "Wave Width",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "hex-mosaic",
+    "name": "Hexagon Mosaic",
+    "url": "shaders/hex-mosaic.wgsl",
+    "category": "image",
+    "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor.",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Reveal Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hardness",
+        "name": "Edge Hardness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "saturation",
+        "name": "Sat Boost",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "neon-cursor-trace",
+    "name": "Neon Cursor Trace",
+    "url": "shaders/neon-cursor-trace.wgsl",
+    "category": "image",
+    "description": "Persistent neon light trail that follows the cursor.",
+    "params": [
+      {
+        "id": "decay",
+        "name": "Trace Decay",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "width",
+        "name": "Trace Width",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Neon Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satBoost",
+        "name": "Sat Boost",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "liquid-smear",
+    "name": "Liquid Smear",
+    "url": "shaders/liquid-smear.wgsl",
+    "category": "image",
+    "description": "Smudge pixels like wet paint with your mouse.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Smear Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "size",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Persistence",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mix",
+        "name": "Mix Strength",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "rgb-split-glitch",
+    "name": "RGB Split Glitch",
+    "url": "shaders/rgb-split-glitch.wgsl",
+    "category": "image",
+    "description": "Splits RGB channels based on mouse proximity.",
+    "params": [
+      {
+        "id": "split",
+        "name": "Split Dist",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "angle",
+        "name": "Angle Offset",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "noise",
+        "name": "Jitter Noise",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "pixel-sort-radial",
+    "name": "Radial Pixel Stretch",
+    "url": "shaders/pixel-sort-radial.wgsl",
+    "category": "image",
+    "description": "Radially stretches pixels from the mouse position based on luminance.",
+    "params": [
+      {
+        "id": "stretch",
+        "name": "Stretch Amt",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "thresh",
+        "name": "Luma Thresh",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dir",
+        "name": "Direction",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "interactive-frost",
+    "name": "Interactive Frost",
+    "url": "shaders/frost-reveal.wgsl",
+    "category": "image",
+    "description": "Realistic frost grows over the image; use your mouse (warmth) to melt it away.",
+    "params": [
+      {
+        "id": "growth",
+        "name": "Growth Speed",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Melt Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "opacity",
+        "name": "Frost Opacity",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "vhs-jog",
+    "name": "VHS Jog Wheel",
+    "url": "shaders/vhs-jog.wgsl",
+    "category": "image",
+    "description": "Simulate VHS tracking and jogging. Mouse X controls distortion (jog), Mouse Y controls tracking.",
+    "params": [
+      {
+        "id": "noise",
+        "name": "Static Noise",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "distFreq",
+        "name": "Dist. Freq",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "bleed",
+        "name": "Color Bleed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "scanlines",
+        "name": "Scanlines",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ]
+  },
+  {
+    "id": "glass-shatter",
+    "name": "Glass Shatter",
+    "url": "shaders/glass-shatter.wgsl",
+    "category": "image",
+    "description": "Interactive shattered glass effect where shards are pushed by the mouse.",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Shard Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "displacement",
+        "name": "Displacement",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "edge",
+        "name": "Edge",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "raindrop-ripples",
+    "name": "Raindrop Ripples",
+    "url": "shaders/raindrop-ripples.wgsl",
+    "category": "image",
+    "description": "Raindrops fall creating ripples, but the mouse cursor acts as a shield.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Rain Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "shield",
+        "name": "Shield Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "cyber-organic",
+    "name": "Cyber Organic Scanner",
+    "url": "shaders/cyber-organic.wgsl",
+    "category": "image",
+    "description": "Scans the image to reveal a pulsating organic layer beneath.",
+    "params": [
+      {
+        "id": "scanSpeed",
+        "name": "Scan Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "organicScale",
+        "name": "Organic Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "revealRadius",
+        "name": "Reveal Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "ferrofluid",
+    "name": "Magnetic Ferrofluid",
+    "url": "shaders/ferrofluid.wgsl",
+    "category": "image",
+    "description": "Simulates magnetic ferrofluid spikes attracted to the mouse.",
+    "params": [
+      {
+        "id": "spikeScale",
+        "name": "Spike Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "attraction",
+        "name": "Attraction",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "chronos-brush",
+    "name": "Chronos Brush",
+    "url": "shaders/chronos-brush.wgsl",
+    "category": "image",
+    "description": "Freeze time by painting over the video feed.",
+    "params": [
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Freeze Decay",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "distortion",
+        "name": "Time Edge Distort",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mode",
+        "name": "Mode (Paint/Erase)",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": [
+          "Freeze",
+          "Unfreeze"
+        ]
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "cyber-rain",
+    "name": "Cyber Rain",
+    "url": "shaders/cyber-rain.wgsl",
+    "category": "image",
+    "description": "Neon rain on wet glass with mouse wiper.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Rain Intensity",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blur",
+        "name": "Wet Blur",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "bloom",
+        "name": "Neon Bloom",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "wiper",
+        "name": "Wiper Size",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "holographic-prism",
+    "name": "Holographic Prism",
+    "url": "shaders/holographic-prism.wgsl",
+    "category": "image",
+    "description": "Splits the image into spectral shards that rotate and shift, creating a holographic lens effect.",
+    "params": [
+      {
+        "id": "facets",
+        "name": "Facet Count",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glitch",
+        "name": "Holo Glitch",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "data-stream-corruption",
+    "name": "Data Stream Corruption",
+    "url": "shaders/data-stream-corruption.wgsl",
+    "category": "image",
+    "description": "Vertical data streams fall like rain; your mouse leaves a trail of corrupted code blocks.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Stream Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "brush",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Glitch Intensity",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "persistence",
+        "name": "Persistence",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "glitch"
+    ]
+  },
+  {
+    "id": "hyper-chromatic-delay",
+    "name": "Hyper-Chromatic Delay",
+    "url": "shaders/hyper-chromatic-delay.wgsl",
+    "category": "image",
+    "description": "RGB channels separate and leave temporal trails, reacting to mouse proximity.",
+    "params": [
+      {
+        "id": "sepStrength",
+        "name": "RGB Split",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Shift Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mouseInf",
+        "name": "Mouse Influence",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "liquid-mirror",
+    "name": "Liquid Mirror",
+    "url": "shaders/liquid-mirror.wgsl",
+    "category": "image",
+    "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+    "params": [
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "smooth",
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "reflect",
+        "name": "Reflectivity",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "push",
+        "name": "Push Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "scanline-sorting",
+    "name": "Scanline Sorting",
+    "url": "shaders/scanline-sorting.wgsl",
+    "category": "image",
+    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse.",
+    "params": [
+      {
+        "id": "thresh",
+        "name": "Sort Threshold",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "width",
+        "name": "Scan Width",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Auto Speed",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "dir",
+        "name": "Dir (H/V)",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": ["Horizontal", "Vertical"]
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "sorting"
+    ]
+  },
+  {
+    "id": "voronoi-glass",
+    "name": "Voronoi Glass",
+    "url": "shaders/voronoi-glass.wgsl",
+    "category": "image",
+    "description": "Refractive glass cells based on Voronoi patterns that shift with the mouse.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "refract",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "border",
+        "name": "Border Width",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "attract",
+        "name": "Mouse Attract",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ]
+  },
+  {
+    "id": "cross-stitch",
+    "name": "Cross Stitch Reveal",
+    "url": "shaders/cross-stitch.wgsl",
+    "category": "image",
+    "description": "Quantizes the image into cross-stitch patterns. Mouse movement unravels or distorts the fabric.",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Stitch Scale",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "thickness",
+        "name": "Thread Thickness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Effect Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "chaos",
+        "name": "Unravel Chaos",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ]
+  },
+  {
+    "id": "bubble-wrap",
+    "name": "Bubble Wrap",
+    "url": "shaders/bubble-wrap.wgsl",
+    "category": "image",
+    "description": "Interactive bubble wrap that you can pop with your mouse. Popped bubbles stay popped!",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Bubble Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "popStrength",
+        "name": "Pop Strength",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "unused",
+        "name": "Unused",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "selective-color",
+    "name": "Selective Color",
+    "url": "shaders/selective-color.wgsl",
+    "category": "image",
+    "description": "Desaturates the image except for a circular region around the mouse.",
+    "params": [
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "softness",
+        "name": "Edge Softness",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 0.5
+      },
+      {
+        "id": "desat",
+        "name": "Desat. Strength",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "interactive-emboss",
+    "name": "Interactive Emboss",
+    "url": "shaders/interactive-emboss.wgsl",
+    "category": "image",
+    "description": "Emboss effect where the light source follows the mouse cursor.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mix",
+        "name": "Intensity",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorMode",
+        "name": "Color Mode",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": ["Gray", "Color"]
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "quad-mirror",
+    "name": "Quad Mirror",
+    "url": "shaders/quad-mirror.wgsl",
+    "category": "image",
+    "description": "Kaleidoscope-like 4-way mirror reflection centered on the mouse.",
+    "params": [
+      {
+        "id": "mode",
+        "name": "Mode",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 1.0,
+        "min": 0.1,
+        "max": 3.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ]
+  },
+  {
+    "id": "interactive-fisheye",
+    "name": "Interactive Fisheye",
+    "url": "shaders/interactive-fisheye.wgsl",
+    "category": "image",
+    "description": "Barrel distortion lens that magnifies the area under the mouse.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Lens Radius",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ]
+  },
+  {
+    "id": "optical-feedback",
+    "name": "Optical Feedback Loop",
+    "url": "shaders/optical-feedback.wgsl",
+    "category": "image",
+    "description": "Infinite video feedback loop centered on the mouse cursor.",
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Feedback Zoom",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.95,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "shift",
+        "name": "Hue Shift",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "laser-burn",
+    "name": "Laser Burn",
+    "url": "shaders/laser-burn.wgsl",
+    "category": "image",
+    "description": "Interactive laser that burns the image permanently (or heals slowly).",
+    "params": [
+      {
+        "id": "beamSize",
+        "name": "Beam Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "burnSpeed",
+        "name": "Burn Intensity",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "healRate",
+        "name": "Heal Rate",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "heatMode",
+        "name": "Heat Glow",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
     ]
   }
 ]

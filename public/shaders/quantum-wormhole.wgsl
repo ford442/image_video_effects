@@ -23,8 +23,8 @@
 
 struct Uniforms {
   config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=twistScale, y=flowStrength, z=trailLength, w=persistence
   zoom_config: vec4<f32>,       // x=burstIntensity, y=voidThreshold, z=rotationSpeed, w=depthInf
+  zoom_params: vec4<f32>,       // x=twistScale, y=flowStrength, z=trailLength, w=persistence
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -86,11 +86,7 @@ fn curlField(uv: vec2<f32>, texelSize: vec2<f32>) -> vec2<f32> {
 // ---------------------------------------------------------------
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dimsI = textureDimensions(videoTex);
-    let dims = vec2<f32>(f32(dimsI.x), f32(dimsI.y));
-    if (gid.x >= u32(dimsI.x) || gid.y >= u32(dimsI.y)) {
-        return;
-    }
+    let dims = u.config.zw;
 
     let uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
@@ -157,8 +153,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  Colour debt (negative channels) in dark regions → "void pockets"
     // -----------------------------------------------------------------
-    let srcLum = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    if (srcLum < voidThreshold) {
+    if (hsv.z < voidThreshold) {
         newRGB = -newRGB; // creates "void pockets"
     }
 

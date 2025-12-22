@@ -23,8 +23,8 @@
 
 struct Uniforms {
   config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=amplification, y=curlStrength, z=feedbackMix, w=chromaticDrift
   zoom_config: vec4<f32>,       // x=contrastBoost, y=evolutionSpeed, z=seedStrength, w=depthMod
+  zoom_params: vec4<f32>,       // x=amplification, y=curlStrength, z=feedbackMix, w=chromaticDrift
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -47,22 +47,16 @@ fn luminanceGradient(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-//  Calculate curl (2D rotation) - OPTIMIZED: uses only 4 samples instead of 16
-//  Curl ≈ dGy/dx - dGx/dy where G = (dL/dx, dL/dy)
-//  We approximate this with a simple Laplacian-like operator
+//  Calculate curl (2D rotation) from gradient derivatives
 // ───────────────────────────────────────────────────────────────────────────────
 fn curlNoise(uv: vec2<f32>, texel: vec2<f32>) -> f32 {
-    // Sample luminance at 4 cardinal directions
-    let lL = luminance(textureSampleLevel(feedbackTex, videoSampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb);
-    let lR = luminance(textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb);
-    let lU = luminance(textureSampleLevel(feedbackTex, videoSampler, uv - vec2<f32>(0.0, texel.y), 0.0).rgb);
-    let lD = luminance(textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb);
-    
-    // Approximate curl as cross-derivative difference
-    // This captures rotational tendency in the luminance field
-    let dx = lR - lL;
-    let dy = lD - lU;
-    return (dx - dy) * 0.5;
+    let gx0 = luminanceGradient(uv - vec2<f32>(texel.x, 0.0), texel);
+    let gx1 = luminanceGradient(uv + vec2<f32>(texel.x, 0.0), texel);
+    let gy0 = luminanceGradient(uv - vec2<f32>(0.0, texel.y), texel);
+    let gy1 = luminanceGradient(uv + vec2<f32>(0.0, texel.y), texel);
+
+    // Curl is z-component of cross product of gradients
+    return (gy1.x - gy0.x - gx1.y + gx0.y) * 0.5;
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -91,11 +85,7 @@ fn gaussianBlur3x3(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> vec3<f32> {
 // ───────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dimsI = textureDimensions(videoTex);
-    let dims = vec2<f32>(f32(dimsI.x), f32(dimsI.y));
-    if (gid.x >= u32(dimsI.x) || gid.y >= u32(dimsI.y)) {
-        return;
-    }
+    let dims = u.config.zw;
 
     let uv = vec2<f32>(gid.xy) / dims;
     let texel = 1.0 / dims;

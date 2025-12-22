@@ -17,8 +17,8 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_params: vec4<f32>,  // x=TwistScale, y=DistortionStep, z=ColorShift, w=Unused
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=TwistScale, y=DistortionStep, z=ColorShift, w=Unused
   ripples: array<vec4<f32>, 50>,
 };
 

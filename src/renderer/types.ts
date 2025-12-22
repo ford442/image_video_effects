@@ -1,8 +1,9 @@
 export type RenderMode = string;
 
-export type ShaderCategory = 'shader' | 'image' | 'video';
+export type ShaderCategory = 'shader' | 'image' | 'video' | 'simulation' | 'feedback' | 'sorting' | 'warp' | 'tessellation' | 'audio' | 'glyph' | 'edge' | 'geometry' | 'artistic' | 'glitch' | 'temporal';
 
-export type InputSource = 'image' | 'video';
+// Added 'webcam'
+export type InputSource = 'image' | 'video' | 'webcam';
 
 export interface ShaderParam {
     id: string;
@@ -23,4 +24,16 @@ export interface ShaderEntry {
     params?: ShaderParam[];
     advanced_params?: ShaderParam[];
     features?: string[];
+}
+
+export interface SlotParams {
+    zoomParam1: number;
+    zoomParam2: number;
+    zoomParam3: number;
+    zoomParam4: number;
+    lightStrength: number;
+    ambient: number;
+    normalStrength: number;
+    fogFalloff: number;
+    depthThreshold: number;
 }
