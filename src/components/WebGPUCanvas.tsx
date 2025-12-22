@@ -134,6 +134,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
+                // Resolution: Use the stacking render signature from 'main'
                 (rendererRef.current as any).render(
                     modes,
                     slotParams,
@@ -147,7 +148,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
     }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef]);
 
-    // Mouse Handlers (Existing)
+    // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -174,8 +175,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
         setIsMouseDown(true);
         updateMousePosition(event);
+        
+        // Check if any active mode supports interaction
         const hasInteractiveMode = modes.some(m => m === 'ripple' || m === 'vortex' || m.startsWith('liquid'));
         if (hasInteractiveMode) addRippleAtMouseEvent(event);
+        
         const plasmaMode = modes.includes('plasma');
         if (plasmaMode) {
             if (!canvasRef.current) return;
@@ -228,11 +232,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 playsInline
                 preload="auto"
                 onCanPlay={() => {
-                     console.log("Video can play, forcing play.");
+                     // Ensure video plays when loaded
                      videoRef.current?.play().catch(() => {});
                 }}
-                onLoadStart={() => console.log("Video load start")}
-                onWaiting={() => console.log("Video waiting")}
                 style={{
                     position: 'absolute',
                     width: '1px',
