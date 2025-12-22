@@ -3726,5 +3726,87 @@
       "mouse-driven",
       "geometry"
     ]
+  },
+  {
+    "id": "optical-feedback",
+    "name": "Optical Feedback Loop",
+    "url": "shaders/optical-feedback.wgsl",
+    "category": "image",
+    "description": "Infinite video feedback loop centered on the mouse cursor.",
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Feedback Zoom",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.95,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "shift",
+        "name": "Hue Shift",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "laser-burn",
+    "name": "Laser Burn",
+    "url": "shaders/laser-burn.wgsl",
+    "category": "image",
+    "description": "Interactive laser that burns the image permanently (or heals slowly).",
+    "params": [
+      {
+        "id": "beamSize",
+        "name": "Beam Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "burnSpeed",
+        "name": "Burn Intensity",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "healRate",
+        "name": "Heal Rate",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "heatMode",
+        "name": "Heat Glow",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
   }
 ]
