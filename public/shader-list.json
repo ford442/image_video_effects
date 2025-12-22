@@ -3731,7 +3731,7 @@
     "id": "elastic-surface",
     "name": "Elastic Surface",
     "url": "shaders/elastic-surface.wgsl",
-    "category": "simulation",
+    "category": "image",
     "description": "Simulates a rubber sheet that can be pushed or pulled by the mouse.",
     "params": [
       {
