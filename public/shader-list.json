@@ -3726,5 +3726,88 @@
       "mouse-driven",
       "geometry"
     ]
+  },
+  {
+    "id": "elastic-surface",
+    "name": "Elastic Surface",
+    "url": "shaders/elastic-surface.wgsl",
+    "category": "simulation",
+    "description": "Simulates a rubber sheet that can be pushed or pulled by the mouse.",
+    "params": [
+      {
+        "id": "stiffness",
+        "name": "Stiffness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "force",
+        "name": "Mouse Force",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "physics"
+    ]
+  },
+  {
+    "id": "divine-light",
+    "name": "Divine Light",
+    "url": "shaders/divine-light.wgsl",
+    "category": "image",
+    "description": "Volumetric light rays emanating from the mouse cursor.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "threshold",
+        "name": "Luma Thresh",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "lighting"
+    ]
   }
 ]
