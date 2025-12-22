@@ -59,7 +59,7 @@ This document provides structured guidance for AI code agents working on this co
 
 | Task | Files to Modify |
 |------|-----------------|
-| Add new shader effect | `public/shaders/*.wgsl`, `public/shader-list.json` |
+| Add new shader effect | `public/shaders/*.wgsl`, `public/shader-lists/{category}.json` |
 | Modify UI controls | `src/components/Controls.tsx` |
 | Change rendering logic | `src/renderer/Renderer.ts` |
 | Add new render mode | `src/renderer/types.ts`, `Renderer.ts` |
@@ -90,7 +90,13 @@ src/
 
 public/
 ├── index.html              # HTML entry point
-├── shader-list.json        # Shader registry configuration
+├── shader-lists/           # Shader registry (category-based organization)
+│   ├── liquid-effects.json       # Liquid shaders (16 entries)
+│   ├── interactive-mouse.json    # Mouse-driven effects (49 entries)
+│   ├── visual-effects.json       # Glitch/CRT/chromatic (26 entries)
+│   ├── lighting-effects.json     # Plasma/cosmic/glow (14 entries)
+│   ├── distortion.json           # Spatial distortions (11 entries)
+│   └── artistic.json             # Creative effects (28 entries)
 └── shaders/                # WGSL compute and render shaders
     ├── liquid.wgsl         # Main interactive liquid effect
     ├── liquid-*.wgsl       # Liquid effect variants
@@ -118,7 +124,7 @@ The simulation uses a **ping-pong texture system** where compute shaders read pr
 The main WebGPU orchestrator:
 
 - Manages GPU resources (textures, buffers, pipelines, bind groups)
-- Loads shaders dynamically from `shader-list.json`
+- Loads shaders dynamically from category files in `shader-lists/`
 - Handles mouse ripple effects via `addRipplePoint()`
 - Supports plasma ball physics via `firePlasma()`
 
@@ -194,15 +200,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
 ### Step 2: Register the Shader
 
-Add entry to `public/shader-list.json`:
+Add entry to the appropriate category file in `public/shader-lists/`:
+
+**Choose the right category:**
+- `liquid-effects.json` - for liquid-* shaders
+- `interactive-mouse.json` - for mouse-driven effects  
+- `visual-effects.json` - for glitch/CRT/chromatic effects
+- `lighting-effects.json` - for plasma/cosmic/glow effects
+- `distortion.json` - for spatial distortions
+- `artistic.json` - for creative/artistic effects
 
 ```json
 {
   "id": "my-effect",
   "name": "My Effect",
-  "url": "shaders/my-effect.wgsl"
+  "url": "shaders/my-effect.wgsl",
+  "category": "image"
 }
 ```
+
+**Note:** The category-based structure prevents merge conflicts when multiple contributors add shaders simultaneously. Always add your shader to the most relevant category file.
 
 ### Step 3: Test
 

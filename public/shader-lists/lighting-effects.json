@@ -1,0 +1,435 @@
+[
+  {
+    "id": "plasma",
+    "name": "Plasma Ball",
+    "url": "shaders/plasma.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "bioluminescent",
+    "name": "Bioluminescent Growth",
+    "url": "shaders/bioluminescent.wgsl",
+    "category": "image",
+    "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching.",
+    "params": [
+      {
+        "id": "spread",
+        "name": "Spread Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Branch Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spores",
+        "name": "Spore Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_mode",
+        "name": "Color Mode",
+        "default": 0.25,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pulse",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "depth_influence",
+        "name": "Depth Influence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "multi-mode"
+    ]
+  },
+  {
+    "id": "astral-veins",
+    "name": "Astral Veins",
+    "url": "shaders/astral-veins.wgsl",
+    "category": "image",
+    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour\u2011cycle. Click to seed new veins.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "scale",
+        "name": "Noise Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Glow Intensity",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hueShift",
+        "name": "Hue Shift",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "veinThickness",
+        "name": "Vein Thickness",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInfluence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive"
+    ]
+  },
+  {
+    "id": "radiating-haze",
+    "name": "Radiating Haze",
+    "url": "shaders/radiating-haze.wgsl",
+    "category": "image",
+    "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Aura Intensity",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Aura Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pulseSpd",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hueBias",
+        "name": "Hue Bias / Fixed Hue",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colourMode",
+        "name": "Colour Mode",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "labels": [
+          "Shifted",
+          "Original",
+          "Fixed"
+        ]
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "multi-mode"
+    ]
+  },
+  {
+    "id": "radiating-displacement",
+    "name": "Radiating Displacement",
+    "url": "shaders/radiating-displacement.wgsl",
+    "category": "image",
+    "description": "Rippling displacement waves emanate only from strong colours; neutrals stay sharp. Mouse-click to seed ripples.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "strength",
+        "name": "Displace Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Wave Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pulseSpd",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "colour-masking"
+    ]
+  },
+  {
+    "id": "green-tracer",
+    "name": "Green Tracer World",
+    "url": "shaders/green-tracer.wgsl",
+    "category": "image",
+    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night\u2011vision aesthetics.",
+    "params": [
+      {
+        "id": "trailLen",
+        "name": "Trail Length",
+        "default": 0.6,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glowInt",
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "greenTint",
+        "name": "Green Tint",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "noiseAmt",
+        "name": "Film Grain",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 0.5
+      },
+      {
+        "id": "motionThresh",
+        "name": "Motion Threshold",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "depthInf",
+        "name": "Depth Influence",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "trailFade",
+        "name": "Trail Fade Rate",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "temporal\u2011persistence",
+      "edge\u2011glow",
+      "film\u2011grain",
+      "depth\u2011aware"
+    ]
+  },
+  {
+    "id": "wave-equation",
+    "name": "Wave Tank",
+    "url": "shaders/wave-equation.wgsl",
+    "category": "simulation",
+    "description": "2D wave equation simulation with ripple physics, refraction effects, and rainbow phase coloring.",
+    "params": [
+      {
+        "id": "waveSpeed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "sourceStrength",
+        "name": "Source Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "boundaryReflect",
+        "name": "Boundary Reflect",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics"
+    ]
+  },
+  {
+    "id": "nebulous-dream",
+    "name": "Nebulous Dream",
+    "url": "shaders/nebulous-dream.wgsl",
+    "category": "image",
+    "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields."
+  },
+  {
+    "id": "spectrum-bleed",
+    "name": "Spectrum Bleed",
+    "url": "shaders/spectrum-bleed.wgsl",
+    "category": "image",
+    "description": "Color channel separation and bleeding effects."
+  },
+  {
+    "id": "aurora-rift",
+    "name": "Aurora Rift",
+    "url": "shaders/aurora-rift.wgsl",
+    "category": "image",
+    "description": "Aurora borealis-inspired lighting effects with atmospheric rifts."
+  },
+  {
+    "id": "aurora-rift-2",
+    "name": "Aurora Rift V2",
+    "url": "shaders/aurora-rift-2.wgsl",
+    "category": "image",
+    "description": "Enhanced aurora effects with improved color gradients."
+  },
+  {
+    "id": "stella-orbit",
+    "name": "Stellar Orbit",
+    "url": "shaders/stella-orbit.wgsl",
+    "category": "image",
+    "description": "Orbital motion patterns with stellar particle systems."
+  },
+  {
+    "id": "rainbow-cloud",
+    "name": "Rainbow Cloud",
+    "url": "shaders/rainbow-cloud.wgsl",
+    "category": "image",
+    "description": "Colorful cloud formations with rainbow gradients."
+  },
+  {
+    "id": "astral-kaleidoscope",
+    "name": "Astral Kaleidoscope",
+    "url": "shaders/astral-kaleidoscope.wgsl",
+    "category": "image",
+    "description": "Cosmic kaleidoscope with astral color schemes."
+  }
+]

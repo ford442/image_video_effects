@@ -1,0 +1,255 @@
+[
+  {
+    "id": "liquid",
+    "name": "Liquid (Interactive)",
+    "url": "shaders/liquid.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-v1",
+    "name": "Liquid (Ambient)",
+    "url": "shaders/liquid-v1.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-zoom",
+    "name": "Liquid Zoom",
+    "url": "shaders/liquid-zoom.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-perspective",
+    "name": "Liquid Perspective",
+    "url": "shaders/liquid-perspective.wgsl",
+    "category": "image",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "shift",
+        "name": "Color Shift",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "advanced_params": [
+      {
+        "id": "fg_depth",
+        "name": "Foreground Depth",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "falloff",
+        "name": "Edge Softness",
+        "default": 0.1,
+        "min": 0.001,
+        "max": 0.2
+      },
+      {
+        "id": "parallax",
+        "name": "Parallax Strength",
+        "default": 0.03,
+        "min": 0.0,
+        "max": 0.1
+      }
+    ]
+  },
+  {
+    "id": "liquid-viscous",
+    "name": "Liquid Viscous",
+    "url": "shaders/liquid-viscous.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-fast",
+    "name": "Liquid Fast",
+    "url": "shaders/liquid-fast.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-rgb",
+    "name": "Liquid RGB",
+    "url": "shaders/liquid-rgb.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-metal",
+    "name": "Liquid Metal",
+    "url": "shaders/liquid-metal.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-jelly",
+    "name": "Liquid Jelly",
+    "url": "shaders/liquid-jelly.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-rainbow",
+    "name": "Liquid Rainbow",
+    "url": "shaders/liquid-rainbow.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-oil",
+    "name": "Liquid Oil",
+    "url": "shaders/liquid-oil.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-glitch",
+    "name": "Liquid Glitch",
+    "url": "shaders/liquid-glitch.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-viscous-simple",
+    "name": "Liquid Viscous (Simple)",
+    "url": "shaders/liquid-viscous-simple.wgsl",
+    "category": "image"
+  },
+  {
+    "id": "liquid-displacement",
+    "name": "Liquid Displacement",
+    "url": "shaders/liquid-displacement.wgsl",
+    "category": "image",
+    "description": "Liquid-like distortion that acts as a lens, pushing or pulling pixels with the mouse.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "softness",
+        "name": "Softness",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
+    "id": "liquid-smear",
+    "name": "Liquid Smear",
+    "url": "shaders/liquid-smear.wgsl",
+    "category": "image",
+    "description": "Smudge pixels like wet paint with your mouse.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Smear Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "size",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Persistence",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mix",
+        "name": "Mix Strength",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "liquid-mirror",
+    "name": "Liquid Mirror",
+    "url": "shaders/liquid-mirror.wgsl",
+    "category": "image",
+    "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+    "params": [
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "smooth",
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "reflect",
+        "name": "Reflectivity",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "push",
+        "name": "Push Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  }
+]

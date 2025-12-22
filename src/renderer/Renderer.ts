@@ -246,9 +246,32 @@ export class Renderer {
 
     private async fetchShaderList(): Promise<void> {
         try {
-            const response = await fetch('shader-list.json');
-            if (!response.ok) throw new Error(`Failed to load shader list: ${response.status}`);
-            this.shaderList = await response.json();
+            const categories = [
+                'liquid-effects',
+                'interactive-mouse',
+                'visual-effects',
+                'lighting-effects',
+                'distortion',
+                'artistic'
+            ];
+            
+            const allShaders: ShaderEntry[] = [];
+            
+            for (const category of categories) {
+                try {
+                    const response = await fetch(`shader-lists/${category}.json`);
+                    if (response.ok) {
+                        const shaders = await response.json();
+                        allShaders.push(...shaders);
+                    } else {
+                        console.warn(`Failed to load category ${category}: ${response.status}`);
+                    }
+                } catch (e) {
+                    console.warn(`Failed to load category ${category}:`, e);
+                }
+            }
+            
+            this.shaderList = allShaders;
         } catch (e) {
             console.error("Failed to fetch shader list:", e);
             this.shaderList = [];
