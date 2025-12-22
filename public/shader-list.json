@@ -3726,5 +3726,87 @@
       "mouse-driven",
       "geometry"
     ]
+  },
+  {
+    "id": "infinite-video-feedback",
+    "name": "Infinite Video Feedback",
+    "url": "shaders/infinite-video-feedback.wgsl",
+    "category": "image",
+    "description": "Create a feedback loop with the previous frame, applying zoom and rotation centered on the mouse.",
+    "params": [
+      {
+        "id": "feedback",
+        "name": "Feedback Decay",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 0.99
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "shift",
+        "name": "Color Shift",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "strip-scan-glitch",
+    "name": "Strip Scan Glitch",
+    "url": "shaders/strip-scan-glitch.wgsl",
+    "category": "image",
+    "description": "Slices the image into vertical strips that drift and jitter, controlled by mouse position.",
+    "params": [
+      {
+        "id": "strips",
+        "name": "Strip Count",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Scroll Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "jitter",
+        "name": "Glitch Jitter",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "rgb",
+        "name": "RGB Split",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ]
   }
 ]
