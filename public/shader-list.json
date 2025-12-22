@@ -529,7 +529,7 @@
     "name": "Astral Veins",
     "url": "shaders/astral-veins.wgsl",
     "category": "image",
-    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour\u2011cycle. Click to seed new veins.",
+    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
     "params": [
       {
         "id": "speed",
@@ -835,7 +835,7 @@
     "name": "Green Tracer World",
     "url": "shaders/green-tracer.wgsl",
     "category": "image",
-    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night\u2011vision aesthetics.",
+    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night‑vision aesthetics.",
     "params": [
       {
         "id": "trailLen",
@@ -888,10 +888,10 @@
       }
     ],
     "features": [
-      "temporal\u2011persistence",
-      "edge\u2011glow",
-      "film\u2011grain",
-      "depth\u2011aware"
+      "temporal‑persistence",
+      "edge‑glow",
+      "film‑grain",
+      "depth‑aware"
     ]
   },
   {
@@ -1408,7 +1408,7 @@
     "name": "Hyperbolic Tiling",
     "url": "shaders/poincare-tile.wgsl",
     "category": "geometry",
-    "description": "Poincar\u00e9 disk hyperbolic geometry with M\u00f6bius transformations and animated tilings.",
+    "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
     "params": [
       {
         "id": "curvature",
@@ -3475,7 +3475,10 @@
         "default": 0.0,
         "min": 0.0,
         "max": 1.0,
-        "labels": ["Horizontal", "Vertical"]
+        "labels": [
+          "Horizontal",
+          "Vertical"
+        ]
       }
     ],
     "features": [
@@ -3666,7 +3669,10 @@
         "default": 0.0,
         "min": 0.0,
         "max": 1.0,
-        "labels": ["Gray", "Color"]
+        "labels": [
+          "Gray",
+          "Color"
+        ]
       }
     ],
     "features": [
@@ -3728,6 +3734,48 @@
     ]
   },
   {
+    "id": "particle-swarm",
+    "name": "Particle Swarm",
+    "url": "shaders/particle-swarm.wgsl",
+    "category": "image",
+    "description": "Pixels behave like a swarm of particles attracted to the mouse, with spring physics returning them to their origin.",
+    "params": [
+      {
+        "id": "stiffness",
+        "name": "Spring Stiffness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "force",
+        "name": "Mouse Force",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Interact Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "physics"
+    ]
+  },
+  {
     "id": "optical-feedback",
     "name": "Optical Feedback Loop",
     "url": "shaders/optical-feedback.wgsl",
@@ -3759,6 +3807,47 @@
         "id": "shift",
         "name": "Hue Shift",
         "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "neon-warp",
+    "name": "Neon Warp",
+    "url": "shaders/neon-warp.wgsl",
+    "category": "image",
+    "description": "Mouse movement warps the image fabric, revealing neon edges and glowing trails.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "neon",
+        "name": "Neon Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Color Speed",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Warp Decay",
+        "default": 0.8,
         "min": 0.0,
         "max": 1.0
       }
