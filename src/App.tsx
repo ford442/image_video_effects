@@ -352,7 +352,7 @@ function MainApp() {
                 setIsMouseDown={setIsMouseDown}
                 onInit={() => {
                    if(rendererRef.current) {
-                       setAvailableModes(rendererRef.current.getAvailableShaders());
+                       setAvailableModes(rendererRef.current.getAvailableModes());
                    }
                 }}
                 inputSource={inputSource}
