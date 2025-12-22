@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
-import RemoteApp from './RemoteApp';
 import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
@@ -65,6 +64,23 @@ function MainApp() {
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
 
+    // --- Helpers for Controls ---
+    const updateSlotParam = (index: number, updates: Partial<SlotParams>) => {
+        setSlotParams(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], ...updates };
+            return next;
+        });
+    };
+
+    const setMode = (index: number, mode: RenderMode) => {
+        setModes(prev => {
+            const next = [...prev];
+            next[index] = mode;
+            return next;
+        });
+    };
+
     // --- AI Model Loading ---
     const loadModel = async () => {
         if (depthEstimator) { setStatus('Model already loaded.'); return; }
@@ -82,6 +98,9 @@ function MainApp() {
             });
             setDepthEstimator(() => estimator);
             setStatus('Model Loaded. Processing initial image...');
+            
+            // Re-process current image if possible, but we need the URL. 
+            // For now, next image load will trigger it, or user can click 'Load Random'.
         } catch (e: any) {
             console.error(e);
             setStatus(`Failed to load model: ${e.message}`);
@@ -201,3 +220,189 @@ function MainApp() {
                 if (v < min) min = v;
                 if (v > max) max = v;
             });
+
+            const range = max - min;
+            for (let i = 0; i < data.length; ++i) {
+                const val = (data[i] - min) / range;
+                const idx = i * 4;
+                const c = Math.floor(val * 255);
+                imageData.data[idx] = c;
+                imageData.data[idx + 1] = c;
+                imageData.data[idx + 2] = c;
+                imageData.data[idx + 3] = 255;
+            }
+            context.putImageData(imageData, 0, 0);
+        }
+    }, [depthMapResult]);
+
+    // --- Sync Logic (Handling Commands from Remote) ---
+    const broadcastState = useCallback((channel: BroadcastChannel) => {
+        const state: FullState = {
+            modes, activeSlot, slotParams, shaderCategory,
+            zoom, panX, panY, inputSource,
+            autoChangeEnabled, autoChangeDelay,
+            isModelLoaded: !!depthEstimator,
+            availableModes,
+            videoList, selectedVideo, isMuted
+        };
+        channel.postMessage({ type: 'STATE_FULL', payload: state });
+    }, [modes, activeSlot, slotParams, shaderCategory, zoom, panX, panY, inputSource, autoChangeEnabled, autoChangeDelay, depthEstimator, availableModes, videoList, selectedVideo, isMuted]);
+
+    useEffect(() => {
+        const channel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+        
+        channel.onmessage = async (event) => {
+             const msg = event.data as SyncMessage;
+             switch (msg.type) {
+                 case 'HELLO':
+                     broadcastState(channel);
+                     break;
+                 case 'CMD_SET_MODE':
+                     if (msg.payload) setMode(msg.payload.index, msg.payload.mode);
+                     break;
+                 case 'CMD_SET_ACTIVE_SLOT':
+                     setActiveSlot(msg.payload);
+                     break;
+                 case 'CMD_UPDATE_SLOT_PARAM':
+                     updateSlotParam(msg.payload.index, msg.payload.updates);
+                     break;
+                 case 'CMD_SET_SHADER_CATEGORY':
+                     setShaderCategory(msg.payload);
+                     break;
+                 case 'CMD_SET_ZOOM':
+                     setZoom(msg.payload);
+                     break;
+                 case 'CMD_SET_PAN_X':
+                     setPanX(msg.payload);
+                     break;
+                 case 'CMD_SET_PAN_Y':
+                     setPanY(msg.payload);
+                     break;
+                 case 'CMD_SET_INPUT_SOURCE':
+                     setInputSource(msg.payload);
+                     break;
+                 case 'CMD_SET_AUTO_CHANGE':
+                     setAutoChangeEnabled(msg.payload);
+                     break;
+                 case 'CMD_SET_AUTO_CHANGE_DELAY':
+                     setAutoChangeDelay(msg.payload);
+                     break;
+                 case 'CMD_LOAD_RANDOM_IMAGE':
+                     handleNewImage();
+                     break;
+                 case 'CMD_LOAD_MODEL':
+                     loadModel();
+                     break;
+                 case 'CMD_SELECT_VIDEO':
+                     setSelectedVideo(msg.payload);
+                     break;
+                 case 'CMD_SET_MUTED':
+                     setIsMuted(msg.payload);
+                     break;
+                 case 'CMD_UPLOAD_FILE':
+                     // msg.payload: { name, type, mimeType, data: ArrayBuffer }
+                     const blob = new Blob([msg.payload.data], { type: msg.payload.mimeType });
+                     const url = URL.createObjectURL(blob);
+                     if (msg.payload.type === 'image') {
+                         if (rendererRef.current) {
+                            await rendererRef.current.loadImage(url);
+                             if (depthEstimator) runDepthAnalysis(url);
+                         }
+                         setInputSource('image');
+                     } else {
+                         setVideoSourceUrl(url);
+                         setInputSource('video');
+                     }
+                     break;
+             }
+        };
+        
+        // Heartbeat
+        const hbInterval = setInterval(() => {
+            channel.postMessage({ type: 'HEARTBEAT' });
+        }, 1000);
+
+        return () => {
+            channel.close();
+            clearInterval(hbInterval);
+        };
+    }, [depthEstimator, runDepthAnalysis, broadcastState, handleNewImage]); 
+
+    // Broadcast on state change
+    useEffect(() => {
+        const channel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+        broadcastState(channel);
+        return () => channel.close();
+    }, [broadcastState]);
+
+
+    return (
+        <div className="App">
+            <WebGPUCanvas
+                modes={modes}
+                slotParams={slotParams}
+                zoom={zoom}
+                panX={panX}
+                panY={panY}
+                rendererRef={rendererRef}
+                farthestPoint={farthestPoint}
+                mousePosition={mousePosition}
+                setMousePosition={setMousePosition}
+                isMouseDown={isMouseDown}
+                setIsMouseDown={setIsMouseDown}
+                onInit={() => {
+                   if(rendererRef.current) {
+                       setAvailableModes(rendererRef.current.getAvailableShaders());
+                   }
+                }}
+                inputSource={inputSource}
+                selectedVideo={selectedVideo}
+                videoSourceUrl={videoSourceUrl}
+                isMuted={isMuted}
+                setInputSource={setInputSource}
+            />
+            
+            <div className="ui-layer">
+                 <Controls 
+                    modes={modes}
+                    setMode={setMode}
+                    activeSlot={activeSlot}
+                    setActiveSlot={setActiveSlot}
+                    slotParams={slotParams}
+                    updateSlotParam={updateSlotParam}
+                    shaderCategory={shaderCategory}
+                    setShaderCategory={setShaderCategory}
+                    zoom={zoom} setZoom={setZoom}
+                    panX={panX} setPanX={setPanX}
+                    panY={panY} setPanY={setPanY}
+                    onNewImage={handleNewImage}
+                    autoChangeEnabled={autoChangeEnabled}
+                    setAutoChangeEnabled={setAutoChangeEnabled}
+                    autoChangeDelay={autoChangeDelay}
+                    setAutoChangeDelay={setAutoChangeDelay}
+                    onLoadModel={loadModel}
+                    isModelLoaded={!!depthEstimator}
+                    availableModes={availableModes}
+                    inputSource={inputSource}
+                    setInputSource={setInputSource}
+                    videoList={videoList}
+                    selectedVideo={selectedVideo}
+                    setSelectedVideo={setSelectedVideo}
+                    isMuted={isMuted}
+                    setIsMuted={setIsMuted}
+                    onUploadImageTrigger={() => fileInputImageRef.current?.click()}
+                    onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
+                 />
+                 
+                 <div className="status-bar">{status}</div>
+                 
+                 <canvas ref={debugCanvasRef} style={{ display: 'none' }} />
+            </div>
+
+            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={handleUploadImage} />
+            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={handleUploadVideo} />
+        </div>
+    );
+}
+
+export default MainApp;
