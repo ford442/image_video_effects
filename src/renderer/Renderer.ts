@@ -44,6 +44,9 @@ export class Renderer {
 
     private shaderList: ShaderEntry[] = [];
     private inputSource: InputSource = 'image';
+    
+    // Lifecycle flag to prevent race conditions
+    private isDestroyed = false;
 
     // Plasma Mode State
     private plasmaBalls: {
@@ -63,6 +66,7 @@ export class Renderer {
     }
 
     public setInputSource(source: InputSource) {
+        if (this.isDestroyed) return;
         this.inputSource = source;
         this.createBindGroups();
     }
@@ -167,6 +171,8 @@ export class Renderer {
     }
 
     public destroy(): void {
+        this.isDestroyed = true; // Mark as destroyed immediately
+        
         if (this.imageTexture) this.imageTexture.destroy();
         if (this.videoTexture) this.videoTexture.destroy();
         if (this.depthTextureRead) this.depthTextureRead.destroy();
@@ -181,70 +187,56 @@ export class Renderer {
     }
 
     public async init(): Promise<boolean> {
+        if (this.isDestroyed) return false;
         if (!navigator.gpu) return false;
+        
         const adapter = await navigator.gpu.requestAdapter();
-        if (!adapter) return false;
+        if (this.isDestroyed || !adapter) return false;
 
-  //  add WebGPU extensions
         const requiredFeatures: GPUFeatureName[] = [];
-        if (adapter.features.has('float32-filterable')) {
-            requiredFeatures.push('float32-filterable');
-        } else {
-            console.log("Device does not support 'float32-filterable'");
-        }
-        if (adapter.features.has('float32-blendable')) {
-            requiredFeatures.push('float32-blendable');
-        } else {
-            console.log("Device does not support 'float32-blendable'.");
-        }
-        if (adapter.features.has('clip-distances')) {
-            requiredFeatures.push('clip-distances');
-        } else {
-            console.log("Device does not support 'clip-distances'.");
-        }
-        if (adapter.features.has('depth32float-stencil8')) {
-            requiredFeatures.push('depth32float-stencil8');
-        } else {
-            console.log("Device does not support 'depth32float-stencil8'.");
-        }
-        if (adapter.features.has('dual-source-blending')) {
-            requiredFeatures.push('dual-source-blending');
-        } else {
-            console.log("Device does not support 'dual-source-blending'.");
-        }
-        if (adapter.features.has('subgroups')) {
-            requiredFeatures.push('subgroups');
-        } else {
-            console.log("Device does not support 'subgroups'.");
-        }
-        if (adapter.features.has('texture-component-swizzle')) {
-            requiredFeatures.push('texture-component-swizzle');
-        } else {
-            console.log("Device does not support 'texture-component-swizzle'.");
-        }
-        if (adapter.features.has('shader-f16')) {
-            requiredFeatures.push('shader-f16');
-        } else {
-            console.log("Device does not support 'shader-f16'.");
-        }
+        const featureCheck = [
+            'float32-filterable', 'float32-blendable', 'clip-distances', 
+            'depth32float-stencil8', 'dual-source-blending', 'subgroups', 
+            'texture-component-swizzle', 'shader-f16'
+        ];
+        
+        featureCheck.forEach(f => {
+            if (adapter.features.has(f)) requiredFeatures.push(f as GPUFeatureName);
+        });
         
         // Initialize Device
         this.device = await adapter.requestDevice({
             requiredFeatures,
         });
 
+        if (this.isDestroyed) {
+            this.device.destroy();
+            return false;
+        }
+
         this.context = this.canvas.getContext('webgpu')!;
         this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
         this.context.configure({device: this.device, colorSpace: "display-p3", format: this.presentationFormat, alphaMode: 'premultiplied', toneMapping: {mode: "extended"}});
+        
         await this.fetchImageUrls();
+        if (this.isDestroyed) return false;
+
         await this.fetchShaderList();
+        if (this.isDestroyed) return false;
+
         await this.createResources();
+        if (this.isDestroyed) return false;
+
         await this.createPipelines();
+        if (this.isDestroyed) return false;
+
         await this.loadRandomImage();
-        return true;
+        
+        return !this.isDestroyed;
     }
 
     private async fetchShaderList(): Promise<void> {
+        if (this.isDestroyed) return;
         try {
             const categories = [
                 'liquid-effects',
@@ -258,6 +250,7 @@ export class Renderer {
             const allShaders: ShaderEntry[] = [];
             
             for (const category of categories) {
+                if (this.isDestroyed) return;
                 try {
                     const response = await fetch(`shader-lists/${category}.json`);
                     if (response.ok) {
@@ -285,6 +278,8 @@ export class Renderer {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error(`API error: ${response.status}`);
             const data = await response.json();
+            if (this.isDestroyed) return;
+
             this.imageUrls = data.items ? data.items
                 .filter((item: { name: string }) => /\.(jpg|jpeg|png|webp|gif)$/i.test(item.name))
                 .map((item: {
@@ -298,10 +293,13 @@ export class Renderer {
 
     // New Method to load specific image (URL or Blob)
     public async loadImage(url: string): Promise<string | undefined> {
+        if (this.isDestroyed) return undefined;
         try {
              const response = await fetch(url);
              const blob = await response.blob();
              const imageBitmap = await createImageBitmap(blob);
+             
+             if (this.isDestroyed) return undefined;
 
              if (this.imageTexture) this.imageTexture.destroy();
              this.imageTexture = this.device.createTexture({
@@ -325,7 +323,7 @@ export class Renderer {
     }
 
     public updateDepthMap(data: Float32Array, width: number, height: number): void {
-        if (!this.device) return;
+        if (!this.device || this.isDestroyed) return;
         if (this.depthTextureRead && (this.depthTextureRead.width !== width || this.depthTextureRead.height !== height)) {
             this.depthTextureRead.destroy();
             this.depthTextureWrite.destroy();
@@ -351,6 +349,7 @@ export class Renderer {
     }
 
     private async createResources(): Promise<void> {
+        if (this.isDestroyed) return;
         const {width, height} = this.canvas;
         this.filteringSampler = this.device.createSampler({
             magFilter: 'linear',
@@ -426,6 +425,8 @@ export class Renderer {
     }
 
     private async createPipelines(): Promise<void> {
+        if (this.isDestroyed) return;
+
         const commonConfig = {
             vertex: {module: null as any, entryPoint: 'vs_main'},
             fragment: {targets: [{format: this.presentationFormat}]},
@@ -434,6 +435,8 @@ export class Renderer {
 
         const staticShaders = ['galaxy.wgsl', 'imageVideo.wgsl', 'texture.wgsl'];
         const staticCodes = await Promise.all(staticShaders.map(name => fetch(`shaders/${name}`).then(r => r.text())));
+        if (this.isDestroyed) return;
+        
         const [galaxyCode, imageVideoCode, textureCode] = staticCodes;
 
         const galaxyModule = this.device.createShaderModule({code: galaxyCode});
@@ -485,23 +488,31 @@ export class Renderer {
         });
 
         for (const entry of this.shaderList) {
+            if (this.isDestroyed) return;
             try {
                 const url = entry.url;
                 const code = await fetch(url).then(r => r.text());
+                if (this.isDestroyed) return;
+
                 const module = this.device.createShaderModule({code});
 
                 const pipeline = await this.device.createComputePipelineAsync({
                     layout: computePipelineLayout,
                     compute: {module, entryPoint: 'main'}
                 });
+                
+                if (this.isDestroyed) return;
                 this.pipelines.set(entry.id, pipeline);
             } catch (e) {
-                console.error(`Failed to load shader ${entry.name} (${entry.url}):`, e);
+                if (!this.isDestroyed) {
+                    console.error(`Failed to load shader ${entry.name} (${entry.url}):`, e);
+                }
             }
         }
     }
 
     private createBindGroups(): void {
+        if (this.isDestroyed) return;
         if (!this.imageTexture || !this.filteringSampler || !this.nonFilteringSampler || !this.comparisonSampler || !this.depthTextureRead || !this.depthTextureWrite || !this.dataTextureA|| !this.dataTextureB || !this.dataTextureC || !this.extraBuffer || !this.computeUniformBuffer || !this.plasmaBuffer) return;
 
         if (this.videoTexture) {
@@ -569,7 +580,7 @@ export class Renderer {
         x: number,
         y: number
     }, mousePosition: { x: number, y: number }, isMouseDown: boolean): void {
-        if (!this.device || !this.imageTexture || !this.filteringSampler) return;
+        if (this.isDestroyed || !this.device || !this.imageTexture || !this.filteringSampler) return;
         const currentTime = performance.now() / 1000.0;
 
         // Handle Video Input (Video or Webcam)
@@ -663,7 +674,7 @@ export class Renderer {
                 }
 
                 uniformArray.set([currentTime, targetX, targetY, zoomConfigW], 4);
-                uniformArray.set([this.canvas.width, this.canvas.height], 0); // Re-set width/height at index 2,3 (bug fix: index 0 is time/ripple count usually)
+                uniformArray.set([this.canvas.width, this.canvas.height], 0); 
                 // Correct Packing:
                 // Vec4 0: [Time, RippleCount, Width, Height]
                 uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0); 
