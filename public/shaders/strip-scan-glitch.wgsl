@@ -61,7 +61,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Vertical displacement
     // Use the brightness of the strip (sampled at top or center) to modulate speed?
     // Let's sample the center of the screen at this x for a "scan" value
-    let stripBrightness = textureSampleLevel(readTexture, u_sampler, vec2<f32>(stripCenterU, 0.5), 0.0).g;
+    // Changed to use non_filtering_sampler to ensure compatibility with float32 textures
+    let stripBrightness = textureSampleLevel(readTexture, non_filtering_sampler, vec2<f32>(stripCenterU, 0.5), 0.0).g;
 
     // Calculate Y offset
     // Sine wave pattern + constant flow
@@ -70,7 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Horizontal Jitter (Glitch)
     // Occurs randomly or periodically
     let jitter = (fract(sin(time * 10.0 + stripIdx) * 43758.5453) - 0.5) * 2.0;
-    let xOffset = 0.0;
+    var xOffset = 0.0;
 
     // Apply jitter if threshold met
     if (abs(jitter) > (1.0 - jitterParam * 0.8)) {
@@ -84,10 +85,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uvG = vec2<f32>(uv.x + xOffset,         uv.y + yOffset);
     let uvB = vec2<f32>(uv.x + xOffset - split, uv.y + yOffset);
 
-    // Wrap or Clamp? Wraparound looks cooler for scanning
-    let sampleR = textureSampleLevel(readTexture, u_sampler, fract(uvR), 0.0).r;
-    let sampleG = textureSampleLevel(readTexture, u_sampler, fract(uvG), 0.0).g;
-    let sampleB = textureSampleLevel(readTexture, u_sampler, fract(uvB), 0.0).b;
+    // Use non_filtering_sampler here as well
+    let sampleR = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvR), 0.0).r;
+    let sampleG = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvG), 0.0).g;
+    let sampleB = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvB), 0.0).b;
 
     let finalColor = vec4<f32>(sampleR, sampleG, sampleB, 1.0);
 
