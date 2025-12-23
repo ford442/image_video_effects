@@ -1922,5 +1922,87 @@
       "mouse-driven",
       "temporal-persistence"
     ]
+  },
+  {
+    "id": "interactive-kuwahara",
+    "name": "Oil Painting (Kuwahara)",
+    "url": "shaders/interactive-kuwahara.wgsl",
+    "category": "image",
+    "description": "Applies an oil painting effect using a Kuwahara filter. Mouse distance controls the detail level (focus area).",
+    "params": [
+      {
+        "id": "radius",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "satBoost",
+        "name": "Saturation",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mouseFalloff",
+        "name": "Focus Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "hardness",
+        "name": "Hardness",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "artistic"
+    ]
+  },
+  {
+    "id": "digital-compression",
+    "name": "Digital Compression",
+    "url": "shaders/digital-compression.wgsl",
+    "category": "image",
+    "description": "Simulates digital artifacts and compression blocks. Mouse controls the clear focus area.",
+    "params": [
+      {
+        "id": "blockSize",
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorDepth",
+        "name": "Bit Crush",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "artifacts",
+        "name": "Artifacts",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "focus",
+        "name": "Focus Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ]
   }
 ]
