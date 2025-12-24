@@ -1,0 +1,41 @@
+{
+  "id": "neon-contour-drag",
+  "name": "Neon Wake",
+  "url": "shaders/neon-contour-drag.wgsl",
+  "category": "image",
+  "description": "Detects edges and applies a neon glow that is warped by the mouse cursor like a magnetic field.",
+  "params": [
+    {
+      "id": "edgeStrength",
+      "name": "Edge Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "dragRadius",
+      "name": "Warp Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "image"
+  ]
+}
