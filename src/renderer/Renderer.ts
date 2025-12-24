@@ -48,6 +48,10 @@ export class Renderer {
     // Lifecycle flag to prevent race conditions
     private isDestroyed = false;
 
+    // Store layout to create pipelines lazily
+    private computePipelineLayout!: GPUPipelineLayout;
+    private loadingShaders = new Set<string>();
+
     // Plasma Mode State
     private plasmaBalls: {
         x: number, y: number, vx: number, vy: number,
@@ -483,31 +487,43 @@ export class Renderer {
             ],
         });
 
-        const computePipelineLayout = this.device.createPipelineLayout({
+        // Store layout for lazy loading
+        this.computePipelineLayout = this.device.createPipelineLayout({
             bindGroupLayouts: [computeBindGroupLayout],
         });
+        
+        // LAZY LOADING OPTIMIZATION: 
+        // We no longer loop through this.shaderList here. 
+        // Shaders will be compiled on-demand in loadComputeShader()
+    }
 
-        for (const entry of this.shaderList) {
+    private async loadComputeShader(id: string): Promise<void> {
+        if (this.pipelines.has(id) || this.loadingShaders.has(id)) return;
+        
+        const entry = this.shaderList.find(s => s.id === id);
+        if (!entry) return;
+
+        this.loadingShaders.add(id);
+        
+        try {
+            const url = entry.url;
+            const code = await fetch(url).then(r => r.text());
+            
             if (this.isDestroyed) return;
-            try {
-                const url = entry.url;
-                const code = await fetch(url).then(r => r.text());
-                if (this.isDestroyed) return;
 
-                const module = this.device.createShaderModule({code});
+            const module = this.device.createShaderModule({code});
 
-                const pipeline = await this.device.createComputePipelineAsync({
-                    layout: computePipelineLayout,
-                    compute: {module, entryPoint: 'main'}
-                });
-                
-                if (this.isDestroyed) return;
-                this.pipelines.set(entry.id, pipeline);
-            } catch (e) {
-                if (!this.isDestroyed) {
-                    console.error(`Failed to load shader ${entry.name} (${entry.url}):`, e);
-                }
-            }
+            const pipeline = await this.device.createComputePipelineAsync({
+                layout: this.computePipelineLayout,
+                compute: {module, entryPoint: 'main'}
+            });
+            
+            if (this.isDestroyed) return;
+            this.pipelines.set(entry.id, pipeline);
+        } catch (e) {
+            console.error(`Failed to load shader ${id}:`, e);
+        } finally {
+            this.loadingShaders.delete(id);
         }
     }
 
@@ -612,8 +628,17 @@ export class Renderer {
         const activeChain = modes.map((m, i) => ({ mode: m, params: slotParams[i] })).filter(item => {
              return item.mode !== 'none' && this.shaderList.some(s => s.id === item.mode);
         });
+        
+        // --- LAZY LOADING CHECK ---
+        // Filter out shaders that are not yet loaded, triggering their load.
+        const readyChain = activeChain.filter(item => {
+            if (this.pipelines.has(item.mode)) return true;
+            // If not loaded, trigger load and skip this frame
+            this.loadComputeShader(item.mode);
+            return false;
+        });
 
-        if (activeChain.length > 0) {
+        if (readyChain.length > 0) {
             if (modes.includes('plasma')) {
                  this.updatePlasma(0.016);
                  const plasmaData = new Float32Array(this.MAX_PLASMA_BALLS * 12);
@@ -639,9 +664,9 @@ export class Renderer {
                 rippleDataArr.set([point.x, point.y, point.startTime], i * 4);
             }
 
-            for (let i = 0; i < activeChain.length; i++) {
-                const { mode, params } = activeChain[i];
-                const isLast = i === activeChain.length - 1;
+            for (let i = 0; i < readyChain.length; i++) {
+                const { mode, params } = readyChain[i];
+                const isLast = i === readyChain.length - 1;
 
                 let targetTexture: GPUTexture;
                 if (isLast) {
@@ -764,15 +789,15 @@ export class Renderer {
              passEncoder.setBindGroup(0, this.bindGroups.get('video')!);
              passEncoder.draw(4);
         } else {
-             // If active chain exists, render the output texture
-             if (activeChain.length > 0) {
+             // If active chain exists (and has loaded shaders), render the output texture
+             if (readyChain.length > 0) {
                  if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
                     passEncoder.setPipeline(liquidRenderPipeline);
                     passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
                     passEncoder.draw(4);
                 }
              } else {
-                 // No effects. Draw input directly (scaled).
+                 // No effects or effects loading. Draw input directly (scaled).
                  const isVideo = (this.inputSource === 'video' || this.inputSource === 'webcam');
                  // Ensure texture exists
                  if ((isVideo && this.videoTexture) || (!isVideo && this.imageTexture)) {
