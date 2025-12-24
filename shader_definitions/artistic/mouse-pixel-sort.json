@@ -1,0 +1,38 @@
+{
+  "id": "mouse-pixel-sort",
+  "name": "Mouse Pixel Sort",
+  "url": "shaders/mouse-pixel-sort.wgsl",
+  "category": "image",
+  "description": "Luminance-based pixel sorting controlled by mouse proximity.",
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "threshold",
+      "name": "Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "length",
+      "name": "Sort Length",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "direction",
+      "name": "Direction (V/H)",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mode",
+      "name": "Invert Sort",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
