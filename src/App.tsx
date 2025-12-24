@@ -58,6 +58,9 @@ function MainApp() {
     const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined); // For uploaded videos
     const [isMuted, setIsMuted] = useState(true);
 
+    // Layout State
+    const [showSidebar, setShowSidebar] = useState(true);
+
     // Refs
     const rendererRef = useRef<Renderer | null>(null);
     const debugCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -335,72 +338,95 @@ function MainApp() {
         return () => channel.close();
     }, [broadcastState]);
 
+    const openRemote = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', 'remote');
+        window.open(url.toString(), '_blank', 'width=400,height=800');
+    };
 
     return (
         <div className="App">
-            <WebGPUCanvas
-                modes={modes}
-                slotParams={slotParams}
-                zoom={zoom}
-                panX={panX}
-                panY={panY}
-                rendererRef={rendererRef}
-                farthestPoint={farthestPoint}
-                mousePosition={mousePosition}
-                setMousePosition={setMousePosition}
-                isMouseDown={isMouseDown}
-                setIsMouseDown={setIsMouseDown}
-                onInit={() => {
-                   if(rendererRef.current) {
-                       setAvailableModes(rendererRef.current.getAvailableModes());
-                   }
-                }}
-                inputSource={inputSource}
-                selectedVideo={selectedVideo}
-                videoSourceUrl={videoSourceUrl}
-                isMuted={isMuted}
-                setInputSource={setInputSource}
-            />
-            
-            <div className="ui-layer">
-                 <Controls 
-                    modes={modes}
-                    setMode={setMode}
-                    activeSlot={activeSlot}
-                    setActiveSlot={setActiveSlot}
-                    slotParams={slotParams}
-                    updateSlotParam={updateSlotParam}
-                    shaderCategory={shaderCategory}
-                    setShaderCategory={setShaderCategory}
-                    zoom={zoom} setZoom={setZoom}
-                    panX={panX} setPanX={setPanX}
-                    panY={panY} setPanY={setPanY}
-                    onNewImage={handleNewImage}
-                    autoChangeEnabled={autoChangeEnabled}
-                    setAutoChangeEnabled={setAutoChangeEnabled}
-                    autoChangeDelay={autoChangeDelay}
-                    setAutoChangeDelay={setAutoChangeDelay}
-                    onLoadModel={loadModel}
-                    isModelLoaded={!!depthEstimator}
-                    availableModes={availableModes}
-                    inputSource={inputSource}
-                    setInputSource={setInputSource}
-                    videoList={videoList}
-                    selectedVideo={selectedVideo}
-                    setSelectedVideo={setSelectedVideo}
-                    isMuted={isMuted}
-                    setIsMuted={setIsMuted}
-                    onUploadImageTrigger={() => fileInputImageRef.current?.click()}
-                    onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
-                 />
-                 
-                 <div className="status-bar">{status}</div>
-                 
-                 <canvas ref={debugCanvasRef} style={{ display: 'none' }} />
+            <header className="header">
+                <div className="logo-section">
+                    <div className="logo-text">Pixelocity</div>
+                    <div className="subtitle-text">WebGPU Shader Playground</div>
+                </div>
+                <div className="header-controls">
+                    <button className="toggle-sidebar-btn" onClick={openRemote}>
+                         Open Remote
+                    </button>
+                    <button className="toggle-sidebar-btn" onClick={() => setShowSidebar(!showSidebar)}>
+                        {showSidebar ? 'Hide Controls' : 'Show Controls'}
+                    </button>
+                </div>
+            </header>
+
+            <div className="main-container">
+                <aside className={`sidebar ${!showSidebar ? 'hidden' : ''}`}>
+                    <Controls
+                        modes={modes}
+                        setMode={setMode}
+                        activeSlot={activeSlot}
+                        setActiveSlot={setActiveSlot}
+                        slotParams={slotParams}
+                        updateSlotParam={updateSlotParam}
+                        shaderCategory={shaderCategory}
+                        setShaderCategory={setShaderCategory}
+                        zoom={zoom} setZoom={setZoom}
+                        panX={panX} setPanX={setPanX}
+                        panY={panY} setPanY={setPanY}
+                        onNewImage={handleNewImage}
+                        autoChangeEnabled={autoChangeEnabled}
+                        setAutoChangeEnabled={setAutoChangeEnabled}
+                        autoChangeDelay={autoChangeDelay}
+                        setAutoChangeDelay={setAutoChangeDelay}
+                        onLoadModel={loadModel}
+                        isModelLoaded={!!depthEstimator}
+                        availableModes={availableModes}
+                        inputSource={inputSource}
+                        setInputSource={setInputSource}
+                        videoList={videoList}
+                        selectedVideo={selectedVideo}
+                        setSelectedVideo={setSelectedVideo}
+                        isMuted={isMuted}
+                        setIsMuted={setIsMuted}
+                        onUploadImageTrigger={() => fileInputImageRef.current?.click()}
+                        onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
+                    />
+                </aside>
+
+                <main className="canvas-container">
+                    <WebGPUCanvas
+                        modes={modes}
+                        slotParams={slotParams}
+                        zoom={zoom}
+                        panX={panX}
+                        panY={panY}
+                        rendererRef={rendererRef}
+                        farthestPoint={farthestPoint}
+                        mousePosition={mousePosition}
+                        setMousePosition={setMousePosition}
+                        isMouseDown={isMouseDown}
+                        setIsMouseDown={setIsMouseDown}
+                        onInit={() => {
+                        if(rendererRef.current) {
+                            setAvailableModes(rendererRef.current.getAvailableModes());
+                        }
+                        }}
+                        inputSource={inputSource}
+                        selectedVideo={selectedVideo}
+                        videoSourceUrl={videoSourceUrl}
+                        isMuted={isMuted}
+                        setInputSource={setInputSource}
+                    />
+                    <div className="status-bar">{status}</div>
+                </main>
             </div>
 
+            {/* Hidden Input Elements */}
             <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={handleUploadImage} />
             <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={handleUploadVideo} />
+            <canvas ref={debugCanvasRef} style={{ display: 'none' }} />
         </div>
     );
 }
