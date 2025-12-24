@@ -1,4 +1,5 @@
 node_modules
 *.log
 package-lock.json
+public/shader-lists/*.json
 build/

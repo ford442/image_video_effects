@@ -1,0 +1,7 @@
+{
+  "id": "physarum",
+  "name": "Physarum Slime Mold",
+  "url": "shaders/physarum.wgsl",
+  "category": "simulation",
+  "description": "Agent-based slime mold texture feeder that creates trails and networks."
+}

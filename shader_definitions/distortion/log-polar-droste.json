@@ -1,0 +1,42 @@
+{
+  "id": "log-polar-droste",
+  "name": "Log-Polar Droste",
+  "url": "shaders/log-polar-droste.wgsl",
+  "category": "geometry",
+  "description": "Infinite recursive zoom with spiral distortion creating Droste/Escher-like effects.",
+  "params": [
+    {
+      "id": "zoomSpeed",
+      "name": "Zoom Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "spiralFactor",
+      "name": "Spiral Factor",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "recursionDepth",
+      "name": "Recursion Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "branchCount",
+      "name": "Branch Count",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "interactive",
+    "mathematical",
+    "recursive"
+  ]
+}

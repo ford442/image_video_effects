@@ -1,0 +1,7 @@
+{
+  "id": "julia-warp",
+  "name": "Julia Warp",
+  "url": "shaders/julia-warp.wgsl",
+  "category": "warp",
+  "description": "Julia fractal-based warping with orbit traps for psychedelic coloring."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "quantum-smear",
+  "name": "Quantum Smear",
+  "url": "shaders/quantum-smear.wgsl",
+  "category": "image",
+  "description": "Quantum particle disintegration with stochastic advection and pointillist effects."
+}

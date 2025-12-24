@@ -1,0 +1,40 @@
+{
+  "id": "sonar-pulse",
+  "name": "Sonar Pulse",
+  "url": "shaders/sonar-pulse.wgsl",
+  "category": "image",
+  "description": "Radial sonar waves emitting from the cursor that distort and scan the image.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "freq",
+      "name": "Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "width",
+      "name": "Wave Width",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

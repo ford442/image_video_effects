@@ -1,0 +1,40 @@
+{
+  "id": "vortex-drag",
+  "name": "Vortex Drag",
+  "url": "shaders/vortex-drag.wgsl",
+  "category": "image",
+  "description": "Twisting vortex distortion that follows the mouse cursor.",
+  "params": [
+    {
+      "id": "twist",
+      "name": "Twist Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Vortex Radius",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "pinch",
+      "name": "Pinch/Bulge",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "hardness",
+      "name": "Edge Hardness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

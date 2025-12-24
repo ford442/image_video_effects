@@ -59,7 +59,7 @@ This document provides structured guidance for AI code agents working on this co
 
 | Task | Files to Modify |
 |------|-----------------|
-| Add new shader effect | `public/shaders/*.wgsl`, `public/shader-lists/{category}.json` |
+| Add new shader effect | `public/shaders/*.wgsl`, `shader_definitions/{category}/{id}.json` |
 | Modify UI controls | `src/components/Controls.tsx` |
 | Change rendering logic | `src/renderer/Renderer.ts` |
 | Add new render mode | `src/renderer/types.ts`, `Renderer.ts` |
@@ -90,21 +90,16 @@ src/
 
 public/
 ├── index.html              # HTML entry point
-├── shader-lists/           # Shader registry (category-based organization)
-│   ├── liquid-effects.json       # Liquid shaders (16 entries)
-│   ├── interactive-mouse.json    # Mouse-driven effects (49 entries)
-│   ├── visual-effects.json       # Glitch/CRT/chromatic (26 entries)
-│   ├── lighting-effects.json     # Plasma/cosmic/glow (14 entries)
-│   ├── distortion.json           # Spatial distortions (11 entries)
-│   └── artistic.json             # Creative effects (28 entries)
+├── shader-lists/           # Shader registry (GENERATED - DO NOT EDIT MANUALLY)
 └── shaders/                # WGSL compute and render shaders
-    ├── liquid.wgsl         # Main interactive liquid effect
-    ├── liquid-*.wgsl       # Liquid effect variants
-    ├── plasma.wgsl         # Plasma ball effect
-    ├── vortex.wgsl         # Vortex effect
-    ├── galaxy.wgsl         # Galaxy render shader
-    ├── imageVideo.wgsl     # Image/video render shader
-    └── texture.wgsl        # Texture display render shader
+
+shader_definitions/         # SOURCE OF TRUTH for shaders
+├── artistic/               # Creative effects
+├── distortion/             # Spatial distortions
+├── interactive-mouse/      # Mouse-driven effects
+├── lighting-effects/       # Plasma/cosmic/glow
+├── liquid-effects/         # Liquid shaders
+└── visual-effects/         # Glitch/CRT/chromatic
 ```
 
 ## Architecture Overview
@@ -183,15 +178,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
-  
+
   // YOUR EFFECT LOGIC HERE
-  
+
   // Sample and modify the image
   let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  
+
   // Write output (REQUIRED)
   textureStore(writeTexture, global_id.xy, color);
-  
+
   // Update depth for next frame (REQUIRED for depth-aware effects)
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
@@ -200,26 +195,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
 ### Step 2: Register the Shader
 
-Add entry to the appropriate category file in `public/shader-lists/`:
+Create a new JSON file in the appropriate subdirectory of `shader_definitions/`:
 
 **Choose the right category:**
-- `liquid-effects.json` - for liquid-* shaders
-- `interactive-mouse.json` - for mouse-driven effects  
-- `visual-effects.json` - for glitch/CRT/chromatic effects
-- `lighting-effects.json` - for plasma/cosmic/glow effects
-- `distortion.json` - for spatial distortions
-- `artistic.json` - for creative/artistic effects
+- `shader_definitions/liquid-effects/` - for liquid-* shaders
+- `shader_definitions/interactive-mouse/` - for mouse-driven effects
+- `shader_definitions/visual-effects/` - for glitch/CRT/chromatic effects
+- `shader_definitions/lighting-effects/` - for plasma/cosmic/glow effects
+- `shader_definitions/distortion/` - for spatial distortions
+- `shader_definitions/artistic/` - for creative/artistic effects
 
+**File Path Example:** `shader_definitions/artistic/my-effect.json`
+
+**Content:**
 ```json
 {
   "id": "my-effect",
   "name": "My Effect",
   "url": "shaders/my-effect.wgsl",
-  "category": "image"
+  "category": "image",
+  "description": "Optional description",
+  "params": []
 }
 ```
 
-**Note:** The category-based structure prevents merge conflicts when multiple contributors add shaders simultaneously. Always add your shader to the most relevant category file.
+**Note:** DO NOT edit `public/shader-lists/*.json` directly. These files are automatically generated from the individual definitions in `shader_definitions/` before start/build. This "One File Per Shader" approach prevents git merge conflicts.
 
 ### Step 3: Test
 

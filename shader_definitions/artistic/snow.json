@@ -1,0 +1,6 @@
+{
+  "id": "snow",
+  "name": "Blizzard (Depth-Aware)",
+  "url": "shaders/snow.wgsl",
+  "category": "image"
+}

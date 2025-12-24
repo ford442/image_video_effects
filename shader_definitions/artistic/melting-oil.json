@@ -1,0 +1,7 @@
+{
+  "id": "melting-oil",
+  "name": "Melting Oil",
+  "url": "shaders/melting-oil.wgsl",
+  "category": "simulation",
+  "description": "Sobel gradient-driven oil-paint flow with viscosity and hue shifts."
+}
