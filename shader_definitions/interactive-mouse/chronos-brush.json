@@ -1,0 +1,45 @@
+{
+  "id": "chronos-brush",
+  "name": "Chronos Brush",
+  "url": "shaders/chronos-brush.wgsl",
+  "category": "image",
+  "description": "Freeze time by painting over the video feed.",
+  "params": [
+    {
+      "id": "brushSize",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "decay",
+      "name": "Freeze Decay",
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "distortion",
+      "name": "Time Edge Distort",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mode",
+      "name": "Mode (Paint/Erase)",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "labels": [
+        "Freeze",
+        "Unfreeze"
+      ]
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ]
+}

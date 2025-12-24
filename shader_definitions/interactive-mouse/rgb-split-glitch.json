@@ -1,0 +1,42 @@
+{
+  "id": "rgb-split-glitch",
+  "name": "RGB Split Glitch",
+  "url": "shaders/rgb-split-glitch.wgsl",
+  "category": "image",
+  "description": "Splits RGB channels based on mouse proximity.",
+  "params": [
+    {
+      "id": "split",
+      "name": "Split Dist",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "angle",
+      "name": "Angle Offset",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "noise",
+      "name": "Jitter Noise",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch",
+    "chromatic-aberration"
+  ]
+}

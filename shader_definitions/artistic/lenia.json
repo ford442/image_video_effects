@@ -1,0 +1,7 @@
+{
+  "id": "lenia",
+  "name": "Lenia Cellular Automata",
+  "url": "shaders/lenia.wgsl",
+  "category": "simulation",
+  "description": "Continuous cellular automata (Lenia) with ring kernel growth functions."
+}

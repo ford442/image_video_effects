@@ -1,0 +1,41 @@
+{
+  "id": "cyber-focus",
+  "name": "Cyber Focus",
+  "url": "shaders/cyber-focus.wgsl",
+  "category": "image",
+  "description": "High-tech focus mode where the area around the mouse is crisp, while the background suffers from digital interference and chromatic aberration.",
+  "params": [
+    {
+      "id": "radius",
+      "name": "Focus Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "blur",
+      "name": "Blur Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "glitch",
+      "name": "Glitch Intensity",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "chromatographic-separation",
+  "name": "Chromatographic Separation",
+  "url": "shaders/chromatographic-separation.wgsl",
+  "category": "simulation",
+  "description": "RGB channel fluid simulation with separate viscosities, wind forces, and inter-layer drag.",
+  "params": [
+    {
+      "id": "viscosityR",
+      "name": "Red Viscosity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "viscosityG",
+      "name": "Green Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "viscosityB",
+      "name": "Blue Viscosity",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "temperature",
+      "name": "Temperature",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "interactive",
+    "fluid-dynamics"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "rain",
+  "name": "Rain",
+  "url": "shaders/rain.wgsl",
+  "category": "image"
+}

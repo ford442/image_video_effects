@@ -1,0 +1,42 @@
+{
+  "id": "lidar",
+  "name": "LiDAR Scanner Pro",
+  "url": "shaders/lidar.wgsl",
+  "category": "image",
+  "description": "Multi-mode LiDAR with point clouds, persistence trails, and 3D edge detection. Modes: Linear/Radial/Spiral scan.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Scan Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "width",
+      "name": "Beam Width",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "contours",
+      "name": "Contour Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "edges",
+      "name": "Edge Sensitivity",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "multi-mode"
+  ]
+}

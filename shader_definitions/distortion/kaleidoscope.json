@@ -1,0 +1,6 @@
+{
+  "id": "kaleidoscope",
+  "name": "Kaleidoscope",
+  "url": "shaders/kaleidoscope.wgsl",
+  "category": "image"
+}

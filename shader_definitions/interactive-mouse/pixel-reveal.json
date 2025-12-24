@@ -1,0 +1,40 @@
+{
+  "id": "pixel-reveal",
+  "name": "Pixel Reveal",
+  "url": "shaders/pixel-reveal.wgsl",
+  "category": "image",
+  "description": "Pixelates the image, with a clear window (or obscuring block) around the mouse.",
+  "params": [
+    {
+      "id": "pixelSize",
+      "name": "Pixel Size",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "softness",
+      "name": "Edge Softness",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "invert",
+      "name": "Invert Mode",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

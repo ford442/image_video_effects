@@ -1,0 +1,7 @@
+{
+  "id": "neural-dreamscape",
+  "name": "Neural Dreamscape",
+  "url": "shaders/neural-dreamscape.wgsl",
+  "category": "image",
+  "description": "Neural network-inspired dreamlike visuals."
+}

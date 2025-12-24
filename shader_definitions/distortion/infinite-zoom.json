@@ -1,0 +1,6 @@
+{
+  "id": "infinite-zoom",
+  "name": "Infinite Zoom",
+  "url": "shaders/infinite-zoom.wgsl",
+  "category": "image"
+}

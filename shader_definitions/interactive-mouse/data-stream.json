@@ -1,0 +1,41 @@
+{
+  "id": "data-stream",
+  "name": "Digital Stream",
+  "url": "shaders/data-stream.wgsl",
+  "category": "image",
+  "description": "Digital matrix-style data stream disrupted by mouse interaction.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "glow",
+      "name": "Digital Glow",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ]
+}

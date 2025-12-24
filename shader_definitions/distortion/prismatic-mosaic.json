@@ -1,0 +1,35 @@
+{
+  "id": "prismatic-mosaic",
+  "name": "Prismatic Mosaic",
+  "url": "shaders/prismatic-mosaic.wgsl",
+  "category": "image",
+  "description": "Color tiles break apart and reassemble into shifting prisms, turning strong colors into a kaleidoscopic mosaic that ripples across the image.",
+  "params": [
+    {
+      "id": "tileSize",
+      "name": "Tile Size",
+      "default": 0.05,
+      "min": 0.01,
+      "max": 0.2
+    },
+    {
+      "id": "speed",
+      "name": "Mosaic Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "satBoost",
+      "name": "Saturation Boost",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "colour-masking"
+  ]
+}

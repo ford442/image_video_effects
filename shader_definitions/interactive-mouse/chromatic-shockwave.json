@@ -1,0 +1,34 @@
+{
+  "id": "chromatic-shockwave",
+  "name": "Chromatic Shockwave",
+  "url": "shaders/chromatic-shockwave.wgsl",
+  "category": "image",
+  "description": "Continuous chromatic ripples emanating from the mouse.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "freq",
+      "name": "Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "boids",
+  "name": "Boids Reveal",
+  "url": "shaders/boids.wgsl",
+  "category": "simulation",
+  "description": "Flocking boids with reveal masking and simple attraction mechanics."
+}

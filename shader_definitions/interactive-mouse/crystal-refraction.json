@@ -1,0 +1,41 @@
+{
+  "id": "crystal-refraction",
+  "name": "Crystal Refraction",
+  "url": "shaders/crystal-refraction.wgsl",
+  "category": "image",
+  "description": "Interactive faceted crystal lens simulation with chromatic aberration and mouse-driven refraction.",
+  "params": [
+    {
+      "id": "facetScale",
+      "name": "Facet Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.05,
+      "min": 0.0,
+      "max": 0.1
+    },
+    {
+      "id": "strength",
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "smoothness",
+      "name": "Smoothness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration"
+  ]
+}

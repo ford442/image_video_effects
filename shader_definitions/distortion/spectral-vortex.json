@@ -1,0 +1,7 @@
+{
+  "id": "spectral-vortex",
+  "name": "Spectral Vortex",
+  "url": "shaders/spectral-vortex.wgsl",
+  "category": "image",
+  "description": "Spectral color vortex with twisted distortions."
+}

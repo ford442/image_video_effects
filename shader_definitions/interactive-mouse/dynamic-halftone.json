@@ -1,0 +1,33 @@
+{
+  "id": "dynamic-halftone",
+  "name": "Dynamic Halftone",
+  "url": "shaders/dynamic-halftone.wgsl",
+  "category": "image",
+  "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes.",
+  "params": [
+    {
+      "id": "density",
+      "name": "Dot Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Mouse Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "contrast",
+      "name": "Contrast",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "id": "cyber-rain",
+  "name": "Cyber Rain",
+  "url": "shaders/cyber-rain.wgsl",
+  "category": "image",
+  "description": "Neon rain on wet glass with mouse wiper.",
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Rain Intensity",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "blur",
+      "name": "Wet Blur",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "bloom",
+      "name": "Neon Bloom",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "wiper",
+      "name": "Wiper Size",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "laser-burn",
+  "name": "Laser Burn",
+  "url": "shaders/laser-burn.wgsl",
+  "category": "image",
+  "description": "Interactive laser that burns the image permanently (or heals slowly).",
+  "params": [
+    {
+      "id": "beamSize",
+      "name": "Beam Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "burnSpeed",
+      "name": "Burn Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "healRate",
+      "name": "Heal Rate",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "heatMode",
+      "name": "Heat Glow",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ]
+}

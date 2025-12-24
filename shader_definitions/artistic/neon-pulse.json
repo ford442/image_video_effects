@@ -1,0 +1,63 @@
+{
+  "id": "neon-pulse",
+  "name": "Neon Pulse",
+  "url": "shaders/neon-pulse.wgsl",
+  "category": "image",
+  "description": "Cyberpunk scanning lines that pulse with energy and conform to depth.",
+  "params": [
+    {
+      "id": "scanSpeed",
+      "name": "Scan Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "thickness",
+      "name": "Line Thickness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "intensity",
+      "name": "Glow Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "hue",
+      "name": "Neon Hue",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "pulseRate",
+      "name": "Pulse Rate",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "depthInf",
+      "name": "Depth Influence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "gridScale",
+      "name": "Grid Scale",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "cyberpunk"
+  ]
+}

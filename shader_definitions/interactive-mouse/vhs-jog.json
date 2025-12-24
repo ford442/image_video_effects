@@ -1,0 +1,41 @@
+{
+  "id": "vhs-jog",
+  "name": "VHS Jog Wheel",
+  "url": "shaders/vhs-jog.wgsl",
+  "category": "image",
+  "description": "Simulate VHS tracking and jogging. Mouse X controls distortion (jog), Mouse Y controls tracking.",
+  "params": [
+    {
+      "id": "noise",
+      "name": "Static Noise",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "distFreq",
+      "name": "Dist. Freq",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "bleed",
+      "name": "Color Bleed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "scanlines",
+      "name": "Scanlines",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ]
+}

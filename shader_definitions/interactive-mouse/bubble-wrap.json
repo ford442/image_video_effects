@@ -1,0 +1,41 @@
+{
+  "id": "bubble-wrap",
+  "name": "Bubble Wrap",
+  "url": "shaders/bubble-wrap.wgsl",
+  "category": "image",
+  "description": "Interactive bubble wrap that you can pop with your mouse. Popped bubbles stay popped!",
+  "params": [
+    {
+      "id": "scale",
+      "name": "Bubble Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "popStrength",
+      "name": "Pop Strength",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "unused",
+      "name": "Unused",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ]
+}
