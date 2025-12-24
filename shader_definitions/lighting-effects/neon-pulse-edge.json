@@ -1,0 +1,38 @@
+{
+  "id": "neon-pulse-edge",
+  "name": "Neon Pulse Edge",
+  "url": "shaders/neon-pulse-edge.wgsl",
+  "category": "image",
+  "description": "Edge detection with neon glow that reveals near the mouse.",
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "threshold",
+      "name": "Edge Threshold",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "intensity",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
