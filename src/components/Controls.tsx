@@ -82,9 +82,9 @@ const Controls: React.FC<ControlsProps> = ({
         <div className="controls">
             {/* --- Input Source Selection --- */}
             <div className="control-group">
-                <label>Input Source:</label>
-                <div style={{ display: 'inline-block', marginLeft: '10px' }}>
-                    <label style={{ marginRight: '10px', cursor: 'pointer' }}>
+                <label>Input Source</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: '#ccc', fontSize: '12px' }}>
                         <input
                             type="radio"
                             name="inputSource"
@@ -93,7 +93,7 @@ const Controls: React.FC<ControlsProps> = ({
                             onChange={() => setInputSource('image')}
                         /> Image
                     </label>
-                    <label style={{ marginRight: '10px', cursor: 'pointer' }}>
+                    <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: '#ccc', fontSize: '12px' }}>
                         <input
                             type="radio"
                             name="inputSource"
@@ -102,7 +102,7 @@ const Controls: React.FC<ControlsProps> = ({
                             onChange={() => setInputSource('video')}
                         /> Video
                     </label>
-                    <label style={{ cursor: 'pointer' }}>
+                    <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: '#ccc', fontSize: '12px' }}>
                         <input
                             type="radio"
                             name="inputSource"
@@ -115,7 +115,7 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
 
             <div className="control-group">
-                <label htmlFor="category-select">Effect Filter:</label>
+                <label htmlFor="category-select">Effect Filter</label>
                 <select
                     id="category-select"
                     value={shaderCategory}
@@ -127,39 +127,40 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
 
             {/* --- Stack / Slot Selection --- */}
-            <div className="stack-controls" style={{border: '1px solid #444', padding: '10px', margin: '10px 0', borderRadius: '5px'}}>
-                <div style={{fontWeight: 'bold', marginBottom: '5px'}}>Effect Stack</div>
+            <div className="stack-controls">
+                <div style={{fontWeight: 'bold', marginBottom: '8px', color: '#61dafb', fontSize: '13px'}}>Effect Stack</div>
                 {[0, 1, 2].map(index => (
-                    <div key={index} className="control-group" style={{ display: 'flex', alignItems: 'center', backgroundColor: activeSlot === index ? '#334' : 'transparent', padding: '5px', borderRadius: '4px' }}>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', backgroundColor: activeSlot === index ? 'rgba(97, 218, 251, 0.15)' : 'transparent', padding: '6px', borderRadius: '4px', marginBottom: '4px' }}>
                         <input
                             type="radio"
                             name="activeSlot"
                             checked={activeSlot === index}
                             onChange={() => setActiveSlot(index)}
-                            style={{marginRight: '10px'}}
+                            style={{marginRight: '10px', width: 'auto', height: 'auto'}}
                         />
-                        <label style={{width: '60px'}}>Slot {index + 1}:</label>
-                        <select
-                            value={modes[index]}
-                            onChange={(e) => setMode(index, e.target.value as RenderMode)}
-                            style={{flexGrow: 1}}
-                        >
-                            <option value="none">None</option>
-                            {currentModes.map(entry => (
-                                <option key={entry.id} value={entry.id}>{entry.name}</option>
-                            ))}
-                        </select>
+                        <div style={{flexGrow: 1}}>
+                             <select
+                                value={modes[index]}
+                                onChange={(e) => setMode(index, e.target.value as RenderMode)}
+                                style={{fontSize: '12px', padding: '4px'}}
+                            >
+                                <option value="none">Empty Slot {index + 1}</option>
+                                {currentModes.map(entry => (
+                                    <option key={entry.id} value={entry.id}>{entry.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 ))}
             </div>
 
             {/* --- Source Specific Controls --- */}
             {inputSource === 'video' && (
-                <div className="control-group" style={{alignItems: 'flex-start', flexDirection: 'column'}}>
-                      <div style={{marginBottom: '5px'}}>
-                        <button onClick={onUploadVideoTrigger} style={{marginRight: '10px'}}>Upload Video</button>
-                        <label style={{ marginLeft: '10px' }}>
-                            <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} /> Mute
+                <div className="control-group">
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <button onClick={onUploadVideoTrigger} style={{flex: 1}}>Upload Video</button>
+                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '12px' }}>
+                            <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{marginRight: '5px', width: 'auto'}} /> Mute
                         </label>
                     </div>
                     <div>
@@ -179,72 +180,36 @@ const Controls: React.FC<ControlsProps> = ({
 
             {inputSource === 'image' && (
                 <>
-                    <div className="control-group">
-                        <button onClick={onUploadImageTrigger}>Upload Image</button>
-                        <button onClick={onNewImage}>Load Random Image</button>
-                        <button onClick={onLoadModel} disabled={isModelLoaded}>
-                            {isModelLoaded ? 'AI Model Loaded' : 'Load AI Model'}
+                    <div className="control-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <button onClick={onUploadImageTrigger}>Upload Img</button>
+                        <button onClick={onNewImage}>Random Img</button>
+                        <button onClick={onLoadModel} disabled={isModelLoaded} style={{gridColumn: 'span 2'}}>
+                            {isModelLoaded ? 'AI Model Active' : 'Enable AI Depth'}
                         </button>
                     </div>
-                    <div className="control-group">
-                        <label htmlFor="auto-change-toggle">Auto Change:</label>
-                        <input type="checkbox" id="auto-change-toggle" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} />
+
+                    <div className="control-group" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                        <label htmlFor="auto-change-toggle" style={{marginBottom: 0}}>Auto-Switch Image</label>
+                        <input type="checkbox" id="auto-change-toggle" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} style={{width: 'auto'}} />
                     </div>
+
                     {autoChangeEnabled && (
                         <div className="control-group">
-                            <label htmlFor="delay-slider">Delay ({autoChangeDelay}s):</label>
+                            <label htmlFor="delay-slider">Switch Delay: {autoChangeDelay}s</label>
                             <input type="range" id="delay-slider" min="1" max="10" step="1" value={autoChangeDelay} onChange={(e) => setAutoChangeDelay(Number(e.target.value))} />
                         </div>
                     )}
                 </>
             )}
 
-            {/* --- Global View Controls --- */}
-            <div className="control-group">
-                <label htmlFor="zoom-slider">Zoom:</label>
-                <input type="range" id="zoom-slider" min="50" max="200" value={zoom * 100} onChange={(e) => setZoom(parseFloat(e.target.value) / 100)} />
-            </div>
-            <div className="control-group">
-                <label htmlFor="pan-x-slider">Pan X:</label>
-                <input type="range" id="pan-x-slider" min="0" max="200" value={panX * 100} onChange={(e) => setPanX(parseFloat(e.target.value) / 100)} />
-            </div>
-            <div className="control-group">
-                <label htmlFor="pan-y-slider">Pan Y:</label>
-                <input type="range" id="pan-y-slider" min="0" max="200" value={panY * 100} onChange={(e) => setPanY(parseFloat(e.target.value) / 100)} />
-            </div>
+            <hr />
 
             {/* --- Active Slot Parameter Controls --- */}
-            <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-            <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>
-                Slot {activeSlot + 1} Controls ({modes[activeSlot] === 'none' ? 'Empty' : modes[activeSlot]})
+            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#61dafb', fontSize: '14px' }}>
+                Slot {activeSlot + 1} Settings
             </div>
 
-            {currentMode === 'infinite-zoom' && (
-                <>
-                    <div className="control-group">
-                        <label>Light Strength: {currentParams.lightStrength?.toFixed(1)}</label>
-                        <input type="range" min="0" max="5" step="0.1" value={currentParams.lightStrength} onChange={(e) => updateSlotParam(activeSlot, { lightStrength: parseFloat(e.target.value) })} />
-                    </div>
-                    <div className="control-group">
-                        <label>Ambient: {currentParams.ambient?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.05" value={currentParams.ambient} onChange={(e) => updateSlotParam(activeSlot, { ambient: parseFloat(e.target.value) })} />
-                    </div>
-                    <div className="control-group">
-                        <label>Normal Strength: {currentParams.normalStrength?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={currentParams.normalStrength} onChange={(e) => updateSlotParam(activeSlot, { normalStrength: parseFloat(e.target.value) })} />
-                    </div>
-                    <div className="control-group">
-                        <label>Fog Falloff: {currentParams.fogFalloff?.toFixed(1)}</label>
-                        <input type="range" min="0.1" max="10" step="0.1" value={currentParams.fogFalloff} onChange={(e) => updateSlotParam(activeSlot, { fogFalloff: parseFloat(e.target.value) })} />
-                    </div>
-                    <div className="control-group">
-                        <label>Depth Threshold: {currentParams.depthThreshold?.toFixed(2)}</label>
-                        <input type="range" min="0" max="1" step="0.01" value={currentParams.depthThreshold} onChange={(e) => updateSlotParam(activeSlot, { depthThreshold: parseFloat(e.target.value) })} />
-                    </div>
-                </>
-            )}
-
-            {currentMode !== 'none' && currentMode !== 'infinite-zoom' && currentShaderEntry && (
+            {currentMode !== 'none' && currentMode !== 'infinite-zoom' && currentShaderEntry ? (
                 <>
                     {/* Dynamic Shader Params based on metadata */}
                     {currentShaderEntry.params && currentShaderEntry.params.map((param, i) => {
@@ -264,7 +229,10 @@ const Controls: React.FC<ControlsProps> = ({
 
                         return (
                              <div className="control-group" key={param.id}>
-                                <label>{param.name}: {val?.toFixed(2)}</label>
+                                <label style={{display: 'flex', justifyContent: 'space-between'}}>
+                                    <span>{param.name}</span>
+                                    <span>{val?.toFixed(2)}</span>
+                                </label>
                                 <input
                                     type="range"
                                     min={param.min}
@@ -277,29 +245,54 @@ const Controls: React.FC<ControlsProps> = ({
                         );
                     })}
                     
-                    {/* Fallback for shaders without metadata (should not happen often) */}
+                    {/* Fallback for shaders without metadata */}
                     {(!currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
-                         <>
-                            <div className="control-group">
-                                <label>Param 1: {currentParams.zoomParam1?.toFixed(2)}</label>
-                                <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam1} onChange={(e) => updateSlotParam(activeSlot, { zoomParam1: parseFloat(e.target.value) })} />
-                            </div>
-                            <div className="control-group">
-                                <label>Param 2: {currentParams.zoomParam2?.toFixed(2)}</label>
-                                <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam2} onChange={(e) => updateSlotParam(activeSlot, { zoomParam2: parseFloat(e.target.value) })} />
-                            </div>
-                            <div className="control-group">
-                                <label>Param 3: {currentParams.zoomParam3?.toFixed(2)}</label>
-                                <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam3} onChange={(e) => updateSlotParam(activeSlot, { zoomParam3: parseFloat(e.target.value) })} />
-                            </div>
-                            <div className="control-group">
-                                <label>Param 4: {currentParams.zoomParam4?.toFixed(2)}</label>
-                                <input type="range" min="0" max="1" step="0.01" value={currentParams.zoomParam4} onChange={(e) => updateSlotParam(activeSlot, { zoomParam4: parseFloat(e.target.value) })} />
-                            </div>
-                         </>
+                         <div style={{fontSize: '12px', color: '#888', fontStyle: 'italic'}}>
+                             No adjustable parameters for this effect.
+                         </div>
                     )}
                 </>
+            ) : currentMode === 'infinite-zoom' ? (
+                <>
+                     <div className="control-group">
+                        <label>Light Strength: {currentParams.lightStrength?.toFixed(1)}</label>
+                        <input type="range" min="0" max="5" step="0.1" value={currentParams.lightStrength} onChange={(e) => updateSlotParam(activeSlot, { lightStrength: parseFloat(e.target.value) })} />
+                    </div>
+                     <div className="control-group">
+                        <label>Ambient: {currentParams.ambient?.toFixed(2)}</label>
+                        <input type="range" min="0" max="1" step="0.05" value={currentParams.ambient} onChange={(e) => updateSlotParam(activeSlot, { ambient: parseFloat(e.target.value) })} />
+                    </div>
+                </>
+            ) : (
+                <div style={{fontSize: '13px', color: '#666', padding: '20px 0', textAlign: 'center'}}>
+                    Select an effect for this slot to see options.
+                </div>
             )}
+
+            <hr />
+
+            {/* --- Global View Controls --- */}
+            <div className="control-group">
+                <label style={{display: 'flex', justifyContent: 'space-between'}}>
+                    <span>Zoom</span>
+                    <span>{(zoom * 100).toFixed(0)}%</span>
+                </label>
+                <input type="range" id="zoom-slider" min="50" max="200" value={zoom * 100} onChange={(e) => setZoom(parseFloat(e.target.value) / 100)} />
+            </div>
+            <div className="control-group">
+                <label style={{display: 'flex', justifyContent: 'space-between'}}>
+                    <span>Pan X</span>
+                    <span>{(panX * 100).toFixed(0)}%</span>
+                </label>
+                <input type="range" id="pan-x-slider" min="0" max="200" value={panX * 100} onChange={(e) => setPanX(parseFloat(e.target.value) / 100)} />
+            </div>
+            <div className="control-group">
+                <label style={{display: 'flex', justifyContent: 'space-between'}}>
+                    <span>Pan Y</span>
+                    <span>{(panY * 100).toFixed(0)}%</span>
+                </label>
+                <input type="range" id="pan-y-slider" min="0" max="200" value={panY * 100} onChange={(e) => setPanY(parseFloat(e.target.value) / 100)} />
+            </div>
         </div>
     );
 };

@@ -68,10 +68,10 @@ test('renders Rain controls when active slot mode is rain', () => {
     );
 
     // Check for Rain specific labels
-    expect(screen.getByText(/Rain Speed:/)).toBeInTheDocument();
-    expect(screen.getByText(/Rain Density:/)).toBeInTheDocument();
-    expect(screen.getByText(/Wind:/)).toBeInTheDocument();
-    expect(screen.getByText(/Splash\/Flow:/)).toBeInTheDocument();
+    expect(screen.getByText(/Rain Speed/)).toBeInTheDocument();
+    expect(screen.getByText(/Rain Density/)).toBeInTheDocument();
+    expect(screen.getByText(/Wind/)).toBeInTheDocument();
+    expect(screen.getByText(/Splash\/Flow/)).toBeInTheDocument();
 });
 
 test('does not render Rain controls when active slot mode is not rain', () => {
@@ -102,5 +102,5 @@ test('does not render Rain controls when active slot mode is not rain', () => {
         />
     );
 
-    expect(screen.queryByText(/Rain Speed:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Rain Speed/)).not.toBeInTheDocument();
 });

@@ -1,0 +1,33 @@
+
+> webgpu-react-app@0.1.0 prestart
+> node scripts/generate_shader_lists.js
+
+Generated artistic.json with 28 shaders.
+Generated distortion.json with 11 shaders.
+Generated interactive-mouse.json with 55 shaders.
+
+> webgpu-react-app@0.1.0 start
+> react-scripts start
+
+(node:3111) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:3111) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+Compiled with warnings.
+
+[eslint]
+src/App.tsx
+  Line 56:23:  'setVideoList' is assigned a value but never used                                                             @typescript-eslint/no-unused-vars
+  Line 332:8:  React Hook useEffect has a missing dependency: 'loadModel'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint]
+src/App.tsx
+  Line 56:23:  'setVideoList' is assigned a value but never used                                                             @typescript-eslint/no-unused-vars
+  Line 332:8:  React Hook useEffect has a missing dependency: 'loadModel'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+No issues found.
