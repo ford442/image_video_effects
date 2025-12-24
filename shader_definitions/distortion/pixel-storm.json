@@ -1,0 +1,41 @@
+{
+  "id": "pixel-storm",
+  "name": "Pixel Storm",
+  "url": "shaders/pixel-storm.wgsl",
+  "category": "image",
+  "description": "Mouse movement creates a chaotic storm of pixels.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Storm Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chaos",
+      "name": "Chaos",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "trail",
+      "name": "Trail Length",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "distortion"
+  ]
+}
