@@ -1924,6 +1924,163 @@
     ]
   },
   {
+    "id": "echo-ripple",
+    "name": "Echo Ripple",
+    "url": "shaders/echo-ripple.wgsl",
+    "category": "image",
+    "description": "Mouse movement creates expanding ripples that echo and persist in time.",
+    "params": [
+      {
+        "id": "freq",
+        "name": "Frequency",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Echo Decay",
+        "default": 0.9,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "strength",
+        "name": "Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "directional-glitch",
+    "name": "Directional Glitch",
+    "url": "shaders/directional-glitch.wgsl",
+    "category": "image",
+    "description": "Glitch artifacts radiate from the mouse position.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "scatter",
+        "name": "Scatter",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ]
+  },
+  {
+    "id": "rgb-fluid",
+    "name": "RGB Fluidity",
+    "url": "shaders/rgb-fluid.wgsl",
+    "category": "image",
+    "description": "Image behaves like a fluid, stirred by the mouse cursor.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "decay",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "force",
+        "name": "Mouse Force",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "shift",
+        "name": "Color Shift",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ]
+  },
+  {
+    "id": "virtual-lens",
+    "name": "Virtual Lens",
+    "url": "shaders/virtual-lens.wgsl",
+    "category": "image",
+    "description": "A virtual magnifying glass with chromatic aberration.",
+    "params": [
+      {
+        "id": "mag",
+        "name": "Magnification",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Lens Radius",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "softness",
+        "name": "Edge Softness",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ]
+  },
+  {
     "id": "interactive-kuwahara",
     "name": "Oil Painting (Kuwahara)",
     "url": "shaders/interactive-kuwahara.wgsl",
