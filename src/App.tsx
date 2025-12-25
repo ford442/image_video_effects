@@ -53,7 +53,7 @@ function MainApp() {
 
     // Video/Input State
     const [inputSource, setInputSource] = useState<InputSource>('image');
-    const [videoList, setVideoList] = useState<string[]>([]);
+    const [videoList] = useState<string[]>([]); // For future: list of stock videos
     const [selectedVideo, setSelectedVideo] = useState<string>(''); // For stock videos
     const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined); // For uploaded videos
     const [isMuted, setIsMuted] = useState(true);
@@ -85,7 +85,7 @@ function MainApp() {
     };
 
     // --- AI Model Loading ---
-    const loadModel = async () => {
+    const loadModel = useCallback(async () => {
         if (depthEstimator) { setStatus('Model already loaded.'); return; }
         try {
             setStatus('Loading model...');
@@ -108,7 +108,7 @@ function MainApp() {
             console.error(e);
             setStatus(`Failed to load model: ${e.message}`);
         }
-    };
+    }, [depthEstimator]);
 
     // --- Depth Analysis Logic ---
     const runDepthAnalysis = useCallback(async (imageUrl: string) => {
@@ -329,7 +329,7 @@ function MainApp() {
             channel.close();
             clearInterval(hbInterval);
         };
-    }, [depthEstimator, runDepthAnalysis, broadcastState, handleNewImage]); 
+    }, [depthEstimator, runDepthAnalysis, broadcastState, handleNewImage, loadModel]); 
 
     // Broadcast on state change
     useEffect(() => {
