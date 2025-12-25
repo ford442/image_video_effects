@@ -298,24 +298,39 @@ export class Renderer {
     // New Method to load specific image (URL or Blob)
     public async loadImage(url: string): Promise<string | undefined> {
         if (this.isDestroyed) return undefined;
+        let newTexture: GPUTexture | undefined;
+
         try {
-             const response = await fetch(url);
-             const blob = await response.blob();
-             const imageBitmap = await createImageBitmap(blob);
+             // Use HTMLImageElement to avoid "valid external Instance reference" issues with ImageBitmap
+             const img = new Image();
+             img.crossOrigin = "Anonymous";
+             img.src = url;
+             await img.decode();
              
              if (this.isDestroyed) return undefined;
 
-             if (this.imageTexture) this.imageTexture.destroy();
-             this.imageTexture = this.device.createTexture({
-                 size: [imageBitmap.width, imageBitmap.height],
+             newTexture = this.device.createTexture({
+                 size: [img.naturalWidth, img.naturalHeight],
                  format: 'rgba32float',
                  usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
              });
-             this.device.queue.copyExternalImageToTexture({source: imageBitmap}, {texture: this.imageTexture, colorSpace:"display-p3"}, [imageBitmap.width, imageBitmap.height]);
+
+             this.device.queue.copyExternalImageToTexture(
+                 { source: img },
+                 { texture: newTexture, colorSpace: "display-p3" },
+                 [img.naturalWidth, img.naturalHeight]
+             );
+
+             // Swap textures only after successful load & copy
+             if (this.imageTexture) this.imageTexture.destroy();
+             this.imageTexture = newTexture;
              this.createBindGroups();
+
              return url;
         } catch(e) {
             console.error("Failed to load image:", url, e);
+            // Clean up the new texture if it was created but not used
+            if (newTexture) newTexture.destroy();
             return undefined;
         }
     }
