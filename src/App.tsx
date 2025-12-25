@@ -408,11 +408,11 @@ function MainApp() {
                         setMousePosition={setMousePosition}
                         isMouseDown={isMouseDown}
                         setIsMouseDown={setIsMouseDown}
-                        onInit={() => {
-                        if(rendererRef.current) {
-                            setAvailableModes(rendererRef.current.getAvailableModes());
-                        }
-                        }}
+                        onInit={useCallback(() => {
+                            if(rendererRef.current) {
+                                setAvailableModes(rendererRef.current.getAvailableModes());
+                            }
+                        }, [])}
                         inputSource={inputSource}
                         selectedVideo={selectedVideo}
                         videoSourceUrl={videoSourceUrl}
