@@ -1,0 +1,38 @@
+{
+  "id": "molten-glass",
+  "name": "Molten Glass",
+  "url": "shaders/molten-glass.wgsl",
+  "category": "image",
+  "features": ["mouse-driven"],
+  "description": "Melts the image under the mouse cursor like hot glass.",
+  "params": [
+    {
+      "id": "heat-radius",
+      "name": "Heat Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "cooling-rate",
+      "name": "Cooling Rate",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
