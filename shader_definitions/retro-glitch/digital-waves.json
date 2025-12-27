@@ -1,0 +1,7 @@
+{
+  "id": "digital-waves",
+  "name": "Digital Waves",
+  "url": "shaders/digital-waves.wgsl",
+  "category": "image",
+  "description": "Digital wave interference patterns."
+}

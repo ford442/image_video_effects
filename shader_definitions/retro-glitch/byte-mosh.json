@@ -1,0 +1,42 @@
+{
+  "id": "byte-mosh",
+  "name": "Byte-Mosh Glitch",
+  "url": "shaders/byte-mosh.wgsl",
+  "category": "image",
+  "description": "Bitwise XOR, AND, shift, and rotate operations creating digital corruption effects.",
+  "params": [
+    {
+      "id": "operationMix",
+      "name": "Operation Mix",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "bitShift",
+      "name": "Bit Shift",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "errorRate",
+      "name": "Error Rate",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "blockSize",
+      "name": "Block Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "interactive",
+    "chromatic-aberration",
+    "glitch"
+  ]
+}

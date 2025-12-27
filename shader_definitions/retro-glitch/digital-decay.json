@@ -1,0 +1,37 @@
+{
+  "id": "digital-decay",
+  "name": "Digital Decay",
+  "url": "shaders/digital-decay.wgsl",
+  "category": "image",
+  "description": "",
+  "params": [
+    {
+      "id": "decayIntensity",
+      "name": "Decay Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "blockSize",
+      "name": "Block Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "corruptionSpeed",
+      "name": "Corruption Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "depthFocus",
+      "name": "Depth Focus",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}

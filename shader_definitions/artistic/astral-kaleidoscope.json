@@ -1,0 +1,7 @@
+{
+  "id": "astral-kaleidoscope",
+  "name": "Astral Kaleidoscope",
+  "url": "shaders/astral-kaleidoscope.wgsl",
+  "category": "image",
+  "description": "Cosmic kaleidoscope with astral color schemes."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "liquid-viscous",
+  "name": "Liquid Viscous",
+  "url": "shaders/liquid-viscous.wgsl",
+  "category": "image",
+  "description": ""
+}

@@ -1,0 +1,7 @@
+{
+  "id": "neon-edge-diffusion",
+  "name": "Neon Edge Diffusion",
+  "url": "shaders/neon-edge-diffusion.wgsl",
+  "category": "image",
+  "description": "Sobel edge detection with neon-diffusion and color bleeding."
+}

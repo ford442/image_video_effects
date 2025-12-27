@@ -1,0 +1,7 @@
+{
+  "id": "liquid-oil",
+  "name": "Liquid Oil",
+  "url": "shaders/liquid-oil.wgsl",
+  "category": "image",
+  "description": ""
+}

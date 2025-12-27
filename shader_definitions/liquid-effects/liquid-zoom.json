@@ -1,0 +1,7 @@
+{
+  "id": "liquid-zoom",
+  "name": "Liquid Zoom",
+  "url": "shaders/liquid-zoom.wgsl",
+  "category": "image",
+  "description": ""
+}

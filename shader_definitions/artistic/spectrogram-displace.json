@@ -1,0 +1,7 @@
+{
+  "id": "spectrogram-displace",
+  "name": "Spectrogram Displace",
+  "url": "shaders/spectrogram-displace.wgsl",
+  "category": "image",
+  "description": "Audio-driven per-pixel displacements from an FFT texture."
+}

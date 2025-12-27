@@ -1,0 +1,7 @@
+{
+  "id": "rainbow-cloud",
+  "name": "Rainbow Cloud",
+  "url": "shaders/rainbow-cloud.wgsl",
+  "category": "image",
+  "description": "Colorful cloud formations with rainbow gradients."
+}

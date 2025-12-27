@@ -1,0 +1,7 @@
+{
+  "id": "liquid-metal",
+  "name": "Liquid Metal",
+  "url": "shaders/liquid-metal.wgsl",
+  "category": "image",
+  "description": ""
+}

@@ -1,0 +1,7 @@
+{
+  "id": "crt-tv",
+  "name": "CRT Monitor",
+  "url": "shaders/crt-tv.wgsl",
+  "category": "image",
+  "description": ""
+}

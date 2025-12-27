@@ -1,0 +1,7 @@
+{
+  "id": "spectrum-bleed",
+  "name": "Spectrum Bleed",
+  "url": "shaders/spectrum-bleed.wgsl",
+  "category": "image",
+  "description": "Color channel separation and bleeding effects."
+}

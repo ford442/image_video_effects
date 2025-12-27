@@ -1,0 +1,7 @@
+{
+  "id": "liquid-glitch",
+  "name": "Liquid Glitch",
+  "url": "shaders/liquid-glitch.wgsl",
+  "category": "image",
+  "description": ""
+}
