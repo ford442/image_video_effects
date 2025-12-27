@@ -349,7 +349,7 @@ function MainApp() {
             <header className="header">
                 <div className="logo-section">
                     <div className="logo-text">Pixelocity</div>
-                    <div className="subtitle-text">WebGPU Shader Playground</div>
+                    <div className="subtitle-text">1ink.us WebGPU Shader Playground</div>
                 </div>
                 <div className="header-controls">
                     <button className="toggle-sidebar-btn" onClick={openRemote}>
