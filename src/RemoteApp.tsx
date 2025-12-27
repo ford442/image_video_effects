@@ -80,20 +80,7 @@ const RemoteApp: React.FC = () => {
                 setIsMuted(state.isMuted);
                 resetHeartbeat();
             } else if (msg.type === 'STATE_UPDATE') {
-                // Handle partial updates if needed, for now we might only rely on full state or specific updates
-                // But simplified: Main broadcasts changes individually too?
-                // Actually, let's assume 'STATE_UPDATE' payload is { key, value }
-                // For simplicity in this iteration, let's rely on individual setters from Main matching the CMDs,
-                // OR Main just broadcasting FULL_STATE on change?
-                // Broadcasting Full State on every slider move (60fps) is heavy for serialization?
-                // BroadcastChannel is structured clone.
-                // Let's implement specific update handlers if we want optimization, or just trust the channel.
-                // For now, let's assume Main sends STATE_FULL mostly.
-                // Wait, if I drag a slider, I want smooth updates.
-                // If I drag slider on Remote -> CMD -> Main -> STATE_FULL -> Remote -> SetState.
-                // This roundtrip might be laggy.
-                // Optimistic UI: Update local state immediately, then send CMD.
-                // If STATE_FULL comes back, it overwrites.
+                // Handle partial updates if needed
             }
         };
 
@@ -108,9 +95,6 @@ const RemoteApp: React.FC = () => {
 
 
     // Handlers
-    // We update local state AND send command.
-    // This provides immediate feedback (Optimistic UI).
-
     const handleSetMode = (index: number, mode: RenderMode) => {
         const newModes = [...modes];
         newModes[index] = mode;
@@ -217,8 +201,24 @@ const RemoteApp: React.FC = () => {
     }
 
     return (
-        <div className="remote-app" style={{ padding: '20px', backgroundColor: '#222', minHeight: '100vh', color: 'white' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Remote Control</h2>
+        <div className="remote-app" style={{
+            backgroundColor: '#222',
+            height: '100vh',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden' // Prevent body scroll
+        }}>
+            <h2 style={{
+                textAlign: 'center',
+                padding: '20px 0',
+                margin: 0,
+                backgroundColor: '#2a2a2a',
+                borderBottom: '1px solid #444',
+                flexShrink: 0
+            }}>
+                Remote Control
+            </h2>
 
             {/* Hidden Inputs */}
             <input
@@ -236,36 +236,44 @@ const RemoteApp: React.FC = () => {
                 onChange={(e) => handleFileUpload(e, 'video')}
             />
 
-            <Controls
-                modes={modes}
-                setMode={handleSetMode}
-                activeSlot={activeSlot}
-                setActiveSlot={handleSetActiveSlot}
-                slotParams={slotParams}
-                updateSlotParam={handleUpdateSlotParam}
-                shaderCategory={shaderCategory}
-                setShaderCategory={handleSetShaderCategory}
-                zoom={zoom} setZoom={handleSetZoom}
-                panX={panX} setPanX={handleSetPanX}
-                panY={panY} setPanY={handleSetPanY}
-                onNewImage={handleLoadRandom}
-                autoChangeEnabled={autoChangeEnabled}
-                setAutoChangeEnabled={handleSetAutoChange}
-                autoChangeDelay={autoChangeDelay}
-                setAutoChangeDelay={handleSetAutoChangeDelay}
-                onLoadModel={handleLoadModel}
-                isModelLoaded={isModelLoaded}
-                availableModes={availableModes}
-                inputSource={inputSource}
-                setInputSource={handleSetInputSource}
-                videoList={videoList}
-                selectedVideo={selectedVideo}
-                setSelectedVideo={handleSetSelectedVideo}
-                isMuted={isMuted}
-                setIsMuted={handleSetMuted}
-                onUploadImageTrigger={() => fileInputImageRef.current?.click()}
-                onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
-            />
+            {/* Scrollable Content Container */}
+            <div className="remote-content" style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '20px',
+                position: 'relative'
+            }}>
+                <Controls
+                    modes={modes}
+                    setMode={handleSetMode}
+                    activeSlot={activeSlot}
+                    setActiveSlot={handleSetActiveSlot}
+                    slotParams={slotParams}
+                    updateSlotParam={handleUpdateSlotParam}
+                    shaderCategory={shaderCategory}
+                    setShaderCategory={handleSetShaderCategory}
+                    zoom={zoom} setZoom={handleSetZoom}
+                    panX={panX} setPanX={handleSetPanX}
+                    panY={panY} setPanY={handleSetPanY}
+                    onNewImage={handleLoadRandom}
+                    autoChangeEnabled={autoChangeEnabled}
+                    setAutoChangeEnabled={handleSetAutoChange}
+                    autoChangeDelay={autoChangeDelay}
+                    setAutoChangeDelay={handleSetAutoChangeDelay}
+                    onLoadModel={handleLoadModel}
+                    isModelLoaded={isModelLoaded}
+                    availableModes={availableModes}
+                    inputSource={inputSource}
+                    setInputSource={handleSetInputSource}
+                    videoList={videoList}
+                    selectedVideo={selectedVideo}
+                    setSelectedVideo={handleSetSelectedVideo}
+                    isMuted={isMuted}
+                    setIsMuted={handleSetMuted}
+                    onUploadImageTrigger={() => fileInputImageRef.current?.click()}
+                    onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
+                />
+            </div>
         </div>
     );
 };

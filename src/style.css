@@ -213,21 +213,21 @@ hr {
     z-index: 20;
 }
 
-/* Scrollbar for sidebar */
-.sidebar::-webkit-scrollbar {
+/* Scrollbar for sidebar and remote content */
+.sidebar::-webkit-scrollbar, .remote-content::-webkit-scrollbar {
     width: 8px;
 }
 
-.sidebar::-webkit-scrollbar-track {
+.sidebar::-webkit-scrollbar-track, .remote-content::-webkit-scrollbar-track {
     background: #181818;
 }
 
-.sidebar::-webkit-scrollbar-thumb {
+.sidebar::-webkit-scrollbar-thumb, .remote-content::-webkit-scrollbar-thumb {
     background: #333;
     border-radius: 4px;
 }
 
-.sidebar::-webkit-scrollbar-thumb:hover {
+.sidebar::-webkit-scrollbar-thumb:hover, .remote-content::-webkit-scrollbar-thumb:hover {
     background: #444;
 }
 
