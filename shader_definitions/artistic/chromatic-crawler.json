@@ -1,0 +1,7 @@
+{
+  "id": "chromatic-crawler",
+  "name": "Chromatic Crawler",
+  "url": "shaders/chromatic-crawler.wgsl",
+  "category": "image",
+  "description": "Chaotic color-swapping regions that crawl across the screen with Voronoi-based patterns."
+}

@@ -1,0 +1,42 @@
+{
+  "id": "pixelation-drift",
+  "name": "Pixelation Drift",
+  "url": "shaders/pixelation-drift.wgsl",
+  "category": "image",
+  "description": "Dynamic pixelated mosaic with organic drifting motion and depth-aware pixel sizing. Watch as chunky pixels slowly morph and flow across the image.",
+  "params": [
+    {
+      "id": "pixelSize",
+      "name": "Pixel Size",
+      "default": 0.15,
+      "min": 0.01,
+      "max": 1.0
+    },
+    {
+      "id": "driftSpeed",
+      "name": "Drift Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorBleed",
+      "name": "Color Bleed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "depthInfluence",
+      "name": "Depth Influence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "organic-motion"
+  ]
+}

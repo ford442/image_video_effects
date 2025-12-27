@@ -1,0 +1,40 @@
+{
+  "id": "liquid-mirror",
+  "name": "Liquid Mirror",
+  "url": "shaders/liquid-mirror.wgsl",
+  "category": "image",
+  "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+  "params": [
+    {
+      "id": "distort",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "smooth",
+      "name": "Smoothness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "reflect",
+      "name": "Reflectivity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "push",
+      "name": "Push Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

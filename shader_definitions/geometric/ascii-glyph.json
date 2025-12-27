@@ -1,0 +1,7 @@
+{
+  "id": "ascii-glyph",
+  "name": "ASCII Glyphs",
+  "url": "shaders/ascii-glyph.wgsl",
+  "category": "image",
+  "description": "ASCII / SDF glyph morphing and atlas-based rendering."
+}

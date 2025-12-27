@@ -1,0 +1,7 @@
+{
+  "id": "bitonic-sort",
+  "name": "Bitonic Pixel Sort",
+  "url": "shaders/bitonic-sort.wgsl",
+  "category": "image",
+  "description": "Workgroup bitonic sort skeleton for pixel sorting and glitch effects."
+}

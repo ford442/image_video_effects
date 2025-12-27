@@ -1,0 +1,76 @@
+{
+  "id": "radiating-haze",
+  "name": "Radiating Haze",
+  "url": "shaders/radiating-haze.wgsl",
+  "category": "image",
+  "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "intensity",
+      "name": "Aura Intensity",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "satThresh",
+      "name": "Saturation Threshold",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Aura Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "pulseSpd",
+      "name": "Pulse Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "depthInf",
+      "name": "Depth Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "hueBias",
+      "name": "Hue Bias / Fixed Hue",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colourMode",
+      "name": "Colour Mode",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "labels": [
+        "Shifted",
+        "Original",
+        "Fixed"
+      ]
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "colour-masking",
+    "multi-mode"
+  ]
+}

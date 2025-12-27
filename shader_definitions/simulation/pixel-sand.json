@@ -1,0 +1,7 @@
+{
+  "id": "pixel-sand",
+  "name": "Pixel Sand",
+  "url": "shaders/pixel-sand.wgsl",
+  "category": "image",
+  "description": "Falling granular automata with RGB gravity and diagonal movement."
+}

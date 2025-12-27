@@ -1,0 +1,7 @@
+{
+  "id": "liquid-jelly",
+  "name": "Liquid Jelly",
+  "url": "shaders/liquid-jelly.wgsl",
+  "category": "image",
+  "description": ""
+}

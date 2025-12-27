@@ -1,0 +1,23 @@
+{
+  "id": "neon-edges",
+  "name": "Neon Edges",
+  "url": "shaders/neon-edges.wgsl",
+  "category": "image",
+  "description": "",
+  "params": [
+    {
+      "id": "edgeThreshold",
+      "name": "Edge Threshold",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "neonIntensity",
+      "name": "Neon Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "liquid",
+  "name": "Liquid (Interactive)",
+  "url": "shaders/liquid.wgsl",
+  "category": "image",
+  "description": ""
+}

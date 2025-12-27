@@ -1,0 +1,43 @@
+{
+  "id": "wave-equation",
+  "name": "Wave Tank",
+  "url": "shaders/wave-equation.wgsl",
+  "category": "image",
+  "description": "2D wave equation simulation with ripple physics, refraction effects, and rainbow phase coloring.",
+  "params": [
+    {
+      "id": "waveSpeed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "damping",
+      "name": "Damping",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "sourceStrength",
+      "name": "Source Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "boundaryReflect",
+      "name": "Boundary Reflect",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "interactive",
+    "physics"
+  ]
+}

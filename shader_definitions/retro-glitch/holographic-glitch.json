@@ -1,0 +1,43 @@
+{
+  "id": "holographic-glitch",
+  "name": "Holographic Glitch",
+  "url": "shaders/holographic-glitch.wgsl",
+  "category": "image",
+  "description": "Futuristic holographic projection with RGB chromatic aberration, scanlines, digital artifacts, and unstable flickering. Perfect for sci-fi aesthetics.",
+  "params": [
+    {
+      "id": "glitchIntensity",
+      "name": "Glitch Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "scanlineSpeed",
+      "name": "Scanline Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rgbShift",
+      "name": "RGB Shift",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "flicker",
+      "name": "Flicker",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "chromatic-aberration",
+    "sci-fi"
+  ]
+}

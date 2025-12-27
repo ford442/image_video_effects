@@ -1,0 +1,42 @@
+{
+  "id": "flow-sort",
+  "name": "Streamline Pixel Sort",
+  "url": "shaders/flow-sort.wgsl",
+  "category": "image",
+  "description": "Pixel sorting along vector field lines derived from luminance gradients.",
+  "params": [
+    {
+      "id": "flowStrength",
+      "name": "Flow Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "sortPasses",
+      "name": "Sort Passes",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "strandPersist",
+      "name": "Trail Persistence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "threshold",
+      "name": "Sort Threshold",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "temporal-persistence",
+    "interactive",
+    "depth-aware"
+  ]
+}

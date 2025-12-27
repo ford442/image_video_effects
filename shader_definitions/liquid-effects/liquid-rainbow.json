@@ -1,0 +1,7 @@
+{
+  "id": "liquid-rainbow",
+  "name": "Liquid Rainbow",
+  "url": "shaders/liquid-rainbow.wgsl",
+  "category": "image",
+  "description": ""
+}
