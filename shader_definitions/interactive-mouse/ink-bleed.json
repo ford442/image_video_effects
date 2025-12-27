@@ -1,0 +1,41 @@
+{
+  "id": "ink-bleed",
+  "name": "Ink Bleed",
+  "url": "shaders/ink-bleed.wgsl",
+  "category": "image",
+  "description": "Click to drop spreading ink that permanently stains the video feed.",
+  "params": [
+    {
+      "id": "inkHue",
+      "name": "Ink Hue",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "spreadSpeed",
+      "name": "Spread Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "fadeSpeed",
+      "name": "Fade Speed",
+      "default": 0.05,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "density",
+      "name": "Ink Density",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ]
+}
