@@ -1,0 +1,38 @@
+{
+  "id": "ascii-decode",
+  "name": "ASCII Decode",
+  "url": "shaders/ascii-decode.wgsl",
+  "category": "interactive-mouse",
+  "features": ["mouse-driven"],
+  "description": "Renders the view as a digital ASCII matrix. Mouse movement acts as a decoding lens.",
+  "params": [
+    {
+      "id": "gridSize",
+      "name": "Grid Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Decode Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Matrix Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mix",
+      "name": "Effect Strength",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
