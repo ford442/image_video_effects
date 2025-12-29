@@ -1,0 +1,41 @@
+{
+  "id": "motion-revealer",
+  "name": "Motion Revealer",
+  "url": "shaders/motion-revealer.wgsl",
+  "category": "interactive-mouse",
+  "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades.",
+  "params": [
+    {
+      "id": "size",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "fade",
+      "name": "Fade Speed",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "softness",
+      "name": "Edge Softness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "opacity",
+      "name": "Brush Opacity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ]
+}
