@@ -1,0 +1,14 @@
+{
+  "id": "neon-pulse-edge",
+  "label": "Neon Pulse Edge",
+  "category": "interactive-mouse",
+  "features": ["mouse-driven"],
+  "url": "shaders/neon-pulse-edge.wgsl",
+  "description": "Pulsing neon edges that react to mouse proximity.",
+  "params": [
+    { "id": "speed", "name": "Pulse Speed", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "glow", "name": "Glow Strength", "default": 0.8, "min": 0.0, "max": 1.0 },
+    { "id": "threshold", "name": "Edge Threshold", "default": 0.2, "min": 0.0, "max": 1.0 },
+    { "id": "radius", "name": "Mouse Radius", "default": 0.3, "min": 0.0, "max": 1.0 }
+  ]
+}

@@ -16,84 +16,62 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=PulseSpeed, y=GlowStrength, z=EdgeThreshold, w=MouseRadius
   ripples: array<vec4<f32>, 50>,
 };
 
-fn luminance(c: vec3<f32>) -> f32 {
-    return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
-}
-
-fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
-    let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
-}
-
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let texel = 1.0 / vec2<f32>(resolution);
+  let resolution = u.config.zw;
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
 
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+  let mousePos = u.zoom_config.yz;
 
-    // Params
-    let edgeThreshold = u.zoom_params.x * 0.5;
-    let glowIntensity = u.zoom_params.y * 3.0;
-    let pulseSpeed = u.zoom_params.z;
-    let colorShift = u.zoom_params.w;
+  let speed = u.zoom_params.x * 5.0;
+  let glowStr = u.zoom_params.y * 2.0;
+  let threshold = u.zoom_params.z;
+  let radius = u.zoom_params.w; // 0 to 1
 
-    // Mouse Interaction
-    let mouse = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
+  // Sobel Edge Detection
+  let texel = vec2<f32>(1.0) / resolution;
 
-    // Light falloff from mouse
-    var light = 0.0;
-    if (mouse.x >= 0.0) {
-        light = 1.0 - smoothstep(0.0, 0.5, dist); // 0.5 radius light
-    }
+  let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).rgb;
+  let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb;
+  let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).rgb;
+  let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb;
 
-    // Sobel Edge Detection
-    let gx = -1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-1.0, -1.0) * texel, 0.0).rgb) +
-             -2.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-1.0, 0.0) * texel, 0.0).rgb) +
-             -1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-1.0, 1.0) * texel, 0.0).rgb) +
-              1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0, -1.0) * texel, 0.0).rgb) +
-              2.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0, 0.0) * texel, 0.0).rgb) +
-              1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0, 1.0) * texel, 0.0).rgb);
+  let gx = length(l - r);
+  let gy = length(t - b);
+  let edge = sqrt(gx*gx + gy*gy);
 
-    let gy = -1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-1.0, -1.0) * texel, 0.0).rgb) +
-             -2.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -1.0) * texel, 0.0).rgb) +
-             -1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0, -1.0) * texel, 0.0).rgb) +
-              1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-1.0, 1.0) * texel, 0.0).rgb) +
-              2.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, 1.0) * texel, 0.0).rgb) +
-              1.0 * luminance(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0, 1.0) * texel, 0.0).rgb);
+  var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    let mag = sqrt(gx * gx + gy * gy);
-    let isEdge = smoothstep(edgeThreshold, edgeThreshold + 0.1, mag);
+  if (edge > threshold) {
+      // Base Neon Color
+      var neon = vec3<f32>(
+          0.5 + 0.5 * sin(time * speed),
+          0.5 + 0.5 * sin(time * speed + 2.0),
+          0.5 + 0.5 * sin(time * speed + 4.0)
+      );
 
-    // Neon Color Calculation
-    let time = u.config.x * (1.0 + pulseSpeed * 2.0);
-    // Hue varies by distance to mouse + time
-    let hue = fract(colorShift + dist * 0.5 - time * 0.1);
-    let neonColor = hsv2rgb(vec3<f32>(hue, 1.0, 1.0));
+      // Mouse Interaction
+      let aspect = resolution.x / resolution.y;
+      let dVec = uv - mousePos;
+      let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
-    // Combine
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+      // Pulse based on distance
+      let pulse = 1.0 - smoothstep(0.0, radius, dist);
 
-    // We want the edges to glow, and the glow to be stronger near mouse
-    let finalGlow = neonColor * isEdge * glowIntensity * (0.2 + 0.8 * light);
+      // If mouse is close, intensify and shift color
+      let interaction = pulse * glowStr * 2.0;
 
-    // Mix with dark original
-    let outColor = mix(original * 0.1, finalGlow, isEdge * (0.5 + 0.5 * light));
+      neon = mix(neon, vec3<f32>(1.0, 1.0, 1.0), interaction);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(outColor, 1.0));
+      // Add glow to original color or replace it
+      color = vec4<f32>(mix(color.rgb, neon, glowStr + interaction), color.a);
+  }
 
-    // Depth passthrough
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, global_id.xy, color);
 }
