@@ -2,7 +2,7 @@
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var <uniform> u: Uniforms;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
@@ -15,129 +15,87 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime
-  zoom_params: vec4<f32>,  // x=Strength, y=Radius, z=DiskWidth, w=Redshift
+  config: vec4<f32>,       // x=Time, y=Ripples, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // Params
   ripples: array<vec4<f32>, 50>,
 };
-
-// Smoothstep alternative with more control
-fn smoothstep_edge(a: f32, b: f32, x: f32) -> f32 {
-    let t = clamp((x - a) / (b - a), 0.0, 1.0);
-    return t * t * (3.0 - 2.0 * t);
-}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+    let aspect = resolution.x / resolution.y;
 
-    // Parameters from sliders
-    let strength = mix(0.2, 2.0, u.zoom_params.x);      // Mass/gravity strength
-    let eventHorizon = u.zoom_params.y * 0.15;          // Schwarzschild radius
-    let diskWidth = mix(0.05, 0.3, u.zoom_params.z);    // Accretion disk thickness
-    let redshiftIntensity = u.zoom_params.w;            // Gravitational redshift
+    // Parameters
+    let gravity = u.zoom_params.x;        // Distortion strength
+    let radius = u.zoom_params.y * 0.3;   // Event horizon size (0.0 - 0.3)
+    let glow_intensity = u.zoom_params.z; // Accretion disk glow
+    let lensing_scale = u.zoom_params.w;  // Lensing width factor
 
-    var totalDisplacement = vec2<f32>(0.0);
-    var blackHoleMask = 0.0;      // For event horizon
-    var diskMask = 0.0;           // For accretion disk
-    var einsteinRadius = 0.0;     // For photon ring
-    var activeCenter = vec2<f32>(0.5);
+    // Mouse Interaction (Center of Black Hole)
+    let mouse = u.zoom_config.yz;
 
-    let rippleCount = u32(u.config.y);
-    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let center = ripple.xy;
-        let age = time - ripple.z;
+    // Calculate vector from mouse to current pixel (aspect corrected)
+    let d_vec_raw = uv - mouse;
+    let d_vec_aspect = vec2<f32>(d_vec_raw.x * aspect, d_vec_raw.y);
+    let dist = length(d_vec_aspect);
 
-        // Black holes last 5 seconds with smooth fade
-        if (age > 0.0 && age < 5.0) {
-            activeCenter = center;
-            let dVec = uv - center;
-            
-            // Correct for aspect ratio for perfect circles
-            let aspect = resolution.x / resolution.y;
-            let dVecAspect = dVec * vec2<f32>(aspect, 1.0);
-            let dist = length(dVecAspect);
-            
-            // Lifetime fade (ease out)
-            let lifetimeFade = 1.0 - smoothstep_edge(3.5, 5.0, age);
-            
-            // --- Gravitational Lensing ---
-            // Einstein radius approximation: sqrt(4GM/c² * d_ls / (d_l * d_s))
-            // We simplify to: strength / distance for the deflection angle
-            let deflectionAngle = strength * lifetimeFade / max(dist - eventHorizon * 0.5, 0.001);
-            
-            // Pull UVs towards center (gravitational attraction)
-            totalDisplacement -= normalize(dVec) * deflectionAngle * 0.03;
+    var final_color = vec3<f32>(0.0, 0.0, 0.0);
 
-            // --- Event Horizon Detection ---
-            if (dist < eventHorizon) {
-                blackHoleMask = 1.0;
-            }
-            
-            // --- Accretion Disk ---
-            // Disk is a ring around the black hole
-            let diskInner = eventHorizon * 1.5;  // Innermost Stable Circular Orbit (ISCO)
-            let diskOuter = eventHorizon + diskWidth;
-            
-            if (dist >= diskInner && dist <= diskOuter) {
-                diskMask = 1.0 - smoothstep_edge(diskInner, diskOuter, dist);
-            }
-            
-            // --- Photon Ring (Inner Bright Edge) ---
-            // Light that orbited the black hole before escaping
-            let photonRingRadius = eventHorizon * 1.5;
-            if (dist > photonRingRadius * 0.9 && dist < photonRingRadius * 1.1) {
-                einsteinRadius = 1.0 - smoothstep_edge(photonRingRadius * 0.9, photonRingRadius * 1.1, dist);
-            }
-        }
-    }
-
-    let finalUV = uv + totalDisplacement;
-    
-    // Sample texture with high-quality filtering
-    var color = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    
-    // --- Gravitational Effects on Color ---
-    
-    // 1. Brightness Amplification (gravitational lensing magnification)
-    let magnification = length(totalDisplacement) * 2.0 + 1.0;
-    color = vec4<f32>(color.rgb * mix(1.0, magnification, 0.3), color.a);
-    
-    // 2. Gravitational Redshift (light loses energy climbing out of gravity well)
-    if (redshiftIntensity > 0.01) {
-        let redshift = 1.0 - (length(totalDisplacement) * redshiftIntensity * 0.5);
-        color = vec4<f32>(color.r, color.g * redshift, color.b * redshift * redshift, color.a);
-    }
-    
-    // 3. Accretion Disk Rendering
-    if (diskMask > 0.01) {
-        // Temperature gradient: hot (white/blue) near center, cooler (red) outside
-        let tempT = smoothstep_edge(eventHorizon * 1.5, eventHorizon + diskWidth, length(uv - activeCenter));
-        let diskColor = mix(vec3<f32>(1.0, 0.3, 0.0), vec3<f32>(1.0, 1.0, 0.8), tempT);
+    if (dist < radius) {
+        // Event Horizon (Black Void)
+        final_color = vec3<f32>(0.0, 0.0, 0.0);
+    } else {
+        // Gravitational Lensing
+        // We pull pixels from *closer* to the center effectively stretching the background around the hole.
+        // Formula: sample_uv = uv - (offset_vector)
+        // Offset should be larger when close to radius.
         
-        // Add turbulence/flicker
-        let flicker = sin(time * 50.0 + length(uv) * 100.0) * 0.1 + 0.9;
+        let dist_from_surface = dist - radius;
         
-        color = vec4<f32>(mix(color.rgb, diskColor * flicker, diskMask * 0.8), color.a);
-    }
-    
-    // 4. Photon Ring (bright inner edge)
-    if (einsteinRadius > 0.01) {
-        color = vec4<f32>(color.rgb + vec3<f32>(1.0, 0.8, 0.5) * einsteinRadius * 2.0, color.a);
-    }
-    
-    // 5. Event Horizon (black center)
-    if (blackHoleMask > 0.5) {
-        color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+        // Inverse square-ish falloff for gravity
+        let distortion = (gravity * 0.1) / (dist_from_surface * 5.0 + 0.1);
+
+        // Direction from pixel towards mouse
+        let dir_to_center = normalize(d_vec_aspect); // Points away from mouse? No, d_vec is uv - mouse, so it points FROM mouse.
+        // We want to pull FROM mouse direction?
+        // If we subtract dVec, we sample closer to mouse.
+
+        // Simple pinch:
+        // sample_uv = uv - (uv - mouse) * factor
+        // If factor is close to 1, we sample at mouse.
+
+        let pinch_factor = distortion * (0.5 + lensing_scale);
+
+        // We need to apply aspect correction to the offset to avoid oval distortion
+        let offset = normalize(d_vec_aspect) * pinch_factor;
+        // Un-aspect the offset for UV space
+        let offset_uv = vec2<f32>(offset.x / aspect, offset.y);
+
+        let sample_uv = uv - offset_uv;
+
+        // Wrap/Repeat is handled by sampler, but let's clamp or wrap manually if needed?
+        // Default sampler is Repeat.
+
+        let bg_color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
+
+        // Accretion Disk Glow
+        // Very bright near the radius
+        let glow_falloff = exp(-dist_from_surface * 20.0);
+        let glow_color = vec3<f32>(1.0, 0.7, 0.3) * glow_intensity * 3.0 * glow_falloff;
+
+        // Doppler shifting / Redshift? (Optional, maybe just color tint)
+        // Let's add the glow
+        final_color = bg_color + glow_color;
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
 
-    // Pass depth with slight displacement for 3D effect
-    let depthUV = clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthUV, 0.0).r;
+    // Passthrough depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
