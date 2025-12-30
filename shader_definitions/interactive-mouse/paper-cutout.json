@@ -1,0 +1,41 @@
+{
+  "id": "paper-cutout",
+  "name": "Paper Cutout",
+  "url": "shaders/paper-cutout.wgsl",
+  "category": "interactive-mouse",
+  "description": "Posterizes the image into layered paper cutouts with dynamic shadows cast from the mouse position.",
+  "params": [
+    {
+      "id": "layers",
+      "name": "Paper Layers",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shadow",
+      "name": "Shadow Depth",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "smoothness",
+      "name": "Edge Smooth",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "separation",
+      "name": "Layer Height",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "visual-effects"
+  ]
+}
