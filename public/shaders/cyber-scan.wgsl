@@ -6,94 +6,97 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
   ripples: array<vec4<f32>, 50>,
 };
 
+// Cyber Scan
+// Param1: Scan Width
+// Param2: Grid Intensity
+// Param3: Color Speed
+// Param4: Edge Strength
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+  let resolution = u.config.zw;
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let mousePos = u.zoom_config.yz; // Mouse (0-1)
+  let time = u.config.x;
 
-    // Parameters
-    let scan_width = u.zoom_params.x * 0.2 + 0.01;
-    let color_shift = u.zoom_params.y;
-    let grid_intensity = u.zoom_params.z;
-    let noise_amt = u.zoom_params.w;
+  // Params
+  let scanWidth = u.zoom_params.x * 0.4 + 0.05; // 0.05 to 0.45
+  let gridIntensity = u.zoom_params.y;
+  let colorSpeed = u.zoom_params.z * 5.0;
+  let edgeStrength = u.zoom_params.w * 5.0;
 
-    // Mouse Y controls scan position
-    let mouse_y = u.zoom_config.z;
+  // Scan band calculation
+  // y distance to mouse y
+  let distY = abs(uv.y - mousePos.y);
+  // Smooth falloff
+  let scanMask = 1.0 - smoothstep(scanWidth * 0.5, scanWidth, distY);
 
-    // Distance from scan center (vertical)
-    let dist = abs(uv.y - mouse_y);
+  var finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    var sample_uv = uv;
-    var is_scan = false;
+  if (scanMask > 0.01) {
+    // Edge Detection (Sobel-ish)
+    let stepX = 1.0 / resolution.x;
+    let stepY = 1.0 / resolution.y;
 
-    if (dist < scan_width) {
-        is_scan = true;
+    let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -stepY), 0.0).rgb;
+    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, stepY), 0.0).rgb;
+    let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, 0.0), 0.0).rgb;
+    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, 0.0), 0.0).rgb;
 
-        // 1. Pixelate / Low-Res effect inside scan
-        // Higher noise_amt = lower resolution
-        let pixels = 50.0 + (1.0 - noise_amt) * 1000.0;
-        sample_uv = floor(uv * pixels) / pixels;
+    let edgeX = length(r - l);
+    let edgeY = length(b - t);
+    let edgeVal = length(vec2<f32>(edgeX, edgeY));
 
-        // 2. Horizontal Glitch / Jitter
-        let time = u.config.x;
-        let jitter = sin(uv.y * 200.0 + time * 20.0) * 0.02 * noise_amt;
-        sample_uv.x = clamp(sample_uv.x + jitter, 0.0, 1.0);
-    }
+    // Grid Overlay
+    let gridScale = 50.0;
+    let gridX = abs(sin(uv.x * gridScale * 3.14159));
+    let gridY = abs(sin(uv.y * gridScale * 3.14159));
+    let gridVal = smoothstep(0.95, 1.0, max(gridX, gridY));
 
-    var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
+    // Cyber Color
+    let hue = (time * colorSpeed) % 6.28;
+    let cyberColor = vec3<f32>(
+        0.5 + 0.5 * sin(hue),
+        0.5 + 0.5 * sin(hue + 2.09),
+        0.5 + 0.5 * sin(hue + 4.18)
+    );
 
-    if (is_scan) {
-        // 3. Color Shift (Hue Rotate)
-        if (color_shift > 0.01) {
-            let angle = color_shift * 6.28;
-            let c = cos(angle);
-            let s = sin(angle);
-            // RGB to YIQ-ish rotation matrix
-            let mat = mat3x3<f32>(
-                vec3<f32>(0.299, 0.587, 0.114) + vec3<f32>(0.701, -0.587, -0.114)*c + vec3<f32>(-0.168, -0.330, 0.497)*s,
-                vec3<f32>(0.299, 0.587, 0.114) + vec3<f32>(-0.299, 0.413, -0.114)*c + vec3<f32>(0.328, 0.035, -0.497)*s,
-                vec3<f32>(0.299, 0.587, 0.114) + vec3<f32>(-0.300, -0.588, 0.886)*c + vec3<f32>(1.250, -1.050, -0.203)*s
-            );
+    // Apply effects based on scanMask
+    let effectColor = mix(finalColor.rgb, cyberColor, gridVal * gridIntensity);
+    let edgeColor = cyberColor * edgeVal * edgeStrength;
 
-            // Apply matrix
-            color = mat * color;
-        }
+    // Combine
+    let mixed = finalColor.rgb + edgeColor;
 
-        // 4. Grid Overlay
-        if (grid_intensity > 0.0) {
-            let grid_size = 50.0;
-            let grid_x = step(0.95, fract(uv.x * grid_size));
-            let grid_y = step(0.90, fract(uv.y * (grid_size / 2.0))); // wider rows
-            let grid = max(grid_x, grid_y) * grid_intensity;
-            color = color + vec3<f32>(grid);
-        }
+    // Add scanlines
+    let scanline = sin(uv.y * resolution.y * 0.5) * 0.1;
 
-        // 5. Brightness / Scanline Glow
-        // Brighter at the center of the scan
-        let scan_glow = (1.0 - (dist / scan_width)) * 0.5;
-        color = color + vec3<f32>(scan_glow);
-    }
+    let processed = mix(mixed, effectColor, gridVal * gridIntensity * 0.5) + scanline;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    finalColor = vec4<f32>(mix(finalColor.rgb, processed, scanMask), finalColor.a);
+  } else {
+      // Slightly dim outside
+      finalColor = vec4<f32>(finalColor.rgb * 0.8, finalColor.a);
+  }
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+
+  // Depth Pass-through
+  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
 }

@@ -4,10 +4,35 @@
   "url": "shaders/cyber-scan.wgsl",
   "category": "visual-effects",
   "features": ["mouse-driven"],
+  "description": "A digital scanning line that follows the mouse, highlighting edges and overlaying a cybernetic grid.",
   "params": [
-    { "id": "width", "name": "Scan Width", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "shift", "name": "Color Shift", "default": 0.0, "min": 0.0, "max": 1.0 },
-    { "id": "grid", "name": "Grid Intensity", "default": 0.3, "min": 0.0, "max": 1.0 },
-    { "id": "noise", "name": "Glitch Noise", "default": 0.5, "min": 0.0, "max": 1.0 }
+    {
+      "id": "scanWidth",
+      "name": "Scan Width",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "gridIntensity",
+      "name": "Grid Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorSpeed",
+      "name": "Color Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "edgeStrength",
+      "name": "Edge Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
   ]
 }
