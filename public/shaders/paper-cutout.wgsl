@@ -16,78 +16,113 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2 (w=isMouseDown)
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-fn get_lum(c: vec3<f32>) -> f32 {
-    return dot(c, vec3(0.299, 0.587, 0.114));
+fn getLuminance(color: vec3<f32>) -> f32 {
+    return dot(color, vec3<f32>(0.299, 0.587, 0.114));
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+      return;
+  }
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
 
-    // Params
-    let layers = floor(mix(2.0, 12.0, u.zoom_params.x));
-    let shadowStr = u.zoom_params.y;
-    let shadowDist = u.zoom_params.z * 0.05;
-    let grain = u.zoom_params.w * 0.2;
+  // Params
+  let layerParam = u.zoom_params.x; // Number of layers (normalized 0-1)
+  let shadowStrength = u.zoom_params.y; // Shadow intensity
+  let smoothness = u.zoom_params.z; // Edge smoothness
+  let separationParam = u.zoom_params.w; // Layer height separation
 
-    // Mouse Light Source
-    let mousePos = u.zoom_config.yz;
-    let center = vec2(0.5, 0.5);
+  let layers = floor(mix(2.0, 8.0, layerParam));
+  let separation = mix(0.002, 0.02, separationParam);
 
-    // Light is defined by mouse position relative to center
-    // Let's make it intuitive: if mouse is at Top-Right, light comes from Top-Right.
-    // Shadows should fall to Bottom-Left.
-    // So to check if a pixel is occluded, we look towards the light (Top-Right).
-    // Vector towards light:
-    let lightVec = normalize(mousePos - center);
-    let distStrength = length(mousePos - center) * 2.0;
+  // Mouse interaction for light direction
+  let mouse = u.zoom_config.yz;
 
-    // The offset to sample the "blocker"
-    // If we are at P, and light is at L, the blocker B would be at P + (dir to L) * dist.
-    // If B's "height" (luminance) is greater than P's height, B casts shadow on P.
+  // Calculate light direction from mouse to center (or mouse acts as light source)
+  // Let's make mouse the light source.
+  // Light Vector = Pixel - Mouse.
+  // Shadow is cast away from light.
 
-    let offset = lightVec * shadowDist * clamp(distStrength, 0.2, 1.0);
+  let aspect = resolution.x / resolution.y;
+  let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
+  let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
 
-    let sampleUV = uv + offset;
+  // Normalized vector from mouse to pixel
+  var lightDir = uvCorrected - mouseCorrected;
+  let dist = length(lightDir);
+  if (dist > 0.001) {
+      lightDir = normalize(lightDir);
+  } else {
+      lightDir = vec2<f32>(0.0, 0.0);
+  }
 
-    let col = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let lum = get_lum(col);
+  // Adjust lightDir back to UV space
+  lightDir = vec2<f32>(lightDir.x / aspect, lightDir.y);
 
-    // Quantize
-    let q_lum = floor(lum * layers) / layers;
+  // Get current pixel color and quantize it to determine its "height" (layer)
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let gray = getLuminance(baseColor);
 
-    // Shadow sample
-    let shadow_col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-    let shadow_lum = floor(get_lum(shadow_col) * layers) / layers;
+  // Quantize gray to find which layer this pixel belongs to (0 to 1)
+  // 0.0 = Bottom, 1.0 = Top
+  // We use quantized gray as height
+  let layerHeight = floor(gray * layers) / (layers - 1.0);
 
-    var finalCol = col;
-    // Quantize color values to create the cutout look
-    finalCol = floor(col * layers) / layers;
+  // To render shadows, we check if a "higher" layer casts a shadow on current pixel.
+  // We step towards the light source (inverse of shadow direction) to see if we hit a higher layer.
+  // Actually, shadow is cast *away* from light.
+  // If light is at mouse, shadow falls away from mouse.
+  // To check if I am in shadow, I look *towards* the light.
+  // If I find a pixel closer to the light that has a height > my height, I am in shadow.
 
-    // Apply Shadow
-    // We only shadow if the blocker is TALLER (brighter) than us.
-    // And ideally if we are darker?
-    // Let's just say if blocker is higher.
-    if (shadow_lum > q_lum) {
-        finalCol = finalCol * (1.0 - shadowStr);
-    }
+  var shadowFactor = 0.0;
+  let steps = 5;
 
-    // Grain
-    let noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
-    finalCol += (noise - 0.5) * grain;
+  // We only check a short distance determined by separation
+  let stepSize = separation * 2.0;
 
-    textureStore(writeTexture, global_id.xy, vec4(finalCol, 1.0));
+  for (var i = 1; i <= 5; i++) {
+      let sampleUV = uv - lightDir * (f32(i) * stepSize);
 
-    // Pass depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+      // Check bounds
+      if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
+          continue;
+      }
+
+      let sampleColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+      let sampleGray = getLuminance(sampleColor);
+      let sampleLayer = floor(sampleGray * layers) / (layers - 1.0);
+
+      // If the sampled pixel is on a higher layer than current pixel
+      if (sampleLayer > layerHeight) {
+          // It casts a shadow on us
+          // Closer samples cast harder shadows
+          shadowFactor = max(shadowFactor, (1.0 - f32(i)/f32(steps)) * shadowStrength);
+      }
+  }
+
+  // Apply posterization to color
+  // We preserve the hue/sat but snap the value
+  // Simple way: multiply rgb by scalar
+  let quantizedGray = floor(gray * layers) / layers;
+  // Normalize back to 0-1 range approx
+  let valMult = (quantizedGray + (0.5/layers)) / (gray + 0.001);
+  var finalColor = baseColor * valMult;
+
+  // Apply smoothness to edges of quantization?
+  // Maybe too complex for now. The "cutout" look implies sharp edges.
+  // But we can anti-alias the quantization threshold.
+
+  // Apply Shadow
+  finalColor = finalColor * (1.0 - shadowFactor);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }
