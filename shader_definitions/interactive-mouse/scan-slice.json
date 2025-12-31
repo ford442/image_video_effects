@@ -1,0 +1,40 @@
+{
+  "id": "scan-slice",
+  "name": "Scan Slice",
+  "url": "shaders/scan-slice.wgsl",
+  "category": "image",
+  "description": "Mouse X selects a vertical slice; Mouse Y offsets it.",
+  "params": [
+    {
+      "id": "width",
+      "name": "Slice Width",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "offset_scale",
+      "name": "Offset Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "dimming",
+      "name": "Bg Dimming",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
