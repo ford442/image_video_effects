@@ -1,0 +1,38 @@
+{
+  "id": "pixel-sort-glitch",
+  "name": "Pixel Sort Glitch",
+  "url": "shaders/pixel-sort-glitch.wgsl",
+  "category": "distortion",
+  "features": ["mouse-driven"],
+  "description": "Directional pixel sorting/smearing based on luma threshold. Mouse Y adjusts threshold.",
+  "params": [
+    {
+      "id": "direction",
+      "name": "Direction (H/V)",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "threshold",
+      "name": "Luma Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "strength",
+      "name": "Smear Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "blockSize",
+      "name": "Block Size",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}

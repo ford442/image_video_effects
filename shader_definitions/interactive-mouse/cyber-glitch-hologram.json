@@ -1,0 +1,40 @@
+{
+  "id": "cyber-glitch-hologram",
+  "name": "Cyber Glitch Hologram",
+  "url": "shaders/cyber-glitch-hologram.wgsl",
+  "category": "image",
+  "description": "A sci-fi holographic projection with interactive interference and chromatic aberration.",
+  "params": [
+    {
+      "id": "hologramIntensity",
+      "name": "Hologram Int.",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "glitchAmount",
+      "name": "Glitch Amt.",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "scanSpeed",
+      "name": "Scan Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0
+    },
+    {
+      "id": "mouseRadius",
+      "name": "Mouse Inf.",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

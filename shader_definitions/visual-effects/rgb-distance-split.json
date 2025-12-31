@@ -1,0 +1,14 @@
+{
+  "id": "rgb-distance-split",
+  "label": "RGB Distance Split",
+  "category": "visual-effects",
+  "features": ["mouse-driven"],
+  "url": "shaders/rgb-distance-split.wgsl",
+  "description": "Chromatic aberration that intensifies with distance from the mouse.",
+  "params": [
+    { "id": "split", "name": "Split Strength", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "angle", "name": "Angle Offset", "default": 0.0, "min": 0.0, "max": 1.0 },
+    { "id": "blur", "name": "Blur Amount", "default": 0.2, "min": 0.0, "max": 1.0 },
+    { "id": "deadzone", "name": "Deadzone", "default": 0.1, "min": 0.0, "max": 1.0 }
+  ]
+}
