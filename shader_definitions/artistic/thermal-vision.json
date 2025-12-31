@@ -1,0 +1,40 @@
+{
+  "id": "thermal-vision",
+  "name": "Thermal Vision",
+  "url": "shaders/thermal-vision.wgsl",
+  "category": "image",
+  "description": "Heat signature camera view.",
+  "params": [
+    {
+      "id": "sensitivity",
+      "name": "Heat Sensitivity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "color_range",
+      "name": "Color Range",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "noise",
+      "name": "Sensor Noise",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "blur",
+      "name": "Thermal Blur",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "color-remap"
+  ]
+}

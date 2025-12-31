@@ -1,0 +1,41 @@
+{
+  "id": "magnetic-field",
+  "name": "Magnetic Field",
+  "url": "shaders/magnetic-field.wgsl",
+  "category": "image",
+  "description": "Magnetic field lines distortion effect.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "frequency",
+      "name": "Field Lines",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "animated",
+    "physics"
+  ]
+}

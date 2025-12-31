@@ -1,0 +1,42 @@
+{
+  "id": "cyber-ripples",
+  "name": "Cyber Ripples",
+  "url": "shaders/cyber-ripples.wgsl",
+  "category": "image",
+  "description": "Digital ripples with neon grid overlay emanating from cursor.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Ripple Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "amplitude",
+      "name": "Wave Height",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "grid_intensity",
+      "name": "Grid Overlay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "wave",
+    "neon"
+  ]
+}

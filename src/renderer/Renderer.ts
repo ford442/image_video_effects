@@ -248,7 +248,10 @@ export class Renderer {
                 'visual-effects',
                 'lighting-effects',
                 'distortion',
-                'artistic'
+                'artistic',
+                'retro-glitch',
+                'simulation',
+                'geometric'
             ];
             
             const allShaders: ShaderEntry[] = [];

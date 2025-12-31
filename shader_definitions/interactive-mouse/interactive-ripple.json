@@ -1,0 +1,41 @@
+{
+  "id": "interactive-ripple",
+  "name": "Interactive Ripple",
+  "url": "shaders/interactive-ripple.wgsl",
+  "category": "image",
+  "description": "Classic water ripple effect following cursor.",
+  "params": [
+    {
+      "id": "amplitude",
+      "name": "Wave Height",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "damping",
+      "name": "Damping",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "wave"
+  ]
+}

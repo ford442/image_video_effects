@@ -16,7 +16,7 @@
 struct Uniforms {
   config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
   zoom_config: vec4<f32>,         // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,         // x=Scale, y=PopStrength, z=Refraction, w=Unused
+  zoom_params: vec4<f32>,         // x=Scale, y=PopStrength, z=Refraction, w=Highlight
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -37,6 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bubblesScale = max(0.01, u.zoom_params.x * 0.1); // Scale
     let popStrength = u.zoom_params.y; // How visible the pop is (flattening)
     let refraction = u.zoom_params.z * 0.2; // Refraction strength
+    let highlight = u.zoom_params.w * 0.8; // Specular highlight intensity
 
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
@@ -95,7 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Specular Highlight
     // Simple Blinn-Phongish
     let lightDir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
-    let spec = pow(max(0.0, dot(normal, lightDir)), 20.0) * 0.4;
+    let spec = pow(max(0.0, dot(normal, lightDir)), 20.0) * highlight;
 
     // Edges between bubbles
     let edge = smoothstep(0.85, 0.95, d);
