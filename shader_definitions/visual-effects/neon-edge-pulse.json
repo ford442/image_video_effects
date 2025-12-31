@@ -1,0 +1,38 @@
+{
+  "id": "neon-edge-pulse",
+  "name": "Neon Edge Pulse",
+  "url": "shaders/neon-edge-pulse.wgsl",
+  "category": "visual-effects",
+  "features": ["mouse-driven"],
+  "description": "Detects edges and highlights them with pulsing neon colors. Mouse proximity increases intensity.",
+  "params": [
+    {
+      "id": "edgeThreshold",
+      "name": "Edge Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "pulseSpeed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}

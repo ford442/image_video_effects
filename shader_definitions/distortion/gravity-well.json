@@ -1,0 +1,13 @@
+{
+  "id": "gravity-well",
+  "name": "Gravity Well",
+  "url": "shaders/gravity-well.wgsl",
+  "category": "distortion",
+  "features": ["mouse-driven"],
+  "params": [
+    { "id": "strength", "name": "Gravity", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "radius", "name": "Event Horizon", "default": 0.2, "min": 0.01, "max": 0.5 },
+    { "id": "aberration", "name": "Prism", "default": 0.02, "min": 0.0, "max": 0.1 },
+    { "id": "falloff", "name": "Density", "default": 2.0, "min": 0.1, "max": 5.0 }
+  ]
+}
