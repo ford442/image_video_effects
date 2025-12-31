@@ -17,7 +17,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=blockIntensity (0..1), y=channelShift (0..1), z=scanline (0..1), w=unused
+  zoom_params: vec4<f32>,  // x=blockIntensity (0..1), y=channelShift (0..1), z=scanline (0..1), w=colorNoise (0..1)
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -32,8 +32,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
+    // Mouse interaction
+    let mouse = u.zoom_config.yz;
+    let mouseDist = distance(uv, mouse);
+    let mouseInfluence = smoothstep(0.3, 0.0, mouseDist);
+
     // Block displacement
-    let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
+    let intensity = clamp(u.zoom_params.x + mouseInfluence * 0.5, 0.0, 1.0);
     let blockSize = mix(4.0, 64.0, intensity);
     let invBlock = 1.0 / blockSize;
 
@@ -64,7 +69,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec3<f32>(r, g, b);
 
     // Add occasional block color shifts
-    if (seed > 0.9 && intensity > 0.4) {
+    let noiseAmount = u.zoom_params.w;
+    if (seed > (0.9 - noiseAmount * 0.5) && intensity > 0.4) {
         color = mix(color, vec3<f32>(hash21(px + 2.0), hash21(px + 7.0), hash21(px + 11.0)), 0.7);
     }
 
