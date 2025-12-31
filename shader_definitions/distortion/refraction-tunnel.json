@@ -1,0 +1,41 @@
+{
+  "id": "refraction-tunnel",
+  "name": "Refraction Tunnel",
+  "url": "shaders/refraction-tunnel.wgsl",
+  "category": "image",
+  "description": "Infinite refractive tunnel effect.",
+  "params": [
+    {
+      "id": "depth",
+      "name": "Tunnel Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "twist",
+      "name": "Twist Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "aberration",
+      "name": "Chromatic",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Travel Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "animated",
+    "3d"
+  ]
+}

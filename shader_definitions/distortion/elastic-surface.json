@@ -1,0 +1,41 @@
+{
+  "id": "elastic-surface",
+  "name": "Elastic Surface",
+  "url": "shaders/elastic-surface.wgsl",
+  "category": "image",
+  "description": "Bouncy rubber-like surface distortion.",
+  "params": [
+    {
+      "id": "elasticity",
+      "name": "Elasticity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "amplitude",
+      "name": "Wave Height",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "damping",
+      "name": "Damping",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "animated",
+    "wave"
+  ]
+}

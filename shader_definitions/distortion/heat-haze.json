@@ -1,0 +1,41 @@
+{
+  "id": "heat-haze",
+  "name": "Heat Haze",
+  "url": "shaders/heat-haze.wgsl",
+  "category": "image",
+  "description": "Rising heat distortion effect with shimmer.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Haze Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Rise Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "animated",
+    "atmospheric"
+  ]
+}
