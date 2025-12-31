@@ -1,0 +1,38 @@
+{
+  "id": "mirror-drag",
+  "name": "Mirror Drag",
+  "url": "shaders/mirror-drag.wgsl",
+  "category": "interactive-mouse",
+  "features": ["mouse-driven"],
+  "description": "Mirrors the image across an axis defined by the mouse position.",
+  "params": [
+    {
+      "id": "side",
+      "name": "Flip Side",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "flipY",
+      "name": "Mirror Y",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "smoothness",
+      "name": "Edge Smoothness",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mode",
+      "name": "Mode",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
