@@ -85,6 +85,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add "rain drop head" highlight
     // The "phase" of the rain cycle at this pixel
     let rainPhase = fract(uv.y + scrollY + colRandom);
+    // If phase is near start (bottom of screen visually because Y increases down? No, UV 0 is top usually in WebGPU... wait.
+    // Standard UV: 0,0 top-left. +Y is down.
+    // So +scrollY moves texture UP (sample lower).
+    // To make rain fall DOWN, we should subtract scrollY from UV.y or add to sample?
+    // If we want the image to "fall", we decrease UV.y (sample higher up over time).
+    // Wait, let's just stick to "scrolling texture".
 
     // Brighten the leading edge
     if (rainPhase < 0.05) {
