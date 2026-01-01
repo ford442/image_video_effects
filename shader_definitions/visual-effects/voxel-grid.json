@@ -1,0 +1,13 @@
+{
+  "id": "voxel-grid",
+  "name": "Voxel Grid",
+  "url": "shaders/voxel-grid.wgsl",
+  "features": ["mouse-driven"],
+  "params": [
+    { "id": "grid", "name": "Grid Density", "default": 40.0, "min": 10.0, "max": 100.0 },
+    { "id": "radius", "name": "Touch Radius", "default": 0.4, "min": 0.1, "max": 0.8 },
+    { "id": "strength", "name": "Rotation Force", "default": 1.0, "min": 0.0, "max": 2.0 },
+    { "id": "gap", "name": "Cell Gap", "default": 0.05, "min": 0.0, "max": 0.4 }
+  ],
+  "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity."
+}
