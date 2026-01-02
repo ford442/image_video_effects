@@ -1,0 +1,14 @@
+{
+  "id": "gemstone-fractures",
+  "name": "Gemstone Fractures",
+  "url": "shaders/gemstone-fractures.wgsl",
+  "category": "image",
+  "features": [],
+  "description": "Fragments the image into crystalline shards with refraction and rotation.",
+  "params": [
+    { "name": "Facet Size", "id": "zoomParam1", "default": 0.4, "min": 0.0, "max": 1.0 },
+    { "name": "Refraction", "id": "zoomParam2", "default": 0.3, "min": 0.0, "max": 1.0 },
+    { "name": "Rotation", "id": "zoomParam3", "default": 0.1, "min": 0.0, "max": 1.0 },
+    { "name": "Edge Width", "id": "zoomParam4", "default": 0.2, "min": 0.0, "max": 1.0 }
+  ]
+}
