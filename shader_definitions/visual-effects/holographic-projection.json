@@ -1,0 +1,38 @@
+{
+  "id": "holographic-projection",
+  "name": "Holo Projector",
+  "url": "shaders/holographic-projection.wgsl",
+  "category": "visual-effects",
+  "description": "Transforms the image into a flickering hologram. Move mouse to focus and stabilize the projection.",
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "scanSpeed",
+      "name": "Scan Speed",
+      "min": 0.0,
+      "max": 5.0,
+      "default": 1.0
+    },
+    {
+      "id": "glitch",
+      "name": "Glitch Amount",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3
+    },
+    {
+      "id": "hue",
+      "name": "Holo Tint",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.0
+    },
+    {
+      "id": "focus",
+      "name": "Focus Strength",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    }
+  ]
+}
