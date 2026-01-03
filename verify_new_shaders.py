@@ -1,166 +1,87 @@
-import time
-from playwright.sync_api import sync_playwright, Page, expect
 
-def test_new_shaders(page: Page):
-    # Mock WebGPU before loading the page
-    page.add_init_script("""
-    const mockDevice = {
-        queue: {
-            submit: () => {},
-            writeBuffer: () => {},
-            writeTexture: () => {},
-            copyExternalImageToTexture: () => {},
-        },
-        createCommandEncoder: () => ({
-            beginComputePass: () => ({
-                setPipeline: () => {},
-                setBindGroup: () => {},
-                dispatchWorkgroups: () => {},
-                end: () => {},
-            }),
-            beginRenderPass: () => ({
-                setPipeline: () => {},
-                setBindGroup: () => {},
-                setVertexBuffer: () => {},
-                setIndexBuffer: () => {},
-                draw: () => {},
-                end: () => {},
-            }),
-            finish: () => ({}),
-            copyTextureToTexture: () => {},
-        }),
-        createBindGroup: () => ({}),
-        createBindGroupLayout: () => ({}),
-        createPipelineLayout: () => ({}),
-        createShaderModule: () => ({}),
-        createRenderPipelineAsync: async () => ({
-            getBindGroupLayout: () => ({}),
-        }),
-        createComputePipelineAsync: async () => ({
-            getBindGroupLayout: () => ({}),
-        }),
-        createBuffer: () => ({
-            destroy: () => {},
-        }),
-        createTexture: () => ({
-            createView: () => ({}),
-            destroy: () => {},
-        }),
-        createSampler: () => ({}),
-        destroy: () => {},
-        features: {
-            has: (feature) => true, // Mock all features as supported
-        },
-    };
+import os
+from playwright.sync_api import sync_playwright, expect
 
-    const mockAdapter = {
-        requestDevice: async () => mockDevice,
-        features: {
-            has: (feature) => true,
-        },
-    };
+def check_new_shaders():
+    with sync_playwright() as p:
+        print("Launching browser...")
+        # Mock WebGPU in args if possible, but headless won't have it.
+        browser = p.chromium.launch(headless=True, args=['--enable-unsafe-webgpu'])
+        page = browser.new_page()
 
-    // Inject navigator.gpu
-    Object.defineProperty(navigator, 'gpu', {
-        writable: true,
-        value: {
-            requestAdapter: async () => mockAdapter,
-            getPreferredCanvasFormat: () => 'bgra8unorm',
-        },
-    });
+        # Handle console errors
+        page.on("console", lambda msg: print(f"Console: {msg.text}"))
+        page.on("pageerror", lambda exc: print(f"PageError: {exc}"))
 
-    // Inject canvas context for WebGPU
-    const getContextOriginal = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (type) {
-        if (type === 'webgpu') {
-            return {
-                configure: () => {},
-                getCurrentTexture: () => ({
-                    createView: () => ({}),
-                }),
-            };
-        }
-        return getContextOriginal.apply(this, arguments);
-    };
-    """)
+        print("Navigating to app...")
+        try:
+            page.goto("http://localhost:3000/", timeout=30000)
+        except Exception as e:
+            print(f"Error navigating: {e}")
+            return
 
-    print("Navigating to app...")
-    page.goto("http://localhost:3000")
+        # Wait for controls to load
+        try:
+            print("Waiting for stack controls...")
+            page.wait_for_selector(".stack-controls select", state="attached", timeout=10000)
+        except Exception as e:
+            print(f"Controls not found: {e}")
+            # Take a debug screenshot
+            page.screenshot(path="verification_debug.png", full_page=True)
+            return
 
-    # Wait for the canvas to ensure app loaded
-    page.wait_for_selector("canvas", state="visible", timeout=10000)
-    print("Canvas found.")
+        selects = page.locator(".stack-controls select").all()
+        if not selects:
+            print("No select elements found in .stack-controls")
+            return
 
-    # Select the "Image" filter category if necessary (though shaders should be in default list or categorized)
-    # The memory says Controls.tsx has an 'Effect Filter'. Let's find it.
+        print(f"Found {len(selects)} selects.")
 
-    # Wait for controls to appear
-    page.wait_for_selector("select", state="attached")
+        # Check Shader 1: Circuit Breaker
+        target_shader = "circuit-breaker"
+        print(f"Looking for {target_shader}...")
 
-    # The first select is typically the filter category in the sidebar
-    # Let's inspect the page content for "Velvet Vortex" in the shader dropdown
+        # Get options from the first select
+        options = selects[0].locator("option").all_inner_texts()
+        # Filter for Circuit Breaker (Name in UI might be "Circuit Breaker")
 
-    # We need to find the "Slot 1" dropdown.
-    # It usually has options like "None", "Liquid Metal", etc.
+        found = False
+        for opt in options:
+            if "Circuit Breaker" in opt:
+                found = True
+                print("Found 'Circuit Breaker' option!")
+                break
 
-    # Let's try to locate the select element that contains "Velvet Vortex"
-    # Wait a bit for the shader list to populate asynchronously
-    time.sleep(2)
-
-    # Look for the option in the DOM
-    # Note: options might not be visible until clicked, but they exist in the DOM
-
-    # Check if "Velvet Vortex" is in the page source
-    content = page.content()
-    if "Velvet Vortex" in content:
-        print("SUCCESS: 'Velvet Vortex' found in page content.")
-    else:
-        print("FAILURE: 'Velvet Vortex' NOT found in page content.")
-
-    if "Neon Echo" in content:
-        print("SUCCESS: 'Neon Echo' found in page content.")
-    else:
-        print("FAILURE: 'Neon Echo' NOT found in page content.")
-
-    # Try to select it to see parameters
-    # The first select after the filter is usually Slot 1
-    # Or we can search for the select that contains the option
-
-    try:
-        # Find the select element that has the option "velvet-vortex"
-        # We need to click the sidebar toggle if controls are hidden?
-        # Memory says controls are in a sidebar <aside>.
-
-        # Take a screenshot of the initial state
-        page.screenshot(path="/home/jules/verification/initial_load.png")
-
-        # Try to select the option
-        page.select_option("select:has(option[value='velvet-vortex'])", "velvet-vortex")
-        print("Selected Velvet Vortex")
-
-        # Wait for parameters to update
-        time.sleep(1)
-
-        # Check for specific parameter labels
-        if "Vortex Radius" in page.content():
-             print("SUCCESS: 'Vortex Radius' parameter found.")
+        if found:
+            selects[0].select_option(label="Circuit Breaker")
+            page.wait_for_timeout(1000)
+            page.screenshot(path="circuit_breaker_selected.png")
+            print("Selected Circuit Breaker and saved screenshot.")
         else:
-             print("FAILURE: 'Vortex Radius' parameter NOT found.")
+            print("'Circuit Breaker' not found in options.")
+            print(f"First 10 options: {options[:10]}")
 
-        page.screenshot(path="/home/jules/verification/velvet_vortex_selected.png")
+        # Check Shader 2: Reality Tear
+        target_shader_2 = "reality-tear"
+        print(f"Looking for {target_shader_2}...")
 
-    except Exception as e:
-        print(f"Error selecting option: {e}")
-        page.screenshot(path="/home/jules/verification/error.png")
+        found_2 = False
+        options_2 = selects[0].locator("option").all_inner_texts()
+        for opt in options_2:
+            if "Reality Tear" in opt:
+                found_2 = True
+                print("Found 'Reality Tear' option!")
+                break
+
+        if found_2:
+            selects[0].select_option(label="Reality Tear")
+            page.wait_for_timeout(1000)
+            page.screenshot(path="reality_tear_selected.png")
+            print("Selected Reality Tear and saved screenshot.")
+        else:
+            print("'Reality Tear' not found in options.")
+
+        browser.close()
 
 if __name__ == "__main__":
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
-        try:
-            test_new_shaders(page)
-        except Exception as e:
-            print(f"Test failed: {e}")
-        finally:
-            browser.close()
+    check_new_shaders()
