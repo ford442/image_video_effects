@@ -1,0 +1,37 @@
+{
+    "id": "time-slit-scan",
+    "label": "Time Slit Scan",
+    "category": "visual-effects",
+    "url": "shaders/time-slit-scan.wgsl",
+    "features": ["mouse-driven"],
+    "params": [
+        {
+            "id": "param1",
+            "name": "Drift Speed",
+            "default": 0.01,
+            "min": 0.0,
+            "max": 0.05
+        },
+        {
+            "id": "param2",
+            "name": "Slit Width",
+            "default": 0.02,
+            "min": 0.001,
+            "max": 0.2
+        },
+        {
+            "id": "param3",
+            "name": "Time Scale",
+            "default": 1.0,
+            "min": 0.0,
+            "max": 2.0
+        },
+        {
+            "id": "param4",
+            "name": "Decay",
+            "default": 0.99,
+            "min": 0.9,
+            "max": 1.0
+        }
+    ]
+}
