@@ -2,7 +2,7 @@
   "id": "circuit-breaker",
   "name": "Circuit Breaker",
   "url": "shaders/circuit-breaker.wgsl",
-  "category": "image",
+  "category": "interactive-mouse",
   "description": "Transforms image into a circuit board. Mouse interaction overloads the circuits.",
   "features": ["mouse-driven"],
   "params": [
