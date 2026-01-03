@@ -2,22 +2,22 @@
 > webgpu-react-app@0.1.0 prestart
 > node scripts/generate_shader_lists.js
 
-Generated artistic.json with 56 shaders.
-Generated distortion.json with 27 shaders.
+Generated artistic.json with 57 shaders.
+Generated distortion.json with 28 shaders.
 Generated geometric.json with 4 shaders.
-Generated interactive-mouse.json with 94 shaders.
+Generated interactive-mouse.json with 92 shaders.
 Generated lighting-effects.json with 4 shaders.
 Generated liquid-effects.json with 16 shaders.
-Generated retro-glitch.json with 15 shaders.
+Generated retro-glitch.json with 16 shaders.
 Generated simulation.json with 7 shaders.
-Generated visual-effects.json with 8 shaders.
+Generated visual-effects.json with 9 shaders.
 
 > webgpu-react-app@0.1.0 start
 > react-scripts start
 
-(node:2796) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:5879) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:2796) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:5879) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 Starting the development server...
 
 Compiled successfully!
