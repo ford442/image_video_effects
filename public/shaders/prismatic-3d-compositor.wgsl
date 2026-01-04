@@ -14,6 +14,18 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 
+// ═══════════════════════════════════════════════════════════════
+//  Prismatic 3D Compositor - PASS 2 of 2
+//  Adds parallax shifting, volumetric glow, chromatic aberration
+//  and final composite with depth-aware blending.
+//  
+//  Inputs:
+//    - readTexture: Pass 1 cloud color
+//    - readDepthTexture: Pass 1 cloud depth
+//  
+//  Previous Pass: volumetric-rainbow-clouds.wgsl
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>;
   zoom_config: vec4<f32>;

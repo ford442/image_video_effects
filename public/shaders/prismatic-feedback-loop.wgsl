@@ -14,6 +14,18 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 
+// ═══════════════════════════════════════════════════════════════
+//  Prismatic Feedback Loop - PASS 2 of 2
+//  Consumes displacement from Pass 1 to create chromatic 
+//  aberration, temporal feedback, and glowing halos.
+//  
+//  Inputs:
+//    - readTexture: Pass 1 color
+//    - readDepthTexture: Displacement field from Pass 1
+//  
+//  Previous Pass: rainbow-vector-field.wgsl
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>;       // x=Time, y=PassNumber, z=ResX, w=ResY
   zoom_config: vec4<f32>;  // x=clickIntensity, y=mouseX, z=mouseY, w=aberration

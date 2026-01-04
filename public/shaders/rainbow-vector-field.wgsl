@@ -14,6 +14,18 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 
+// ═══════════════════════════════════════════════════════════════
+//  Rainbow Vector Field - PASS 1 of 2
+//  Generates a psychedelic rainbow pattern and computes a 
+//  displacement field (stored in depth texture) for Pass 2. 
+//  
+//  Outputs: 
+//    - writeTexture: Rainbow color pattern
+//    - writeDepthTexture: Displacement strength field
+//  
+//  Next Pass: prismatic-feedback-loop.wgsl
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>;       // x=Time, y=FrameCount, z=ResX, w=ResY
   zoom_config: vec4<f32>;  // x=mouseX, y=mouseX, z=mouseY, w=clickIntensity (mapped)

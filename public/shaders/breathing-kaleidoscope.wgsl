@@ -35,13 +35,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let cycleSpeed = u.config.y;
-    let segments = max(1.0, u.config.z);
-    let rotationSpeed = u.config.w;
+    let cycleSpeed = u.zoom_params.x;      // From JSON param[0]
+    let segments = max(1.0, u.zoom_params.y); // From JSON param[1]
+    let rotationSpeed = u.zoom_params.z;   // From JSON param[2]
+    let maxRotationPercent = clamp(u.zoom_params.w, 0.0, 1.0); // From JSON param[3]
+    let blendSmoothness = 2.0; // Fixed value
 
-    let center = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
-    let maxRotationPercent = clamp(u.zoom_params.y, 0.0, 1.0);
-    let blendSmoothness = max(0.0001, u.zoom_params.x);
+    // Mouse-driven center and ripple distortion
+    let mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
+    let center = mousePos; // Make center follow mouse
+
+    // Add ripple distortion
+    let rippleCount = u32(u.config.y);
+    var mouseDisplacement = vec2<f32>(0.0);
+    for (var i: u32 = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let timeSinceClick = time - ripple.z;
+        if (timeSinceClick > 0.0 && timeSinceClick < 2.0) {
+            let direction = uv - ripple.xy;
+            let dist = length(direction);
+            if (dist > 0.001) {
+                let wave = sin(dist * 30.0 - timeSinceClick * 5.0);
+                let falloff = exp(-timeSinceClick * 2.0) / (dist * 10.0 + 1.0);
+                mouseDisplacement += (direction / dist) * wave * falloff * 0.05;
+            }
+        }
+    }
 
     // Strength cycles 0->1->0 (!wrap)
     let strength = ping_pong(time * cycleSpeed);
@@ -52,7 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotation = ping_pong(time * rotationSpeed) * maxRotation;
 
     // Convert to polar coords from center
-    let delta = uv - center;
+    let delta = (uv + mouseDisplacement) - center;
     let angle = atan2(delta.y, delta.x);
     let radius = length(delta);
 

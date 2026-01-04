@@ -14,6 +14,18 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 
+// ═══════════════════════════════════════════════════════════════
+//  Parallax Glow Compositor - PASS 2 of 2
+//  Applies chromatic aberration, volumetric glow, and 
+//  depth-aware compositing for volumetric zooms.
+//  
+//  Inputs:
+//    - readTexture: Pass 1 volumetric zoom
+//    - readDepthTexture: Pass 1 raymarch depth
+//  
+//  Previous Pass: volumetric-depth-zoom.wgsl
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>;
   zoom_config: vec4<f32>;
