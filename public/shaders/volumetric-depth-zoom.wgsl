@@ -14,6 +14,18 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 
+// ═══════════════════════════════════════════════════════════════
+//  Volumetric Depth Zoom - PASS 1 of 2
+//  Raymarched volumetric zoom using multiple depth slices with
+//  depth-of-field, parallax, and edge specular lighting.
+//  
+//  Outputs:
+//    - writeTexture: Volumetric zoom with DOF and lighting
+//    - writeDepthTexture: Accumulated depth from raymarch slices
+//  
+//  Next Pass: parallax-glow-compositor.wgsl
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>;
   zoom_config: vec4<f32>;

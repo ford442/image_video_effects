@@ -14,6 +14,18 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 
+// ═══════════════════════════════════════════════════════════════
+//  Volumetric Rainbow Clouds - PASS 1 of 2
+//  Generates 3D noise clouds with normals, lighting, and 
+//  depth-aware rainbow coloring for volumetric prismatic effects.
+//  
+//  Outputs:
+//    - writeTexture: Rainbow-colored clouds with lighting
+//    - writeDepthTexture: Cloud density and depth information
+//  
+//  Next Pass: prismatic-3d-compositor.wgsl
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>;
   zoom_config: vec4<f32>;
