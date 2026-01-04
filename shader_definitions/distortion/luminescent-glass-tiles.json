@@ -1,0 +1,14 @@
+{
+  "id": "luminescent-glass-tiles",
+  "label": "Luminescent Glass",
+  "url": "shaders/luminescent-glass-tiles.wgsl",
+  "category": "distortion",
+  "features": ["mouse-driven"],
+  "params": [
+    { "id": "density", "name": "Grid Density", "type": "float", "default": 0.2, "min": 0.0, "max": 1.0 },
+    { "id": "refraction", "name": "Refraction", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "radius", "name": "Mouse Radius", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0 },
+    { "id": "turbulence", "name": "Mouse Chaos", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0 }
+  ],
+  "description": "Glass tiles that refract based on video brightness and mouse interaction."
+}
