@@ -10,5 +10,5 @@
     { "id": "parallax", "name": "Parallax", "default": 0.5, "min": 0.0, "max": 2.0 },
     { "id": "fog_density", "name": "Fog Density", "default": 0.6, "min": 0.0, "max": 4.0 }
   ],
-  "features": ["multi-pass", "volumetric", "depth", "fluid"]
+  "features": ["volumetric", "raymarched", "depth", "fluid", "single-pass-multilayer"]
 }
