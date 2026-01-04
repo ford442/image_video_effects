@@ -1,0 +1,14 @@
+{
+  "id": "infinite-fractal-feedback",
+  "name": "Infinite Fractal Feedback",
+  "url": "shaders/infinite-fractal-feedback.wgsl",
+  "category": "image",
+  "description": "Perpetual zoom tunnel with rotating mandala patterns. Mouse controls the zoom focal point and rotation speed.",
+  "params": [
+    { "id": "zoomRate", "name": "Zoom Rate", "default": 0.8, "min": 0.0, "max": 2.0 },
+    { "id": "spiralTightness", "name": "Spiral Tightness", "default": 0.6, "min": 0.0, "max": 2.0 },
+    { "id": "colorShift", "name": "Color Shift", "default": 0.2, "min": -1.0, "max": 1.0 },
+    { "id": "feedbackStrength", "name": "Feedback", "default": 0.5, "min": 0.0, "max": 1.0 }
+  ],
+  "features": ["interactive", "fractal", "feedback"]
+}
