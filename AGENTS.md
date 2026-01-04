@@ -258,6 +258,123 @@ let displacedUV = uv + displacement;
 let color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 ```
 
+## Multi-Pass Shader Architecture
+
+### Overview
+
+Multi-pass shaders split complex effects into multiple rendering passes, where each pass reads from the previous pass's output and writes to its own output textures. This enables advanced effects like temporal feedback, volumetric rendering, and complex compositing.
+
+### Multi-Pass Pairs in This Project
+
+#### 1. Rainbow Vector Field → Prismatic Feedback Loop
+```
+Pass 1: rainbow-vector-field.wgsl
+  Generates: Rainbow color pattern + Displacement field
+  Outputs: writeTexture (color), writeDepthTexture (displacement)
+
+Pass 2: prismatic-feedback-loop.wgsl
+  Reads: readTexture (Pass 1 color), readDepthTexture (displacement)
+  Applies: Chromatic aberration + Temporal feedback + Glow
+  Outputs: Final composited effect
+```
+
+#### 2. Volumetric Rainbow Clouds → Prismatic 3D Compositor
+```
+Pass 1: volumetric-rainbow-clouds.wgsl
+  Generates: 3D noise clouds with lighting and normals
+  Outputs: writeTexture (cloud color), writeDepthTexture (cloud depth)
+
+Pass 2: prismatic-3d-compositor.wgsl
+  Reads: readTexture (clouds), readDepthTexture (depth)
+  Applies: Parallax shift + Volumetric glow + Chromatic aberration
+  Outputs: Final 3D composite
+```
+
+#### 3. Volumetric Depth Zoom → Parallax Glow Compositor
+```
+Pass 1: volumetric-depth-zoom.wgsl
+  Generates: Raymarched volumetric zoom with DOF
+  Outputs: writeTexture (zoom effect), writeDepthTexture (raymarch depth)
+
+Pass 2: parallax-glow-compositor.wgsl
+  Reads: readTexture (zoom), readDepthTexture (depth)
+  Applies: Depth-aware glow + Bloom + Chromatic aberration
+  Outputs: Final glowing composite
+```
+
+### Multi-Pass Shader Template
+
+#### Pass 1 Template
+```wgsl
+// ═══════════════════════════════════════════════════════════════
+//  [Shader Name] - PASS 1 of 2
+//  [Description of what this pass generates]
+//  
+//  Outputs: 
+//    - writeTexture: [Description]
+//    - writeDepthTexture: [Description]
+//  
+//  Next Pass: [next-shader-name].wgsl
+// ═══════════════════════════════════════════════════════════════
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    // Generate base effect
+    // Store to writeTexture and writeDepthTexture
+}
+```
+
+#### Pass 2 Template
+```wgsl
+// ═══════════════════════════════════════════════════════════════
+//  [Shader Name] - PASS 2 of 2
+//  [Description of what this pass does with Pass 1 data]
+//  
+//  Inputs:
+//    - readTexture: [Description from Pass 1]
+//    - readDepthTexture: [Description from Pass 1]
+//  
+//  Previous Pass: [previous-shader-name].wgsl
+// ═══════════════════════════════════════════════════════════════
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    // Read Pass 1 results
+    let pass1Color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let pass1Data = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0);
+    
+    // Apply effects using Pass 1 data
+    // Write final output
+}
+```
+
+### JSON Metadata for Multi-Pass Shaders
+
+Multi-pass shaders should include metadata in their JSON definitions:
+
+```json
+{
+  "id": "shader-pass-1",
+  "name": "Shader Name (Pass 1)",
+  "multipass": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "shader-pass-2"
+  },
+  "features": ["multi-pass-1", "other-features"]
+}
+```
+
+### Important Notes
+
+1. **Texture Flow**: Pass 1 writes to `writeTexture` and `writeDepthTexture`. Pass 2 reads from `readTexture` and `readDepthTexture`.
+
+2. **Single-Pass Multi-Layer**: Some shaders like `liquid-volumetric-zoom.wgsl` perform multiple samples in a single pass (raymarching). These are NOT multi-pass shaders and should use `"features": ["raymarched", "single-pass-multilayer"]` instead.
+
+3. **Depth Texture Repurposing**: Multi-pass shaders often repurpose the depth texture to pass arbitrary data (displacement fields, density maps, etc.) between passes.
+
+4. **Mouse Interaction**: Both passes can respond to mouse input via `u.zoom_config.yz` and `u.ripples[]` array.
+
 ## Modifying the Renderer
 
 ### Adding a New Uniform
