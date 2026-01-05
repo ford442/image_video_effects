@@ -1,0 +1,14 @@
+{
+  "id": "chromatic-mosaic-projector",
+  "name": "Chromatic Mosaic",
+  "url": "shaders/chromatic-mosaic-projector.wgsl",
+  "category": "image",
+  "description": "Projects the image onto a mosaic grid with chromatic aberration controlled by the mouse light source.",
+  "params": [
+    { "id": "cells", "name": "Cell Count", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "spread", "name": "Light Spread", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "chroma", "name": "Aberration", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "tint", "name": "Light Tint", "default": 0.0, "min": 0.0, "max": 1.0 }
+  ],
+  "features": ["mouse-driven"]
+}
