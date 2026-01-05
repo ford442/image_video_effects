@@ -1,0 +1,41 @@
+{
+  "id": "night-vision-scope",
+  "name": "Night Vision Scope",
+  "url": "shaders/night-vision-scope.wgsl",
+  "category": "image",
+  "description": "Simulates a night vision intensifier tube with a high-clarity scope area following the mouse.",
+  "params": [
+    {
+      "id": "scopeSize",
+      "name": "Scope Size",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0
+    },
+    {
+      "id": "grainAmount",
+      "name": "Noise Grain",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "brightness",
+      "name": "Brightness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0
+    },
+    {
+      "id": "scanlineStrength",
+      "name": "Scanlines",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "image"
+  ]
+}
