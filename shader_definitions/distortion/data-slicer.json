@@ -1,0 +1,41 @@
+{
+  "id": "data-slicer",
+  "name": "Data Slicer",
+  "url": "shaders/data-slicer.wgsl",
+  "category": "image",
+  "description": "Glitchy horizontal slicing effect with chromatic aberration. Mouse Y controls influence area, Mouse X controls offset direction.",
+  "params": [
+    {
+      "id": "slideSpeed",
+      "name": "Jitter Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "sliceHeight",
+      "name": "Slice Thickness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chaos",
+      "name": "Chaos Amount",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "aberration",
+      "name": "Color Split",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "distortion"
+  ]
+}
