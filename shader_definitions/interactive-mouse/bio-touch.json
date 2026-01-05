@@ -1,0 +1,40 @@
+{
+  "id": "bio-touch",
+  "name": "Bio-Luminescent Touch",
+  "url": "shaders/bio-touch.wgsl",
+  "category": "image",
+  "description": "Reveals organic, glowing cellular structures beneath the image where you touch.",
+  "params": [
+    {
+      "id": "radius",
+      "name": "Glow Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "density",
+      "name": "Cell Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Pulse Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
