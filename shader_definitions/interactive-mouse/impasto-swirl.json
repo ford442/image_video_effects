@@ -1,0 +1,40 @@
+{
+  "id": "impasto-swirl",
+  "name": "Impasto Swirl",
+  "url": "shaders/impasto-swirl.wgsl",
+  "category": "image",
+  "description": "Simulates wet oil paint mixing. Mouse acts as a smudge tool that stirs the image.",
+  "params": [
+    {
+      "id": "brush",
+      "name": "Brush Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "smudge",
+      "name": "Smudge Strength",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "dry",
+      "name": "Paint Dry Speed",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "noise",
+      "name": "Canvas Texture",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
