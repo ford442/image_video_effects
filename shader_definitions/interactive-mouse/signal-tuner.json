@@ -1,0 +1,40 @@
+{
+  "id": "signal-tuner",
+  "name": "Signal Tuner",
+  "url": "shaders/signal-tuner.wgsl",
+  "category": "image",
+  "description": "Applies TV-style signal interference and wave distortion localized around the mouse.",
+  "params": [
+    {
+      "id": "frequency",
+      "name": "Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "amplitude",
+      "name": "Interference",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Drift Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "noise",
+      "name": "Static Noise",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

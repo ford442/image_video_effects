@@ -1,0 +1,40 @@
+{
+  "id": "entropy-grid",
+  "name": "Entropy Grid",
+  "url": "shaders/entropy-grid.wgsl",
+  "category": "image",
+  "description": "Scrambles the image into a chaotic grid. Mouse restores order (or creates chaos).",
+  "params": [
+    {
+      "id": "gridSize",
+      "name": "Grid Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chaos",
+      "name": "Chaos Level",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "invert",
+      "name": "Invert Effect",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
