@@ -251,7 +251,8 @@ export class Renderer {
                 'artistic',
                 'retro-glitch',
                 'simulation',
-                'geometric'
+                'geometric',
+                'image'
             ];
             
             const allShaders: ShaderEntry[] = [];

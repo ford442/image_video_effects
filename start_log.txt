@@ -7,9 +7,10 @@ Generated artistic.json with 58 shaders.
 WARNING: Missing WGSL file for 'prism-displacement' in distortion/prism-displacement.json. Expected at: /app/public/shaders/prism-displacement.wgsl - SKIPPING
 Generated distortion.json with 31 shaders.
 Generated geometric.json with 4 shaders.
+Generated image.json with 6 shaders.
 WARNING: Duplicate ID 'black-hole' in interactive-mouse/black-hole.json. (Already defined in distortion/black-hole.json) - SKIPPING
 WARNING: Missing WGSL file for 'pixel-repel' in interactive-mouse/pixel-repel.json. Expected at: /app/public/shaders/pixel-repel.wgsl - SKIPPING
-Generated interactive-mouse.json with 113 shaders.
+Generated interactive-mouse.json with 121 shaders.
 WARNING: Duplicate ID 'neon-pulse-edge' in lighting-effects/neon-pulse-edge.json. (Already defined in interactive-mouse/neon-pulse-edge.json) - SKIPPING
 Generated lighting-effects.json with 3 shaders.
 WARNING: Duplicate ID 'liquid-metal' in liquid-effects/liquid-metal.json. (Already defined in interactive-mouse/liquid-metal.json) - SKIPPING
@@ -36,20 +37,4 @@ Done.
 > webgpu-react-app@0.1.0 start
 > react-scripts start
 
-(node:3259) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:3259) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
-Starting the development server...
-
-Compiled successfully!
-
-You can now view webgpu-react-app in the browser.
-
-  Local:            http://localhost:3000
-  On Your Network:  http://192.168.0.2:3000
-
-Note that the development build is not optimized.
-To create a production build, use npm run build.
-
-webpack compiled successfully
-No issues found.
+sh: 1: react-scripts: not found

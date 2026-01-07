@@ -1,0 +1,40 @@
+{
+  "id": "rgb-ripple-distortion",
+  "name": "RGB Ripple Distortion",
+  "url": "shaders/rgb-ripple-distortion.wgsl",
+  "category": "image",
+  "description": "A ripple effect that separates RGB channels based on distance from mouse.",
+  "params": [
+    {
+      "id": "freq",
+      "name": "Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "amp",
+      "name": "Amplitude",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "sep",
+      "name": "Color Separation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
