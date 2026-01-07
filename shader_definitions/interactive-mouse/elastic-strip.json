@@ -1,0 +1,44 @@
+{
+  "id": "elastic-strip",
+  "name": "Elastic Strip",
+  "url": "shaders/elastic-strip.wgsl",
+  "category": "image",
+  "description": "Divides the image into strips that stretch elastically towards the mouse cursor.",
+  "params": [
+    {
+      "id": "density",
+      "name": "Strip Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "strength",
+      "name": "Stretch Strength",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "falloff",
+      "name": "Influence Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "dir",
+      "name": "Direction (V/H)",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "labels": [
+        "Vertical Strips",
+        "Horizontal Strips"
+      ]
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

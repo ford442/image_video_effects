@@ -1,0 +1,40 @@
+{
+  "id": "solarize-warp",
+  "name": "Solarize Warp",
+  "url": "shaders/solarize-warp.wgsl",
+  "category": "image",
+  "description": "Twists the image around the mouse cursor while applying a solarization effect.",
+  "params": [
+    {
+      "id": "twist",
+      "name": "Twist Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "threshold",
+      "name": "Solarize Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Effect Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "unused",
+      "name": "Unused",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
