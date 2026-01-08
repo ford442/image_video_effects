@@ -1,0 +1,41 @@
+{
+  "id": "video-echo-chamber",
+  "name": "Video Echo Chamber",
+  "url": "shaders/video-echo-chamber.wgsl",
+  "category": "image",
+  "description": "Temporal trails that persist longer near the mouse cursor, creating a ghostly echo effect.",
+  "params": [
+    {
+      "id": "decay",
+      "name": "Global Decay",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 0.95
+    },
+    {
+      "id": "radius",
+      "name": "Mouse Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "echoStr",
+      "name": "Echo Strength",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ]
+}

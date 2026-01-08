@@ -1,0 +1,41 @@
+{
+  "id": "data-moshing",
+  "name": "Data Moshing",
+  "url": "shaders/data-moshing.wgsl",
+  "category": "image",
+  "description": "Smears pixels based on mouse movement, simulating video compression artifacts and glitch art.",
+  "params": [
+    {
+      "id": "smear",
+      "name": "Smear Force",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Brush Size",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 0.5
+    },
+    {
+      "id": "decay",
+      "name": "Persistence",
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "crush",
+      "name": "Bit Crush",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ]
+}
