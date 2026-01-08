@@ -1,0 +1,41 @@
+{
+  "id": "voxel-depth-sort",
+  "name": "Voxel Depth Sort",
+  "url": "shaders/voxel-depth-sort.wgsl",
+  "category": "image",
+  "description": "Converts the image into a 3D grid of floating blocks. Block height is determined by brightness, and mouse position tilts the view.",
+  "params": [
+    {
+      "id": "gridSize",
+      "name": "Block Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "extrusion",
+      "name": "Extrusion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shadow",
+      "name": "BG Darken",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "gap",
+      "name": "Block Gap",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 0.8
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "3d-effect"
+  ]
+}
