@@ -1,0 +1,42 @@
+{
+    "id": "liquid-prism",
+    "label": "Liquid Prism",
+    "url": "shaders/liquid-prism.wgsl",
+    "category": "distortion",
+    "features": ["mouse-driven"],
+    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens.",
+    "params": [
+        {
+            "id": "strength",
+            "name": "Prism Strength",
+            "type": "float",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "frequency",
+            "name": "Wave Frequency",
+            "type": "float",
+            "default": 0.3,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "speed",
+            "name": "Flow Speed",
+            "type": "float",
+            "default": 0.2,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "aberration",
+            "name": "Aberration",
+            "type": "float",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        }
+    ]
+}
