@@ -1,0 +1,37 @@
+{
+    "id": "glass-brick-distortion",
+    "label": "Glass Brick Wall",
+    "category": "image",
+    "url": "shaders/glass-brick-distortion.wgsl",
+    "features": ["mouse-driven"],
+    "params": [
+        {
+            "id": "param1",
+            "name": "Brick Count",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "param2",
+            "name": "Refraction",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "param3",
+            "name": "Grout Width",
+            "default": 0.2,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "param4",
+            "name": "Clear Radius",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        }
+    ]
+}
