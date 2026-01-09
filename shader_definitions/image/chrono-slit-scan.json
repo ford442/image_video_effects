@@ -1,0 +1,40 @@
+{
+  "id": "chrono-slit-scan",
+  "name": "Chrono Slit Scan",
+  "url": "shaders/chrono-slit-scan.wgsl",
+  "category": "image",
+  "description": "Accumulates time slices of the video into a static image.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Scan Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "width",
+      "name": "Slit Width",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "warp",
+      "name": "Time Warp",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "freeze",
+      "name": "Fade Reset",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "temporal-persistence"
+  ]
+}
