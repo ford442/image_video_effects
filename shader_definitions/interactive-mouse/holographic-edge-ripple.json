@@ -1,0 +1,38 @@
+{
+  "id": "holographic-edge-ripple",
+  "name": "Holographic Edge Ripple",
+  "url": "shaders/holographic-edge-ripple.wgsl",
+  "category": "image",
+  "features": ["mouse-driven"],
+  "description": "Edges ripple and split into RGB components based on mouse proximity.",
+  "params": [
+    {
+      "name": "Wave Speed",
+      "id": "wave-speed",
+      "default": 2.0,
+      "min": 0.0,
+      "max": 10.0
+    },
+    {
+      "name": "Frequency",
+      "id": "frequency",
+      "default": 20.0,
+      "min": 1.0,
+      "max": 100.0
+    },
+    {
+      "name": "Aberration",
+      "id": "aberration",
+      "default": 0.02,
+      "min": 0.0,
+      "max": 0.1
+    },
+    {
+      "name": "Edge Threshold",
+      "id": "edge-threshold",
+      "default": 0.2,
+      "min": 0.01,
+      "max": 1.0
+    }
+  ]
+}

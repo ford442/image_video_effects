@@ -1,0 +1,38 @@
+{
+  "id": "luma-velocity-melt",
+  "name": "Luma Velocity Melt",
+  "url": "shaders/luma-velocity-melt.wgsl",
+  "category": "image",
+  "features": ["mouse-driven"],
+  "description": "Image melts downwards based on brightness. Mouse heat speeds up the melting.",
+  "params": [
+    {
+      "name": "Melt Speed",
+      "id": "melt-speed",
+      "default": 0.005,
+      "min": 0.0,
+      "max": 0.02
+    },
+    {
+      "name": "Heat Intensity",
+      "id": "heat-intensity",
+      "default": 2.0,
+      "min": 0.0,
+      "max": 5.0
+    },
+    {
+      "name": "Persistence",
+      "id": "persistence",
+      "default": 0.95,
+      "min": 0.5,
+      "max": 0.999
+    },
+    {
+      "name": "Luma Threshold",
+      "id": "luma-threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
