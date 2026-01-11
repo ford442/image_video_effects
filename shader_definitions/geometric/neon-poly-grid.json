@@ -1,0 +1,14 @@
+{
+    "id": "neon-poly-grid",
+    "name": "Neon Poly Grid",
+    "url": "shaders/neon-poly-grid.wgsl",
+    "category": "geometric",
+    "description": "A futuristic hexagonal grid that lights up when you touch it, leaving a fading trail.",
+    "features": ["mouse-driven"],
+    "params": [
+        { "id": "grid-scale", "name": "Grid Scale", "min": 0.0, "max": 1.0, "default": 0.5 },
+        { "id": "line-width", "name": "Line Width", "min": 0.0, "max": 1.0, "default": 0.2 },
+        { "id": "glow-strength", "name": "Glow Strength", "min": 0.0, "max": 1.0, "default": 0.8 },
+        { "id": "decay-speed", "name": "Trail Duration", "min": 0.0, "max": 1.0, "default": 0.8 }
+    ]
+}
