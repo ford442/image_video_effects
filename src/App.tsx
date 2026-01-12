@@ -13,7 +13,20 @@ env.backends.onnx.logLevel = 'warning';
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
 const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
+const LOCAL_MANIFEST_URL = `/image_manifest.json`;
+// Placeholder base URL for bucket images. If this is wrong, the fallback Unsplash images will save the day.
+const BUCKET_BASE_URL = `https://storage.googleapis.com/ford442-storage-manager`;
 const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
+
+const FALLBACK_IMAGES = [
+    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop", // Liquid Metal
+    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2568&auto=format&fit=crop", // Cyberpunk City
+    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670&auto=format&fit=crop", // Fluid Gradient
+    "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2694&auto=format&fit=crop", // Grid Landscape
+    "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=2670&auto=format&fit=crop", // Nature
+    "https://images.unsplash.com/photo-1614850523060-8da1d56ae167?q=80&w=2670&auto=format&fit=crop", // Neon
+    "https://images.unsplash.com/photo-1605218427306-633ba8546381?q=80&w=2669&auto=format&fit=crop"  // Geometry
+];
 
 const defaultSlotParams: SlotParams = {
     zoomParam1: 0.99,
@@ -93,25 +106,69 @@ function MainApp() {
     useEffect(() => {
         // Fetch the dynamic image manifest from the backend on startup
         const fetchImageManifest = async () => {
+            let manifest: ImageRecord[] = [];
+
+            // 1. Try API
             try {
                 const response = await fetch(IMAGE_MANIFEST_URL);
-                if (!response.ok) throw new Error('Failed to fetch image manifest');
-                const data = await response.json();
-                let manifest = data.map((item: any) => ({
-                    url: item.url,
-                    tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],
-                    description: item.description || ''
-                }));
-
-                if (manifest.length === 0) {
-                    console.warn("Image manifest from backend is empty. Using fallback.");
-                    manifest = [{ url: 'https://i.imgur.com/vCNL2sT.jpeg', tags: ['fallback'], description: 'Fallback image' }];
+                if (response.ok) {
+                    const data = await response.json();
+                    manifest = data.map((item: any) => ({
+                        url: item.url,
+                        tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],
+                        description: item.description || ''
+                    }));
                 }
-
-                setImageManifest(manifest);
             } catch (error) {
-                console.error(error);
-                setStatus('Error: Could not load image manifest from backend.');
+                console.warn("Backend API failed, trying local manifest...", error);
+            }
+
+            // 2. Try Local Manifest (Bucket Images) if API Empty
+            if (manifest.length === 0) {
+                try {
+                    const response = await fetch(LOCAL_MANIFEST_URL);
+                    if (response.ok) {
+                        const data = await response.json();
+                         // Construct full URLs if they are relative
+                         manifest = (data.images || []).map((item: any) => ({
+                            url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${item.url}`,
+                            tags: item.tags || [],
+                            description: item.tags ? item.tags.join(', ') : ''
+                        }));
+                        console.log("Loaded local image manifest:", manifest.length, "images");
+                    }
+                } catch (e) {
+                    console.warn("Failed to load local manifest:", e);
+                }
+            }
+
+            // 3. Last Resort: Robust Unsplash Fallback
+            if (manifest.length === 0) {
+                console.warn("Image manifest empty. Using robust Unsplash fallback.");
+                manifest = FALLBACK_IMAGES.map(url => ({
+                    url,
+                    tags: ['fallback', 'unsplash', 'demo'],
+                    description: 'Demo Image'
+                }));
+            }
+
+            // Add Unsplash images to the pool regardless, to ensure variety
+            const existingUrls = new Set(manifest.map(m => m.url));
+            FALLBACK_IMAGES.forEach(url => {
+                if (!existingUrls.has(url)) {
+                    manifest.push({
+                         url,
+                         tags: ['fallback', 'unsplash', 'high-quality'],
+                         description: 'High Quality Fallback'
+                    });
+                }
+            });
+
+            setImageManifest(manifest);
+
+            // Push to Renderer
+            if (rendererRef.current) {
+                rendererRef.current.setImageList(manifest.map(m => m.url));
             }
         };
         fetchImageManifest();

@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
-import { AIStatus } from '../AutoDJ'; // Import AIStatus
+import { AIStatus } from '../AutoDJ';
 
 interface ControlsProps {
     modes: RenderMode[];
@@ -59,11 +58,11 @@ const Controls: React.FC<ControlsProps> = ({
     isMuted, setIsMuted,
     onUploadImageTrigger,
     onUploadVideoTrigger,
-    // AI VJ Props
     isAiVjMode,
     onToggleAiVj,
     aiVjStatus
 }) => {
+    // Filter modes based on category
     const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
     const imageEntries = availableModes.filter(entry => entry.category === 'image');
 
@@ -126,25 +125,33 @@ const Controls: React.FC<ControlsProps> = ({
             {/* --- Stack / Slot Selection --- */}
             <div className="stack-controls">
                 {[0, 1, 2].map(i => (
-                    <div key={i} className={`stack-slot ${activeSlot === i ? 'active' : ''}`} onClick={() => setActiveSlot(i)}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-                            <input
-                                type="radio"
-                                checked={activeSlot === i}
-                                onChange={() => setActiveSlot(i)}
-                                style={{ marginRight: '8px' }}
-                            />
-                            <span style={{ fontWeight: activeSlot === i ? 'bold' : 'normal' }}>Slot {i + 1}:</span>
-                        </div>
+                    <div
+                        key={i}
+                        className={`stack-slot ${activeSlot === i ? 'active' : ''}`}
+                        onClick={() => setActiveSlot(i)}
+                        style={{
+                            padding: '8px',
+                            border: activeSlot === i ? '1px solid #61dafb' : '1px solid #333',
+                            marginBottom: '5px',
+                            background: activeSlot === i ? 'rgba(97, 218, 251, 0.1)' : 'transparent',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <div style={{marginBottom: '4px', fontSize: '12px', color: activeSlot === i ? '#61dafb' : '#888'}}>Slot {i + 1}</div>
                         <select
                             value={modes[i]}
-                            onChange={(e) => setMode(i, e.target.value as RenderMode)}
-                            style={{ width: '100%' }}
+                            onChange={(e) => setMode(i, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{width: '100%'}}
                         >
                             <option value="none">None</option>
-                            {currentModes.map(mode => (
-                                <option key={mode.id} value={mode.id}>{mode.name}</option>
+                            {currentModes.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
                             ))}
+                            {/* Always include current mode if it's not in the list (to avoid it disappearing) */}
+                            {modes[i] !== 'none' && !currentModes.find(m => m.id === modes[i]) && (
+                                <option value={modes[i]}>{availableModes.find(m => m.id === modes[i])?.name || modes[i]}</option>
+                            )}
                         </select>
                     </div>
                 ))}
@@ -153,7 +160,7 @@ const Controls: React.FC<ControlsProps> = ({
             {/* --- Source Specific Controls --- */}
             {inputSource === 'image' && (
                 <>
-                    <div className="control-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div className="control-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
                         <button onClick={onUploadImageTrigger}>Upload Img</button>
                         <button onClick={onNewImage}>Random Img</button>
                     </div>
@@ -186,59 +193,67 @@ const Controls: React.FC<ControlsProps> = ({
             )}
             
             {inputSource === 'video' && (
-                <div className="control-group">
-                    <label>Select Video</label>
-                    <div style={{display: 'flex', gap: '5px'}}>
-                        <select
-                            value={selectedVideo}
-                            onChange={(e) => setSelectedVideo(e.target.value)}
-                            style={{flex: 1}}
-                        >
-                            {videoList.map((v, i) => (
-                                <option key={i} value={v}>{v.split('/').pop()}</option>
-                            ))}
-                        </select>
-                        <button onClick={onUploadVideoTrigger}>Upload</button>
-                    </div>
-                    <div style={{marginTop: '10px'}}>
-                         <label style={{display: 'flex', alignItems: 'center'}}>
-                            <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{width: 'auto', marginRight: '5px'}}/>
-                            Mute Audio
-                         </label>
-                    </div>
+                <div className="control-group" style={{marginTop: '10px'}}>
+                     <div style={{marginBottom: '5px'}}>Select Video:</div>
+                     <select value={selectedVideo} onChange={(e) => setSelectedVideo(e.target.value)} style={{width: '100%', marginBottom: '8px'}}>
+                        <option value="">-- Choose Video --</option>
+                        {videoList.map(v => <option key={v} value={v}>{v}</option>)}
+                     </select>
+                     <button onClick={onUploadVideoTrigger} style={{width: '100%', marginBottom: '8px'}}>Upload Video</button>
+                     <label style={{display: 'flex', alignItems: 'center'}}>
+                        <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{marginRight: '5px'}}/> Mute Audio
+                     </label>
                 </div>
             )}
 
 
-            <hr />
+            <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
 
             {/* --- Active Slot Parameter Controls --- */}
             <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#61dafb', fontSize: '14px' }}>
-                Slot {activeSlot + 1} Settings
+                Slot {activeSlot + 1} Settings ({currentShaderEntry?.name || 'None'})
             </div>
 
-            {currentParams && currentShaderEntry && currentShaderEntry.params && currentShaderEntry.params.map((param, index) => {
-                 if (index >= 4) return null;
-                 const valKey = `zoomParam${index + 1}` as keyof SlotParams;
-                 const val = currentParams[valKey];
+            {currentShaderEntry?.params?.map((param, index) => {
+                if (index > 3) return null; // Only 4 params supported
 
-                 return (
-                     <div key={param.id} className="control-group">
-                         <label>{param.name}</label>
-                         <input
-                             type="range"
-                             min={param.min}
-                             max={param.max}
-                             step="0.01"
-                             value={val}
-                             onChange={(e) => updateSlotParam(activeSlot, { [valKey]: parseFloat(e.target.value) })}
-                         />
-                     </div>
-                 );
+                let val = 0;
+                if (index === 0) val = currentParams.zoomParam1;
+                else if (index === 1) val = currentParams.zoomParam2;
+                else if (index === 2) val = currentParams.zoomParam3;
+                else if (index === 3) val = currentParams.zoomParam4;
+
+                return (
+                    <div key={param.id} className="control-group">
+                        <label htmlFor={`param-${param.id}`} style={{display: 'flex', justifyContent: 'space-between'}}>
+                            <span>{param.name}</span>
+                            <span style={{opacity: 0.7, fontSize: '11px'}}>{val.toFixed(2)}</span>
+                        </label>
+                        <input
+                            id={`param-${param.id}`}
+                            type="range"
+                            min={param.min}
+                            max={param.max}
+                            step={param.step || 0.01}
+                            value={val}
+                            onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                const update: Partial<SlotParams> = {};
+                                if (index === 0) update.zoomParam1 = v;
+                                else if (index === 1) update.zoomParam2 = v;
+                                else if (index === 2) update.zoomParam3 = v;
+                                else if (index === 3) update.zoomParam4 = v;
+                                updateSlotParam(activeSlot, update);
+                            }}
+                        />
+                    </div>
+                );
             })}
 
-            {(!currentShaderEntry || !currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
-                <div style={{fontStyle: 'italic', color: '#888'}}>No parameters</div>
+            {!currentShaderEntry && (
+                <div style={{color: '#888', fontStyle: 'italic', padding: '10px'}}>
+                    Select an effect for this slot to see parameters.
+                </div>
             )}
         </div>
     );

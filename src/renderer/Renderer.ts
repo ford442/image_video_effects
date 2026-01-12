@@ -279,6 +279,12 @@ export class Renderer {
         }
     }
 
+    public setImageList(urls: string[]) {
+        if (urls && urls.length > 0) {
+            this.imageUrls = urls;
+        }
+    }
+
     private async fetchImageUrls(): Promise<void> {
         const apiUrl = `${this.apiBaseUrl}/api/songs?type=image`;
         try {
