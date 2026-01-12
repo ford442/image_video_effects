@@ -46,6 +46,7 @@ function MainApp() {
     const [inputSource, setInputSource] = useState<InputSource>('image');
     const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined);
     const [isMuted, setIsMuted] = useState(true);
+    const [selectedVideo, setSelectedVideo] = useState<string>("");
 
     // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
@@ -227,7 +228,7 @@ function MainApp() {
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
                         onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
                         inputSource={inputSource} setInputSource={setInputSource} videoList={[]}
-                        selectedVideo={""} setSelectedVideo={()=>{}} isMuted={isMuted} setIsMuted={setIsMuted}
+                        selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo} isMuted={isMuted} setIsMuted={setIsMuted}
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                         onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
@@ -241,6 +242,7 @@ function MainApp() {
                         isMouseDown={false} setIsMouseDown={()=>{}} onInit={onInitCanvas}
                         inputSource={inputSource} videoSourceUrl={videoSourceUrl}
                         isMuted={isMuted} setInputSource={setInputSource}
+                        selectedVideo={selectedVideo}
                     />
                     <div className="status-bar">
                         {isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}
