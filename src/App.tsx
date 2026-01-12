@@ -73,11 +73,17 @@ function MainApp() {
                 const response = await fetch(IMAGE_MANIFEST_URL);
                 if (!response.ok) throw new Error('Failed to fetch image manifest');
                 const data = await response.json();
-                const manifest = data.map((item: any) => ({
+                let manifest = data.map((item: any) => ({
                     url: item.url,
                     tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],
                     description: item.description || ''
                 }));
+
+                if (manifest.length === 0) {
+                    console.warn("Image manifest from backend is empty. Using fallback.");
+                    manifest = [{ url: 'https://i.imgur.com/vCNL2sT.jpeg', tags: ['fallback'], description: 'Fallback image' }];
+                }
+
                 setImageManifest(manifest);
             } catch (error) {
                 console.error(error);
