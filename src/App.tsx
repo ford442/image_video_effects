@@ -159,7 +159,13 @@ function MainApp() {
                 (id) => setMode(0, id),
                 () => { // This now correctly reads from state
                     const imgRecord = imageManifest.find(img => img.url === currentImageUrl) || null;
-                    const shaderRecord = availableModes.find(m => m.id === modes[0]) || null;
+                    const shaderEntry = availableModes.find(m => m.id === modes[0]) || null;
+                    const shaderRecord: ShaderRecord | null = shaderEntry ? {
+                        id: shaderEntry.id,
+                        name: shaderEntry.name,
+                        description: shaderEntry.description,
+                        tags: shaderEntry.tags || [],
+                    } : null;
                     return { currentImage: imgRecord, currentShader: shaderRecord };
                 }
             );
