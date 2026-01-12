@@ -87,6 +87,28 @@ function MainApp() {
     }, []);
 
     // --- Image Loading ---
+    const runDepthAnalysis = useCallback(async (imageUrl: string) => {
+        if (!depthEstimator || !rendererRef.current) return;
+        setStatus('Analyzing image with depth model...');
+        try {
+            const result = await depthEstimator(imageUrl);
+            const { data, dims } = result.predicted_depth;
+            const [height, width] = [dims[dims.length-2], dims[dims.length-1]];
+            const normalizedData = new Float32Array(data.length);
+            let min = Infinity, max = -Infinity;
+            data.forEach((v:number) => { min = Math.min(min, v); max = Math.max(max, v); });
+            const range = max - min;
+            for (let i = 0; i < data.length; ++i) {
+                normalizedData[i] = 1.0 - ((data[i] - min) / range);
+            }
+            rendererRef.current.updateDepthMap(normalizedData, width, height);
+            setStatus('Depth map updated.');
+        } catch (e: any) {
+            console.error("Error during analysis:", e);
+            setStatus(`Failed to analyze image: ${e.message}`);
+        }
+    }, [depthEstimator]);
+
     const handleLoadImage = useCallback(async (url: string) => {
         if (!rendererRef.current) return;
         const newImageUrl = await rendererRef.current.loadImage(url);
@@ -96,7 +118,7 @@ function MainApp() {
                 await runDepthAnalysis(newImageUrl);
             }
         }
-    }, [depthEstimator]);
+    }, [depthEstimator, runDepthAnalysis]);
 
     const handleNewRandomImage = useCallback(async () => {
         if (imageManifest.length === 0) {
@@ -108,6 +130,22 @@ function MainApp() {
             await handleLoadImage(randomImage.url);
         }
     }, [imageManifest, handleLoadImage]);
+
+    const loadDepthModel = useCallback(async () => {
+        if (depthEstimator) { setStatus('Depth model already loaded.'); return; }
+        try {
+            setStatus('Loading depth model...');
+            const estimator = await pipeline('depth-estimation', DEPTH_MODEL_ID, {
+                progress_callback: (p: any) => setStatus(`Loading depth model: ${p.status}...`),
+            });
+            setDepthEstimator(() => estimator);
+            setStatus('Depth model loaded.');
+            if (currentImageUrl) await runDepthAnalysis(currentImageUrl);
+        } catch (e: any) {
+            console.error(e);
+            setStatus(`Failed to load depth model: ${e.message}`);
+        }
+    }, [depthEstimator, currentImageUrl, runDepthAnalysis]);
     
     // --- AI VJ Mode ---
     const toggleAiVj = useCallback(async () => {
@@ -181,7 +219,7 @@ function MainApp() {
                         setPanX={setPanX} panY={panY} setPanY={setPanY} onNewImage={handleNewRandomImage}
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
-                        onLoadModel={() => {}} isModelLoaded={!!depthEstimator} availableModes={availableModes}
+                        onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
                         inputSource={inputSource} setInputSource={setInputSource} videoList={[]}
                         selectedVideo={""} setSelectedVideo={()=>{}} isMuted={isMuted} setIsMuted={setIsMuted}
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
