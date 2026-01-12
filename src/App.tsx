@@ -15,12 +15,28 @@ const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
 const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
 const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
 
+const defaultSlotParams: SlotParams = {
+    zoomParam1: 0.99,
+    zoomParam2: 1.01,
+    zoomParam3: 0.5,
+    zoomParam4: 0.5,
+    lightStrength: 1.0,
+    ambient: 0.2,
+    normalStrength: 0.1,
+    fogFalloff: 4.0,
+    depthThreshold: 0.5,
+};
+
 function MainApp() {
     // --- State: General & Stacking ---
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
     const [modes, setModes] = useState<RenderMode[]>(['liquid', 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
-    const [slotParams, setSlotParams] = useState<SlotParams[]>([]);
+    const [slotParams, setSlotParams] = useState<SlotParams[]>([
+        defaultSlotParams,
+        defaultSlotParams,
+        defaultSlotParams
+    ]);
 
     // --- State: Global View ---
     const [zoom, setZoom] = useState(1.0);
@@ -64,6 +80,14 @@ function MainApp() {
             return next;
         });
     };
+
+    const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
+        setSlotParams(prev => {
+            const next = [...prev];
+            next[slotIndex] = { ...next[slotIndex], ...updates };
+            return next;
+        });
+    }, []);
 
     // --- Effects & Initializers ---
     useEffect(() => {
@@ -227,7 +251,7 @@ function MainApp() {
                     <Controls
                         // ... pass all props to Controls component
                         modes={modes} setMode={setMode} activeSlot={activeSlot} setActiveSlot={setActiveSlot}
-                        slotParams={slotParams} updateSlotParam={()=>{}} shaderCategory={shaderCategory}
+                        slotParams={slotParams} updateSlotParam={updateSlotParam} shaderCategory={shaderCategory}
                         setShaderCategory={setShaderCategory} zoom={zoom} setZoom={setZoom} panX={panX}
                         setPanX={setPanX} panY={panY} setPanY={setPanY} onNewImage={handleNewRandomImage}
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}

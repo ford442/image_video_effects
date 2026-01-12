@@ -616,7 +616,7 @@ export class Renderer {
         x: number,
         y: number
     }, mousePosition: { x: number, y: number }, isMouseDown: boolean): void {
-        if (this.isDestroyed || !this.device || !this.imageTexture || !this.filteringSampler) return;
+        if (this.isDestroyed || !this.device || !this.imageTexture || !this.filteringSampler || !slotParams || slotParams.length === 0) return;
         const currentTime = performance.now() / 1000.0;
 
         // Handle Video Input (Video or Webcam)
