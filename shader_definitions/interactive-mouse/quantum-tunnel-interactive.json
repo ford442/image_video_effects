@@ -1,0 +1,14 @@
+{
+    "id": "quantum-tunnel-interactive",
+    "name": "Quantum Tunnel",
+    "category": "image",
+    "features": ["mouse-driven"],
+    "params": [
+        { "id": "tunnel_strength", "name": "Tunnel Strength", "default": 0.5, "min": 0.0, "max": 1.0 },
+        { "id": "aberration", "name": "Aberration", "default": 0.3, "min": 0.0, "max": 1.0 },
+        { "id": "pulse_speed", "name": "Pulse Speed", "default": 0.2, "min": 0.0, "max": 1.0 },
+        { "id": "twist", "name": "Twist", "default": 0.1, "min": 0.0, "max": 1.0 }
+    ],
+    "url": "shaders/quantum-tunnel-interactive.wgsl",
+    "description": "Interactive radial distortion with chromatic aberration and pulsing effects."
+}

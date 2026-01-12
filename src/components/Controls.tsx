@@ -85,15 +85,31 @@ const Controls: React.FC<ControlsProps> = ({
         <div className="controls">
             {/* --- Input Source Selection --- */}
             <div className="control-group">
-                <div style={{display: 'flex', gap: '10px', marginBottom: '10px', justifyContent: 'center'}}>
-                    <label style={{display:'flex', alignItems:'center', cursor: 'pointer', fontSize: '13px'}}>
-                        <input type="radio" checked={inputSource === 'image'} onChange={() => setInputSource('image')} style={{marginRight: '5px'}}/> Image
+                <label>Input Source</label>
+                <div className="radio-group">
+                    <label>
+                        <input
+                            type="radio"
+                            value="image"
+                            checked={inputSource === 'image'}
+                            onChange={() => setInputSource('image')}
+                        /> Image
                     </label>
-                    <label style={{display:'flex', alignItems:'center', cursor: 'pointer', fontSize: '13px'}}>
-                        <input type="radio" checked={inputSource === 'video'} onChange={() => setInputSource('video')} style={{marginRight: '5px'}}/> Video
+                    <label>
+                        <input
+                            type="radio"
+                            value="video"
+                            checked={inputSource === 'video'}
+                            onChange={() => setInputSource('video')}
+                        /> Video
                     </label>
-                    <label style={{display:'flex', alignItems:'center', cursor: 'pointer', fontSize: '13px'}}>
-                        <input type="radio" checked={inputSource === 'webcam'} onChange={() => setInputSource('webcam')} style={{marginRight: '5px'}}/> Webcam
+                    <label>
+                        <input
+                            type="radio"
+                            value="webcam"
+                            checked={inputSource === 'webcam'}
+                            onChange={() => setInputSource('webcam')}
+                        /> Webcam
                     </label>
                 </div>
             </div>
