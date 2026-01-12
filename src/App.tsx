@@ -182,12 +182,12 @@ function MainApp() {
                 setIsAiVjMode(false);
             } else {
                 if (aiVj.status === 'ready') {
-                    aiVj.start();
-                    setIsAiVjMode(true);
+                    if (aiVj.start()) {
+                        setIsAiVjMode(true);
+                    }
                 } else { // Re-initialize if it failed or hasn't been run
                     await aiVj.initialize(imageManifest, availableModes, IMAGE_SUGGESTIONS_URL);
-                     if (aiVj.status === 'ready') {
-                        aiVj.start();
+                    if (aiVj.start()) {
                         setIsAiVjMode(true);
                     }
                 }

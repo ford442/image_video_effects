@@ -119,17 +119,18 @@ export class Alucinate {
       return suggestions;
   }
 
-  public start() {
-    if (this.isRunning) return;
+  public start(): boolean {
+    if (this.isRunning) return false;
     if (this.status !== 'ready') {
         console.warn('Alucinate is not ready. Please initialize models first.');
         this.setStatus('idle', 'Cannot start: AI not initialized.');
-        return;
+        return false;
     }
     console.log('Starting Alucinate loop...');
     this.isRunning = true;
     this.runCycle(); 
     this.loopInterval = window.setInterval(() => this.runCycle(), 25000);
+    return true;
   }
 
   public stop() {
