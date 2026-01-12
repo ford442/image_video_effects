@@ -63,6 +63,66 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Negative prompt:** "lowres, watermark, overexposed, text, modern structures"
 - **Notes:** Aim for a moody, melancholic atmosphere; emphasize volumetric light shafts, rich texture detail, and film grain. Suggested aspect ratios: 3:2 or 16:10; use shallow depth to slightly soften distant canopy.
 
+### Suggestion: Neon Street Vendor
+- **Prompt:** "A cinematic, photorealistic night shot of a futuristic street food stall tucked into a rain-drenched cyberpunk alley. A battered mechanical vendor with glowing blue optics serves steaming noodles to a hooded figure. Neon signs in electric pink and cyan reflect vividly off the wet pavement and the metallic surfaces of the stall. Volumetric steam rises from the cooking station, blending with the atmospheric city fog. High contrast, sharp focus on the interaction, creamy bokeh background showing distant city lights. Shot on 35mm lens, f/1.8, 8k resolution, Unreal Engine 5 render style."
+- **Negative prompt:** "daylight, sunshine, blurry, low resolution, cartoon, illustration"
+- **Tags:** cyberpunk, robot, night, neon, food
+- **Style / Reference:** Photorealistic, Cinematic
+- **Composition:** Medium shot, eye level, focus on interaction
+- **Color palette:** Cyan, Magenta, dark shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260112_neon_vendor.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the texture of the wet ground and the glow of the neon.
+
+### Suggestion: Steampunk Airship Dock
+- **Prompt:** "A majestic steampunk airship docking at a floating Victorian sky-station high above a sea of clouds during golden hour. The ship features polished brass gears, billowing canvas sails, and a rich mahogany hull. The station is an intricate lattice of ironwork and steam vents. Crew members in period goggles and leather aviation gear are securing mooring ropes. Warm, low-angle sunlight bathes the scene, casting long, dramatic shadows and creating lens flares. Volumetric clouds, hyper-detailed mechanical parts, cinematic lighting, wide-angle shot."
+- **Negative prompt:** "modern technology, airplanes, plastic, low detail"
+- **Tags:** steampunk, airship, clouds, golden hour, victorian
+- **Style / Reference:** Digital Painting, Concept Art
+- **Composition:** Wide angle, looking up slightly
+- **Color palette:** Gold, Brass, Sky Blue, White
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260112_airship_dock.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the scale of the ship versus the people.
+
+### Suggestion: Crystalline Flora
+- **Prompt:** "A macro photography shot of an alien flower composed entirely of translucent, iridescent crystals. The faceted petals refract light into spectral rainbows. Inside the flower, a tiny, bioluminescent insect rests on a stamen. The background is a soft, dreamy wash of other crystal flora. Extremely sharp focus on the subject, shallow depth of field, caustic lighting effects, vibrant jewel tones. 100mm macro lens, photorealistic, 8k."
+- **Negative prompt:** "blurry, organic textures, dull colors"
+- **Tags:** macro, crystal, alien, nature, abstract
+- **Style / Reference:** Macro Photography, 3D Render
+- **Composition:** Extreme close-up, center focus
+- **Color palette:** Iridescent, pastel rainbow, dark background
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260112_crystal_flower.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the refraction looks realistic.
+
+### Suggestion: Shadows of the City
+- **Prompt:** "A classic black and white film noir scene inside a private detective's office. Venetian blinds cast harsh, striped shadows (chiaroscuro) across a cluttered wooden desk featuring a smoking ashtray, a half-empty glass of whiskey, and a revolver. Rain streaks the glass of the window. A silhouette of a fedora-wearing figure stands by the window, gazing out at the rainy city lights. High contrast, film grain, dramatic moody lighting, atmospheric perspective. 50mm lens, cinematic composition."
+- **Negative prompt:** "color, bright, happy, modern"
+- **Tags:** noir, black and white, detective, moody, interior
+- **Style / Reference:** Film Noir, B&W Photography
+- **Composition:** Dutch angle, rule of thirds
+- **Color palette:** Grayscale, high contrast
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260112_noir_office.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The play of light and shadow is crucial.
+
+### Suggestion: The Alchemist's Corner
+- **Prompt:** "An isometric 3D render of a cozy, cluttered alchemist's workshop. Wooden shelves are packed with glowing potions in various shapes, ancient rolled scrolls, and leather-bound books. A cauldron bubbles in the center emitting green steam. A sleeping cat rests on a rug near a fireplace. Warm, inviting lighting from candles and magical artifacts. Stylized, low poly but with detailed textures, diorama aesthetic, soft ambient occlusion, vibrant colors. 4k resolution."
+- **Negative prompt:** "realistic, dark, scary, messy geometry"
+- **Tags:** isometric, 3D, magic, cute, interior
+- **Style / Reference:** Stylized 3D, Isometric Art
+- **Composition:** Isometric view
+- **Color palette:** Warm woods, purple and green magic glows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260112_magic_shop.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing consistent isometric perspective.
+
 ---
 
 ## Attribution & legal
