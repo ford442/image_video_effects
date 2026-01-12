@@ -20,6 +20,7 @@ interface WebGPUCanvasProps {
     videoSourceUrl?: string; // NEW: Used for "Uploaded" videos (Blob URL)
     isMuted: boolean;
     setInputSource?: (source: InputSource) => void; // Added for error handling
+    apiBaseUrl: string;
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
@@ -27,7 +28,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
-    setInputSource
+    setInputSource, apiBaseUrl
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -41,7 +42,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     useEffect(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
-        const renderer = new Renderer(canvas);
+        const renderer = new Renderer(canvas, apiBaseUrl);
 
         (async () => {
             const success = await renderer.init();
@@ -62,7 +63,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rendererRef, onInit]);
+    }, [rendererRef, onInit, apiBaseUrl]);
 
     // Handle Input Source & Video Source Changes
     useEffect(() => {

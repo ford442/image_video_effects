@@ -61,7 +61,7 @@ export class Renderer {
     private plasmaBuffer!: GPUBuffer;
     private MAX_PLASMA_BALLS = 50;
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor(canvas: HTMLCanvasElement, private apiBaseUrl: string) {
         this.canvas = canvas;
     }
 
@@ -280,7 +280,7 @@ export class Renderer {
     }
 
     private async fetchImageUrls(): Promise<void> {
-        const apiUrl = 'http://localhost:7860/api/songs?type=image';
+        const apiUrl = `${this.apiBaseUrl}/api/songs?type=image`;
         try {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error(`API error: ${response.status}`);

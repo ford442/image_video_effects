@@ -11,7 +11,7 @@ import './style.css';
 env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
-const API_BASE_URL = 'http://localhost:7860';
+const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
 const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
 const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
 
@@ -243,6 +243,7 @@ function MainApp() {
                         inputSource={inputSource} videoSourceUrl={videoSourceUrl}
                         isMuted={isMuted} setInputSource={setInputSource}
                         selectedVideo={selectedVideo}
+                        apiBaseUrl={API_BASE_URL}
                     />
                     <div className="status-bar">
                         {isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}
