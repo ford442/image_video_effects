@@ -1,0 +1,40 @@
+{
+  "id": "quantized-ripples",
+  "name": "Quantized Ripples",
+  "url": "shaders/quantized-ripples.wgsl",
+  "category": "image",
+  "description": "Quantizes the image (posterization) with levels that ripple out from the mouse position.",
+  "params": [
+    {
+      "id": "frequency",
+      "name": "Ripple Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "amplitude",
+      "name": "Ripple Amplitude",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Ripple Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "depth",
+      "name": "Color Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

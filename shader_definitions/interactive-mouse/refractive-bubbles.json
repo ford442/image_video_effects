@@ -1,0 +1,40 @@
+{
+  "id": "refractive-bubbles",
+  "name": "Refractive Bubbles",
+  "url": "shaders/refractive-bubbles.wgsl",
+  "category": "image",
+  "description": "Floating bubbles around the cursor that distort the background like glass.",
+  "params": [
+    {
+      "id": "size",
+      "name": "Bubble Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction Index",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "count",
+      "name": "Bubble Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "wobble",
+      "name": "Wobble Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
