@@ -86,7 +86,33 @@ const Controls: React.FC<ControlsProps> = ({
         <div className="controls">
             {/* --- Input Source Selection --- */}
             <div className="control-group">
-                {/* ... existing input source controls */}
+                <label>Input Source</label>
+                <div className="radio-group">
+                    <label>
+                        <input
+                            type="radio"
+                            value="image"
+                            checked={inputSource === 'image'}
+                            onChange={() => setInputSource('image')}
+                        /> Image
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            value="video"
+                            checked={inputSource === 'video'}
+                            onChange={() => setInputSource('video')}
+                        /> Video
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            value="webcam"
+                            checked={inputSource === 'webcam'}
+                            onChange={() => setInputSource('webcam')}
+                        /> Webcam
+                    </label>
+                </div>
             </div>
 
             <div className="control-group">
@@ -99,7 +125,29 @@ const Controls: React.FC<ControlsProps> = ({
 
             {/* --- Stack / Slot Selection --- */}
             <div className="stack-controls">
-                {/* ... existing stack controls */}
+                {[0, 1, 2].map(i => (
+                    <div key={i} className={`stack-slot ${activeSlot === i ? 'active' : ''}`} onClick={() => setActiveSlot(i)}>
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+                            <input
+                                type="radio"
+                                checked={activeSlot === i}
+                                onChange={() => setActiveSlot(i)}
+                                style={{ marginRight: '8px' }}
+                            />
+                            <span style={{ fontWeight: activeSlot === i ? 'bold' : 'normal' }}>Slot {i + 1}:</span>
+                        </div>
+                        <select
+                            value={modes[i]}
+                            onChange={(e) => setMode(i, e.target.value as RenderMode)}
+                            style={{ width: '100%' }}
+                        >
+                            <option value="none">None</option>
+                            {currentModes.map(mode => (
+                                <option key={mode.id} value={mode.id}>{mode.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                ))}
             </div>
 
             {/* --- Source Specific Controls --- */}
@@ -139,7 +187,25 @@ const Controls: React.FC<ControlsProps> = ({
             
             {inputSource === 'video' && (
                 <div className="control-group">
-                    {/* ... existing video controls */}
+                    <label>Select Video</label>
+                    <div style={{display: 'flex', gap: '5px'}}>
+                        <select
+                            value={selectedVideo}
+                            onChange={(e) => setSelectedVideo(e.target.value)}
+                            style={{flex: 1}}
+                        >
+                            {videoList.map((v, i) => (
+                                <option key={i} value={v}>{v.split('/').pop()}</option>
+                            ))}
+                        </select>
+                        <button onClick={onUploadVideoTrigger}>Upload</button>
+                    </div>
+                    <div style={{marginTop: '10px'}}>
+                         <label style={{display: 'flex', alignItems: 'center'}}>
+                            <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{width: 'auto', marginRight: '5px'}}/>
+                            Mute Audio
+                         </label>
+                    </div>
                 </div>
             )}
 
@@ -150,7 +216,30 @@ const Controls: React.FC<ControlsProps> = ({
             <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#61dafb', fontSize: '14px' }}>
                 Slot {activeSlot + 1} Settings
             </div>
-            {/* ... existing parameter controls ... */}
+
+            {currentParams && currentShaderEntry && currentShaderEntry.params && currentShaderEntry.params.map((param, index) => {
+                 if (index >= 4) return null;
+                 const valKey = `zoomParam${index + 1}` as keyof SlotParams;
+                 const val = currentParams[valKey];
+
+                 return (
+                     <div key={param.id} className="control-group">
+                         <label>{param.name}</label>
+                         <input
+                             type="range"
+                             min={param.min}
+                             max={param.max}
+                             step="0.01"
+                             value={val}
+                             onChange={(e) => updateSlotParam(activeSlot, { [valKey]: parseFloat(e.target.value) })}
+                         />
+                     </div>
+                 );
+            })}
+
+            {(!currentShaderEntry || !currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
+                <div style={{fontStyle: 'italic', color: '#888'}}>No parameters</div>
+            )}
         </div>
     );
 };
