@@ -193,9 +193,9 @@ export class Alucinate {
         setTimeout(() => {
             if (this.isRunning) {
                 this.onNextImage(nextImage.url);
-                this.setStatus('ready', 'Awaiting next cycle...');
+                this.setStatus('ready', 'Visuals updated. Enjoy the vibe.');
             }
-        }, 8000); 
+        }, 5000);
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -265,7 +265,18 @@ Describe the next scene in a single, descriptive sentence.`;
       let bestScore = -1;
       let bestImage: ImageRecord | null = null;
 
-      const candidates = this.imageManifest.filter(image => image.url !== currentUrl);
+      // Filter out current image to ensure rotation, UNLESS it's the only one.
+      let candidates = this.imageManifest.filter(image => image.url !== currentUrl);
+
+      if (candidates.length === 0) {
+          // If only one image exists, we must reuse it (or fail gracefully)
+          if (this.imageManifest.length > 0) {
+               candidates = this.imageManifest;
+          } else {
+              // Should not happen due to App.tsx fallback, but safety first
+              return { url: currentUrl, tags: [], description: 'Fallback' };
+          }
+      }
 
       for (const image of candidates) {
           let score = 0;
@@ -288,6 +299,7 @@ Describe the next scene in a single, descriptive sentence.`;
       if (bestImage) {
           return bestImage;
       }
+      // Return random if no match found
       return candidates[Math.floor(Math.random() * candidates.length)];
   }
 }
