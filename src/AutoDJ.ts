@@ -229,6 +229,9 @@ Your selection (ID only):`;
     try {
         const reply = await this.llm.chat.completions.create({ messages: [{ role: "user", content: prompt }]});
         const choice = reply.choices[0].message.content;
+        if (!choice) {
+            return null;
+        }
         const match = choice.match(/"([^"]+)"/);
         let selectedId = match ? match[1] : choice.trim().split(/\s+/)[0];
         return this.shaderManifest.some(s => s.id === selectedId) ? selectedId : null;
@@ -249,7 +252,8 @@ Describe the next scene in a single, descriptive sentence.`;
 
       try {
           const reply = await this.llm.chat.completions.create({ messages: [{ role: "user", content: prompt}]});
-          return reply.choices[0].message.content.trim();
+          const choice = reply.choices[0].message.content;
+          return choice ? choice.trim() : null;
       } catch (error) {
           console.error('LLM theme suggestion failed:', error);
           return "a futuristic city at night"; // Fallback

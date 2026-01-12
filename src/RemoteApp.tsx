@@ -272,6 +272,9 @@ const RemoteApp: React.FC = () => {
                     setIsMuted={handleSetMuted}
                     onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                     onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
+                    isAiVjMode={false}
+                    onToggleAiVj={() => {}}
+                    aiVjStatus={'idle'}
                 />
             </div>
         </div>

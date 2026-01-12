@@ -64,6 +64,9 @@ test('renders Rain controls when active slot mode is rain', () => {
             isMuted={false} setIsMuted={() => {}}
             onUploadImageTrigger={() => {}}
             onUploadVideoTrigger={() => {}}
+            isAiVjMode={false}
+            onToggleAiVj={() => {}}
+            aiVjStatus={'idle'}
         />
     );
 
@@ -99,6 +102,9 @@ test('does not render Rain controls when active slot mode is not rain', () => {
             isMuted={false} setIsMuted={() => {}}
             onUploadImageTrigger={() => {}}
             onUploadVideoTrigger={() => {}}
+            isAiVjMode={false}
+            onToggleAiVj={() => {}}
+            aiVjStatus={'idle'}
         />
     );
 
