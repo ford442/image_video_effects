@@ -5,7 +5,7 @@ import * as webllm from "@mlc-ai/web-llm";
 // --- Configuration ---
 env.allowLocalModels = false;
 const CAPTIONER_ID = 'Xenova/vit-gpt2-image-captioning';
-const LLM_ID = 'gemma-2b-it-q4f32_1';
+const LLM_ID = 'gemma-2-2b-it-q4f32_1-MLC';
 
 // --- Interfaces ---
 export interface ImageRecord {
@@ -102,9 +102,9 @@ export class Alucinate {
             appConfig: {
                 model_list: [
                     {
-                        "model": "https://huggingface.co/mlc-ai/gemma-2b-it-q4f32_1-MLC/resolve/main/",
-                        "model_id": "gemma-2b-it-q4f32_1",
-                        "model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/gemma-2b-it-q4f32_1-webgpu.wasm",
+                        "model": "https://huggingface.co/mlc-ai/gemma-2-2b-it-q4f32_1-MLC",
+                        "model_id": "gemma-2-2b-it-q4f32_1-MLC",
+                        "model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_80/gemma-2-2b-it-q4f32_1-ctx4k_cs1k-webgpu.wasm",
                     }
                 ]
             }
