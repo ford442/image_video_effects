@@ -1,0 +1,12 @@
+{
+  "images": [
+    { "url": "my-sd35-space-images-2025/cyberpunk_street.jpg", "tags": ["dark", "neon", "city", "cyberpunk", "structure"] },
+    { "url": "my-sd35-space-images-2025/forest_macro.jpg", "tags": ["nature", "green", "organic", "texture"] },
+    { "url": "my-sd35-space-images-2025/infinite_hallway.jpg", "tags": ["tunnel", "hallway", "architecture", "grid", "structure", "depth"] },
+    { "url": "my-sd35-space-images-2025/cyborg_bust.jpg", "tags": ["statue", "robot", "face", "portrait", "focal"] },
+    { "url": "my-sd35-space-images-2025/oil_spill.jpg", "tags": ["fluid", "oil", "macro", "organic", "texture"] },
+    { "url": "my-sd35-space-images-2025/starfield.jpg", "tags": ["space", "grid", "dark", "depth"] },
+    { "url": "my-sd35-space-images-2025/server_leds.jpg", "tags": ["neon", "night", "tech", "grid", "cyberpunk"] },
+    { "url": "my-sd35-space-images-2025/liquid_metal.jpg", "tags": ["fluid", "organic", "texture", "macro"] }
+  ]
+}

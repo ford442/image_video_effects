@@ -280,22 +280,23 @@ export class Renderer {
     }
 
     private async fetchImageUrls(): Promise<void> {
-        const bucketName = 'my-sd35-space-images-2025';
-        const apiUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o`;
+        const apiUrl = 'http://localhost:7860/api/songs?type=image';
         try {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error(`API error: ${response.status}`);
             const data = await response.json();
             if (this.isDestroyed) return;
 
-            this.imageUrls = data.items ? data.items
-                .filter((item: { name: string }) => /\.(jpg|jpeg|png|webp|gif)$/i.test(item.name))
-                .map((item: {
-                name: string
-            }) => `https://storage.googleapis.com/${bucketName}/${item.name}`) : [];
+            // The backend now returns the full URL, so we just need to extract it
+            this.imageUrls = data.map((item: { url: string }) => item.url).filter(Boolean);
+
+            if (this.imageUrls.length === 0) {
+                 console.warn("No image URLs received from backend.");
+                 this.imageUrls = ['https://i.imgur.com/vCNL2sT.jpeg'];
+            }
         } catch (e) {
-            console.error("Failed to fetch image list:", e);
-            this.imageUrls = ['https://i.imgur.com/vCNL2sT.jpeg'];
+            console.error("Failed to fetch image list from backend:", e);
+            this.imageUrls = ['https://i.imgur.com/vCNL2sT.jpeg']; // Fallback
         }
     }
 

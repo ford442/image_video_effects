@@ -1,0 +1,7 @@
+{
+  "id": "alucinate",
+  "name": "Alucinate",
+  "url": "shaders/alucinate.wgsl",
+  "category": "image",
+  "tags": ["psychedelic", "warp", "interactive", "organic", "fluid"]
+}
