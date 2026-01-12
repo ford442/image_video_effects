@@ -3,63 +3,113 @@ from playwright.sync_api import sync_playwright
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
-    page = browser.new_page()
+    # Mock WebGPU for headless environment
+    context = browser.new_context()
 
-    # Mock WebGPU to prevent crash and allow UI loading
-    page.add_init_script("""
-    Object.defineProperty(navigator, 'gpu', {
-      value: {
-        requestAdapter: async () => ({
-          requestDevice: async () => ({
-            createBuffer: () => ({}),
-            createTexture: () => ({ createView: () => ({}) }),
-            createSampler: () => ({}),
-            createBindGroupLayout: () => ({}),
-            createPipelineLayout: () => ({}),
-            createBindGroup: () => ({}),
-            createRenderPipelineAsync: async () => ({}),
-            createComputePipelineAsync: async () => ({}),
-            createCommandEncoder: () => ({
-                beginRenderPass: () => ({ setPipeline: () => {}, draw: () => {}, end: () => {} }),
-                beginComputePass: () => ({ setPipeline: () => {}, setBindGroup: () => {}, dispatchWorkgroups: () => {}, end: () => {} }),
-                finish: () => ({}),
-                copyTextureToTexture: () => {}
-            }),
-            queue: { submit: () => {}, writeTexture: () => {} },
-            destroy: () => {}
-          }),
-          features: { has: () => true }
-        }),
-        getPreferredCanvasFormat: () => 'bgra8unorm'
-      }
-    });
-    HTMLCanvasElement.prototype.getContext = function(type) {
-        if (type === 'webgpu') {
-            return { configure: () => {} };
+    # Inject script to mock navigator.gpu
+    context.add_init_script("""
+        if (!navigator.gpu) {
+            navigator.gpu = {
+                requestAdapter: async () => ({
+                    requestDevice: async () => ({
+                        createShaderModule: () => ({}),
+                        createRenderPipelineAsync: async () => ({
+                             getBindGroupLayout: () => ({})
+                        }),
+                        createComputePipelineAsync: async () => ({
+                             getBindGroupLayout: () => ({})
+                        }),
+                        createBindGroup: () => ({}),
+                        createBindGroupLayout: () => ({}),
+                        createPipelineLayout: () => ({}),
+                        createTexture: () => ({
+                            createView: () => ({}),
+                            destroy: () => {}
+                        }),
+                        createSampler: () => ({}),
+                        createBuffer: () => ({ destroy: () => {} }),
+                        createCommandEncoder: () => ({
+                            beginRenderPass: () => ({
+                                setPipeline: () => {},
+                                setBindGroup: () => {},
+                                draw: () => {},
+                                end: () => {}
+                            }),
+                            beginComputePass: () => ({
+                                setPipeline: () => {},
+                                setBindGroup: () => {},
+                                dispatchWorkgroups: () => {},
+                                end: () => {}
+                            }),
+                            finish: () => {},
+                            copyTextureToTexture: () => {},
+                            copyExternalImageToTexture: () => {},
+                            writeBuffer: () => {},
+                            writeTexture: () => {}
+                        }),
+                        queue: {
+                            submit: () => {},
+                            writeBuffer: () => {},
+                            writeTexture: () => {},
+                            copyExternalImageToTexture: () => {}
+                        },
+                        destroy: () => {}
+                    }),
+                    features: { has: () => true }
+                }),
+                getPreferredCanvasFormat: () => 'bgra8unorm'
+            };
+
+            // Mock Canvas Context
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type) {
+                if (type === 'webgpu') {
+                    return {
+                        configure: () => {},
+                        getCurrentTexture: () => ({ createView: () => ({}) })
+                    };
+                }
+                return originalGetContext.apply(this, arguments);
+            };
         }
-        return this._getContext ? this._getContext(type) : null;
-    };
     """)
 
+    page = context.new_page()
+
+    # Enable console logging
+    page.on("console", lambda msg: print(f"Browser Console: {msg.text}"))
+    page.on("pageerror", lambda err: print(f"Browser Error: {err}"))
+
     try:
+        print("Navigating to http://localhost:3000...")
         page.goto("http://localhost:3000")
-        # Wait for controls to load
-        page.wait_for_selector(".stack-controls", timeout=10000)
 
-        # Check if our new shaders are in the dropdown
-        # Note: They are in 'distortion' folder but marked as 'image' category.
-        # The UI filters by category.
+        # Wait for app to load
+        print("Waiting for app to load...")
+        # Check for specific UI elements added in Controls.tsx
+        page.wait_for_selector("text=Pixelocity", timeout=20000)
 
-        # Select the 'image' category (Effects / Filters) which is the default for slot 1 usually?
-        # The dropdowns are grouped by category if the UI supports it, or just a flat list filtered by the "active category" of the slot?
-        # Actually Controls.tsx has a mode selector.
+        print("Checking for Image Source radio buttons...")
+        # My Controls.tsx implementation doesn't use value attribute, just checked state.
+        # Use a more generic selector or text.
+        page.wait_for_selector("text=Image")
+        page.wait_for_selector("input[type=radio]")
 
-        page.screenshot(path="verification/ui_loaded.png")
-        print("UI loaded and screenshot taken.")
+        print("Checking for Upload Img button...")
+        page.wait_for_selector("button:has-text('Upload Img')")
+
+        print("Checking for AutoDJ controls...")
+        # "Start AI VJ" button
+        page.wait_for_selector("button:has-text('Start AI VJ')")
+
+        # Take screenshot of the UI
+        print("Taking screenshot...")
+        page.screenshot(path="verification/ui_verification.png", full_page=True)
+        print("Screenshot saved to verification/ui_verification.png")
 
     except Exception as e:
-        print(f"Error: {e}")
-        page.screenshot(path="verification/error.png")
+        print(f"Test failed: {e}")
+        page.screenshot(path="verification/error_screenshot.png")
     finally:
         browser.close()
 
