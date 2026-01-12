@@ -174,6 +174,48 @@ export class Renderer {
         if (params.depthThreshold !== undefined) this.depthThreshold = params.depthThreshold;
     }
 
+    public handleResize(width: number, height: number): void {
+        if (this.isDestroyed || !this.device) return;
+
+        // Recreate resolution-dependent textures
+        const rwTextureDesc: GPUTextureDescriptor = {
+            size: [width, height],
+            format: 'rgba32float',
+            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
+        };
+        if (this.writeTexture) this.writeTexture.destroy();
+        this.writeTexture = this.device.createTexture(rwTextureDesc);
+
+        if (this.pingPongTexture1) this.pingPongTexture1.destroy();
+        this.pingPongTexture1 = this.device.createTexture(rwTextureDesc);
+
+        if (this.pingPongTexture2) this.pingPongTexture2.destroy();
+        this.pingPongTexture2 = this.device.createTexture(rwTextureDesc);
+
+        const dataStorageTextureDescriptor: GPUTextureDescriptor = {
+            size: [width, height],
+            format: 'rgba32float',
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
+        };
+        const dataTextureDescriptor: GPUTextureDescriptor = {
+            size: [width, height],
+            format: 'rgba32float',
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        };
+
+        if (this.dataTextureA) this.dataTextureA.destroy();
+        this.dataTextureA = this.device.createTexture(dataStorageTextureDescriptor);
+
+        if (this.dataTextureB) this.dataTextureB.destroy();
+        this.dataTextureB = this.device.createTexture(dataStorageTextureDescriptor);
+
+        if (this.dataTextureC) this.dataTextureC.destroy();
+        this.dataTextureC = this.device.createTexture(dataTextureDescriptor);
+
+        // Re-create bind groups that might depend on these textures
+        this.createBindGroups();
+    }
+
     public destroy(): void {
         this.isDestroyed = true; // Mark as destroyed immediately
         
