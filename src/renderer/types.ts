@@ -21,6 +21,7 @@ export interface ShaderEntry {
     url: string;
     category: ShaderCategory;
     description?: string;
+    tags?: string[];
     params?: ShaderParam[];
     advanced_params?: ShaderParam[];
     features?: string[];
