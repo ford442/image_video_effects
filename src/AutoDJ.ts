@@ -95,9 +95,18 @@ export class Alucinate {
         });
 
         this.setStatus('loading-models', 'Loading large language model...');
-        this.llm = await webllm.CreateMLCEngine(LLM_ID, { 
+        this.llm = await webllm.CreateMLCEngine(LLM_ID, {
             initProgressCallback: (progress: webllm.InitProgressReport) => {
                 this.setStatus('loading-models', `LLM: ${progress.text.replace('[...]', `(${(progress.progress * 100).toFixed(2)}%)`)}`);
+            },
+            appConfig: {
+                model_list: [
+                    {
+                        "model": "https://huggingface.co/mlc-ai/gemma-2b-it-q4f32_1-MLC/resolve/main/",
+                        "model_id": "gemma-2b-it-q4f32_1",
+                        "model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/gemma-2b-it-q4f32_1-webgpu.wasm",
+                    }
+                ]
             }
         });
 

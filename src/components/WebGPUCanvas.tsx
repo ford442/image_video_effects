@@ -65,6 +65,27 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rendererRef, onInit, apiBaseUrl]);
 
+    // Handle Canvas Resizing
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !rendererRef.current) return;
+
+        const observer = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect;
+                 if (canvas.width !== Math.round(width) || canvas.height !== Math.round(height)) {
+                    canvas.width = Math.round(width);
+                    canvas.height = Math.round(height);
+                    rendererRef.current?.handleResize(canvas.width, canvas.height);
+                }
+            }
+        });
+
+        observer.observe(canvas);
+        return () => observer.disconnect();
+    }, [rendererRef]);
+
+
     // Handle Input Source & Video Source Changes
     useEffect(() => {
         if (!videoRef.current) return;
@@ -223,7 +244,14 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     return (
         <>
-            <canvas ref={canvasRef} width="1280" height="1280" onMouseMove={handleCanvasMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} />
+            <canvas
+                ref={canvasRef}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseDown={handleMouseDown}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                style={{ width: '100%', height: '100%', display: 'block' }}
+            />
             <video
                 ref={videoRef}
                 crossOrigin="anonymous"

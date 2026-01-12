@@ -37,29 +37,3 @@ Done.
 > webgpu-react-app@0.1.0 start
 > react-scripts start
 
-(node:4354) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:4354) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
-Starting the development server...
-
-Compiled with warnings.
-
-[eslint]
-src/App.tsx
-  Line 63:28:  'setVideoSourceUrl' is assigned a value but never used  @typescript-eslint/no-unused-vars
-
-src/AutoDJ.ts
-  Line 150:27:  'currentShader' is assigned a value but never used  @typescript-eslint/no-unused-vars
-
-Search for the keywords to learn more about each warning.
-To ignore, add // eslint-disable-next-line to the line before.
-
-WARNING in [eslint]
-src/App.tsx
-  Line 63:28:  'setVideoSourceUrl' is assigned a value but never used  @typescript-eslint/no-unused-vars
-
-src/AutoDJ.ts
-  Line 150:27:  'currentShader' is assigned a value but never used  @typescript-eslint/no-unused-vars
-
-webpack compiled with 1 warning
-No issues found.
