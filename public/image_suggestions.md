@@ -123,6 +123,66 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **License / Attribution:** CC0
 - **Notes:** Good for testing consistent isometric perspective.
 
+### Suggestion: Orbital Greenhouse
+- **Prompt:** "A photorealistic wide shot inside a massive rotating space station greenhouse. Lush, vibrant tropical vegetation and hanging gardens fill the curved interior structure. Through the large reinforced glass panels above, the curvature of the Earth and the starry void of space are visible. Sunlight streams in, creating dappled shadows on the metallic floor grates. High-tech hydroponic systems mix with organic nature. 8k, cinematic lighting, highly detailed."
+- **Negative prompt:** "blurry, low resolution, painting, illustration, distortion"
+- **Tags:** sci-fi, space, nature, greenhouse, earth
+- **Style / Reference:** Photorealistic, Sci-Fi Concept Art
+- **Composition:** Wide angle, curved perspective
+- **Color palette:** Lush greens, metallic greys, deep space blues, bright white sunlight
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260124_orbital_greenhouse.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the contrast between the organic plants and the cold tech/space background.
+
+### Suggestion: Origami Paper Kingdom
+- **Prompt:** "A whimsical landscape entirely constructed from folded paper. Mountains are sharp geometric folds, trees are stylized paper cutouts, and a river is made of layered blue tissue paper. Soft, warm studio lighting casts gentle shadows, enhancing the texture of the paper grain. A small paper boat floats on the river. Depth of field emphasizes the miniature scale. Tilt-shift effect, macro photography style, 8k."
+- **Negative prompt:** "realistic textures, water, photorealistic, dark, gritty"
+- **Tags:** origami, papercraft, miniature, whimsical, landscape
+- **Style / Reference:** Papercraft, Macro Photography
+- **Composition:** Tilt-shift, isometric-like
+- **Color palette:** Pastel blues, greens, and creams
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260124_origami_kingdom.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Essential to emphasize the *paper texture* and physical folds.
+
+### Suggestion: Magma Forge
+- **Prompt:** "Inside a colossal dwarven forge deep within a volcano. Molten lava flows in channels carved into dark obsidian rock. A massive anvil sits in the center, glowing with heat. Sparks fly as a giant mechanical hammer strikes glowing metal. The lighting is dominated by the intense orange and red glow of the lava, contrasting with deep shadows. Heat haze distortion, sparks, smoke, volumetric lighting. Epic fantasy style, detailed textures."
+- **Negative prompt:** "cool colors, blue, daylight, clean, modern"
+- **Tags:** fantasy, forge, lava, fire, interior
+- **Style / Reference:** Fantasy Concept Art, Cinematic
+- **Composition:** Eye level, framing the anvil
+- **Color palette:** Burning oranges, reds, deep blacks, charcoal greys
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260124_magma_forge.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use heavy contrast and saturation for the lava glow.
+
+### Suggestion: Vintage Explorer's Flatlay
+- **Prompt:** "A high-angle, directly overhead 'knolling' shot of vintage exploration gear arranged neatly on a weathered wooden table. Items include a brass compass, a rolled parchment map, a leather-bound journal, an old brass telescope, a fountain pen, and a flickering candle. The lighting is warm and diffuse. Ultra-detailed textures of leather, brass, and paper. Photorealistic, commercial product photography style."
+- **Negative prompt:** "messy, angled, perspective, digital, plastic"
+- **Tags:** knolling, vintage, explorer, still life, flatlay
+- **Style / Reference:** Product Photography, Still Life
+- **Composition:** Top-down (flatlay), organized
+- **Color palette:** Browns, golds, warm wood tones
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260124_explorer_flatlay.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the items are arranged in a grid or organized pattern (knolling).
+
+### Suggestion: Double Exposure Stag
+- **Prompt:** "A artistic double exposure image blending the silhouette of a majestic stag with a foggy pine forest landscape. The stag's body is filled with the forest scene: tall pine trees, mist, and a flock of birds flying into the pale sky. The background is a clean, solid off-white to isolate the shape. Minimalist, moody, ethereal. High contrast between the dark trees and the light mist. Vector art inspiration but with photographic textures."
+- **Negative prompt:** "color, messy background, realistic fur, low contrast"
+- **Tags:** double exposure, abstract, nature, stag, minimalist
+- **Style / Reference:** Double Exposure, Digital Art
+- **Composition:** Centered subject, silhouette
+- **Color palette:** Black, white, grey, cool pine greens (desaturated)
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260124_double_exposure_stag.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Needs a clear silhouette for the effect to work.
+
 ---
 
 ## Attribution & legal
