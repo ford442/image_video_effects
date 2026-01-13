@@ -1,0 +1,40 @@
+{
+  "id": "chroma-kinetic",
+  "name": "Chroma Kinetic",
+  "url": "shaders/chroma-kinetic.wgsl",
+  "category": "image",
+  "description": "Mouse-driven chromatic aberration modulated by image luminance.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Distortion Str",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Effect Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "luma_inf",
+      "name": "Luma Influence",
+      "default": 1.0,
+      "min": -2.0,
+      "max": 2.0
+    },
+    {
+      "id": "rotation",
+      "name": "Direction Rot",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

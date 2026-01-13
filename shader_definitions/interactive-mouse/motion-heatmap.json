@@ -1,0 +1,40 @@
+{
+  "id": "motion-heatmap",
+  "name": "Motion Heatmap",
+  "url": "shaders/motion-heatmap.wgsl",
+  "category": "image",
+  "description": "Visualizes video motion and mouse interaction as a heatmap.",
+  "params": [
+    {
+      "id": "decay",
+      "name": "Heat Decay",
+      "default": 0.05,
+      "min": 0.001,
+      "max": 0.3
+    },
+    {
+      "id": "sensitivity",
+      "name": "Motion Sens.",
+      "default": 2.0,
+      "min": 0.0,
+      "max": 10.0
+    },
+    {
+      "id": "mouse_heat",
+      "name": "Mouse Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
