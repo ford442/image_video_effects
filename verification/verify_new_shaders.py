@@ -1,79 +1,58 @@
 import time
-import json
 from playwright.sync_api import sync_playwright
 
 def verify(page):
+    page.on("console", lambda msg: print(f"Browser console: {msg.text}"))
+    page.on("pageerror", lambda exc: print(f"Browser error: {exc}"))
+
     print("Navigating to app...")
     page.goto("http://localhost:3000")
 
-    # Check if we can fetch the JSON list
-    print("Checking JSON availability...")
-    response = page.request.get("http://localhost:3000/shader-lists/interactive-mouse.json")
-    if response.ok:
-        data = response.json()
-        ids = [x['id'] for x in data]
-        print(f"Server returned {len(ids)} shaders in interactive-mouse.json")
-        if "quantized-ripples" in ids:
-            print("PASS: quantized-ripples is in the JSON served by the server.")
-        else:
-            print("FAIL: quantized-ripples is NOT in the JSON served by the server.")
-    else:
-        print(f"FAIL: Could not fetch JSON list. Status: {response.status}")
-
-    # Wait for the select element
+    print("Waiting for Neon Fluid Warp option...")
     try:
-        page.wait_for_selector('.stack-controls select', state="attached", timeout=10000)
-        print("Stack controls found.")
-    except:
-        print("Stack controls not found. App might have crashed.")
-        page.screenshot(path="/home/jules/verification/crash_debug.png")
-        return
+        page.wait_for_selector('option[value="neon-fluid-warp"]', state="attached", timeout=10000)
+        print("Neon Fluid Warp option found in DOM.")
+    except Exception:
+        print("Neon Fluid Warp option NOT found within timeout.")
+        page.screenshot(path="verification/debug_not_found.png", full_page=True)
+        raise
 
-    # Wait a bit for async load
-    time.sleep(3)
+    selects = page.locator('.stack-controls select').all()
+    if len(selects) < 3:
+        print("Could not find stack selects.")
+        pass
 
-    # Change category to 'image'
-    page.select_option('#category-select', 'image')
-    time.sleep(1)
+    print(f"Found {len(selects)} selects in stack controls.")
+    slot1_select = selects[0]
 
-    # Inspect options in the first select
-    select = page.locator('.stack-controls select').first
-    options = select.locator('option').all_inner_texts()
-    values = select.locator('option').all_get_attributes('value')
+    print("Selecting Neon Fluid Warp...")
+    slot1_select.select_option('neon-fluid-warp')
 
-    print(f"Found {len(options)} options in dropdown.")
+    time.sleep(2)
 
-    new_shaders = [
-        "quantized-ripples",
-        "digital-mold",
-        "refractive-bubbles",
-        "chroma-shift-grid"
-    ]
-
-    missing = []
-    for shader in new_shaders:
-        if shader in values:
-            print(f"Found {shader}")
-        else:
-            missing.append(shader)
-
-    if missing:
-        print(f"Missing shaders: {missing}")
-        print("First 10 options available:", values[:10])
+    controls = page.locator('.sidebar')
+    if controls.count() > 0:
+        controls.screenshot(path="verification/neon_fluid_warp_selected.png")
+        print("Screenshot saved: neon_fluid_warp_selected.png")
     else:
-        print("ALL NEW SHADERS FOUND IN UI.")
+        page.screenshot(path="verification/neon_fluid_warp_selected_full.png", full_page=True)
+        print("Sidebar not found, took full page screenshot.")
 
-    page.screenshot(path="/home/jules/verification/debug_ui.png")
+    print("Selecting Magnetic Luma Sort...")
+    slot1_select.select_option('magnetic-luma-sort')
+    time.sleep(2)
+
+    if controls.count() > 0:
+        controls.screenshot(path="verification/magnetic_luma_sort_selected.png")
+        print("Screenshot saved: magnetic_luma_sort_selected.png")
+    else:
+        page.screenshot(path="verification/magnetic_luma_sort_selected_full.png", full_page=True)
 
 if __name__ == "__main__":
     with sync_playwright() as p:
         print("Launching browser...")
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-
-        # Listen to console
-        page.on("console", lambda msg: print(f"Browser Console: {msg.text}"))
-        page.on("pageerror", lambda exc: print(f"Browser Error: {exc}"))
 
         # Inject WebGPU Mock
         page.add_init_script("""
@@ -126,7 +105,8 @@ if __name__ == "__main__":
                     },
                     createBuffer: () => ({ destroy: () => {} }),
                     createTexture: () => ({ createView: () => {}, destroy: () => {} }),
-                    createSampler: () => {}
+                    createSampler: () => {},
+                    destroy: () => {}
                   })
                 })
               }

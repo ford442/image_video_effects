@@ -10,7 +10,7 @@ Generated geometric.json with 7 shaders.
 Generated image.json with 19 shaders.
 WARNING: Duplicate ID 'black-hole' in interactive-mouse/black-hole.json. (Already defined in distortion/black-hole.json) - SKIPPING
 WARNING: Missing WGSL file for 'pixel-repel' in interactive-mouse/pixel-repel.json. Expected at: /app/public/shaders/pixel-repel.wgsl - SKIPPING
-Generated interactive-mouse.json with 130 shaders.
+Generated interactive-mouse.json with 132 shaders.
 WARNING: Duplicate ID 'neon-pulse-edge' in lighting-effects/neon-pulse-edge.json. (Already defined in interactive-mouse/neon-pulse-edge.json) - SKIPPING
 Generated lighting-effects.json with 3 shaders.
 WARNING: Duplicate ID 'liquid-metal' in liquid-effects/liquid-metal.json. (Already defined in interactive-mouse/liquid-metal.json) - SKIPPING
@@ -37,9 +37,9 @@ Done.
 > webgpu-react-app@0.1.0 start
 > react-scripts start
 
-(node:3684) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:3507) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:3684) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:3507) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 Starting the development server...
 
 Compiled with warnings.
@@ -49,7 +49,7 @@ src/App.tsx
   Line 76:28:  'setVideoSourceUrl' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
 src/AutoDJ.ts
-  Line 150:27:  'currentShader' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  Line 159:27:  'currentShader' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
 Search for the keywords to learn more about each warning.
 To ignore, add // eslint-disable-next-line to the line before.
@@ -59,7 +59,7 @@ src/App.tsx
   Line 76:28:  'setVideoSourceUrl' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
 src/AutoDJ.ts
-  Line 150:27:  'currentShader' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  Line 159:27:  'currentShader' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
 webpack compiled with 1 warning
 No issues found.
