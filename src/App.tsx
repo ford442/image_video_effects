@@ -80,6 +80,10 @@ function MainApp() {
     // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
 
+    // --- State: Mouse Interaction ---
+    const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+    const [isMouseDown, setIsMouseDown] = useState(false);
+
     // --- Refs ---
     const rendererRef = useRef<Renderer | null>(null);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
@@ -325,8 +329,8 @@ function MainApp() {
                     <WebGPUCanvas
                         modes={modes} slotParams={slotParams} zoom={zoom} panX={panX} panY={panY}
                         rendererRef={rendererRef} farthestPoint={{x:0.5, y:0.5}}
-                        mousePosition={{x:-1, y:-1}} setMousePosition={()=>{}}
-                        isMouseDown={false} setIsMouseDown={()=>{}} onInit={onInitCanvas}
+                        mousePosition={mousePosition} setMousePosition={setMousePosition}
+                        isMouseDown={isMouseDown} setIsMouseDown={setIsMouseDown} onInit={onInitCanvas}
                         inputSource={inputSource} videoSourceUrl={videoSourceUrl}
                         isMuted={isMuted} setInputSource={setInputSource}
                         selectedVideo={selectedVideo}
