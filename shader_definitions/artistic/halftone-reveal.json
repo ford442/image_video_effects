@@ -1,0 +1,37 @@
+{
+  "id": "halftone-reveal",
+  "name": "Halftone Reveal",
+  "category": "image",
+  "url": "shaders/halftone-reveal.wgsl",
+  "description": "Renders the image as a coarse halftone pattern that resolves into a clear image near the mouse.",
+  "params": [
+    {
+      "name": "Dot Size",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3
+    },
+    {
+      "name": "Angle",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Reveal Size",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4
+    },
+    {
+      "name": "Magnify",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3
+    }
+  ]
+}

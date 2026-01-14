@@ -248,7 +248,15 @@ function MainApp() {
             }
             const vj = new Alucinate(
                 (url) => handleLoadImage(url),
-                (id) => setMode(0, id),
+                (ids) => {
+                    setModes(prev => {
+                        const next = [...prev];
+                        if (ids.length > 0) next[0] = ids[0];
+                        if (ids.length > 1) next[1] = ids[1];
+                        if (ids.length > 2) next[2] = ids[2];
+                        return next;
+                    });
+                },
                 () => { // This now correctly reads from state
                     const imgRecord = imageManifest.find(img => img.url === currentImageUrl) || null;
                     const shaderEntry = availableModes.find(m => m.id === modes[0]) || null;

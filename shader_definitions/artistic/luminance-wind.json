@@ -1,0 +1,37 @@
+{
+  "id": "luminance-wind",
+  "name": "Luminance Wind",
+  "category": "image",
+  "url": "shaders/luminance-wind.wgsl",
+  "description": "Pixels are blown by a digital wind. Lighter pixels are lighter weight and travel further. Mouse controls wind direction.",
+  "params": [
+    {
+      "name": "Wind Speed",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Trail Decay",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "name": "Luma Threshold",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.1
+    },
+    {
+      "name": "Turbulence",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    }
+  ]
+}
