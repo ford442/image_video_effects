@@ -1,0 +1,13 @@
+{
+    "id": "pixel-stretch-interactive",
+    "name": "Pixel Stretch",
+    "category": "image",
+    "description": "Stretches pixels from the mouse position to the screen edge, creating a spatial slit-scan effect.",
+    "url": "shaders/pixel-stretch-interactive.wgsl",
+    "params": [
+        { "name": "Direction Mode", "id": "mode", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0 },
+        { "name": "Jitter", "id": "jitter", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0 },
+        { "name": "RGB Shift", "id": "rgb_shift", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0 },
+        { "name": "Unused", "id": "unused", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0 }
+    ]
+}
