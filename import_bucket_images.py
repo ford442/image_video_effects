@@ -3,6 +3,9 @@ import os
 from google.cloud import storage
 
 # --- CONFIGURATION ---
+# Replace with the output from 'gcloud config get-value project'
+PROJECT_ID = 'sanguine-medley-204807'
+
 # Replace with your actual bucket name
 BUCKET_NAME = 'my-sd35-space-images-2025'
 
@@ -17,7 +20,8 @@ MANIFEST_PATH = 'public/image_manifest.json'
 def list_blobs(bucket_name, prefix):
     """Lists all the blobs in the bucket that begin with the prefix."""
     try:
-        storage_client = storage.Client()
+        # Explicitly pass the project ID to fix the environment error
+        storage_client = storage.Client(project=PROJECT_ID)
         blobs = storage_client.list_blobs(bucket_name, prefix=prefix)
         return blobs
     except Exception as e:
@@ -37,45 +41,44 @@ def update_manifest():
         print(f"{MANIFEST_PATH} not found, creating new.")
         data = {"images": []}
 
-    # Create a set of existing URLs for fast lookup
-    existing_urls = {img['url'] for img in data.get('images', [])}
+    # Ensure "images" key exists
+    if "images" not in data:
+        data["images"] = []
 
-    print(f"Scanning bucket: {BUCKET_NAME} prefix: '{PREFIX}'...")
+    # Create a set of existing URLs for fast lookup
+    existing_urls = {img['url'] for img in data['images']}
+
+    print(f"Scanning bucket: {BUCKET_NAME} (Project: {PROJECT_ID}) prefix: '{PREFIX}'...")
     blobs = list_blobs(BUCKET_NAME, PREFIX)
 
     new_count = 0
 
-    for blob in blobs:
-        # Filter for image extensions
-        if blob.name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
+    # Check if blobs is iterable (it might be an empty list if error occurred)
+    if blobs:
+        for blob in blobs:
+            # Filter for image extensions
+            if blob.name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
 
-            # Construct the identifier used in the app.
-            # Based on your current manifest, it looks like you use "bucket_name/filename"
-            # or simply the path. Adjust this line if you need a specific URL format.
-            # For now, I'm appending the bucket name to match your example format:
-            # "my-sd35-space-images-2025/filename.jpg"
+                # Construct the identifier used in the app.
+                url_entry = f"{BUCKET_NAME}/{blob.name}"
 
-            # If the blob name already contains the folder structure, use it directly.
-            url_entry = f"{BUCKET_NAME}/{blob.name}"
+                if url_entry in existing_urls:
+                    continue
 
-            if url_entry in existing_urls:
-                continue
+                # Generate simple tags from the filename
+                filename = os.path.basename(blob.name)
+                name_without_ext = os.path.splitext(filename)[0]
+                tags = name_without_ext.replace('_', ' ').replace('-', ' ').split()
 
-            # Generate simple tags from the filename
-            # e.g., "cyberpunk_street.jpg" -> ["cyberpunk", "street"]
-            filename = os.path.basename(blob.name)
-            name_without_ext = os.path.splitext(filename)[0]
-            tags = name_without_ext.replace('_', ' ').replace('-', ' ').split()
+                new_image = {
+                    "url": url_entry,
+                    "tags": tags
+                }
 
-            new_image = {
-                "url": url_entry,
-                "tags": tags
-            }
-
-            data['images'].append(new_image)
-            existing_urls.add(url_entry)
-            new_count += 1
-            print(f"Queueing: {filename}")
+                data['images'].append(new_image)
+                existing_urls.add(url_entry)
+                new_count += 1
+                print(f"Queueing: {filename}")
 
     # 2. Save the updated manifest
     if new_count > 0:
@@ -86,4 +89,7 @@ def update_manifest():
         print("\nNo new images found.")
 
 if __name__ == "__main__":
-    update_manifest()
+    if PROJECT_ID == 'your-google-cloud-project-id':
+        print("ERROR: Please update the PROJECT_ID variable in the script with your actual Google Cloud Project ID.")
+    else:
+        update_manifest()
