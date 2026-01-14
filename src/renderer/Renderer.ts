@@ -294,7 +294,8 @@ export class Renderer {
                 'retro-glitch',
                 'simulation',
                 'geometric',
-                'image'
+                'image',
+                'generative'
             ];
             
             const allShaders: ShaderEntry[] = [];
@@ -663,8 +664,10 @@ export class Renderer {
     public render(modes: RenderMode[], slotParams: SlotParams[], videoElement: HTMLVideoElement, zoom: number, panX: number, panY: number, farthestPoint: {
         x: number,
         y: number
-    }, mousePosition: { x: number, y: number }, isMouseDown: boolean): void {
-        if (this.isDestroyed || !this.device || !this.imageTexture || !this.filteringSampler || !slotParams || slotParams.length === 0) return;
+    }, mousePosition: { x: number, y: number }, isMouseDown: boolean, generativeShaderId?: string): void {
+        if (this.isDestroyed || !this.device || !this.filteringSampler || !slotParams || slotParams.length === 0) return;
+        if (this.inputSource === 'image' && !this.imageTexture) return;
+
         const currentTime = performance.now() / 1000.0;
 
         // Handle Video Input (Video or Webcam)
@@ -687,8 +690,53 @@ export class Renderer {
 
         // Determine input source texture
         let currentInputTexture = this.imageTexture;
-        // Accept 'video' or 'webcam' as valid sources for video texture
-        if ((this.inputSource === 'video' || this.inputSource === 'webcam') && this.videoTexture) {
+
+        // Handle Generative Input
+        if (this.inputSource === 'generative' && generativeShaderId) {
+            if (!this.pipelines.has(generativeShaderId)) {
+                this.loadComputeShader(generativeShaderId);
+                // Fallback to something safe to prevent crash if pipeline not ready
+                currentInputTexture = this.imageTexture || this.pingPongTexture2;
+            } else {
+                 const genPipeline = this.pipelines.get(generativeShaderId) as GPUComputePipeline;
+
+                 // Update Uniforms for Generative Shader (Similar to loop logic)
+                 const genUniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
+                 genUniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
+
+                 // Mouse for Generative
+                 let genTargetX = mousePosition.x >= 0 ? mousePosition.x : 0.5;
+                 let genTargetY = mousePosition.y >= 0 ? mousePosition.y : 0.5;
+                 let genZoomW = isMouseDown ? 1.0 : 0.0;
+                 genUniformArray.set([genTargetX, genTargetY, genZoomW, 0.0], 4);
+
+                 // Dummy params/ripples
+                 const rippleDataArr = new Float32Array(this.MAX_RIPPLES * 4);
+                 // (We could pass ripples if we wanted, but let's keep it simple or copy from class state)
+                 // Note: this.ripplePoints logic is below, maybe we should move it up?
+                 // For now, leave ripples empty for generative source or access them if needed.
+
+                 this.device.queue.writeBuffer(this.computeUniformBuffer, 0, genUniformArray);
+
+                 // Use pingPongTexture2 as output for Generative Pass
+                 // Input binding (1) is ignored by generative shaders but must be valid.
+                 const dummyInput = this.imageTexture || this.videoTexture || this.pingPongTexture2;
+
+                 if (dummyInput && this.pingPongTexture2) {
+                     const genBindGroup = this.getComputeBindGroup(genPipeline, dummyInput.createView(), this.pingPongTexture2.createView());
+
+                     const genPassEncoder = this.device.createCommandEncoder();
+                     const genComputePass = genPassEncoder.beginComputePass();
+                     genComputePass.setPipeline(genPipeline);
+                     genComputePass.setBindGroup(0, genBindGroup);
+                     genComputePass.dispatchWorkgroups(Math.ceil(this.canvas.width / 8), Math.ceil(this.canvas.height / 8), 1);
+                     genComputePass.end();
+                     this.device.queue.submit([genPassEncoder.finish()]);
+
+                     currentInputTexture = this.pingPongTexture2;
+                 }
+            }
+        } else if ((this.inputSource === 'video' || this.inputSource === 'webcam') && this.videoTexture) {
             currentInputTexture = this.videoTexture;
         }
 

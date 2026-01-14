@@ -20,6 +20,7 @@ interface WebGPUCanvasProps {
     videoSourceUrl?: string; // NEW: Used for "Uploaded" videos (Blob URL)
     isMuted: boolean;
     setInputSource?: (source: InputSource) => void; // Added for error handling
+    activeGenerativeShader?: string;
     apiBaseUrl: string;
 }
 
@@ -28,7 +29,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
-    setInputSource, apiBaseUrl
+    setInputSource, activeGenerativeShader, apiBaseUrl
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -165,14 +166,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     modes,
                     slotParams,
                     videoRef.current,
-                    zoom, panX, panY, farthestPoint, mousePosition, isMouseDown
+                    zoom, panX, panY, farthestPoint, mousePosition, isMouseDown,
+                    activeGenerativeShader
                 );
             }
             animationFrameId.current = requestAnimationFrame(animate);
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef]);
+    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader]);
 
     // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {

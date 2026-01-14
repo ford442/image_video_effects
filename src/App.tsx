@@ -73,6 +73,7 @@ function MainApp() {
     const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>();
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
     const [inputSource, setInputSource] = useState<InputSource>('image');
+    const [activeGenerativeShader, setActiveGenerativeShader] = useState<string>('gen-orb');
     const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined);
     const [isMuted, setIsMuted] = useState(true);
     const [selectedVideo, setSelectedVideo] = useState<string>("");
@@ -320,6 +321,7 @@ function MainApp() {
                         onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
                         inputSource={inputSource} setInputSource={setInputSource} videoList={[]}
                         selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo} isMuted={isMuted} setIsMuted={setIsMuted}
+                        activeGenerativeShader={activeGenerativeShader} setActiveGenerativeShader={setActiveGenerativeShader}
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                         onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
@@ -333,6 +335,7 @@ function MainApp() {
                         isMouseDown={isMouseDown} setIsMouseDown={setIsMouseDown} onInit={onInitCanvas}
                         inputSource={inputSource} videoSourceUrl={videoSourceUrl}
                         isMuted={isMuted} setInputSource={setInputSource}
+                        activeGenerativeShader={activeGenerativeShader}
                         selectedVideo={selectedVideo}
                         apiBaseUrl={API_BASE_URL}
                     />

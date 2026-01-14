@@ -34,6 +34,9 @@ interface ControlsProps {
     setIsMuted: (muted: boolean) => void;
     onUploadImageTrigger: () => void;
     onUploadVideoTrigger: () => void;
+    // Generative Props
+    activeGenerativeShader?: string;
+    setActiveGenerativeShader?: (id: string) => void;
     // AI VJ Props
     isAiVjMode: boolean;
     onToggleAiVj: () => void;
@@ -58,6 +61,7 @@ const Controls: React.FC<ControlsProps> = ({
     isMuted, setIsMuted,
     onUploadImageTrigger,
     onUploadVideoTrigger,
+    activeGenerativeShader, setActiveGenerativeShader,
     isAiVjMode,
     onToggleAiVj,
     aiVjStatus
@@ -110,6 +114,14 @@ const Controls: React.FC<ControlsProps> = ({
                             checked={inputSource === 'webcam'}
                             onChange={() => setInputSource('webcam')}
                         /> Webcam
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            value="generative"
+                            checked={inputSource === 'generative'}
+                            onChange={() => setInputSource('generative')}
+                        /> Generative
                     </label>
                 </div>
             </div>
@@ -203,6 +215,20 @@ const Controls: React.FC<ControlsProps> = ({
                      <label style={{display: 'flex', alignItems: 'center'}}>
                         <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{marginRight: '5px'}}/> Mute Audio
                      </label>
+                </div>
+            )}
+
+            {inputSource === 'generative' && activeGenerativeShader && setActiveGenerativeShader && (
+                <div className="control-group" style={{marginTop: '10px'}}>
+                     <div style={{marginBottom: '5px'}}>Select Generative Shader:</div>
+                     <select value={activeGenerativeShader} onChange={(e) => setActiveGenerativeShader(e.target.value)} style={{width: '100%', marginBottom: '8px'}}>
+                        {availableModes.filter(m => m.category === 'generative').map(g => (
+                             <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                     </select>
+                     <div style={{fontSize: '11px', color: '#888', fontStyle: 'italic', padding: '5px 0'}}>
+                         Move mouse to interact. Click/Drag for more effects.
+                     </div>
                 </div>
             )}
 
