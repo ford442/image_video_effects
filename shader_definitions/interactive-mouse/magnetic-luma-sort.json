@@ -1,0 +1,40 @@
+{
+  "id": "magnetic-luma-sort",
+  "name": "Magnetic Luma Sort",
+  "url": "shaders/magnetic-luma-sort.wgsl",
+  "category": "image",
+  "description": "Pixels are magnetically pulled by the cursor based on brightness, creating trails.",
+  "params": [
+    {
+      "id": "pullStrength",
+      "name": "Pull Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "threshold",
+      "name": "Luma Threshold",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "trailDecay",
+      "name": "Trail Decay",
+      "default": 0.9,
+      "min": 0.5,
+      "max": 0.99
+    },
+    {
+      "id": "mode",
+      "name": "Attract/Repel",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
