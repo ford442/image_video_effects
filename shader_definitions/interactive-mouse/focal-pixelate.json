@@ -1,0 +1,38 @@
+{
+  "id": "focal-pixelate",
+  "name": "Focal Pixelate",
+  "url": "shaders/focal-pixelate.wgsl",
+  "category": "interactive-mouse",
+  "features": ["mouse-driven"],
+  "description": "Applies pixelation that varies based on distance from the mouse cursor, creating a focal point effect.",
+  "params": [
+    {
+      "id": "pixel_strength",
+      "name": "Pixel Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "focus_radius",
+      "name": "Focus Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "focus_falloff",
+      "name": "Focus Softness",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "invert",
+      "name": "Invert Focus",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
