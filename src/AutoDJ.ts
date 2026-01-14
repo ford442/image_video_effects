@@ -1,4 +1,3 @@
-
 import { pipeline, env } from '@xenova/transformers';
 import * as webllm from "@mlc-ai/web-llm";
 
@@ -43,16 +42,18 @@ export class Alucinate {
   
   // Callbacks
   private onNextImage: (url: string) => void;
-  private onNextShader: (id: string) => void;
+  // UPDATED: Now accepts an array of strings for the stack
+  private onUpdateStack: (ids: string[]) => void;
   public getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null };
 
   constructor(
     onNextImage: (url: string) => void,
-    onNextShader: (id: string) => void,
+    // UPDATED Constructor signature
+    onUpdateStack: (ids: string[]) => void,
     getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null }
   ) {
     this.onNextImage = onNextImage;
-    this.onNextShader = onNextShader;
+    this.onUpdateStack = onUpdateStack;
     this.getCurrentState = getCurrentState;
   }
 
@@ -74,9 +75,14 @@ export class Alucinate {
         this.imageManifest = imageManifest;
 
         this.setStatus('loading-models', 'Fetching suggestions...');
-        const suggestionsResponse = await fetch(imageSuggestionsUrl);
-        const suggestionsMarkdown = await suggestionsResponse.text();
-        this.imageThemes = this.parseImageSuggestions(suggestionsMarkdown);
+        try {
+            const suggestionsResponse = await fetch(imageSuggestionsUrl);
+            const suggestionsMarkdown = await suggestionsResponse.text();
+            this.imageThemes = this.parseImageSuggestions(suggestionsMarkdown);
+        } catch (e) {
+            console.warn("Could not load suggestions, using defaults.");
+            this.imageThemes = ["abstract digital art", "neon geometric shapes", "fluid dynamics"];
+        }
 
         this.shaderManifest = shaderDefs
             .filter(def => def.tags && def.tags.length > 0)
@@ -125,7 +131,7 @@ export class Alucinate {
       while ((match = promptRegex.exec(markdown)) !== null) {
           suggestions.push(match[1]);
       }
-      return suggestions;
+      return suggestions.length > 0 ? suggestions : ["vibrant colorful patterns"];
   }
 
   public start(): boolean {
@@ -156,11 +162,11 @@ export class Alucinate {
   private async runCycle() {
     if (!this.isRunning || this.status !== 'ready') return;
 
-    const { currentImage, currentShader } = this.getCurrentState();
+    const { currentImage } = this.getCurrentState();
     if (!currentImage || !currentImage.url) {
       console.warn('Alucinate: No current image. Kicking things off with a random one.');
       const firstImage = this.imageManifest[Math.floor(Math.random() * this.imageManifest.length)];
-      this.onNextImage(firstImage.url);
+      if (firstImage) this.onNextImage(firstImage.url);
       return; 
     }
 
@@ -169,35 +175,43 @@ export class Alucinate {
         const caption = await this.generateCaption(currentImage.url);
         if (!caption) {
             this.setStatus('error', 'Failed to generate image caption.');
-            this.onNextShader(this.shaderManifest[Math.floor(Math.random() * this.shaderManifest.length)].id);
+            // Fallback: Random single shader
+            const random = this.shaderManifest[Math.floor(Math.random() * this.shaderManifest.length)];
+            this.onUpdateStack([random.id, 'none', 'none']);
             return;
         }
         this.setStatus('generating', `Image caption: "${caption}"`);
 
-        const nextShaderId = await this.getShaderFromLLM(caption);
-        const nextShader = this.shaderManifest.find(s => s.id === nextShaderId);
-        if (nextShaderId && this.isRunning) {
-            this.setStatus('generating', `LLM selected shader: ${nextShader?.name || nextShaderId}`);
-            this.onNextShader(nextShaderId);
+        // NEW: Get a full stack instead of a single shader
+        const shaderStack = await this.getShaderStackFromLLM(caption);
+        
+        if (shaderStack && this.isRunning) {
+            const readableStack = shaderStack.map(id => {
+                const s = this.shaderManifest.find(m => m.id === id);
+                return s ? s.name : id;
+            }).join(' + ');
+            
+            this.setStatus('generating', `Mixing stack: ${readableStack}`);
+            this.onUpdateStack(shaderStack);
         } else if (this.isRunning) {
-            const randomShader = this.shaderManifest[Math.floor(Math.random() * this.shaderManifest.length)];
-            console.warn(`[Alucinate] LLM failed to select a shader. Picking random: ${randomShader.name}`);
-            this.onNextShader(randomShader.id);
+            // Fallback
+            const random = this.shaderManifest[Math.floor(Math.random() * this.shaderManifest.length)];
+            this.onUpdateStack([random.id, 'none', 'none']);
         }
         
         await new Promise(resolve => setTimeout(resolve, 2000));
         if (!this.isRunning) return;
 
         this.setStatus('generating', 'Dreaming up the next scene...');
-        const nextTheme = await this.getNextImageThemeFromLLM(caption, nextShader?.name || 'a visual effect');
-        if (!nextTheme) {
-            this.setStatus('error', 'LLM failed to suggest a new theme.');
-            return;
-        }
+        // Use the first shader in the stack for context
+        const primaryShaderName = this.shaderManifest.find(s => s.id === (shaderStack ? shaderStack[0] : ''))?.name || 'effect';
+        
+        const nextTheme = await this.getNextImageThemeFromLLM(caption, primaryShaderName);
+        if (!nextTheme) return; // Keep current image if theme fails
+        
         this.setStatus('generating', `Next theme: "${nextTheme}"`);
 
         const nextImage = this.findBestMatchingImage(nextTheme, currentImage.url);
-        console.log(`[Alucinate] Best match for next image: ${nextImage.url}`);
         
         setTimeout(() => {
             if (this.isRunning) {
@@ -208,7 +222,7 @@ export class Alucinate {
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        this.setStatus('error', `An error occurred during the cycle: ${errorMessage}`);
+        this.setStatus('error', `Cycle error: ${errorMessage}`);
         console.error('[Alucinate] runCycle error:', error);
         this.stop();
     }
@@ -225,25 +239,76 @@ export class Alucinate {
     }
   }
   
-  private async getShaderFromLLM(caption: string): Promise<string | null> {
+  // NEW: Optimized prompt for multi-slot control
+  private async getShaderStackFromLLM(caption: string): Promise<string[] | null> {
     if (!this.llm) return null;
-    const shaderOptions = this.shaderManifest.map(s => `ID: "${s.id}", Name: "${s.name}", Tags: [${s.tags.join(', ')}]`).join('\n');
-    const prompt = `You are an expert AI VJ selecting a visual effect ("shader") to match an image. The image is described as: "${caption}". Based on that description, pick the best shader from the following list. Respond with ONLY the shader ID of your choice, and nothing else.
----
- Shader Options ---
-${shaderOptions}
----
-Your selection (ID only):`;
+    
+    // Provide a simplified list to save context window, focusing on names and tags
+    const shaderOptions = this.shaderManifest
+        .map(s => `"${s.id}" (${s.tags.slice(0,2).join(',')})`)
+        .slice(0, 50) // Limit to 50 options to prevent overflow
+        .join(', ');
+
+    const prompt = `
+You are an expert VJ creating a 3-layer visual effect stack for an image described as: "${caption}".
+Your goal is to choose 3 shader IDs (or "none") to combine into a coherent visual style.
+
+Roles:
+1. Base: The primary effect.
+2. Modifier: Distorts or changes the base.
+3. Overlay: Adds texture, glitch, or lighting.
+
+Available IDs: ${shaderOptions}
+
+Respond with a JSON array of 3 strings. Use "none" for empty slots.
+Example: ["neon-pulse", "liquid-warp", "none"]
+Your Selection:
+`;
 
     try {
-        const reply = await this.llm.chat.completions.create({ messages: [{ role: "user", content: prompt }]});
-        const choice = reply.choices[0].message.content;
-        if (!choice) {
-            return null;
+        const reply = await this.llm.chat.completions.create({ 
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.7 // slightly creative but deterministic format
+        });
+        
+        const content = reply.choices[0].message.content || "";
+        console.log("[Alucinate] LLM Raw Reply:", content);
+
+        // Robust parsing: Try to find a JSON array in the text
+        const jsonMatch = content.match(/\[.*?\]/s);
+        if (jsonMatch) {
+            try {
+                // Sanitize quotes to ensure valid JSON
+                const jsonStr = jsonMatch[0].replace(/'/g, '"');
+                const parsed = JSON.parse(jsonStr);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    // Normalize to 3 slots, validating IDs
+                    const result = ['none', 'none', 'none'];
+                    for(let i=0; i<3; i++) {
+                        if (parsed[i] && (parsed[i] === 'none' || this.shaderManifest.some(s => s.id === parsed[i]))) {
+                            result[i] = parsed[i];
+                        }
+                    }
+                    return result;
+                }
+            } catch (e) {
+                console.warn("[Alucinate] Failed to parse LLM array, falling back to regex.");
+            }
         }
-        const match = choice.match(/"([^"]+)"/);
-        let selectedId = match ? match[1] : choice.trim().split(/\s+/)[0];
-        return this.shaderManifest.some(s => s.id === selectedId) ? selectedId : null;
+
+        // Fallback: Grab the first 3 valid IDs found in the text
+        const allIds = this.shaderManifest.map(s => s.id);
+        const foundIds = content.split(/[\s,"]+/).filter(word => allIds.includes(word));
+        
+        if (foundIds.length > 0) {
+            return [
+                foundIds[0] || 'none',
+                foundIds[1] || 'none',
+                foundIds[2] || 'none'
+            ];
+        }
+
+        return null;
     } catch (error) {
         console.error('LLM shader selection failed:', error);
         return null;
@@ -252,12 +317,12 @@ Your selection (ID only):`;
 
   private async getNextImageThemeFromLLM(currentCaption: string, currentShader: string): Promise<string | null> {
       if (!this.llm) return null;
-      const themeExamples = this.imageThemes.slice(0, 5).join('\n - ');
-      const prompt = `You are an AI VJ creating a visual journey. The last scene was "${currentCaption}" with a "${currentShader}" effect.
-What should the next scene be? Be creative and describe a compelling, new visual. Here are some examples for inspiration:
- - ${themeExamples}
-
-Describe the next scene in a single, descriptive sentence.`;
+      const themeExamples = this.imageThemes.slice(0, 3).join(', ');
+      const prompt = `
+Context: Last scene was "${currentCaption}" with "${currentShader}" effect.
+Task: Describe the next scene in one short sentence. Be creative.
+Inspiration: ${themeExamples}.
+Next Scene:`;
 
       try {
           const reply = await this.llm.chat.completions.create({ messages: [{ role: "user", content: prompt}]});
@@ -265,7 +330,7 @@ Describe the next scene in a single, descriptive sentence.`;
           return choice ? choice.trim() : null;
       } catch (error) {
           console.error('LLM theme suggestion failed:', error);
-          return "a futuristic city at night"; // Fallback
+          return "abstract geometric neon"; 
       }
   }
 
@@ -274,29 +339,20 @@ Describe the next scene in a single, descriptive sentence.`;
       let bestScore = -1;
       let bestImage: ImageRecord | null = null;
 
-      // Filter out current image to ensure rotation, UNLESS it's the only one.
       let candidates = this.imageManifest.filter(image => image.url !== currentUrl);
-
-      if (candidates.length === 0) {
-          // If only one image exists, we must reuse it (or fail gracefully)
-          if (this.imageManifest.length > 0) {
-               candidates = this.imageManifest;
-          } else {
-              // Should not happen due to App.tsx fallback, but safety first
-              return { url: currentUrl, tags: [], description: 'Fallback' };
-          }
-      }
+      if (candidates.length === 0 && this.imageManifest.length > 0) candidates = this.imageManifest;
+      if (candidates.length === 0) return { url: currentUrl, tags: [] };
 
       for (const image of candidates) {
           let score = 0;
           const imageTags = new Set(image.tags.map(t => t.toLowerCase()));
           for (const word of themeWords) {
-              if (imageTags.has(word)) {
-                  score++;
-              }
+              if (imageTags.has(word)) score += 2;
           }
-          if (score > 0) {
-             score += image.tags.length / 10;
+          // Bonus for description matching
+          if (image.description && themeWords.size > 0) {
+              const descWords = image.description.toLowerCase().split(/\s+/);
+              for(const word of descWords) if(themeWords.has(word)) score += 1;
           }
 
           if (score > bestScore) {
@@ -305,10 +361,6 @@ Describe the next scene in a single, descriptive sentence.`;
           }
       }
 
-      if (bestImage) {
-          return bestImage;
-      }
-      // Return random if no match found
-      return candidates[Math.floor(Math.random() * candidates.length)];
+      return bestImage || candidates[Math.floor(Math.random() * candidates.length)];
   }
 }
