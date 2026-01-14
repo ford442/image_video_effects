@@ -183,6 +183,66 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **License / Attribution:** CC0
 - **Notes:** Needs a clear silhouette for the effect to work.
 
+### Suggestion: Sumi-e Ink Mountains
+- **Prompt:** "A traditional Japanese Sumi-e ink wash painting of towering, jagged mountain peaks shrouded in mist. Stark black brushstrokes define the cliffs against a textured white rice paper background. A solitary, gnarled pine tree clings to a precipice in the foreground. Minimalist composition, emphasizing negative space (ma). High contrast, fluid ink bleeding effects, visible paper grain."
+- **Negative prompt:** "color, photograph, realistic, 3D, modern, vibrant"
+- **Tags:** sumi-e, ink wash, japanese, landscape, minimalist
+- **Style / Reference:** Traditional Ink Painting, Sesshu Toyo
+- **Composition:** Vertical, lots of negative space
+- **Color palette:** Black, Grayscale, White
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20260210_sumi_e_mountains.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the texture of the paper and the fluidity of the ink.
+
+### Suggestion: Knitted Wool Village
+- **Prompt:** "A cozy, whimsical scene of a miniature village entirely made of knitted wool and yarn. Small cottages have fuzzy roof thatching, trees are pom-poms, and the ground is a patchwork of green crochet patterns. Soft, warm studio lighting highlights the fuzzy texture and stray fibers. Macro photography style, shallow depth of field, tilt-shift effect to enhance the miniature look."
+- **Negative prompt:** "plastic, realistic materials, metal, sharp edges, smooth"
+- **Tags:** knitted, wool, craft, miniature, cute
+- **Style / Reference:** Stop Motion, Handicraft
+- **Composition:** High angle, tilt-shift
+- **Color palette:** Warm pastels, soft creams, cozy greens
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260210_knitted_village.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the stray fibers and the tactile nature of the wool.
+
+### Suggestion: Atomic Age Diner
+- **Prompt:** "A retro-futuristic 1950s 'Googie' architecture diner on the moon. Curved chrome fins, large glass bubbles, and starburst motifs. Inside, a robot waitress on a unicycle serves milkshakes to astronauts in bubble helmets. Outside the window, the Earth rises over the cratered lunar landscape. Bright, cheerful optimistic lighting. Technicolor aesthetic, Norman Rockwell meets The Jetsons."
+- **Negative prompt:** "gritty, dark, dystopian, cyberpunk, rusty"
+- **Tags:** retro-futurism, 1950s, sci-fi, space, diner
+- **Style / Reference:** Mid-Century Modern, Googie, Technicolor
+- **Composition:** Wide shot showing interior and view outside
+- **Color palette:** Teal, chrome, cherry red, bright white
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260210_atomic_diner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the optimism of the space age.
+
+### Suggestion: Brutalist Fog Monument
+- **Prompt:** "A massive, imposing Brutalist concrete monument rising from a dark, foggy plain. Sharp geometric angles, raw concrete textures with water stains, and repeating modular patterns. The structure is illuminated by a single, harsh searchlight cutting through the thick fog. Atmosphere of oppression and mystery. Cinematic, dystopian, Villeneuve-style sci-fi."
+- **Negative prompt:** "ornate, colorful, happy, nature, wood"
+- **Tags:** brutalism, concrete, fog, dystopian, architecture
+- **Style / Reference:** Brutalist Architecture, Dystopian Sci-Fi
+- **Composition:** Low angle, looking up to emphasize scale
+- **Color palette:** Monochromatic greys, cold blue fog, harsh white light
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20260210_brutalist_fog.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the scale and the texture of the raw concrete.
+
+### Suggestion: Microchip Metropolis
+- **Prompt:** "A macro photography shot of a computer motherboard, visualized as a futuristic glowing city at night. Capacitors look like skyscrapers, copper traces are highways of light, and the CPU is a central citadel. Neon green and blue energy pulses through the circuits. Extremely shallow depth of field, bokeh from distant LEDs. High-tech, intricate detail, cyberpunk aesthetic on a micro scale."
+- **Negative prompt:** "organic, dirt, rust, full size city"
+- **Tags:** macro, technology, circuit, cyberpunk, abstract
+- **Style / Reference:** Macro Photography, Tech Noir
+- **Composition:** Isometric or close-up macro
+- **Color palette:** Electric blue, neon green, gold, black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260210_microchip_city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Blur the line between hardware and architecture.
+
 ---
 
 ## Attribution & legal
