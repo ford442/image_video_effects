@@ -68,14 +68,18 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Handle Canvas Resizing
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas || !rendererRef.current) return;
+        if (!canvas) return;
 
         const observer = new ResizeObserver(entries => {
             for (const entry of entries) {
                 const { width, height } = entry.contentRect;
-                 if (canvas.width !== Math.round(width) || canvas.height !== Math.round(height)) {
-                    canvas.width = Math.round(width);
-                    canvas.height = Math.round(height);
+                const dpr = window.devicePixelRatio || 1;
+                const newWidth = Math.floor(width * dpr);
+                const newHeight = Math.floor(height * dpr);
+
+                 if (canvas.width !== newWidth || canvas.height !== newHeight) {
+                    canvas.width = newWidth;
+                    canvas.height = newHeight;
                     rendererRef.current?.handleResize(canvas.width, canvas.height);
                 }
             }
@@ -175,8 +179,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / canvas.width;
-        const y = (event.clientY - rect.top) / canvas.height;
+        const x = (event.clientX - rect.left) / rect.width;
+        const y = (event.clientY - rect.top) / rect.height;
         setMousePosition({ x, y });
     };
 
@@ -189,8 +193,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         if (!rendererRef.current) return;
         const canvas = canvasRef.current!;
         const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / canvas.width;
-        const y = (event.clientY - rect.top) / canvas.height;
+        const x = (event.clientX - rect.left) / rect.width;
+        const y = (event.clientY - rect.top) / rect.height;
         rendererRef.current.addRipplePoint(x, y);
     };
 
@@ -207,7 +211,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             if (!canvasRef.current) return;
             const canvas = canvasRef.current;
             const rect = canvas.getBoundingClientRect();
-            dragStartPos.current = { x: (event.clientX - rect.left) / canvas.width, y: (event.clientY - rect.top) / canvas.height };
+            dragStartPos.current = { x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height };
             dragStartTime.current = performance.now();
         }
     };
@@ -218,8 +222,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         if (plasmaMode && dragStartPos.current && rendererRef.current) {
             const canvas = canvasRef.current!;
             const rect = canvas.getBoundingClientRect();
-            const currentX = (event.clientX - rect.left) / canvas.width;
-            const currentY = (event.clientY - rect.top) / canvas.height;
+            const currentX = (event.clientX - rect.left) / rect.width;
+            const currentY = (event.clientY - rect.top) / rect.height;
             const dt = (performance.now() - dragStartTime.current) / 1000.0;
             const dx = currentX - dragStartPos.current.x;
             const dy = currentY - dragStartPos.current.y;
