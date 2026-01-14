@@ -1,0 +1,41 @@
+{
+  "id": "spectral-smear",
+  "name": "Spectral Smear",
+  "url": "shaders/spectral-smear.wgsl",
+  "category": "image",
+  "description": "Leaves a colorful spectral trail that follows the mouse.",
+  "params": [
+    {
+      "id": "decay",
+      "name": "Trail Decay",
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Brush Radius",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 0.5
+    },
+    {
+      "id": "speed",
+      "name": "Color Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0
+    },
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "history"
+  ]
+}
