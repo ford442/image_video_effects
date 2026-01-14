@@ -1,0 +1,14 @@
+{
+    "id": "luma-echo-warp",
+    "label": "Luma Echo Warp",
+    "category": "interactive-mouse",
+    "url": "shaders/luma-echo-warp.wgsl",
+    "description": "Distorts the image based on pixel brightness and mouse position, creating a warping echo effect.",
+    "features": ["mouse-driven"],
+    "params": {
+        "zoomParam1": { "label": "Warp Strength", "min": 0.0, "max": 1.0, "default": 0.5 },
+        "zoomParam2": { "label": "Echo Decay", "min": 0.0, "max": 1.0, "default": 0.8 },
+        "zoomParam3": { "label": "Radius", "min": 0.0, "max": 1.0, "default": 0.5 },
+        "zoomParam4": { "label": "Luma Weight", "min": 0.0, "max": 1.0, "default": 0.5 }
+    }
+}
