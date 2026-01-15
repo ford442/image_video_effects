@@ -1,0 +1,40 @@
+{
+  "id": "chroma-depth-tunnel",
+  "name": "Chroma Depth Tunnel",
+  "category": "image",
+  "url": "shaders/chroma-depth-tunnel.wgsl",
+  "description": "A concentric tunnel effect centered on the mouse, with chromatic aberration.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Tunnel Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chromaSep",
+      "name": "Chroma Sep",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "centerFade",
+      "name": "Center Fog",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
