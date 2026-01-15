@@ -1,0 +1,14 @@
+{
+    "id": "spectral-slit-scan",
+    "label": "Spectral Slit Scan",
+    "category": "image",
+    "url": "shaders/spectral-slit-scan.wgsl",
+    "description": "RGB trails that decay at different rates, distorted by sine waves and mouse gravity.",
+    "features": ["mouse-driven"],
+    "params": [
+        { "id": "split", "name": "RGB Split", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0 },
+        { "id": "trail", "name": "Trail Length", "type": "float", "default": 0.8, "min": 0.0, "max": 1.0 },
+        { "id": "freq", "name": "Wave Freq", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0 },
+        { "id": "amp", "name": "Wave Amp", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0 }
+    ]
+}
