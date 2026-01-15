@@ -4,6 +4,17 @@
 
 This file stores curated image suggestions for text-to-image generation and provides guidance on how to write high-quality prompts.
 
+## Table of Contents
+
+- [Purpose](#purpose)
+- [How to store suggestions](#how-to-store-suggestions)
+- [Suggestion template](#suggestion-template-copy--paste)
+- [How to write useful prompts (tips)](#how-to-write-useful-prompts-tips-)
+- [Prompt examples](#prompt-examples)
+- [Attribution & legal](#attribution--legal)
+- [Workflow suggestions](#workflow-suggestions)
+- [Agent suggestions](#agent-suggestions)
+
 ---
 
 ## How to store suggestions
@@ -42,6 +53,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Use negative prompts to avoid unwanted artifacts.** (e.g., "lowres, watermark, text, missing fingers").
 - **Include composition guidance.** (e.g., "rule of thirds, subject centered, foreground interest").
 - **Add color direction.** (e.g., "muted pastels", "high contrast teal and orange").
+- **Style Blending.** Combine two distinct styles for unique results (e.g., "Art Nouveau architecture in a Cyberpunk setting").
 - **Iterate & record variants.** Save alternate prompts and parameter changes (seed, steps, scale) so results can be reproduced.
 
 ---
@@ -303,6 +315,66 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **License / Attribution:** CC0
 - **Notes:** The form should be ambiguous but recognizable.
 
+### Suggestion: Crystal Knowledge Cavern
+- **Prompt:** "A mystical underground library carved into a geode. Instead of books, shelves hold glowing, color-coded crystal shards. A scholar in robes inspects a shard, illuminating their face. The walls sparkle with amethyst and quartz structures..."
+- **Negative prompt:** "books, paper, wooden shelves, daylight, modern"
+- **Tags:** fantasy, library, crystal, magical, interior
+- **Style / Reference:** Fantasy Concept Art, 3D Render
+- **Composition:** Wide shot, atmospheric perspective
+- **Color palette:** Purple, blue, glowing cyan, dark rock
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260115_crystal_library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lighting should come primarily from the crystals.
+
+### Suggestion: Solarpunk City Heights
+- **Prompt:** "A bright, optimistic view of a Solarpunk city. Skyscrapers are covered in lush vertical gardens and cascading waterfalls. Solar panels resemble glass leaves. People travel in transparent pneumatic tubes. The lighting is warm morning sun..."
+- **Negative prompt:** "smog, dark, dirty, concrete, dystopian, cars"
+- **Tags:** solarpunk, eco-friendly, futuristic, city, bright
+- **Style / Reference:** Solarpunk, Architectural Rendering
+- **Composition:** High angle, overlooking the city
+- **Color palette:** Bright greens, sky blue, warm sunlight, white
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260115_solarpunk_city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the harmony between technology and nature.
+
+### Suggestion: Haunted Carnival Pier
+- **Prompt:** "A foggy, atmospheric shot of an abandoned seaside amusement park at twilight. A rusted Ferris wheel looms in the mist. The wooden pier is rotting. Faint, ghostly lights flicker on a carousel. The mood is eerie and silent..."
+- **Negative prompt:** "bright, happy, people, clean, day"
+- **Tags:** horror, carnival, abandoned, moody, fog
+- **Style / Reference:** Horror Photography, Cinematic
+- **Composition:** Eye level, leading lines along the pier
+- **Color palette:** Desaturated blues, greys, rust orange, faint yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260115_haunted_pier.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use fog to hide details and create mystery.
+
+### Suggestion: Liquid Chrome Symphony
+- **Prompt:** "An abstract macro shot of liquid metal (mercury or chrome) splashing and morphing. The surface is perfectly reflective, mirroring a distorted studio light setup. Ripples and droplets are frozen in time. High contrast, monochromatic with metallic sheen..."
+- **Negative prompt:** "matte, color, water, plastic, rough"
+- **Tags:** abstract, liquid, chrome, 3D, macro
+- **Style / Reference:** 3D Simulation, Abstract Photography
+- **Composition:** Macro, centered splash
+- **Color palette:** Silver, black, white (monochrome)
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260115_liquid_chrome.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Reflections are the most important part of this look.
+
+### Suggestion: Voxel Valley Sunset
+- **Prompt:** "A landscape made entirely of photorealistic voxels (cubes). A blocky sun sets over a blocky ocean, casting realistic ray-traced reflections. Trees are cube clusters. It looks like a high-end render of a video game world, distinct and geometric..."
+- **Negative prompt:** "smooth, curves, round sun, lowres"
+- **Tags:** voxel, 8-bit, landscape, 3D, geometric
+- **Style / Reference:** Voxel Art, Ray-Tracing
+- **Composition:** Wide landscape view
+- **Color palette:** Sunset oranges, purples, deep blue ocean
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260115_voxel_valley.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The key is the contrast between the blocky shapes and the realistic lighting.
+
 ---
 
 ## Attribution & legal
@@ -312,7 +384,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 
 ---
 
-## Workflow suggestions ✅
+## Workflow suggestions
 
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
@@ -320,7 +392,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 
 ---
 
-## Agent suggestions ✍️
+## Agent suggestions
 This section is reserved for short, incremental contributions by agents (automation scripts, bots, or collaborators). Add one suggestion per subsection so entries are easy to track and reference.[...] 
 
 **Agent contribution template (copy & paste):**
