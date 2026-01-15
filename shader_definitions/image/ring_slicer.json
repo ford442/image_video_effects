@@ -1,0 +1,13 @@
+{
+    "id": "ring-slicer",
+    "name": "Ring Slicer",
+    "category": "image",
+    "description": "Slices the image into rotating concentric rings centered on the mouse.",
+    "url": "shaders/ring_slicer.wgsl",
+    "params": [
+        { "id": "density", "name": "Ring Count", "min": 0, "max": 1, "default": 0.5 },
+        { "id": "speed", "name": "Rotation Speed", "min": 0, "max": 1, "default": 0.6 },
+        { "id": "chaos", "name": "Chaos", "min": 0, "max": 1, "default": 0.1 },
+        { "id": "center", "name": "Mouse Follow", "min": 0, "max": 1, "default": 1.0 }
+    ]
+}
