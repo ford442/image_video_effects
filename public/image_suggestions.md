@@ -243,6 +243,66 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **License / Attribution:** CC0
 - **Notes:** Blur the line between hardware and architecture.
 
+### Suggestion: Bioluminescent Abyss
+- **Prompt:** "A terrifying yet beautiful photorealistic deep-sea scene. A colossal, translucent leviathan resembling a jellyfish floats in the crushing darkness of the abyss. Its internal organs glow with a pulsating bioluminescent blue and violet light, illuminating the surrounding marine snow and tiny swarming crustaceans. 8k, national geographic style, high contrast."
+- **Negative prompt:** "surface, boat, bright, cartoon, blurry"
+- **Tags:** underwater, bioluminescence, creature, horror, nature
+- **Style / Reference:** Photorealistic, Nature Documentary
+- **Composition:** Wide shot, low angle
+- **Color palette:** Black, electric blue, violet
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260211_bioluminescent_abyss.jpg`
+- **License / Attribution:** CC0
+- **Notes:** High contrast is key to emphasize the bioluminescence against the dark water.
+
+### Suggestion: Midnight Arcade
+- **Prompt:** "A nostalgic 1980s arcade interior at night, filled with rows of glowing CRT cabinets. The carpet has a vibrant, cosmic pattern glowing under blacklight. A teenager in a denim jacket plays a cabinet in the foreground, illuminated by the screen's glow. Synthwave atmosphere, neon pink and blue lighting, haze, shallow depth of field. Cinematic, detailed textures."
+- **Negative prompt:** "LCD screens, modern clothes, daylight, clean"
+- **Tags:** arcade, 80s, retro, neon, interior
+- **Style / Reference:** Retro Photography, Cinematic
+- **Composition:** Eye level, depth of field
+- **Color palette:** Neon pink, cyan, deep purple, black
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260211_midnight_arcade.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the screen glow and the carpet texture for authenticity.
+
+### Suggestion: Delftware Diorama
+- **Prompt:** "A surreal landscape where everything is made of glazed white porcelain with intricate Delft blue patterns. A windmill sits on a hill, and the clouds are painted ceramic shapes suspended by strings. Glossy reflections, studio lighting, smooth textures. The scene looks like a precious antique plate come to life. Macro photography style."
+- **Negative prompt:** "rough texture, dirt, realistic grass, matte"
+- **Tags:** porcelain, delftware, blue and white, surreal, miniature
+- **Style / Reference:** 3D Render, Ceramic Art
+- **Composition:** Isometric or tilt-shift
+- **Color palette:** White, Cobalt Blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260211_delftware_diorama.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the glossiness of the ceramic to sell the material.
+
+### Suggestion: Cyber Samurai Duel
+- **Prompt:** "A dynamic action shot of a cybernetic samurai drawing a glowing katana in a rain-slicked neo-Tokyo street. Sparks fly from the blade. The samurai has a traditional silhouette but with mechanical armor parts and a holographic mask. Motion blur, rain droplets frozen in mid-air, intense lens flare. Cinematic lighting, dramatic angle."
+- **Negative prompt:** "static, boring, peaceful, historical accuracy"
+- **Tags:** cyberpunk, samurai, action, rain, neon
+- **Style / Reference:** Action Movie Still, Concept Art
+- **Composition:** Low angle, dynamic action
+- **Color palette:** Steel grey, blood red, neon blue
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260211_cyber_samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use motion blur to convey speed and impact.
+
+### Suggestion: Smoke Spirit
+- **Prompt:** "A double exposure artistic shot of a dancer formed entirely from swirling, colored smoke and ink in water. The human form is suggested but ephemeral, dissolving into wisps of pink, gold, and teal smoke against a black background. Fluid dynamics, high speed photography, ethereal, dreamlike. 8k, sharp focus on the core."
+- **Negative prompt:** "solid body, flesh, clothes, messy"
+- **Tags:** smoke, abstract, dancer, fluid, ethereal
+- **Style / Reference:** Abstract Photography, Fluid Art
+- **Composition:** Centered, floating
+- **Color palette:** Black background, pastel pink, gold, teal
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260211_smoke_spirit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The form should be ambiguous but recognizable.
+
 ---
 
 ## Attribution & legal
