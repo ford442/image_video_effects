@@ -61,7 +61,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 ### Example 3 — Ancient collapsing flume in old-growth forest (detailed)
 - **Prompt:** "A photorealistic landscape photograph captures an ancient, collapsing wooden flume extending into a dense, old-growth forest. Moss and thick ivy drape heavily from the decaying tres[...]"
 - **Negative prompt:** "lowres, watermark, overexposed, text, modern structures"
-- **Notes:** Aim for a moody, melancholic atmosphere; emphasize volumetric light shafts, rich texture detail, and film grain. Suggested aspect ratios: 3:2 or 16:10; use shallow depth to slightly s[...] 
+- **Notes:** Aim for a moody, melancholic atmosphere; emphasize volumetric light shafts, rich texture detail, and film grain.
 
 ### Suggestion: Neon Street Vendor
 - **Prompt:** "A cinematic, photorealistic night shot of a futuristic street food stall tucked into a rain-drenched cyberpunk alley. A battered mechanical vendor with glowing blue optics serves st[...]"
@@ -292,7 +292,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Use motion blur to convey speed and impact.
 
 ### Suggestion: Smoke Spirit
-- **Prompt:** "A double exposure artistic shot of a dancer formed entirely from swirling, colored smoke and ink in water. The human form is suggested but ephemeral, dissolving into wisps of pink,[..."
+- **Prompt:** "A double exposure artistic shot of a dancer formed entirely from swirling, colored smoke and ink in water. The human form is suggested but ephemeral, dissolving into wisps of pink,[...]"
 - **Negative prompt:** "solid body, flesh, clothes, messy"
 - **Tags:** smoke, abstract, dancer, fluid, ethereal
 - **Style / Reference:** Abstract Photography, Fluid Art
@@ -321,5 +321,162 @@ This file stores curated image suggestions for text-to-image generation and prov
 ---
 
 ## Agent suggestions ✍️
+This section is reserved for short, incremental contributions by agents (automation scripts, bots, or collaborators). Add one suggestion per subsection so entries are easy to track and reference.[...] 
 
-This section is reserved for short, incremental contributions by agents (automation scripts, bots, or collaborators). Add one suggestion per subsection so entries are easy to track and reference.[...]
+**Agent contribution template (copy & paste):**
+
+```md
+### Agent Suggestion: <Title> — @<agent-name> — YYYY-MM-DD
+- **Prompt:** "<Detailed prompt — include subject, mood, lighting, style, and camera cues>"
+- **Negative prompt:** "<Optional: words to exclude>"
+- **Tags:** tag1, tag2
+- **Ref image:** `public/images/suggestions/<filename>.jpg` or URL
+- **Notes / agent context:** (e.g., generation params, seed, why suggested)
+- **Status:** proposed / tested / merged (include PR or commit link if applicable)
+```
+
+**Example (agent entry):**
+
+### Agent Suggestion: Lonely Forest Flume — @autogen-bot — 2026-01-12
+- **Prompt:** "A photorealistic landscape photograph captures an ancient, collapsing wooden flume extending into a dense, old-growth forest. Moss and thick ivy drape heavily from the decaying tre[...]"
+- **Negative prompt:** "lowres, watermark, overexposed, text, modern structures"
+- **Tags:** photorealism, nature, melancholic
+- **Ref image:** `public/images/suggestions/20260112_forest-flume.jpg`
+- **Notes / agent context:** Suggested as a high-recall prompt for melancholic nature scenes; tested with seed=12345, steps=50.
+- **Status:** proposed
+
+### Agent Suggestion: Bioluminescent Cave — @gemini-agent — 2026-01-12
+- **Prompt:** "A photorealistic wide shot of a massive underground cavern filled with glowing bioluminescent mushrooms and strange flora. A crystal-clear river flows through the center, reflectin[...]"
+- **Negative prompt:** "sunlight, daylight, artificial lights, blurry, people"
+- **Tags:** fantasy, nature, underground, glowing
+- **Ref image:** `public/images/suggestions/20260112_bioluminescent-cave.jpg`
+- **Notes / agent context:** Good for testing ethereal and magical visual effects.
+- **Status:** proposed
+
+### Agent Suggestion: Retro-Futuristic Android Portrait — @gemini-agent — 2026-01-12
+- **Prompt:** "A 1980s-style airbrushed portrait of a female android. Her face is partially translucent, revealing complex chrome mechanics and wiring underneath. She has vibrant neon pink hair a[...] "
+- **Negative prompt:** "photorealistic, modern, flat, simple"
+- **Tags:** cyberpunk, retro, 80s, portrait
+- **Ref image:** `public/images/suggestions/20260112_retro-android.jpg`
+- **Notes / agent context:** Ideal for testing neon, glitch, and retro shader effects.
+- **Status:** proposed
+
+### Agent Suggestion: Crystalline Alien Jungle — @gemini-agent — 2026-01-12
+- **Prompt:** "A world where the jungle is made of semi-translucent, glowing crystals instead of wood. The air is filled with floating, sparkling spores. The flora and fauna are alien and geometr[...] "
+- **Negative prompt:** "trees, wood, leaves, green, people, earth-like"
+- **Tags:** sci-fi, alien, fantasy, crystal, jungle
+- **Ref image:** `public/images/suggestions/20260112_crystal-jungle.jpg`
+- **Notes / agent context:** Excellent for refraction, bloom, and god-ray effects.
+- **Status:** proposed
+
+### Agent Suggestion: Quantum Computer Core — @gemini-agent — 2026-01-12
+- **Prompt:** "The inside of a futuristic quantum computer core. A central sphere of entangled light particles pulses with energy, connected by threads of light to a complex, fractal-like structu[...] "
+- **Negative prompt:** "people, screens, keyboards, messy wires"
+- **Tags:** abstract, tech, sci-fi, quantum, computer
+- **Ref image:** `public/images/suggestions/20260112_quantum-core.jpg`
+- **Notes / agent context:** Use for testing generative, abstract, and data-moshing shaders.
+- **Status:** proposed
+
+### Agent Suggestion: Solar Sail Ship — @gemini-agent — 2026-01-12
+- **Prompt:** "A massive, elegant spaceship with vast, shimmering solar sails that look like a captured nebula, cruising silently through a dense starfield. The ship's hull is sleek and pearlesce[...] "
+- **Negative prompt:** "fire, smoke, explosions, cartoon"
+- **Tags:** sci-fi, space, ship, nebula, majestic
+- **Ref image:** `public/images/suggestions/20260112_solar-sail.jpg`
+- **Notes / agent context:** Good for testing galaxy, starfield, and other cosmic background shaders.
+- **Status:** proposed
+
+### Agent Suggestion: Clockwork Dragon — @gemini-agent — 2026-01-12
+- **Prompt:** "A magnificent and intricate mechanical dragon made of polished brass, copper, and glowing gears, perched atop a gothic cathedral. Steam escapes from vents on its body. The city bel[...] "
+- **Negative prompt:** "flesh, scales, simple, modern"
+- **Tags:** steampunk, fantasy, dragon, mechanical, gothic
+- **Ref image:** `public/images/suggestions/20260112_clockwork-dragon.jpg`
+- **Notes / agent context:** Tests metallic surfaces, fog, and glow effects.
+- **Status:** proposed
+
+### Agent Suggestion: Underwater Metropolis — @gemini-agent — 2026-01-12
+- **Prompt:** "A bustling futuristic city enclosed in a giant glass dome at the bottom of the ocean. Schools of bioluminescent fish and giant marine creatures swim peacefully outside the dome, wh[...] "
+- **Negative prompt:** "land, sky, clouds, empty, ruins"
+- **Tags:** futuristic, city, underwater, sci-fi
+- **Ref image:** `public/images/suggestions/20260112_underwater-city.jpg`
+- **Notes / agent context:** Perfect for caustics, water distortion, and fog effects.
+- **Status:** proposed
+
+### Agent Suggestion: Floating Islands Market — @gemini-agent — 2026-01-12
+- **Prompt:** "A vibrant and chaotic marketplace set on a series of fantastical floating islands, connected by rickety rope bridges. Strange, colorful alien merchants sell exotic fruits and myste[...] "
+- **Negative prompt:** "ground, roads, cars, realistic"
+- **Tags:** fantasy, flying, islands, market, whimsical
+- **Ref image:** `public/images/suggestions/20260112_floating-market.jpg`
+- **Notes / agent context:** A colorful and complex scene to test a wide variety of effects.
+- **Status:** proposed
+
+### Agent Suggestion: Desert Planet Oasis — @gemini-agent — 2026-01-12
+- **Prompt:** "A hidden oasis on a desert planet with two suns setting in the sky, casting long shadows. The oasis is centered around a shimmering, turquoise pool, surrounded by bizarre, crystall[...] "
+- **Negative prompt:** "green, Earth-like, trees, people"
+- **Tags:** sci-fi, desert, oasis, alien, landscape
+- **Ref image:** `public/images/suggestions/20260112_desert-oasis.jpg`
+- **Notes / agent context:** Good for testing heat-haze, water ripples, and stark lighting.
+- **Status:** proposed
+
+### Agent Suggestion: Ancient Tree of Souls — @gemini-agent — 2026-01-12
+- **Prompt:** "A colossal, ancient, glowing tree whose leaves and bark emit a soft, ethereal, spiritual light. Its roots are massive, intertwining with the landscape and appearing to connect to t[...] "
+- **Negative prompt:** "chopped, burning, daytime, simple"
+- **Tags:** fantasy, magic, tree, spiritual, glowing
+- **Ref image:** `public/images/suggestions/20260112_soul-tree.jpg`
+- **Notes / agent context:** Great for particle effects, glow, and ethereal vibes.
+- **Status:** proposed
+
+### Agent Suggestion: Post-Apocalyptic Library — @gemini-agent — 2026-01-12
+- **Prompt:** "The grand, dusty interior of a ruined baroque library, reclaimed by nature. Huge shafts of volumetric light pierce through the collapsed, vaulted ceiling, illuminating floating dus[...] "
+- **Negative prompt:** "clean, new, people, pristine"
+- **Tags:** post-apocalyptic, ruins, library, atmospheric
+- **Ref image:** `public/images/suggestions/20260112_ruin-library.jpg`
+- **Notes / agent context:** Tests god-rays, dust particles, and detailed textures.
+- **Status:** proposed
+
+### Agent Suggestion: Surreal Cloudscape — @gemini-agent — 2026-01-12
+- **Prompt:** "A dreamlike, minimalist landscape set high above the clouds at sunset. The clouds are a soft, pink and orange sea. Impossible geometric shapes and minimalist architecture float ser[...] "
+- **Negative prompt:** "realistic, ground, busy, dark"
+- **Tags:** surreal, dreamlike, minimalist, clouds
+- **Ref image:** `public/images/suggestions/20260112_cloudscape.jpg`
+- **Notes / agent context:** Good for simple, clean shaders and color-blending effects.
+- **Status:** proposed
+
+### Agent Suggestion: Overgrown Train Station — @autogen-bot — 2026-01-12
+- **Prompt:** "A wide-angle photorealistic scene of an abandoned train station overtaken by nature: platforms cracked and lifted by roots, trains half-buried in moss, glass roofs shattered with v[...] "
+- **Negative prompt:** "modern signs, people, clean, sunny"
+- **Tags:** urban, ruins, nature, atmospheric
+- **Ref image:** `public/images/suggestions/20260112_overgrown-station.jpg`
+- **Notes / agent context:** Great for testing wet surfaces, moss detail, and depth-of-field. Suggested aspect ratio: 16:9.
+- **Status:** proposed
+
+### Agent Suggestion: Neon Rain Alley — @neonbot — 2026-01-12
+- **Prompt:** "A dark, rain-soaked alley in a cyberpunk city at night: neon signs in kanji and English flicker, puddles reflect saturated color, steam rises from grates, and a lone figure with a [...] "
+- **Negative prompt:** "daylight, cartoon, bright, cheerful"
+- **Tags:** cyberpunk, neon, urban, night
+- **Ref image:** `public/images/suggestions/20260112_neon-alley.jpg`
+- **Notes / agent context:** Use for testing chromatic aberration, bloom, and wet-reflection shaders. Try seed=67890 for reproducibility.
+- **Status:** proposed
+
+### Agent Suggestion: Antique Map Room with Floating Islands — @mapbot — 2026-01-12
+- **Prompt:** "An ornately furnished, dimly lit study filled with antique maps and celestial globes; in the center, several miniature floating islands levitate above a polished mahogany table, ea[...] "
+- **Negative prompt:** "modern electronics, fluorescent light, messy"
+- **Tags:** fantasy, interior, steampunk, magic
+- **Ref image:** `public/images/suggestions/20260112_map-room.jpg`
+- **Notes / agent context:** Ideal for layered compositing, warm lighting, and small-scale detail tests. Aspect ratio: 4:3.
+- **Status:** proposed
+
+### Agent Suggestion: Microscopic Coral City — @biology-agent — 2026-01-12
+- **Prompt:** "A macro, photorealistic view of a coral reef that resembles an ancient submerged city: arched coral towers, tiny fish like airborne commuters, minuscule windows filled with biolumi[...] "
+- **Negative prompt:** "land, buildings, people, murky"
+- **Tags:** macro, underwater, coral, photorealism
+- **Ref image:** `public/images/suggestions/20260112_coral-city.jpg`
+- **Notes / agent context:** Use for caustics, water distortion, and fine-scale texture generation tests. Suggested camera: macro 100mm.
+- **Status:** proposed
+
+### Agent Suggestion: Auroral Glacier Cathedral — @aurora-agent — 2026-01-12
+- **Prompt:** "A majestic natural cathedral carved of blue ice and glacier, its spires and arches rimed with frost; above, a luminous aurora paints vivid green and purple curtains across the nigh[...] "
+- **Negative prompt:** "tropical, sunlight, warm colors, crowds"
+- **Tags:** landscape, aurora, ice, epic
+- **Ref image:** `public/images/suggestions/20260112_auroral-cathedral.jpg`
+- **Notes / agent context:** Excellent for volumetric lighting, ice refraction, and subtle color grading tests.
+- **Status:** proposed
