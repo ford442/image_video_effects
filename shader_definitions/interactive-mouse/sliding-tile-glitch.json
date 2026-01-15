@@ -1,0 +1,40 @@
+{
+  "id": "sliding-tile-glitch",
+  "name": "Sliding Tile Glitch",
+  "category": "image",
+  "url": "shaders/sliding-tile-glitch.wgsl",
+  "description": "Grid tiles slide and glitch when touched by the mouse.",
+  "params": [
+    {
+      "id": "gridDensity",
+      "name": "Grid Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "slideSpeed",
+      "name": "Slide Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chaos",
+      "name": "Chaos",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "decay",
+      "name": "Restoration",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
