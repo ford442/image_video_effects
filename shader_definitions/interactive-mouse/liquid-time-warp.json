@@ -1,0 +1,14 @@
+{
+    "id": "liquid-time-warp",
+    "label": "Liquid Time Warp",
+    "url": "shaders/liquid-time-warp.wgsl",
+    "category": "interactive-mouse",
+    "features": ["mouse-driven", "webcam"],
+    "description": "Fluid feedback loop where time is distorted by mouse movement.",
+    "params": [
+        { "name": "Distortion", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0 },
+        { "name": "Flow Speed", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0 },
+        { "name": "Scale", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0 },
+        { "name": "Decay", "type": "float", "default": 0.8, "min": 0.0, "max": 1.0 }
+    ]
+}
