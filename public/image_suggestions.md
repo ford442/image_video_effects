@@ -57,6 +57,13 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Style Blending.** Combine two distinct styles for unique results (e.g., "Art Nouveau architecture in a Cyberpunk setting").
 - **Iterate & record variants.** Save alternate prompts and parameter changes (seed, steps, scale) so results can be reproduced.
 
+### Standardized Tags Guide
+To help organize prompts, please use tags from the following categories:
+- **Genre:** sci-fi, fantasy, horror, cyberpunk, steampunk, solarpunk, noir, retro.
+- **Subject:** landscape, portrait, interior, nature, macro, architecture, still life.
+- **Style:** photorealistic, painterly, 3D, isometric, abstract, surreal, minimalist.
+- **Mood:** moody, ethereal, cinematic, whimsical, dark, bright.
+
 ---
 
 ## Prompt examples
@@ -435,6 +442,66 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Reference images:** `public/images/suggestions/20260215_baroque_cyborg.jpg`
 - **License / Attribution:** CC0
 - **Notes:** Blend the mechanical and organic seamlessly.
+
+### Suggestion: Phoenix Ascending
+- **Prompt:** "A dramatic fantasy scene of a massive phoenix rising from a pile of white ash. The bird is composed of living fire and molten gold feathers. Embers and sparks fill the air. The background is a dark, charred landscape, contrasting with the intense brightness of the bird."
+- **Negative prompt:** "water, ice, dull colors, bird skeleton, cartoon"
+- **Tags:** fantasy, fire, phoenix, mythical, epic
+- **Style / Reference:** Fantasy Art, Digital Painting
+- **Composition:** Centered, dynamic upward motion
+- **Color palette:** Blazing orange, yellow, gold, charcoal black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260215_phoenix_ascending.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the particle effects of the sparks and fire.
+
+### Suggestion: Clockwork Heart
+- **Prompt:** "A surreal, hyper-realistic close-up of a human heart mechanically constructed from intricate brass watch gears, springs, and ticking escapements. It is suspended in a glass jar filled with amber fluid. Light refracts through the glass and metal."
+- **Negative prompt:** "blood, gore, organic tissue, plastic, simple"
+- **Tags:** surreal, steampunk, mechanical, heart, macro
+- **Style / Reference:** Surrealism, Macro Photography
+- **Composition:** Extreme close-up, center focus
+- **Color palette:** Brass, gold, amber, dark vignette
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260215_clockwork_heart.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The metal textures should look oiled and functional.
+
+### Suggestion: Art Deco Atlantis
+- **Prompt:** "A majestic underwater city built in the Art Deco style. Gold-plated geometric skyscrapers rise from the ocean floor, covered in barnacles and glowing corals. Schools of fish swim through the arched windows. God rays filter down from the surface."
+- **Negative prompt:** "modern, ugly, ruins, rubble, murky"
+- **Tags:** underwater, art deco, architecture, city, fantasy
+- **Style / Reference:** BioShock-esque, Architectural Visualization
+- **Composition:** Wide angle, looking up
+- **Color palette:** Turquoise, gold, deep blue, seafoam green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260215_art_deco_atlantis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Combine the clean lines of Art Deco with the organic chaos of the ocean.
+
+### Suggestion: Galactic Patisserie
+- **Prompt:** "A mouth-watering macro shot of a glazed donut that looks like a miniature galaxy. The glaze is a swirling nebula of purple and blue with edible star sprinkles. It sits on a silver plate. The lighting is soft and cinematic."
+- **Negative prompt:** "messy, dry, realistic dough, boring"
+- **Tags:** food, space, abstract, macro, whimsical
+- **Style / Reference:** Food Photography, Abstract Art
+- **Composition:** 45-degree angle, macro
+- **Color palette:** Galaxy purple, blue, silver, pastry golden brown
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260215_galactic_patisserie.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The glaze should look glossy and wet.
+
+### Suggestion: Bioluminescent High Fashion
+- **Prompt:** "A fashion editorial shot of a model wearing an avant-garde dress made of living bioluminescent jellyfish tissue. The dress glows with a soft blue light. The model poses on a reflective black runway. The background is dark to let the dress shine."
+- **Negative prompt:** "casual clothes, daylight, ugly face, low fashion"
+- **Tags:** fashion, bioluminescence, sci-fi, portrait, avant-garde
+- **Style / Reference:** High Fashion Photography, Sci-Fi
+- **Composition:** Full body shot, low angle
+- **Color palette:** Electric blue, black, skin tones
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20260215_bioluminescent_fashion.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the fabric looks organic and translucent.
 
 ---
 
