@@ -1,0 +1,41 @@
+{
+  "id": "interactive-glitch-brush",
+  "name": "Glitch Brush",
+  "url": "shaders/interactive-glitch-brush.wgsl",
+  "category": "image",
+  "description": "Paint digital glitches onto the screen.",
+  "params": [
+    {
+      "id": "size",
+      "name": "Brush Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "intensity",
+      "name": "Glitch Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "block_scale",
+      "name": "Block Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "color_split",
+      "name": "Color Split",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ]
+}
