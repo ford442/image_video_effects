@@ -22,6 +22,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - Recommended directory for actual image files: `public/images/suggestions/` (or reference an external URL).
 - File naming convention suggestion: `YYYYMMDD_slug.ext` (e.g., `20260112_sunset-glass-city.jpg`).
 - Each suggestion should be a markdown section with a clear title and metadata (see the template below).
+- **IMPORTANT:** Do not truncate prompts. Ensure the full text is preserved. However, please keep prompts under 300 tokens when suggesting them.
 
 ---
 
@@ -61,22 +62,22 @@ This file stores curated image suggestions for text-to-image generation and prov
 ## Prompt examples
 
 ### Example 1 — Photorealistic landscape
-- **Prompt:** "A photorealistic landscape photograph captures a hyper-realistic sunset over a futuristic glass city. Reflective skyscrapers stretch into the sky, their mirrored facades catching wa[...]"
+- **Prompt:** "A photorealistic landscape photograph captures a hyper-realistic sunset over a futuristic glass city. Reflective skyscrapers stretch into the sky, their mirrored facades catching warm sunlight and reflections of the surrounding structures."
 - **Negative prompt:** "lowres, watermark, extra limbs, text, cartoonish"
 - **Notes:** Use wide aspect (16:9), emphasize warm color grading and crisp reflections. Include camera cues (lens, DOF) for photorealism.
 
 ### Example 2 — Painterly portrait
-- **Prompt:** "A close-up painterly portrait of an elderly woman rendered in Rembrandt-style oil painting; soft directional Rembrandt lighting creates strong chiaroscuro; warm earth tones and laye[...]"
+- **Prompt:** "A close-up painterly portrait of an elderly woman rendered in Rembrandt-style oil painting; soft directional Rembrandt lighting creates strong chiaroscuro; warm earth tones and layered brushstrokes define the texture of the skin and clothing."
 - **Negative prompt:** "blurry, disfigured, text, oversaturated"
 - **Notes:** Use 4:5 aspect; request visible brushstrokes and canvas texture; specify the level of detail.
 
 ### Example 3 — Ancient collapsing flume in old-growth forest (detailed)
-- **Prompt:** "A photorealistic landscape photograph captures an ancient, collapsing wooden flume extending into a dense, old-growth forest. Moss and thick ivy drape heavily from the decaying tres[...]"
+- **Prompt:** "A photorealistic landscape photograph captures an ancient, collapsing wooden flume extending into a dense, old-growth forest. Moss and thick ivy drape heavily from the decaying trestles, blurring the line between man-made structure and nature."
 - **Negative prompt:** "lowres, watermark, overexposed, text, modern structures"
 - **Notes:** Aim for a moody, melancholic atmosphere; emphasize volumetric light shafts, rich texture detail, and film grain.
 
 ### Suggestion: Neon Street Vendor
-- **Prompt:** "A cinematic, photorealistic night shot of a futuristic street food stall tucked into a rain-drenched cyberpunk alley. A battered mechanical vendor with glowing blue optics serves st[...]"
+- **Prompt:** "A cinematic, photorealistic night shot of a futuristic street food stall tucked into a rain-drenched cyberpunk alley. A battered mechanical vendor with glowing blue optics serves steaming noodles to a hooded figure."
 - **Negative prompt:** "daylight, sunshine, blurry, low resolution, cartoon, illustration"
 - **Tags:** cyberpunk, robot, night, neon, food
 - **Style / Reference:** Photorealistic, Cinematic
@@ -88,7 +89,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Emphasize the texture of the wet ground and the glow of the neon.
 
 ### Suggestion: Steampunk Airship Dock
-- **Prompt:** "A majestic steampunk airship docking at a floating Victorian sky-station high above a sea of clouds during golden hour. The ship features polished brass gears, billowing canvas sail[...]"
+- **Prompt:** "A majestic steampunk airship docking at a floating Victorian sky-station high above a sea of clouds during golden hour. The ship features polished brass gears, billowing canvas sails, and intricate rigging."
 - **Negative prompt:** "modern technology, airplanes, plastic, low detail"
 - **Tags:** steampunk, airship, clouds, golden hour, victorian
 - **Style / Reference:** Digital Painting, Concept Art
@@ -100,7 +101,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Focus on the scale of the ship versus the people.
 
 ### Suggestion: Crystalline Flora
-- **Prompt:** "A macro photography shot of an alien flower composed entirely of translucent, iridescent crystals. The faceted petals refract light into spectral rainbows. Inside the flower, a tiny[...]"
+- **Prompt:** "A macro photography shot of an alien flower composed entirely of translucent, iridescent crystals. The faceted petals refract light into spectral rainbows. Inside the flower, a tiny glowing orb pulses with soft light."
 - **Negative prompt:** "blurry, organic textures, dull colors"
 - **Tags:** macro, crystal, alien, nature, abstract
 - **Style / Reference:** Macro Photography, 3D Render
@@ -112,7 +113,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Ensure the refraction looks realistic.
 
 ### Suggestion: Shadows of the City
-- **Prompt:** "A classic black and white film noir scene inside a private detective's office. Venetian blinds cast harsh, striped shadows (chiaroscuro) across a cluttered wooden desk featuring a [...]"
+- **Prompt:** "A classic black and white film noir scene inside a private detective's office. Venetian blinds cast harsh, striped shadows (chiaroscuro) across a cluttered wooden desk featuring a rotary phone, a half-empty glass of whiskey, and a smoking cigarette."
 - **Negative prompt:** "color, bright, happy, modern"
 - **Tags:** noir, black and white, detective, moody, interior
 - **Style / Reference:** Film Noir, B&W Photography
@@ -124,7 +125,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** The play of light and shadow is crucial.
 
 ### Suggestion: The Alchemist's Corner
-- **Prompt:** "An isometric 3D render of a cozy, cluttered alchemist's workshop. Wooden shelves are packed with glowing potions in various shapes, ancient rolled scrolls, and leather-bound books.[...]"
+- **Prompt:** "An isometric 3D render of a cozy, cluttered alchemist's workshop. Wooden shelves are packed with glowing potions in various shapes, ancient rolled scrolls, and leather-bound books. A bubbling cauldron sits on a small burner."
 - **Negative prompt:** "realistic, dark, scary, messy geometry"
 - **Tags:** isometric, 3D, magic, cute, interior
 - **Style / Reference:** Stylized 3D, Isometric Art
@@ -136,7 +137,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Good for testing consistent isometric perspective.
 
 ### Suggestion: Orbital Greenhouse
-- **Prompt:** "A photorealistic wide shot inside a massive rotating space station greenhouse. Lush, vibrant tropical vegetation and hanging gardens fill the curved interior structure. Through the[...]"
+- **Prompt:** "A photorealistic wide shot inside a massive rotating space station greenhouse. Lush, vibrant tropical vegetation and hanging gardens fill the curved interior structure. Through the massive glass panels, the curvature of the Earth is visible against the blackness of space."
 - **Negative prompt:** "blurry, low resolution, painting, illustration, distortion"
 - **Tags:** sci-fi, space, nature, greenhouse, earth
 - **Style / Reference:** Photorealistic, Sci-Fi Concept Art
@@ -148,7 +149,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Focus on the contrast between the organic plants and the cold tech/space background.
 
 ### Suggestion: Origami Paper Kingdom
-- **Prompt:** "A whimsical landscape entirely constructed from folded paper. Mountains are sharp geometric folds, trees are stylized paper cutouts, and a river is made of layered blue tissue pape[...]"
+- **Prompt:** "A whimsical landscape entirely constructed from folded paper. Mountains are sharp geometric folds, trees are stylized paper cutouts, and a river is made of layered blue tissue paper. Small paper cranes fly in the sky."
 - **Negative prompt:** "realistic textures, water, photorealistic, dark, gritty"
 - **Tags:** origami, papercraft, miniature, whimsical, landscape
 - **Style / Reference:** Papercraft, Macro Photography
@@ -160,7 +161,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Essential to emphasize the *paper texture* and physical folds.
 
 ### Suggestion: Magma Forge
-- **Prompt:** "Inside a colossal dwarven forge deep within a volcano. Molten lava flows in channels carved into dark obsidian rock. A massive anvil sits in the center, glowing with heat. Sparks f[...]"
+- **Prompt:** "Inside a colossal dwarven forge deep within a volcano. Molten lava flows in channels carved into dark obsidian rock. A massive anvil sits in the center, glowing with heat. Sparks fly as a heavy hammer strikes glowing metal."
 - **Negative prompt:** "cool colors, blue, daylight, clean, modern"
 - **Tags:** fantasy, forge, lava, fire, interior
 - **Style / Reference:** Fantasy Concept Art, Cinematic
@@ -172,7 +173,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Use heavy contrast and saturation for the lava glow.
 
 ### Suggestion: Vintage Explorer's Flatlay
-- **Prompt:** "A high-angle, directly overhead 'knolling' shot of vintage exploration gear arranged neatly on a weathered wooden table. Items include a brass compass, a rolled parchment map, a le[...]"
+- **Prompt:** "A high-angle, directly overhead 'knolling' shot of vintage exploration gear arranged neatly on a weathered wooden table. Items include a brass compass, a rolled parchment map, a leather journal, and an old brass telescope."
 - **Negative prompt:** "messy, angled, perspective, digital, plastic"
 - **Tags:** knolling, vintage, explorer, still life, flatlay
 - **Style / Reference:** Product Photography, Still Life
@@ -184,7 +185,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Ensure the items are arranged in a grid or organized pattern (knolling).
 
 ### Suggestion: Double Exposure Stag
-- **Prompt:** "A artistic double exposure image blending the silhouette of a majestic stag with a foggy pine forest landscape. The stag's body is filled with the forest scene: tall pine trees, mi[...]"
+- **Prompt:** "A artistic double exposure image blending the silhouette of a majestic stag with a foggy pine forest landscape. The stag's body is filled with the forest scene: tall pine trees, mist, and birds flying in the distance."
 - **Negative prompt:** "color, messy background, realistic fur, low contrast"
 - **Tags:** double exposure, abstract, nature, stag, minimalist
 - **Style / Reference:** Double Exposure, Digital Art
@@ -196,7 +197,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Needs a clear silhouette for the effect to work.
 
 ### Suggestion: Sumi-e Ink Mountains
-- **Prompt:** "A traditional Japanese Sumi-e ink wash painting of towering, jagged mountain peaks shrouded in mist. Stark black brushstrokes define the cliffs against a textured white rice paper [...]"
+- **Prompt:** "A traditional Japanese Sumi-e ink wash painting of towering, jagged mountain peaks shrouded in mist. Stark black brushstrokes define the cliffs against a textured white rice paper. A solitary bird flies near the peak."
 - **Negative prompt:** "color, photograph, realistic, 3D, modern, vibrant"
 - **Tags:** sumi-e, ink wash, japanese, landscape, minimalist
 - **Style / Reference:** Traditional Ink Painting, Sesshu Toyo
@@ -208,7 +209,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Emphasize the texture of the paper and the fluidity of the ink.
 
 ### Suggestion: Knitted Wool Village
-- **Prompt:** "A cozy, whimsical scene of a miniature village entirely made of knitted wool and yarn. Small cottages have fuzzy roof thatching, trees are pom-poms, and the ground is a patchwork o[...]"
+- **Prompt:** "A cozy, whimsical scene of a miniature village entirely made of knitted wool and yarn. Small cottages have fuzzy roof thatching, trees are pom-poms, and the ground is a patchwork of green knitted squares."
 - **Negative prompt:** "plastic, realistic materials, metal, sharp edges, smooth"
 - **Tags:** knitted, wool, craft, miniature, cute
 - **Style / Reference:** Stop Motion, Handicraft
@@ -220,7 +221,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Focus on the stray fibers and the tactile nature of the wool.
 
 ### Suggestion: Atomic Age Diner
-- **Prompt:** "A retro-futuristic 1950s 'Googie' architecture diner on the moon. Curved chrome fins, large glass bubbles, and starburst motifs. Inside, a robot waitress on a unicycle serves milks[...]"
+- **Prompt:** "A retro-futuristic 1950s 'Googie' architecture diner on the moon. Curved chrome fins, large glass bubbles, and starburst motifs. Inside, a robot waitress on a unicycle serves milkshakes to a space-suited couple."
 - **Negative prompt:** "gritty, dark, dystopian, cyberpunk, rusty"
 - **Tags:** retro-futurism, 1950s, sci-fi, space, diner
 - **Style / Reference:** Mid-Century Modern, Googie, Technicolor
@@ -232,7 +233,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Capture the optimism of the space age.
 
 ### Suggestion: Brutalist Fog Monument
-- **Prompt:** "A massive, imposing Brutalist concrete monument rising from a dark, foggy plain. Sharp geometric angles, raw concrete textures with water stains, and repeating modular patterns. Th[...]"
+- **Prompt:** "A massive, imposing Brutalist concrete monument rising from a dark, foggy plain. Sharp geometric angles, raw concrete textures with water stains, and repeating modular patterns. The structure dominates the landscape, evoking a sense of awe and dread."
 - **Negative prompt:** "ornate, colorful, happy, nature, wood"
 - **Tags:** brutalism, concrete, fog, dystopian, architecture
 - **Style / Reference:** Brutalist Architecture, Dystopian Sci-Fi
@@ -244,7 +245,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Focus on the scale and the texture of the raw concrete.
 
 ### Suggestion: Microchip Metropolis
-- **Prompt:** "A macro photography shot of a computer motherboard, visualized as a futuristic glowing city at night. Capacitors look like skyscrapers, copper traces are highways of light, and the[...]"
+- **Prompt:** "A macro photography shot of a computer motherboard, visualized as a futuristic glowing city at night. Capacitors look like skyscrapers, copper traces are highways of light, and the CPU cooler resembles a futuristic stadium."
 - **Negative prompt:** "organic, dirt, rust, full size city"
 - **Tags:** macro, technology, circuit, cyberpunk, abstract
 - **Style / Reference:** Macro Photography, Tech Noir
@@ -256,7 +257,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Blur the line between hardware and architecture.
 
 ### Suggestion: Bioluminescent Abyss
-- **Prompt:** "A terrifying yet beautiful photorealistic deep-sea scene. A colossal, translucent leviathan resembling a jellyfish floats in the crushing darkness of the abyss. Its internal organs[...]"
+- **Prompt:** "A terrifying yet beautiful photorealistic deep-sea scene. A colossal, translucent leviathan resembling a jellyfish floats in the crushing darkness of the abyss. Its internal organs glow with a faint, rhythmic pulse."
 - **Negative prompt:** "surface, boat, bright, cartoon, blurry"
 - **Tags:** underwater, bioluminescence, creature, horror, nature
 - **Style / Reference:** Photorealistic, Nature Documentary
@@ -268,7 +269,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** High contrast is key to emphasize the bioluminescence against the dark water.
 
 ### Suggestion: Midnight Arcade
-- **Prompt:** "A nostalgic 1980s arcade interior at night, filled with rows of glowing CRT cabinets. The carpet has a vibrant, cosmic pattern glowing under blacklight. A teenager in a denim jacke[...]"
+- **Prompt:** "A nostalgic 1980s arcade interior at night, filled with rows of glowing CRT cabinets. The carpet has a vibrant, cosmic pattern glowing under blacklight. A teenager in a denim jacket plays an intense game."
 - **Negative prompt:** "LCD screens, modern clothes, daylight, clean"
 - **Tags:** arcade, 80s, retro, neon, interior
 - **Style / Reference:** Retro Photography, Cinematic
@@ -280,7 +281,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Focus on the screen glow and the carpet texture for authenticity.
 
 ### Suggestion: Delftware Diorama
-- **Prompt:** "A surreal landscape where everything is made of glazed white porcelain with intricate Delft blue patterns. A windmill sits on a hill, and the clouds are painted ceramic shapes susp[...]"
+- **Prompt:** "A surreal landscape where everything is made of glazed white porcelain with intricate Delft blue patterns. A windmill sits on a hill, and the clouds are painted ceramic shapes suspended in the sky."
 - **Negative prompt:** "rough texture, dirt, realistic grass, matte"
 - **Tags:** porcelain, delftware, blue and white, surreal, miniature
 - **Style / Reference:** 3D Render, Ceramic Art
@@ -292,7 +293,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Emphasize the glossiness of the ceramic to sell the material.
 
 ### Suggestion: Cyber Samurai Duel
-- **Prompt:** "A dynamic action shot of a cybernetic samurai drawing a glowing katana in a rain-slicked neo-Tokyo street. Sparks fly from the blade. The samurai has a traditional silhouette but w[...]"
+- **Prompt:** "A dynamic action shot of a cybernetic samurai drawing a glowing katana in a rain-slicked neo-Tokyo street. Sparks fly from the blade. The samurai has a traditional silhouette but with mechanical limbs and glowing eyes."
 - **Negative prompt:** "static, boring, peaceful, historical accuracy"
 - **Tags:** cyberpunk, samurai, action, rain, neon
 - **Style / Reference:** Action Movie Still, Concept Art
@@ -304,7 +305,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Notes:** Use motion blur to convey speed and impact.
 
 ### Suggestion: Smoke Spirit
-- **Prompt:** "A double exposure artistic shot of a dancer formed entirely from swirling, colored smoke and ink in water. The human form is suggested but ephemeral, dissolving into wisps of pink,[...]"
+- **Prompt:** "A double exposure artistic shot of a dancer formed entirely from swirling, colored smoke and ink in water. The human form is suggested but ephemeral, dissolving into wisps of pink, blue, and violet."
 - **Negative prompt:** "solid body, flesh, clothes, messy"
 - **Tags:** smoke, abstract, dancer, fluid, ethereal
 - **Style / Reference:** Abstract Photography, Fluid Art
@@ -470,7 +471,7 @@ This section is reserved for short, incremental contributions by agents (automat
 **Example (agent entry):**
 
 ### Agent Suggestion: Lonely Forest Flume — @autogen-bot — 2026-01-12
-- **Prompt:** "A photorealistic landscape photograph captures an ancient, collapsing wooden flume extending into a dense, old-growth forest. Moss and thick ivy drape heavily from the decaying tre[...]"
+- **Prompt:** "A photorealistic landscape photograph captures an ancient, collapsing wooden flume extending into a dense, old-growth forest. Moss and thick ivy drape heavily from the decaying trestles."
 - **Negative prompt:** "lowres, watermark, overexposed, text, modern structures"
 - **Tags:** photorealism, nature, melancholic
 - **Ref image:** `public/images/suggestions/20260112_forest-flume.jpg`
@@ -478,7 +479,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Bioluminescent Cave — @gemini-agent — 2026-01-12
-- **Prompt:** "A photorealistic wide shot of a massive underground cavern filled with glowing bioluminescent mushrooms and strange flora. A crystal-clear river flows through the center, reflectin[...]"
+- **Prompt:** "A photorealistic wide shot of a massive underground cavern filled with glowing bioluminescent mushrooms and strange flora. A crystal-clear river flows through the center, reflecting the eerie glow of the cave ceiling."
 - **Negative prompt:** "sunlight, daylight, artificial lights, blurry, people"
 - **Tags:** fantasy, nature, underground, glowing
 - **Ref image:** `public/images/suggestions/20260112_bioluminescent-cave.jpg`
@@ -486,7 +487,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Retro-Futuristic Android Portrait — @gemini-agent — 2026-01-12
-- **Prompt:** "A 1980s-style airbrushed portrait of a female android. Her face is partially translucent, revealing complex chrome mechanics and wiring underneath. She has vibrant neon pink hair a[...] "
+- **Prompt:** "A 1980s-style airbrushed portrait of a female android. Her face is partially translucent, revealing complex chrome mechanics and wiring underneath. She has vibrant neon pink hair and cybernetic eyes."
 - **Negative prompt:** "photorealistic, modern, flat, simple"
 - **Tags:** cyberpunk, retro, 80s, portrait
 - **Ref image:** `public/images/suggestions/20260112_retro-android.jpg`
@@ -494,7 +495,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Crystalline Alien Jungle — @gemini-agent — 2026-01-12
-- **Prompt:** "A world where the jungle is made of semi-translucent, glowing crystals instead of wood. The air is filled with floating, sparkling spores. The flora and fauna are alien and geometr[...] "
+- **Prompt:** "A world where the jungle is made of semi-translucent, glowing crystals instead of wood. The air is filled with floating, sparkling spores. The flora and fauna are alien and geometric, shifting colors as the light changes."
 - **Negative prompt:** "trees, wood, leaves, green, people, earth-like"
 - **Tags:** sci-fi, alien, fantasy, crystal, jungle
 - **Ref image:** `public/images/suggestions/20260112_crystal-jungle.jpg`
@@ -502,7 +503,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Quantum Computer Core — @gemini-agent — 2026-01-12
-- **Prompt:** "The inside of a futuristic quantum computer core. A central sphere of entangled light particles pulses with energy, connected by threads of light to a complex, fractal-like structu[...] "
+- **Prompt:** "The inside of a futuristic quantum computer core. A central sphere of entangled light particles pulses with energy, connected by threads of light to a complex, fractal-like structure of gold and cooling pipes."
 - **Negative prompt:** "people, screens, keyboards, messy wires"
 - **Tags:** abstract, tech, sci-fi, quantum, computer
 - **Ref image:** `public/images/suggestions/20260112_quantum-core.jpg`
@@ -510,7 +511,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Solar Sail Ship — @gemini-agent — 2026-01-12
-- **Prompt:** "A massive, elegant spaceship with vast, shimmering solar sails that look like a captured nebula, cruising silently through a dense starfield. The ship's hull is sleek and pearlesce[...] "
+- **Prompt:** "A massive, elegant spaceship with vast, shimmering solar sails that look like a captured nebula, cruising silently through a dense starfield. The ship's hull is sleek and pearlescent, reflecting the distant stars."
 - **Negative prompt:** "fire, smoke, explosions, cartoon"
 - **Tags:** sci-fi, space, ship, nebula, majestic
 - **Ref image:** `public/images/suggestions/20260112_solar-sail.jpg`
@@ -518,7 +519,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Clockwork Dragon — @gemini-agent — 2026-01-12
-- **Prompt:** "A magnificent and intricate mechanical dragon made of polished brass, copper, and glowing gears, perched atop a gothic cathedral. Steam escapes from vents on its body. The city bel[...] "
+- **Prompt:** "A magnificent and intricate mechanical dragon made of polished brass, copper, and glowing gears, perched atop a gothic cathedral. Steam escapes from vents on its body. The city below is a sprawl of Victorian architecture."
 - **Negative prompt:** "flesh, scales, simple, modern"
 - **Tags:** steampunk, fantasy, dragon, mechanical, gothic
 - **Ref image:** `public/images/suggestions/20260112_clockwork-dragon.jpg`
@@ -526,7 +527,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Underwater Metropolis — @gemini-agent — 2026-01-12
-- **Prompt:** "A bustling futuristic city enclosed in a giant glass dome at the bottom of the ocean. Schools of bioluminescent fish and giant marine creatures swim peacefully outside the dome, wh[...] "
+- **Prompt:** "A bustling futuristic city enclosed in a giant glass dome at the bottom of the ocean. Schools of bioluminescent fish and giant marine creatures swim peacefully outside the dome, while futuristic submarines dock at the ports."
 - **Negative prompt:** "land, sky, clouds, empty, ruins"
 - **Tags:** futuristic, city, underwater, sci-fi
 - **Ref image:** `public/images/suggestions/20260112_underwater-city.jpg`
@@ -534,7 +535,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Floating Islands Market — @gemini-agent — 2026-01-12
-- **Prompt:** "A vibrant and chaotic marketplace set on a series of fantastical floating islands, connected by rickety rope bridges. Strange, colorful alien merchants sell exotic fruits and myste[...] "
+- **Prompt:** "A vibrant and chaotic marketplace set on a series of fantastical floating islands, connected by rickety rope bridges. Strange, colorful alien merchants sell exotic fruits and mysterious artifacts to passing travelers."
 - **Negative prompt:** "ground, roads, cars, realistic"
 - **Tags:** fantasy, flying, islands, market, whimsical
 - **Ref image:** `public/images/suggestions/20260112_floating-market.jpg`
@@ -542,7 +543,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Desert Planet Oasis — @gemini-agent — 2026-01-12
-- **Prompt:** "A hidden oasis on a desert planet with two suns setting in the sky, casting long shadows. The oasis is centered around a shimmering, turquoise pool, surrounded by bizarre, crystall[...] "
+- **Prompt:** "A hidden oasis on a desert planet with two suns setting in the sky, casting long shadows. The oasis is centered around a shimmering, turquoise pool, surrounded by bizarre, crystalline rock formations."
 - **Negative prompt:** "green, Earth-like, trees, people"
 - **Tags:** sci-fi, desert, oasis, alien, landscape
 - **Ref image:** `public/images/suggestions/20260112_desert-oasis.jpg`
@@ -550,7 +551,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Ancient Tree of Souls — @gemini-agent — 2026-01-12
-- **Prompt:** "A colossal, ancient, glowing tree whose leaves and bark emit a soft, ethereal, spiritual light. Its roots are massive, intertwining with the landscape and appearing to connect to t[...] "
+- **Prompt:** "A colossal, ancient, glowing tree whose leaves and bark emit a soft, ethereal, spiritual light. Its roots are massive, intertwining with the landscape and appearing to connect to the glowing ley lines of the planet."
 - **Negative prompt:** "chopped, burning, daytime, simple"
 - **Tags:** fantasy, magic, tree, spiritual, glowing
 - **Ref image:** `public/images/suggestions/20260112_soul-tree.jpg`
@@ -558,7 +559,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Post-Apocalyptic Library — @gemini-agent — 2026-01-12
-- **Prompt:** "The grand, dusty interior of a ruined baroque library, reclaimed by nature. Huge shafts of volumetric light pierce through the collapsed, vaulted ceiling, illuminating floating dus[...] "
+- **Prompt:** "The grand, dusty interior of a ruined baroque library, reclaimed by nature. Huge shafts of volumetric light pierce through the collapsed, vaulted ceiling, illuminating floating dust motes and the overgrowth covering the shelves."
 - **Negative prompt:** "clean, new, people, pristine"
 - **Tags:** post-apocalyptic, ruins, library, atmospheric
 - **Ref image:** `public/images/suggestions/20260112_ruin-library.jpg`
@@ -566,7 +567,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Surreal Cloudscape — @gemini-agent — 2026-01-12
-- **Prompt:** "A dreamlike, minimalist landscape set high above the clouds at sunset. The clouds are a soft, pink and orange sea. Impossible geometric shapes and minimalist architecture float ser[...] "
+- **Prompt:** "A dreamlike, minimalist landscape set high above the clouds at sunset. The clouds are a soft, pink and orange sea. Impossible geometric shapes and minimalist architecture float serenely in the sky."
 - **Negative prompt:** "realistic, ground, busy, dark"
 - **Tags:** surreal, dreamlike, minimalist, clouds
 - **Ref image:** `public/images/suggestions/20260112_cloudscape.jpg`
@@ -574,7 +575,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Overgrown Train Station — @autogen-bot — 2026-01-12
-- **Prompt:** "A wide-angle photorealistic scene of an abandoned train station overtaken by nature: platforms cracked and lifted by roots, trains half-buried in moss, glass roofs shattered with v[...] "
+- **Prompt:** "A wide-angle photorealistic scene of an abandoned train station overtaken by nature: platforms cracked and lifted by roots, trains half-buried in moss, glass roofs shattered with vines hanging down."
 - **Negative prompt:** "modern signs, people, clean, sunny"
 - **Tags:** urban, ruins, nature, atmospheric
 - **Ref image:** `public/images/suggestions/20260112_overgrown-station.jpg`
@@ -582,7 +583,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Neon Rain Alley — @neonbot — 2026-01-12
-- **Prompt:** "A dark, rain-soaked alley in a cyberpunk city at night: neon signs in kanji and English flicker, puddles reflect saturated color, steam rises from grates, and a lone figure with a [...] "
+- **Prompt:** "A dark, rain-soaked alley in a cyberpunk city at night: neon signs in kanji and English flicker, puddles reflect saturated color, steam rises from grates, and a lone figure with a glowing umbrella walks away."
 - **Negative prompt:** "daylight, cartoon, bright, cheerful"
 - **Tags:** cyberpunk, neon, urban, night
 - **Ref image:** `public/images/suggestions/20260112_neon-alley.jpg`
@@ -590,7 +591,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Antique Map Room with Floating Islands — @mapbot — 2026-01-12
-- **Prompt:** "An ornately furnished, dimly lit study filled with antique maps and celestial globes; in the center, several miniature floating islands levitate above a polished mahogany table, ea[...] "
+- **Prompt:** "An ornately furnished, dimly lit study filled with antique maps and celestial globes; in the center, several miniature floating islands levitate above a polished mahogany table, each with its own tiny weather system."
 - **Negative prompt:** "modern electronics, fluorescent light, messy"
 - **Tags:** fantasy, interior, steampunk, magic
 - **Ref image:** `public/images/suggestions/20260112_map-room.jpg`
@@ -598,7 +599,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Microscopic Coral City — @biology-agent — 2026-01-12
-- **Prompt:** "A macro, photorealistic view of a coral reef that resembles an ancient submerged city: arched coral towers, tiny fish like airborne commuters, minuscule windows filled with biolumi[...] "
+- **Prompt:** "A macro, photorealistic view of a coral reef that resembles an ancient submerged city: arched coral towers, tiny fish like airborne commuters, minuscule windows filled with bioluminescent light."
 - **Negative prompt:** "land, buildings, people, murky"
 - **Tags:** macro, underwater, coral, photorealism
 - **Ref image:** `public/images/suggestions/20260112_coral-city.jpg`
@@ -606,7 +607,7 @@ This section is reserved for short, incremental contributions by agents (automat
 - **Status:** proposed
 
 ### Agent Suggestion: Auroral Glacier Cathedral — @aurora-agent — 2026-01-12
-- **Prompt:** "A majestic natural cathedral carved of blue ice and glacier, its spires and arches rimed with frost; above, a luminous aurora paints vivid green and purple curtains across the nigh[...] "
+- **Prompt:** "A majestic natural cathedral carved of blue ice and glacier, its spires and arches rimed with frost; above, a luminous aurora paints vivid green and purple curtains across the night sky, reflected in the ice below."
 - **Negative prompt:** "tropical, sunlight, warm colors, crowds"
 - **Tags:** landscape, aurora, ice, epic
 - **Ref image:** `public/images/suggestions/20260112_auroral-cathedral.jpg`
