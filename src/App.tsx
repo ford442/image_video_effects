@@ -14,8 +14,9 @@ const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
 const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
 const LOCAL_MANIFEST_URL = `/image_manifest.json`;
-// Placeholder base URL for bucket images. If this is wrong, the fallback Unsplash images will save the day.
-const BUCKET_BASE_URL = `https://storage.googleapis.com/ford442-storage-manager`;
+
+// UPDATED: Pointing directly to your bucket
+const BUCKET_BASE_URL = `https://storage.googleapis.com/my-sd35-space-images-2025`;
 const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
 
 const FALLBACK_IMAGES = [
@@ -70,6 +71,7 @@ function MainApp() {
 
     // --- State: Content ---
     const [imageManifest, setImageManifest] = useState<ImageRecord[]>([]);
+    const [videoList, setVideoList] = useState<string[]>([]); // New Video List State
     const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>();
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
     const [inputSource, setInputSource] = useState<InputSource>('image');
@@ -107,11 +109,28 @@ function MainApp() {
         });
     }, []);
 
+    // --- EFFECT: Auto-Switch Generative Mode ---
+    // This fixes the issue where generative mode wouldn't replace image/video input
+    useEffect(() => {
+        if (shaderCategory === 'shader') {
+            // When user selects "Procedural Generation", force input source to generative
+            setInputSource('generative');
+            setStatus('Switched to Generative Input');
+        } else {
+            // When user goes back to "Effects / Filters", default back to image (if currently generative)
+            if (inputSource === 'generative') {
+                setInputSource('image');
+                setStatus('Switched to Image Input');
+            }
+        }
+    }, [shaderCategory, inputSource]);
+
     // --- Effects & Initializers ---
     useEffect(() => {
         // Fetch the dynamic image manifest from the backend on startup
         const fetchImageManifest = async () => {
             let manifest: ImageRecord[] = [];
+            let videos: string[] = [];
 
             // 1. Try API
             try {
@@ -128,19 +147,31 @@ function MainApp() {
                 console.warn("Backend API failed, trying local manifest...", error);
             }
 
-            // 2. Try Local Manifest (Bucket Images) if API Empty
+            // 2. Try Local Manifest (Bucket Images & Videos) if API Empty
             if (manifest.length === 0) {
                 try {
                     const response = await fetch(LOCAL_MANIFEST_URL);
                     if (response.ok) {
                         const data = await response.json();
-                         // Construct full URLs if they are relative
-                         manifest = (data.images || []).map((item: any) => ({
-                            url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${item.url}`,
-                            tags: item.tags || [],
-                            description: item.tags ? item.tags.join(', ') : ''
-                        }));
-                        console.log("Loaded local image manifest:", manifest.length, "images");
+
+                        // Process Images
+                        manifest = (data.images || []).map((item: any) => {
+                            // Fix double bucket names if they exist in the manifest already
+                            const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
+                            return {
+                                url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`,
+                                tags: item.tags || [],
+                                description: item.tags ? item.tags.join(', ') : ''
+                            };
+                        });
+
+                        // Process Videos
+                        videos = (data.videos || []).map((item: any) => {
+                            const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
+                            return item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`;
+                        });
+
+                        console.log("Loaded local manifest:", manifest.length, "images,", videos.length, "videos");
                     }
                 } catch (e) {
                     console.warn("Failed to load local manifest:", e);
@@ -157,23 +188,14 @@ function MainApp() {
                 }));
             }
 
-            // Add Unsplash images to the pool regardless, to ensure variety
-            const existingUrls = new Set(manifest.map(m => m.url));
-            FALLBACK_IMAGES.forEach(url => {
-                if (!existingUrls.has(url)) {
-                    manifest.push({
-                         url,
-                         tags: ['fallback', 'unsplash', 'high-quality'],
-                         description: 'High Quality Fallback'
-                    });
-                }
-            });
-
             setImageManifest(manifest);
+            setVideoList(videos); // Update Video List State
 
             // Push to Renderer
             if (rendererRef.current) {
                 rendererRef.current.setImageList(manifest.map(m => m.url));
+                // If the renderer has a setVideoList method, call it here.
+                // Currently assuming Controls handles the selection via `selectedVideo` prop.
             }
         };
         fetchImageManifest();
@@ -327,7 +349,7 @@ function MainApp() {
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
                         onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
-                        inputSource={inputSource} setInputSource={setInputSource} videoList={[]}
+                        inputSource={inputSource} setInputSource={setInputSource} videoList={videoList}
                         selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo} isMuted={isMuted} setIsMuted={setIsMuted}
                         activeGenerativeShader={activeGenerativeShader} setActiveGenerativeShader={setActiveGenerativeShader}
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
