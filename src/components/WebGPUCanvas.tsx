@@ -127,7 +127,10 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                  if (videoSourceUrl) {
                      src = videoSourceUrl; // Uploaded video (blob:)
                  } else if (selectedVideo) {
-                     src = `videos/${selectedVideo}`; // Stock video
+                     // Handle both local files and full bucket URLs
+                     src = selectedVideo.startsWith('http')
+                        ? selectedVideo
+                        : `videos/${selectedVideo}`;
                  }
 
                  if (src && videoRef.current!.src !== src) {

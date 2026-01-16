@@ -207,9 +207,24 @@ const Controls: React.FC<ControlsProps> = ({
             {inputSource === 'video' && (
                 <div className="control-group" style={{marginTop: '10px'}}>
                      <div style={{marginBottom: '5px'}}>Select Video:</div>
-                     <select value={selectedVideo} onChange={(e) => setSelectedVideo(e.target.value)} style={{width: '100%', marginBottom: '8px'}}>
-                        <option value="">-- Choose Video --</option>
-                        {videoList.map(v => <option key={v} value={v}>{v}</option>)}
+                     <select
+                        value={selectedVideo}
+                        onChange={(e) => {
+                            setSelectedVideo(e.target.value);
+                            setInputSource('video');
+                        }}
+                        className="control-select"
+                        style={{width: '100%', marginBottom: '8px'}}
+                     >
+                        <option value="" disabled>Select a Video...</option>
+                        {videoList.map((v) => {
+                            const fileName = v.split('/').pop() || v;
+                            return (
+                                <option key={v} value={v}>
+                                    {fileName}
+                                </option>
+                            );
+                        })}
                      </select>
                      <button onClick={onUploadVideoTrigger} style={{width: '100%', marginBottom: '8px'}}>Upload Video</button>
                      <label style={{display: 'flex', alignItems: 'center'}}>
