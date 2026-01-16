@@ -249,10 +249,23 @@ export class Renderer {
         featureCheck.forEach(f => {
             if (adapter.features.has(f)) requiredFeatures.push(f as GPUFeatureName);
         });
+
+        // Request highest limits to prevent buffer size errors
+        const requiredLimits: Record<string, number> = {};
+        if (adapter.limits.maxBufferSize) {
+             requiredLimits.maxBufferSize = adapter.limits.maxBufferSize;
+        }
+        if (adapter.limits.maxStorageBufferBindingSize) {
+             requiredLimits.maxStorageBufferBindingSize = adapter.limits.maxStorageBufferBindingSize;
+        }
+        if (adapter.limits.maxTextureDimension2D) {
+             requiredLimits.maxTextureDimension2D = adapter.limits.maxTextureDimension2D;
+        }
         
         // Initialize Device
         this.device = await adapter.requestDevice({
             requiredFeatures,
+            requiredLimits
         });
 
         if (this.isDestroyed) {
