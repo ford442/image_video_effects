@@ -375,6 +375,66 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **License / Attribution:** CC0
 - **Notes:** The key is the contrast between the blocky shapes and the realistic lighting.
 
+### Suggestion: Stained Glass Forest
+- **Prompt:** "A breathtaking view inside a cathedral made entirely of living trees, where the leaves form a natural stained glass canopy. Sunlight streams through the translucent, multi-colored leaves (autumnal reds, golds, and greens), casting kaleidoscope patterns on the mossy floor. The atmosphere is holy and serene."
+- **Negative prompt:** "man-made structure, stone, dark, gloomy"
+- **Tags:** fantasy, forest, stained glass, light, ethereal
+- **Style / Reference:** Fantasy Concept Art, Ethereal
+- **Composition:** Low angle, looking up at the canopy
+- **Color palette:** Jewel tones, gold, green, ruby red
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260215_stained_glass_forest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the translucency of the leaves.
+
+### Suggestion: Graffiti Alleyway Mural
+- **Prompt:** "A wide shot of a gritty urban alleyway featuring a massive, vibrant graffiti mural of a roaring tiger breaking through a brick wall. The spray paint texture is visible, with drips and layers. Puddles on the ground reflect the colorful art. The lighting is overcast, making the colors pop."
+- **Negative prompt:** "clean, vector, cartoon, 3D render, luxury"
+- **Tags:** street art, graffiti, urban, tiger, grunge
+- **Style / Reference:** Urban Photography, Street Art
+- **Composition:** Wide shot, slightly off-center
+- **Color palette:** Concrete grey, vibrant orange, electric blue, black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260215_graffiti_mural.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the texture of the brick and paint.
+
+### Suggestion: X-Ray Floral Composition
+- **Prompt:** "An artistic X-ray photography composition of a bouquet of lilies and tulips. The petals are ghost-like and translucent, revealing the delicate internal veins and structures. The background is deep black, highlighting the skeletal beauty of the flowers. High contrast and fine detail."
+- **Negative prompt:** "color, opaque, painting, illustration, blurry"
+- **Tags:** x-ray, flowers, abstract, botanical, monochrome
+- **Style / Reference:** X-Ray Photography, Fine Art
+- **Composition:** Centered, flat lay
+- **Color palette:** Grayscale, inverted white on black
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260215_xray_flowers.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the image looks like a medical X-ray or fine art radiograph.
+
+### Suggestion: Retro Travel Poster: Mars
+- **Prompt:** "A vintage 1930s style travel poster advertising 'Visit Mars'. Flat vector illustration style with bold shapes and limited color palette. A sleek art-deco rocket stands on red dunes, with two moons in the teal sky. Typography at the bottom says 'MARS' in a retro font."
+- **Negative prompt:** "photorealistic, 3D, noise, gradient, messy"
+- **Tags:** retro, vintage, poster, mars, vector
+- **Style / Reference:** WPA Poster, Art Deco, Vector Art
+- **Composition:** Vertical poster layout
+- **Color palette:** Rust red, teal, cream, mustard yellow
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20260215_mars_poster.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Needs to look like a printed lithograph.
+
+### Suggestion: Baroque Cyborg Portrait
+- **Prompt:** "A hyper-realistic portrait of a cyborg noblewoman in the style of the late Baroque period. Her face is porcelain white, but portions reveal intricate gold clockwork and filigree gears underneath. She wears a powdered wig and a dress made of fiber-optic lace. Soft, dramatic lighting."
+- **Negative prompt:** "low quality, anime, cartoon, sketch"
+- **Tags:** steampunk, baroque, cyborg, portrait, gold
+- **Style / Reference:** Oil Painting, Sci-Fi Baroque
+- **Composition:** Medium shot, portrait
+- **Color palette:** Gold, white, deep velvet red, bronze
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20260215_baroque_cyborg.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Blend the mechanical and organic seamlessly.
+
 ---
 
 ## Attribution & legal
