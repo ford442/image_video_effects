@@ -503,6 +503,67 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ensure the fabric looks organic and translucent.
 
+### Suggestion: Miniature Railway Chase
+- **Prompt:** "A macro tilt-shift photography shot of a miniature steam train chase scene on a model railway. The trains are tiny but incredibly detailed, puffing cotton smoke. They race through a miniature pine forest made of bottle brushes. The lighting mimics a sunny afternoon with shallow depth of field."
+- **Negative prompt:** "full size train, real forest, dark, blurry"
+- **Tags:** retro, macro, still life, whimsical, bright
+- **Style / Reference:** Tilt-shift Photography, Miniature Faking
+- **Composition:** High angle, macro focus
+- **Color palette:** Bright greens, train engine black/red, sunny yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260223_miniature_railway.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use tilt-shift blur to emphasize the scale.
+
+### Suggestion: The Eye in the Storm
+- **Prompt:** "A terrifying, hyper-realistic wide shot of a massive hurricane viewed from a ship at sea. In the center of the storm's eye, a colossal, non-Euclidean glowing eye gazes down from the heavens. The water is rough and dark, with jagged lightning illuminating the roiling clouds."
+- **Negative prompt:** "calm, sunny, land, cartoon, low resolution"
+- **Tags:** horror, fantasy, landscape, nature, dark, moody
+- **Style / Reference:** Lovecraftian Horror, Cinematic
+- **Composition:** Wide shot, low angle from water surface
+- **Color palette:** Dark blues, greys, electric purple/white lightning
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260223_eye_in_storm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the scale of the eye against the storm.
+
+### Suggestion: Layered Paper Forest
+- **Prompt:** "A digital art illustration mimicking a backlit paper-cut light box. Layers of white paper are cut into silhouettes of a dense forest and distant mountains. Warm golden light shines from behind, creating depth through shadows and varying opacity of the paper layers."
+- **Negative prompt:** "realistic, 3D render, photo, flat, cold colors"
+- **Tags:** fantasy, landscape, nature, ethereal, cinematic
+- **Style / Reference:** Paper Art, Silhouette, Lightbox
+- **Composition:** Centered, layered depth
+- **Color palette:** Gold, orange, deep brown shadows, warm white
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260223_paper_forest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lighting needs to look like it's coming from behind the paper.
+
+### Suggestion: Digital Fragmentation
+- **Prompt:** "A stylized portrait of a hacker where their face is partially dissolving into digital pixels and data streams (datamoshing). The left side is a realistic human face, while the right side fragments into colorful glitch artifacts, compression blocks, and cascading code."
+- **Negative prompt:** "perfect face, clean, painting, black and white"
+- **Tags:** cyberpunk, sci-fi, portrait, abstract, dark
+- **Style / Reference:** Glitch Art, Datamoshing, Cyberpunk
+- **Composition:** Close-up portrait
+- **Color palette:** Skin tones, neon green, magenta, digital noise
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260223_digital_fragmentation.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Balance the realism with the glitch effect.
+
+### Suggestion: Gummy Bear Canyon
+- **Prompt:** "A surreal landscape composed entirely of translucent gummy candy. The river is flowing soda, the rocks are rock candy, and the trees are giant lollipops. Sunlight passes through the translucent gummy mountains, casting colorful caustics on the sugary ground."
+- **Negative prompt:** "realistic rock, water, dirt, dark, scary"
+- **Tags:** fantasy, landscape, surreal, whimsical, bright
+- **Style / Reference:** 3D Render, Surrealism
+- **Composition:** Wide angle landscape
+- **Color palette:** Translucent red, green, orange, bright blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260223_gummy_canyon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the subsurface scattering and translucency of the materials.
+
+
 ---
 
 ## Attribution & legal
