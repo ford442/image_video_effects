@@ -28,8 +28,10 @@ This file stores curated image suggestions for text-to-image generation and prov
 
 ## Suggestion template (copy & paste)
 
+> **Note:** Please append new suggestions to the **Prompt examples** section, inserting them just before the **Attribution & legal** header.
+
 ```md
-## Suggestion: <Title>
+### Suggestion: <Title>
 - **Prompt:** "<Write the prompt here — be specific about subject, style, lighting, mood, level of detail>"
 - **Negative prompt:** "<Optional: words to exclude (e.g., watermark, lowres)>"
 - **Tags:** tag1, tag2, tag3 (e.g., photorealism, cyberpunk, portrait)
@@ -502,6 +504,68 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20260215_bioluminescent_fashion.jpg`
 - **License / Attribution:** CC0
 - **Notes:** Ensure the fabric looks organic and translucent.
+
+---
+
+### Suggestion: Infrared Dreamscape
+- **Prompt:** "A surreal landscape shot on Kodak Aerochrome infrared film. The dense forest foliage is a vibrant, shocking pink and magenta, contrasting deeply with a turquoise blue river and sky. A solitary wooden cabin sits on the riverbank."
+- **Negative prompt:** "green trees, realistic colors, digital, low contrast"
+- **Tags:** infrared, aerochrome, surreal, landscape, pink
+- **Style / Reference:** Analog Photography, Kodak Aerochrome
+- **Composition:** Wide shot, rule of thirds
+- **Color palette:** Hot pink, Magenta, Turquoise, White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260301_infrared_dream.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the grain and the specific color shift of infrared film.
+
+### Suggestion: Vaporwave Classical
+- **Prompt:** "A Vaporwave aesthetic composition featuring a classical white marble bust of Helios wearing pixelated black sunglasses. The statue is blowing a pink bubblegum bubble. The background is a retro neon grid fading into a purple and cyan gradient sunset."
+- **Negative prompt:** "realistic, historical, boring, sepia, warm colors"
+- **Tags:** vaporwave, aesthetic, statue, surreal, retro
+- **Style / Reference:** Vaporwave, Glitch Art, Pop Art
+- **Composition:** Centered portrait
+- **Color palette:** Cyan, Magenta, Pink, Marble White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260301_vaporwave_statue.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Combine the high art of the statue with the low-fi digital aesthetic.
+
+### Suggestion: Layered Paper Lightbox
+- **Prompt:** "A backlit paper-cut light box art piece depicting a deep forest scene. Multiple layers of white paper silhouettes create depth. In the distance, a deer stands between the trees. The backlight is a warm golden glow that fades to deep orange at the edges."
+- **Negative prompt:** "flat, drawing, painting, 3D render, realistic trees"
+- **Tags:** papercut, lightbox, silhouette, craft, layered
+- **Style / Reference:** Paper Art, Shadow Box
+- **Composition:** Layered depth, centered subject
+- **Color palette:** White (paper), Orange/Gold (light), Black (shadows)
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260301_paper_lightbox.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the shadows cast by the paper layers to show thickness.
+
+### Suggestion: Glitch Art Portrait
+- **Prompt:** "A digital glitch art portrait of a cyberpunk hacker. Half of their face is photorealistic, while the other half is heavily datamoshed, pixelated, and smeared into digital noise. CRT scanlines and chromatic aberration overlay the image."
+- **Negative prompt:** "clean, smooth, perfect, painting, lowres"
+- **Tags:** glitch, datamoshing, cyberpunk, portrait, abstract
+- **Style / Reference:** Glitch Art, Datamoshing
+- **Composition:** Close-up portrait
+- **Color palette:** Neon green, static grey, skin tones, electric blue
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20260301_glitch_portrait.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The transition between real and glitch should be jagged and digital.
+
+### Suggestion: Retro Terminal Room
+- **Prompt:** "A dimly lit, claustrophobic server room from the late 1970s (Cassette Futurism). Walls are lined with bulky mainframe computers featuring reeling tape drives and flashing incandescent bulbs. Green phosphor monochrome monitors display scrolling code. Cables hang messily from the ceiling."
+- **Negative prompt:** "modern, LCD, blue LEDs, clean, white"
+- **Tags:** cassette futurism, retro, technology, 70s, sci-fi
+- **Style / Reference:** Sci-Fi Movie Set, Analog Tech
+- **Composition:** One-point perspective down the aisle
+- **Color palette:** Phosphor green, beige, dark grey, amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260301_retro_terminal.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the tactility of the buttons and the glow of the CRTs.
 
 ---
 
