@@ -1,0 +1,8 @@
+{
+  "id": "neon-edge-reveal",
+  "name": "Neon Edge Reveal",
+  "url": "shaders/neon-edge-reveal.wgsl",
+  "category": "image",
+  "description": "Neon edge detection with interactive flashlight reveal.",
+  "params": []
+}

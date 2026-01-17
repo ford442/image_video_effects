@@ -1,0 +1,8 @@
+{
+  "id": "voronoi-faceted-glass",
+  "name": "Voronoi Faceted Glass",
+  "url": "shaders/voronoi-faceted-glass.wgsl",
+  "category": "image",
+  "description": "Cellular glass distortion effect.",
+  "params": []
+}
