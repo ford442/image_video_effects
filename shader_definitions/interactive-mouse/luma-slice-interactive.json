@@ -1,0 +1,41 @@
+{
+  "id": "luma-slice-interactive",
+  "name": "Luma Slice Interactive",
+  "url": "shaders/luma-slice-interactive.wgsl",
+  "category": "image",
+  "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position.",
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Displace Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "slices",
+      "name": "Slice Density",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0
+    },
+    {
+      "id": "rgb_shift",
+      "name": "RGB Shift",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "phase",
+      "name": "Phase Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ]
+}

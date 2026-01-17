@@ -1,0 +1,41 @@
+{
+  "id": "voronoi-zoom-turbulence",
+  "name": "Voronoi Zoom Turbulence",
+  "url": "shaders/voronoi-zoom-turbulence.wgsl",
+  "category": "visual-effects",
+  "description": "A cellular grid where each cell acts as a zooming lens, with turbulent edges controlled by the mouse.",
+  "params": [
+    {
+      "id": "density",
+      "name": "Cell Density",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom Level",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "complex-geometry"
+  ]
+}
