@@ -628,6 +628,66 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the tactility of the buttons and the glow of the CRTs.
 
+### Suggestion: Ceramic Tea Party
+- **Prompt:** "A surreal tea party scene where the characters (rabbits and hatters) and the setting are made entirely of polished, painted porcelain. Fine cracks in the material are filled with gold (kintsugi). The table is set in a garden of ceramic flowers."
+- **Negative prompt:** "flesh, fur, realistic skin, dull, broken"
+- **Tags:** surreal, porcelain, kintsugi, tea party, fantasy
+- **Style / Reference:** 3D Render, Ceramic Art, Alice in Wonderland
+- **Composition:** Eye level, table setting
+- **Color palette:** White, cobalt blue, gold, pastel pink
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260401_ceramic_tea.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the glossiness of the porcelain and the gold cracks.
+
+### Suggestion: Bioluminescent Desert
+- **Prompt:** "A majestic night landscape of a vast desert. The sand dunes ripple with faint blue bioluminescence. Giant alien cacti glow with internal neon green light. A massive, ringed planet dominates the starry sky."
+- **Negative prompt:** "daylight, sun, water, forest, city"
+- **Tags:** sci-fi, desert, bioluminescence, night, alien
+- **Style / Reference:** Sci-Fi Concept Art, National Geographic (Alien)
+- **Composition:** Wide shot, low angle
+- **Color palette:** Deep blue, neon green, sand beige, black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260401_bio_desert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Contrast the dark sky with the glowing terrestrial elements.
+
+### Suggestion: Isometric Pixel Gamer Room
+- **Prompt:** "A cozy, high-fidelity isometric pixel art view of a gamer's bedroom. A desk with a dual-monitor setup glows. Posters cover the walls. A cat sleeps on a beanbag. Rain falls outside the window."
+- **Negative prompt:** "blurry, vector, 3D render, realistic, messy"
+- **Tags:** pixel art, isometric, interior, cozy, retro
+- **Style / Reference:** Pixel Art, 16-bit, Cozy Games
+- **Composition:** Isometric view (45 degrees)
+- **Color palette:** Warm indoors, cool blue outdoors, neon accents
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260401_pixel_room.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure clear pixel definition and grid alignment.
+
+### Suggestion: Miniature Food Kingdom
+- **Prompt:** "A whimsical landscape photography shot where giant food items form the terrain. Steamed broccoli florets are towering trees. Mashed potato mountains rise in the distance. A river of brown gravy flows through a valley of peas."
+- **Negative prompt:** "rotten food, messy, plastic, realistic size"
+- **Tags:** whimsical, food, miniature, landscape, fun
+- **Style / Reference:** Macro Photography, Cloudy with a Chance of Meatballs
+- **Composition:** Tilt-shift, bird's eye view
+- **Color palette:** Vibrant green, creamy white, rich brown
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260401_food_kingdom.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use depth of field to sell the miniature scale.
+
+### Suggestion: Glass Blower's Workshop
+- **Prompt:** "A warm, atmospheric interior shot of a traditional glass blower's workshop. A master craftsman shapes a glowing orange molten glass bubble on a blowpipe. Shelves in the background are lined with colorful, delicate glass vases catching the light."
+- **Negative prompt:** "modern factory, cold light, plastic, broken glass"
+- **Tags:** craft, glass, interior, warm, portrait
+- **Style / Reference:** Cinematic Documentary, Artisan
+- **Composition:** Medium shot, focus on the molten glass
+- **Color palette:** Glowing orange, amber, dark shadows, prismatic reflections
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260401_glass_workshop.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the intense heat and light of the molten glass.
+
 ---
 
 ## Attribution & legal
