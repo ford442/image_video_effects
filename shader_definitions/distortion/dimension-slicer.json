@@ -1,0 +1,38 @@
+{
+  "id": "dimension-slicer",
+  "name": "Dimension Slicer",
+  "url": "shaders/dimension-slicer.wgsl",
+  "category": "distortion",
+  "features": ["mouse-driven", "chromatic-aberration"],
+  "description": "Opens a dimensional rift at the mouse position, distorting space inside a rotating slice.",
+  "params": [
+    {
+      "id": "width",
+      "name": "Slice Width",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "distortion",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "angle",
+      "name": "Rotation",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
