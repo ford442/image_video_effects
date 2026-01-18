@@ -61,10 +61,7 @@ fn vs_main(@builtin(vertex_index) VertexIndex: u32) -> VertexOutput {
 
 @fragment
 fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-    // Optional: Bounds check to create clean edges if using "Contain" instead of "Cover"
-    // For "Cover" mode (zoom to fill), this isn't strictly necessary but good practice.
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-    }
+    // We are in "Cover" mode, so UVs are always inside [0, 1].
+    // No bounds check needed, which avoids "textureSample inside non-uniform control flow" errors.
     return textureSample(myTexture, mySampler, uv);
 }
