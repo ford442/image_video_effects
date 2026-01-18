@@ -1,0 +1,37 @@
+{
+  "id": "voronoi-chaos",
+  "name": "Voronoi Chaos",
+  "url": "shaders/voronoi-chaos.wgsl",
+  "category": "distortion",
+  "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
+  "params": [
+    {
+      "name": "Cell Scale",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Chaos Amount",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Color Mix",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.0
+    },
+    {
+      "name": "Center Dot Size",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    }
+  ]
+}
