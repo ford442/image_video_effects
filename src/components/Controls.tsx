@@ -96,7 +96,10 @@ const Controls: React.FC<ControlsProps> = ({
                             type="radio"
                             value="image"
                             checked={inputSource === 'image'}
-                            onChange={() => setInputSource('image')}
+                            onChange={() => {
+                                setInputSource('image');
+                                setShaderCategory('image');
+                            }}
                         /> Image
                     </label>
                     <label>
@@ -104,7 +107,10 @@ const Controls: React.FC<ControlsProps> = ({
                             type="radio"
                             value="video"
                             checked={inputSource === 'video'}
-                            onChange={() => setInputSource('video')}
+                            onChange={() => {
+                                setInputSource('video');
+                                setShaderCategory('image');
+                            }}
                         /> Video
                     </label>
                     <label>
@@ -112,7 +118,10 @@ const Controls: React.FC<ControlsProps> = ({
                             type="radio"
                             value="webcam"
                             checked={inputSource === 'webcam'}
-                            onChange={() => setInputSource('webcam')}
+                            onChange={() => {
+                                setInputSource('webcam');
+                                setShaderCategory('image');
+                            }}
                         /> Webcam
                     </label>
                     <label>
@@ -120,7 +129,10 @@ const Controls: React.FC<ControlsProps> = ({
                             type="radio"
                             value="generative"
                             checked={inputSource === 'generative'}
-                            onChange={() => setInputSource('generative')}
+                            onChange={() => {
+                                setInputSource('generative');
+                                setShaderCategory('shader');
+                            }}
                         /> Generative
                     </label>
                 </div>
