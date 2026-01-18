@@ -25,6 +25,7 @@ export class Renderer {
     private dataTextureA!: GPUTexture;
     private dataTextureB!: GPUTexture;
     private dataTextureC!: GPUTexture;
+    private emptyTexture!: GPUTexture; // New empty texture for fallback
 
     // Intermediate textures for ping-pong
     private pingPongTexture1!: GPUTexture;
@@ -184,7 +185,7 @@ export class Renderer {
         const rwTextureDesc: GPUTextureDescriptor = {
             size: [safeWidth, safeHeight],
             format: 'rgba32float',
-            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
+            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
         };
         if (this.writeTexture) this.writeTexture.destroy();
         this.writeTexture = this.device.createTexture(rwTextureDesc);
@@ -232,6 +233,7 @@ export class Renderer {
         if (this.writeTexture) this.writeTexture.destroy();
         if (this.pingPongTexture1) this.pingPongTexture1.destroy();
         if (this.pingPongTexture2) this.pingPongTexture2.destroy();
+        if (this.emptyTexture) this.emptyTexture.destroy();
         if (this.device) this.device.destroy();
     }
 
@@ -443,6 +445,20 @@ export class Renderer {
         const safeWidth = Math.max(1, width);
         const safeHeight = Math.max(1, height);
 
+        // --- Create Empty Texture for Fallback ---
+        this.emptyTexture = this.device.createTexture({
+            size: [1, 1],
+            format: 'rgba32float',
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+        });
+        // Initialize to transparent black
+        this.device.queue.writeTexture(
+            { texture: this.emptyTexture },
+            new Float32Array([0, 0, 0, 1]), 
+            { bytesPerRow: 16 }, 
+            [1, 1]
+        );
+
         this.filteringSampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear',
@@ -483,7 +499,7 @@ export class Renderer {
         const rwTextureDesc: GPUTextureDescriptor = {
             size: [safeWidth, safeHeight],
             format: 'rgba32float',
-            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
+            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
         };
 
         this.writeTexture = this.device.createTexture(rwTextureDesc);
@@ -579,10 +595,6 @@ export class Renderer {
         this.computePipelineLayout = this.device.createPipelineLayout({
             bindGroupLayouts: [computeBindGroupLayout],
         });
-        
-        // LAZY LOADING OPTIMIZATION: 
-        // We no longer loop through this.shaderList here. 
-        // Shaders will be compiled on-demand in loadComputeShader()
     }
 
     private async loadComputeShader(id: string): Promise<void> {
@@ -686,6 +698,7 @@ export class Renderer {
         y: number
     }, mousePosition: { x: number, y: number }, isMouseDown: boolean, generativeShaderId?: string): void {
         if (this.isDestroyed || !this.device || !this.filteringSampler || !slotParams || slotParams.length === 0) return;
+        // Skip check for imageTexture if we are in generative mode, as it might use emptyTexture
         if (this.inputSource === 'image' && !this.imageTexture) return;
 
         const currentTime = performance.now() / 1000.0;
@@ -716,7 +729,8 @@ export class Renderer {
             if (!this.pipelines.has(generativeShaderId)) {
                 this.loadComputeShader(generativeShaderId);
                 // Fallback to something safe to prevent crash if pipeline not ready
-                currentInputTexture = this.imageTexture || this.pingPongTexture2;
+                // Use emptyTexture instead of pingPongTexture2 to prevent read/write hazards
+                currentInputTexture = this.imageTexture || this.emptyTexture;
             } else {
                  const genPipeline = this.pipelines.get(generativeShaderId) as GPUComputePipeline;
 
@@ -730,14 +744,11 @@ export class Renderer {
                  let genZoomW = isMouseDown ? 1.0 : 0.0;
                  genUniformArray.set([genTargetX, genTargetY, genZoomW, 0.0], 4);
 
-                 // Note: Generative shaders use basic uniforms (time, mouse, canvas size)
-                 // Ripple data is not currently passed to generative shaders
-
                  this.device.queue.writeBuffer(this.computeUniformBuffer, 0, genUniformArray);
 
                  // Use pingPongTexture2 as output for Generative Pass
-                 // Input binding (1) is ignored by generative shaders but must be valid.
-                 const dummyInput = this.imageTexture || this.videoTexture || this.pingPongTexture2;
+                 // Fix: Ensure dummyInput is NOT the same as output (pingPongTexture2)
+                 const dummyInput = this.imageTexture || this.videoTexture || this.emptyTexture;
 
                  if (dummyInput && this.pingPongTexture2) {
                      const genBindGroup = this.getComputeBindGroup(genPipeline, dummyInput.createView(), this.pingPongTexture2.createView());
@@ -763,10 +774,8 @@ export class Renderer {
         });
         
         // --- LAZY LOADING CHECK ---
-        // Filter out shaders that are not yet loaded, triggering their load.
         const readyChain = activeChain.filter(item => {
             if (this.pipelines.has(item.mode)) return true;
-            // If not loaded, trigger load and skip this frame
             this.loadComputeShader(item.mode);
             return false;
         });
@@ -810,13 +819,12 @@ export class Renderer {
 
                 const uniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
                 
-                // Determine target point and zoomConfigW based on Shader Features (Left Side Logic) vs Mode (Right Side Logic)
                 let targetX = farthestPoint.x;
                 let targetY = farthestPoint.y;
                 let zoomConfigW = 0;
 
                 if (mode === 'infinite-zoom') {
-                    zoomConfigW = params.depthThreshold; // Infinite zoom uses W for depth threshold
+                    zoomConfigW = params.depthThreshold;
                 }
 
                 const shaderEntry = this.shaderList.find(s => s.id === mode);
@@ -825,18 +833,13 @@ export class Renderer {
                         targetX = mousePosition.x;
                         targetY = mousePosition.y;
                     }
-                    // For mouse-driven non-infinite-zoom shaders, use W for interaction state
                     if (mode !== 'infinite-zoom') {
                         zoomConfigW = isMouseDown ? 1.0 : 0.0;
                     }
                 }
 
-                uniformArray.set([currentTime, targetX, targetY, zoomConfigW], 4);
-                uniformArray.set([this.canvas.width, this.canvas.height], 0); 
-                // Correct Packing:
-                // Vec4 0: [Time, RippleCount, Width, Height]
                 uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0); 
-                // Vec4 1: [TargetX, TargetY, ZoomConfigW, PADDING] -> overwritten by next steps usually, but we set it above
+                uniformArray.set([targetX, targetY, zoomConfigW, 0.0], 4);
 
                 const zoomParamsArr = new Float32Array([
                     params.zoomParam1,
@@ -913,7 +916,6 @@ export class Renderer {
              passEncoder.setBindGroup(0, this.bindGroups.get('galaxy')!);
              passEncoder.draw(6);
         } else if ((primaryMode === 'video' || this.inputSource === 'video' || this.inputSource === 'webcam') && primaryMode === 'video' && imageVideoPipeline && this.bindGroups.has('video')) {
-            // Render video pass-through if explicitly selected
              const uniformArray = new Float32Array(8);
              uniformArray.set([this.canvas.width, this.canvas.height, this.videoTexture.width, this.videoTexture.height], 0);
              uniformArray.set([currentTime, 0, 0, 0], 4);
@@ -922,17 +924,32 @@ export class Renderer {
              passEncoder.setBindGroup(0, this.bindGroups.get('video')!);
              passEncoder.draw(4);
         } else {
-             // If active chain exists (and has loaded shaders), render the output texture
-             if (readyChain.length > 0) {
+             // Logic Update: Handle case where Generative is active but no shader chain exists
+             const hasEffects = readyChain.length > 0;
+             const isGenerative = this.inputSource === 'generative';
+             
+             if (hasEffects || isGenerative) {
+                 // If generative with no effects, output is in pingPongTexture2.
+                 // We need to copy it to writeTexture to use the standard liquid-render pipeline.
+                 if (isGenerative && !hasEffects && this.pingPongTexture2 && this.writeTexture) {
+                      const copyEncoder = this.device.createCommandEncoder();
+                      copyEncoder.copyTextureToTexture(
+                          { texture: this.pingPongTexture2 },
+                          { texture: this.writeTexture },
+                          [this.canvas.width, this.canvas.height]
+                      );
+                      this.device.queue.submit([copyEncoder.finish()]);
+                 }
+                 
+                 // Render writeTexture to screen
                  if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
                     passEncoder.setPipeline(liquidRenderPipeline);
                     passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
                     passEncoder.draw(4);
                 }
              } else {
-                 // No effects or effects loading. Draw input directly (scaled).
+                 // No effects, not generative. Draw input (image/video) directly.
                  const isVideo = (this.inputSource === 'video' || this.inputSource === 'webcam');
-                 // Ensure texture exists
                  if ((isVideo && this.videoTexture) || (!isVideo && this.imageTexture)) {
                      const groupName = isVideo ? 'video' : 'image';
                      const texture = isVideo ? this.videoTexture : this.imageTexture;
