@@ -735,12 +735,11 @@ export class Renderer {
             if (!this.pipelines.has(generativeShaderId)) {
                 this.loadComputeShader(generativeShaderId);
                 // Fallback to something safe to prevent crash if pipeline not ready
-                // Use emptyTexture instead of pingPongTexture2 to prevent read/write hazards
                 currentInputTexture = this.imageTexture || this.emptyTexture;
             } else {
                  const genPipeline = this.pipelines.get(generativeShaderId) as GPUComputePipeline;
 
-                 // Update Uniforms for Generative Shader (Similar to loop logic)
+                 // Update Uniforms for Generative Shader
                  const genUniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
                  genUniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
 
@@ -753,7 +752,6 @@ export class Renderer {
                  this.device.queue.writeBuffer(this.computeUniformBuffer, 0, genUniformArray);
 
                  // Use pingPongTexture2 as output for Generative Pass
-                 // Fix: Ensure dummyInput is NOT the same as output (pingPongTexture2)
                  const dummyInput = this.imageTexture || this.videoTexture || this.emptyTexture;
 
                  if (dummyInput && this.pingPongTexture2) {
@@ -922,7 +920,6 @@ export class Renderer {
              passEncoder.setBindGroup(0, this.bindGroups.get('galaxy')!);
              passEncoder.draw(6);
         } else if ((primaryMode === 'video' || this.inputSource === 'video' || this.inputSource === 'webcam') && primaryMode === 'video' && imageVideoPipeline && this.bindGroups.has('video')) {
-             // Ensure uniforms match imageVideo.wgsl (Cover Mode)
              const uniformArray = new Float32Array(8);
              uniformArray.set([this.canvas.width, this.canvas.height, this.videoTexture.width, this.videoTexture.height], 0);
              uniformArray.set([currentTime, 0, 0, 0], 4);
@@ -940,12 +937,22 @@ export class Renderer {
                  // We need to copy it to writeTexture to use the standard liquid-render pipeline.
                  if (isGenerative && !hasEffects && this.pingPongTexture2 && this.writeTexture) {
                       const copyEncoder = this.device.createCommandEncoder();
-                      copyEncoder.copyTextureToTexture(
-                          { texture: this.pingPongTexture2 },
-                          { texture: this.writeTexture },
-                          [this.canvas.width, this.canvas.height]
-                      );
-                      this.device.queue.submit([copyEncoder.finish()]);
+
+                      // --- CRITICAL FIX START ---
+                      // Safely clamp copy dimensions to prevent "touches outside" crash
+                      // This ensures we never try to copy more than the smallest texture dimension
+                      const safeCopyW = Math.min(this.canvas.width, this.pingPongTexture2.width, this.writeTexture.width);
+                      const safeCopyH = Math.min(this.canvas.height, this.pingPongTexture2.height, this.writeTexture.height);
+
+                      if (safeCopyW > 0 && safeCopyH > 0) {
+                          copyEncoder.copyTextureToTexture(
+                              { texture: this.pingPongTexture2 },
+                              { texture: this.writeTexture },
+                              [safeCopyW, safeCopyH]
+                          );
+                          this.device.queue.submit([copyEncoder.finish()]);
+                      }
+                      // --- CRITICAL FIX END ---
                  }
                  
                  // Render writeTexture to screen
@@ -962,7 +969,6 @@ export class Renderer {
                      const texture = isVideo ? this.videoTexture : this.imageTexture;
 
                      if (imageVideoPipeline && this.bindGroups.has(groupName) && texture) {
-                         // Ensure uniforms match imageVideo.wgsl (Cover Mode)
                          const uniformArray = new Float32Array(8);
                          uniformArray.set([this.canvas.width, this.canvas.height, texture.width, texture.height], 0);
                          uniformArray.set([currentTime, 0, 0, 0], 4);

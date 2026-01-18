@@ -37,8 +37,9 @@ fn vs_main(@builtin(vertex_index) VertexIndex: u32) -> VertexOutput {
     );
 
     // --- ASPECT RATIO CORRECTION (COVER MODE) ---
+    // Calculates scale factors to ensure the image covers the entire screen
+    // without stretching, cropping the excess.
     let screenAspect = uniforms.canvasWidth / uniforms.canvasHeight;
-    // Prevent divide by zero if texture hasn't loaded yet
     let texW = max(uniforms.textureWidth, 1.0);
     let texH = max(uniforms.textureHeight, 1.0);
     let imageAspect = texW / texH;
@@ -46,11 +47,13 @@ fn vs_main(@builtin(vertex_index) VertexIndex: u32) -> VertexOutput {
     var uv = baseUV;
 
     if (screenAspect > imageAspect) {
-        // Screen is wider than image: Fit Width, crop Height
+        // Screen is wider than image: Fit Width (1.0), crop Height
+        // The image is "zoomed in" vertically to fill the width
         let scaleHeight = imageAspect / screenAspect;
         uv.y = (uv.y - 0.5) * scaleHeight + 0.5;
     } else {
-        // Screen is taller than image: Fit Height, crop Width
+        // Screen is taller than image: Fit Height (1.0), crop Width
+        // The image is "zoomed in" horizontally to fill the height
         let scaleWidth = screenAspect / imageAspect;
         uv.x = (uv.x - 0.5) * scaleWidth + 0.5;
     }
@@ -61,7 +64,5 @@ fn vs_main(@builtin(vertex_index) VertexIndex: u32) -> VertexOutput {
 
 @fragment
 fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-    // We are in "Cover" mode, so UVs are always inside [0, 1].
-    // No bounds check needed, which avoids "textureSample inside non-uniform control flow" errors.
     return textureSample(myTexture, mySampler, uv);
 }
