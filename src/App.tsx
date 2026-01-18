@@ -13,7 +13,7 @@ env.backends.onnx.logLevel = 'warning';
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
 const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
-const LOCAL_MANIFEST_URL = `/image_manifest.json`;
+const LOCAL_MANIFEST_URL = `./image_manifest.json`;
 
 // UPDATED: Pointing directly to your bucket
 const BUCKET_BASE_URL = `https://storage.googleapis.com/my-sd35-space-images-2025`;
