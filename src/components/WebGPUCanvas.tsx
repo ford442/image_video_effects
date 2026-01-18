@@ -31,6 +31,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     inputSource, selectedVideo, videoSourceUrl, isMuted,
     setInputSource, activeGenerativeShader, apiBaseUrl
 }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const animationFrameId = useRef<number>(0);
@@ -86,14 +87,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Handle Canvas Resizing (Track Display Size Only)
     useLayoutEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        const container = containerRef.current;
+        if (!container) return;
 
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 // Get the displayed size (CSS pixels)
-                // We use contentRect or devicePixelContentBox depending on needs,
-                // but for aspect ratio calculations, client width/height is usually sufficient.
                 const width = entry.contentRect.width;
                 const height = entry.contentRect.height;
 
@@ -103,7 +102,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
         });
 
-        observer.observe(canvas);
+        observer.observe(container);
         return () => observer.disconnect();
     }, []); // Empty dependency array as we only want to set up the observer once
 
@@ -278,7 +277,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     };
 
     return (
-        <>
+        <div
+            ref={containerRef}
+            style={{
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden'
+            }}
+        >
             <canvas
                 ref={canvasRef}
                 onMouseMove={handleCanvasMouseMove}
@@ -286,6 +293,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
                 style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
                     width: '100%',
                     height: '100%',
                     display: 'block',
@@ -313,7 +323,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     zIndex: -1
                 }}
             />
-        </>
+        </div>
     );
 };
 
