@@ -719,7 +719,8 @@ export class Renderer {
                  let genTargetX = mousePosition.x >= 0 ? mousePosition.x : 0.5;
                  let genTargetY = mousePosition.y >= 0 ? mousePosition.y : 0.5;
                  let genZoomW = isMouseDown ? 1.0 : 0.0;
-                 genUniformArray.set([genTargetX, genTargetY, genZoomW, 0.0], 4);
+                 // Fix: Map to [Time, MouseX, MouseY, MouseDown] to match standard shader header
+                 genUniformArray.set([currentTime, genTargetX, genTargetY, genZoomW], 4);
 
                  this.device.queue.writeBuffer(this.computeUniformBuffer, 0, genUniformArray);
 
@@ -788,13 +789,25 @@ export class Renderer {
                 if (mode === 'infinite-zoom') zoomConfigW = params.depthThreshold;
 
                 const shaderEntry = this.shaderList.find(s => s.id === mode);
-                if (shaderEntry?.features?.includes('mouse-driven')) {
+                const isMouseDriven = shaderEntry?.features?.includes('mouse-driven');
+                const isInfiniteZoom = mode === 'infinite-zoom';
+
+                if (isMouseDriven) {
                     if (mousePosition.x >= 0) { targetX = mousePosition.x; targetY = mousePosition.y; }
-                    if (mode !== 'infinite-zoom') zoomConfigW = isMouseDown ? 1.0 : 0.0;
+                    if (!isInfiniteZoom) zoomConfigW = isMouseDown ? 1.0 : 0.0;
                 }
 
                 uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0); 
-                uniformArray.set([targetX, targetY, zoomConfigW, 0.0], 4);
+
+                // Fix: Standardize uniform mapping for mouse-driven and infinite-zoom shaders
+                // Standard header expects: x=Time, y=MouseX, z=MouseY, w=Param
+                if (isMouseDriven || isInfiniteZoom) {
+                    uniformArray.set([currentTime, targetX, targetY, zoomConfigW], 4);
+                } else {
+                    // Maintain legacy mapping for other shaders (e.g. rainbow-cloud) that might expect [Param1, Param2, Param3, 0]
+                    uniformArray.set([targetX, targetY, zoomConfigW, 0.0], 4);
+                }
+
                 uniformArray.set([params.zoomParam1, params.zoomParam2, params.zoomParam3, params.zoomParam4], 8);
 
                 if (mode === 'infinite-zoom') {
