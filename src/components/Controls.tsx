@@ -131,7 +131,6 @@ const Controls: React.FC<ControlsProps> = ({
                             checked={inputSource === 'generative'}
                             onChange={() => {
                                 setInputSource('generative');
-                                setShaderCategory('shader');
                             }}
                         /> Generative
                     </label>
