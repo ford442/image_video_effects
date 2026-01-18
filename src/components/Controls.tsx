@@ -247,7 +247,7 @@ const Controls: React.FC<ControlsProps> = ({
 
             {inputSource === 'generative' && activeGenerativeShader && setActiveGenerativeShader && (
                 <div className="control-group" style={{marginTop: '10px'}}>
-                     <div style={{marginBottom: '5px'}}>Select Generative Shader:</div>
+                     <div style={{marginBottom: '5px'}}>Input Source:</div>
                      <select value={activeGenerativeShader} onChange={(e) => setActiveGenerativeShader(e.target.value)} style={{width: '100%', marginBottom: '8px'}}>
                         {availableModes.filter(m => m.category === 'generative').map(g => (
                              <option key={g.id} value={g.id}>{g.name}</option>

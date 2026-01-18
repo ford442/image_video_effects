@@ -622,10 +622,11 @@ export class Renderer {
         if (this.videoTexture) {
             this.bindGroups.set('galaxy', this.device.createBindGroup({
                 layout: this.pipelines.get('galaxy')!.getBindGroupLayout(0),
-                entries: [{binding: 0, resource: {buffer: this.galaxyUniformBuffer}}, {
-                    binding: 1,
-                    resource: this.filteringSampler
-                }, {binding: 2, resource: this.videoTexture.createView()}]
+                entries: [
+                    {binding: 0, resource: this.filteringSampler},
+                    {binding: 2, resource: this.videoTexture.createView()},
+                    {binding: 3, resource: {buffer: this.galaxyUniformBuffer}}
+                ]
             }));
             this.bindGroups.set('video', this.device.createBindGroup({
                 layout: this.pipelines.get('imageVideo')!.getBindGroupLayout(0),

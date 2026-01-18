@@ -1,7 +1,6 @@
 // Uniforms: time, zoom, panX, panY
 // Sampler for the texture
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var u_texture: texture_2d<f32>;
 
 // Input texture from a video or image
 @group(0) @binding(2) var inputTexture: texture_2d<f32>;
@@ -46,6 +45,6 @@ fn fs_main(@location(0) fragUV: vec2<f32>) -> @location(0) vec4<f32> {
 
     // Mix the generated pattern with the input texture
     let finalColor = mix(pattern, textureColor.rgb, 0.6);
-    
+
     return vec4<f32>(finalColor, 1.0);
 }
