@@ -730,11 +730,8 @@ export class Renderer {
                  let genZoomW = isMouseDown ? 1.0 : 0.0;
                  genUniformArray.set([genTargetX, genTargetY, genZoomW, 0.0], 4);
 
-                 // Dummy params/ripples
-                 const rippleDataArr = new Float32Array(this.MAX_RIPPLES * 4);
-                 // (We could pass ripples if we wanted, but let's keep it simple or copy from class state)
-                 // Note: this.ripplePoints logic is below, maybe we should move it up?
-                 // For now, leave ripples empty for generative source or access them if needed.
+                 // Note: Generative shaders use basic uniforms (time, mouse, canvas size)
+                 // Ripple data is not currently passed to generative shaders
 
                  this.device.queue.writeBuffer(this.computeUniformBuffer, 0, genUniformArray);
 
