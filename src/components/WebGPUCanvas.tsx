@@ -38,18 +38,29 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const dragStartPos = useRef<{x: number, y: number} | null>(null);
     const dragStartTime = useRef<number>(0);
     const streamRef = useRef<MediaStream | null>(null);
-    const [nativeDimensions, setNativeDimensions] = useState<{width: number, height: number} | null>(null);
+
+    // Track the physical display size of the canvas element
+    const [displaySize, setDisplaySize] = useState({ width: 1, height: 1 });
+
+    // Constants for the internal high-res buffer
+    const INTERNAL_RES = 2048;
 
     // Initialize Renderer
     useEffect(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
+
+        // Enforce the high-res buffer size
+        canvas.width = INTERNAL_RES;
+        canvas.height = INTERNAL_RES;
+
         const renderer = new Renderer(canvas, apiBaseUrl);
 
-        // Hook up dimensions listener
+        // Hook up dimensions listener - kept for potential future use or informational purposes,
+        // but we are locking buffer size now.
         renderer.onImageDimensions = (w, h) => {
-            // Only update for image source to avoid conflicts
-            setNativeDimensions({width: w, height: h});
+             // We no longer resize the canvas based on image dimensions
+             // But we might want to log it or use it for aspect ratio logic if needed in future
         };
 
         (async () => {
@@ -73,66 +84,33 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rendererRef, onInit, apiBaseUrl]);
 
-    // Handle Canvas Resizing
+    // Handle Canvas Resizing (Track Display Size Only)
     useLayoutEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
-                // If we are in a native/fixed mode, strictly enforce the native dimensions
-                // ignoring the container's layout constraints
-                if (nativeDimensions && (inputSource === 'generative' || inputSource === 'image' || inputSource === 'video')) {
-                     if (canvas.width !== nativeDimensions.width || canvas.height !== nativeDimensions.height) {
-                         canvas.width = nativeDimensions.width;
-                         canvas.height = nativeDimensions.height;
-                         rendererRef.current?.handleResize(nativeDimensions.width, nativeDimensions.height);
-                     }
-                     return;
-                }
+                // Get the displayed size (CSS pixels)
+                // We use contentRect or devicePixelContentBox depending on needs,
+                // but for aspect ratio calculations, client width/height is usually sufficient.
+                const width = entry.contentRect.width;
+                const height = entry.contentRect.height;
 
-                let width;
-                let height;
-
-                // 1. Get physical pixel dimensions
-                if (entry.devicePixelContentBoxSize && entry.devicePixelContentBoxSize.length > 0) {
-                    width = entry.devicePixelContentBoxSize[0].inlineSize;
-                    height = entry.devicePixelContentBoxSize[0].blockSize;
-                } else {
-                    const dpr = window.devicePixelRatio || 1;
-                    width = Math.max(1, Math.round(entry.contentRect.width * dpr));
-                    height = Math.max(1, Math.round(entry.contentRect.height * dpr));
-                }
-
-                // 2. Update canvas buffer size
-                if (canvas.width !== width || canvas.height !== height) {
-                    canvas.width = width;
-                    canvas.height = height;
-                    // Use optional chaining so we update canvas size even if renderer isn't ready
-                    rendererRef.current?.handleResize(width, height);
+                if (width > 0 && height > 0) {
+                    setDisplaySize({ width, height });
                 }
             }
         });
 
         observer.observe(canvas);
         return () => observer.disconnect();
-    }, [rendererRef, nativeDimensions, inputSource]);
+    }, []); // Empty dependency array as we only want to set up the observer once
 
-
-    // Sync inputSource to renderer & Handle Native Modes
+    // Sync inputSource to renderer
     useEffect(() => {
         if (rendererRef.current) {
             rendererRef.current.setInputSource(inputSource);
-        }
-
-        if (inputSource === 'generative') {
-            setNativeDimensions({ width: 2048, height: 2048 });
-        } else if (inputSource === 'webcam') {
-            setNativeDimensions(null);
-        } else if (inputSource === 'image') {
-            // Wait for onImageDimensions callback
-        } else if (inputSource === 'video') {
-            // Wait for video metadata
         }
     }, [inputSource, rendererRef]);
 
@@ -210,19 +188,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
                 // Resolution: Use the stacking render signature from 'main'
+                // AND pass display dimensions
                 (rendererRef.current as any).render(
                     modes,
                     slotParams,
                     videoRef.current,
                     zoom, panX, panY, farthestPoint, mousePosition, isMouseDown,
-                    activeGenerativeShader
+                    activeGenerativeShader,
+                    displaySize.width, // viewWidth
+                    displaySize.height // viewHeight
                 );
             }
             animationFrameId.current = requestAnimationFrame(animate);
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader, inputSource]);
+    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader, inputSource, displaySize]);
 
     // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -300,15 +281,13 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         <>
             <canvas
                 ref={canvasRef}
-                width={nativeDimensions?.width}
-                height={nativeDimensions?.height}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
                 style={{
-                    width: nativeDimensions ? `${nativeDimensions.width}px` : '100%',
-                    height: nativeDimensions ? `${nativeDimensions.height}px` : '100%',
+                    width: '100%',
+                    height: '100%',
                     display: 'block',
                     touchAction: 'none'
                 }}
@@ -321,14 +300,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 autoPlay
                 playsInline
                 preload="auto"
-                onLoadedMetadata={(e) => {
-                     if (inputSource === 'video') {
-                         setNativeDimensions({
-                             width: e.currentTarget.videoWidth,
-                             height: e.currentTarget.videoHeight
-                         });
-                     }
-                }}
                 onCanPlay={() => {
                      // Ensure video plays when loaded
                      videoRef.current?.play().catch(() => {});
