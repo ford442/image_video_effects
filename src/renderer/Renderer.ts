@@ -916,6 +916,7 @@ export class Renderer {
              passEncoder.setBindGroup(0, this.bindGroups.get('galaxy')!);
              passEncoder.draw(6);
         } else if ((primaryMode === 'video' || this.inputSource === 'video' || this.inputSource === 'webcam') && primaryMode === 'video' && imageVideoPipeline && this.bindGroups.has('video')) {
+             // Ensure uniforms match imageVideo.wgsl (Cover Mode)
              const uniformArray = new Float32Array(8);
              uniformArray.set([this.canvas.width, this.canvas.height, this.videoTexture.width, this.videoTexture.height], 0);
              uniformArray.set([currentTime, 0, 0, 0], 4);
@@ -955,6 +956,7 @@ export class Renderer {
                      const texture = isVideo ? this.videoTexture : this.imageTexture;
 
                      if (imageVideoPipeline && this.bindGroups.has(groupName) && texture) {
+                         // Ensure uniforms match imageVideo.wgsl (Cover Mode)
                          const uniformArray = new Float32Array(8);
                          uniformArray.set([this.canvas.width, this.canvas.height, texture.width, texture.height], 0);
                          uniformArray.set([currentTime, 0, 0, 0], 4);
