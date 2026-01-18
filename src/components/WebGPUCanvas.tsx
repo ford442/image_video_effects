@@ -76,9 +76,16 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 const { width, height } = entry.contentRect;
                 if (width === 0 || height === 0) return; // Skip zero-sized resizes
 
-                const dpr = window.devicePixelRatio || 1;
-                const newWidth = Math.floor(width * dpr);
-                const newHeight = Math.floor(height * dpr);
+                let newWidth, newHeight;
+                if (inputSource === 'generative') {
+                    // Force high resolution for generative mode (square)
+                    newWidth = 2048;
+                    newHeight = 2048;
+                } else {
+                    const dpr = window.devicePixelRatio || 1;
+                    newWidth = Math.floor(width * dpr);
+                    newHeight = Math.floor(height * dpr);
+                }
 
                  if (canvas.width !== newWidth || canvas.height !== newHeight) {
                     canvas.width = newWidth;
@@ -90,7 +97,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         observer.observe(canvas);
         return () => observer.disconnect();
-    }, [rendererRef]);
+    }, [rendererRef, inputSource]);
 
 
     // Sync inputSource to renderer
@@ -268,7 +275,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
-                style={{ width: '100%', height: '100%', display: 'block' }}
+                style={inputSource === 'generative' ? {
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    aspectRatio: '1 / 1',
+                    width: 'auto',
+                    height: 'auto',
+                    display: 'block',
+                    margin: 'auto'
+                } : { width: '100%', height: '100%', display: 'block' }}
             />
             <video
                 ref={videoRef}
