@@ -186,6 +186,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
+                // Force square viewport to match the aspect ratio of the 2048x2048 internal buffer
+                const canvasSize = Math.min(displaySize.width, displaySize.height);
+
                 // Resolution: Use the stacking render signature from 'main'
                 // AND pass display dimensions
                 (rendererRef.current as any).render(
@@ -194,8 +197,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     videoRef.current,
                     zoom, panX, panY, farthestPoint, mousePosition, isMouseDown,
                     activeGenerativeShader,
-                    displaySize.width, // viewWidth
-                    displaySize.height // viewHeight
+                    canvasSize, // viewWidth (square)
+                    canvasSize  // viewHeight (square)
                 );
             }
             animationFrameId.current = requestAnimationFrame(animate);
@@ -276,6 +279,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     };
 
+    // Calculate canvas style to be a square that fits within the container (CSS Contain)
+    const canvasSize = Math.min(displaySize.width, displaySize.height);
+    const canvasStyle: React.CSSProperties = {
+        position: 'absolute',
+        width: `${canvasSize}px`,
+        height: `${canvasSize}px`,
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        display: 'block',
+        touchAction: 'none',
+        // Optional: Ensure it doesn't overflow if something goes wrong with calculation
+        maxWidth: '100%',
+        maxHeight: '100%'
+    };
+
     return (
         <div
             ref={containerRef}
@@ -283,7 +302,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 width: '100%',
                 height: '100%',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                // Center the canvas content
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#000' // Optional: letterboxing color
             }}
         >
             <canvas
@@ -292,15 +316,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    display: 'block',
-                    touchAction: 'none'
-                }}
+                style={canvasStyle}
             />
             <video
                 ref={videoRef}
