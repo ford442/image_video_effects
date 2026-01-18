@@ -7,7 +7,7 @@
 
 struct Uniforms {
   config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
-  zoom_config: vec4<f32>,         // mouseX, mouseY, isMouseDown, padding
+  zoom_config: vec4<f32>,         // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var p = uv * 2.0 - 1.0;
   p.x *= aspect;
 
-  var mouse = vec2<f32>(u.zoom_config.x, u.zoom_config.y) * 2.0 - 1.0;
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
   mouse.x *= aspect;
 
   let d = length(p - mouse);
@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   newColor = max(newColor, brushColor * intensity);
 
   // Click to explode/clear?
-  if (u.zoom_config.z > 0.5) {
+  if (u.zoom_config.w > 0.5) {
      // Mouse Down - maybe expand brush or emit particles
      // For now, just make it brighter
      newColor += brushColor * intensity * 2.0;
