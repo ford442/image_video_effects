@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useLayoutEffect } from 'react';
 import { Renderer } from '../renderer/Renderer';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 
@@ -67,37 +67,38 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     }, [rendererRef, onInit, apiBaseUrl]);
 
     // Handle Canvas Resizing
-    useEffect(() => {
+    useLayoutEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const observer = new ResizeObserver(entries => {
+        const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
-                const { width, height } = entry.contentRect;
-                if (width === 0 || height === 0) return; // Skip zero-sized resizes
+                let width;
+                let height;
 
-                let newWidth, newHeight;
-                if (inputSource === 'generative') {
-                    // Force high resolution for generative mode (square)
-                    newWidth = 2048;
-                    newHeight = 2048;
+                // 1. Get physical pixel dimensions
+                if (entry.devicePixelContentBoxSize && entry.devicePixelContentBoxSize.length > 0) {
+                    width = entry.devicePixelContentBoxSize[0].inlineSize;
+                    height = entry.devicePixelContentBoxSize[0].blockSize;
                 } else {
                     const dpr = window.devicePixelRatio || 1;
-                    newWidth = Math.floor(width * dpr);
-                    newHeight = Math.floor(height * dpr);
+                    width = Math.max(1, Math.round(entry.contentRect.width * dpr));
+                    height = Math.max(1, Math.round(entry.contentRect.height * dpr));
                 }
 
-                 if (canvas.width !== newWidth || canvas.height !== newHeight) {
-                    canvas.width = newWidth;
-                    canvas.height = newHeight;
-                    rendererRef.current?.handleResize(canvas.width, canvas.height);
+                // 2. Update canvas buffer size
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    // Use optional chaining so we update canvas size even if renderer isn't ready
+                    rendererRef.current?.handleResize(width, height);
                 }
             }
         });
 
         observer.observe(canvas);
         return () => observer.disconnect();
-    }, [rendererRef, inputSource]);
+    }, [rendererRef]);
 
 
     // Sync inputSource to renderer
@@ -275,15 +276,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
-                style={inputSource === 'generative' ? {
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    aspectRatio: '1 / 1',
-                    width: 'auto',
-                    height: 'auto',
+                style={{
+                    width: '100%',
+                    height: '100%',
                     display: 'block',
-                    margin: 'auto'
-                } : { width: '100%', height: '100%', display: 'block' }}
+                    touchAction: 'none'
+                }}
             />
             <video
                 ref={videoRef}
