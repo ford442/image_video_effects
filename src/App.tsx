@@ -76,6 +76,7 @@ function MainApp() {
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
     const [inputSource, setInputSource] = useState<InputSource>('image');
     const [activeGenerativeShader, setActiveGenerativeShader] = useState<string>('gen-orb');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined);
     const [isMuted, setIsMuted] = useState(true);
     const [selectedVideo, setSelectedVideo] = useState<string>("");
@@ -123,7 +124,8 @@ function MainApp() {
                 setStatus('Switched to Image Input');
             }
         }
-    }, [shaderCategory, inputSource]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shaderCategory]); // Only depend on shaderCategory, not inputSource
 
     // --- Effects & Initializers ---
     useEffect(() => {
