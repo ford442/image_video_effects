@@ -1,0 +1,41 @@
+{
+  "id": "data-slicer-interactive",
+  "name": "Data Slicer",
+  "url": "shaders/data-slicer-interactive.wgsl",
+  "category": "interactive-mouse",
+  "description": "Glitchy horizontal slicing controlled by mouse vertical position.",
+  "params": [
+    {
+      "id": "slice_height",
+      "name": "Slice Height",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shift_amt",
+      "name": "Shift Amount",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "jitter_speed",
+      "name": "Jitter Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rgb_split",
+      "name": "RGB Split",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ]
+}
