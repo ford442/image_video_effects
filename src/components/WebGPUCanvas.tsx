@@ -74,6 +74,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const observer = new ResizeObserver(entries => {
             for (const entry of entries) {
                 const { width, height } = entry.contentRect;
+                if (width === 0 || height === 0) return; // Skip zero-sized resizes
+
                 const dpr = window.devicePixelRatio || 1;
                 const newWidth = Math.floor(width * dpr);
                 const newHeight = Math.floor(height * dpr);

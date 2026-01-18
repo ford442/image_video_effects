@@ -177,9 +177,12 @@ export class Renderer {
     public handleResize(width: number, height: number): void {
         if (this.isDestroyed || !this.device) return;
 
+        const safeWidth = Math.max(1, width);
+        const safeHeight = Math.max(1, height);
+
         // Recreate resolution-dependent textures
         const rwTextureDesc: GPUTextureDescriptor = {
-            size: [width, height],
+            size: [safeWidth, safeHeight],
             format: 'rgba32float',
             usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
         };
@@ -193,12 +196,12 @@ export class Renderer {
         this.pingPongTexture2 = this.device.createTexture(rwTextureDesc);
 
         const dataStorageTextureDescriptor: GPUTextureDescriptor = {
-            size: [width, height],
+            size: [safeWidth, safeHeight],
             format: 'rgba32float',
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
         };
         const dataTextureDescriptor: GPUTextureDescriptor = {
-            size: [width, height],
+            size: [safeWidth, safeHeight],
             format: 'rgba32float',
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         };
@@ -437,6 +440,9 @@ export class Renderer {
     private async createResources(): Promise<void> {
         if (this.isDestroyed) return;
         const {width, height} = this.canvas;
+        const safeWidth = Math.max(1, width);
+        const safeHeight = Math.max(1, height);
+
         this.filteringSampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear',
@@ -475,7 +481,7 @@ export class Renderer {
         this.device.queue.writeTexture({texture: this.depthTextureWrite}, new Float32Array([0.0]), {bytesPerRow: 4}, [1, 1]);
 
         const rwTextureDesc: GPUTextureDescriptor = {
-            size: [width, height],
+            size: [safeWidth, safeHeight],
             format: 'rgba32float',
             usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
         };
@@ -485,12 +491,12 @@ export class Renderer {
         this.pingPongTexture2 = this.device.createTexture(rwTextureDesc);
 
         const dataStorageTextureDescriptor: GPUTextureDescriptor = {
-            size: [width, height],
+            size: [safeWidth, safeHeight],
             format: 'rgba32float',
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
         };
         const dataTextureDescriptor: GPUTextureDescriptor = {
-            size: [width, height],
+            size: [safeWidth, safeHeight],
             format: 'rgba32float',
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         };
