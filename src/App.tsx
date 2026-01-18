@@ -117,12 +117,6 @@ function MainApp() {
             // When user selects "Procedural Generation", force input source to generative
             setInputSource('generative');
             setStatus('Switched to Generative Input');
-        } else {
-            // When user goes back to "Effects / Filters", default back to image (if currently generative)
-            if (inputSource === 'generative') {
-                setInputSource('image');
-                setStatus('Switched to Image Input');
-            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shaderCategory]); // Only depend on shaderCategory, not inputSource
