@@ -49,6 +49,8 @@ export class Renderer {
     // Lifecycle flag to prevent race conditions
     private isDestroyed = false;
 
+    public onImageDimensions?: (width: number, height: number) => void;
+
     // Store layout to create pipelines lazily
     private computePipelineLayout!: GPUPipelineLayout;
     private loadingShaders = new Set<string>();
@@ -380,6 +382,10 @@ export class Renderer {
              await img.decode();
              
              if (this.isDestroyed) return undefined;
+
+             if (this.onImageDimensions) {
+                 this.onImageDimensions(img.naturalWidth, img.naturalHeight);
+             }
 
              newTexture = this.device.createTexture({
                  size: [img.naturalWidth, img.naturalHeight],

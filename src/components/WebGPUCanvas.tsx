@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { Renderer } from '../renderer/Renderer';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 
@@ -38,12 +38,19 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const dragStartPos = useRef<{x: number, y: number} | null>(null);
     const dragStartTime = useRef<number>(0);
     const streamRef = useRef<MediaStream | null>(null);
+    const [nativeDimensions, setNativeDimensions] = useState<{width: number, height: number} | null>(null);
 
     // Initialize Renderer
     useEffect(() => {
         if (!canvasRef.current) return;
         const canvas = canvasRef.current;
         const renderer = new Renderer(canvas, apiBaseUrl);
+
+        // Hook up dimensions listener
+        renderer.onImageDimensions = (w, h) => {
+            // Only update for image source to avoid conflicts
+            setNativeDimensions({width: w, height: h});
+        };
 
         (async () => {
             const success = await renderer.init();
@@ -73,6 +80,17 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
+                // If we are in a native/fixed mode, strictly enforce the native dimensions
+                // ignoring the container's layout constraints
+                if (nativeDimensions && (inputSource === 'generative' || inputSource === 'image' || inputSource === 'video')) {
+                     if (canvas.width !== nativeDimensions.width || canvas.height !== nativeDimensions.height) {
+                         canvas.width = nativeDimensions.width;
+                         canvas.height = nativeDimensions.height;
+                         rendererRef.current?.handleResize(nativeDimensions.width, nativeDimensions.height);
+                     }
+                     return;
+                }
+
                 let width;
                 let height;
 
@@ -98,13 +116,23 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         observer.observe(canvas);
         return () => observer.disconnect();
-    }, [rendererRef]);
+    }, [rendererRef, nativeDimensions, inputSource]);
 
 
-    // Sync inputSource to renderer
+    // Sync inputSource to renderer & Handle Native Modes
     useEffect(() => {
         if (rendererRef.current) {
             rendererRef.current.setInputSource(inputSource);
+        }
+
+        if (inputSource === 'generative') {
+            setNativeDimensions({ width: 2048, height: 2048 });
+        } else if (inputSource === 'webcam') {
+            setNativeDimensions(null);
+        } else if (inputSource === 'image') {
+            // Wait for onImageDimensions callback
+        } else if (inputSource === 'video') {
+            // Wait for video metadata
         }
     }, [inputSource, rendererRef]);
 
@@ -272,13 +300,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         <>
             <canvas
                 ref={canvasRef}
+                width={nativeDimensions?.width}
+                height={nativeDimensions?.height}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
                 style={{
-                    width: '100%',
-                    height: '100%',
+                    width: nativeDimensions ? `${nativeDimensions.width}px` : '100%',
+                    height: nativeDimensions ? `${nativeDimensions.height}px` : '100%',
                     display: 'block',
                     touchAction: 'none'
                 }}
@@ -291,6 +321,14 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 autoPlay
                 playsInline
                 preload="auto"
+                onLoadedMetadata={(e) => {
+                     if (inputSource === 'video') {
+                         setNativeDimensions({
+                             width: e.currentTarget.videoWidth,
+                             height: e.currentTarget.videoHeight
+                         });
+                     }
+                }}
                 onCanPlay={() => {
                      // Ensure video plays when loaded
                      videoRef.current?.play().catch(() => {});
