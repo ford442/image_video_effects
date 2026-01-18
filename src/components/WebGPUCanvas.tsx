@@ -93,6 +93,13 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     }, [rendererRef]);
 
 
+    // Sync inputSource to renderer
+    useEffect(() => {
+        if (rendererRef.current) {
+            rendererRef.current.setInputSource(inputSource);
+        }
+    }, [inputSource, rendererRef]);
+
     // Handle Input Source & Video Source Changes
     useEffect(() => {
         if (!videoRef.current) return;
@@ -144,7 +151,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                      }
                  }
              } else {
-                 // Image mode: pause video to save resources
+                 // Image or Generative mode: pause video to save resources
                  videoRef.current!.pause();
              }
         };
@@ -179,7 +186,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader]);
+    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader, inputSource]);
 
     // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {

@@ -123,7 +123,8 @@ function MainApp() {
                 setStatus('Switched to Image Input');
             }
         }
-    }, [shaderCategory, inputSource]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shaderCategory]); // Only depend on shaderCategory, not inputSource
 
     // --- Effects & Initializers ---
     useEffect(() => {
