@@ -32,6 +32,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 
 ```md
 ### Suggestion: <Title>
+- **Date:** YYYY-MM-DD
 - **Prompt:** "<Write the prompt here — be specific about subject, style, lighting, mood, level of detail>"
 - **Negative prompt:** "<Optional: words to exclude (e.g., watermark, lowres)>"
 - **Tags:** tag1, tag2, tag3 (e.g., photorealism, cyberpunk, portrait)
@@ -688,6 +689,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the intense heat and light of the molten glass.
 
+### Suggestion: Cinematic Claymation
+- **Date:** 2026-05-01
+- **Prompt:** "A whimsical, stop-motion style claymation character resembling a clumsy robot with fingerprints visible on the plasticine surface. It stands in a miniature cardboard city studio set. Dramatic cinematic lighting creates strong shadows."
+- **Negative prompt:** "3D render, smooth, digital, cartoon, drawing"
+- **Tags:** claymation, stop-motion, whimsical, miniature, robot
+- **Style / Reference:** Aardman, Laika
+- **Composition:** Medium shot, studio lighting
+- **Color palette:** Primary colors, cardboard browns, warm tungsten light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260501_claymation_robot.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the texture of the clay and the fingerprints.
+
+### Suggestion: Thermal Vision Hunt
+- **Date:** 2026-05-01
+- **Prompt:** "A simulated thermal imaging camera shot of a wolf howling at the moon. The wolf is a glowing spectrum of heat (reds, oranges, yellows) against a cool, dark blue background. The heat signature reveals the texture of the fur."
+- **Negative prompt:** "realistic colors, black and white, standard photo"
+- **Tags:** thermal, heat map, infrared, predator, abstract
+- **Style / Reference:** Thermal Imaging, Scientific Visualization
+- **Composition:** Silhouette, high contrast
+- **Color palette:** Thermal spectrum (Red, Orange, Yellow, Blue, Black)
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260501_thermal_wolf.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast between the hot subject and cold background is key.
+
+### Suggestion: Blueprint Schematic
+- **Date:** 2026-05-01
+- **Prompt:** "A detailed cyanotype blueprint schematic of a fictional steampunk flying machine. White technical lines, measurements, and annotations are drawn on a textured dark blue paper background. The design includes gears, propellers, and balloons."
+- **Negative prompt:** "photo, 3D, color, realistic, render"
+- **Tags:** blueprint, schematic, cyanotype, steampunk, technical
+- **Style / Reference:** Architectural Drawing, Cyanotype
+- **Composition:** Flat lay, technical diagram
+- **Color palette:** Cyan blue, white
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260501_blueprint_machine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the lines are clean and the paper texture is visible.
+
+### Suggestion: Trash Polka Portrait
+- **Date:** 2026-05-01
+- **Prompt:** "A striking Trash Polka style tattoo art portrait of a woman's face. Realistic black and grey shading is juxtaposed with chaotic red smears, geometric shapes, and bold typography. The background is a distressed paper texture."
+- **Negative prompt:** "clean, simple, traditional tattoo, color photo"
+- **Tags:** trash polka, tattoo, abstract, portrait, collage
+- **Style / Reference:** Tattoo Art, Mixed Media
+- **Composition:** Portrait, centered
+- **Color palette:** Black, Grey, Red, White
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20260501_trash_polka.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The red elements should look like paint or ink splatters.
+
+### Suggestion: Psychedelic Fractal Tunnel
+- **Date:** 2026-05-01
+- **Prompt:** "An infinite, mind-bending 3D fractal tunnel. Intricate geometric patterns in neon colors (electric blue, magenta, lime green) spiral towards a bright white center. The walls of the tunnel are reflective, creating a kaleidoscope effect."
+- **Negative prompt:** "flat, 2D, simple, blurry, natural"
+- **Tags:** fractal, psychedelic, abstract, 3D, neon
+- **Style / Reference:** Mathematical Art, Psychedelic
+- **Composition:** Centered perspective (infinite zoom)
+- **Color palette:** Neon rainbow, black void
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260501_fractal_tunnel.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the depth and the infinite nature of the pattern.
+
 ---
 
 ## Attribution & legal
@@ -699,6 +765,7 @@ To help organize prompts, please use tags from the following categories:
 
 ## Workflow suggestions
 
+- **Check for duplicates:** Before adding, search existing titles and prompts to ensure distinctness.
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
 - Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts.
