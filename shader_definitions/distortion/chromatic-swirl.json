@@ -1,0 +1,13 @@
+{
+  "id": "chromatic-swirl",
+  "label": "Chromatic Swirl",
+  "url": "shaders/chromatic-swirl.wgsl",
+  "icon": "cyclone",
+  "features": ["mouse-driven"],
+  "params": {
+    "zoomParam1": { "label": "Swirl Strength", "min": 0, "max": 1, "default": 0.5 },
+    "zoomParam2": { "label": "Radius", "min": 0, "max": 1, "default": 0.5 },
+    "zoomParam3": { "label": "Aberration", "min": 0, "max": 1, "default": 0.5 },
+    "zoomParam4": { "label": "Auto Rotation", "min": 0, "max": 1, "default": 0.0, "step": 1.0 }
+  }
+}

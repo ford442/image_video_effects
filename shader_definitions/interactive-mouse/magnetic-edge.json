@@ -1,0 +1,13 @@
+{
+  "id": "magnetic-edge",
+  "label": "Magnetic Edge",
+  "url": "shaders/magnetic-edge.wgsl",
+  "icon": "edgesensor_high",
+  "features": ["mouse-driven"],
+  "params": {
+    "zoomParam1": { "label": "Pull Strength", "min": 0, "max": 1, "default": 0.5 },
+    "zoomParam2": { "label": "Radius", "min": 0, "max": 1, "default": 0.5 },
+    "zoomParam3": { "label": "Edge Threshold", "min": 0, "max": 1, "default": 0.5 },
+    "zoomParam4": { "label": "Glow", "min": 0, "max": 1, "default": 0.2 }
+  }
+}
