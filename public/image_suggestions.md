@@ -754,6 +754,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the depth and the infinite nature of the pattern.
 
+### Suggestion: Unfinished Cathedral Sketch
+- **Date:** 2026-01-19
+- **Prompt:** "A rough graphite pencil sketch of a gothic cathedral on textured white paper. Construction lines, perspective grids, and eraser marks are visible. The bottom half is highly detailed and shaded with hatching, fading into loose gesture lines at the top."
+- **Negative prompt:** "photorealistic, color, 3D render, smooth, ink"
+- **Tags:** sketch, pencil, architecture, drawing, unfinished
+- **Style / Reference:** Architectural Sketch, Graphite
+- **Composition:** Low angle perspective
+- **Color palette:** Grayscale, graphite grey, paper white
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20260119_cathedral_sketch.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the paper texture and the difference in finish between bottom and top.
+
+### Suggestion: Byzantine Gold Mosaic
+- **Date:** 2026-01-19
+- **Prompt:** "A close-up of an ancient Byzantine gold leaf mosaic on a cracked church wall. Uneven tesserae tiles form the image of a celestial angel with multi-colored wings. Some tiles are missing, revealing the rough plaster underneath. The gold reflects light unevenly."
+- **Negative prompt:** "painting, smooth, digital art, modern, flat"
+- **Tags:** mosaic, gold, byzantine, texture, angel
+- **Style / Reference:** Byzantine Art, Mosaic
+- **Composition:** Close-up face and wings
+- **Color palette:** Gold, Lapis Lazuli Blue, Deep Red
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260119_byzantine_mosaic.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The grout lines and tile unevenness are crucial for realism.
+
+### Suggestion: Floating City Bubble
+- **Date:** 2026-01-19
+- **Prompt:** "A macro photograph of a giant iridescent soap bubble floating down a busy New York street. The thin, oily surface of the bubble reflects a distorted, fish-eye view of the surrounding skyscrapers, traffic, and pedestrians. The background is softly blurred (bokeh)."
+- **Negative prompt:** "illustration, drawing, fake, matte, solid"
+- **Tags:** macro, bubble, reflection, urban, photorealistic
+- **Style / Reference:** Macro Photography, Street Photography
+- **Composition:** Centered bubble, shallow depth of field
+- **Color palette:** Rainbow iridescence, urban greys and yellows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260119_city_bubble.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the refraction and reflection on the bubble surface.
+
+### Suggestion: Linocut Forest Stag
+- **Date:** 2026-01-19
+- **Prompt:** "A high-contrast black and white linocut print of a majestic stag standing in a stylized pine forest. The image features bold, carved lines and ink textures. The white areas show the paper grain where the ink didn't touch. No greyscale, only black and white."
+- **Negative prompt:** "color, grey, shading, smooth, photo"
+- **Tags:** linocut, printmaking, black and white, stag, forest
+- **Style / Reference:** Linocut, Woodblock Print
+- **Composition:** Centered subject
+- **Color palette:** Black Ink, Cream Paper
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20260119_linocut_stag.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The look should simulate the physical carving of the block.
+
+### Suggestion: Felt Puppet Adventurer
+- **Date:** 2026-01-19
+- **Prompt:** "A cinematic shot of a fuzzy felt puppet character resembling a brave explorer, wearing a tiny stitched leather hat and jacket. He stands in a realistic, mossy forest environment. Dramatic lighting treats the puppet like a serious actor, highlighting the fuzz texture."
+- **Negative prompt:** "human, skin, cartoon drawing, 3D render, smooth"
+- **Tags:** puppet, felt, whimsical, cinematic, forest
+- **Style / Reference:** Jim Henson style, Felt Art
+- **Composition:** Eye level (puppet scale), depth of field
+- **Color palette:** Earth tones, moss green, felt texture
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260119_felt_puppet.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast between the toy-like material and realistic lighting makes this work.
+
 ---
 
 ## Attribution & legal
