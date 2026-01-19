@@ -821,6 +821,71 @@ To help organize prompts, please use tags from the following categories:
 
 ---
 
+### Suggestion: Anamorphic Chalk Illusion
+- **Date:** 2026-06-01
+- **Prompt:** "A high-angle photograph of 3D anamorphic street art drawn in chalk on pavement. From this specific angle, the drawing creates a convincing illusion of a gaping abyss opening up in the middle of the sidewalk, revealing a subterranean fantasy world with glowing mushrooms and waterfalls. Passersby look at it in amazement."
+- **Negative prompt:** "flat, bad perspective, 2D, mural on wall, graffiti, messy"
+- **Tags:** street art, illusion, 3D, chalk, fantasy
+- **Style / Reference:** Anamorphic Art, Street Photography
+- **Composition:** High angle (forced perspective)
+- **Color palette:** Dusty chalk pastels, grey pavement, vibrant underground colors
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260601_chalk_illusion.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The angle is critical to sell the 3D illusion effect.
+
+### Suggestion: Bismuth Crystal Fortress
+- **Date:** 2026-06-01
+- **Prompt:** "A surreal architectural concept art of a fortress grown entirely from bismuth crystals. The walls feature the characteristic geometric, staircase-like hopper crystal structure. The surface is iridescent, shifting between rainbow colors (metallic pink, gold, blue) under a bright white sky."
+- **Negative prompt:** "organic, round, brick, stone, dull colors, realistic castle"
+- **Tags:** bismuth, crystal, architecture, surreal, iridescent
+- **Style / Reference:** 3D Render, Surrealism
+- **Composition:** Wide shot, low angle
+- **Color palette:** Metallic rainbow, iridescent, white background
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260601_bismuth_fortress.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the 'hopper' geometric structure of the crystals.
+
+### Suggestion: Kirlian Aura Photography
+- **Date:** 2026-06-01
+- **Prompt:** "A Kirlian photography shot of a maple leaf against a pitch-black background. The leaf is silhouetted, surrounded by a coronal discharge of glowing, electrified plasma filaments in violet and electric blue. The veins of the leaf faintly glow with energy."
+- **Negative prompt:** "daylight, normal photo, green leaf, flat, blurry"
+- **Tags:** kirlian, photography, aura, electric, abstract
+- **Style / Reference:** Scientific Photography, Abstract
+- **Composition:** Centered, flat lay
+- **Color palette:** Black, Violet, Electric Blue, White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260601_kirlian_leaf.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The glowing edge effect (corona) is the defining feature.
+
+### Suggestion: Cross-Stitch Pixel Art
+- **Date:** 2026-06-01
+- **Prompt:** "A close-up macro shot of a framed cross-stitch embroidery piece. The embroidery depicts a retro 8-bit video game landscape (green hills, blue sky). The image focuses on the texture of the fabric (aida cloth) and the individual X-shaped thread stitches that form the pixels."
+- **Negative prompt:** "digital pixel art, screen, smooth, drawing, vector"
+- **Tags:** embroidery, cross-stitch, craft, pixel art, texture
+- **Style / Reference:** Macro Photography, Handicraft
+- **Composition:** Close-up, texture focus
+- **Color palette:** Cotton thread colors, white fabric
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260601_cross_stitch.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Must look like physical thread and fabric, not a digital image.
+
+### Suggestion: Ferrofluid Magnetic Sculpture
+- **Date:** 2026-06-01
+- **Prompt:** "A studio macro shot of a ferrofluid sculpture under a magnetic field. The black magnetic liquid forms sharp, rhythmic spikes and organic alien shapes. The surface is highly reflective, mirroring the studio softbox lighting. A splash of gold ink mixes with the black fluid."
+- **Negative prompt:** "water, matte, flat, blurry, messy, rust"
+- **Tags:** ferrofluid, macro, abstract, physics, liquid
+- **Style / Reference:** Scientific Photography, Abstract Art
+- **Composition:** Macro, centered
+- **Color palette:** Glossy Black, Gold, White reflections
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260601_ferrofluid.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The sharp spikes are the key visual element.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -832,8 +897,15 @@ To help organize prompts, please use tags from the following categories:
 
 - **Check for duplicates:** Before adding, search existing titles and prompts to ensure distinctness.
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
+- **Diversity Check:** Ensure new suggestions introduce new textures, materials, or lighting scenarios not yet covered.
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
 - Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts.
+
+### Future Suggestion Ideas (Wishlist)
+To keep the collection diverse, consider adding prompts for:
+- **Styles:** Pointillism, Art Nouveau, Bauhaus, Dadaism, Ukiyo-e (beyond Sumi-e).
+- **Materials:** Smoke, Fire, Ice, Velvet, Gold leaf, Stained Glass (detailed).
+- **Subjects:** Machinery, Weather phenomena (tornadoes, blizzards), Microscopic worlds, Mathematical visualizations.
 
 ---
 
