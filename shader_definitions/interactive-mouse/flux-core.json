@@ -1,0 +1,9 @@
+{
+  "id": "flux-core",
+  "name": "Flux Core",
+  "category": "image",
+  "url": "shaders/flux-core.wgsl",
+  "description": "Energy arcs emit from the cursor, connecting to bright areas in the image.",
+  "features": ["mouse-driven"],
+  "params": []
+}
