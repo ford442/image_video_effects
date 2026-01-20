@@ -886,6 +886,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The sharp spikes are the key visual element.
 
+### Suggestion: Misty Prehistoric Swamp
+- **Date:** 2026-06-15
+- **Prompt:** "A photorealistic, atmospheric shot of a misty prehistoric swamp at dawn. A massive Triceratops wades through the murky water, surrounded by giant ferns and ancient cycads. Soft morning light filters through the fog, creating god rays."
+- **Negative prompt:** "cartoon, drawing, lowres, modern plants, blur"
+- **Tags:** prehistoric, dinosaur, nature, fog, cinematic
+- **Style / Reference:** Paleoart, National Geographic
+- **Composition:** Eye level, environmental portrait
+- **Color palette:** Muted greens, grey fog, soft morning gold
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260615_prehistoric_swamp.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the atmosphere and scale of the dinosaur.
+
+### Suggestion: Watercolor Rainy Paris
+- **Date:** 2026-06-15
+- **Prompt:** "A soft, impressionistic watercolor painting of a rainy street in Paris. Reflections of street lamps shimmer on the wet cobblestones. The Eiffel Tower fades into the grey mist in the background. Loose brushstrokes define the umbrellas of pedestrians."
+- **Negative prompt:** "photograph, sharp, digital art, acrylic, oil"
+- **Tags:** watercolor, paris, rain, impressionism, art
+- **Style / Reference:** Watercolor, Impressionism
+- **Composition:** Street view, leading lines
+- **Color palette:** Pastel blues, greys, soft yellows
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260615_watercolor_paris.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the bleeding colors and paper texture.
+
+### Suggestion: Pop Art Explosion
+- **Date:** 2026-06-15
+- **Prompt:** "A vibrant Pop Art style comic book panel inspired by Roy Lichtenstein. A dramatic explosion with a bold 'BOOM!' sound effect in a jagged yellow speech bubble. Thick black outlines, Ben-Day dots for shading, and flat primary colors."
+- **Negative prompt:** "photorealistic, 3D, shading, gradients, noise"
+- **Tags:** pop art, comic, retro, explosion, vector
+- **Style / Reference:** Pop Art, Comic Book
+- **Composition:** Dynamic, centered text
+- **Color palette:** Primary Red, Blue, Yellow, Black, White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260615_pop_art_boom.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The Ben-Day dots are the signature texture to capture.
+
+### Suggestion: Bauhaus Geometric Poster
+- **Date:** 2026-06-15
+- **Prompt:** "A minimalist geometric poster design inspired by the Bauhaus movement. A balanced composition of simple shapes (circles, triangles, rectangles) arranged on a beige paper background. Clean typography."
+- **Negative prompt:** "busy, textured, 3D, messy, realistic"
+- **Tags:** bauhaus, abstract, geometric, design, minimalist
+- **Style / Reference:** Bauhaus, Graphic Design
+- **Composition:** Flat, graphic
+- **Color palette:** Red, Blue, Yellow, Black, Beige
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20260615_bauhaus_poster.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on balance and negative space.
+
+### Suggestion: Wild West Ghost Town
+- **Date:** 2026-06-15
+- **Prompt:** "A dusty, desolate street of an abandoned Wild West ghost town at high noon. Tumbleweeds roll past wooden saloon doors hanging off their hinges. The sun is harsh and unforgiving, casting deep shadows. Heat haze ripples the air."
+- **Negative prompt:** "modern, cars, people, green grass, rain"
+- **Tags:** western, cowboy, ghost town, abandoned, cinematic
+- **Style / Reference:** Western Movie, Cinematic
+- **Composition:** One-point perspective down the street
+- **Color palette:** Sepia, dusty brown, faded wood, bleached sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260615_ghost_town.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lighting should be hard and direct to mimic the midday sun.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
