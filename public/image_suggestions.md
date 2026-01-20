@@ -57,6 +57,7 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Use negative prompts to avoid unwanted artifacts.** (e.g., "lowres, watermark, text, missing fingers").
 - **Include composition guidance.** (e.g., "rule of thirds, subject centered, foreground interest").
 - **Add color direction.** (e.g., "muted pastels", "high contrast teal and orange").
+- **Explore Materiality.** Explicitly describe materials to create texture (e.g., "made of translucent gummy candy", "carved from obsidian", "knitted wool").
 - **Style Blending.** Combine two distinct styles for unique results (e.g., "Art Nouveau architecture in a Cyberpunk setting").
 - **Iterate & record variants.** Save alternate prompts and parameter changes (seed, steps, scale) so results can be reproduced.
 
@@ -566,9 +567,6 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the subsurface scattering and translucency of the materials.
 
-
----
-
 ### Suggestion: Infrared Dreamscape
 - **Prompt:** "A surreal landscape shot on Kodak Aerochrome infrared film. The dense forest foliage is a vibrant, shocking pink and magenta, contrasting deeply with a turquoise blue river and sky. A solitary wooden cabin sits on the riverbank."
 - **Negative prompt:** "green trees, realistic colors, digital, low contrast"
@@ -819,8 +817,6 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The contrast between the toy-like material and realistic lighting makes this work.
 
----
-
 ### Suggestion: Anamorphic Chalk Illusion
 - **Date:** 2026-06-01
 - **Prompt:** "A high-angle photograph of 3D anamorphic street art drawn in chalk on pavement. From this specific angle, the drawing creates a convincing illusion of a gaping abyss opening up in the middle of the sidewalk, revealing a subterranean fantasy world with glowing mushrooms and waterfalls. Passersby look at it in amazement."
@@ -951,6 +947,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The lighting should be hard and direct to mimic the midday sun.
 
+### Suggestion: Surreal Chessboard Desert
+- **Date:** 2026-10-25
+- **Prompt:** "A surreal, dreamlike landscape painting in the style of Salvador Dali. The desert floor is a warping, melting black and white chessboard grid that stretches to infinity. Giant chess pieces (knights and rooks) float weightlessly in the sky among melting pocket watches. Long, dramatic shadows cast by invisible objects."
+- **Negative prompt:** "realistic, logical, modern, photo, noise"
+- **Tags:** surreal, dali, chess, dream, melting
+- **Style / Reference:** Surrealism, Salvador Dali
+- **Composition:** Wide angle, deep depth of field
+- **Color palette:** Desert orange, sky blue, black, white, gold
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261025_chess_desert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the "melting" and "warping" aspect.
+
+### Suggestion: 1960s Spaceport Lounge
+- **Date:** 2026-10-25
+- **Prompt:** "A cinematic wide shot of a retro-futuristic spaceport departure lounge, designed in the 1960s Jet Age style (Eero Saarinen). Huge curved glass windows overlook a launchpad where sleek silver retro-rockets are taking off. Passengers in mod fashion and bubble helmets wait in ball chairs. The floor is polished terrazzo."
+- **Negative prompt:** "modern technology, flat screens, messy, dark, dystopian"
+- **Tags:** retro-futurism, 60s, spaceport, mid-century modern, travel
+- **Style / Reference:** Mid-Century Modern, Cinematic, TWA Flight Center
+- **Composition:** Wide interior shot, symmetrical
+- **Color palette:** Burnt orange, teal, crisp white, silver
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261025_spaceport.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the optimism of the early space age.
+
+### Suggestion: Mechanical Bee on Circuit Flower
+- **Date:** 2026-10-25
+- **Prompt:** "A hyper-realistic macro photography shot of a tiny mechanical bee collecting data from a flower made of flexible printed circuit boards and fiber optics. The bee has translucent glass wings with gold veins and a copper abdomen. The flower's pistils are glowing LED filaments. Shallow depth of field."
+- **Negative prompt:** "real insect, organic flower, blurry, lowres, drawing"
+- **Tags:** macro, cyberpunk, insect, technology, nature
+- **Style / Reference:** Macro Photography, Sci-Fi
+- **Composition:** Extreme close-up, macro focus
+- **Color palette:** Gold, copper, circuit board green, electric blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261025_mech_bee.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The textures of metal and glass are crucial.
+
+### Suggestion: Rooftop Oasis in Ruined City
+- **Date:** 2026-10-25
+- **Prompt:** "A serene, golden-hour shot of a lush vegetable garden thriving on the roof of a crumbling skyscraper in a reclaimed post-apocalyptic city. Vines drape over the edge. In the background, other ruined skyscrapers are covered in greenery. A survivor reads a book in a hammock, suggesting peace amidst ruins."
+- **Negative prompt:** "zombies, monsters, scary, dark, fire, destruction"
+- **Tags:** post-apocalyptic, solarpunk, nature, peace, city
+- **Style / Reference:** Concept Art, The Last of Us, Solarpunk
+- **Composition:** Medium-wide shot, environmental
+- **Color palette:** Sunset gold, lush green, concrete grey, soft blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261025_rooftop_oasis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the beauty of nature taking back the city.
+
+### Suggestion: Memphis Group Playground
+- **Date:** 2026-10-25
+- **Prompt:** "A surreal, abstract architectural space designed in the style of the 80s Memphis Group. The room is filled with giant geometric shapes: squiggly lines, cones, and spheres. Patterns include terrazzo and black-and-white stripes. The lighting is flat and bright, making it look like a 3D render."
+- **Negative prompt:** "realistic, dirt, shadows, moody, organic"
+- **Tags:** memphis design, 80s, abstract, geometric, pattern
+- **Style / Reference:** Memphis Group, Postmodernism, 3D Render
+- **Composition:** Eye level, chaotic but balanced
+- **Color palette:** Pastel pink, mint green, electric blue, yellow, black/white
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20261025_memphis_playground.jpg`
+- **License / Attribution:** CC0
+- **Notes:** It should feel playful and artificial.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -963,14 +1024,15 @@ To help organize prompts, please use tags from the following categories:
 - **Check for duplicates:** Before adding, search existing titles and prompts to ensure distinctness.
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
 - **Diversity Check:** Ensure new suggestions introduce new textures, materials, or lighting scenarios not yet covered.
+- **Update Wishlist:** After adding suggestions, review the "Future Suggestion Ideas" list and remove completed items or add new gaps you noticed.
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
 - Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts.
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Pointillism, Art Nouveau, Bauhaus, Dadaism, Ukiyo-e (beyond Sumi-e).
-- **Materials:** Smoke, Fire, Ice, Velvet, Gold leaf, Stained Glass (detailed).
-- **Subjects:** Machinery, Weather phenomena (tornadoes, blizzards), Microscopic worlds, Mathematical visualizations.
+- **Styles:** Rococo, Constructivism, Low Poly, Ukiyo-e (beyond Sumi-e), Brutalism (Interior).
+- **Materials:** Slime, Fur, Neon gas, Holograms, Obsidian, Velvet.
+- **Subjects:** Crowds, Sports (Futuristic), Musical Instruments, Maps (Topographic/Fantasy).
 
 ---
 
