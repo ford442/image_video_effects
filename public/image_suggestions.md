@@ -1012,6 +1012,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** It should feel playful and artificial.
 
+### Suggestion: Rococo Ballroom Dancers
+- **Date:** 2026-11-01
+- **Prompt:** "A lavish, pastel-colored Rococo ballroom filled with dancers in powdered wigs and wide silk gowns. Crystal chandeliers drip with diamonds. The walls are adorned with gold filigree and mirrors. Soft, airy lighting captures the frivolity and elegance of the era."
+- **Negative prompt:** "dark, gritty, modern, plain, high contrast"
+- **Tags:** rococo, historical, dance, interior, pastel
+- **Style / Reference:** Rococo, Oil Painting, Fragonard
+- **Composition:** Wide shot, slightly high angle
+- **Color palette:** Pastel pink, baby blue, gold, cream
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261101_rococo_ballroom.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The key is the 'airiness' and the abundance of pastel colors.
+
+### Suggestion: Obsidian Volcanic Temple
+- **Date:** 2026-11-01
+- **Prompt:** "A sharp, angular temple carved entirely from glossy black obsidian volcanic glass. It sits at the edge of a bubbling lava lake. The black stone reflects the intense red glow of the lava, creating high-contrast highlights. Smoke rises from vents in the ground."
+- **Negative prompt:** "matte stone, grey rock, daylight, blue sky, trees"
+- **Tags:** obsidian, volcano, temple, fantasy, dark
+- **Style / Reference:** Fantasy Landscape, 3D Render
+- **Composition:** Low angle, looking up at the temple
+- **Color palette:** Black, lava red, orange, smoke grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261101_obsidian_temple.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the glass-like reflectivity of the obsidian.
+
+### Suggestion: Holographic Data Map
+- **Date:** 2026-11-01
+- **Prompt:** "A 3D holographic topographic map floating in the center of a dark, high-tech command center. The terrain is rendered in translucent blue and orange wireframe grids. A hand reaches into the frame to manipulate the hologram, causing digital ripples."
+- **Negative prompt:** "paper map, physical screen, messy, bright room"
+- **Tags:** hologram, map, sci-fi, technology, ui
+- **Style / Reference:** Sci-Fi UI Design, Cyberpunk
+- **Composition:** Close-up on the hologram
+- **Color palette:** Electric blue, safety orange, black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261101_holographic_map.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the hologram looks translucent and emits light.
+
+### Suggestion: Futuristic Zero-G Sports
+- **Date:** 2026-11-01
+- **Prompt:** "A dynamic action shot of a futuristic zero-gravity sport played inside a massive transparent sphere arena. Athletes in sleek, neon-trimmed armored suits propel themselves off floating platforms to catch a glowing orb. The background shows a cheering crowd and a futuristic cityscape."
+- **Negative prompt:** "gravity, ground, grass, stadium, static"
+- **Tags:** sports, sci-fi, zero-g, action, futuristic
+- **Style / Reference:** Sci-Fi Concept Art, Sports Photography
+- **Composition:** Dynamic, tilted angle, motion blur
+- **Color palette:** Neon team colors (cyan vs magenta), stadium lights
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261101_zero_g_sports.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use motion blur to convey the speed and chaos.
+
+### Suggestion: Ukiyo-e Cat Spirit
+- **Date:** 2026-11-01
+- **Prompt:** "A traditional Japanese woodblock print (Ukiyo-e) depicting a giant, spectral cat (Bakeneko) looming over a snow-covered village at night. The colors are flat and vibrant—indigo sky, salmon pink glowing eyes, and matcha green kimono patterns. The texture of the paper is visible."
+- **Negative prompt:** "3D, realistic, photograph, shading, gradient"
+- **Tags:** ukiyo-e, woodblock, cat, yokai, japanese
+- **Style / Reference:** Ukiyo-e, Hokusai, Kuniyoshi
+- **Composition:** Vertical, dramatic scale difference
+- **Color palette:** Indigo, Salmon Pink, White, Black
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20261101_ukiyo_e_cat.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Adhere strictly to the flat color and line work style of woodblock prints.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
