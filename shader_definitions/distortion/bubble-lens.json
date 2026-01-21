@@ -1,0 +1,9 @@
+{
+    "id": "bubble-lens",
+    "name": "Bubble Lens",
+    "url": "shaders/bubble-lens.wgsl",
+    "category": "image",
+    "features": ["mouse-driven"],
+    "description": "A magnifying bubble lens distortion that follows the mouse cursor.",
+    "params": []
+}

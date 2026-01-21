@@ -205,7 +205,8 @@ export class Renderer {
         if (!navigator.gpu) return false;
         
         const adapter = await navigator.gpu.requestAdapter();
-        if (this.isDestroyed || !adapter) return false;
+        if (this.isDestroyed) return false;
+        if (!adapter) return false;
 
         const requiredFeatures: GPUFeatureName[] = [];
         const featureCheck = [
@@ -231,10 +232,15 @@ export class Renderer {
         }
         
         // Initialize Device
-        this.device = await adapter.requestDevice({
-            requiredFeatures,
-            requiredLimits
-        });
+        try {
+            this.device = await adapter.requestDevice({
+                requiredFeatures,
+                requiredLimits
+            });
+        } catch (e) {
+            console.error("Renderer: requestDevice failed", e);
+            return false;
+        }
 
         if (this.isDestroyed) {
             this.device.destroy();
@@ -242,8 +248,19 @@ export class Renderer {
         }
 
         this.context = this.canvas.getContext('webgpu')!;
+        if (!this.context) {
+             console.error("Renderer: getContext('webgpu') returned null");
+             return false;
+        }
+
         this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-        this.context.configure({device: this.device, colorSpace: "display-p3", format: this.presentationFormat, alphaMode: 'premultiplied', toneMapping: {mode: "extended"}});
+
+        try {
+            this.context.configure({device: this.device, colorSpace: "display-p3", format: this.presentationFormat, alphaMode: 'premultiplied', toneMapping: {mode: "extended"}});
+        } catch (e) {
+            console.warn("Renderer: Enhanced context configuration failed, falling back", e);
+            this.context.configure({device: this.device, format: this.presentationFormat, alphaMode: 'premultiplied'});
+        }
         
         await this.fetchImageUrls();
         if (this.isDestroyed) return false;

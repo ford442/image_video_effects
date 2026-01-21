@@ -1,0 +1,9 @@
+{
+    "id": "phase-shift",
+    "name": "Phase Shift",
+    "url": "shaders/phase-shift.wgsl",
+    "category": "image",
+    "features": ["mouse-driven"],
+    "description": "RGB channels are rotationally shifted relative to the mouse position.",
+    "params": []
+}
