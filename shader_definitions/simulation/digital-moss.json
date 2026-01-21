@@ -1,0 +1,9 @@
+{
+  "id": "digital-moss",
+  "name": "Digital Moss",
+  "category": "image",
+  "url": "shaders/digital-moss.wgsl",
+  "description": "Digital moss grows on dark areas. Use the mouse to clean it.",
+  "features": ["mouse-driven"],
+  "params": []
+}
