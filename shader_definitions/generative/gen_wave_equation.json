@@ -1,0 +1,8 @@
+{
+  "id": "gen-wave-equation",
+  "name": "Fluid Ripples",
+  "url": "shaders/gen_wave_equation.wgsl",
+  "category": "generative",
+  "description": "Realistic water ripple simulation with wave interference.",
+  "features": ["mouse-driven"]
+}

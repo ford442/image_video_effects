@@ -1,0 +1,8 @@
+{
+  "id": "gen-fluffy-raincloud",
+  "name": "Fluffy Raincloud",
+  "url": "shaders/gen_fluffy_raincloud.wgsl",
+  "category": "generative",
+  "description": "Move the cloud with your mouse and watch it rain (try clicking!).",
+  "features": ["mouse-driven"]
+}

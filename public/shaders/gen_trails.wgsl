@@ -32,7 +32,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Brush
   let brushSize = 0.05;
-  let intensity = smoothstep(brushSize, 0.0, d);
+  let intensity = 1.0 - smoothstep(0.0, brushSize, d);
 
   // Color cycle
   let brushColor = 0.5 + 0.5 * vec3<f32>(sin(time), sin(time + 2.0), sin(time + 4.0));

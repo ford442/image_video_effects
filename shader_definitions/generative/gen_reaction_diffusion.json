@@ -1,0 +1,8 @@
+{
+  "id": "gen-reaction-diffusion",
+  "name": "Reaction Diffusion",
+  "url": "shaders/gen_reaction_diffusion.wgsl",
+  "category": "generative",
+  "description": "Organic coral-like growth patterns (Gray-Scott model).",
+  "features": ["mouse-driven"]
+}

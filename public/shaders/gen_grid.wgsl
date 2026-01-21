@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Distort space near mouse
   let d = length(p - mouse);
-  let force = 0.5 * smoothstep(0.5, 0.0, d);
+  let force = 0.5 * (1.0 - smoothstep(0.0, 0.5, d));
   p += (p - mouse) * force * sin(time * 2.0);
 
   // Grid
