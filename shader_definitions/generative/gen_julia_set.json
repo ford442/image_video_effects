@@ -1,0 +1,8 @@
+{
+  "id": "gen-julia-set",
+  "name": "Julia Set",
+  "url": "shaders/gen_julia_set.wgsl",
+  "category": "generative",
+  "description": "Animated Julia Set fractal controlled by mouse position.",
+  "features": ["mouse-driven"]
+}

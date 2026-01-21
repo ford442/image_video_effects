@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glow = 0.02 / (dist * dist + 0.001);
 
   // Core
-  let core = smoothstep(radius, radius - 0.05, dist);
+  let core = 1.0 - smoothstep(radius - 0.05, radius, dist);
 
   // Dynamic color
   let orbColor = 0.5 + 0.5 * vec3<f32>(sin(time), cos(time * 1.3), sin(time * 0.7));

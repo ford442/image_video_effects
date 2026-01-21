@@ -1,0 +1,8 @@
+{
+  "id": "gen-rainbow-smoke",
+  "name": "Rainbow Smoke",
+  "url": "shaders/gen_rainbow_smoke.wgsl",
+  "category": "generative",
+  "description": "Turbulent fluid simulation with colorful, explosive interactions.",
+  "features": ["mouse-driven"]
+}
