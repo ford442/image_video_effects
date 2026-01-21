@@ -1,0 +1,8 @@
+{
+  "id": "ink-marbling",
+  "name": "Ink Marbling",
+  "url": "shaders/ink-marbling.wgsl",
+  "category": "image",
+  "description": "Distorts the image with fluid, ink-like domain warping.",
+  "features": ["mouse-driven"]
+}
