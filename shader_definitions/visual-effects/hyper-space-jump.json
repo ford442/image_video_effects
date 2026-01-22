@@ -1,0 +1,8 @@
+{
+  "id": "hyper-space-jump",
+  "name": "Hyper Space Jump",
+  "url": "shaders/hyper-space-jump.wgsl",
+  "category": "image",
+  "description": "Streaks the image radially from the mouse position, simulating a hyperspace jump.",
+  "features": ["mouse-driven"]
+}
