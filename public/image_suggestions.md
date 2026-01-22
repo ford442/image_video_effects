@@ -1077,6 +1077,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Adhere strictly to the flat color and line work style of woodblock prints.
 
+### Suggestion: Constructivist Revolution
+- **Date:** 2026-11-15
+- **Prompt:** "A bold, geometric Soviet Constructivist style poster design. Sharp diagonal red and black shapes slice through a cream background. Industrial imagery (gears, factories) is abstracted into pure form. Cyrillic-style typography integrates with the architecture of the composition."
+- **Negative prompt:** "photorealistic, messy, organic, 3D render, gradient"
+- **Tags:** constructivism, geometric, poster, abstract, retro
+- **Style / Reference:** Constructivism, El Lissitzky, Rodchenko
+- **Composition:** Diagonal dynamic, graphic design
+- **Color palette:** Red, Black, Cream, Grey
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20261115_constructivist_poster.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Keep the shapes flat and the lines sharp.
+
+### Suggestion: Iridescent Slime Mold
+- **Date:** 2026-11-15
+- **Prompt:** "A macro photography shot of a vibrant, iridescent slime mold growing on rotting dark wood. The mold forms intricate, vein-like networks that pulse with a yellow and neon green glow. Water droplets cling to the surface, reflecting the forest canopy."
+- **Negative prompt:** "blurry, low contrast, dry, artificial, plastic"
+- **Tags:** macro, slime, nature, bioluminescence, abstract
+- **Style / Reference:** Macro Nature Photography, Scientific
+- **Composition:** Extreme close-up
+- **Color palette:** Neon Yellow, Lime Green, Dark Brown, Wet Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261115_slime_mold.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the vein structure and the wet, biological texture.
+
+### Suggestion: Velvet Jazz Lounge
+- **Date:** 2026-11-15
+- **Prompt:** "An interior shot of a moody, upscale jazz lounge. The furniture is upholstered in crushed red velvet. Dim, warm lighting reflects off brass instruments and crystal glasses. Smoke hangs low in the air. The atmosphere is intimate and luxurious."
+- **Negative prompt:** "bright, daylight, modern, clean, neon"
+- **Tags:** interior, noir, velvet, luxury, jazz
+- **Style / Reference:** Cinematic, Interior Design
+- **Composition:** Eye level, cozy
+- **Color palette:** Deep Red, Gold, Shadowy Black, Warm Amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261115_velvet_lounge.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture of the velvet and the haziness of the smoke are key.
+
+### Suggestion: 3D Topographic Fantasy Map
+- **Date:** 2026-11-15
+- **Prompt:** "A high-angle, photorealistic view of a physical relief map of a fantasy kingdom. The terrain is built from layers of wood and painted plaster. Mountains are raised, rivers are carved deep blue channels. Tiny miniature castles and forests dot the landscape. Side lighting reveals the texture of the elevation."
+- **Negative prompt:** "paper map, flat, drawing, digital map, satellite"
+- **Tags:** map, topographic, fantasy, miniature, craft
+- **Style / Reference:** Physical Model, Diorama
+- **Composition:** High angle (top-down or 45 degrees)
+- **Color palette:** Earth tones, wood, plaster white, river blue
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20261115_topographic_map.jpg`
+- **License / Attribution:** CC0
+- **Notes:** It must look like a physical object, not a digital drawing.
+
+### Suggestion: Cybernetic Sprinter
+- **Date:** 2026-11-15
+- **Prompt:** "A frozen-in-time action shot of a Paralympic-style cybernetic sprinter launching from the starting blocks. Their legs are advanced carbon-fiber blades with glowing hydraulics. The stadium background is a blur of motion and neon lights. Raindrops are suspended in the air around them."
+- **Negative prompt:** "static, standing still, normal legs, daylight, calm"
+- **Tags:** sports, cyberpunk, action, cyborg, futuristic
+- **Style / Reference:** Sports Photography, Cyberpunk Concept Art
+- **Composition:** Low angle, dynamic action
+- **Color palette:** Neon Blue, Carbon Black, Silver, Stadium lights
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261115_cyber_sprinter.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use motion blur on the background to emphasize the speed.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1095,9 +1160,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Rococo, Constructivism, Low Poly, Ukiyo-e (beyond Sumi-e), Brutalism (Interior).
-- **Materials:** Slime, Fur, Neon gas, Holograms, Obsidian, Velvet.
-- **Subjects:** Crowds, Sports (Futuristic), Musical Instruments, Maps (Topographic/Fantasy).
+- **Styles:** Rococo, Low Poly, Brutalism (Interior), Art Nouveau, Fauvism.
+- **Materials:** Fur, Aerogel, Vantablack, Satin, Damascus Steel.
+- **Subjects:** Crowds, Musical Instruments, Microscopic Organisms, Street Food, Festivals.
 
 ---
 
