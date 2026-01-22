@@ -1142,6 +1142,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Use motion blur on the background to emphasize the speed.
 
+### Suggestion: Brutalist Library Atrium
+- **Date:** 2026-12-01
+- **Prompt:** "A monumental Brutalist library atrium. Massive, raw concrete pillars rise to a grid-patterned skylight. Geometric staircases crisscross the void in a complex, Escher-like arrangement. The atmosphere is quiet and imposing, with soft diffused light highlighting the rough texture of the concrete."
+- **Negative prompt:** "ornate, colorful, wood, cozy, noisy, modern furniture"
+- **Tags:** brutalism, architecture, interior, concrete, monolithic
+- **Style / Reference:** Brutalist Architecture, Louis Kahn
+- **Composition:** Wide angle, looking up, symmetry
+- **Color palette:** Concrete Grey, Shadow Black, Soft White
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20261201_brutalist_atrium.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the weight and texture of the concrete.
+
+### Suggestion: Microscopic Tardigrade
+- **Date:** 2026-12-01
+- **Prompt:** "A scanning electron microscope (SEM) style image of a tardigrade (water bear) clinging to a piece of moss. The image is falsely colored in neon blues and magentas to highlight the wrinkled texture of its skin and its tiny claws. The background is a dark void."
+- **Negative prompt:** "optical photo, blurry, realistic colors, low detail, cartoon"
+- **Tags:** microscopic, nature, science, abstract, neon
+- **Style / Reference:** SEM Photography, Scientific Visualization
+- **Composition:** Macro, centered subject
+- **Color palette:** Neon Blue, Magenta, Black
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20261201_tardigrade.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The 'false color' SEM look is distinct from standard macro photography.
+
+### Suggestion: Damascus Steel Blade
+- **Date:** 2026-12-01
+- **Prompt:** "A high-resolution macro studio shot of a hand-forged Damascus steel knife blade. The intricate, swirling 'raindrop' pattern of the folded steel is clearly visible, contrasting with the mirror-polished cutting edge. Warm studio lighting reflects off the oil on the blade."
+- **Negative prompt:** "stainless steel, smooth, scratches, rust, dull"
+- **Tags:** craft, metal, texture, macro, damascus
+- **Style / Reference:** Product Photography, Macro
+- **Composition:** Close-up on the pattern
+- **Color palette:** Steel Grey, Silver, Warm Gold (reflections)
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_damascus_steel.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast between the dark etched layers and bright polished layers is key.
+
+### Suggestion: Tokyo Night Market
+- **Date:** 2026-12-01
+- **Prompt:** "A vibrant, crowded night market scene in a Tokyo alleyway. Clouds of steam rise from yakitori grills. Red and white paper lanterns glow overhead. In the foreground, a chef hands a skewer to a customer. The background is a beautiful bokeh blur of moving crowds and neon signs."
+- **Negative prompt:** "empty, daylight, clean, quiet, western"
+- **Tags:** street food, night, crowd, japan, atmospheric
+- **Style / Reference:** Street Photography, Cinematic
+- **Composition:** Eye level, depth of field
+- **Color palette:** Lantern Red, Neon Blue, Smoke Grey, Warm Orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_tokyo_market.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Balance the chaos of the crowd with a clear focal point.
+
+### Suggestion: Art Nouveau Conservatory
+- **Date:** 2026-12-01
+- **Prompt:** "A romantic Art Nouveau conservatory at sunset. Curving, organic ironwork frames the tall glass walls, shaped like vines and flowers. Inside, exotic orchids and giant ferns grow wildly. The golden hour light casts complex, organic shadows on the intricate mosaic tile floor."
+- **Negative prompt:** "modern, straight lines, industrial, dead plants, bright noon"
+- **Tags:** art nouveau, architecture, nature, greenhouse, romantic
+- **Style / Reference:** Art Nouveau, Alphonse Mucha (architecture)
+- **Composition:** Wide shot, interior
+- **Color palette:** Sage Green, Gold, Sunset Orange, Iron Black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261201_art_nouveau.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the 'whiplash' curves of the ironwork.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1160,9 +1225,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Rococo, Low Poly, Brutalism (Interior), Art Nouveau, Fauvism.
-- **Materials:** Fur, Aerogel, Vantablack, Satin, Damascus Steel.
-- **Subjects:** Crowds, Musical Instruments, Microscopic Organisms, Street Food, Festivals.
+- **Styles:** Rococo, Low Poly, Fauvism, Pointillism, Kinetic Sculpture.
+- **Materials:** Fur, Aerogel, Vantablack, Satin, Iridescent Scales, Bismuth.
+- **Subjects:** Musical Instruments, Festivals, Bioluminescent Fungi, Isometric Rooms, Knolling (Photography).
 
 ---
 
