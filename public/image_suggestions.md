@@ -1336,6 +1336,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The geometry should be faceted and sharp.
 
+### Suggestion: Vantablack Geometric Abstract
+- **Date:** 2027-01-01
+- **Prompt:** "A minimalist abstract composition featuring a perfect cube and sphere coated in Vantablack (absorbing 99.9% of light). They float in a blindingly white, featureless void. The objects appear as 2D flat black holes, void of any texture or reflection, creating a stark contrast."
+- **Negative prompt:** "reflections, shadows on object, grey, texture, noise"
+- **Tags:** vantablack, abstract, minimalist, surreal, contrast
+- **Style / Reference:** Minimalist Photography, Surrealism
+- **Composition:** Centered, floating
+- **Color palette:** Pure Black, Pure White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270101_vantablack.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The key is the absolute lack of shading on the black objects.
+
+### Suggestion: Liquid Satin Waves
+- **Date:** 2027-01-01
+- **Prompt:** "An abstract background texture of flowing, rippled silk satin fabric in a rich emerald green. The lighting is soft and luxurious, creating deep shadows in the folds and bright, glossy highlights on the peaks. The fabric looks like liquid metal."
+- **Negative prompt:** "flat, cotton, rough, noisy, dull"
+- **Tags:** satin, silk, fabric, abstract, texture
+- **Style / Reference:** Product Photography, Cloth Simulation
+- **Composition:** Full frame texture
+- **Color palette:** Emerald Green, White highlights, Black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270101_liquid_satin.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the sheen and the fluidity of the folds.
+
+### Suggestion: Lantern Festival on the Lake
+- **Date:** 2027-01-01
+- **Prompt:** "A breathtaking wide shot of a traditional lantern festival at night. Thousands of glowing paper lanterns float on a calm, misty lake, reflecting in the water. In the background, silhouetted mountains rise against a starry sky. A small wooden boat drifts nearby."
+- **Negative prompt:** "daylight, modern buildings, neon, electric lights, chaotic"
+- **Tags:** festival, lanterns, lake, night, atmospheric
+- **Style / Reference:** Travel Photography, Cinematic
+- **Composition:** Wide landscape, low angle
+- **Color palette:** Warm orange (lanterns), cool blue (night), black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270101_lantern_festival.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The reflection in the water is as important as the sky.
+
+### Suggestion: Exploded Mechanical Watch
+- **Date:** 2027-01-01
+- **Prompt:** "A highly detailed 3D technical illustration of a luxury mechanical watch in an 'exploded view'. Gears, springs, screws, and the watch face float in an expanded arrangement, showing how the parts fit together. Clean studio lighting highlights the brass and steel textures."
+- **Negative prompt:** "flat, 2D, sketch, drawing, blurry"
+- **Tags:** exploded view, watch, mechanical, technical, 3D
+- **Style / Reference:** Technical Illustration, Product Render
+- **Composition:** Centered, exploded diagram
+- **Color palette:** Silver, gold, brass, white background
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270101_exploded_watch.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Every tiny screw and gear should be sharp and metallic.
+
+### Suggestion: Paper Quilling Peacock
+- **Date:** 2027-01-01
+- **Prompt:** "A vibrant artistic depiction of a peacock made entirely of intricate paper quilling (coiled strips of paper). The tail feathers are detailed swirls of blue, teal, and gold paper strips standing on edge. The background is a simple textured white cardstock."
+- **Negative prompt:** "drawing, painting, real bird, feathers, flat"
+- **Tags:** paper quilling, craft, peacock, art, colorful
+- **Style / Reference:** Paper Quilling, Handicraft
+- **Composition:** Centered subject
+- **Color palette:** Royal blue, teal, gold, white
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270101_quilling_peacock.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The depth and shadows of the paper coils are essential.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1349,14 +1414,15 @@ To help organize prompts, please use tags from the following categories:
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
 - **Diversity Check:** Ensure new suggestions introduce new textures, materials, or lighting scenarios not yet covered.
 - **Update Wishlist:** After adding suggestions, review the "Future Suggestion Ideas" list and remove completed items or add new gaps you noticed.
+- **Review Tags:** Check the 'Tags' of existing entries to ensure diversity and avoid over-representation of certain genres (e.g., Cyberpunk).
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
 - Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts.
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Rococo, Low Poly, Fauvism, Pointillism, Kinetic Sculpture.
-- **Materials:** Fur, Aerogel, Vantablack, Satin, Iridescent Scales, Bismuth.
-- **Subjects:** Musical Instruments, Festivals, Bioluminescent Fungi, Isometric Rooms, Knolling (Photography).
+- **Styles:** Risograph, ASCII Art, Collage, Charcoal Drawing, Bauhaus.
+- **Materials:** Carbon Fiber, Latex, Denim, Hologram, Ice.
+- **Subjects:** Liminal Spaces, Drone Swarm, F1 Race Car, Coral Reef, Thunderstorm.
 
 ---
 
