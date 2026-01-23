@@ -143,31 +143,35 @@ function MainApp() {
                 console.warn("Backend API failed, trying local manifest...", error);
             }
 
-            // 2. Try Local Manifest (Bucket Images & Videos) if API Empty
-            if (manifest.length === 0) {
+            // 2. Try Local Manifest (Bucket Images & Videos) if API Empty OR Videos Missing
+            if (manifest.length === 0 || videos.length === 0) {
                 try {
                     const response = await fetch(LOCAL_MANIFEST_URL);
                     if (response.ok) {
                         const data = await response.json();
 
-                        // Process Images
-                        manifest = (data.images || []).map((item: any) => {
-                            // Fix double bucket names if they exist in the manifest already
-                            const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
-                            return {
-                                url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`,
-                                tags: item.tags || [],
-                                description: item.tags ? item.tags.join(', ') : ''
-                            };
-                        });
+                        // Process Images (only if API failed to provide them)
+                        if (manifest.length === 0) {
+                            manifest = (data.images || []).map((item: any) => {
+                                // Fix double bucket names if they exist in the manifest already
+                                const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
+                                return {
+                                    url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`,
+                                    tags: item.tags || [],
+                                    description: item.tags ? item.tags.join(', ') : ''
+                                };
+                            });
+                        }
 
-                        // Process Videos
-                        videos = (data.videos || []).map((item: any) => {
-                            const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
-                            return item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`;
-                        });
+                        // Process Videos (if missing)
+                        if (videos.length === 0) {
+                            videos = (data.videos || []).map((item: any) => {
+                                const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
+                                return item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`;
+                            });
+                        }
 
-                        console.log("Loaded local manifest:", manifest.length, "images,", videos.length, "videos");
+                        console.log("Loaded local manifest. Total:", manifest.length, "images,", videos.length, "videos");
                     }
                 } catch (e) {
                     console.warn("Failed to load local manifest:", e);
