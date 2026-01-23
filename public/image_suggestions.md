@@ -1271,6 +1271,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The texture should look bumpy and organic, like an SEM scan.
 
+### Suggestion: Kinetic Beach Beast
+- **Date:** 2026-12-15
+- **Prompt:** "A photorealistic wide shot of a massive, intricate kinetic sculpture walking on a windy beach. The structure is made of yellow PVC pipes and white sails, resembling a Theo Jansen Strandbeest. Sand blows across the dunes. The sky is overcast and dramatic."
+- **Negative prompt:** "static, metal, robot, engine, calm"
+- **Tags:** kinetic sculpture, beach, strandbeest, engineering, wind
+- **Style / Reference:** Photorealistic, Kinetic Art, Theo Jansen
+- **Composition:** Wide shot, low angle
+- **Color palette:** Sand beige, PVC yellow, white, storm grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261215_kinetic_beast.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the sense of motion and the mechanical complexity.
+
+### Suggestion: Pointillist Riverbank
+- **Date:** 2026-12-15
+- **Prompt:** "A vibrant landscape painting in the style of Pointillism (Neo-Impressionism). Thousands of tiny distinct dots of pure color blend to form a scene of a peaceful riverbank in summer. Willows drape over the water. People in Victorian dress picnic on the grass."
+- **Negative prompt:** "smooth brushstrokes, blended colors, digital art, photo"
+- **Tags:** pointillism, painting, river, dots, art
+- **Style / Reference:** Pointillism, Georges Seurat, Signac
+- **Composition:** Landscape view
+- **Color palette:** Vibrant green, blue, yellow, touches of red
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20261215_pointillist_river.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The 'dots' texture is essential for this style.
+
+### Suggestion: Iridescent Dragon Scale
+- **Date:** 2026-12-15
+- **Prompt:** "A stunning macro photography shot of dragon scales. The scales shift color from emerald green to deep violet (iridescence) as they curve. The texture is hard and armor-like, but with organic ridges and scratches. Drops of water rest on the surface."
+- **Negative prompt:** "blurry, lizard skin, soft, matte, flat color"
+- **Tags:** macro, dragon, scales, iridescent, fantasy
+- **Style / Reference:** Macro Photography, Fantasy Concept Art
+- **Composition:** Extreme close-up, abstract texture
+- **Color palette:** Iridescent Green, Purple, Blue, Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261215_dragon_scale.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the light refraction and surface detail.
+
+### Suggestion: Aerogel Flower Holder
+- **Date:** 2026-12-15
+- **Prompt:** "A studio product shot of a block of blue aerogel ('frozen smoke') holding a vibrant red rose. The aerogel is translucent and ghost-like, barely visible against the dark background, yet it physically supports the flower. The lighting highlights the ethereal, smoky quality of the material."
+- **Negative prompt:** "glass, plastic, opaque, ice, messy"
+- **Tags:** aerogel, science, flower, translucent, studio
+- **Style / Reference:** Scientific Photography, Minimalist
+- **Composition:** Centered, studio lighting
+- **Color palette:** Pale ghostly blue, vibrant red, black background
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20261215_aerogel_flower.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Aerogel has a very specific blue-haze look; avoid making it look like clear glass.
+
+### Suggestion: Low Poly Winter Retreat
+- **Date:** 2026-12-15
+- **Prompt:** "A charming low poly 3D render of a winter mountain cabin at night. The scene is composed of sharp geometric triangles. Smoke puffs from the chimney are low-poly spheres. Snow-covered pine trees surround the cabin. The lighting is soft blue moonlight with warm yellow windows."
+- **Negative prompt:** "high poly, smooth, realistic, detailed textures, noise"
+- **Tags:** low poly, winter, 3D, geometric, cozy
+- **Style / Reference:** Low Poly Art, 3D Render
+- **Composition:** Isometric or high angle
+- **Color palette:** Moonlight blue, snow white, warm yellow/orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261215_low_poly_winter.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The geometry should be faceted and sharp.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
