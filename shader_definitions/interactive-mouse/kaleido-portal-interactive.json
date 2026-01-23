@@ -1,0 +1,15 @@
+{
+    "id": "kaleido-portal-interactive",
+    "label": "Kaleido Portal",
+    "url": "shaders/kaleido-portal-interactive.wgsl",
+    "category": "interactive-mouse",
+    "icon": "circle",
+    "description": "A circular portal that reveals a kaleidoscopic view of the video, controlled by the mouse.",
+    "features": ["mouse-driven"],
+    "params": {
+        "x": { "label": "Radius", "min": 0.0, "max": 1.0, "default": 0.5 },
+        "y": { "label": "Segments", "min": 0.0, "max": 1.0, "default": 0.5 },
+        "z": { "label": "Rotation", "min": 0.0, "max": 1.0, "default": 0.2 },
+        "w": { "label": "Hardness", "min": 0.0, "max": 1.0, "default": 0.1 }
+    }
+}
