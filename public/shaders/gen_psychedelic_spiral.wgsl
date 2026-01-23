@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p.x *= aspect;
 
     // Mouse interaction
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) - 0.5;
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) - 0.5;
     mouse.x *= aspect;
     let mouse_dist = length(p - mouse);
     let mouse_warp = u.zoom_config.w * 0.5;
