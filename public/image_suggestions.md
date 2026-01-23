@@ -1142,6 +1142,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Use motion blur on the background to emphasize the speed.
 
+### Suggestion: Art Nouveau Greenhouse
+- **Date:** 2026-12-01
+- **Prompt:** "A breathtaking interior shot of an Art Nouveau style greenhouse. Curving ironwork beams in organic shapes support a glass roof. Lush exotic plants and hanging ferns fill the space. Stained glass panels with floral motifs filter the sunlight, casting colorful patterns on the mosaic floor."
+- **Negative prompt:** "modern, straight lines, brutalist, dead plants, dark"
+- **Tags:** art nouveau, greenhouse, architecture, nature, interior
+- **Style / Reference:** Art Nouveau, Alphonse Mucha (architecture)
+- **Composition:** Wide angle, looking up
+- **Color palette:** Sage green, gold, stained glass colors
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261201_art_nouveau.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the organic curves of the ironwork.
+
+### Suggestion: Damascus Steel Dagger
+- **Date:** 2026-12-01
+- **Prompt:** "A macro studio shot of an ornate dagger with a blade made of high-contrast Damascus steel. The watery, rippled pattern of the steel is clearly visible. The handle is carved from dark ebony wood with gold inlay. It rests on piece of red velvet."
+- **Negative prompt:** "rust, plain steel, lowres, blurry, sword"
+- **Tags:** damascus steel, weapon, macro, craft, still life
+- **Style / Reference:** Product Photography, Macro
+- **Composition:** Macro, 45-degree angle
+- **Color palette:** Silver, black, gold, deep red
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261201_damascus_dagger.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture of the Damascus steel is the hero of the shot.
+
+### Suggestion: Steampunk Cello Performance
+- **Date:** 2026-12-01
+- **Prompt:** "A cinematic portrait of a musician playing a mechanical Steampunk cello. The instrument is a complex assembly of brass pipes, gears, and steam vents. The musician wears Victorian attire with leather goggles. The setting is a smoky, dimly lit Victorian theater stage."
+- **Negative prompt:** "electric guitar, modern clothes, daylight, simple"
+- **Tags:** steampunk, music, cello, portrait, cinematic
+- **Style / Reference:** Steampunk, Cinematic Portrait
+- **Composition:** Medium shot
+- **Color palette:** Brass, copper, leather brown, stage smoke blue
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20261201_steampunk_cello.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the intricate details of the mechanical instrument.
+
+### Suggestion: Fauvist City Street
+- **Date:** 2026-12-01
+- **Prompt:** "A vibrant, expressive painting of a busy city street in the style of Fauvism (Henri Matisse). Colors are unnatural and wild: trees are red, the sky is green, and the road is yellow. Bold, thick brushstrokes define the buildings and people. The mood is energetic and joyful."
+- **Negative prompt:** "photorealistic, dull colors, black and white, precise"
+- **Tags:** fauvism, painting, abstract, city, colorful
+- **Style / Reference:** Fauvism, Henri Matisse, André Derain
+- **Composition:** Street view
+- **Color palette:** Bright red, emerald green, cadmium yellow, cobalt blue
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20261201_fauvist_street.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Don't be afraid of clashing colors; that's the point of the style.
+
+### Suggestion: Microscopic Water Bear
+- **Date:** 2026-12-01
+- **Prompt:** "A scanning electron microscope (SEM) style image of a tardigrade (water bear) in extreme detail. It clings to a piece of moss. The image is false-colored to highlight the texture of its chubby body and tiny claws. The background is a blurred void."
+- **Negative prompt:** "cartoon, drawing, low detail, blurry"
+- **Tags:** microscopic, tardigrade, science, macro, nature
+- **Style / Reference:** Scientific Visualization, SEM Photography
+- **Composition:** Extreme close-up
+- **Color palette:** False color (electric blue, purple, or gold), black background
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_micro_tardigrade.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture should look bumpy and organic, like an SEM scan.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
