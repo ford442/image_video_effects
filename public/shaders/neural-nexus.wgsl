@@ -15,10 +15,10 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>;
-  zoom_config: vec4<f32>;
-  zoom_params: vec4<f32>;
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x: time, y: aspect_ratio, z: active_ripples_count, w: unused
+  zoom_config: vec4<f32>,  // xy: center_offset, z: zoom_level, w: unused
+  zoom_params: vec4<f32>,  // xy: target_zoom, zw: interpolation_speed
+  ripples: array<vec4<f32>, 50>, // xy: position (0-1), z: start_time, w: amplitude/decay
 };
 
 // Mapping notes: mouse in zoom_config.yz; zoom_params: x=networkDensity, y=signalSpeed, z=decayRate, w=branchComplexity
