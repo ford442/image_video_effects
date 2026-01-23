@@ -1,0 +1,7 @@
+{
+    "id": "quantum-prism",
+    "label": "Quantum Prism",
+    "url": "shaders/quantum-prism.wgsl",
+    "category": "image",
+    "features": ["mouse-driven"]
+}

@@ -1,0 +1,7 @@
+{
+    "id": "glass-wall",
+    "label": "Glass Wall",
+    "url": "shaders/glass-wall.wgsl",
+    "category": "image",
+    "features": ["mouse-driven"]
+}
