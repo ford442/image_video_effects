@@ -1,0 +1,16 @@
+{
+    "id": "phosphor-magnifier",
+    "label": "Phosphor Magnifier",
+    "name": "Phosphor Magnifier",
+    "url": "shaders/phosphor-magnifier.wgsl",
+    "category": "image",
+    "icon": "search",
+    "description": "Simulates a CRT phosphor mask. Use mouse to magnify the screen pixels.",
+    "features": ["mouse-driven"],
+    "params": [
+        { "name": "Zoom Level", "id": "x", "min": 0.0, "max": 1.0, "default": 0.5 },
+        { "name": "Pixel Size", "id": "y", "min": 0.0, "max": 1.0, "default": 0.5 },
+        { "name": "Glow", "id": "z", "min": 0.0, "max": 1.0, "default": 0.3 },
+        { "name": "Lens Size", "id": "w", "min": 0.0, "max": 1.0, "default": 0.4 }
+    ]
+}
