@@ -70,7 +70,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p.x *= aspect;
 
     // --- Mouse Interaction ---
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) - 0.5;
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) - 0.5;
     mouse.x *= aspect;
     let mouse_dist = length(p - mouse);
     // Inverted smoothstep logic
