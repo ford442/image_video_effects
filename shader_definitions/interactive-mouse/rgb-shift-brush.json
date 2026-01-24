@@ -1,0 +1,41 @@
+{
+  "id": "rgb-shift-brush",
+  "name": "RGB Shift Brush",
+  "url": "shaders/rgb-shift-brush.wgsl",
+  "category": "image",
+  "description": "Paint with RGB channel separation trails using the mouse.",
+  "params": [
+    {
+      "id": "shift",
+      "name": "Shift Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "size",
+      "name": "Brush Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "decay",
+      "name": "Trail Decay",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "hue",
+      "name": "Hue Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ]
+}
