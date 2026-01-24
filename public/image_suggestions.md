@@ -1401,6 +1401,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The depth and shadows of the paper coils are essential.
 
+### Suggestion: Risograph Retro Kitchen
+- **Date:** 2027-02-01
+- **Prompt:** "A nostalgic 3-color Risograph print of a cluttered 1970s kitchen. The image features grainy texture, halftone patterns, and slight misregistration of layers. A vintage orange refrigerator and a patterned linoleum floor are visible. A black cat sits on a yellow chair. The ink colors are Fluorescent Orange, Teal, and Black."
+- **Negative prompt:** "photorealistic, smooth, perfect alignment, digital painting, 3D"
+- **Tags:** risograph, retro, kitchen, 70s, printmaking
+- **Style / Reference:** Risograph, Vintage Print
+- **Composition:** Interior room view
+- **Color palette:** Fluorescent Orange, Teal, Black, White paper
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270201_risograph_kitchen.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the grain and the specific ink color limitations.
+
+### Suggestion: Liminal Indoor Pool
+- **Date:** 2027-02-01
+- **Prompt:** "A hyper-realistic, unsettling photo of a 'Liminal Space': a vast, tiled indoor swimming pool complex with no windows. The architecture is nonsensical, with pillars rising from the water and doorways leading nowhere. The water is glassy and still. The lighting is an artificial, buzzing fluorescent white. No people are present."
+- **Negative prompt:** "people, sunlight, outdoors, messy, dirt"
+- **Tags:** liminal space, pool, eerie, architecture, dreamcore
+- **Style / Reference:** Liminal Space Photography, Dreamcore
+- **Composition:** Wide angle, symmetrical
+- **Color palette:** Sterile White, Aqua Blue, Pale Tiles
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270201_liminal_pool.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The feeling of emptiness and artificiality is key.
+
+### Suggestion: Carbon Fiber Racer
+- **Date:** 2027-02-01
+- **Prompt:** "A cinematic, low-angle action shot of a futuristic Formula 1 race car speeding on a wet track at night. The car's body is unpainted, revealing the raw, woven texture of the Carbon Fiber material. Raindrops streak across the surface. Neon advertisements reflect on the wet asphalt and the glossy car body."
+- **Negative prompt:** "painted car, plastic, daylight, dry, static"
+- **Tags:** carbon fiber, f1, racing, automotive, night
+- **Style / Reference:** Automotive Photography, Cinematic
+- **Composition:** Low angle, panning shot (motion blur)
+- **Color palette:** Black (carbon), Neon Red/Blue reflections, Wet Grey
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270201_carbon_racer.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the woven texture of the carbon fiber.
+
+### Suggestion: Charcoal Thunderstorm
+- **Date:** 2027-02-01
+- **Prompt:** "A dramatic, expressive charcoal drawing of a violent thunderstorm rolling over a jagged coastline. Deep, smudged black charcoal creates heavy storm clouds. Eraser marks are used to create stark white lightning bolts tearing through the sky. The rough texture of the paper is visible."
+- **Negative prompt:** "color, paint, smooth, digital, photo"
+- **Tags:** charcoal, drawing, storm, landscape, moody
+- **Style / Reference:** Charcoal Sketch, Fine Art
+- **Composition:** Wide landscape
+- **Color palette:** Black, Grey, White
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20270201_charcoal_storm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the smudge texture and the contrast between black charcoal and white paper.
+
+### Suggestion: Surreal Dada Collage
+- **Date:** 2027-02-01
+- **Prompt:** "A surreal analog collage in the style of Dadaism. Cut-out black-and-white vintage magazine photos are layered to create a bizarre scene. A giant human eye replaces the sun. A hand reaches out from a chimney holding a bouquet of colorful flowers (the only color element). Ripped paper edges and glue marks are visible."
+- **Negative prompt:** "digital blending, smooth, photoshop, realistic, painting"
+- **Tags:** collage, dada, surreal, vintage, mixed media
+- **Style / Reference:** Dada, Analog Collage
+- **Composition:** Centered composition
+- **Color palette:** Black and White, Splash of vintage color
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270201_dada_collage.jpg`
+- **License / Attribution:** CC0
+- **Notes:** It should look like it was physically cut and pasted with scissors and glue.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
