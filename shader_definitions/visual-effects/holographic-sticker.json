@@ -1,0 +1,8 @@
+{
+  "id": "holographic-sticker",
+  "label": "Holographic Sticker",
+  "category": "visual-effects",
+  "url": "shaders/holographic-sticker.wgsl",
+  "features": ["mouse-driven"],
+  "params": []
+}
