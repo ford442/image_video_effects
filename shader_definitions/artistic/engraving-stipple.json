@@ -1,0 +1,33 @@
+{
+  "id": "engraving-stipple",
+  "name": "Engraving Stipple",
+  "url": "shaders/engraving-stipple.wgsl",
+  "category": "artistic",
+  "description": "Transforms the image into a stippled engraving style. Mouse acts as a light source to reveal details.",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Stipple Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "bias",
+      "name": "Ink Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "light",
+      "name": "Mouse Light",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
