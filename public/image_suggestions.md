@@ -1466,6 +1466,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** It should look like it was physically cut and pasted with scissors and glue.
 
+### Suggestion: Risograph Retro Space Poster
+- **Date:** 2027-02-15
+- **Prompt:** "A retro-futuristic Risograph print of a 1950s style rocket ship launching into a starry void. Grainy texture, misaligned color layers, and a limited color palette of bright fluorescent pink, teal, and yellow on off-white paper."
+- **Negative prompt:** "digital, smooth, 3d render, perfect registration, cgi"
+- **Tags:** risograph, retro, sci-fi, print
+- **Style / Reference:** Risograph, Vintage Print
+- **Composition:** Minimalist, centered
+- **Color palette:** Fluorescent Pink, Teal, Yellow, Off-white
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270215_risograph_rocket.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the texture of the paper and the imperfections of the printing process (misaligned layers).
+
+### Suggestion: F1 Race Car in Rain
+- **Date:** 2027-02-15
+- **Prompt:** "A high-octane photorealistic shot of a Formula 1 race car speeding down a wet track at night. The carbon fiber body reflects the stadium floodlights. Spray kicks up from the tires, blurring the background. Motion blur emphasizes speed."
+- **Negative prompt:** "stationary, parked, sunny, cartoon, drawing"
+- **Tags:** f1, racing, automotive, carbon fiber, photorealistic
+- **Style / Reference:** Sports Photography, Photorealism
+- **Composition:** Low angle, tracking shot, motion blur
+- **Color palette:** Dark asphalt, bright neon highlights, silver reflections
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270215_f1_rain.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the texture of the carbon fiber and the interaction of light with the water spray.
+
+### Suggestion: Holographic Cyberpunk Map
+- **Date:** 2027-02-15
+- **Prompt:** "A close-up of a 3D holographic city map projecting from a wrist-mounted device. The hologram is made of translucent blue and cyan light particles, showing wireframe buildings and data streams. Shallow depth of field focuses on the hologram, blurring the rainy street background."
+- **Negative prompt:** "solid, opaque, plastic, daylight, low contrast"
+- **Tags:** hologram, cyberpunk, sci-fi, technology
+- **Style / Reference:** Cyberpunk, Macro Photography
+- **Composition:** Close-up, shallow depth of field
+- **Color palette:** Cyan, Blue, Black, Neon
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270215_hologram_map.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the hologram looks volumetric and light-emitting, not just a flat screen.
+
+### Suggestion: Liminal Indoor Pool
+- **Date:** 2027-02-15
+- **Prompt:** "A surreal, unsettling photo of a vast, empty indoor tiled pool room. The water is still and turquoise. The walls are tiled in white and mint green. No windows, just artificial fluorescent lighting humming overhead. An endless series of archways leads into darkness."
+- **Negative prompt:** "people, dirt, furniture, sunlight, outdoor"
+- **Tags:** liminal space, poolrooms, surreal, unsettling
+- **Style / Reference:** Liminal Space, Dreamcore
+- **Composition:** Wide angle, symmetrical, vanishing point
+- **Color palette:** White, Mint Green, Turquoise, Sterile
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270215_liminal_pool.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lighting should be flat and artificial. The atmosphere should feel eerily quiet.
+
+### Suggestion: Charcoal Portrait of a Miner
+- **Date:** 2027-02-15
+- **Prompt:** "A rough, expressive charcoal drawing of an old miner's face. Heavy, dark strokes define the deep wrinkles and grit. Smudges and eraser marks add texture. High contrast between the dark coal dust on the face and the white of the eyes."
+- **Negative prompt:** "color, digital painting, smooth, airbrushed, photo"
+- **Tags:** charcoal, drawing, portrait, expressive, monochrome
+- **Style / Reference:** Charcoal Drawing, Expressive Realism
+- **Composition:** Extreme close-up, front facing
+- **Color palette:** Black, White, Grey
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270215_charcoal_miner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the materiality of the charcoal—dust, smudges, and the texture of the paper.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1481,13 +1546,13 @@ To help organize prompts, please use tags from the following categories:
 - **Update Wishlist:** After adding suggestions, review the "Future Suggestion Ideas" list and remove completed items or add new gaps you noticed.
 - **Review Tags:** Check the 'Tags' of existing entries to ensure diversity and avoid over-representation of certain genres (e.g., Cyberpunk).
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
-- Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts.
+- Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts, ensuring the wishlist is replenished with at least as many new ideas.
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Risograph, ASCII Art, Collage, Charcoal Drawing, Bauhaus.
-- **Materials:** Carbon Fiber, Latex, Denim, Hologram, Ice.
-- **Subjects:** Liminal Spaces, Drone Swarm, F1 Race Car, Coral Reef, Thunderstorm.
+- **Styles:** Bauhaus, ASCII Art, Ukiyo-e, Blueprint, Voxel Art, Pointillism.
+- **Materials:** Latex, Denim, Ice, Velvet, Stained Glass, Liquid Metal, Aerogel.
+- **Subjects:** Drone Swarm, Coral Reef, Thunderstorm, Cybernetic Implant, Desert Oasis, Abandoned Amusement Park, Space Station Interior.
 
 ---
 
