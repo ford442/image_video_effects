@@ -1,0 +1,26 @@
+{
+  "id": "double-exposure-zoom",
+  "name": "Double Exposure Zoom",
+  "url": "shaders/double-exposure-zoom.wgsl",
+  "category": "image",
+  "description": "Blends the image with a zoomed and rotated copy of itself, pivoting around the mouse cursor.",
+  "params": [
+    {
+      "id": "rotation",
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom Level",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
