@@ -1531,6 +1531,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Emphasize the materiality of the charcoal—dust, smudges, and the texture of the paper.
 
+### Suggestion: Voxel Coral Reef
+- **Date:** 2027-03-01
+- **Prompt:** "A vibrant, isometric 3D voxel art scene of a teeming coral reef. Blocky clownfish swim among cube-shaped anemones and pixelated brain coral. Shafts of light penetrate the water, illuminating the geometric textures. The water is a gradient of voxel blues."
+- **Negative prompt:** "smooth, curves, round, high poly, realistic"
+- **Tags:** voxel, coral reef, underwater, 3D, isometric
+- **Style / Reference:** Voxel Art, Minecraft-esque, 3D Render
+- **Composition:** Isometric view
+- **Color palette:** Bright Orange, Cyan, Pink, Deep Blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270301_voxel_reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the 'blocky' look is consistent.
+
+### Suggestion: Stained Glass Space Station
+- **Date:** 2027-03-01
+- **Prompt:** "A majestic interior shot of a futuristic space station built in the style of a Gothic cathedral. Huge stained glass windows depict cosmic events (supernovas, nebulae) in vibrant colored glass. Sunlight from a nearby star streams through, casting multi-colored patterns on the high-tech metal floor."
+- **Negative prompt:** "simple glass, clear windows, dark, gloomy, low detail"
+- **Tags:** stained glass, sci-fi, space station, gothic, interior
+- **Style / Reference:** Gothic Sci-Fi, Concept Art
+- **Composition:** Wide angle, looking up at the windows
+- **Color palette:** Jewel tones (Ruby, Sapphire, Emerald), Metallic Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270301_stained_glass_station.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast between the ancient art form and futuristic setting is key.
+
+### Suggestion: Liquid Metal Cybernetics
+- **Date:** 2027-03-01
+- **Prompt:** "A close-up portrait of a cyborg with liquid metal skin (like mercury or gallium) flowing over their face. The metal ripples and reflects the neon city lights around them. Where the metal pulls back, complex circuitry is visible underneath. The eyes are glowing red optical sensors."
+- **Negative prompt:** "flesh, skin, matte, rust, static"
+- **Tags:** liquid metal, cyborg, cyberpunk, portrait, reflective
+- **Style / Reference:** Sci-Fi, 3D Render, Terminator 2 style
+- **Composition:** Portrait, close-up
+- **Color palette:** Chrome Silver, Neon Red, Night City Blue
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270301_liquid_metal.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the fluid simulation and reflections.
+
+### Suggestion: Drone Swarm Blueprint
+- **Date:** 2027-03-01
+- **Prompt:** "A detailed technical blueprint (cyanotype) of a hive-mind drone swarm. White technical lines on a dark blue background show the schematic of individual drones and their formation patterns. Annotation text describes connection nodes and sensor arrays."
+- **Negative prompt:** "photo, 3D, color, realistic, drawing"
+- **Tags:** blueprint, schematic, drone, sci-fi, technical
+- **Style / Reference:** Blueprint, Technical Drawing
+- **Composition:** Flat lay, technical diagram
+- **Color palette:** Blueprint Blue, White
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270301_drone_blueprint.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Must look like a technical document.
+
+### Suggestion: Frozen Desert Oasis
+- **Date:** 2027-03-01
+- **Prompt:** "A surreal landscape of a desert oasis that has been instantly flash-frozen. Palm trees are encased in clear ice, glistening in the harsh desert sun. The sand dunes are dusted with frost. The water hole is a solid mirror of ice. The sky is a piercing cloudless blue."
+- **Negative prompt:** "green leaves, flowing water, heat haze, melting"
+- **Tags:** surreal, ice, desert, frozen, landscape
+- **Style / Reference:** Surrealism, National Geographic (if it were real)
+- **Composition:** Wide landscape
+- **Color palette:** Ice Blue, Sand Gold, Sky Blue, White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270301_frozen_oasis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The juxtaposition of hot desert elements and ice is the main theme.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
