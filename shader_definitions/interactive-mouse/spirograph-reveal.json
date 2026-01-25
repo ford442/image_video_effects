@@ -1,0 +1,41 @@
+{
+  "id": "spirograph-reveal",
+  "name": "Spirograph Reveal",
+  "url": "shaders/spirograph-reveal.wgsl",
+  "category": "image",
+  "description": "Reveals the image through a complex, rotating spirograph pattern centered on the mouse.",
+  "params": [
+    {
+      "id": "petals",
+      "name": "Petals",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "complexity",
+      "name": "Complexity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "thickness",
+      "name": "Line Thickness",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "interactive"
+  ]
+}
