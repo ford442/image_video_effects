@@ -1596,6 +1596,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The juxtaposition of hot desert elements and ice is the main theme.
 
+### Suggestion: ASCII Terminal Portrait
+- **Date:** 2027-03-15
+- **Prompt:** "A portrait of a cyberpunk hacker generated entirely from glowing green ASCII characters on an old curved CRT monitor. The characters (letters, numbers, symbols) vary in density to create shading and form the facial features. Scanlines and phosphor bloom are visible."
+- **Negative prompt:** "drawing, photo, smooth, solid lines, vector"
+- **Tags:** ascii art, typography, cyberpunk, retro, crt
+- **Style / Reference:** ASCII Art, Retro Computing
+- **Composition:** Close-up portrait
+- **Color palette:** Phosphor Green, Black
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270315_ascii_portrait.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The bloom effect is critical to make it look like a screen.
+
+### Suggestion: Denim Patchwork Plains
+- **Date:** 2027-03-15
+- **Prompt:** "A creative landscape where rolling hills are made of layered blue denim fabric. The texture of the weave is visible. Rivers are silver zippers. Trees are made of frayed indigo cotton. The sky is a bleached acid-wash blue."
+- **Negative prompt:** "realistic grass, water, dirt, smooth, painting"
+- **Tags:** denim, fabric, landscape, surreal, texture
+- **Style / Reference:** Textile Art, Surrealism
+- **Composition:** Wide landscape
+- **Color palette:** Indigo, Blue, Silver, White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270315_denim_plains.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the different washes of denim creating depth.
+
+### Suggestion: Latex Cyber-Assassin
+- **Date:** 2027-03-15
+- **Prompt:** "A cinematic shot of a futuristic assassin wearing a form-fitting, high-gloss black latex suit. The material stretches and reflects the neon city lights (pink and blue) surrounding them. They wear a sleek helmet. Rain beads on the hydrophobic surface."
+- **Negative prompt:** "matte, cloth, cotton, dull, low resolution"
+- **Tags:** latex, cyberpunk, sci-fi, character, glossy
+- **Style / Reference:** Cyberpunk Concept Art, Fetish Fashion (aesthetic)
+- **Composition:** Medium shot, dynamic
+- **Color palette:** Glossy Black, Neon Pink, Cyan
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270315_latex_assassin.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The reflections on the black latex define the form.
+
+### Suggestion: Alebrijes Spirit Guide
+- **Date:** 2027-03-15
+- **Prompt:** "A vibrant, fantastical Alebrije spirit animal in a dreamscape. It is a hybrid of a jaguar, eagle, and lizard, carved from wood and painted with intricate, colorful Zapotec patterns (dots, lines, geometric shapes). The colors are neon bright against a dark jungle background."
+- **Negative prompt:** "realistic animal, fur, plain, dull colors, plastic"
+- **Tags:** alebrije, folk art, mexican, fantasy, colorful
+- **Style / Reference:** Mexican Folk Art, Wood Carving
+- **Composition:** Full body, centered
+- **Color palette:** Neon Pink, Orange, Green, Purple, Black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270315_alebrije_spirit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The wood texture should be faintly visible under the paint.
+
+### Suggestion: Cardboard Box Metropolis
+- **Date:** 2027-03-15
+- **Prompt:** "A sprawling city skyline constructed entirely from brown corrugated cardboard boxes and masking tape. Windows are drawn on with black marker. The lighting is warm and dramatic, making the cardboard look like grand architecture. Tearing and corrugation details are visible."
+- **Negative prompt:** "realistic buildings, glass, concrete, metal, clean"
+- **Tags:** cardboard, craft, miniature, city, texture
+- **Style / Reference:** Miniature Art, Recycled Art
+- **Composition:** High angle city view
+- **Color palette:** Cardboard Brown, Black Marker, Warm Yellow Light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270315_cardboard_city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Lighting is key to transforming the trash into treasure.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1612,12 +1677,13 @@ To help organize prompts, please use tags from the following categories:
 - **Review Tags:** Check the 'Tags' of existing entries to ensure diversity and avoid over-representation of certain genres (e.g., Cyberpunk).
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
 - Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts, ensuring the wishlist is replenished with at least as many new ideas.
+- **Verification:** Always check the bottom of the **Prompt examples** section to see what has been recently added. The Wishlist below may not always reflect the absolute latest additions if the previous agent forgot to update it.
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Bauhaus, ASCII Art, Ukiyo-e, Blueprint, Voxel Art, Pointillism.
-- **Materials:** Latex, Denim, Ice, Velvet, Stained Glass, Liquid Metal, Aerogel.
-- **Subjects:** Drone Swarm, Coral Reef, Thunderstorm, Cybernetic Implant, Desert Oasis, Abandoned Amusement Park, Space Station Interior.
+- **Styles:** Scratchboard, Impasto, Solarisation, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting, Pixel Sorting.
+- **Materials:** Cork, Tinfoil, Bubble Wrap, Chainmail, Fur, Sponges, Wax, Holographic Foil, Glitter.
+- **Subjects:** Ant Colony (Macro), Ship in a Bottle, Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch.
 
 ---
 
