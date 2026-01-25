@@ -1,0 +1,38 @@
+{
+  "id": "interactive-origami",
+  "name": "Interactive Origami",
+  "url": "shaders/interactive-origami.wgsl",
+  "category": "image",
+  "description": "Simulates folded paper creases that react to mouse position.",
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "foldScale",
+      "name": "Fold Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "foldDepth",
+      "name": "Fold Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "lightIntensity",
+      "name": "Light Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "unused",
+      "name": "Unused",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
