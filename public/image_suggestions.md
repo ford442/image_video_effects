@@ -1661,6 +1661,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Lighting is key to transforming the trash into treasure.
 
+### Suggestion: Scratchboard Lion
+- **Date:** 2027-04-01
+- **Prompt:** "A highly detailed scratchboard art illustration of a roaring lion. The image is created by scratching away black ink to reveal the white board underneath. Thousands of fine white lines define the texture of the lion's mane and fur. High contrast, dramatic lighting."
+- **Negative prompt:** "color, grey, painting, smooth, graphite"
+- **Tags:** scratchboard, illustration, lion, black and white, texture
+- **Style / Reference:** Scratchboard, Engraving
+- **Composition:** Close-up portrait
+- **Color palette:** Black, White
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270401_scratchboard_lion.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture is defined by the negative space (removing black).
+
+### Suggestion: Storm in a Bottle
+- **Date:** 2027-04-01
+- **Prompt:** "A photorealistic close-up of an antique glass bottle sitting on a wooden desk. Inside the bottle, a raging storm is contained: dark thunderclouds, jagged lightning, and a tiny 18th-century galleon tossing on turbulent waves. The glass distorts the view slightly."
+- **Negative prompt:** "calm water, toy boat, plastic, cartoon, blurry"
+- **Tags:** ship in a bottle, storm, fantasy, surreal, still life
+- **Style / Reference:** Photorealism, Surrealism
+- **Composition:** Centered, shallow depth of field
+- **Color palette:** Glass green, stormy grey, wood brown, electric blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270401_storm_bottle.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the refraction of the glass and the scale difference.
+
+### Suggestion: Holographic Foil Fashion
+- **Date:** 2027-04-01
+- **Prompt:** "A futuristic fashion editorial shot. A model wears a structured jacket made entirely of crinkled silver holographic foil. The material reflects a spectrum of rainbow colors (cyan, magenta, yellow) as light hits the folds. The background is stark white."
+- **Negative prompt:** "matte, cloth, cotton, dull, dark background"
+- **Tags:** holographic, foil, fashion, iridescent, texture
+- **Style / Reference:** Fashion Photography, Editorial
+- **Composition:** Medium shot
+- **Color palette:** Silver, Rainbow iridescence, White
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270401_holographic_foil.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The rainbow reflections are the key visual element.
+
+### Suggestion: Ant Colony Cross-Section
+- **Date:** 2027-04-01
+- **Prompt:** "A macro cross-section view of an underground ant colony. Tunnels and chambers are carved into the dark earth. Queen ants, workers, and larvae are visible in high detail. Roots from plants above dangle into the chambers. The soil texture is rich and granular."
+- **Negative prompt:** "cartoon, drawing, surface view, messy, blurry"
+- **Tags:** ant colony, macro, nature, underground, cross-section
+- **Style / Reference:** Scientific Illustration, Macro Photography
+- **Composition:** Cutaway view
+- **Color palette:** Earth tones, dark brown, black, white (larvae)
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270401_ant_colony.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the intricate network of tunnels.
+
+### Suggestion: Pixel Sorted Tokyo
+- **Date:** 2027-04-01
+- **Prompt:** "A glitch art cityscape of Tokyo at night. The bright neon lights of Shibuya Crossing are 'pixel sorted', dragging vertically in long streaks of color (pink, blue, green) that melt into the street. The buildings remain partially recognizable but heavily distorted by the digital effect."
+- **Negative prompt:** "clean, sharp, normal photo, painting, blur"
+- **Tags:** pixel sorting, glitch art, cyberpunk, tokyo, abstract
+- **Style / Reference:** Glitch Art, Datamoshing
+- **Composition:** Wide city shot
+- **Color palette:** Neon Pink, Electric Blue, Acid Green, Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270401_pixel_sort.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The vertical streaking is the defining characteristic of pixel sorting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1681,9 +1746,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Scratchboard, Impasto, Solarisation, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting, Pixel Sorting.
-- **Materials:** Cork, Tinfoil, Bubble Wrap, Chainmail, Fur, Sponges, Wax, Holographic Foil, Glitter.
-- **Subjects:** Ant Colony (Macro), Ship in a Bottle, Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch.
+- **Styles:** Op Art, Mughal Miniature, Impasto, Solarisation, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting.
+- **Materials:** Amber, Cork, Tinfoil, Bubble Wrap, Chainmail, Fur, Sponges, Wax, Glitter.
+- **Subjects:** Geode, Lighthouse in Storm, Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch.
 
 ---
 
