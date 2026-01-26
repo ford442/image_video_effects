@@ -1,0 +1,33 @@
+{
+  "id": "rgb-delay-brush",
+  "name": "RGB Delay Brush",
+  "url": "shaders/rgb-delay-brush.wgsl",
+  "category": "image",
+  "description": "Reveals past frames in RGB channels. Painting with the mouse creates colorful time-delayed trails.",
+  "params": [
+    {
+      "id": "decay",
+      "name": "Trail Persistence",
+      "default": 0.9,
+      "min": 0.5,
+      "max": 0.99
+    },
+    {
+      "id": "split",
+      "name": "Time Split",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Brush Size",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
