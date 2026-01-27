@@ -1790,6 +1790,70 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20270415_bubble_wrap_fashion.jpg`
 - **License / Attribution:** CC0
 - **Notes:** The texture of the bubble wrap needs to be clearly defined by the lighting.
+### Suggestion: Op Art Spiral
+- **Date:** 2027-04-15
+- **Prompt:** "A black and white Optical Art (Op Art) composition. Concentric circles of alternating black and white bands create a dizzying, vibrating illusion of depth, pulling the viewer into the center. The lines are sharp and vector-like."
+- **Negative prompt:** "blur, color, grey, 3D render, noise"
+- **Tags:** op art, abstract, illusion, black and white, geometric
+- **Style / Reference:** Op Art, Bridget Riley
+- **Composition:** Centered, geometric
+- **Color palette:** Black, White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270415_op_art.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast must be maximum (pure black and white).
+
+### Suggestion: Impasto Sunflower Field
+- **Date:** 2027-04-15
+- **Prompt:** "A thick impasto oil painting of a vibrant sunflower field under a bright blue sky. The paint is applied in heavy, three-dimensional globs, creating a tactile texture. The yellow petals stand out in relief against the canvas."
+- **Negative prompt:** "smooth, digital art, flat, watercolor, photo"
+- **Tags:** impasto, painting, texture, sunflowers, art
+- **Style / Reference:** Impasto, Van Gogh (style)
+- **Composition:** Landscape view
+- **Color palette:** Vibrant Yellow, Sky Blue, Green
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270415_impasto_sunflowers.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the height and shadow of the paint strokes.
+
+### Suggestion: Lighthouse in a Gale
+- **Date:** 2027-04-15
+- **Prompt:** "A dramatic, moody photorealistic shot of an isolated lighthouse on a rocky cliff during a violent storm. Massive waves crash against the rocks, spraying white foam. The lighthouse beam cuts through the dark rain and fog."
+- **Negative prompt:** "sunny, calm, blue sky, cartoon, painting"
+- **Tags:** lighthouse, storm, ocean, moody, cinematic
+- **Style / Reference:** Cinematic, Landscape Photography
+- **Composition:** Wide shot, rule of thirds
+- **Color palette:** Storm Grey, Dark Blue, White Foam, Yellow Beam
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270415_lighthouse_storm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the power of the waves and the isolation.
+
+### Suggestion: Fantasy Floating Castle
+- **Date:** 2027-04-15
+- **Prompt:** "A grand, cinematic digital matte painting of a fantasy castle floating on a rock in the sky. Waterfalls cascade from the rock edge into the clouds below. The lighting is ethereal and soft, blending 2D painting techniques with photorealistic textures."
+- **Negative prompt:** "3D render, sharp edges, lowres, sketch"
+- **Tags:** matte painting, fantasy, castle, landscape, cinematic
+- **Style / Reference:** Matte Painting, Concept Art
+- **Composition:** Wide angle, atmospheric perspective
+- **Color palette:** Pastel Blue, White, Stone Grey, Soft Gold
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270415_matte_castle.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use atmospheric perspective to create scale.
+
+### Suggestion: Bubble Wrap Fashion
+- **Date:** 2027-04-15
+- **Prompt:** "A high-fashion editorial portrait of a model wearing an avant-garde dress made entirely of clear bubble wrap. The plastic bubbles catch the studio light, creating interesting specular highlights and distortions. The background is a solid hot pink."
+- **Negative prompt:** "fabric, cotton, silk, dull, dark"
+- **Tags:** bubble wrap, fashion, plastic, texture, pop
+- **Style / Reference:** Fashion Photography, Avant-Garde
+- **Composition:** Medium shot, studio lighting
+- **Color palette:** Clear plastic, Hot Pink background, Skin tones
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270415_bubble_wrap.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The highlights on the plastic are essential.
 
 ## Attribution & legal
 
@@ -1814,6 +1878,9 @@ To keep the collection diverse, consider adding prompts for:
 - **Styles:** Impasto, Solarisation, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting, Cubism, Trompe-l'œil, Encaustic Painting.
 - **Materials:** Cork, Tinfoil, Chainmail, Fur, Sponges, Wax, Glitter, Marble, Sea Glass.
 - **Subjects:** Geode, Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch, Spiral Staircase, Fireworks.
+- **Styles:** Mughal Miniature, Solarisation, Stereoscopic 3D (Anaglyph), Cubism, Medieval Illuminated Manuscript.
+- **Materials:** Amber, Cork, Tinfoil, Chainmail, Fur, Sponges, Wax, Glitter, Rust, Hessian Fabric, Spilled Oil.
+- **Subjects:** Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Dyson Sphere, Giant Robot Graveyard, Spaceship Cockpit.
 
 ---
 

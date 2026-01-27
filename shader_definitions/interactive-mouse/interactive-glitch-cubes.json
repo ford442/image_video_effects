@@ -1,0 +1,41 @@
+{
+  "id": "interactive-glitch-cubes",
+  "name": "Interactive Glitch Cubes",
+  "url": "shaders/interactive-glitch-cubes.wgsl",
+  "category": "image",
+  "description": "Image is mapped onto a grid of extruded cubes that react to mouse height.",
+  "params": [
+    {
+      "id": "size",
+      "name": "Cube Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "extrusion",
+      "name": "Extrusion Height",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "gap",
+      "name": "Grid Gap",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shadow",
+      "name": "Shadow Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "pseudo-3d"
+  ]
+}
