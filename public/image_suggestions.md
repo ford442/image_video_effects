@@ -1726,6 +1726,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The vertical streaking is the defining characteristic of pixel sorting.
 
+### Suggestion: Op Art Portrait
+- **Date:** 2027-04-15
+- **Prompt:** "A striking black and white Op Art portrait. The subject's face is formed by undulating, warping checkerboard patterns that create a dizzying optical illusion of depth and movement. The background is a spiraling geometric vortex."
+- **Negative prompt:** "color, grey, shading, realistic skin, messy lines"
+- **Tags:** op art, optical illusion, black and white, abstract, portrait
+- **Style / Reference:** Op Art, Bridget Riley, Victor Vasarely
+- **Composition:** Centered portrait
+- **Color palette:** Black, White
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270415_op_art_portrait.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The illusion of depth should come purely from the distortion of the pattern.
+
+### Suggestion: Ancient Amber Fossil
+- **Date:** 2027-04-15
+- **Prompt:** "A backlit macro photography shot of a piece of polished, glowing orange amber. Inside, a prehistoric mosquito is perfectly preserved, its delicate wings and legs visible in high detail. Air bubbles are trapped around it."
+- **Negative prompt:** "opaque, rock, blurry, modern insect, plastic"
+- **Tags:** amber, fossil, macro, nature, prehistoric
+- **Style / Reference:** Macro Photography, Scientific
+- **Composition:** Extreme close-up, backlit
+- **Color palette:** Golden Orange, Honey Yellow, Dark Brown
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270415_amber_fossil.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Backlighting is crucial to make the amber glow.
+
+### Suggestion: Lighthouse at Cape Wrath
+- **Date:** 2027-04-15
+- **Prompt:** "A dramatic, moody matte painting of a solitary lighthouse clinging to a jagged black cliff edge during a violent ocean storm. Massive waves crash against the rocks, sending spray high into the air. The lighthouse beam cuts through the dark rain."
+- **Negative prompt:** "sunny, calm, blue sky, photo, low detail"
+- **Tags:** lighthouse, storm, matte painting, seascape, dramatic
+- **Style / Reference:** Matte Painting, Romanticism
+- **Composition:** Wide shot, vertical emphasis
+- **Color palette:** Stormy Grey, Deep Blue, White Foam, Yellow Light
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270415_lighthouse_storm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the power of the ocean and the isolation of the lighthouse.
+
+### Suggestion: Mughal Garden Pavilion
+- **Date:** 2027-04-15
+- **Prompt:** "A highly detailed traditional Mughal Miniature painting. A royal couple sits in an ornate marble pavilion in a lush Persian garden. The scene features flattened perspective, intricate floral borders, and gold leaf accents. Peacocks roam the garden."
+- **Negative prompt:** "3D, realistic, perspective, shadows, western style"
+- **Tags:** mughal, miniature, painting, india, traditional
+- **Style / Reference:** Mughal Miniature, Indian Art
+- **Composition:** Flat, decorative
+- **Color palette:** Gold, Lapis Blue, Emerald Green, Vermilion
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270415_mughal_garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the intricate patterns and the specific flat style.
+
+### Suggestion: Bubble Wrap Haute Couture
+- **Date:** 2027-04-15
+- **Prompt:** "A high-fashion editorial studio shot of a model wearing an avant-garde voluminous gown made entirely of clear plastic bubble wrap. Studio lighting creates sparkling highlights on the air bubbles. The model strikes a dramatic pose."
+- **Negative prompt:** "fabric, cloth, blurry, casual, dark"
+- **Tags:** fashion, bubble wrap, plastic, avant-garde, studio
+- **Style / Reference:** High Fashion Photography, Conceptual
+- **Composition:** Full body, studio backdrop
+- **Color palette:** Clear/White (plastic), Skin tones, Grey background
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270415_bubble_wrap_fashion.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture of the bubble wrap needs to be clearly defined by the lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1746,9 +1811,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Op Art, Mughal Miniature, Impasto, Solarisation, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting.
-- **Materials:** Amber, Cork, Tinfoil, Bubble Wrap, Chainmail, Fur, Sponges, Wax, Glitter.
-- **Subjects:** Geode, Lighthouse in Storm, Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch.
+- **Styles:** Impasto, Solarisation, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting, Cubism, Trompe-l'œil, Encaustic Painting.
+- **Materials:** Cork, Tinfoil, Chainmail, Fur, Sponges, Wax, Glitter, Marble, Sea Glass.
+- **Subjects:** Geode, Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch, Spiral Staircase, Fireworks.
 
 ---
 
