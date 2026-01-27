@@ -1,0 +1,40 @@
+{
+  "id": "quantum-field-visualizer",
+  "name": "Quantum Field Visualizer",
+  "url": "shaders/quantum-field-visualizer.wgsl",
+  "category": "visual-effects",
+  "description": "Visualizes quantum fluctuations as colorful noise. The act of observation (mouse proximity) collapses the wave function, clearing the image.",
+  "params": [
+    {
+      "id": "observation_strength",
+      "name": "Observation Field",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "fluctuation_speed",
+      "name": "Fluctuation Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "energy_level",
+      "name": "Energy Level",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "uncertainty",
+      "name": "Uncertainty",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

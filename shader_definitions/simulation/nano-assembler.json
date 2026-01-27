@@ -1,0 +1,40 @@
+{
+  "id": "nano-assembler",
+  "name": "Nano Assembler",
+  "url": "shaders/nano-assembler.wgsl",
+  "category": "simulation",
+  "description": "Simulates nanobots constructing the image. Mouse movement disrupts the assembly, scattering the particles.",
+  "params": [
+    {
+      "id": "assembly_progress",
+      "name": "Assembly",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "particle_density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "scatter_force",
+      "name": "Disruption",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rebuild_speed",
+      "name": "Rebuild Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
