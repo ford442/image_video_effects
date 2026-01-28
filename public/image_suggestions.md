@@ -1920,6 +1920,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Emphasize the sheer scale of the engineering project.
 
+### Suggestion: Retro Anaglyph Dino
+- **Date:** 2027-06-01
+- **Prompt:** "A vintage-style stereoscopic 3D (anaglyph) image of a roaring T-Rex in a prehistoric jungle. The image is composed of offset red and cyan layers, creating a 3D effect when viewed with glasses. The aesthetic mimics a 1950s comic book or movie poster, with halftone dots and slightly misaligned colors."
+- **Negative prompt:** "modern 3D render, clean, digital, perfect alignment"
+- **Tags:** anaglyph, 3D, retro, dinosaur, vintage
+- **Style / Reference:** Vintage Comic, Anaglyph
+- **Composition:** Dynamic action shot
+- **Color palette:** Red, Cyan, Black, White
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270601_anaglyph_dino.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The red/cyan split is the defining feature.
+
+### Suggestion: Sea Glass Mosaic
+- **Date:** 2027-06-01
+- **Prompt:** "A close-up macro shot of a beach mosaic made entirely of frosted sea glass. Pieces of tumbled glass in shades of bottle green, cobalt blue, and frosted white are arranged in sand. Sunlight shines through the glass, creating soft, caustic shadows on the sand."
+- **Negative prompt:** "sharp glass, clear glass, plastic, artificial, broken bottle"
+- **Tags:** sea glass, mosaic, beach, macro, texture
+- **Style / Reference:** Macro Photography, Nature Art
+- **Composition:** Top-down or close-up
+- **Color palette:** Seafoam Green, Cobalt Blue, White, Sand Beige
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270601_sea_glass.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the frosted, tumbled texture of the glass.
+
+### Suggestion: Mecha Graveyard
+- **Date:** 2027-06-01
+- **Prompt:** "A melancholic, atmospheric wide shot of a graveyard for giant battle mechs. Colossal, rusted robot limbs and heads jut out of a foggy swamp. Moss and vines cover the metal. A small human figure stands in the foreground for scale, looking up at a decaying mechanical eye."
+- **Negative prompt:** "clean, new robots, action, battle, bright"
+- **Tags:** sci-fi, ruins, mecha, atmospheric, dystopian
+- **Style / Reference:** Concept Art, Simon Stålenhag
+- **Composition:** Wide shot, low angle
+- **Color palette:** Rust Orange, Swamp Green, Fog Grey, Muted Blue
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270601_mecha_graveyard.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the scale and the decay.
+
+### Suggestion: Bestiary Dragon
+- **Date:** 2027-06-15
+- **Prompt:** "A highly detailed page from a medieval illuminated manuscript. A hand-painted illustration depicts a knight fighting a dragon. The borders are filled with intricate gold leaf filigree and latin text in gothic calligraphy. The parchment looks aged and textured."
+- **Negative prompt:** "modern drawing, 3D, digital art, clean white paper"
+- **Tags:** medieval, manuscript, illustration, dragon, gold leaf
+- **Style / Reference:** Medieval Art, Illuminated Manuscript
+- **Composition:** Flat page layout
+- **Color palette:** Gold, Lapis Blue, Crimson, Parchment Beige
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270615_illuminated_dragon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The gold leaf texture and parchment aging are key.
+
+### Suggestion: Oil Slick Abstract
+- **Date:** 2027-06-15
+- **Prompt:** "An abstract macro photograph of oil spilled on wet asphalt. The thin film of oil creates swirling, psychedelic interference patterns in rainbow colors (purple, green, pink). The texture of the rough black asphalt is visible underneath the colorful sheen."
+- **Negative prompt:** "clean water, solid color, painting, lowres"
+- **Tags:** abstract, oil slick, texture, macro, rainbow
+- **Style / Reference:** Abstract Photography, Urban Texture
+- **Composition:** Top-down macro
+- **Color palette:** Asphalt Black, Iridescent Rainbow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270615_oil_slick.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the iridescence and the contrast with the dark road.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
