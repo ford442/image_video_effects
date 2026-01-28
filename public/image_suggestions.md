@@ -1855,6 +1855,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The highlights on the plastic are essential.
 
+### Suggestion: Cubist Jazz Quartet
+- **Date:** 2027-05-01
+- **Prompt:** "A Cubist painting of a jazz quartet performing in a smoky club. The musicians and instruments (saxophone, double bass, piano, drums) are fragmented into geometric planes and interlocking shapes. Perspectives are simultaneous, showing profiles and front views at once. The colors are muted browns, blues, and greys."
+- **Negative prompt:** "realistic, photograph, smooth, 3D render, highly detailed"
+- **Tags:** cubism, abstract, jazz, painting, music
+- **Style / Reference:** Cubism, Picasso, Braque
+- **Composition:** Fragmented, geometric
+- **Color palette:** Earth tones, Slate Blue, Charcoal
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270501_cubist_jazz.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the geometric deconstruction of the forms.
+
+### Suggestion: Tinfoil Astronaut
+- **Date:** 2027-05-01
+- **Prompt:** "A hyper-realistic studio photography shot of an astronaut suit made entirely of crinkled kitchen tinfoil. The foil reflects the studio lighting with sharp, metallic highlights. The astronaut stands on a surface covered in flour (simulating moon dust). The visor is a polished soup ladle."
+- **Negative prompt:** "real spacesuit, cloth, fabric, drawing, painting"
+- **Tags:** tinfoil, craft, astronaut, whimsical, hyper-realistic
+- **Style / Reference:** Product Photography, DIY aesthetic
+- **Composition:** Full body, low angle
+- **Color palette:** Silver, White, Black background
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270501_tinfoil_astronaut.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture of the wrinkled foil is the most important element.
+
+### Suggestion: Ultimate Treehouse
+- **Date:** 2027-05-01
+- **Prompt:** "A magical, sprawling treehouse complex built into a massive ancient banyan tree. Wooden walkways connect different levels. Lanterns glow warm orange in the twilight. There are rope swings, a telescope platform, and a slide. The leaves are lush and vibrant green."
+- **Negative prompt:** "modern house, concrete, scary, dark, winter"
+- **Tags:** treehouse, fantasy, architecture, nature, cozy
+- **Style / Reference:** Fantasy Concept Art, Adventure
+- **Composition:** Wide shot, looking up
+- **Color palette:** Forest Green, Wood Brown, Warm Orange, Twilight Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270501_ultimate_treehouse.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the sense of childhood wonder and adventure.
+
+### Suggestion: Solarized Surrealist Portrait
+- **Date:** 2027-05-15
+- **Prompt:** "A black and white surrealist portrait using the Solarisation effect (Sabattier effect). A woman's face is partially inverted in tone, creating glowing dark lines around the edges of her profile. She holds a glass sphere. The lighting is mysterious and dreamlike."
+- **Negative prompt:** "color, normal photo, low contrast, digital filter"
+- **Tags:** solarisation, surrealism, man ray, black and white, portrait
+- **Style / Reference:** Man Ray, Surrealist Photography
+- **Composition:** Close-up portrait
+- **Color palette:** Black, White, Grey (Solarized)
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270515_solarized_portrait.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The tone inversion is specific to the solarisation process.
+
+### Suggestion: Dyson Sphere Construction
+- **Date:** 2027-05-15
+- **Prompt:** "An epic sci-fi wide shot of a Dyson Sphere under construction around a blazing blue star. Hexagonal megastructures are being assembled by swarm drones, blocking out parts of the star's light. The scale is immense, with planets looking tiny in the foreground."
+- **Negative prompt:** "small scale, atmospheric, ground view, blurry"
+- **Tags:** dyson sphere, sci-fi, space, megastructure, epic
+- **Style / Reference:** Sci-Fi Concept Art, Space Art
+- **Composition:** Wide cosmic scale
+- **Color palette:** Star Blue, Silhouette Black, Construction Yellow lights
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270515_dyson_sphere.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the sheer scale of the engineering project.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1875,12 +1940,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Impasto, Solarisation, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting, Cubism, Trompe-l'œil, Encaustic Painting.
-- **Materials:** Cork, Tinfoil, Chainmail, Fur, Sponges, Wax, Glitter, Marble, Sea Glass.
-- **Subjects:** Geode, Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch, Spiral Staircase, Fireworks.
-- **Styles:** Mughal Miniature, Solarisation, Stereoscopic 3D (Anaglyph), Cubism, Medieval Illuminated Manuscript.
-- **Materials:** Amber, Cork, Tinfoil, Chainmail, Fur, Sponges, Wax, Glitter, Rust, Hessian Fabric, Spilled Oil.
-- **Subjects:** Treehouse, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Dyson Sphere, Giant Robot Graveyard, Spaceship Cockpit.
+- **Styles:** Impasto, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting, Trompe-l'œil, Encaustic Painting, Mughal Miniature, Medieval Illuminated Manuscript, Ukiyo-e, Art Deco, Brutalism, Pointillism, Baroque, Gothic, Cybernetic Renaissance.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Wax, Glitter, Marble, Sea Glass, Amber, Rust, Hessian Fabric, Spilled Oil, Slime, Smoke, Ice, Velvet, Denim, Ferrofluid.
+- **Subjects:** Geode, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch, Spiral Staircase, Fireworks, Giant Robot Graveyard, Spaceship Cockpit, Black Hole, Volcanic Eruption, Steampunk Laboratory, Bioluminescent Forest.
 
 ---
 
