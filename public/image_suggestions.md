@@ -1985,6 +1985,12 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the iridescence and the contrast with the dark road.
 
+### Agent Suggestion: Volumetric God Rays — @Jules — 2027-10-25
+- **Prompt:** "A dense forest canopy with sunlight streaming through the leaves, creating intense volumetric god rays that follow the mouse."
+
+### Agent Suggestion: Origami Fold — @Jules — 2027-10-25
+- **Prompt:** "A vintage map of the world being folded like origami, with creases and shadows appearing where the paper bends."
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
