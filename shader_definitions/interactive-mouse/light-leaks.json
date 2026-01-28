@@ -1,0 +1,14 @@
+{
+  "id": "light-leaks",
+  "name": "Light Leaks",
+  "url": "shaders/light-leaks.wgsl",
+  "category": "image",
+  "description": "Simulates film light leaks. Move the mouse to change the light source angle.",
+  "params": [
+    { "id": "intensity", "name": "Intensity", "default": 0.6, "min": 0.0, "max": 1.0 },
+    { "id": "warmth", "name": "Warmth", "default": 0.8, "min": 0.0, "max": 1.0 },
+    { "id": "size", "name": "Leak Size", "default": 0.4, "min": 0.0, "max": 1.0 },
+    { "id": "speed", "name": "Drift Speed", "default": 0.2, "min": 0.0, "max": 1.0 }
+  ],
+  "features": ["mouse-driven", "overlay"]
+}

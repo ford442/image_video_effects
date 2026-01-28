@@ -1,0 +1,14 @@
+{
+  "id": "sonic-distortion",
+  "name": "Sonic Distortion",
+  "url": "shaders/sonic-distortion.wgsl",
+  "category": "image",
+  "description": "Visualizes high-frequency sound waves emitting from the cursor, distorting the image.",
+  "params": [
+    { "id": "freq", "name": "Frequency", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "speed", "name": "Speed", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "amp", "name": "Amplitude", "default": 0.2, "min": 0.0, "max": 1.0 },
+    { "id": "radius", "name": "Radius", "default": 0.5, "min": 0.0, "max": 1.0 }
+  ],
+  "features": ["mouse-driven", "distortion"]
+}
