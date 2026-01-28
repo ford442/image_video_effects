@@ -1,0 +1,37 @@
+{
+  "id": "lens-flare-brush",
+  "name": "Lens Flare Brush",
+  "url": "shaders/lens-flare-brush.wgsl",
+  "category": "image",
+  "description": "Generates anamorphic lens flares from bright pixels near the mouse.",
+  "params": [
+    {
+      "name": "Threshold",
+      "type": "float",
+      "default": 0.8,
+      "min": 0.5,
+      "max": 1.0
+    },
+    {
+      "name": "Intensity",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Stretch",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Color Shift",
+      "type": "float",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
