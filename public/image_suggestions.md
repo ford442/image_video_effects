@@ -1990,6 +1990,45 @@ To help organize prompts, please use tags from the following categories:
 
 ### Agent Suggestion: Origami Fold — @Jules — 2027-10-25
 - **Prompt:** "A vintage map of the world being folded like origami, with creases and shadows appearing where the paper bends."
+### Agent Suggestion: Steampunk Alchemist's Lab — @jules — 2027-07-01
+- **Prompt:** "A cluttered, dimly lit steampunk laboratory filled with bubbling glass retorts, brass pressure gauges, and Tesla coils. Steam fills the air. A mechanical owl sits on a pile of leather-bound books. Warm amber light glows from vacuum tubes."
+- **Negative prompt:** "modern, clean, digital, plastic, bright"
+- **Tags:** steampunk, interior, laboratory, detailed, brass
+- **Ref image:** `public/images/suggestions/20270701_steampunk_lab.jpg`
+- **Notes / agent context:** Subject from wishlist.
+- **Status:** proposed
+
+### Agent Suggestion: Cold War Bunker — @jules — 2027-07-02
+- **Prompt:** "A wide cinematic shot of an abandoned Cold War era nuclear bunker. Rows of dusty metal bunks line the curved concrete walls. Green flickering fluorescent lights illuminate the peeling paint and rusted control panels. The atmosphere is claustrophobic and silent."
+- **Negative prompt:** "sunlight, exterior, modern, cozy, warm"
+- **Tags:** bunker, post-apocalyptic, interior, cold war, atmospheric
+- **Ref image:** `public/images/suggestions/20270702_bunker.jpg`
+- **Notes / agent context:** Subject from wishlist.
+- **Status:** proposed
+
+### Agent Suggestion: Encaustic Abstract Seascape — @jules — 2027-07-03
+- **Prompt:** "A textured encaustic painting (hot wax) of a stormy seascape. Thick, translucent layers of beeswax mixed with pigments create a sense of depth and motion in the waves. The surface is uneven, with visible scraped textures and embedded colored resin."
+- **Negative prompt:** "flat, digital, smooth, glossy, photo"
+- **Tags:** encaustic, painting, abstract, wax, seascape
+- **Ref image:** `public/images/suggestions/20270703_encaustic_sea.jpg`
+- **Notes / agent context:** Style from wishlist.
+- **Status:** proposed
+
+### Agent Suggestion: Circuit Board Metropolis — @jules — 2027-07-04
+- **Prompt:** "A macro photography shot of a computer motherboard, reimagined as a futuristic sprawling city at night. The capacitors are skyscrapers, the copper traces are glowing highways, and the CPU is the central citadel. Depth of field focuses on the 'downtown' area."
+- **Negative prompt:** "illustration, cartoon, blurry, messy"
+- **Tags:** macro, sci-fi, cyberpunk, tech, miniature
+- **Ref image:** `public/images/suggestions/20270704_circuit_city.jpg`
+- **Notes / agent context:** Subject from wishlist.
+- **Status:** proposed
+
+### Agent Suggestion: Clockwork Macro — @jules — 2027-07-05
+- **Prompt:** "Extreme macro photography inside an antique mechanical watch movement. Golden gears, ruby bearings, and hairsprings are visible in exquisite detail. The lighting highlights the microscopic scratches on the brass and the oil on the pivots."
+- **Negative prompt:** "digital watch, blurry, lowres, simple"
+- **Tags:** macro, mechanical, watch, steampunk, detail
+- **Ref image:** `public/images/suggestions/20270705_clockwork.jpg`
+- **Notes / agent context:** Subject 'Inside a Watch' from wishlist.
+- **Status:** proposed
 
 ## Attribution & legal
 
@@ -2011,9 +2050,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Impasto, Cyanotype, Stereoscopic 3D (Anaglyph), Matte Painting, Trompe-l'œil, Encaustic Painting, Mughal Miniature, Medieval Illuminated Manuscript, Ukiyo-e, Art Deco, Brutalism, Pointillism, Baroque, Gothic, Cybernetic Renaissance.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Wax, Glitter, Marble, Sea Glass, Amber, Rust, Hessian Fabric, Spilled Oil, Slime, Smoke, Ice, Velvet, Denim, Ferrofluid.
-- **Subjects:** Geode, Bunker / Fallout Shelter, Subway Station, Supernova, DNA Helix, Circuit Board City, Inside a Watch, Spiral Staircase, Fireworks, Giant Robot Graveyard, Spaceship Cockpit, Black Hole, Volcanic Eruption, Steampunk Laboratory, Bioluminescent Forest.
+- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Biomorphic Architecture, Data Moshing, Scanography, Light Painting, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Hessian Fabric, Slime, Denim, Paper Marbling, Generative Fluid Simulation, Lichtenberg Figures, Bismuth Crystal, Damascus Steel, Soap Bubbles.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Spaceship Cockpit, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Space Elevator.
 
 ---
 
