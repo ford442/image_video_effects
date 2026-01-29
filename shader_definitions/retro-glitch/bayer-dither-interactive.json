@@ -1,0 +1,29 @@
+{
+  "id": "bayer-dither-interactive",
+  "name": "Bayer Dither Interactive",
+  "category": "retro-glitch",
+  "url": "shaders/bayer-dither-interactive.wgsl",
+  "description": "Applies an ordered 8x8 Bayer dithering effect with adjustable bit depth and pixelation scale.",
+  "features": [
+    "mouse-driven",
+    "retro-style"
+  ],
+  "params": [
+    {
+      "name": "Bit Depth",
+      "id": "zoomParam1",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.1
+    },
+    {
+      "name": "Contrast",
+      "id": "zoomParam2",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    }
+  ]
+}
