@@ -1,0 +1,40 @@
+{
+  "id": "origami-fold",
+  "name": "Origami Fold",
+  "url": "shaders/origami-fold.wgsl",
+  "category": "image",
+  "description": "Simulates a paper fold effect where the image is creased and folded based on the mouse position.",
+  "params": [
+    {
+      "id": "radius",
+      "name": "Fold Radius",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 0.5
+    },
+    {
+      "id": "shadowStrength",
+      "name": "Shadow Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "angle",
+      "name": "Fold Angle",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 6.28
+    },
+    {
+      "id": "transparency",
+      "name": "Transparency",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

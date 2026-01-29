@@ -1,0 +1,40 @@
+{
+  "id": "volumetric-god-rays",
+  "name": "Volumetric God Rays",
+  "url": "shaders/volumetric-god-rays.wgsl",
+  "category": "image",
+  "description": "Generates volumetric light rays emanating from the mouse position, using the image highlights as the source.",
+  "params": [
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "decay",
+      "name": "Decay",
+      "default": 0.95,
+      "min": 0.8,
+      "max": 1.0
+    },
+    {
+      "id": "weight",
+      "name": "Weight",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "exposure",
+      "name": "Exposure",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
