@@ -61,6 +61,14 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Style Blending.** Combine two distinct styles for unique results (e.g., "Art Nouveau architecture in a Cyberpunk setting").
 - **Iterate & record variants.** Save alternate prompts and parameter changes (seed, steps, scale) so results can be reproduced.
 
+### Quality Assurance Checklist ✅
+Before adding a suggestion, ask yourself:
+1. **Is the subject clear?** (e.g., "A cat" vs "A fluffy Persian cat sitting on a velvet pillow")
+2. **Is the lighting defined?** (e.g., "cinematic lighting", "soft morning sun")
+3. **Is the style specified?** (e.g., "oil painting", "3D render", "Polaroid photo")
+4. **Is the prompt under 300 tokens?** (Concise but descriptive)
+5. **Did I check for duplicates?**
+
 ### Standardized Tags Guide
 To help organize prompts, please use tags from the following categories:
 - **Genre:** sci-fi, fantasy, horror, cyberpunk, steampunk, solarpunk, noir, retro.
@@ -2025,6 +2033,71 @@ To help organize prompts, please use tags from the following categories:
 - **Notes / agent context:** Subject 'Inside a Watch' from wishlist.
 - **Status:** proposed
 
+### Suggestion: Lichtenberg Figures (Wood Burning)
+- **Date:** 2027-07-15
+- **Prompt:** "A macro photography shot of Lichtenberg figures being burned into a piece of dark cherry wood. High voltage electricity branches out in fractal patterns, glowing with intense orange heat and leaving charred black trails. Smoke rises from the contact points."
+- **Negative prompt:** "drawing, painting, low resolution, blurry, digital art"
+- **Tags:** lichtenberg, wood, fractal, macro, texture
+- **Style / Reference:** Scientific Photography, Macro
+- **Composition:** Close-up, top-down
+- **Color palette:** Dark Wood Brown, Glowing Orange, Charred Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270715_lichtenberg.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the contrast between the glowing ember and the dark wood.
+
+### Suggestion: Biomorphic Architecture
+- **Date:** 2027-07-15
+- **Prompt:** "A futuristic biomorphic skyscraper rising from a green city park. The building is white and organic, shaped like a twisting sea shell or bone structure, with smooth curves and no sharp angles (Zaha Hadid style). It reflects the bright blue sky."
+- **Negative prompt:** "brutalist, square, brick, grey, standard building"
+- **Tags:** architecture, biomorphic, futuristic, sci-fi, organic
+- **Style / Reference:** Zaha Hadid, Biomimicry
+- **Composition:** Low angle, looking up
+- **Color palette:** White, Sky Blue, lush Green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270715_biomorphic.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The building should look grown rather than built.
+
+### Suggestion: Hessian & Gold Embroidery
+- **Date:** 2027-07-15
+- **Prompt:** "A detailed close-up texture shot of rough, brown hessian (burlap) fabric. Intricate floral patterns are embroidered onto it using metallic gold thread. The contrast between the coarse, frayed fabric and the smooth, shiny gold wire is emphasized."
+- **Negative prompt:** "smooth fabric, silk, low detail, blurry"
+- **Tags:** texture, fabric, embroidery, gold, craft
+- **Style / Reference:** Textile Art, Macro Photography
+- **Composition:** Flat lay texture
+- **Color palette:** Burlap Brown, Metallic Gold
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270715_hessian_gold.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the tactile difference between the materials.
+
+### Suggestion: Hyperdrive Cockpit
+- **Date:** 2027-07-15
+- **Prompt:** "A first-person view from the pilot's seat of a sci-fi spaceship cockpit engaging hyperdrive. The stars outside streak into long lines of blue and white light. The dashboard is filled with glowing holographic displays and complex physical switches."
+- **Negative prompt:** "third person, exterior view, simple, cartoon"
+- **Tags:** sci-fi, cockpit, space, hyperdrive, cinematic
+- **Style / Reference:** Sci-Fi Movie, Concept Art
+- **Composition:** First-person POV
+- **Color palette:** Star White, Deep Space Blue, HUD Cyan/Orange
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270715_hyperdrive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The motion blur of the stars should create a sense of speed.
+
+### Suggestion: Neon Forest Light Painting
+- **Date:** 2027-07-15
+- **Prompt:** "A long-exposure photograph taken in a dark, misty forest at night. Ribbons of glowing neon blue and pink light weave through the trees, creating a magical, floating path. The trees are silhouetted against the light. The ground is covered in ferns."
+- **Negative prompt:** "daylight, sun, flash photography, static light"
+- **Tags:** light painting, forest, long exposure, neon, abstract
+- **Style / Reference:** Long Exposure Photography, Light Art
+- **Composition:** Eye level, winding path
+- **Color palette:** Black, Neon Blue, Neon Pink, Forest Green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270715_light_painting.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The light trails must be smooth and continuous.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -2037,7 +2110,8 @@ To help organize prompts, please use tags from the following categories:
 - **Check for duplicates:** Before adding, search existing titles and prompts to ensure distinctness.
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
 - **Diversity Check:** Ensure new suggestions introduce new textures, materials, or lighting scenarios not yet covered.
-- **Update Wishlist:** After adding suggestions, review the "Future Suggestion Ideas" list and remove completed items or add new gaps you noticed.
+- **Select & Remove:** When creating new suggestions, pick from the "Future Suggestion Ideas" list and **remove the utilized items** to keep the list fresh.
+- **Update Wishlist:** After adding suggestions, add new gaps you noticed to replenish the list.
 - **Review Tags:** Check the 'Tags' of existing entries to ensure diversity and avoid over-representation of certain genres (e.g., Cyberpunk).
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
 - Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts, ensuring the wishlist is replenished with at least as many new ideas.
@@ -2045,9 +2119,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Biomorphic Architecture, Data Moshing, Scanography, Light Painting, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Hessian Fabric, Slime, Denim, Paper Marbling, Generative Fluid Simulation, Lichtenberg Figures, Bismuth Crystal, Damascus Steel, Soap Bubbles.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Spaceship Cockpit, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Space Elevator.
+- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Scanography, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Generative Fluid Simulation, Bismuth Crystal, Damascus Steel, Soap Bubbles.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Space Elevator.
 
 ---
 
