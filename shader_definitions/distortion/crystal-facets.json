@@ -1,0 +1,38 @@
+{
+  "id": "crystal-facets",
+  "name": "Crystal Facets",
+  "category": "distortion",
+  "url": "shaders/crystal-facets.wgsl",
+  "description": "Simulates a radial cut crystal or diamond lens. The image is split into angular facets that refract light differently based on mouse interaction.",
+  "params": [
+    {
+      "name": "Facet Count",
+      "id": "zoomParam1",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Refraction",
+      "id": "zoomParam2",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Rotation",
+      "id": "zoomParam3",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Center Zoom",
+      "id": "zoomParam4",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": ["mouse-driven"]
+}
