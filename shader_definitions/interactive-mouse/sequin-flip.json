@@ -1,0 +1,40 @@
+{
+  "id": "sequin-flip",
+  "name": "Sequin Flip",
+  "url": "shaders/sequin-flip.wgsl",
+  "category": "image",
+  "description": "Simulates reversible sequins that flip to reveal a metallic back when brushed by the mouse.",
+  "params": [
+    {
+      "id": "grid_size",
+      "name": "Grid Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "flip_radius",
+      "name": "Brush Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "specular",
+      "name": "Shine",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "back_color",
+      "name": "Gold/Silver",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
