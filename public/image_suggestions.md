@@ -2489,6 +2489,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The shadows in the raked gravel grooves are essential for depth.
 
+### Suggestion: Cybernetic Renaissance Noble
+- **Date:** 2027-10-26
+- **Prompt:** "A portrait of a nobleman in the style of the High Renaissance (like Titian or Raphael), but his skin is partially transparent, revealing complex clockwork and gold circuitry underneath. He holds a cybernetic skull. Warm, soft lighting, oil painting texture, cracked varnish details."
+- **Negative prompt:** "photograph, modern clothes, flat, vector, 3d render"
+- **Tags:** cybernetic, renaissance, portrait, clockwork, oil painting
+- **Style / Reference:** Cybernetic Renaissance, High Renaissance
+- **Composition:** Half-body portrait, three-quarter view
+- **Color palette:** Deep Red, Gold, Vandyke Brown, Skin tones
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20271026_cybernetic_renaissance.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Combines classical art techniques with sci-fi elements.
+
+### Suggestion: Ferrofluid Event Horizon
+- **Date:** 2027-10-26
+- **Prompt:** "A macro studio shot of a dynamic ferrofluid sculpture shaped like a black hole's accretion disk. Spiked, glossy black liquid is suspended in a magnetic field, spiraling around a central void. Stark white background to emphasize the fluid's silhouette and specular highlights."
+- **Negative prompt:** "color, blurry, messy, low contrast"
+- **Tags:** ferrofluid, black hole, physics, macro, abstract
+- **Style / Reference:** Scientific Photography, Abstract Sculpture
+- **Composition:** Centered, Macro
+- **Color palette:** Glossy Black, White, Grey
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20271026_ferrofluid_blackhole.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on surface tension and magnetic spike details.
+
+### Suggestion: Chiaroscuro Spiral Descent
+- **Date:** 2027-10-26
+- **Prompt:** "A high-angle view looking down a weathered stone spiral staircase into deep darkness. A single lantern halfway down casts dramatic, harsh shadows (chiaroscuro) against the curved walls. Dust motes dance in the beam of light. The texture of the rough stone is palpable."
+- **Negative prompt:** "flat lighting, bright, cheerful, modern, metal"
+- **Tags:** chiaroscuro, spiral staircase, atmospheric, mystery, architecture
+- **Style / Reference:** Baroque, Noir, Tenebrism
+- **Composition:** High-angle, Golden Spiral
+- **Color palette:** Shadow Black, Warm Lantern Orange, Stone Grey
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20271026_chiaroscuro_staircase.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing dynamic range and contrast.
+
+### Suggestion: Aerogel Lab Sample
+- **Date:** 2027-10-26
+- **Prompt:** "A translucent, ghostly blue block of aerogel held by precision robotic grippers in a sterile, white laboratory. A red laser beam passes through the material, refracting slightly and scattering light. The aerogel looks like frozen smoke."
+- **Negative prompt:** "opaque, heavy, rock, dirty, dark"
+- **Tags:** aerogel, science, laboratory, tech, material
+- **Style / Reference:** Scientific Visualization, High-Tech
+- **Composition:** Close-up, rule of thirds
+- **Color palette:** Sterile White, Ethereal Blue, Laser Red, Silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271026_aerogel_sample.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Captures the unique 'frozen smoke' property of aerogel.
+
+### Suggestion: Bismuth Crystal Metropolis
+- **Date:** 2027-10-26
+- **Prompt:** "A fantasy cityscape growing organically out of giant, iridescent bismuth crystals. The buildings follow the natural stair-step geometric formations of the crystal. The surfaces oxidize in rainbows of pink, yellow, blue, and purple. The sky is a pale, hazy violet."
+- **Negative prompt:** "brick, concrete, normal city, dull colors"
+- **Tags:** bismuth, crystal, fantasy city, geometry, iridescent
+- **Style / Reference:** Fantasy Landscape, Geometric Abstraction
+- **Composition:** Wide landscape, bottom-up perspective
+- **Color palette:** Iridescent Rainbow (Pink, Gold, Blue), Violet
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20271026_bismuth_city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Explores geometric fractal patterns in architecture.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -2511,9 +2577,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Scanography, Zoetrope, Glitch Art, Pixel Sorting, Pointillism, Chiaroscuro, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Suprematism, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Aerogel, Carbon Fiber, Ferrofluid, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Bismuth Crystal, Terracotta, Tulle, Burlap, Liquid Nitrogen.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Cybernetic Eye, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, Ringworld, Solar Punk City, Solar Eclipse, Particle Accelerator, Coral Reef.
+- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Zoetrope, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Suprematism, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Dieselpunk, Biopunk, Bauhaus, Art Deco, Constructivism.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Terracotta, Tulle, Burlap, Liquid Nitrogen, Obsidian, Titanium, Peridot, Velvet, Latex, Neon Gas.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, Ringworld, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Mech Hangar, Bioluminescent Bay.
 
 ---
 
