@@ -1,0 +1,40 @@
+{
+  "id": "foil-impression",
+  "name": "Foil Impression",
+  "url": "shaders/foil-impression.wgsl",
+  "category": "image",
+  "description": "Simulates a metallic foil surface. Pressing with the mouse flattens the foil to reveal the image relief and color.",
+  "params": [
+    {
+      "id": "pressure_radius",
+      "name": "Pressure Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "foil_roughness",
+      "name": "Foil Crinkle",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "relief_strength",
+      "name": "Image Emboss",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "color_reveal",
+      "name": "Color Mix",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
