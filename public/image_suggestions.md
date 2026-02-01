@@ -1993,6 +1993,11 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the iridescence and the contrast with the dark road.
 
+### Agent Suggestion: Volumetric God Rays — @Jules — 2027-10-25
+- **Prompt:** "A dense forest canopy with sunlight streaming through the leaves, creating intense volumetric god rays that follow the mouse."
+
+### Agent Suggestion: Origami Fold — @Jules — 2027-10-25
+- **Prompt:** "A vintage map of the world being folded like origami, with creases and shadows appearing where the paper bends."
 ### Agent Suggestion: Steampunk Alchemist's Lab — @jules — 2027-07-01
 - **Prompt:** "A cluttered, dimly lit steampunk laboratory filled with bubbling glass retorts, brass pressure gauges, and Tesla coils. Steam fills the air. A mechanical owl sits on a pile of leather-bound books. Warm amber light glows from vacuum tubes."
 - **Negative prompt:** "modern, clean, digital, plastic, bright"
