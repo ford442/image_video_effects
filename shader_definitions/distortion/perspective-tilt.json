@@ -1,0 +1,33 @@
+{
+  "id": "perspective-tilt",
+  "name": "Perspective Tilt",
+  "url": "shaders/perspective-tilt.wgsl",
+  "category": "image",
+  "description": "Rotates the image plane in 3D space based on mouse position (Pitch/Yaw). Zoom param adjusts distance.",
+  "params": [
+    {
+      "name": "Tilt Sensitivity",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "target": "zoom_params.x"
+    },
+    {
+      "name": "Distance (FOV)",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 3.0,
+      "target": "zoom_params.y"
+    },
+    {
+        "name": "Y-Axis Tilt (Pitch)",
+        "type": "float",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 1.0,
+        "target": "zoom_params.z"
+    }
+  ]
+}

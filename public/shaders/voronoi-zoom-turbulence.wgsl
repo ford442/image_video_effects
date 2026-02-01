@@ -15,16 +15,23 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=Density, y=Zoom, z=Turbulence, w=Speed
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Density, y=Speed, z=Intensity, w=MouseInfl
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hash2(p: vec2<f32>) -> vec2<f32> {
+// Helper: Random hash
+fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+	var p3  = fract(vec3<f32>(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -34,108 +41,100 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let time = u.config.x;
     let mouse = u.zoom_config.yz;
 
     // Params
-    let density = 5.0 + u.zoom_params.x * 20.0;
-    let zoomAmount = u.zoom_params.y * 2.0; // 0 to 2
-    let turbulence = u.zoom_params.z;
-    let speed = u.zoom_params.w * 2.0;
-    let time = u.config.x * speed;
+    let density = 3.0 + u.zoom_params.x * 5.0; // 3 to 8
+    let speed = u.zoom_params.y;
+    let intensity = u.zoom_params.z;
+    let mouseInfl = u.zoom_params.w;
 
-    // Correct aspect for grid
-    let uvGrid = uv;
-    uvGrid.x *= aspect;
+    let aspect = resolution.x / resolution.y;
+    let uv_scaled = vec2<f32>(uv.x * aspect, uv.y) * density;
 
-    let i_st = floor(uvGrid * density);
-    let f_st = fract(uvGrid * density);
+    let i_st = floor(uv_scaled);
+    let f_st = fract(uv_scaled);
 
-    var m_dist = 1.0;  // Minimum distance
-    var m_point = vec2<f32>(0.0); // Closest point relative pos
-    var m_id = vec2<f32>(0.0);    // Closest point ID
+    var min_dist = 1.0;
+    var min_point = vec2<f32>(0.0);
+    var cell_id = vec2<f32>(0.0);
 
     // Voronoi Loop
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
             let neighbor = vec2<f32>(f32(x), f32(y));
-            let id = i_st + neighbor;
+            var point = hash22(i_st + neighbor);
 
-            // Random point in cell
-            var point = hash2(id);
+            // Animate point position slightly for organic feel
+            point = 0.5 + 0.5 * sin(time * 0.5 + 6.2831 * point);
 
-            // Animate point
-            point = 0.5 + 0.5 * sin(time + 6.2831 * point);
-
-            // Vector from current pixel to point
             let diff = neighbor + point - f_st;
             let dist = length(diff);
 
-            if (dist < m_dist) {
-                m_dist = dist;
-                m_point = diff; // Vector to center
-                m_id = id;
+            if (dist < min_dist) {
+                min_dist = dist;
+                min_point = diff; // Vector from current pixel to center (actually center - pixel)
+                // wait, diff = neighbor + point - f_st.
+                // neighbor+point is Center position in grid space relative to i_st.
+                // f_st is Pixel position in grid space relative to i_st.
+                // so diff = Center - Pixel.
+                cell_id = i_st + neighbor;
             }
         }
     }
 
-    // Interactive Turbulence based on Mouse
-    let mouseDist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-    let mouseInfluence = smoothstep(0.5, 0.0, mouseDist); // Stronger near mouse
+    // Determine Zoom for this cell
+    // Random base value per cell
+    let randVal = hash12(cell_id);
 
-    // Apply turbulence
-    // Use the cell ID to create random offset
-    let cellHash = hash2(m_id);
-    let turbAngle = (cellHash.x * 6.28) + time + mouseDist * 10.0;
-    let turbVec = vec2<f32>(cos(turbAngle), sin(turbAngle)) * turbulence * 0.1 * (1.0 + mouseInfluence * 2.0);
+    // Time varying component
+    let cellTime = time * speed + randVal * 10.0;
 
-    // Zoom Effect
-    // Center of the cell in UV space
-    // uv is current pixel.
-    // m_point is vector from pixel to cell center (in grid space).
-    // So cell center in grid space is: (uvGrid * density) + m_point
-    // Wait, m_point is (neighbor + point - f_st).
-    // Vector FROM pixel TO point.
-    // So Pixel + m_point = Point.
-    // Normalized vector to center:
-    let dir = normalize(m_point);
+    // Zoom oscillates.
+    // Base scale 1.0. Variation +/- intensity.
+    // Use sin/cos with different frequencies
+    var zoomFactor = 1.0 + sin(cellTime) * 0.5 * intensity + cos(cellTime * 0.7) * 0.2 * intensity;
 
-    // Distort UV
-    // Push UV away from cell center (zoom in) or towards (zoom out)
-    // We want to sample the texture such that it looks like each cell is a lens.
+    // Mouse Influence
+    let distMouse = distance(uv, mouse);
 
-    // Scale the offset from the center
-    // If zoomAmount is 1.0, we want normal scale? No.
-    // Lens distortion: sampleUV = center + (pixel - center) / zoom
+    // If mouseInfl is positive: proximity increases turbulence/zoom range
+    // If negative: proximity stabilizes (sets zoom to 1.0)
 
-    // Convert m_point (grid space delta) to UV space delta
-    let uvDelta = m_point / density;
-    uvDelta.x /= aspect; // Fix aspect back
+    if (mouseInfl > 0.0) {
+        let infl = smoothstep(0.5, 0.0, distMouse) * mouseInfl;
+        zoomFactor += sin(time * 10.0 + randVal) * infl * 2.0;
+    } else {
+        let stab = smoothstep(0.5, 0.0, distMouse) * (-mouseInfl);
+        zoomFactor = mix(zoomFactor, 1.0, stab);
+    }
 
-    // Apply lens zoom
-    // if zoom > 1, we divide delta, sampling smaller area -> magnification
-    let lensScale = max(0.1, 1.0 - (zoomAmount * 0.5 + mouseInfluence * 0.5));
+    // Apply Zoom
+    // Center is current pixel + min_point (diff)
+    // Pixel - Center = -diff
 
-    let finalUV = uv + uvDelta * (1.0 - lensScale) + turbVec;
+    let offsetFromCenter = -min_point;
 
-    // Add border
-    let border = smoothstep(0.0, 0.05, m_dist);
+    // We want to scale this offset.
+    // newOffset = offset / zoom
+
+    let shift = offsetFromCenter * (1.0 / max(0.1, zoomFactor) - 1.0);
+
+    let uv_scaled_new = uv_scaled + shift;
+
+    let uv_new = vec2<f32>(uv_scaled_new.x / aspect, uv_scaled_new.y) / density;
+
+    // Sample
+    // Handle wrapping manually if needed, or rely on sampler.
+    // Let's add simple repeat just in case.
+    let finalUV = fract(uv_new);
 
     var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    // Darken edges
-    // color = color * smoothstep(0.0, 0.1, m_dist); // Inverted? m_dist is 0 at center? No, m_dist is dist to center.
-    // m_dist is 0 at center, approx 0.5 at edge.
-    // So we want 1.0 at center, 0.0 at edge.
-
-    // Calculate distance to edge (approx)
-    // Voronoi edge distance is harder.
-    // Just use center glow.
-    color = color * (1.0 - smoothstep(0.3, 0.8, m_dist));
-
-    // Tint cells based on ID
-    let tint = vec3<f32>(cellHash.x, cellHash.y, 1.0 - cellHash.x) * 0.1;
-    color = color + vec4<f32>(tint, 0.0);
-
     textureStore(writeTexture, global_id.xy, color);
+
+    // Depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

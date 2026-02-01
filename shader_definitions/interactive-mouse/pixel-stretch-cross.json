@@ -1,0 +1,38 @@
+{
+  "id": "pixel-stretch-cross",
+  "name": "Pixel Stretch Cross",
+  "url": "shaders/pixel-stretch-cross.wgsl",
+  "category": "image",
+  "description": "Stretches pixels from the mouse position to the screen edges in a cross pattern.",
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "width",
+      "name": "Stretch Width",
+      "default": 0.05,
+      "min": 0.0,
+      "max": 0.2
+    },
+    {
+      "id": "decay",
+      "name": "Decay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mix_strength",
+      "name": "Mix Strength",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "opacity",
+      "name": "Opacity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}

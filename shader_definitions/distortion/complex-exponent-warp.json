@@ -1,0 +1,29 @@
+{
+  "id": "complex-exponent-warp",
+  "name": "Complex Exponent Warp",
+  "category": "distortion",
+  "url": "shaders/complex-exponent-warp.wgsl",
+  "description": "Applies a complex domain distortion z -> z^p where p is controlled by mouse position. Creates spirals, fractals, and inversions.",
+  "features": [
+    "mouse-driven",
+    "complex-math"
+  ],
+  "params": [
+    {
+      "name": "Scale",
+      "id": "zoomParam1",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    },
+    {
+      "name": "Spiral Rotation",
+      "id": "zoomParam2",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.0
+    }
+  ]
+}

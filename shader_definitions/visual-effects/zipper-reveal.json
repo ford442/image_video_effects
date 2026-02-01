@@ -1,0 +1,13 @@
+{
+  "id": "zipper-reveal",
+  "name": "Zipper Reveal",
+  "url": "shaders/zipper-reveal.wgsl",
+  "category": "image",
+  "description": "Unzips the image to reveal darkness, controlled by the mouse position.",
+  "params": [
+    { "id": "zipper_width", "name": "Spread", "default": 0.3, "min": 0.0, "max": 1.0 },
+    { "id": "tooth_size", "name": "Tooth Size", "default": 0.02, "min": 0.005, "max": 0.1 },
+    { "id": "angle", "name": "Angle", "default": 0.0, "min": -1.57, "max": 1.57 }
+  ],
+  "features": ["mouse-driven"]
+}

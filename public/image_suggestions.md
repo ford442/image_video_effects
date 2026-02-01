@@ -61,6 +61,14 @@ This file stores curated image suggestions for text-to-image generation and prov
 - **Style Blending.** Combine two distinct styles for unique results (e.g., "Art Nouveau architecture in a Cyberpunk setting").
 - **Iterate & record variants.** Save alternate prompts and parameter changes (seed, steps, scale) so results can be reproduced.
 
+### Quality Assurance Checklist ✅
+Before adding a suggestion, ask yourself:
+1. **Is the subject clear?** (e.g., "A cat" vs "A fluffy Persian cat sitting on a velvet pillow")
+2. **Is the lighting defined?** (e.g., "cinematic lighting", "soft morning sun")
+3. **Is the style specified?** (e.g., "oil painting", "3D render", "Polaroid photo")
+4. **Is the prompt under 300 tokens?** (Concise but descriptive)
+5. **Did I check for duplicates?**
+
 ### Standardized Tags Guide
 To help organize prompts, please use tags from the following categories:
 - **Genre:** sci-fi, fantasy, horror, cyberpunk, steampunk, solarpunk, noir, retro.
@@ -2049,6 +2057,11 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20270801_veiled_marble.jpg`
 - **License / Attribution:** CC0
 - **Notes:** The challenge is to make hard stone look like soft, transparent cloth.
+### Agent Suggestion: Volumetric God Rays — @Jules — 2027-10-25
+- **Prompt:** "A dense forest canopy with sunlight streaming through the leaves, creating intense volumetric god rays that follow the mouse."
+
+### Agent Suggestion: Origami Fold — @Jules — 2027-10-25
+- **Prompt:** "A vintage map of the world being folded like origami, with creases and shadows appearing where the paper bends."
 ### Agent Suggestion: Steampunk Alchemist's Lab — @jules — 2027-07-01
 - **Prompt:** "A cluttered, dimly lit steampunk laboratory filled with bubbling glass retorts, brass pressure gauges, and Tesla coils. Steam fills the air. A mechanical owl sits on a pile of leather-bound books. Warm amber light glows from vacuum tubes."
 - **Negative prompt:** "modern, clean, digital, plastic, bright"
@@ -2089,6 +2102,264 @@ To help organize prompts, please use tags from the following categories:
 - **Notes / agent context:** Subject 'Inside a Watch' from wishlist.
 - **Status:** proposed
 
+### Suggestion: Lichtenberg Figures (Wood Burning)
+- **Date:** 2027-07-15
+- **Prompt:** "A macro photography shot of Lichtenberg figures being burned into a piece of dark cherry wood. High voltage electricity branches out in fractal patterns, glowing with intense orange heat and leaving charred black trails. Smoke rises from the contact points."
+- **Negative prompt:** "drawing, painting, low resolution, blurry, digital art"
+- **Tags:** lichtenberg, wood, fractal, macro, texture
+- **Style / Reference:** Scientific Photography, Macro
+- **Composition:** Close-up, top-down
+- **Color palette:** Dark Wood Brown, Glowing Orange, Charred Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270715_lichtenberg.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the contrast between the glowing ember and the dark wood.
+
+### Suggestion: Biomorphic Architecture
+- **Date:** 2027-07-15
+- **Prompt:** "A futuristic biomorphic skyscraper rising from a green city park. The building is white and organic, shaped like a twisting sea shell or bone structure, with smooth curves and no sharp angles (Zaha Hadid style). It reflects the bright blue sky."
+- **Negative prompt:** "brutalist, square, brick, grey, standard building"
+- **Tags:** architecture, biomorphic, futuristic, sci-fi, organic
+- **Style / Reference:** Zaha Hadid, Biomimicry
+- **Composition:** Low angle, looking up
+- **Color palette:** White, Sky Blue, lush Green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270715_biomorphic.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The building should look grown rather than built.
+
+### Suggestion: Hessian & Gold Embroidery
+- **Date:** 2027-07-15
+- **Prompt:** "A detailed close-up texture shot of rough, brown hessian (burlap) fabric. Intricate floral patterns are embroidered onto it using metallic gold thread. The contrast between the coarse, frayed fabric and the smooth, shiny gold wire is emphasized."
+- **Negative prompt:** "smooth fabric, silk, low detail, blurry"
+- **Tags:** texture, fabric, embroidery, gold, craft
+- **Style / Reference:** Textile Art, Macro Photography
+- **Composition:** Flat lay texture
+- **Color palette:** Burlap Brown, Metallic Gold
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270715_hessian_gold.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the tactile difference between the materials.
+
+### Suggestion: Hyperdrive Cockpit
+- **Date:** 2027-07-15
+- **Prompt:** "A first-person view from the pilot's seat of a sci-fi spaceship cockpit engaging hyperdrive. The stars outside streak into long lines of blue and white light. The dashboard is filled with glowing holographic displays and complex physical switches."
+- **Negative prompt:** "third person, exterior view, simple, cartoon"
+- **Tags:** sci-fi, cockpit, space, hyperdrive, cinematic
+- **Style / Reference:** Sci-Fi Movie, Concept Art
+- **Composition:** First-person POV
+- **Color palette:** Star White, Deep Space Blue, HUD Cyan/Orange
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270715_hyperdrive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The motion blur of the stars should create a sense of speed.
+
+### Suggestion: Neon Forest Light Painting
+- **Date:** 2027-07-15
+- **Prompt:** "A long-exposure photograph taken in a dark, misty forest at night. Ribbons of glowing neon blue and pink light weave through the trees, creating a magical, floating path. The trees are silhouetted against the light. The ground is covered in ferns."
+- **Negative prompt:** "daylight, sun, flash photography, static light"
+- **Tags:** light painting, forest, long exposure, neon, abstract
+- **Style / Reference:** Long Exposure Photography, Light Art
+- **Composition:** Eye level, winding path
+- **Color palette:** Black, Neon Blue, Neon Pink, Forest Green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270715_light_painting.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The light trails must be smooth and continuous.
+
+### Suggestion: Scanography Flora
+- **Date:** 2027-08-01
+- **Prompt:** "A high-resolution scanography art piece of crushed tropical flowers and ferns pressed against a glass scanner bed. The depth of field is extremely shallow, with parts of the petals sharply in focus and others fading into a pitch-black background. Glitch artifacts from the scanner light create a surreal distortion."
+- **Negative prompt:** "standard photo, deep depth of field, bright background, perfect flowers"
+- **Tags:** scanography, floral, abstract, glitch, texture
+- **Style / Reference:** Scanography, Glitch Art
+- **Composition:** Flat lay, pressed against glass
+- **Color palette:** Vibrant Pink, Green, Pitch Black background
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_scanography.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The 'pressed against glass' look is essential.
+
+### Suggestion: Rusted Chainmail Macro
+- **Date:** 2027-08-01
+- **Prompt:** "A macro photography shot of antique, rusted iron chainmail armor. Each ring is textured with flaky orange corrosion and battle damage. A single ring is polished silver, standing out against the decay. The lighting emphasizes the rough metal texture."
+- **Negative prompt:** "shiny, new, clean, low resolution, blurry, plastic"
+- **Tags:** chainmail, texture, macro, rust, medieval
+- **Style / Reference:** Macro Photography, Texture Study
+- **Composition:** Extreme close-up
+- **Color palette:** Rust Orange, Iron Grey, Silver
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270801_chainmail.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the flaking texture of the rust.
+
+### Suggestion: DNA Helix Visualization
+- **Date:** 2027-08-15
+- **Prompt:** "A cinematic scientific visualization of a double helix DNA strand floating in a deep blue liquid medium. The base pairs are glowing neon blue and magenta. The strand is surrounded by floating proteins and enzymes. The scene has a soft, underwater atmospheric depth."
+- **Negative prompt:** "drawing, cartoon, flat, white background, simple model"
+- **Tags:** science, dna, biology, 3d, abstract
+- **Style / Reference:** Scientific Visualization, 3D Render
+- **Composition:** Diagonal composition, shallow depth of field
+- **Color palette:** Deep Blue, Neon Blue, Magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270815_dna_helix.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use subsurface scattering to make the strand look organic.
+
+### Suggestion: Space Elevator Base
+- **Date:** 2027-08-15
+- **Prompt:** "A cinematic upward shot from the ocean base of a massive space elevator tether. The thick carbon nanotube cable stretches endlessly up into the clouds and beyond. Futuristic ships and drones dock at the floating platform station. The scale is overwhelming."
+- **Negative prompt:** "small scale, messy, lowres, land, mountains"
+- **Tags:** sci-fi, space elevator, megastructure, ocean, cinematic
+- **Style / Reference:** Sci-Fi Concept Art, Matte Painting
+- **Composition:** Low angle, looking straight up (1-point perspective)
+- **Color palette:** Ocean Blue, White Clouds, Carbon Grey, Metallic lights
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270815_space_elevator.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Atmospheric perspective is key to showing the height.
+
+### Suggestion: Suminagashi Paper Marbling
+- **Date:** 2027-09-01
+- **Prompt:** "A close-up of Suminagashi (Japanese paper marbling) in progress. Concentric rings of black Sumi ink float on the surface of water, distorted by a gentle breeze into organic topographical map shapes. A single drop of red ink creates a focal point. The water surface reflects soft light."
+- **Negative prompt:** "dry paper, digital noise, chaotic, muddy colors"
+- **Tags:** suminagashi, marbling, ink, water, abstract
+- **Style / Reference:** Suminagashi, Abstract Photography
+- **Composition:** Top-down, macro
+- **Color palette:** Sumi Black, White (water reflection), Red accent
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270901_suminagashi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The fluid nature of the ink on water is distinct from print.
+### Suggestion: Trompe-l'œil Facade
+- **Date:** 2027-08-01
+- **Prompt:** "A photorealistic street photography shot of a brick building with a massive Trompe-l'œil mural. The mural paints a fake tear in the wall revealing a lush, alien jungle inside. Passersby seem to ignore the impossible depth. The lighting matches the real street."
+- **Negative prompt:** "bad art, flat, obvious painting, blurry, cartoon"
+- **Tags:** trompe-l'œil, mural, street art, illusion, jungle
+- **Style / Reference:** Trompe-l'œil, Street Photography
+- **Composition:** Street view, wide angle
+- **Color palette:** Brick Red, Jungle Green, Concrete Grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_trompe_l_oeil.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The key is the seamless blend between the real wall and the painted illusion.
+
+### Suggestion: Cork Miniature World
+- **Date:** 2027-08-01
+- **Prompt:** "A macro studio shot of a landscape entirely carved from wine corks. Mountains are stacked corks, trees are shaved cork bits. The texture of the cork is porous and detailed. Warm studio lighting creates soft shadows."
+- **Negative prompt:** "wood, plastic, realistic mountains, smooth, blurry"
+- **Tags:** cork, miniature, craft, carving, macro
+- **Style / Reference:** Miniature Art, Macro Photography
+- **Composition:** Tilt-shift, high angle
+- **Color palette:** Cork Tan, Brown, Warm White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_cork_world.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the porous texture of the cork material.
+
+### Suggestion: Glitched Scanography Portrait
+- **Date:** 2027-08-01
+- **Prompt:** "A surreal scanography (scanner photography) portrait. A face is pressed against the glass, distorted and smeared by the movement of the scanner bar. The depth of field is non-existent (everything touching the glass is sharp, background is black). High contrast and gritty texture."
+- **Negative prompt:** "normal photo, blurry, distance, 3D render, smooth"
+- **Tags:** scanography, portrait, surreal, distortion, glitch
+- **Style / Reference:** Scanography, Glitch Art
+- **Composition:** Close-up face
+- **Color palette:** Skin tones, Black background, High Contrast
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270801_scanography.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Replicate the specific look of a flatbed scanner light.
+
+### Suggestion: Medical Hologram DNA
+- **Date:** 2027-08-01
+- **Prompt:** "A clean, high-tech medical visualization of a double helix DNA strand. The DNA is made of floating, glowing blue interface particles. It rotates above a sleek black table in a laboratory. Shallow depth of field focuses on a specific gene segment highlighted in red."
+- **Negative prompt:** "cartoon, drawing, messy, organic, biological tissue"
+- **Tags:** dna, medical, sci-fi, hologram, interface
+- **Style / Reference:** Medical Visualization, Sci-Fi UI
+- **Composition:** Centered object, macro
+- **Color palette:** Electric Blue, Red highlight, Black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270801_dna_hologram.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The hologram should look volumetric and light-emitting.
+
+### Suggestion: Suminagashi Ink Swirls
+- **Date:** 2027-08-01
+- **Prompt:** "A top-down close-up of Suminagashi (Japanese paper marbling) in progress. Black and indigo ink rings float on water, distorted by a single drop of surfactant creating a complex fractal pattern. The texture of the water surface and the ink tension is visible."
+- **Negative prompt:** "painting, dry paper, digital art, vector, messy"
+- **Tags:** suminagashi, marbling, ink, abstract, water
+- **Style / Reference:** Suminagashi, Abstract Photography
+- **Composition:** Top-down flat lay
+- **Color palette:** Indigo, Black, Water White/Grey
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270801_suminagashi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the fluid dynamics and the tension on the water surface.
+### Suggestion: Floral Scanography
+- **Date:** 2027-08-01
+- **Prompt:** "A hyper-realistic scanography art piece of crushed vibrant wildflowers (poppies, cornflowers) pressed against a flat scanner glass. The background is pitch black. The lighting is flat and high-contrast, revealing microscopic details of the pollen and petals. Shallow depth of field is non-existent; everything is sharp."
+- **Negative prompt:** "blur, depth of field, 3D render, drawing, illustration"
+- **Tags:** scanography, floral, macro, abstract, botanical
+- **Style / Reference:** Scanography, Botanical Art
+- **Composition:** Flat lay, pressed against glass
+- **Color palette:** Pitch Black, Vibrant Red, Blue, Green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_scanography.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The 'pressed against glass' look is the defining feature.
+
+### Suggestion: Gold & Black Fluid Sim
+- **Date:** 2027-08-01
+- **Prompt:** "A mesmerizing still frame of a 3D generative fluid simulation. Swirling vortices of mixing metallic gold and matte black liquid paints. The fluids look viscous and heavy. Studio lighting creates specular highlights on the gold portions. The composition is abstract and dynamic."
+- **Negative prompt:** "water, thin liquid, messy, low resolution, noise"
+- **Tags:** abstract, fluid, 3D, gold, liquid
+- **Style / Reference:** 3D Simulation, Abstract Art
+- **Composition:** Macro, swirling pattern
+- **Color palette:** Gold, Matte Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_fluid_sim.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Contrast between the matte black and shiny gold is key.
+
+### Suggestion: Space Elevator Tether
+- **Date:** 2027-08-01
+- **Prompt:** "A breathtaking upward-looking wide shot from the base of a futuristic space elevator anchored in the ocean. The carbon-nanotube tether stretches infinitely upwards into the blue sky, piercing the clouds. Climber cars ascend the cable. The ocean is calm with a few maintenance ships."
+- **Negative prompt:** "cartoon, drawing, messy, low detail, clouds blocking view"
+- **Tags:** sci-fi, space elevator, mega-structure, ocean, futuristic
+- **Style / Reference:** Sci-Fi Concept Art, Photorealistic
+- **Composition:** Extreme low angle, vanishing point in sky
+- **Color palette:** Ocean Blue, Sky Blue, White, Carbon Black
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270801_space_elevator.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the infinite scale of the tether.
+
+### Suggestion: Suminagashi Paper Marbling
+- **Date:** 2027-08-01
+- **Prompt:** "A high-resolution texture shot of traditional Japanese Suminagashi (paper marbling). Concentric rings of black ink float on water, distorted by a gentle breeze into organic, topographic map-like patterns. The background is the white of the paper/water."
+- **Negative prompt:** "digital noise, 3D, color, messy, blur"
+- **Tags:** suminagashi, marbling, abstract, texture, ink
+- **Style / Reference:** Suminagashi, Abstract Expressionism
+- **Composition:** Top-down texture
+- **Color palette:** Black Ink, White Paper
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_suminagashi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lines should be organic and fluid, like topography.
+
+### Suggestion: Chainmail Weave Macro
+- **Date:** 2027-08-01
+- **Prompt:** "A macro photography shot of hand-forged riveting chainmail armor. The interlocking iron rings show signs of wear, rust, and oil. The texture is gritty and metallic. Cold blue cinematic lighting glints off the metal rings. The background is blurred dark leather."
+- **Negative prompt:** "perfect rings, machine made, plastic, silver, clean"
+- **Tags:** chainmail, armor, macro, texture, medieval
+- **Style / Reference:** Macro Photography, Historical
+- **Composition:** Extreme close-up
+- **Color palette:** Iron Grey, Rust Orange, Cold Blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270801_chainmail.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the imperfections and rust on the rings.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -2101,7 +2372,9 @@ To help organize prompts, please use tags from the following categories:
 - **Check for duplicates:** Before adding, search existing titles and prompts to ensure distinctness.
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
 - **Diversity Check:** Ensure new suggestions introduce new textures, materials, or lighting scenarios not yet covered.
-- **Update Wishlist:** After adding suggestions, review the "Future Suggestion Ideas" list and remove completed items or add new gaps you noticed.
+- **Aspect Ratio Diversity:** Avoid sticking to 16:9 or 1:1. Experiment with 21:9 (Cinematic), 9:16 (Mobile), or 4:5 (Portrait).
+- **Select & Remove:** When creating new suggestions, pick from the "Future Suggestion Ideas" list and **remove the utilized items** to keep the list fresh.
+- **Update Wishlist:** After adding suggestions, add new gaps you noticed to replenish the list.
 - **Review Tags:** Check the 'Tags' of existing entries to ensure diversity and avoid over-representation of certain genres (e.g., Cyberpunk).
 - Optionally maintain a simple CSV/JSON data file for programmatic consumption (columns: id, title, prompt, tags, ref_image, license).
 - Scheduled task: Add 5 new suggestions weekly to maintain a diverse and growing collection of prompts, ensuring the wishlist is replenished with at least as many new ideas.
@@ -2109,9 +2382,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Biomorphic Architecture, Data Moshing, Scanography, Light Painting, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Hessian Fabric, Slime, Denim, Paper Marbling, Generative Fluid Simulation, Lichtenberg Figures, Bismuth Crystal, Damascus Steel, Soap Bubbles.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Spaceship Cockpit, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Space Elevator.
+- **Styles:** Collodion Process, Tenebrism, Geometric Abstraction, Zoetrope, Suprematism, De Stijl, Romanticism, High-Speed Photography.
+- **Materials:** Chainmail, Fur, Sponges, Glitter, Generative Fluid Simulation, Feathers, Sand, Sequin, Graphene, Mercury, Gallium.
+- **Subjects:** Subway Station, Supernova, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Space Elevator, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, O'Neill Cylinder, Ringworld.
+- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting, De Stijl.
+- **Materials:** Cork, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Bismuth Crystal, Damascus Steel, Soap Bubbles, Terracotta, Tulle.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Solar Eclipse, Zen Garden.
 
 ---
 

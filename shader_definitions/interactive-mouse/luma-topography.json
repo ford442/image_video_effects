@@ -1,0 +1,41 @@
+{
+  "id": "luma-topography",
+  "name": "Luma Topography",
+  "url": "shaders/luma-topography.wgsl",
+  "category": "image",
+  "description": "Visualizes the image as a 3D terrain map where brightness determines height. The mouse controls a dynamic light source.",
+  "params": [
+    {
+      "id": "height",
+      "name": "Relief Height",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "intensity",
+      "name": "Light Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shininess",
+      "name": "Shininess",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "ambient",
+      "name": "Ambient Light",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "lighting"
+  ]
+}
