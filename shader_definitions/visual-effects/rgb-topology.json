@@ -1,0 +1,38 @@
+{
+  "id": "rgb-topology",
+  "name": "RGB Topology",
+  "category": "visual-effects",
+  "url": "shaders/rgb-topology.wgsl",
+  "description": "Visualizes the image as 3D topographic maps, one for each color channel (Red, Green, Blue). The layers are offset based on mouse tilt.",
+  "params": [
+    {
+      "name": "Contour Density",
+      "id": "zoomParam1",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Parallax Height",
+      "id": "zoomParam2",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Line Thickness",
+      "id": "zoomParam3",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Glow",
+      "id": "zoomParam4",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": ["mouse-driven"]
+}
