@@ -2424,6 +2424,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the imperfections and rust on the rings.
 
+### Suggestion: De Stijl Architecture
+- **Date:** 2027-09-15
+- **Prompt:** "A minimalist architectural composition inspired by the De Stijl movement. The building facade is composed of precise rectangular planes in primary colors (Red, Blue, Yellow) separated by thick black lines and white stucco. The lighting is flat and graphic, emphasizing the strict geometry."
+- **Negative prompt:** "curves, organic shapes, decoration, gradients, messy"
+- **Tags:** de stijl, architecture, abstract, geometric, minimalist
+- **Style / Reference:** De Stijl, Mondrian, Rietveld
+- **Composition:** Flat, graphic, orthogonal
+- **Color palette:** Primary Red, Blue, Yellow, Black, White
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270915_destijl.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the lines are perfectly straight and colors are flat.
+
+### Suggestion: Iridescent Feathers Macro
+- **Date:** 2027-09-15
+- **Prompt:** "An extreme macro photography shot of a peacock feather. The barbs are in sharp focus, revealing the microscopic lattice structure that creates the iridescence. Colors shift from emerald green to deep metallic blue and bronze. The background is a soft, dark blur."
+- **Negative prompt:** "blurry, whole feather, distant, dull colors"
+- **Tags:** macro, feathers, iridescent, texture, nature
+- **Style / Reference:** Macro Photography, Nature
+- **Composition:** Extreme close-up
+- **Color palette:** Emerald Green, Royal Blue, Bronze, Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270915_feathers.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the metallic sheen and fine detail.
+
+### Suggestion: Wet Plate Portrait
+- **Date:** 2027-09-15
+- **Prompt:** "A hauntingly beautiful portrait taken using the 19th-century Collodion wet plate process. The subject is a woman in Victorian dress. The image features characteristic chemical swirls, uneven edges, and high contrast. The eyes are piercingly sharp against the slightly blurred periphery."
+- **Negative prompt:** "modern photo, color, digital, perfect skin, smooth"
+- **Tags:** wet plate, collodion, vintage, portrait, texture
+- **Style / Reference:** Wet Plate Photography, Julia Margaret Cameron
+- **Composition:** Portrait, shallow depth of field (Petzval lens effect)
+- **Color palette:** Sepia, Black, Cream
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270915_wetplate.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The chemical imperfections are key to the aesthetic.
+
+### Suggestion: O'Neill Cylinder Interior
+- **Date:** 2027-09-15
+- **Prompt:** "A breathtaking wide shot inside a massive O'Neill Cylinder space colony. Looking up, the landscape curves upwards until it forms a ceiling of land and rivers overhead. Clouds float in the zero-gravity center. The terrain is a mix of futuristic cities and lush parklands."
+- **Negative prompt:** "flat horizon, planet surface, dark, dystopian"
+- **Tags:** sci-fi, space colony, o'neill cylinder, landscape, futuristic
+- **Style / Reference:** Sci-Fi Concept Art, Syd Mead
+- **Composition:** Wide angle, cylindrical perspective
+- **Color palette:** Sky Blue, Grass Green, White Clouds, City Lights
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270915_oneill_cylinder.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use the curved horizon to sell the scale of the structure.
+
+### Suggestion: Zen Garden Morning
+- **Date:** 2027-09-15
+- **Prompt:** "A peaceful, photorealistic top-down shot of a Japanese Zen garden at sunrise. Raked white gravel forms perfect concentric ripples around moss-covered rocks. A single red maple leaf rests on the stones. The lighting is soft, raking low across the texture of the sand."
+- **Negative prompt:** "people, messy, dirt, chaotic, bright noon"
+- **Tags:** zen garden, japan, nature, texture, peaceful
+- **Style / Reference:** Landscape Photography, Minimalist
+- **Composition:** Top-down (flat lay)
+- **Color palette:** White/Grey Gravel, Moss Green, Maple Red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270915_zen_garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The shadows in the raked gravel grooves are essential for depth.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -2446,15 +2511,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Scanography, Zoetrope, Glitch Art, Pixel Sorting, Pointillism, Chiaroscuro, Low Poly, Brutalism.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Aerogel, Carbon Fiber, Ferrofluid.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Cybernetic Eye, Microchip City, Nebula.
-- **Styles:** Collodion Process, Tenebrism, Geometric Abstraction, Zoetrope, Suprematism, De Stijl, Romanticism, High-Speed Photography.
-- **Materials:** Chainmail, Fur, Sponges, Glitter, Generative Fluid Simulation, Feathers, Sand, Sequin, Graphene, Mercury, Gallium.
-- **Subjects:** Subway Station, Supernova, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Space Elevator, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, O'Neill Cylinder, Ringworld.
-- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting, De Stijl.
-- **Materials:** Cork, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Bismuth Crystal, Damascus Steel, Soap Bubbles, Terracotta, Tulle.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Solar Eclipse, Zen Garden.
+- **Styles:** Matte Painting, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Scanography, Zoetrope, Glitch Art, Pixel Sorting, Pointillism, Chiaroscuro, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Suprematism, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Aerogel, Carbon Fiber, Ferrofluid, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Bismuth Crystal, Terracotta, Tulle, Burlap, Liquid Nitrogen.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Cybernetic Eye, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, Ringworld, Solar Punk City, Solar Eclipse, Particle Accelerator, Coral Reef.
 
 ---
 
