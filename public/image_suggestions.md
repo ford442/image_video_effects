@@ -1993,6 +1993,70 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the iridescence and the contrast with the dark road.
 
+### Suggestion: Encaustic Wax Seascape
+- **Date:** 2027-07-01
+- **Prompt:** "A textured encaustic painting (hot wax) of a stormy ocean. Thick, translucent layers of beeswax mixed with pigments create a sense of depth and movement. The waves are deep teal and frothy white. The surface has a visible, heat-fused, bumpy texture."
+- **Negative prompt:** "flat, oil painting, acrylic, digital, smooth"
+- **Tags:** encaustic, wax, painting, ocean, texture
+- **Style / Reference:** Encaustic Painting, Textured Art
+- **Composition:** Landscape view
+- **Color palette:** Deep Teal, White, Beeswax Yellow, Navy
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270701_encaustic_sea.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the translucency and thickness of the wax.
+
+### Suggestion: Trompe-l'œil Archway
+- **Date:** 2027-07-01
+- **Prompt:** "A hyper-realistic Trompe-l'œil mural painted on a weathered brick wall. The painting depicts a crumbling stone archway that seemingly opens into a lush, sunlit Italian garden with a fountain. Shadows are painted to match the real-world light source, creating a perfect optical illusion of depth."
+- **Negative prompt:** "real garden, 3D render, cartoon, flat graffiti, bad perspective"
+- **Tags:** trompe-l'œil, mural, illusion, street art, realistic
+- **Style / Reference:** Trompe-l'œil, Street Art
+- **Composition:** Eye level, straight on
+- **Color palette:** Brick Red (wall), Green, Stone Grey, Sky Blue
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270701_trompe_l_oeil.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The illusion depends on the painted shadows and perspective.
+
+### Suggestion: Cybernetic Vitruvian Study
+- **Date:** 2027-07-15
+- **Prompt:** "A Leonardo da Vinci style sepia ink sketch on aged parchment, depicting a 'Vitruvian Man' figure. However, the anatomy is half-human, half-machine. Detailed schematics of gears, pulleys, and hydraulic pistons replace muscles and bones on one side. Handwritten mirror-writing annotations surround the figure."
+- **Negative prompt:** "photograph, color, modern, 3D render, clean paper"
+- **Tags:** sketch, da vinci, steampunk, anatomy, cybernetic
+- **Style / Reference:** Renaissance Sketch, Technical Drawing
+- **Composition:** Centered, diagrammatic
+- **Color palette:** Sepia, Parchment Beige, Black Ink
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270715_vitruvian_cyborg.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Must look like an authentic 15th-century manuscript page.
+
+### Suggestion: Hessian and Lace
+- **Date:** 2027-07-15
+- **Prompt:** "A rustic macro still life composition. A piece of rough, brown hessian (burlap) fabric serves as the background. Overlaying it is a delicate, handmade white lace doily. A single dried lavender sprig rests on top. The lighting highlights the contrast between the coarse jute fibers and the fine cotton thread."
+- **Negative prompt:** "smooth, plastic, digital, bright colors, complex"
+- **Tags:** texture, hessian, burlap, lace, rustic
+- **Style / Reference:** Rustic Still Life, Macro Photography
+- **Composition:** Flat lay, texture focus
+- **Color palette:** Burlap Brown, White, Lavender Purple
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270715_hessian_lace.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the tactile difference between the materials.
+
+### Suggestion: Veiled Marble Mystery
+- **Date:** 2027-08-01
+- **Prompt:** "A hyper-realistic close-up of a classical marble bust in the style of Giovanni Strazza (The Veiled Virgin). The white Carrara marble is carved to look like a transparent silk veil draped over a woman's face. The facial features are softly visible through the 'stone fabric'. Soft, directional museum lighting."
+- **Negative prompt:** "real fabric, skin, painting, low detail, grain"
+- **Tags:** sculpture, marble, veil, art, realistic
+- **Style / Reference:** Classical Sculpture, Hyper-realism
+- **Composition:** Close-up portrait
+- **Color palette:** Marble White, Grey Shadows
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270801_veiled_marble.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The challenge is to make hard stone look like soft, transparent cloth.
 ### Agent Suggestion: Volumetric God Rays — @Jules — 2027-10-25
 - **Prompt:** "A dense forest canopy with sunlight streaming through the leaves, creating intense volumetric god rays that follow the mouse."
 
