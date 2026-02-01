@@ -2098,6 +2098,70 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The light trails must be smooth and continuous.
 
+### Suggestion: Trompe-l'œil Facade
+- **Date:** 2027-08-01
+- **Prompt:** "A photorealistic street photography shot of a brick building with a massive Trompe-l'œil mural. The mural paints a fake tear in the wall revealing a lush, alien jungle inside. Passersby seem to ignore the impossible depth. The lighting matches the real street."
+- **Negative prompt:** "bad art, flat, obvious painting, blurry, cartoon"
+- **Tags:** trompe-l'œil, mural, street art, illusion, jungle
+- **Style / Reference:** Trompe-l'œil, Street Photography
+- **Composition:** Street view, wide angle
+- **Color palette:** Brick Red, Jungle Green, Concrete Grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_trompe_l_oeil.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The key is the seamless blend between the real wall and the painted illusion.
+
+### Suggestion: Cork Miniature World
+- **Date:** 2027-08-01
+- **Prompt:** "A macro studio shot of a landscape entirely carved from wine corks. Mountains are stacked corks, trees are shaved cork bits. The texture of the cork is porous and detailed. Warm studio lighting creates soft shadows."
+- **Negative prompt:** "wood, plastic, realistic mountains, smooth, blurry"
+- **Tags:** cork, miniature, craft, carving, macro
+- **Style / Reference:** Miniature Art, Macro Photography
+- **Composition:** Tilt-shift, high angle
+- **Color palette:** Cork Tan, Brown, Warm White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_cork_world.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the porous texture of the cork material.
+
+### Suggestion: Glitched Scanography Portrait
+- **Date:** 2027-08-01
+- **Prompt:** "A surreal scanography (scanner photography) portrait. A face is pressed against the glass, distorted and smeared by the movement of the scanner bar. The depth of field is non-existent (everything touching the glass is sharp, background is black). High contrast and gritty texture."
+- **Negative prompt:** "normal photo, blurry, distance, 3D render, smooth"
+- **Tags:** scanography, portrait, surreal, distortion, glitch
+- **Style / Reference:** Scanography, Glitch Art
+- **Composition:** Close-up face
+- **Color palette:** Skin tones, Black background, High Contrast
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20270801_scanography.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Replicate the specific look of a flatbed scanner light.
+
+### Suggestion: Medical Hologram DNA
+- **Date:** 2027-08-01
+- **Prompt:** "A clean, high-tech medical visualization of a double helix DNA strand. The DNA is made of floating, glowing blue interface particles. It rotates above a sleek black table in a laboratory. Shallow depth of field focuses on a specific gene segment highlighted in red."
+- **Negative prompt:** "cartoon, drawing, messy, organic, biological tissue"
+- **Tags:** dna, medical, sci-fi, hologram, interface
+- **Style / Reference:** Medical Visualization, Sci-Fi UI
+- **Composition:** Centered object, macro
+- **Color palette:** Electric Blue, Red highlight, Black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270801_dna_hologram.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The hologram should look volumetric and light-emitting.
+
+### Suggestion: Suminagashi Ink Swirls
+- **Date:** 2027-08-01
+- **Prompt:** "A top-down close-up of Suminagashi (Japanese paper marbling) in progress. Black and indigo ink rings float on water, distorted by a single drop of surfactant creating a complex fractal pattern. The texture of the water surface and the ink tension is visible."
+- **Negative prompt:** "painting, dry paper, digital art, vector, messy"
+- **Tags:** suminagashi, marbling, ink, abstract, water
+- **Style / Reference:** Suminagashi, Abstract Photography
+- **Composition:** Top-down flat lay
+- **Color palette:** Indigo, Black, Water White/Grey
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270801_suminagashi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the fluid dynamics and the tension on the water surface.
 ### Suggestion: Floral Scanography
 - **Date:** 2027-08-01
 - **Prompt:** "A hyper-realistic scanography art piece of crushed vibrant wildflowers (poppies, cornflowers) pressed against a flat scanner glass. The background is pitch black. The lighting is flat and high-contrast, revealing microscopic details of the pollen and petals. Shallow depth of field is non-existent; everything is sharp."
@@ -2175,6 +2239,7 @@ To help organize prompts, please use tags from the following categories:
 - **Check for duplicates:** Before adding, search existing titles and prompts to ensure distinctness.
 - Keep each suggestion self-contained (title + metadata + example prompt). This helps reuse and automation.
 - **Diversity Check:** Ensure new suggestions introduce new textures, materials, or lighting scenarios not yet covered.
+- **Aspect Ratio Diversity:** Avoid sticking to 16:9 or 1:1. Experiment with 21:9 (Cinematic), 9:16 (Mobile), or 4:5 (Portrait).
 - **Select & Remove:** When creating new suggestions, pick from the "Future Suggestion Ideas" list and **remove the utilized items** to keep the list fresh.
 - **Update Wishlist:** After adding suggestions, add new gaps you noticed to replenish the list.
 - **Review Tags:** Check the 'Tags' of existing entries to ensure diversity and avoid over-representation of certain genres (e.g., Cyberpunk).
@@ -2184,6 +2249,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
+- **Styles:** Collodion Process, Tenebrism, Geometric Abstraction, Zoetrope, Suprematism, De Stijl, Romanticism, High-Speed Photography.
+- **Materials:** Chainmail, Fur, Sponges, Glitter, Generative Fluid Simulation, Feathers, Sand, Sequin, Graphene, Mercury, Gallium.
+- **Subjects:** Subway Station, Supernova, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Space Elevator, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, O'Neill Cylinder, Ringworld.
 - **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting, De Stijl.
 - **Materials:** Cork, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Bismuth Crystal, Damascus Steel, Soap Bubbles, Terracotta, Tulle.
 - **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Solar Eclipse, Zen Garden.
