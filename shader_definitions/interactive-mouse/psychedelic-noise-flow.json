@@ -1,0 +1,40 @@
+{
+  "id": "psychedelic-noise-flow",
+  "name": "Psychedelic Noise Flow",
+  "url": "shaders/psychedelic-noise-flow.wgsl",
+  "category": "interactive-mouse",
+  "description": "Applies a liquid-like noise flow where RGB channels are separated by phase, creating colorful swirls. Mouse controls flow speed and direction.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "scale",
+      "name": "Noise Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "separation",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
