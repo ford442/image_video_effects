@@ -2098,6 +2098,70 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The light trails must be smooth and continuous.
 
+### Suggestion: Scanography Flora
+- **Date:** 2027-08-01
+- **Prompt:** "A high-resolution scanography art piece of crushed tropical flowers and ferns pressed against a glass scanner bed. The depth of field is extremely shallow, with parts of the petals sharply in focus and others fading into a pitch-black background. Glitch artifacts from the scanner light create a surreal distortion."
+- **Negative prompt:** "standard photo, deep depth of field, bright background, perfect flowers"
+- **Tags:** scanography, floral, abstract, glitch, texture
+- **Style / Reference:** Scanography, Glitch Art
+- **Composition:** Flat lay, pressed against glass
+- **Color palette:** Vibrant Pink, Green, Pitch Black background
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_scanography.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The 'pressed against glass' look is essential.
+
+### Suggestion: Rusted Chainmail Macro
+- **Date:** 2027-08-01
+- **Prompt:** "A macro photography shot of antique, rusted iron chainmail armor. Each ring is textured with flaky orange corrosion and battle damage. A single ring is polished silver, standing out against the decay. The lighting emphasizes the rough metal texture."
+- **Negative prompt:** "shiny, new, clean, low resolution, blurry, plastic"
+- **Tags:** chainmail, texture, macro, rust, medieval
+- **Style / Reference:** Macro Photography, Texture Study
+- **Composition:** Extreme close-up
+- **Color palette:** Rust Orange, Iron Grey, Silver
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270801_chainmail.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the flaking texture of the rust.
+
+### Suggestion: DNA Helix Visualization
+- **Date:** 2027-08-15
+- **Prompt:** "A cinematic scientific visualization of a double helix DNA strand floating in a deep blue liquid medium. The base pairs are glowing neon blue and magenta. The strand is surrounded by floating proteins and enzymes. The scene has a soft, underwater atmospheric depth."
+- **Negative prompt:** "drawing, cartoon, flat, white background, simple model"
+- **Tags:** science, dna, biology, 3d, abstract
+- **Style / Reference:** Scientific Visualization, 3D Render
+- **Composition:** Diagonal composition, shallow depth of field
+- **Color palette:** Deep Blue, Neon Blue, Magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270815_dna_helix.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use subsurface scattering to make the strand look organic.
+
+### Suggestion: Space Elevator Base
+- **Date:** 2027-08-15
+- **Prompt:** "A cinematic upward shot from the ocean base of a massive space elevator tether. The thick carbon nanotube cable stretches endlessly up into the clouds and beyond. Futuristic ships and drones dock at the floating platform station. The scale is overwhelming."
+- **Negative prompt:** "small scale, messy, lowres, land, mountains"
+- **Tags:** sci-fi, space elevator, megastructure, ocean, cinematic
+- **Style / Reference:** Sci-Fi Concept Art, Matte Painting
+- **Composition:** Low angle, looking straight up (1-point perspective)
+- **Color palette:** Ocean Blue, White Clouds, Carbon Grey, Metallic lights
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270815_space_elevator.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Atmospheric perspective is key to showing the height.
+
+### Suggestion: Suminagashi Paper Marbling
+- **Date:** 2027-09-01
+- **Prompt:** "A close-up of Suminagashi (Japanese paper marbling) in progress. Concentric rings of black Sumi ink float on the surface of water, distorted by a gentle breeze into organic topographical map shapes. A single drop of red ink creates a focal point. The water surface reflects soft light."
+- **Negative prompt:** "dry paper, digital noise, chaotic, muddy colors"
+- **Tags:** suminagashi, marbling, ink, water, abstract
+- **Style / Reference:** Suminagashi, Abstract Photography
+- **Composition:** Top-down, macro
+- **Color palette:** Sumi Black, White (water reflection), Red accent
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20270901_suminagashi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The fluid nature of the ink on water is distinct from print.
 ### Suggestion: Trompe-l'œil Facade
 - **Date:** 2027-08-01
 - **Prompt:** "A photorealistic street photography shot of a brick building with a massive Trompe-l'œil mural. The mural paints a fake tear in the wall revealing a lush, alien jungle inside. Passersby seem to ignore the impossible depth. The lighting matches the real street."
