@@ -2167,6 +2167,70 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The light trails must be smooth and continuous.
 
+### Suggestion: Trompe-l'œil Portal
+- **Date:** 2026-01-13
+- **Prompt:** "A hyper-realistic trompe-l'œil street art mural painted on a crumbling brick wall. The painting depicts a convincing hole in the wall revealing a lush, secret garden bathed in golden sunlight. Vines and ivy from the painting appear to spill out onto the real pavement, blurring the line between art and reality."
+- **Negative prompt:** "cartoon, sketch, flat, unrealistic, watermark"
+- **Tags:** street art, trompe-l'œil, mural, realistic, optical illusion
+- **Style / Reference:** Photorealistic street art, 3D chalk art
+- **Composition:** Straight-on view of the wall, centered on the 'hole'
+- **Color palette:** Brick red, grey concrete vs. vibrant green and gold
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260113_trompe-l-oeil.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing depth perception and texture blending shaders.
+
+### Suggestion: Bismuth Geometric Sanctum
+- **Date:** 2026-01-13
+- **Prompt:** "A surreal, alien sanctum constructed entirely from iridescent bismuth crystals. The geometric, stair-step hopper crystals gleam with metallic rainbows of pink, blue, and gold. Soft, ethereal light reflects off the sharp, angular surfaces, creating complex caustics on the floor."
+- **Negative prompt:** "organic, round, soft, blurry, dirt"
+- **Tags:** abstract, geometric, crystal, iridescent, bismuth
+- **Style / Reference:** Macro photography, 3D abstract render
+- **Composition:** Low angle, looking up at crystal formations
+- **Color palette:** Metallic iridescent (rainbow), silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260113_bismuth.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing iridescence, reflection, and geometric shaders.
+
+### Suggestion: Solar Punk Vertical Garden
+- **Date:** 2026-01-13
+- **Prompt:** "A vibrant Solar Punk cityscape at noon, where sleek, white futuristic towers are covered in cascading vertical gardens and solar glass. Flying wind turbines drift silently above. The streets are bustling with people and nature living in harmony, bathed in bright, optimistic sunlight."
+- **Negative prompt:** "smog, dark, dystopian, cyberpunk, dirt"
+- **Tags:** solarpunk, futuristic, city, nature, bright
+- **Style / Reference:** Architectural concept art, utopian
+- **Composition:** Wide shot, looking down a green canyon of buildings
+- **Color palette:** White, lush green, sky blue, golden sunlight
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260113_solarpunk.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use to test vegetation shaders and bright, high-key lighting.
+
+### Suggestion: Infrared Dreamscape
+- **Date:** 2026-01-13
+- **Prompt:** "A surreal infrared landscape photograph of a dense forest. The foliage is a striking, snowy white and vibrant pink, contrasting deeply with a pitch-black sky and dark, mirrored water of a calm lake. The atmosphere is dreamlike, quiet, and otherworldly."
+- **Negative prompt:** "green leaves, blue sky, realistic colors, noise"
+- **Tags:** infrared, landscape, surreal, dreamlike, nature
+- **Style / Reference:** Aerochrome photography, false color
+- **Composition:** Landscape orientation, reflection in water
+- **Color palette:** Pink, white, black, deep blue
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260113_infrared.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing color grading and false-color shaders.
+
+### Suggestion: Abstract Fluid Dynamics
+- **Date:** 2026-01-13
+- **Prompt:** "A macro close-up of a generative fluid simulation. Swirling vortices of metallic gold, deep indigo, and pearlescent white ink mix in a suspension of clear oil. Intricate, fractal-like patterns and bubbles form at the boundaries of the mixing fluids, illuminated by soft studio lighting."
+- **Negative prompt:** "blurry, lowres, text, solid colors"
+- **Tags:** abstract, fluid, macro, simulation, colorful
+- **Style / Reference:** Macro photography, fluid art, 3D simulation
+- **Composition:** Macro texture, edge-to-edge detail
+- **Color palette:** Gold, indigo, white, transparent
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260113_fluid.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing fluid simulation shaders and sub-surface scattering.
 ### Suggestion: Scanography Flora
 - **Date:** 2027-08-01
 - **Prompt:** "A high-resolution scanography art piece of crushed tropical flowers and ferns pressed against a glass scanner bed. The depth of field is extremely shallow, with parts of the petals sharply in focus and others fading into a pitch-black background. Glitch artifacts from the scanner light create a surreal distortion."
@@ -2382,6 +2446,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
+- **Styles:** Matte Painting, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Scanography, Zoetrope, Glitch Art, Pixel Sorting, Pointillism, Chiaroscuro, Low Poly, Brutalism.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Aerogel, Carbon Fiber, Ferrofluid.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Cybernetic Eye, Microchip City, Nebula.
 - **Styles:** Collodion Process, Tenebrism, Geometric Abstraction, Zoetrope, Suprematism, De Stijl, Romanticism, High-Speed Photography.
 - **Materials:** Chainmail, Fur, Sponges, Glitter, Generative Fluid Simulation, Feathers, Sand, Sequin, Graphene, Mercury, Gallium.
 - **Subjects:** Subway Station, Supernova, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Space Elevator, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, O'Neill Cylinder, Ringworld.
