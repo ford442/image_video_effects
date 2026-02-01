@@ -1,0 +1,7 @@
+{
+  "id": "polka-dot-reveal",
+  "name": "Polka Dot Reveal",
+  "url": "shaders/polka-dot-reveal.wgsl",
+  "category": "image",
+  "description": "Interactive halftone effect where mouse proximity increases the dot density, revealing more detail."
+}
