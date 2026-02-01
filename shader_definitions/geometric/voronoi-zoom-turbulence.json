@@ -1,0 +1,41 @@
+{
+  "id": "voronoi-zoom-turbulence",
+  "name": "Voronoi Zoom Turbulence",
+  "url": "shaders/voronoi-zoom-turbulence.wgsl",
+  "category": "image",
+  "description": "Divides the screen into Voronoi cells where each cell applies a chaotic, time-varying zoom. Mouse proximity calms or agitates the turbulence.",
+  "params": [
+    {
+      "name": "Cell Density",
+      "type": "float",
+      "default": 1.0,
+      "min": 1.0,
+      "max": 5.0,
+      "target": "zoom_params.x"
+    },
+    {
+      "name": "Turbulence Speed",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "target": "zoom_params.y"
+    },
+    {
+      "name": "Zoom Intensity",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "target": "zoom_params.z"
+    },
+    {
+      "name": "Mouse Influence",
+      "type": "float",
+      "default": 1.0,
+      "min": -1.0,
+      "max": 1.0,
+      "target": "zoom_params.w"
+    }
+  ]
+}
