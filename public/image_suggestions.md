@@ -2098,6 +2098,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The light trails must be smooth and continuous.
 
+### Suggestion: Floral Scanography
+- **Date:** 2027-08-01
+- **Prompt:** "A hyper-realistic scanography art piece of crushed vibrant wildflowers (poppies, cornflowers) pressed against a flat scanner glass. The background is pitch black. The lighting is flat and high-contrast, revealing microscopic details of the pollen and petals. Shallow depth of field is non-existent; everything is sharp."
+- **Negative prompt:** "blur, depth of field, 3D render, drawing, illustration"
+- **Tags:** scanography, floral, macro, abstract, botanical
+- **Style / Reference:** Scanography, Botanical Art
+- **Composition:** Flat lay, pressed against glass
+- **Color palette:** Pitch Black, Vibrant Red, Blue, Green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_scanography.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The 'pressed against glass' look is the defining feature.
+
+### Suggestion: Gold & Black Fluid Sim
+- **Date:** 2027-08-01
+- **Prompt:** "A mesmerizing still frame of a 3D generative fluid simulation. Swirling vortices of mixing metallic gold and matte black liquid paints. The fluids look viscous and heavy. Studio lighting creates specular highlights on the gold portions. The composition is abstract and dynamic."
+- **Negative prompt:** "water, thin liquid, messy, low resolution, noise"
+- **Tags:** abstract, fluid, 3D, gold, liquid
+- **Style / Reference:** 3D Simulation, Abstract Art
+- **Composition:** Macro, swirling pattern
+- **Color palette:** Gold, Matte Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_fluid_sim.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Contrast between the matte black and shiny gold is key.
+
+### Suggestion: Space Elevator Tether
+- **Date:** 2027-08-01
+- **Prompt:** "A breathtaking upward-looking wide shot from the base of a futuristic space elevator anchored in the ocean. The carbon-nanotube tether stretches infinitely upwards into the blue sky, piercing the clouds. Climber cars ascend the cable. The ocean is calm with a few maintenance ships."
+- **Negative prompt:** "cartoon, drawing, messy, low detail, clouds blocking view"
+- **Tags:** sci-fi, space elevator, mega-structure, ocean, futuristic
+- **Style / Reference:** Sci-Fi Concept Art, Photorealistic
+- **Composition:** Extreme low angle, vanishing point in sky
+- **Color palette:** Ocean Blue, Sky Blue, White, Carbon Black
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20270801_space_elevator.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the infinite scale of the tether.
+
+### Suggestion: Suminagashi Paper Marbling
+- **Date:** 2027-08-01
+- **Prompt:** "A high-resolution texture shot of traditional Japanese Suminagashi (paper marbling). Concentric rings of black ink float on water, distorted by a gentle breeze into organic, topographic map-like patterns. The background is the white of the paper/water."
+- **Negative prompt:** "digital noise, 3D, color, messy, blur"
+- **Tags:** suminagashi, marbling, abstract, texture, ink
+- **Style / Reference:** Suminagashi, Abstract Expressionism
+- **Composition:** Top-down texture
+- **Color palette:** Black Ink, White Paper
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_suminagashi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lines should be organic and fluid, like topography.
+
+### Suggestion: Chainmail Weave Macro
+- **Date:** 2027-08-01
+- **Prompt:** "A macro photography shot of hand-forged riveting chainmail armor. The interlocking iron rings show signs of wear, rust, and oil. The texture is gritty and metallic. Cold blue cinematic lighting glints off the metal rings. The background is blurred dark leather."
+- **Negative prompt:** "perfect rings, machine made, plastic, silver, clean"
+- **Tags:** chainmail, armor, macro, texture, medieval
+- **Style / Reference:** Macro Photography, Historical
+- **Composition:** Extreme close-up
+- **Color palette:** Iron Grey, Rust Orange, Cold Blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270801_chainmail.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the imperfections and rust on the rings.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -2119,9 +2184,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Scanography, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Generative Fluid Simulation, Bismuth Crystal, Damascus Steel, Soap Bubbles.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Space Elevator.
+- **Styles:** Matte Painting, Trompe-l'œil, Baroque, Gothic, Cybernetic Renaissance, Data Moshing, Zoetrope, Infrared Photography, Glitch Art, Pixel Sorting, De Stijl.
+- **Materials:** Cork, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Bismuth Crystal, Damascus Steel, Soap Bubbles, Terracotta, Tulle.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Spiral Staircase, Fireworks, Black Hole, Volcanic Eruption, Bioluminescent Forest, Solar Punk City, Diorama, Dyson Sphere, Solar Eclipse, Zen Garden.
 
 ---
 
