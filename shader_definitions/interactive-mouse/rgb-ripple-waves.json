@@ -1,0 +1,7 @@
+{
+  "id": "rgb-ripple-waves",
+  "name": "RGB Ripple Waves",
+  "url": "shaders/rgb-ripple-waves.wgsl",
+  "category": "image",
+  "description": "Separates RGB channels into distinct ripple waves emanating from the mouse cursor."
+}

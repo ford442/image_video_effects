@@ -1,0 +1,7 @@
+{
+  "id": "glitch-slice-mirror",
+  "name": "Glitch Slice Mirror",
+  "url": "shaders/glitch-slice-mirror.wgsl",
+  "category": "image",
+  "description": "Mirrors the image at the mouse position with digital glitch artifacts along the seam."
+}
