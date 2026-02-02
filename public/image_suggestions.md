@@ -2554,6 +2554,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Explores geometric fractal patterns in architecture.
 
+### Suggestion: Suprematist Void
+- **Date:** 2027-11-01
+- **Prompt:** "A pure abstract composition in zero gravity inspired by Kazimir Malevich's Suprematism. Floating red squares, black circles, and white crosses drift against a deep void. The forms cast sharp, hard shadows on each other, emphasizing their flatness and geometry."
+- **Negative prompt:** "realistic, texture, shading, gradient, messy, 3D"
+- **Tags:** suprematism, abstract, geometric, minimalist, art
+- **Style / Reference:** Suprematism, Malevich, Abstract Art
+- **Composition:** Floating elements, unbalanced but dynamic
+- **Color palette:** Red, Black, White, Void Blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20271101_suprematist_void.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The focus is on the "feeling" of weightlessness and pure geometry.
+
+### Suggestion: Glitter Storm Portrait
+- **Date:** 2027-11-01
+- **Prompt:** "A high-speed macro photography portrait of a woman blowing a handful of gold and silver glitter towards the camera. The focus is on the individual hexagonal particles catching the studio light. The face is visible but slightly obscured by the sparkling bokeh cloud."
+- **Negative prompt:** "blurry, messy, dirt, low resolution, dark"
+- **Tags:** glitter, portrait, macro, festive, sparkling
+- **Style / Reference:** High-Speed Photography, Beauty Editorial
+- **Composition:** Close-up, depth of field
+- **Color palette:** Gold, Silver, Skin Tones, Bokeh
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20271101_glitter_storm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Shallow depth of field is crucial to create the bokeh effect.
+
+### Suggestion: Supercell Sunset
+- **Date:** 2027-11-15
+- **Prompt:** "A terrifying yet beautiful wide shot of a massive supercell thunderstorm rotating over a golden wheat field in Kansas. The setting sun casts a warm glow on the anvil cloud, contrasting with the bruised purple and green of the storm core. Lightning forks touch the ground."
+- **Negative prompt:** "blue sky, sunny, calm, flat clouds, painting"
+- **Tags:** tornado, supercell, storm, landscape, weather
+- **Style / Reference:** Storm Chasing Photography, National Geographic
+- **Composition:** Wide landscape, heavy sky
+- **Color palette:** Golden Yellow, Bruised Purple, Storm Green, Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271115_supercell.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the rotation and structure of the supercell (mesocyclone).
+
+### Suggestion: Terracotta Awakening
+- **Date:** 2027-11-15
+- **Prompt:** "A cinematic fantasy shot inside the Mausoleum of the First Qin Emperor. The rows of Terracotta Warriors are cracking open, revealing glowing molten magma spirits inside. Dust and clay shards fall from their armor as they begin to move. The atmosphere is ancient and dusty."
+- **Negative prompt:** "static, clean, museum, bright lights, normal statue"
+- **Tags:** terracotta warriors, fantasy, magic, history, cinematic
+- **Style / Reference:** Fantasy Movie Still, Historical Fantasy
+- **Composition:** Eye level, looking down the ranks
+- **Color palette:** Clay Brown, Magma Orange, Shadowy Blue
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20271115_terracotta_awakening.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast between the dull clay and bright inner glow is key.
+
+### Suggestion: Chocolate Zoetrope
+- **Date:** 2027-11-15
+- **Prompt:** "A macro shot of an intricate 3D zoetrope cake made of dark chocolate. The tiers feature rings of tiny chocolate horses in slightly different poses. Under strobe lighting (implied), they appear to be galloping. Cocoa powder dusts the surface."
+- **Negative prompt:** "blurry, motion blur, plastic, fake food, painting"
+- **Tags:** zoetrope, chocolate, cake, animation, macro
+- **Style / Reference:** Food Photography, Kinetic Art
+- **Composition:** Close-up, slightly high angle
+- **Color palette:** Dark Chocolate Brown, Gold Dust, Cream
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20271115_zoetrope_cake.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Explain the "strobe" effect visually by having the figures look sharp and sequential.
+
 
 ## Attribution & legal
 
@@ -2577,9 +2642,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Zoetrope, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Suprematism, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Dieselpunk, Biopunk, Bauhaus, Art Deco, Constructivism.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Glitter, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Terracotta, Tulle, Burlap, Liquid Nitrogen, Obsidian, Titanium, Peridot, Velvet, Latex, Neon Gas.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tornado, Tsunami, Ringworld, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Mech Hangar, Bioluminescent Bay.
+- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Dieselpunk, Biopunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Tulle, Burlap, Liquid Nitrogen, Obsidian, Titanium, Peridot, Velvet, Latex, Neon Gas, Basalt.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tsunami, Ringworld, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Mech Hangar, Bioluminescent Bay, Salt Flats, Crop Circles.
 
 ---
 
