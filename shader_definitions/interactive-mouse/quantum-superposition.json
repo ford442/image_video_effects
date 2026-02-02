@@ -1,0 +1,41 @@
+{
+  "id": "quantum-superposition",
+  "name": "Quantum Superposition",
+  "url": "shaders/quantum-superposition.wgsl",
+  "category": "image",
+  "description": "Image vibrates between states, stabilizing when observed (mouse hover).",
+  "params": [
+    {
+      "id": "chaos_speed",
+      "name": "Oscillation Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chaos_amount",
+      "name": "Chaos Probability",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "stability_radius",
+      "name": "Observation Radius",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rgb_split",
+      "name": "RGB Split",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ]
+}

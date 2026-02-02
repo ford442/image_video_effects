@@ -1,0 +1,34 @@
+{
+  "id": "cyber-hex-armor",
+  "name": "Cyber Hex Armor",
+  "url": "shaders/cyber-hex-armor.wgsl",
+  "category": "image",
+  "description": "A hexagonal tech armor overlay that retracts when the mouse approaches.",
+  "params": [
+    {
+      "id": "hex_size",
+      "name": "Hex Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "reveal_radius",
+      "name": "Reveal Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "overlay"
+  ]
+}
