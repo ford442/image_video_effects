@@ -1,0 +1,31 @@
+{
+  "id": "sphere-projection",
+  "name": "Sphere Projection",
+  "url": "shaders/sphere-projection.wgsl",
+  "category": "image",
+  "description": "Projects the image onto a 3D sphere that can be rotated with the mouse.",
+  "features": ["mouse-driven", "3d"],
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Sphere Zoom",
+      "default": 0.6,
+      "min": 0.1,
+      "max": 2.0
+    },
+    {
+      "id": "rotation",
+      "name": "Spin Speed",
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0
+    },
+    {
+      "id": "light",
+      "name": "Lighting",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
