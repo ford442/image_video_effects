@@ -1,46 +1,74 @@
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import sync_playwright
+import time
 
-def verify_shaders_listed(page):
-    print("Navigating to app...")
-    page.goto("http://localhost:3000")
+def verify_shaders():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--enable-unsafe-webgpu'])
+        page = browser.new_page()
 
-    print("Waiting for page title...")
-    expect(page).to_have_title("Pixelocity")
+        print("Navigating to app...")
+        page.goto("http://localhost:3000")
 
-    page.wait_for_timeout(3000)
+        # Wait for the app to load
+        print("Waiting for controls...")
+        try:
+            page.wait_for_selector(".controls", timeout=10000)
+            # Wait a bit more for shaders to fetch
+            time.sleep(2)
+        except Exception as e:
+            print(f"Error waiting for controls: {e}")
+            page.screenshot(path="verification/error.png")
+            return
 
-    print("Checking dropdown for shaders...")
+        print("Checking for new shaders...")
+        content = page.content()
 
-    slot1_select = page.locator(".stack-slot select").first
+        shaders = [
+            "Lichtenberg Fractal",
+            "Encaustic Wax",
+            "Aerogel Smoke",
+            "Cymatic Sand"
+        ]
 
-    # Check for 'Zipper Reveal' option
-    print("Checking for Zipper Reveal option...")
-    expect(slot1_select).to_contain_text("Zipper Reveal")
+        all_found = True
+        for shader in shaders:
+            if shader in content:
+                print(f"✅ Found {shader}")
+            else:
+                print(f"❌ Missing {shader}")
+                # Try checking the other category
+                # The dropdown filters by category, so we might need to switch category to see some
+                # But the <option> elements might be in the DOM if the select was rendered?
+                # React might unmount the options.
+                all_found = False
 
-    # Check for 'Xerox Degrade' option
-    print("Checking for Xerox Degrade option...")
-    expect(slot1_select).to_contain_text("Xerox Degrade")
+        # If missing, try switching categories and checking again
+        if not all_found:
+            print("Switching categories to check again...")
+            try:
+                # Select 'shader' category (Procedural Generation)
+                page.select_option("#category-select", "shader")
+                time.sleep(1)
+                content_shader = page.content()
 
-    print("Taking screenshot...")
-    page.screenshot(path="verification/shader_list.png")
+                # Select 'image' category (Effects / Filters)
+                page.select_option("#category-select", "image")
+                time.sleep(1)
+                content_image = page.content()
+
+                content = content_shader + content_image
+
+                for shader in shaders:
+                    if shader in content:
+                        print(f"✅ Found {shader} (after switching)")
+                    else:
+                        print(f"❌ Still Missing {shader}")
+            except Exception as e:
+                print(f"Error switching categories: {e}")
+
+        page.screenshot(path="verification/verification.png")
+        print("Screenshot saved to verification/verification.png")
+        browser.close()
 
 if __name__ == "__main__":
-    with sync_playwright() as p:
-        # Try to enable WebGPU
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--enable-unsafe-webgpu",
-                "--use-gl=swiftshader", # or angle
-                "--enable-features=Vulkan"
-            ]
-        )
-        page = browser.new_page()
-        try:
-            verify_shaders_listed(page)
-            print("Verification successful!")
-        except Exception as e:
-            print(f"Verification failed: {e}")
-            page.screenshot(path="verification/error.png")
-        finally:
-            browser.close()
+    verify_shaders()
