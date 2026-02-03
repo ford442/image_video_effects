@@ -2619,6 +2619,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Explain the "strobe" effect visually by having the figures look sharp and sequential.
 
+### Suggestion: Ringworld Horizon
+- **Date:** 2027-12-01
+- **Prompt:** "A breathtaking wide shot from the inner surface of a massive Ringworld megastructure. The landscape curves upward into the sky, forming a giant arch of terrain (oceans, continents, clouds) that spans the heavens. A distant sun sits at the center point. The foreground features a futuristic city integrated with lush vegetation."
+- **Negative prompt:** "flat horizon, planet surface, dark, dystopian, lowres"
+- **Tags:** sci-fi, ringworld, megastructure, landscape, futuristic
+- **Style / Reference:** Sci-Fi Concept Art, Larry Niven
+- **Composition:** Wide angle, upward curve perspective
+- **Color palette:** Sky Blue, Lush Green, White Clouds, Sun Gold
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20271201_ringworld.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The key visual is the horizon curving up into an arch overhead.
+
+### Suggestion: Dieselpunk Garage
+- **Date:** 2027-12-01
+- **Prompt:** "A gritty, atmospheric interior of a Dieselpunk mech repair garage. A massive, oil-stained walking tank is being welded by mechanics. Thick smoke and steam fill the air. The lighting is dim, industrial orange, with sparks flying. Walls are covered in pipes and gears."
+- **Negative prompt:** "clean, modern, sleek, sci-fi, bright"
+- **Tags:** dieselpunk, mech, industrial, garage, gritty
+- **Style / Reference:** Dieselpunk, Industrial Concept Art
+- **Composition:** Eye level, crowded interior
+- **Color palette:** Rust Orange, Oil Black, Steel Grey, Spark Yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271201_dieselpunk_garage.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the grease, rust, and smoke textures.
+
+### Suggestion: Tulle Cloudscape
+- **Date:** 2027-12-01
+- **Prompt:** "A surreal, dreamlike landscape where the clouds are made of layers of gathered pink and peach tulle fabric. The fabric clouds cast soft, diffused shadows on rolling hills made of green velvet. The lighting is soft and romantic, resembling a fashion editorial backdrop."
+- **Negative prompt:** "realistic clouds, water, harsh light, digital noise"
+- **Tags:** surreal, tulle, fabric, landscape, dreamlike
+- **Style / Reference:** Surrealism, Fashion Set Design
+- **Composition:** Landscape view
+- **Color palette:** Pastel Pink, Peach, Velvet Green, Soft White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271201_tulle_cloudscape.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the translucency and layering of the tulle material.
+
+### Suggestion: Peridot Crystal Cave
+- **Date:** 2027-12-01
+- **Prompt:** "A spelunker exploring a massive underground geode cavern lined with giant, translucent green Peridot crystals. The crystals glow with an inner lime-green light, illuminating the dark rocky walls. A subterranean lake reflects the jagged crystal formations."
+- **Negative prompt:** "blue crystals, ice, daylight, blurry, low contrast"
+- **Tags:** fantasy, cave, crystal, peridot, underground
+- **Style / Reference:** Fantasy Landscape, National Geographic
+- **Composition:** Wide shot, low angle
+- **Color palette:** Lime Green, Peridot Green, Cave Dark Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271201_peridot_cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The distinctive lime-green color of Peridot is essential.
+
+### Suggestion: Biopunk Laboratory
+- **Date:** 2027-12-01
+- **Prompt:** "A disturbing yet fascinating Biopunk laboratory. Computers and machinery are fused with organic flesh and pulsing veins. Strange, genetically modified organisms float in bio-luminescent tanks. The aesthetic mixes sterile chrome with visceral organic textures."
+- **Negative prompt:** "clean, dry, purely mechanical, cartoon, low detail"
+- **Tags:** biopunk, sci-fi, horror, organic, laboratory
+- **Style / Reference:** Biopunk, Cronenberg-esque, Sci-Fi Horror
+- **Composition:** Interior view
+- **Color palette:** Flesh Tones, Sterile White, Bio-Luminescent Green/Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271201_biopunk_lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Balance the mechanical and biological elements so they look fused.
+
 
 ## Attribution & legal
 
@@ -2642,9 +2707,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Dieselpunk, Biopunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Tulle, Burlap, Liquid Nitrogen, Obsidian, Titanium, Peridot, Velvet, Latex, Neon Gas, Basalt.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tsunami, Ringworld, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Mech Hangar, Bioluminescent Bay, Salt Flats, Crop Circles.
+- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Velvet, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Jade, Opal, Mother of Pearl, Chiffon, Corduroy, Tweed.
+- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tsunami, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon.
 
 ---
 
