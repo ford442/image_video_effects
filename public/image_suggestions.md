@@ -2684,6 +2684,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Balance the mechanical and biological elements so they look fused.
 
+### Suggestion: Kilonova Explosion
+- **Date:** 2027-12-15
+- **Prompt:** "A spectacular cosmic visualization of two neutron stars colliding (kilonova). A blinding jet of gamma rays bursts from the center. Shockwaves of gold and platinum dust ripple outwards into space. The surrounding nebula is illuminated in violet and intense white."
+- **Negative prompt:** "black hole, dark, painting, cartoon, low resolution"
+- **Tags:** space, cosmic, explosion, neutron star, kilonova
+- **Style / Reference:** Scientific Visualization, Space Art
+- **Composition:** Wide cosmic scale, centered explosion
+- **Color palette:** Violet, Intense White, Gold, Platinum
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20271215_kilonova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The collision should look incredibly energetic and bright.
+
+### Suggestion: Macro Snowflake Geometry
+- **Date:** 2027-12-15
+- **Prompt:** "A high-resolution macro photography shot of a single snowflake resting on the fibers of a red wool scarf. The intricate hexagonal ice crystal structure is perfectly sharp. Soft lighting reveals the transparency and prismatic refraction of the ice."
+- **Negative prompt:** "melted, blurry, multiple snowflakes, drawing, vector"
+- **Tags:** macro, snowflake, winter, ice, texture
+- **Style / Reference:** Macro Photography, Winter Nature
+- **Composition:** Extreme close-up
+- **Color palette:** Ice Blue, White, Wool Red
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20271215_snowflake.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the perfect geometry and the contrast with the fuzzy wool.
+
+### Suggestion: Jade Dragon Seal
+- **Date:** 2027-12-15
+- **Prompt:** "A studio close-up of an ancient Chinese Imperial seal carved from translucent green jade. The handle is a coiled dragon. The stone glows slightly from backlighting, revealing the cloudy internal texture and fractures. It rests on red silk."
+- **Negative prompt:** "plastic, opaque stone, toy, low detail, cartoon"
+- **Tags:** jade, artifact, carving, macro, history
+- **Style / Reference:** Museum Photography, Artifact
+- **Composition:** Close-up, 45-degree angle
+- **Color palette:** Jade Green, Silk Red, Gold
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20271215_jade_seal.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The subsurface scattering of the jade is the key effect.
+
+### Suggestion: Long Exposure Subway
+- **Date:** 2027-12-15
+- **Prompt:** "A cinematic long-exposure shot inside a tiled subway station. The train is a blur of light streaks rushing past the platform. Commuters standing still are sharp, while moving figures are ghostly blurs. The atmosphere is gritty and urban."
+- **Negative prompt:** "static train, sharp people, bright daylight, clean"
+- **Tags:** subway, urban, long exposure, motion blur, cinematic
+- **Style / Reference:** Urban Photography, Long Exposure
+- **Composition:** Perspective down the platform
+- **Color palette:** Fluorescent Green, Motion Blur Red/White, Tile Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271215_subway_blur.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Balance the sharp static elements with the motion blurred train.
+
+### Suggestion: Mother of Pearl Box
+- **Date:** 2027-12-15
+- **Prompt:** "A macro detail shot of an antique jewelry box featuring intricate Mother of Pearl (nacre) inlay work. The iridescent shell pieces shift colors (pink, green, silver) in the light. They are set into dark polished ebony wood with geometric precision."
+- **Negative prompt:** "plastic, wood only, flat, painting, blurry"
+- **Tags:** mother of pearl, inlay, texture, craft, macro
+- **Style / Reference:** Macro Photography, Antique
+- **Composition:** Top-down detail
+- **Color palette:** Iridescent Pearl, Ebony Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20271215_pearl_inlay.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the iridescence of the shell material.
+
 
 ## Attribution & legal
 
@@ -2708,8 +2773,8 @@ To help organize prompts, please use tags from the following categories:
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
 - **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Velvet, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Jade, Opal, Mother of Pearl, Chiffon, Corduroy, Tweed.
-- **Subjects:** Geode, Subway Station, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Neutron Star, Quasar, Pulsar, Tsunami, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Velvet, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Bioluminescent Beach, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue.
 
 ---
 
