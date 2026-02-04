@@ -2749,6 +2749,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the iridescence of the shell material.
 
+### Suggestion: Data Moshed Portrait
+- **Date:** 2027-12-16
+- **Prompt:** "A glitch art portrait created via data moshing, where the pixels of a human face drag and smear into the background. The compression artifacts create colorful blocky distortions and movement trails, blending the subject with a digital noise texture."
+- **Negative prompt:** "clean, sharp, undistorted, photo, realistic"
+- **Tags:** glitch art, data moshing, abstract, portrait, digital
+- **Style / Reference:** Glitch Art, Data Moshing
+- **Composition:** Portrait centered
+- **Color palette:** RGB, Neon, Digital Noise
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20271216_datamosh.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the smearing effect typical of video compression errors.
+
+### Suggestion: Crimson Velvet Drapes
+- **Date:** 2027-12-16
+- **Prompt:** "A tactile, close-up shot of heavy crimson velvet fabric draped in elegant folds. The lighting is soft and directional, highlighting the crushing of the pile and the subtle sheen on the curves. Dust motes dance in the light."
+- **Negative prompt:** "flat, polyester, shiny, smooth, low detail"
+- **Tags:** velvet, fabric, texture, crimson, luxury
+- **Style / Reference:** Product Photography, Texture
+- **Composition:** Close-up macro
+- **Color palette:** Crimson Red, Deep Burgundy
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20271216_velvet.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the light interaction with the fabric pile.
+
+### Suggestion: Total Solar Eclipse
+- **Date:** 2027-12-16
+- **Prompt:** "A majestic view of a total solar eclipse from a high-altitude mountain peak. The black moon perfectly covers the sun, revealing the ethereal white corona streaming outwards into the dark violet sky. Stars are visible in the daytime darkness."
+- **Negative prompt:** "partial eclipse, clouds, bright sun, day, flat"
+- **Tags:** eclipse, astronomy, space, mountain, nature
+- **Style / Reference:** Landscape Photography, Astrophotography
+- **Composition:** Wide angle, centered sun
+- **Color palette:** Black, White, Violet, Dark Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271216_eclipse.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the 'diamond ring' effect or the corona detail.
+
+### Suggestion: Tenebrist Still Life
+- **Date:** 2027-12-16
+- **Prompt:** "A still life composition in the style of Caravaggio (Tenebrism). A single candle illuminates a skull, an old book, and a peeling lemon against a pitch-black background. High contrast, dramatic shadows, and rich, deep colors."
+- **Negative prompt:** "bright, flat lighting, daylight, modern, low contrast"
+- **Tags:** tenebrism, still life, baroque, candle, skull
+- **Style / Reference:** Baroque Painting, Caravaggio
+- **Composition:** Still life arrangement
+- **Color palette:** Warm candlelight, Pitch Black, Deep Brown, Yellow
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20271216_tenebrism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Extreme contrast between light and dark is essential.
+
+### Suggestion: Bioluminescent Waves
+- **Date:** 2027-12-16
+- **Prompt:** "A long-exposure night photograph of a beach where the crashing waves glow with bright blue bioluminescence. The wet sand reflects the neon blue light. In the distance, the silhouette of a jagged coastline is visible against a starry sky."
+- **Negative prompt:** "daytime, green water, blurry, noise, lowres"
+- **Tags:** bioluminescence, beach, night, nature, landscape
+- **Style / Reference:** Long Exposure Photography, Nature
+- **Composition:** Landscape wide
+- **Color palette:** Neon Blue, Black, Dark Sand
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20271216_biolum.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the glow is neon blue and looks natural.
+
 
 ## Attribution & legal
 
@@ -2772,9 +2837,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Velvet, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Bioluminescent Beach, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue.
+- **Styles:** Matte Painting, Baroque, Gothic, Cyanotype, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Dichroic Glass, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Bose-Einstein Condensate, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue.
 
 ---
 
