@@ -1,0 +1,11 @@
+{
+  "id": "bismuth-crystallizer",
+  "name": "Bismuth Crystallizer",
+  "url": "shaders/bismuth-crystallizer.wgsl",
+  "category": "image",
+  "description": "Transforms the image into iridescent bismuth hopper crystals.",
+  "params": [],
+  "features": [
+    "mouse-driven"
+  ]
+}

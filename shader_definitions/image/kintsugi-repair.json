@@ -1,0 +1,11 @@
+{
+  "id": "kintsugi-repair",
+  "name": "Kintsugi Repair",
+  "url": "shaders/kintsugi-repair.wgsl",
+  "category": "image",
+  "description": "Breaks the image into shards and fills cracks with gold. Mouse heals the cracks.",
+  "params": [],
+  "features": [
+    "mouse-driven"
+  ]
+}
