@@ -3,72 +3,50 @@ import time
 
 def verify_shaders():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--enable-unsafe-webgpu'])
+        # Launch with WebGPU flag as per memory
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--enable-unsafe-webgpu"]
+        )
         page = browser.new_page()
 
-        print("Navigating to app...")
-        page.goto("http://localhost:3000")
-
-        # Wait for the app to load
-        print("Waiting for controls...")
         try:
-            page.wait_for_selector(".controls", timeout=10000)
-            # Wait a bit more for shaders to fetch
+            print("Navigating to app...")
+            page.goto("http://localhost:3000")
+
+            # Wait for app to load.
+            print("Waiting for controls...")
+            # We assume there is a select element for the modes
+            page.wait_for_selector("select", timeout=30000)
+
+            # Give it a moment to render
             time.sleep(2)
-        except Exception as e:
-            print(f"Error waiting for controls: {e}")
-            page.screenshot(path="verification/error.png")
-            return
 
-        print("Checking for new shaders...")
-        content = page.content()
+            # Get content
+            content = page.content()
 
-        shaders = [
-            "Lichtenberg Fractal",
-            "Encaustic Wax",
-            "Aerogel Smoke",
-            "Cymatic Sand"
-        ]
+            # Check for strings
+            found_rorschach = "Rorschach Inkblot" in content
+            found_xray = "X-Ray Reveal" in content
 
-        all_found = True
-        for shader in shaders:
-            if shader in content:
-                print(f"✅ Found {shader}")
+            if found_rorschach:
+                print("SUCCESS: Found 'Rorschach Inkblot'")
             else:
-                print(f"❌ Missing {shader}")
-                # Try checking the other category
-                # The dropdown filters by category, so we might need to switch category to see some
-                # But the <option> elements might be in the DOM if the select was rendered?
-                # React might unmount the options.
-                all_found = False
+                print("FAILURE: 'Rorschach Inkblot' not found")
 
-        # If missing, try switching categories and checking again
-        if not all_found:
-            print("Switching categories to check again...")
-            try:
-                # Select 'shader' category (Procedural Generation)
-                page.select_option("#category-select", "shader")
-                time.sleep(1)
-                content_shader = page.content()
+            if found_xray:
+                print("SUCCESS: Found 'X-Ray Reveal'")
+            else:
+                print("FAILURE: 'X-Ray Reveal' not found")
 
-                # Select 'image' category (Effects / Filters)
-                page.select_option("#category-select", "image")
-                time.sleep(1)
-                content_image = page.content()
+            # Take screenshot
+            page.screenshot(path="verification/verification.png")
 
-                content = content_shader + content_image
-
-                for shader in shaders:
-                    if shader in content:
-                        print(f"✅ Found {shader} (after switching)")
-                    else:
-                        print(f"❌ Still Missing {shader}")
-            except Exception as e:
-                print(f"Error switching categories: {e}")
-
-        page.screenshot(path="verification/verification.png")
-        print("Screenshot saved to verification/verification.png")
-        browser.close()
+        except Exception as e:
+            print(f"Error: {e}")
+            page.screenshot(path="verification/error.png")
+        finally:
+            browser.close()
 
 if __name__ == "__main__":
     verify_shaders()

@@ -1,0 +1,33 @@
+{
+  "id": "x-ray-reveal",
+  "name": "X-Ray Reveal",
+  "url": "shaders/x-ray-reveal.wgsl",
+  "category": "image",
+  "description": "Interactive X-Ray lens that reveals an inverted, edge-enhanced internal structure.",
+  "params": [
+    {
+      "name": "Lens Size",
+      "type": "float",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "target": "zoom_params.x"
+    },
+    {
+      "name": "Edge Strength",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "target": "zoom_params.y"
+    },
+    {
+      "name": "Contrast",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "target": "zoom_params.z"
+    }
+  ]
+}
