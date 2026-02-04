@@ -1,0 +1,40 @@
+{
+  "id": "slime-drip",
+  "name": "Slime Drip",
+  "url": "shaders/slime-drip.wgsl",
+  "category": "image",
+  "description": "A gooey, dripping slime effect that can be wiped away.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Drip Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "amount",
+      "name": "Slime Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "color",
+      "name": "Green Tint",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}

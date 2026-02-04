@@ -1,0 +1,40 @@
+{
+  "id": "honey-melt",
+  "name": "Honey Melt",
+  "url": "shaders/honey-melt.wgsl",
+  "category": "image",
+  "description": "A golden hexagonal grid that melts under the mouse.",
+  "params": [
+    {
+      "id": "scale",
+      "name": "Cell Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Melt Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "distort",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "softness",
+      "name": "Edge Softness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
