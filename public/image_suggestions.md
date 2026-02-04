@@ -2813,6 +2813,70 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20271216_biolum.jpg`
 - **License / Attribution:** CC0
 - **Notes:** Ensure the glow is neon blue and looks natural.
+### Suggestion: Rayograph Composition
+- **Date:** 2028-01-01
+- **Prompt:** "A photogram (Rayograph) created by placing objects directly on photosensitive paper. Silhouettes of a skeleton key, a glass prism, and a fern leaf are white against a deep black background. Areas of transparency in the glass create grey mid-tones. The composition is abstract and avant-garde."
+- **Negative prompt:** "camera photo, color, digital art, realistic shading, 3D"
+- **Tags:** rayograph, photogram, man ray, abstract, black and white
+- **Style / Reference:** Man Ray, Photogram, Dada
+- **Composition:** Flat lay, abstract arrangement
+- **Color palette:** Black, White, Grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280101_rayograph.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The look must mimic the cameraless photography technique.
+
+### Suggestion: Velcro Jungle
+- **Date:** 2028-01-01
+- **Prompt:** "An extreme macro photography shot of black Velcro (hook and loop fastener). The plastic hooks look like a dense, alien jungle of curled black vines. A single strand of white lint is caught in the hooks, providing scale and contrast. Depth of field is razor-thin."
+- **Negative prompt:** "fabric, blurry, low resolution, messy, drawing"
+- **Tags:** velcro, macro, texture, abstract, plastic
+- **Style / Reference:** Macro Photography, Industrial
+- **Composition:** Extreme close-up
+- **Color palette:** Black, White (lint), Grey highlights
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280101_velcro.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the geometric shape of the hooks.
+
+### Suggestion: Volcanic Ash Storm
+- **Date:** 2028-01-01
+- **Prompt:** "A dramatic long-exposure shot of a volcanic eruption at night. A massive column of dark ash billows into the sky. Jagged bolts of purple volcanic lightning arc within the smoke cloud (dirty thunderstorm). Glowing red lava bombs streak downwards."
+- **Negative prompt:** "daylight, blue sky, clean smoke, painting, cartoon"
+- **Tags:** volcano, lightning, storm, nature, dramatic
+- **Style / Reference:** Landscape Photography, National Geographic
+- **Composition:** Wide shot, vertical emphasis
+- **Color palette:** Magma Red, Ash Grey, Electric Purple, Black
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20280101_volcano_lightning.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast between the red lava and purple lightning is spectacular.
+
+### Suggestion: Metaphysical Cityscape
+- **Date:** 2028-01-01
+- **Prompt:** "A surreal painting of a deserted Italian plaza in the style of Giorgio de Chirico (Metaphysical Art). The architecture is classical but simplified with sharp arches. Long, impossible shadows stretch across the ground. A faceless wooden mannequin stands in the foreground near a green box."
+- **Negative prompt:** "realistic, busy, modern, detailed faces, photo"
+- **Tags:** metaphysical art, surrealism, de chirico, painting, dreamlike
+- **Style / Reference:** Metaphysical Art, Giorgio de Chirico
+- **Composition:** Wide angle, deep perspective, distorted shadows
+- **Color palette:** Ochre, burnt sienna, olive green, deep blue sky
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280101_metaphysical.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The mood should be melancholic and timeless.
+
+### Suggestion: Black Opal Galaxy
+- **Date:** 2028-01-01
+- **Prompt:** "A macro studio shot of a raw Black Opal gemstone. The stone is dark, but flashes with vibrant 'play of color'—patches of neon red, green, and blue fire that look like a trapped nebula or galaxy. The surface is rough and natural rock."
+- **Negative prompt:** "polished, jewelry, flat color, glass, blurry"
+- **Tags:** opal, gemstone, macro, iridescent, texture
+- **Style / Reference:** Macro Photography, Mineralogy
+- **Composition:** Close-up, centered
+- **Color palette:** Black, Neon Green, Electric Blue, Fiery Red
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280101_black_opal.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the 'fire' inside the stone.
 
 
 ## Attribution & legal
@@ -2840,6 +2904,9 @@ To keep the collection diverse, consider adding prompts for:
 - **Styles:** Matte Painting, Baroque, Gothic, Cyanotype, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph.
 - **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Dichroic Glass, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed.
 - **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Bose-Einstein Condensate, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue.
+- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Hard Edge Painting, Tachisme, Synthetism, Tessellation, Vorticism.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Velvet, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Corduroy, Tweed, Fiberglass, Granite.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Bioluminescent Beach, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Whirlpool.
 
 ---
 
