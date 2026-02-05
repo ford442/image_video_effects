@@ -1,0 +1,13 @@
+{
+    "id": "pin-art-3d",
+    "name": "Pin Art 3D",
+    "category": "image",
+    "description": "Simulates a 3D pin art toy where image brightness controls pin height. Mouse pushes pins down.",
+    "url": "shaders/pin-art-3d.wgsl",
+    "params": [
+        { "name": "Density", "id": "density", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5 },
+        { "name": "Pin Radius", "id": "radius", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8 },
+        { "name": "Push Strength", "id": "push", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8 },
+        { "name": "Metallic", "id": "shiny", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5 }
+    ]
+}
