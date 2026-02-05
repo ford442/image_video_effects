@@ -1,0 +1,42 @@
+{
+  "id": "turing-veins",
+  "name": "Turing Veins",
+  "url": "shaders/generative-turing-veins.wgsl",
+  "category": "image",
+  "description": "Generative multiscale reaction-diffusion Turing patterns forming organic vein/networks with bioluminescent glow. Procedurally evolves over time; depth increases complexity; mouse perturbs fields. Subtly distorts and overlays input image.",
+  "params": [
+    {
+      "name": "Scale 1",
+      "type": "range",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 1.0,
+      "desc": "Primary Turing pattern scale (depth-modulated)"
+    },
+    {
+      "name": "Scale 2",
+      "type": "range",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6,
+      "desc": "Secondary finer scale"
+    },
+    {
+      "name": "Feed Rate",
+      "type": "range",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "desc": "Reaction-diffusion activator/inhibitor balance"
+    },
+    {
+      "name": "Vein Glow",
+      "type": "range",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "desc": "Bioluminescent emission intensity"
+    }
+  ],
+  "features": ["generative", "procedural", "reaction-diffusion", "turing-patterns", "depth-aware", "biological"]
+}
