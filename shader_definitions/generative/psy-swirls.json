@@ -1,0 +1,42 @@
+{
+  "id": "psy-swirls",
+  "name": "Psychedelic Rainbow Swirls",
+  "url": "shaders/generative-psy-swirls.wgsl",
+  "category": "image",
+  "description": "Generative swirling vortex fields with multi-layer procedural noise flow, spectral rainbow HSV cycles from polar angles, temporal twisting, and psychedelic distortion. Mouse attracts swirls; ripples spawn color bursts.",
+  "params": [
+    {
+      "name": "Swirl Speed",
+      "type": "range",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 1.0,
+      "desc": "Global rotation and flow velocity"
+    },
+    {
+      "name": "Layer Count",
+      "type": "range",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "desc": "Number of nested swirl layers (2-6)"
+    },
+    {
+      "name": "Rainbow Speed",
+      "type": "range",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 0.8,
+      "desc": "Hue cycling rate"
+    },
+    {
+      "name": "Twist Intensity",
+      "type": "range",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6,
+      "desc": "Vortex distortion strength (depth-reduced)"
+    }
+  ],
+  "features": ["generative", "procedural", "psychedelic", "rainbow", "swirls", "vortex", "depth-aware", "interactive"]
+}
