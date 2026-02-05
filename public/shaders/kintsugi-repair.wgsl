@@ -15,9 +15,9 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Scale, y=CrackWidth, z=Displacement, w=Shininess
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -27,143 +27,123 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract((p3.xx + p3.yz) * p3.zy);
 }
 
-fn voronoi_edge(uv: vec2<f32>, scale: f32) -> vec3<f32> {
+// Returns vec3(min_dist, cell_id_hash, edge_dist)
+fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     let p = uv * scale;
-    let i = floor(p);
-    let f = fract(p);
+    let i_st = floor(p);
+    let f_st = fract(p);
 
-    var m_dist = 10.0;
-    var m_id = vec2<f32>(0.0);
-    var m_diff = vec2<f32>(0.0);
+    var min_dist = 8.0;
+    var id_point = vec2<f32>(0.0);
+    var cell_center = vec2<f32>(0.0);
 
-    // First pass: Find closest cell center
+    // First pass: find closest point
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
             let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash22(i + neighbor);
-            let diff = neighbor + point - f;
+            let point = hash22(i_st + neighbor);
+
+            // Animate points slowly
+            let anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
+
+            let diff = neighbor + point + anim - f_st;
             let dist = length(diff);
-            if (dist < m_dist) {
-                m_dist = dist;
-                m_id = i + neighbor;
-                m_diff = diff;
+
+            if (dist < min_dist) {
+                min_dist = dist;
+                id_point = point; // Use the hash point as ID
+                cell_center = diff;
             }
         }
     }
 
-    // Second pass: Find distance to closest edge (border between cells)
-    var m_border = 10.0;
+    // Second pass: distance to borders (edge distance)
+    var min_edge_dist = 8.0;
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
             let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash22(i + neighbor);
-            let diff = neighbor + point - f;
+            let point = hash22(i_st + neighbor);
+            let anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
+
+            let diff = neighbor + point + anim - f_st;
 
             // Skip the closest center itself
-            if (dot(diff - m_diff, diff - m_diff) > 0.00001) {
-                let r = diff - m_diff;
-                // Distance to the perpendicular bisector
-                let d = dot(0.5 * (diff + m_diff), normalize(r));
-                m_border = min(m_border, d);
+            if (dot(diff - cell_center, diff - cell_center) > 0.0001) {
+                // Distance to the line halfway between cell_center and diff
+                // The line passes through midpoint M = (cell_center + diff) * 0.5
+                // The normal is N = normalize(diff - cell_center)
+                // Distance = dot(M, N) ? No.
+                // Distance from origin (f_st relative to current grid) to the perpendicular bisector.
+
+                // Vector from center to neighbor
+                let to_neighbor = diff - cell_center;
+                let len = length(to_neighbor);
+                let mid_dist = len * 0.5;
+
+                // We want to project the vector (0,0) -> midpoint onto the direction of to_neighbor?
+                // Actually simpler:
+                // Voronoi edge distance is dot( (diff + cell_center)*0.5, normalize(diff-cell_center) )
+                // But vectors are relative to f_st.
+
+                let dist = dot( 0.5 * (cell_center + diff), normalize(diff - cell_center) );
+                min_edge_dist = min(min_edge_dist, dist);
             }
         }
     }
 
-    return vec3<f32>(m_dist, m_border, m_id.x + m_id.y * 57.0);
+    // min_edge_dist is positive inside the cell. approaches 0 at edge.
+    // Invert it for "crack"
+
+    return vec4<f32>(min_dist, id_point.x, id_point.y, min_edge_dist);
 }
 
 @compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-
-    let pixel_pos = vec2<f32>(gid.xy);
-    let uv = pixel_pos / resolution;
-
-    // Correct Aspect Ratio for Voronoi
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
+    let uv_corr = vec2<f32>(uv.x * aspect, uv.y);
 
-    // Voronoi Scale
-    let scale = 6.0;
+    let scale = u.zoom_params.x * 20.0 + 3.0;
+    let crack_width = u.zoom_params.y * 0.1 + 0.001;
+    let displacement = u.zoom_params.z * 0.05;
+    let shiny = u.zoom_params.w;
 
-    let v = voronoi_edge(uv_aspect, scale);
-    let dist_to_center = v.x;
-    let dist_to_edge = v.y; // 0.0 at edge, increasing towards center
-    let cell_id = v.z;
+    let vor = voronoi(uv_corr, scale);
+    let edge_dist = vor.w;
+    let id = vor.yz;
 
-    // Mouse Interaction
-    let mouse = u.zoom_config.yz;
-    let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
-    let mouse_dist = distance(uv_aspect, mouse_aspect);
+    // Crack mask
+    let crack = 1.0 - smoothstep(0.0, crack_width, edge_dist);
 
-    // "Heal" Logic: cracks disappear near mouse
-    // Radius of healing
-    let heal_radius = 0.3;
-    let heal_factor = smoothstep(heal_radius, 0.0, mouse_dist);
+    // Displacement
+    // Shift UV based on cell ID
+    let shift = (id - 0.5) * displacement;
+    let uv_displaced = uv + shift;
 
-    // Crack Thickness
-    let base_thickness = 0.03;
-    let thickness = base_thickness * (1.0 - heal_factor);
+    // Gold color
+    let gold_base = vec3<f32>(1.0, 0.84, 0.0);
 
-    // Shard Offset (Displacement)
-    // Random offset per cell
-    let offset_rng = hash22(vec2<f32>(cell_id, cell_id));
-    let shard_offset = (offset_rng - 0.5) * 0.05 * (1.0 - heal_factor);
+    // Lighting for gold (fake normal)
+    // We can use the gradient of edge_dist as normal approx near edge?
+    // Or just simple specular based on mouse
+    let mouse = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
+    let to_mouse = normalize(mouse - uv_corr);
+    // Cheap normal: points away from edge?
+    // Hard to calculate without derivatives or multiple samples.
+    // Let's make it sparkle based on ID and view angle.
+    let sparkle = pow(abs(sin(dot(id, vec2<f32>(12.9898, 78.233)) * 6.28 + u.config.x)), 10.0) * shiny;
+    let gold = gold_base * (0.5 + 0.5 * sparkle + 0.5 * crack); // Brighter in center of crack
 
-    var final_color = vec3<f32>(0.0);
+    // Fetch texture
+    let img_color = textureSampleLevel(readTexture, u_sampler, uv_displaced, 0.0).rgb;
 
-    if (dist_to_edge < thickness) {
-        // Gold Crack
-        // Simulate a rounded metallic surface for the crack
-        // Normalize dist_to_edge to -1..1 range across the crack width?
-        // dist_to_edge goes from 0 (at border) to +inf.
-        // We are only drawing where dist_to_edge < thickness.
-        // So 0 is center of crack? No, dist_to_edge is 0 at the Voronoi boundary.
-        // So the crack is centered on the boundary.
-        // The "profile" of the crack is 0 to thickness.
+    // Mix
+    // If crack > 0.5, show gold. But smoothstep gives gradient.
+    let final_color = mix(img_color, gold, crack);
 
-        let t = dist_to_edge / thickness; // 0 to 1
-
-        // Let's make a simple normal based on this.
-        // It's a bevel.
-        // Fake normal: Pointing up + some directional bias
-        let normal = normalize(vec3<f32>(t * 2.0 - 1.0, 0.0, 1.0));
-
-        // Lighting
-        let time = u.config.x;
-        let light_dir = normalize(vec3<f32>(sin(time), cos(time), 1.0));
-        let view_dir = vec3<f32>(0.0, 0.0, 1.0);
-
-        // Reflection
-        let ref = reflect(-light_dir, normal);
-        let spec = pow(max(dot(ref, view_dir), 0.0), 40.0);
-
-        let gold = vec3<f32>(1.0, 0.84, 0.0);
-        let ambient = vec3<f32>(0.2, 0.15, 0.0);
-
-        final_color = ambient + gold * spec * 2.0;
-
-        // Add noise to gold
-        let noise = hash22(uv * 50.0).x;
-        final_color *= (0.8 + 0.2 * noise);
-
-    } else {
-        // Image
-        // Displace the sampling UV based on the shard offset
-        var sample_uv = uv + shard_offset;
-
-        // Clamp
-        sample_uv = clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0));
-
-        final_color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
-
-        // Add slight shadow at edge of shard
-        let shadow = smoothstep(thickness, thickness + 0.05, dist_to_edge);
-        final_color *= (0.5 + 0.5 * shadow);
-    }
-
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
 }

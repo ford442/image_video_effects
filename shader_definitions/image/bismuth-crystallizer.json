@@ -3,8 +3,37 @@
   "name": "Bismuth Crystallizer",
   "url": "shaders/bismuth-crystallizer.wgsl",
   "category": "image",
-  "description": "Transforms the image into iridescent bismuth hopper crystals.",
-  "params": [],
+  "description": "Generates geometric hopper crystal patterns with iridescent colors, simulating Bismuth crystals.",
+  "params": [
+    {
+      "id": "steps",
+      "name": "Crystal Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "offset",
+      "name": "Hopper Offset",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "color_shift",
+      "name": "Iridescence Freq",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mix",
+      "name": "Effect Strength",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
   "features": [
     "mouse-driven"
   ]
