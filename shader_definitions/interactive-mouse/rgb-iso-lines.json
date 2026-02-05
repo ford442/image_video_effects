@@ -1,0 +1,33 @@
+{
+  "id": "rgb-iso-lines",
+  "name": "RGB Iso Lines",
+  "url": "shaders/rgb-iso-lines.wgsl",
+  "category": "image",
+  "description": "Visualizes the R, G, and B channels as separated contour maps. Mouse controls the parallax separation.",
+  "params": [
+    {
+      "id": "thickness",
+      "name": "Line Thickness",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "frequency",
+      "name": "Contour Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "parallax",
+      "name": "Parallax Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
