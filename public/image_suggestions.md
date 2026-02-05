@@ -3008,6 +3008,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the moment of impact and the crystalline nature of the frozen petals.
 
+### Suggestion: Galactic Fresco
+- **Date:** 2028-02-15
+- **Prompt:** "A weathered, ancient-looking fresco painting on a cracked plaster wall. However, the scene depicts a futuristic space battle with spaceships and laser beams, painted in the classical Roman style with earth tones (ochre, pompeian red). Parts of the plaster have fallen away, revealing brick underneath."
+- **Negative prompt:** "photorealistic, modern digital art, clean, smooth, 3D"
+- **Tags:** fresco, painting, sci-fi, texture, ancient
+- **Style / Reference:** Fresco, Classical Antiquity
+- **Composition:** Flat wall surface
+- **Color palette:** Ochre, Pompeian Red, Earth Tones
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280215_scifi_fresco.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The juxtaposition of ancient medium and futuristic subject is the key.
+
+### Suggestion: Fordite Agate Texture
+- **Date:** 2028-02-15
+- **Prompt:** "A macro photography shot of a polished piece of Fordite (Detroit Agate). Thousands of layers of colorful automotive paint (red, blue, metallic silver, yellow) create a psychedelic, topographical pattern. The surface is glossy and smooth."
+- **Negative prompt:** "real rock, natural agate, blurry, low resolution, dirty"
+- **Tags:** fordite, material, macro, texture, colorful
+- **Style / Reference:** Macro Photography, Abstract
+- **Composition:** Extreme close-up
+- **Color palette:** Psychedelic Multi-color, Metallic Silver
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280215_fordite.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the banding and the artificial nature of the layers.
+
+### Suggestion: Bose-Einstein Quantum State
+- **Date:** 2028-02-15
+- **Prompt:** "A scientific visualization of a Bose-Einstein Condensate. A cloud of atoms has cooled to near absolute zero, merging into a single quantum wave function. The peaks and troughs are represented by glowing, interference fringes in blue and violet against a dark void."
+- **Negative prompt:** "people, lab equipment, messy, low contrast, drawing"
+- **Tags:** science, quantum physics, abstract, visualization
+- **Style / Reference:** Scientific Visualization, 3D Render
+- **Composition:** Centered, abstract
+- **Color palette:** Electric Blue, Violet, Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280215_quantum_state.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Needs to look like a high-end physics simulation.
+
+### Suggestion: High Key Minimalist Arch
+- **Date:** 2028-02-15
+- **Prompt:** "A high-key architectural photography shot of a modern white concrete building against a pure white sky. The forms are abstract and geometric, defined only by subtle light grey shadows. The composition is minimal and clean."
+- **Negative prompt:** "dark, contrast, clouds, dirt, people, trees"
+- **Tags:** high key, architecture, minimalist, white, abstract
+- **Style / Reference:** High Key Photography, Minimalism
+- **Composition:** Abstract geometry
+- **Color palette:** White, Light Grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280215_high_key_arch.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The image should be almost entirely white with just enough shadow to show form.
+
+### Suggestion: Romantic Mangrove Swamp
+- **Date:** 2028-02-15
+- **Prompt:** "A moody, dramatic landscape painting of a mangrove swamp in the style of Romanticism (Caspar David Friedrich). Twisted roots rise from dark water. A single figure stands in a small boat, dwarfed by the ancient trees. The lighting is sublime and emotional, with a stormy sky."
+- **Negative prompt:** "photo, bright, cheerful, cartoon, modern"
+- **Tags:** romanticism, painting, swamp, moody, nature
+- **Style / Reference:** Romanticism, Fine Art
+- **Composition:** Wide landscape, solitary figure
+- **Color palette:** Dark Green, Storm Grey, Foggy White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280215_romantic_swamp.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the emotional power of nature.
+
 
 ## Attribution & legal
 
@@ -3031,9 +3096,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Neo-Expressionism, High Key Photography.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Fordite, Shagreen, Malachite, Granite, Topaz.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Bose-Einstein Condensate, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Lenticular Cloud, Radio Telescope, Mangrove Forest.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Neo-Expressionism, Hard Surface Modeling, Stipple, Crosshatching.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Shagreen, Malachite, Granite, Topaz, Terrazzo, Wicker, Enamel, Pewter, Alabaster.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Lenticular Cloud, Radio Telescope, Salt Mine, Particle Accelerator, Bioluminescent Plankton, Geyser, Tide Pool.
 
 ---
 
