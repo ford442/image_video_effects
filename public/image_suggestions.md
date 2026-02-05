@@ -2878,6 +2878,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Emphasize the 'fire' inside the stone.
 
+### Suggestion: Botanical Cyanotype
+- **Date:** 2028-01-15
+- **Prompt:** "A high-resolution cyanotype sun print (blueprint) of delicate fern leaves and Queen Anne's Lace flowers arranged on textured watercolor paper. The image is a rich Prussian blue, with the plant silhouettes appearing in stark white. The paper grain and chemical brushstrokes at the edges are visible."
+- **Negative prompt:** "digital, black and white, photo, lowres, vector"
+- **Tags:** cyanotype, botanical, blue, printmaking, texture
+- **Style / Reference:** Cyanotype, Anna Atkins
+- **Composition:** Flat lay, organic arrangement
+- **Color palette:** Prussian Blue, White
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280115_cyanotype_botanical.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The specific Prussian blue color is defined by the chemistry.
+
+### Suggestion: Dichroic Glass Polyhedron
+- **Date:** 2028-01-15
+- **Prompt:** "A studio macro shot of a geometric dodecahedron sculpture made of iridescent dichroic glass. The faceted surfaces shift colors between neon magenta, gold, and teal as they catch the light. Sharp, colorful caustic reflections are cast on the pristine white surface below."
+- **Negative prompt:** "opaque, plastic, dull, simple glass, dirty"
+- **Tags:** dichroic, glass, geometric, iridescent, macro
+- **Style / Reference:** Product Photography, Geometric Art
+- **Composition:** Centered, 45-degree angle
+- **Color palette:** Magenta, Cyan, Gold, White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280115_dichroic_glass.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the color-shifting property of the material.
+
+### Suggestion: Alien Crop Circles
+- **Date:** 2028-01-15
+- **Prompt:** "A majestic aerial drone shot of a vast golden wheat field at sunrise. A complex, mathematical crop circle formation (Julia set fractal) has been flattened into the grain. Long shadows stretch across the field, highlighting the precision of the pattern. The atmosphere is mysterious."
+- **Negative prompt:** "ground level, blurry, messy, tractor, drawing"
+- **Tags:** crop circles, aerial, landscape, mystery, pattern
+- **Style / Reference:** Aerial Photography, Land Art
+- **Composition:** Top-down aerial or high angle
+- **Color palette:** Golden Wheat, Green, Shadow Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280115_crop_circles.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The pattern needs to look physically flattened, not painted on.
+
+### Suggestion: Vorticist Machinery
+- **Date:** 2028-01-15
+- **Prompt:** "A dynamic abstract painting in the style of Vorticism. Sharp, jagged geometric shapes in harsh diagonal lines depict the aggressive energy of industrial machinery. The forms are fragmented and angular. The colors are metallic greys, rust oranges, and stark blacks."
+- **Negative prompt:** "curves, soft, organic, realistic, peaceful"
+- **Tags:** vorticism, abstract, industrial, painting, geometric
+- **Style / Reference:** Vorticism, Wyndham Lewis
+- **Composition:** Diagonal, dynamic, aggressive
+- **Color palette:** Steel Grey, Rust, Black, Mustard Yellow
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20280115_vorticist_machine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the 'vortex' of energy and hard edges.
+
+### Suggestion: Uyuni Salt Flats Mirror
+- **Date:** 2028-01-15
+- **Prompt:** "A surreal, dreamlike wide shot of the Salar de Uyuni salt flats in Bolivia covered in a thin layer of water. The surface creates a perfect, infinite mirror reflecting the fluffy cumulus clouds and the deep blue sky. The horizon line disappears, making it look like walking in the sky."
+- **Negative prompt:** "dry, dirt, mountains, uneven, ripples"
+- **Tags:** salt flats, mirror, landscape, surreal, clouds
+- **Style / Reference:** Landscape Photography, Surrealism
+- **Composition:** Wide shot, infinite horizon
+- **Color palette:** Sky Blue, Cloud White, Mirror Silver
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20280115_salt_flats.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The reflection must be perfectly symmetrical.
+
 
 ## Attribution & legal
 
@@ -2901,12 +2966,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Cyanotype, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Dichroic Glass, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Bose-Einstein Condensate, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue.
-- **Styles:** Matte Painting, Baroque, Gothic, Data Moshing, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Tenebrism, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Hard Edge Painting, Tachisme, Synthetism, Tessellation, Vorticism.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Velvet, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Corduroy, Tweed, Fiberglass, Granite.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Solar Eclipse, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Salt Flats, Crop Circles, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Bioluminescent Beach, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Whirlpool.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Tonalism, Divisionism.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Fordite, Mokume-gane, Shagreen, Malachite.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Bose-Einstein Condensate, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Lenticular Cloud, Cenote.
 
 ---
 
