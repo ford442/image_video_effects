@@ -1,0 +1,37 @@
+{
+  "id": "interactive-pcb-traces",
+  "name": "Interactive PCB Traces",
+  "url": "shaders/interactive-pcb-traces.wgsl",
+  "category": "image",
+  "description": "Simulates a circuit board where traces light up with data pulses driven by the mouse.",
+  "params": [
+    {
+      "name": "Grid Scale",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Pulse Speed",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Glow",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Background",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
