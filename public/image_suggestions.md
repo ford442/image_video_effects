@@ -2943,6 +2943,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The reflection must be perfectly symmetrical.
 
+### Suggestion: Mokume-gane Metalwork
+- **Date:** 2028-02-01
+- **Prompt:** "A macro studio shot of a hand-forged Mokume-gane ring. Layers of copper, silver, and gold are fused and twisted to create a wood-grain pattern in the metal. The surface is polished but textured. Warm lighting highlights the color contrast between the metals."
+- **Negative prompt:** "smooth, simple gold ring, blurred, plastic, lowres"
+- **Tags:** mokume-gane, metalwork, macro, texture, craft
+- **Style / Reference:** Macro Photography, Jewelry Photography
+- **Composition:** Close-up, centered
+- **Color palette:** Copper, Gold, Silver, Black background
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280201_mokume_gane.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the wood-grain pattern of the mixed metals.
+
+### Suggestion: Tonalist River Nocturne
+- **Date:** 2028-02-01
+- **Prompt:** "A moody, atmospheric landscape painting in the style of Tonalism. A river flows slowly at dusk, shrouded in blue-grey mist. Faint yellow lights from a distant bridge reflect softly in the water. The palette is limited to low-contrast shades of blue, grey, and soft yellow, creating a sense of quiet and mystery."
+- **Negative prompt:** "bright colors, high contrast, sharp details, sunny, modern"
+- **Tags:** tonalism, painting, landscape, dusk, moody
+- **Style / Reference:** Tonalism, James McNeill Whistler
+- **Composition:** Wide landscape, soft focus
+- **Color palette:** Blue-Grey, Misty Blue, Soft Yellow, Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280201_tonalist_river.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The low contrast and atmospheric haze are the defining features.
+
+### Suggestion: Underwater Cenote
+- **Date:** 2028-02-01
+- **Prompt:** "A breathtaking underwater shot looking up from the bottom of a Mexican Cenote. Vines hang down from the jungle opening above. Sharp beams of sunlight (god rays) pierce the crystal-clear turquoise water, illuminating floating particles and ancient rock formations."
+- **Negative prompt:** "murky water, dark, no light, surface view, people"
+- **Tags:** cenote, underwater, nature, light beams, landscape
+- **Style / Reference:** Underwater Photography, National Geographic
+- **Composition:** Low angle, looking up
+- **Color palette:** Turquoise, Sunlight White, Dark Rock Grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280201_cenote.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the 'god rays' penetrating the water.
+
+### Suggestion: Divisionist Portrait
+- **Date:** 2028-02-01
+- **Prompt:** "A vibrant portrait of a woman wearing a straw hat, painted in the style of Divisionism (Pointillism's cousin). The image is constructed from distinct, separate dashes of pure unmixed color (orange next to blue) that blend optically. The effect is luminous and vibrating."
+- **Negative prompt:** "smooth blended paint, digital art, realistic, dull colors"
+- **Tags:** divisionism, painting, portrait, color theory, art
+- **Style / Reference:** Divisionism, Paul Signac, Henri-Edmond Cross
+- **Composition:** Portrait, textured brushwork
+- **Color palette:** Complementary colors (Orange/Blue, Red/Green)
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20280201_divisionism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use dashes/strokes rather than round dots (which is Pointillism).
+
+### Suggestion: Liquid Nitrogen Shatter
+- **Date:** 2028-02-01
+- **Prompt:** "A high-speed photography shot of a deep red rose frozen in liquid nitrogen being shattered by a hammer. Thousands of frozen, crystalline petal shards fly outwards. Cold white fog swirls around the impact zone. The background is stark black to highlight the debris."
+- **Negative prompt:** "whole flower, melted, blurry, slow shutter, daylight"
+- **Tags:** liquid nitrogen, high speed, destruction, flower, physics
+- **Style / Reference:** High-Speed Photography, Scientific
+- **Composition:** Centered explosion, frozen motion
+- **Color palette:** Rose Red, Ice White, Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280201_liquid_nitrogen.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the moment of impact and the crystalline nature of the frozen petals.
+
 
 ## Attribution & legal
 
@@ -2966,9 +3031,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Tonalism, Divisionism.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Liquid Nitrogen, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Fordite, Mokume-gane, Shagreen, Malachite.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Bose-Einstein Condensate, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Lenticular Cloud, Cenote.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, Romanticism, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Fresco, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Neo-Expressionism, High Key Photography.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Fordite, Shagreen, Malachite, Granite, Topaz.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Bose-Einstein Condensate, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Lenticular Cloud, Radio Telescope, Mangrove Forest.
 
 ---
 
