@@ -1,0 +1,26 @@
+{
+  "id": "fabric-zipper",
+  "name": "Fabric Zipper",
+  "url": "shaders/fabric-zipper.wgsl",
+  "category": "image",
+  "description": "Unzip the canvas to reveal the underlying image. Drag the mouse vertically to control the zipper.",
+  "params": [
+    {
+      "id": "teeth_density",
+      "name": "Teeth Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "spread",
+      "name": "Opening Spread",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
+}
