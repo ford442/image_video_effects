@@ -1,0 +1,38 @@
+{
+    "id": "concentric-spin",
+    "name": "Concentric Spin",
+    "category": "image",
+    "url": "shaders/concentric-spin.wgsl",
+    "features": ["mouse-driven"],
+    "description": "Concentric rings that rotate in alternating directions. Mouse controls the center.",
+    "params": [
+        {
+            "id": "param1",
+            "name": "Ring Density",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "param2",
+            "name": "Rotation Speed",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "param3",
+            "name": "Smoothness",
+            "default": 0.1,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "param4",
+            "name": "Unused",
+            "default": 0.0,
+            "min": 0.0,
+            "max": 1.0
+        }
+    ]
+}
