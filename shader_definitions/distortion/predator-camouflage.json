@@ -1,0 +1,31 @@
+{
+  "id": "predator-camouflage",
+  "name": "Predator Camouflage",
+  "url": "shaders/predator-camouflage.wgsl",
+  "category": "distortion",
+  "features": ["mouse-driven"],
+  "description": "Simulates an optical camouflage cloaking device around the mouse cursor, with refraction, chromatic aberration, and shimmer.",
+  "params": [
+    {
+      "id": "radius",
+      "name": "Cloak Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "distortion",
+      "name": "Refraction Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shimmer",
+      "name": "Shimmer Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
