@@ -3073,6 +3073,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Emphasize the emotional power of nature.
 
+### Suggestion: Terrazzo Interior
+- **Date:** 2028-03-01
+- **Prompt:** "A chic, modern bathroom interior dominated by bold, colorful Terrazzo stone surfaces. Large chips of pink marble, blue glass, and yellow quartz are embedded in white concrete. The lighting is soft and natural."
+- **Negative prompt:** "dirty, old, rustic, dark, plain concrete"
+- **Tags:** terrazzo, interior, modern, colorful, texture
+- **Style / Reference:** Interior Design, Architectural Photography
+- **Composition:** Wide angle, interior
+- **Color palette:** White, Pink, Blue, Yellow
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280301_terrazzo.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture of the terrazzo aggregate is the focus.
+
+### Suggestion: Lenticular Cloud Formation
+- **Date:** 2028-03-01
+- **Prompt:** "A majestic landscape photograph of a UFO-shaped Lenticular cloud hovering over a snow-capped mountain peak at sunset. The cloud is layered like a stack of plates and glows with orange and pink light."
+- **Negative prompt:** "cumulus, fluffy cloud, storm, dark, flat"
+- **Tags:** lenticular cloud, landscape, mountain, weather, sunset
+- **Style / Reference:** Landscape Photography, National Geographic
+- **Composition:** Wide shot, centered cloud
+- **Color palette:** Sunset Orange, Pink, Snow White, Sky Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280301_lenticular.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The smooth, lens-like shape of the cloud is unique.
+
+### Suggestion: Malachite Macro
+- **Date:** 2028-03-01
+- **Prompt:** "A high-resolution macro photography shot of polished Malachite stone. The intense green banding patterns swirl in hypnotic, organic concentric circles. The surface is glossy and reflects a studio softbox."
+- **Negative prompt:** "dull, rock texture, blurry, dirt, low contrast"
+- **Tags:** malachite, stone, macro, texture, green
+- **Style / Reference:** Macro Photography, Mineralogy
+- **Composition:** Extreme close-up
+- **Color palette:** Emerald Green, Black, Light Green
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280301_malachite.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the banding pattern.
+
+### Suggestion: Radio Telescope Array
+- **Date:** 2028-03-01
+- **Prompt:** "A cinematic wide shot of a vast array of white radio telescopes (like the VLA) in a high desert plain. They all point in unison towards a starry night sky with the Milky Way visible. Red warning lights glow on the dishes."
+- **Negative prompt:** "daylight, single telescope, forest, city, cartoon"
+- **Tags:** radio telescope, space, science, desert, night
+- **Style / Reference:** Sci-Fi Landscape, Astrophotography
+- **Composition:** Wide shot, repetition
+- **Color palette:** Starry Blue, Dish White, Warning Red
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20280301_radio_telescope.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The repetition of the dishes creates rhythm.
+
+### Suggestion: Salt Mine Cathedral
+- **Date:** 2028-03-01
+- **Prompt:** "The breathtaking underground Chapel of St. Kinga in the Wieliczka Salt Mine. Everything is carved from grey rock salt, including the chandeliers, the altar, and the relief statues on the walls. Warm light illuminates the cavernous space."
+- **Negative prompt:** "modern, concrete, wood, sunlight, bright"
+- **Tags:** salt mine, underground, architecture, cavern, poland
+- **Style / Reference:** Architectural Photography, Travel
+- **Composition:** Wide interior shot
+- **Color palette:** Salt Grey, Warm Gold, Shadow
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280301_salt_mine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize that the material is salt, not regular stone.
+
 
 ## Attribution & legal
 
@@ -3096,9 +3161,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Neo-Expressionism, Hard Surface Modeling, Stipple, Crosshatching.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Shagreen, Malachite, Granite, Topaz, Terrazzo, Wicker, Enamel, Pewter, Alabaster.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Lenticular Cloud, Radio Telescope, Salt Mine, Particle Accelerator, Bioluminescent Plankton, Geyser, Tide Pool.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Neo-Expressionism, Hard Surface Modeling, Stipple, Crosshatching, Pre-Raphaelite.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Shagreen, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Bakelite.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Particle Accelerator, Bioluminescent Plankton, Geyser, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam.
 
 ---
 
