@@ -3138,6 +3138,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Emphasize that the material is salt, not regular stone.
 
+### Suggestion: Precisionist Industrial Landscape
+- **Date:** 2028-03-15
+- **Prompt:** "A sharp, geometric painting of an industrial factory complex in the style of Precisionism (Charles Sheeler). Clean lines, smokestacks, and grain elevators are rendered with almost photographic clarity but simplified forms. No people are present. The lighting is crisp and flat."
+- **Negative prompt:** "impressionist, blurry, messy, organic, people, smoke"
+- **Tags:** precisionism, industrial, factory, painting, geometric
+- **Style / Reference:** Precisionism, American Modernism
+- **Composition:** Architectural, geometric
+- **Color palette:** Steel Grey, Brick Red, Sky Blue, White
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280315_precisionism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the geometry and clarity of form.
+
+### Suggestion: Shagreen Leather Macro
+- **Date:** 2028-03-15
+- **Prompt:** "A macro photography shot of luxury Shagreen (stingray leather) texture dyed in deep emerald green. The characteristic round, pebbled scales are polished and shiny, with the larger central 'eye' beads visible. The light catches the glossy surface."
+- **Negative prompt:** "snake skin, crocodile, matte, blurry, fabric"
+- **Tags:** shagreen, leather, texture, macro, luxury
+- **Style / Reference:** Macro Photography, Texture
+- **Composition:** Extreme close-up
+- **Color palette:** Emerald Green, White highlights
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280315_shagreen.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The beaded texture of the skin is the main feature.
+
+### Suggestion: Starling Murmuration
+- **Date:** 2028-03-15
+- **Prompt:** "A breathtaking wide shot of a massive starling murmuration at twilight. Thousands of black birds form a fluid, swirling shape that resembles a giant whale in the sky. The background is a soft gradient of purple and orange sunset over a marshland."
+- **Negative prompt:** "single bird, messy, random dots, bright day"
+- **Tags:** murmuration, birds, nature, landscape, atmospheric
+- **Style / Reference:** Nature Photography, National Geographic
+- **Composition:** Wide landscape
+- **Color palette:** Silhouette Black, Twilight Purple, Orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280315_murmuration.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the fluidity and scale of the flock.
+
+### Suggestion: Art Deco Bakelite Radio
+- **Date:** 2028-03-15
+- **Prompt:** "A studio shot of a vintage 1930s Art Deco radio made of marbled maroon Bakelite plastic. The material has a deep, warm, semi-opaque luster. The speaker grille has a geometric sunburst design. Warm tube glow comes from the dial."
+- **Negative prompt:** "wood, metal, modern plastic, dull, scratched"
+- **Tags:** bakelite, radio, art deco, vintage, product
+- **Style / Reference:** Product Photography, Vintage
+- **Composition:** Centered, studio lighting
+- **Color palette:** Maroon, Gold, Warm Amber
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280315_bakelite_radio.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the unique semi-opaque look of Bakelite.
+
+### Suggestion: Particle Collider Event
+- **Date:** 2028-03-15
+- **Prompt:** "A scientific visualization of a high-energy particle collision inside a detector (like the LHC). Tracks of subatomic particles spiral outwards in golden, blue, and red curves from a central collision point. The background is the dark metallic machinery of the detector."
+- **Negative prompt:** "space, stars, explosion, fire, cartoon"
+- **Tags:** particle physics, science, collider, abstract, visualization
+- **Style / Reference:** Scientific Visualization, 3D Render
+- **Composition:** Centered, radial
+- **Color palette:** Gold, Electric Blue, Red, Dark Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280315_particle_collision.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The clean, mathematical curves of the particle tracks are key.
+
 
 ## Attribution & legal
 
@@ -3161,9 +3226,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Precisionism, Neo-Expressionism, Hard Surface Modeling, Stipple, Crosshatching, Pre-Raphaelite.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Shagreen, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Bakelite.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Murmuration, Particle Accelerator, Bioluminescent Plankton, Geyser, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Neo-Expressionism, Hard Surface Modeling, Stipple, Crosshatching, Pre-Raphaelite, Ashcan School, Hudson River School.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Organza.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Bioluminescent Plankton, Geyser, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Space Junk, Mycelium Network.
 
 ---
 
