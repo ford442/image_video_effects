@@ -5,6 +5,7 @@ import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 import './style.css';
 
 // --- Configuration ---
@@ -92,15 +93,17 @@ function MainApp() {
     const rendererRef = useRef<Renderer | null>(null);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // --- Helpers ---
-    const setMode = (index: number, mode: RenderMode) => {
+    const setMode = useCallback((index: number, mode: RenderMode) => {
         setModes(prev => {
             const next = [...prev];
             next[index] = mode;
             return next;
         });
-    };
+    }, []);
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
         setSlotParams(prev => {
@@ -324,6 +327,102 @@ function MainApp() {
             handleNewRandomImage();
         }
     }, [handleNewRandomImage]);
+
+    // --- Remote Control Sync ---
+    // Build full state object for syncing
+    const buildFullState = useCallback((): FullState => ({
+        modes,
+        activeSlot,
+        slotParams,
+        shaderCategory,
+        zoom,
+        panX,
+        panY,
+        inputSource,
+        autoChangeEnabled,
+        autoChangeDelay,
+        isModelLoaded: !!depthEstimator,
+        availableModes,
+        videoList,
+        selectedVideo,
+        isMuted,
+    }), [modes, activeSlot, slotParams, shaderCategory, zoom, panX, panY, inputSource, 
+        autoChangeEnabled, autoChangeDelay, depthEstimator, availableModes, videoList, selectedVideo, isMuted]);
+
+    // Send message to remote
+    const sendMessage = useCallback((type: SyncMessage['type'], payload?: any) => {
+        if (channelRef.current) {
+            channelRef.current.postMessage({ type, payload });
+        }
+    }, []);
+
+    // Setup BroadcastChannel for remote control
+    useEffect(() => {
+        const channel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+        channelRef.current = channel;
+
+        channel.onmessage = (event) => {
+            const msg = event.data as SyncMessage;
+            
+            if (msg.type === 'HELLO') {
+                // Remote app connected, send full state
+                sendMessage('STATE_FULL', buildFullState());
+            } else if (msg.type === 'CMD_SET_MODE') {
+                const { index, mode } = msg.payload;
+                setMode(index, mode);
+            } else if (msg.type === 'CMD_SET_ACTIVE_SLOT') {
+                setActiveSlot(msg.payload);
+            } else if (msg.type === 'CMD_UPDATE_SLOT_PARAM') {
+                const { index, updates } = msg.payload;
+                updateSlotParam(index, updates);
+            } else if (msg.type === 'CMD_SET_SHADER_CATEGORY') {
+                setShaderCategory(msg.payload);
+            } else if (msg.type === 'CMD_SET_ZOOM') {
+                setZoom(msg.payload);
+            } else if (msg.type === 'CMD_SET_PAN_X') {
+                setPanX(msg.payload);
+            } else if (msg.type === 'CMD_SET_PAN_Y') {
+                setPanY(msg.payload);
+            } else if (msg.type === 'CMD_SET_INPUT_SOURCE') {
+                setInputSource(msg.payload);
+            } else if (msg.type === 'CMD_SET_AUTO_CHANGE') {
+                setAutoChangeEnabled(msg.payload);
+            } else if (msg.type === 'CMD_SET_AUTO_CHANGE_DELAY') {
+                setAutoChangeDelay(msg.payload);
+            } else if (msg.type === 'CMD_LOAD_RANDOM_IMAGE') {
+                handleNewRandomImage();
+            } else if (msg.type === 'CMD_LOAD_MODEL') {
+                loadDepthModel();
+            } else if (msg.type === 'CMD_SELECT_VIDEO') {
+                setSelectedVideo(msg.payload);
+            } else if (msg.type === 'CMD_SET_MUTED') {
+                setIsMuted(msg.payload);
+            } else if (msg.type === 'CMD_UPLOAD_FILE') {
+                // File upload from remote - handle if needed
+                console.log('File upload from remote:', msg.payload);
+            }
+        };
+
+        // Start heartbeat to keep remote connected
+        heartbeatIntervalRef.current = setInterval(() => {
+            sendMessage('HEARTBEAT');
+        }, 1000); // Send heartbeat every second
+
+        return () => {
+            channel.close();
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+            }
+        };
+    }, [buildFullState, sendMessage, handleNewRandomImage, loadDepthModel, updateSlotParam, setMode]);
+
+    // Send state updates to remote when key state changes
+    useEffect(() => {
+        if (channelRef.current) {
+            sendMessage('STATE_FULL', buildFullState());
+        }
+    }, [modes, activeSlot, shaderCategory, zoom, panX, panY, inputSource, 
+        autoChangeEnabled, autoChangeDelay, isMuted, selectedVideo, buildFullState, sendMessage]);
 
     return (
         <div className="App">
