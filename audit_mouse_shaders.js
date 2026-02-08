@@ -26,7 +26,8 @@ wgslFiles.forEach(function (f) {
     const code = fs.readFileSync(path.join(shadersDir, f), 'utf8');
     if (code.includes('u.zoom_config')) {
         const id = f.replace('.wgsl', '');
-        const jsonDef = jsonShaders.get(id);
+        // Normalize ID: try both hyphen and underscore versions
+        const jsonDef = jsonShaders.get(id) || jsonShaders.get(id.replace(/_/g, '-'));
         if (!jsonDef || !jsonDef.def.features || !jsonDef.def.features.includes('mouse-driven')) {
             mismatches.push({
                 wgsl: f,
@@ -69,7 +70,7 @@ if (updateTags && mismatches.length > 0) {
                 if (!def.features) def.features = [];
                 if (!def.features.includes('mouse-driven')) {
                     def.features.push('mouse-driven');
-                    fs.writeFileSync(fullPath, JSON.stringify(def, null, 2));
+                    fs.writeFileSync(fullPath, JSON.stringify(def, null, 2) + '\n');
                     updatedCount++;
                     console.log(`  ✅ Updated ${m.id} (${m.jsonFile})`);
                 }
