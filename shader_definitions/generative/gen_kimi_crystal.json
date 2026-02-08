@@ -1,0 +1,8 @@
+{
+  "id": "gen-kimi-crystal",
+  "name": "Kimi Crystal",
+  "url": "shaders/gen_kimi_crystal.wgsl",
+  "category": "generative",
+  "description": "Animated crystalline structures growing on a hexagonal grid with icy blue colors and gold accents. Mouse creates stellar glow.",
+  "features": ["mouse-driven", "generative", "geometric", "crystalline"]
+}
