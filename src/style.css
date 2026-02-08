@@ -63,6 +63,7 @@ body {
 .sidebar {
     width: 380px;
     height: 100%;
+    max-height: 100vh;
     background-color: #181818;
     border-right: 1px solid #333;
     overflow-y: auto;
@@ -72,6 +73,24 @@ body {
     transition: transform 0.3s ease;
     flex-shrink: 0;
     z-index: 5;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #181818;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .sidebar.hidden {
@@ -106,6 +125,9 @@ canvas {
     flex-direction: column;
     gap: 12px;
     min-height: 0; /* Important for flex scrolling */
+    overflow-y: auto; /* Enable scrolling within controls */
+    overflow-x: hidden;
+    flex: 1; /* Take available space */
 }
 
 /* Radio group horizontal layout for space efficiency */
