@@ -22,7 +22,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
 
     // Feedback trail from previous frame
-    let history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let history = textureLoad(dataTextureC, px, 0).rgb;
 
     // Center coordinates with aspect correction
     let aspect = resolution.x / resolution.y;

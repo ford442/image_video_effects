@@ -261,13 +261,36 @@ const Controls: React.FC<ControlsProps> = ({
 
             <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
 
-            {/* --- Active Slot Parameter Controls --- */}
-            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#61dafb', fontSize: '14px' }}>
-                Slot {activeSlot + 1} Settings ({currentShaderEntry?.name || 'None'})
+            {/* --- View Controls (Zoom/Pan) --- */}
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#61dafb', fontSize: '14px' }}>
+                View Controls
+            </div>
+            <div className="control-group view-controls-grid">
+                <label>Zoom: {zoom.toFixed(2)}x</label>
+                <input type="range" min="0.1" max="5.0" step="0.01" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} />
+            </div>
+            <div className="control-group view-controls-grid">
+                <label>Pan X: {panX.toFixed(2)}</label>
+                <input type="range" min="-2.0" max="2.0" step="0.01" value={panX} onChange={(e) => setPanX(parseFloat(e.target.value))} />
+            </div>
+            <div className="control-group view-controls-grid">
+                <label>Pan Y: {panY.toFixed(2)}</label>
+                <input type="range" min="-2.0" max="2.0" step="0.01" value={panY} onChange={(e) => setPanY(parseFloat(e.target.value))} />
             </div>
 
+            <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
+
+            {/* --- Slot Parameter Controls --- */}
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#61dafb', fontSize: '14px' }}>
+                Shader Parameters
+                <span style={{fontWeight: 'normal', color: '#888', marginLeft: '8px', fontSize: '12px'}}>
+                    {currentShaderEntry?.name || 'None'}
+                </span>
+            </div>
+
+            <div className="params-grid">
             {currentShaderEntry?.params?.map((param, index) => {
-                if (index > 3) return null; // Only 4 params supported
+                if (index > 5) return null; // Support up to 6 params
 
                 let val = 0;
                 if (index === 0) val = currentParams.zoomParam1;
@@ -301,7 +324,14 @@ const Controls: React.FC<ControlsProps> = ({
                     </div>
                 );
             })}
+            </div>
 
+            {currentShaderEntry?.params && currentShaderEntry.params.length > 6 && (
+                <div style={{color: '#888', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
+                    +{currentShaderEntry.params.length - 6} more params available in shader file
+                </div>
+            )}
+            
             {!currentShaderEntry && (
                 <div style={{color: '#888', fontStyle: 'italic', padding: '10px'}}>
                     Select an effect for this slot to see parameters.

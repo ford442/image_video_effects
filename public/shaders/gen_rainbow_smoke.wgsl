@@ -79,8 +79,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Advect density and phase along velocity field
-    let advect_uv = uv - vel * 0.6;
-    let advected = textureSampleLevel(dataTextureC, u_sampler, advect_uv, 0.0);
+    let advect_px = px - vec2<i32>(vel * 0.6 * resolution);
+    let advected = textureLoad(dataTextureC, advect_px, 0);
 
     // Diffuse and fade
     density = mix(advected.b, density, 0.08) * 0.992;

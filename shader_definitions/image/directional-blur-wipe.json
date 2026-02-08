@@ -1,13 +1,44 @@
 {
-    "id": "directional-blur-wipe",
-    "name": "Directional Blur Wipe",
-    "category": "image",
-    "description": "Splits the screen with a directional blur. Mouse controls split position and angle.",
-    "url": "shaders/directional-blur-wipe.wgsl",
-    "params": [
-        { "name": "Split Pos", "id": "split_pos", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5 },
-        { "name": "Angle", "id": "angle", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0 },
-        { "name": "Strength", "id": "strength", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5 },
-        { "name": "Samples", "id": "samples", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5 }
-    ]
+  "id": "directional-blur-wipe",
+  "name": "Directional Blur Wipe",
+  "category": "image",
+  "description": "Splits the screen with a directional blur. Mouse controls split position and angle.",
+  "url": "shaders/directional-blur-wipe.wgsl",
+  "params": [
+    {
+      "name": "Split Pos",
+      "id": "split_pos",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    },
+    {
+      "name": "Angle",
+      "id": "angle",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0
+    },
+    {
+      "name": "Strength",
+      "id": "strength",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    },
+    {
+      "name": "Samples",
+      "id": "samples",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
 }

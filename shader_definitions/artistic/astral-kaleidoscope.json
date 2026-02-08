@@ -3,5 +3,8 @@
   "name": "Astral Kaleidoscope",
   "url": "shaders/astral-kaleidoscope.wgsl",
   "category": "image",
-  "description": "Cosmic kaleidoscope with astral color schemes."
+  "description": "Cosmic kaleidoscope with astral color schemes.",
+  "features": [
+    "mouse-driven"
+  ]
 }

@@ -8,35 +8,45 @@
     {
       "name": "Swirl Speed",
       "type": "range",
-      "min": 0.0,
-      "max": 2.0,
-      "default": 1.0,
+      "min": 0,
+      "max": 2,
+      "default": 1,
       "desc": "Global rotation and flow velocity"
     },
     {
       "name": "Layer Count",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5,
       "desc": "Number of nested swirl layers (2-6)"
     },
     {
       "name": "Rainbow Speed",
       "type": "range",
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "default": 0.8,
       "desc": "Hue cycling rate"
     },
     {
       "name": "Twist Intensity",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.6,
       "desc": "Vortex distortion strength (depth-reduced)"
     }
   ],
-  "features": ["generative", "procedural", "psychedelic", "rainbow", "swirls", "vortex", "depth-aware", "interactive"]
+  "features": [
+    "generative",
+    "procedural",
+    "psychedelic",
+    "rainbow",
+    "swirls",
+    "vortex",
+    "depth-aware",
+    "interactive",
+    "mouse-driven"
+  ]
 }

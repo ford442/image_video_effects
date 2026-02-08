@@ -3,5 +3,8 @@
   "name": "Lenia Cellular Automata",
   "url": "shaders/lenia.wgsl",
   "category": "simulation",
-  "description": "Continuous cellular automata (Lenia) with ring kernel growth functions."
+  "description": "Continuous cellular automata (Lenia) with ring kernel growth functions.",
+  "features": [
+    "mouse-driven"
+  ]
 }

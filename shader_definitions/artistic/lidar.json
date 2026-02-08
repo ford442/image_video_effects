@@ -37,6 +37,7 @@
   "features": [
     "depth-aware",
     "temporal-persistence",
-    "multi-mode"
+    "multi-mode",
+    "mouse-driven"
   ]
 }

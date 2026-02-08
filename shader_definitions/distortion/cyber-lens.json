@@ -9,33 +9,34 @@
       "id": "strength",
       "name": "Lens Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "aberration",
       "name": "Chromatic",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "scanlines",
       "name": "Scan Lines",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "vignette",
       "name": "Vignette",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "distortion",
-    "retro"
+    "retro",
+    "mouse-driven"
   ]
 }

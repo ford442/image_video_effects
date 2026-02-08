@@ -3,5 +3,8 @@
   "name": "Julia Warp",
   "url": "shaders/julia-warp.wgsl",
   "category": "warp",
-  "description": "Julia fractal-based warping with orbit traps for psychedelic coloring."
+  "description": "Julia fractal-based warping with orbit traps for psychedelic coloring.",
+  "features": [
+    "mouse-driven"
+  ]
 }

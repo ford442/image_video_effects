@@ -3,5 +3,8 @@
   "name": "Datamosh",
   "url": "shaders/datamosh.wgsl",
   "category": "image",
-  "description": "Motion-vector driven datamoshing and smear accumulation."
+  "description": "Motion-vector driven datamoshing and smear accumulation.",
+  "features": [
+    "mouse-driven"
+  ]
 }

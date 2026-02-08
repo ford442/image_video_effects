@@ -8,35 +8,42 @@
     {
       "name": "Tile Count",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5,
       "desc": "Number of hyperbolic tiles (3-9)"
     },
     {
       "name": "Curvature",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5,
       "desc": "Hyperbolic bending strength (depth-modulated)"
     },
     {
       "name": "Aberration",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.3,
       "desc": "Chromatic splitting in curved space"
     },
     {
       "name": "Glow Intensity",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.4,
       "desc": "Symmetry line luminescence"
     }
   ],
-  "features": ["geometric", "psychedelic", "depth-aware", "non-euclidean", "interactive"]
+  "features": [
+    "geometric",
+    "psychedelic",
+    "depth-aware",
+    "non-euclidean",
+    "interactive",
+    "mouse-driven"
+  ]
 }

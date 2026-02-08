@@ -9,57 +9,57 @@
       "id": "speed",
       "name": "Wave Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "intensity",
       "name": "Aura Intensity",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "satThresh",
       "name": "Saturation Threshold",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "radius",
       "name": "Aura Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "pulseSpd",
       "name": "Pulse Speed",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "depthInf",
       "name": "Depth Influence",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "hueBias",
       "name": "Hue Bias / Fixed Hue",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "colourMode",
       "name": "Colour Mode",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 0,
+      "min": 0,
+      "max": 1,
       "labels": [
         "Shifted",
         "Original",
@@ -71,6 +71,7 @@
     "depth-aware",
     "temporal-persistence",
     "colour-masking",
-    "multi-mode"
+    "multi-mode",
+    "mouse-driven"
   ]
 }

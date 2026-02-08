@@ -26,7 +26,11 @@
     "prebuild": "node scripts/generate_shader_lists.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "bucket:sync": "node scripts/watch-bucket-simple.js",
+    "bucket:watch": "node scripts/watch-bucket-simple.js --watch",
+    "bucket:sync-full": "node scripts/watch-bucket.js",
+    "bucket:watch-full": "node scripts/watch-bucket.js --watch"
   },
   "eslintConfig": {
     "extends": [
@@ -47,6 +51,7 @@
     ]
   },
   "devDependencies": {
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "xml2js": "^0.6.2"
   }
 }

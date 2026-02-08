@@ -201,14 +201,7 @@ const RemoteApp: React.FC = () => {
     }
 
     return (
-        <div className="remote-app" style={{
-            backgroundColor: '#222',
-            height: '100vh',
-            color: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden' // Prevent body scroll
-        }}>
+        <div className="remote-app">
             <h2 style={{
                 textAlign: 'center',
                 padding: '20px 0',
@@ -237,12 +230,7 @@ const RemoteApp: React.FC = () => {
             />
 
             {/* Scrollable Content Container */}
-            <div className="remote-content" style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: '20px',
-                position: 'relative'
-            }}>
+            <div className="remote-content">
                 <Controls
                     modes={modes}
                     setMode={handleSetMode}

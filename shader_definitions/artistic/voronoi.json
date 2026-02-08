@@ -3,5 +3,8 @@
   "name": "Voronoi Tessellation",
   "url": "shaders/voronoi.wgsl",
   "category": "tessellation",
-  "description": "Animated Voronoi reconstruction (simplified feature detection)."
+  "description": "Animated Voronoi reconstruction (simplified feature detection).",
+  "features": [
+    "mouse-driven"
+  ]
 }

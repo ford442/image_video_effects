@@ -4,5 +4,8 @@
   "url": "shaders/neon-edge-reveal.wgsl",
   "category": "image",
   "description": "Neon edge detection with interactive flashlight reveal.",
-  "params": []
+  "params": [],
+  "features": [
+    "mouse-driven"
+  ]
 }

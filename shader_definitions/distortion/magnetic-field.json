@@ -9,33 +9,34 @@
       "id": "strength",
       "name": "Field Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "frequency",
       "name": "Field Lines",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "rotation",
       "name": "Rotation Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "turbulence",
       "name": "Turbulence",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "animated",
-    "physics"
+    "physics",
+    "mouse-driven"
   ]
 }

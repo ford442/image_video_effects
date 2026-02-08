@@ -1,4 +1,10 @@
-# 🛑 CRITICAL INSTRUCTIONS FOR AI AGENTS
+# AGENTS.md - AI Agent Instructions for Pixelocity
+
+This document provides comprehensive guidance for AI coding agents working on the Pixelocity WebGPU Shader Effects project.
+
+---
+
+## 🛑 CRITICAL: Your Role as a Shader Author
 
 **YOU ARE A SHADER AUTHOR. YOU ARE NOT AN ENGINE DEVELOPER.**
 
@@ -7,14 +13,151 @@ The TypeScript rendering engine (`Renderer.ts`) is **IMMUTABLE INFRASTRUCTURE**.
 * **DO NOT** attempt to add new bindings or uniforms.
 * **DO NOT** ask to install new npm packages.
 
-Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Shaders** that fit the *existing* interface below.
+Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Shaders** that fit the *existing* interface.
 
-## The "Immutable" Shader Contract
+---
 
-Every single shader you write MUST accept exactly these bindings. Even if you don't use them, you must declare them to match the pipeline layout.
+## Project Overview
+
+**Pixelocity** is a React-based web application that runs GPU shader effects using WebGPU. It features:
+
+- **530+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
+- **Real-time interactive effects** with mouse-driven ripples and distortions
+- **AI-powered depth estimation** using DPT-Hybrid-MIDAS model
+- **AI VJ Mode** (Alucinate) that auto-generates visual stacks using LLM
+- **Multi-slot shader stacking** - up to 3 effects can be chained
+- **Multiple input sources** - images, videos, webcam, and procedural generation
+- **WebGPU compute shaders** for high-performance real-time rendering
+
+### Browser Requirements
+- Chrome 113+, Edge 113+, or Firefox Nightly (with `dom.webgpu.enabled` flag)
+- WebGPU support is mandatory
+
+---
+
+## Project Structure
+
+```
+image_video_effects/
+├── package.json                 # Dependencies and npm scripts
+├── tsconfig.json               # TypeScript configuration
+├── webpack.config.js           # Build configuration
+├── public/
+│   ├── index.html              # HTML entry point
+│   ├── shaders/                # WGSL shader files (530+ files)
+│   │   ├── liquid.wgsl
+│   │   ├── liquid-*.wgsl
+│   │   ├── texture.wgsl        # Final render pass shader
+│   │   ├── imageVideo.wgsl     # Image/video display shader
+│   │   └── galaxy.wgsl         # Procedural galaxy shader
+│   └── shader-lists/           # GENERATED - DO NOT EDIT DIRECTLY
+│       ├── liquid-effects.json
+│       ├── interactive-mouse.json
+│       ├── visual-effects.json
+│       ├── lighting-effects.json
+│       ├── distortion.json
+│       ├── artistic.json
+│       ├── retro-glitch.json
+│       ├── simulation.json
+│       ├── geometric.json
+│       ├── image.json
+│       └── generative.json
+├── shader_definitions/         # SOURCE OF TRUTH for shaders
+│   ├── liquid-effects/         # 20+ liquid shader definitions
+│   ├── interactive-mouse/      # 170+ mouse-driven effects
+│   ├── visual-effects/         # Visual/glitch effects
+│   ├── lighting-effects/       # Plasma/cosmic/glow
+│   ├── distortion/             # Spatial distortions
+│   ├── artistic/               # Creative/artistic effects
+│   ├── retro-glitch/           # Retro/glitch aesthetics
+│   ├── simulation/             # Physics simulations
+│   ├── geometric/              # Geometric patterns
+│   ├── image/                  # Image processing effects
+│   └── generative/             # Procedural generation shaders
+├── scripts/
+│   └── generate_shader_lists.js  # Generates shader-lists from definitions
+└── src/
+    ├── index.tsx               # React entry point (switches MainApp/RemoteApp)
+    ├── App.tsx                 # Main application component
+    ├── RemoteApp.tsx           # Remote control mode (BroadcastChannel sync)
+    ├── AutoDJ.ts               # AI VJ (Alucinate) implementation
+    ├── syncTypes.ts            # Types for remote sync
+    ├── style.css               # Global styles
+    ├── components/
+    │   ├── Controls.tsx        # UI controls panel
+    │   ├── Controls.test.tsx   # Test file
+    │   └── WebGPUCanvas.tsx    # Canvas wrapper with mouse handling
+    └── renderer/
+        ├── Renderer.ts         # WebGPU rendering engine (IMMUTABLE)
+        └── types.ts            # TypeScript type definitions
+```
+
+---
+
+## Technology Stack
+
+| Category | Technology |
+|----------|------------|
+| Framework | React 19 + TypeScript 4.9 |
+| Build Tool | Create React App (react-scripts 5.0.1) |
+| GPU API | WebGPU |
+| Shading Language | WGSL (WebGPU Shading Language) |
+| AI/ML | @xenova/transformers (depth estimation), @mlc-ai/web-llm (Gemma-2-2b) |
+| Testing | Jest + React Testing Library |
+
+### Key Dependencies
+- `@xenova/transformers` - AI depth estimation (DPT-Hybrid-MIDAS)
+- `@mlc-ai/web-llm` - In-browser LLM for AI VJ
+- `@webgpu/types` - WebGPU type definitions
+- `playwright` - Browser automation
+
+---
+
+## Build and Development Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server (localhost:3000)
+# Automatically runs generate_shader_lists.js before starting
+npm start
+
+# Build for production
+# Automatically runs generate_shader_lists.js before building
+npm run build
+
+# Run tests
+npm test
+
+# Eject from Create React App (DANGEROUS - one way)
+npm run eject
+```
+
+### Pre-build Script
+The `prestart` and `prebuild` scripts automatically run `scripts/generate_shader_lists.js`, which:
+1. Reads all JSON files from `shader_definitions/` subdirectories
+2. Validates shader IDs (no duplicates)
+3. Verifies WGSL files exist
+4. Generates combined JSON files in `public/shader-lists/`
+
+---
+
+## Rendering Architecture
+
+### Ping-Pong Texture System
+The renderer uses a **multi-pass compute shader chain**:
+
+1. **Input Source** → readTexture (image, video, or generative)
+2. **Compute Pass 1** (Slot 0 shader) → pingPongTexture1
+3. **Compute Pass 2** (Slot 1 shader) → pingPongTexture2
+4. **Compute Pass 3** (Slot 2 shader) → writeTexture
+5. **Render Pass** → Screen (using `texture.wgsl`)
+
+### Shader Bindings (IMMUTABLE)
+Every compute shader MUST declare exactly these bindings:
 
 ```wgsl
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -22,134 +165,65 @@ Every single shader you write MUST accept exactly these bindings. Even if you do
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+```
 
+### Uniform Structure
+```wgsl
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
-  ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=Param
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
 };
-
-### Important: Treat `zoom_params` as a Generic Float Vector
-
-Historically the renderer wrote values like `fgSpeed`, `bgSpeed`, `parallaxStrength`, and `fogDensity` into `zoom_params`. To make shaders and future UI changes robust and generic, treat `zoom_params` as a generic vec4 of floats whose components are semantic-free parameters:
-
-- `zoom_params.x` -> param1
-- `zoom_params.y` -> param2
-- `zoom_params.z` -> param3
-- `zoom_params.w` -> param4
-
-Notes for shader authors and AI agents:
-- Assume each component is a generic scalar float. Don't hard-code engine-specific names in new shaders.
-- You may document what the current UI maps into these params (e.g., param1=fgSpeed) but design shaders to work if the mapping changes.
-- If you need more parameters, prefer packing them into `dataTextureA/B/C` or `extraBuffer` rather than altering the uniform layout.
-
-# WebGPU Fluid Simulation - AI Agent Instructions
-
-This document provides structured guidance for AI code agents working on this codebase.
-
-## Quick Reference
-
-| Task | Files to Modify |
-|------|-----------------|
-| Add new shader effect | `public/shaders/*.wgsl`, `shader_definitions/{category}/{id}.json` |
-| Modify UI controls | `src/components/Controls.tsx` |
-| Change rendering logic | `src/renderer/Renderer.ts` |
-| Add new render mode | `src/renderer/types.ts`, `Renderer.ts` |
-| Update styles | `src/style.css` |
-
-## Build Commands
-
-```bash
-npm install    # Install dependencies
-npm start      # Development server at localhost:3000
-npm run build  # Production build to build/
-npm test       # Run tests
 ```
 
-## Project Structure
-
-```
-src/
-├── App.tsx                 # Main component, state management, AI model loading
-├── index.tsx               # React entry point
-├── style.css               # Global styles
-├── components/
-│   ├── Controls.tsx        # UI controls (mode selector, sliders, buttons)
-│   └── WebGPUCanvas.tsx    # Canvas wrapper with mouse event handling
-└── renderer/
-    ├── Renderer.ts         # WebGPU rendering engine (main logic)
-    └── types.ts            # TypeScript types (RenderMode, ShaderEntry)
-
-public/
-├── index.html              # HTML entry point
-├── shader-lists/           # Shader registry (GENERATED - DO NOT EDIT MANUALLY)
-└── shaders/                # WGSL compute and render shaders
-
-shader_definitions/         # SOURCE OF TRUTH for shaders
-├── artistic/               # Creative effects
-├── distortion/             # Spatial distortions
-├── interactive-mouse/      # Mouse-driven effects
-├── lighting-effects/       # Plasma/cosmic/glow
-├── liquid-effects/         # Liquid shaders
-└── visual-effects/         # Glitch/CRT/chromatic
+### Workgroup Size
+All compute shaders MUST use:
+```wgsl
+@compute @workgroup_size(8, 8, 1)
 ```
 
-## Architecture Overview
+This matches the dispatch: `dispatchWorkgroups(Math.ceil(width/8), Math.ceil(height/8), 1)`
 
-The simulation uses a **ping-pong texture system** where compute shaders read previous frame state and write new state.
+---
 
-### Rendering Pipeline
+## Shader Categories
 
-1. **Compute Pass**: Executes effect shader to update liquid state
-2. **Render Pass**: Draws result to screen using `texture.wgsl`
-3. **Depth Swap**: Ping-pong depth textures for next frame
+| Category | Description | Count |
+|----------|-------------|-------|
+| `liquid-effects` | Fluid simulations, ripples, viscosity | 20+ |
+| `interactive-mouse` | Mouse-driven interactive effects | 170+ |
+| `visual-effects` | Visual/glitch/chromatic effects | 30+ |
+| `lighting-effects` | Plasma, glow, lens flares | 14+ |
+| `distortion` | Spatial distortions, warps | 60+ |
+| `artistic` | Creative/artistic effects | 90+ |
+| `retro-glitch` | Retro aesthetics, VHS, CRT | 26+ |
+| `simulation` | Physics, cellular automata | 16+ |
+| `geometric` | Geometric patterns, tessellations | 10+ |
+| `image` | Image processing effects | 50+ |
+| `generative` | Procedural generation (no input needed) | 14+ |
 
-### Key Components
+---
 
-#### Renderer (`src/renderer/Renderer.ts`)
+## Adding a New Shader
 
-The main WebGPU orchestrator:
+### Step 1: Create the WGSL Shader File
 
-- Manages GPU resources (textures, buffers, pipelines, bind groups)
-- Loads shaders dynamically from category files in `shader-lists/`
-- Handles mouse ripple effects via `addRipplePoint()`
-- Supports plasma ball physics via `firePlasma()`
-
-**Key Methods:**
-- `init()`: Initialize WebGPU, load resources, create pipelines
-- `render()`: Execute compute and render passes
-- `loadRandomImage()`: Fetch and load new image from Google Cloud Storage
-- `updateDepthMap()`: Upload AI-generated depth data to GPU
-- `getAvailableModes()`: Get list of available shader modes
-
-#### Types (`src/renderer/types.ts`)
-
-```typescript
-type RenderMode = 'shader' | 'image' | 'video' | 'ripple' | string;
-
-interface ShaderEntry {
-  id: string;    // Unique identifier (e.g., "liquid-metal")
-  name: string;  // Display name (e.g., "Liquid Metal")
-  url: string;   // Shader path (e.g., "shaders/liquid-metal.wgsl")
-}
-```
-
-## Adding a New Shader Effect
-
-### Step 1: Create the Shader File
-
-Create `public/shaders/my-effect.wgsl` with this required interface:
+Create `public/shaders/my-effect.wgsl`:
 
 ```wgsl
-// Required bindings - DO NOT MODIFY binding numbers
+// ═══════════════════════════════════════════════════════════════
+//  My Effect - Brief description of what this shader does
+//  Category: artistic
+//  Features: mouse-driven, depth-aware
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -164,277 +238,305 @@ Create `public/shaders/my-effect.wgsl` with this required interface:
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-// Required uniform structure
 struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=resolutionX, w=resolutionY
-  zoom_config: vec4<f32>,  // x=time, y=farthestX, z=farthestY, w=unused
-  zoom_params: vec4<f32>,  // x=fgSpeed, y=bgSpeed, z=parallaxStrength, w=fogDensity
-  ripples: array<vec4<f32>, 50>,  // Per-ripple: x, y, startTime, unused
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
-// Required entry point
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let currentTime = u.config.x;
-
-  // YOUR EFFECT LOGIC HERE
-
-  // Sample and modify the image
-  let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-  // Write output (REQUIRED)
-  textureStore(writeTexture, global_id.xy, color);
-
-  // Update depth for next frame (REQUIRED for depth-aware effects)
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let resolution = u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let currentTime = u.config.x;
+    
+    // Sample input color
+    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    
+    // YOUR EFFECT LOGIC HERE
+    let outputColor = color; // Modify this
+    
+    // Write output
+    textureStore(writeTexture, global_id.xy, outputColor);
+    
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 ```
 
-### Step 2: Register the Shader
+### Step 2: Create the Shader Definition
 
-Create a new JSON file in the appropriate subdirectory of `shader_definitions/`:
+Create `shader_definitions/{category}/my-effect.json`:
 
-**Choose the right category:**
-- `shader_definitions/liquid-effects/` - for liquid-* shaders
-- `shader_definitions/interactive-mouse/` - for mouse-driven effects
-- `shader_definitions/visual-effects/` - for glitch/CRT/chromatic effects
-- `shader_definitions/lighting-effects/` - for plasma/cosmic/glow effects
-- `shader_definitions/distortion/` - for spatial distortions
-- `shader_definitions/artistic/` - for creative/artistic effects
-
-**File Path Example:** `shader_definitions/artistic/my-effect.json`
-
-**Content:**
 ```json
 {
   "id": "my-effect",
   "name": "My Effect",
   "url": "shaders/my-effect.wgsl",
   "category": "image",
-  "description": "Optional description",
-  "params": []
+  "description": "Brief description of the effect",
+  "tags": ["artistic", "interactive", "color"],
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Effect Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
 }
 ```
-
-**Note:** DO NOT edit `public/shader-lists/*.json` directly. These files are automatically generated from the individual definitions in `shader_definitions/` before start/build. This "One File Per Shader" approach prevents git merge conflicts.
 
 ### Step 3: Test
 
-1. Run `npm start`
-2. Open browser to localhost:3000
-3. Select "My Effect" from the mode dropdown
+1. Run `npm start` (or let the dev server auto-reload)
+2. Refresh the browser
+3. Select your new effect from the dropdown
 
-## Common Shader Patterns
+**No TypeScript recompilation needed!** The shader is loaded dynamically at runtime.
 
-### Reading Ripple Data
+---
 
-```wgsl
-let rippleCount = u32(u.config.y);
-for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-  let ripple = u.ripples[i];
-  let ripplePos = ripple.xy;
-  let startTime = ripple.z;
-  let elapsed = currentTime - startTime;
-  // Use ripple data...
+## Shader Definition JSON Schema
+
+```typescript
+interface ShaderEntry {
+  id: string;           // Unique identifier (kebab-case)
+  name: string;         // Display name
+  url: string;          // Path to WGSL file relative to public/
+  category: ShaderCategory;
+  description?: string; // Optional description
+  tags?: string[];      // For AI VJ matching (e.g., ["neon", "glitch", "liquid"])
+  features?: string[];  // Feature flags (e.g., ["mouse-driven", "multi-pass"])
+  params?: ShaderParam[]; // Up to 4 slider parameters
+}
+
+interface ShaderParam {
+  id: string;           // Parameter identifier
+  name: string;         // Display name
+  default: number;      // Default value
+  min: number;          // Minimum value
+  max: number;          // Maximum value
+  step?: number;        // Step size (default: 0.01)
+  labels?: string[];    // Optional labels for discrete values
 }
 ```
 
-### Depth-Based Effects
+### Feature Flags
+- `mouse-driven` - Shader responds to mouse position in `zoom_config.yz`
+- `multi-pass-1`, `multi-pass-2` - For multi-pass shader pairs
+- `raymarched` - Single-pass but uses raymarching
+- `depth-aware` - Uses depth texture for effects
 
+---
+
+## Common Shader Patterns
+
+### Reading Mouse Position
+```wgsl
+let mousePos = u.zoom_config.yz;  // Normalized 0-1
+let isMouseDown = u.zoom_config.w > 0.5;
+```
+
+### Reading Parameters
+```wgsl
+let param1 = u.zoom_params.x;
+let param2 = u.zoom_params.y;
+let param3 = u.zoom_params.z;
+let param4 = u.zoom_params.w;
+```
+
+### Reading Depth
 ```wgsl
 let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 // depth: 0.0 = far (background), 1.0 = near (foreground)
-let isForeground = depth > 0.5;
+```
+
+### Ripple Data Access
+```wgsl
+let rippleCount = u32(u.config.y);
+for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let pos = ripple.xy;
+    let startTime = ripple.z;
+    let elapsed = currentTime - startTime;
+}
 ```
 
 ### UV Displacement
-
 ```wgsl
 let displacement = vec2<f32>(sin(uv.y * 10.0 + time), cos(uv.x * 10.0 + time)) * 0.01;
 let displacedUV = uv + displacement;
 let color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 ```
 
+---
+
 ## Multi-Pass Shader Architecture
 
-### Overview
+Some effects require multiple passes. These are implemented as shader pairs:
 
-Multi-pass shaders split complex effects into multiple rendering passes, where each pass reads from the previous pass's output and writes to its own output textures. This enables advanced effects like temporal feedback, volumetric rendering, and complex compositing.
+**Pass 1** (e.g., `rainbow-vector-field.wgsl`):
+- Generates intermediate data
+- Outputs to `writeTexture` (color) and `writeDepthTexture` (data)
 
-### Multi-Pass Pairs in This Project
+**Pass 2** (e.g., `prismatic-feedback-loop.wgsl`):
+- Reads from `readTexture` and `readDepthTexture` (Pass 1 output)
+- Applies final compositing
 
-#### 1. Rainbow Vector Field → Prismatic Feedback Loop
-```
-Pass 1: rainbow-vector-field.wgsl
-  Generates: Rainbow color pattern + Displacement field
-  Outputs: writeTexture (color), writeDepthTexture (displacement)
-
-Pass 2: prismatic-feedback-loop.wgsl
-  Reads: readTexture (Pass 1 color), readDepthTexture (displacement)
-  Applies: Chromatic aberration + Temporal feedback + Glow
-  Outputs: Final composited effect
-```
-
-#### 2. Volumetric Rainbow Clouds → Prismatic 3D Compositor
-```
-Pass 1: volumetric-rainbow-clouds.wgsl
-  Generates: 3D noise clouds with lighting and normals
-  Outputs: writeTexture (cloud color), writeDepthTexture (cloud depth)
-
-Pass 2: prismatic-3d-compositor.wgsl
-  Reads: readTexture (clouds), readDepthTexture (depth)
-  Applies: Parallax shift + Volumetric glow + Chromatic aberration
-  Outputs: Final 3D composite
-```
-
-#### 3. Volumetric Depth Zoom → Parallax Glow Compositor
-```
-Pass 1: volumetric-depth-zoom.wgsl
-  Generates: Raymarched volumetric zoom with DOF
-  Outputs: writeTexture (zoom effect), writeDepthTexture (raymarch depth)
-
-Pass 2: parallax-glow-compositor.wgsl
-  Reads: readTexture (zoom), readDepthTexture (depth)
-  Applies: Depth-aware glow + Bloom + Chromatic aberration
-  Outputs: Final glowing composite
-```
-
-### Multi-Pass Shader Template
-
-#### Pass 1 Template
-```wgsl
-// ═══════════════════════════════════════════════════════════════
-//  [Shader Name] - PASS 1 of 2
-//  [Description of what this pass generates]
-//  
-//  Outputs: 
-//    - writeTexture: [Description]
-//    - writeDepthTexture: [Description]
-//  
-//  Next Pass: [next-shader-name].wgsl
-// ═══════════════════════════════════════════════════════════════
-
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    // Generate base effect
-    // Store to writeTexture and writeDepthTexture
-}
-```
-
-#### Pass 2 Template
-```wgsl
-// ═══════════════════════════════════════════════════════════════
-//  [Shader Name] - PASS 2 of 2
-//  [Description of what this pass does with Pass 1 data]
-//  
-//  Inputs:
-//    - readTexture: [Description from Pass 1]
-//    - readDepthTexture: [Description from Pass 1]
-//  
-//  Previous Pass: [previous-shader-name].wgsl
-// ═══════════════════════════════════════════════════════════════
-
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    // Read Pass 1 results
-    let pass1Color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let pass1Data = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0);
-    
-    // Apply effects using Pass 1 data
-    // Write final output
-}
-```
-
-### JSON Metadata for Multi-Pass Shaders
-
-Multi-pass shaders should include metadata in their JSON definitions:
-
+Mark with metadata:
 ```json
 {
-  "id": "shader-pass-1",
-  "name": "Shader Name (Pass 1)",
-  "multipass": {
-    "pass": 1,
-    "totalPasses": 2,
-    "nextShader": "shader-pass-2"
-  },
-  "features": ["multi-pass-1", "other-features"]
+  "id": "rainbow-vector-field",
+  "multipass": { "pass": 1, "totalPasses": 2, "nextShader": "prismatic-feedback-loop" },
+  "features": ["multi-pass-1"]
 }
 ```
 
-### Important Notes
-
-1. **Texture Flow**: Pass 1 writes to `writeTexture` and `writeDepthTexture`. Pass 2 reads from `readTexture` and `readDepthTexture`.
-
-2. **Single-Pass Multi-Layer**: Some shaders like `liquid-volumetric-zoom.wgsl` perform multiple samples in a single pass (raymarching). These are NOT multi-pass shaders and should use `"features": ["raymarched", "single-pass-multilayer"]` instead.
-
-3. **Depth Texture Repurposing**: Multi-pass shaders often repurpose the depth texture to pass arbitrary data (displacement fields, density maps, etc.) between passes.
-
-4. **Mouse Interaction**: Both passes can respond to mouse input via `u.zoom_config.yz` and `u.ripples[]` array.
-
-## Modifying the Renderer
-
-### Adding a New Uniform
-
-1. Update buffer size in `createResources()`:
-```typescript
-this.computeUniformBuffer = this.device.createBuffer({
-  size: NEW_SIZE,  // Calculate new size
-  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-});
-```
-
-2. Update uniform write in `render()`:
-```typescript
-const uniformArray = new Float32Array(NEW_LENGTH);
-uniformArray.set([/* new values */], OFFSET);
-this.device.queue.writeBuffer(this.computeUniformBuffer, 0, uniformArray);
-```
-
-3. Update shader `Uniforms` struct to match
-
-### Adding a New Texture Binding
-
-1. Add texture creation in `createResources()`
-2. Update bind group layout in `createPipelines()`
-3. Add to bind group entries in `createBindGroups()`
-4. Add matching binding in shader
+---
 
 ## Code Style Guidelines
 
-- **TypeScript**: Use strict typing, avoid `any` when possible
-- **WGSL Shaders**: Use consistent indentation, comment complex algorithms
-- **React**: Functional components with hooks
-- **Naming**: camelCase for variables, PascalCase for components/classes
+### TypeScript
+- Use strict typing - avoid `any`
+- Use functional React components with hooks
+- camelCase for variables/functions, PascalCase for components
+- Interface names should be descriptive
 
-## Dependencies
+### WGSL Shaders
+- Use consistent 2-space indentation
+- Comment complex algorithms
+- Group related operations with blank lines
+- Use descriptive variable names
+- Include header comments with description and category
 
-| Package | Purpose |
-|---------|---------|
-| react, react-dom | UI framework |
-| @xenova/transformers | AI depth estimation model |
-| typescript | Type checking |
-| react-scripts | Build tooling |
+### JSON
+- Use 2-space indentation
+- Always include `id`, `name`, `url`, `category`
+- Use kebab-case for IDs (e.g., `liquid-metal`)
+- Tag shaders appropriately for AI VJ matching
+
+---
+
+## Testing
+
+### Running Tests
+```bash
+npm test
+```
+
+Tests use Jest and React Testing Library. Currently minimal test coverage exists.
+
+### Manual Testing Checklist
+When adding a new shader:
+- [ ] Shader loads without compilation errors
+- [ ] Shader appears in correct category dropdown
+- [ ] Effect renders correctly
+- [ ] Parameters (if any) respond to slider changes
+- [ ] Mouse interaction works (if `mouse-driven` feature flag)
+- [ ] Depth-aware features work (if depth model loaded)
+
+---
+
+## AI VJ (Alucinate) System
+
+The AI VJ mode uses LLM to automatically create visual stacks:
+
+1. **Image Captioning** - Uses `Xenova/vit-gpt2-image-captioning` to describe current image
+2. **Shader Selection** - Uses Gemma-2-2b via WebLLM to select 3 compatible shaders
+3. **Image Selection** - LLM suggests next image theme based on current scene
+
+### Tagging for AI VJ
+When creating shaders, include relevant tags:
+```json
+{
+  "tags": ["neon", "colorful", "geometric", "glitch", "liquid", "abstract"]
+}
+```
+
+Common tags: `neon`, `glitch`, `liquid`, `geometric`, `abstract`, `colorful`, `monochrome`, `retro`, `futuristic`, `organic`, `particles`, `warp`, `distortion`
+
+---
+
+## Remote Control Mode
+
+The app supports remote control via `BroadcastChannel`:
+- Main app URL: `http://localhost:3000`
+- Remote control URL: `http://localhost:3000?mode=remote`
+
+Remote mode mirrors the controls UI and syncs state to the main app.
+
+---
 
 ## Troubleshooting
 
 ### Shader Compilation Errors
-
-Check browser DevTools console for WGSL compilation errors. Common issues:
+Check browser DevTools console for WGSL errors. Common issues:
 - Missing semicolons
-- Type mismatches (e.g., `f32` vs `i32`)
+- Type mismatches (f32 vs i32)
 - Incorrect binding numbers
+- Missing textureStore call
 
 ### WebGPU Not Available
+Ensure browser supports WebGPU and you're using HTTPS or localhost.
 
-Ensure browser supports WebGPU:
-- Chrome 113+
-- Edge 113+
-- Firefox Nightly with `dom.webgpu.enabled` flag
+### Shader Not Appearing in Dropdown
+- Check `shader_definitions/{category}/` has your JSON file
+- Verify `id` is unique across all categories
+- Run `npm start` to regenerate shader lists
+- Check browser console for generation errors
 
 ### Texture Size Mismatch
+All textures must match the canvas size (2048x2048 internal resolution). The renderer handles this automatically.
 
-Ensure all textures in bind group have compatible dimensions. The renderer creates textures matching canvas size.
+---
+
+## Security Considerations
+
+- The app uses `crossOrigin="Anonymous"` for images
+- Video sources must support CORS
+- No sensitive data is stored locally
+- AI models are loaded from HuggingFace/CDN
+
+---
+
+## Deployment
+
+Production builds are created with:
+```bash
+npm run build
+```
+
+This creates a `build/` directory with static files ready for hosting.
+
+### Deployment Requirements
+- HTTPS (for WebGPU and camera access)
+- CORS-enabled hosting for images/videos
+- Modern browser support
+
+---
+
+## Quick Reference
+
+| Task | Files to Modify |
+|------|-----------------|
+| Add new shader | `public/shaders/*.wgsl`, `shader_definitions/{category}/*.json` |
+| Fix shader bug | `public/shaders/{shader}.wgsl` |
+| Add UI controls | `src/components/Controls.tsx` |
+| Change styles | `src/style.css` |
+| Modify renderer | **DON'T** - It's immutable |
+| Add shader category | `scripts/generate_shader_lists.js`, `src/renderer/types.ts` |
+
+---
+
+## Resources
+
+- [WebGPU Specification](https://www.w3.org/TR/webgpu/)
+- [WGSL Specification](https://www.w3.org/TR/WGSL/)
+- [WebGPU Fundamentals](https://webgpu.github.io/webgpu-samples/)
+- [React Documentation](https://react.dev/)

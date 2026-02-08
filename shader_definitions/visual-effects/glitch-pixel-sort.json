@@ -4,5 +4,8 @@
   "url": "shaders/glitch-pixel-sort.wgsl",
   "category": "image",
   "description": "Luminance-based pixel stretching controlled by mouse position.",
-  "params": []
+  "params": [],
+  "features": [
+    "mouse-driven"
+  ]
 }

@@ -9,33 +9,34 @@
       "id": "depth",
       "name": "Tunnel Depth",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "twist",
       "name": "Twist Amount",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "aberration",
       "name": "Chromatic",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "speed",
       "name": "Travel Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "animated",
-    "3d"
+    "3d",
+    "mouse-driven"
   ]
 }

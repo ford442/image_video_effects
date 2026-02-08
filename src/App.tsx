@@ -333,6 +333,13 @@ function MainApp() {
                     <div className="subtitle-text">AI VJ Image Playground</div>
                 </div>
                 <div className="header-controls">
+                    <button 
+                        className="toggle-sidebar-btn" 
+                        onClick={() => window.open('?mode=remote', '_blank', 'width=420,height=900')}
+                        title="Open Remote Control in new window"
+                    >
+                        Open Remote
+                    </button>
                     <button className="toggle-sidebar-btn" onClick={() => setShowSidebar(!showSidebar)}>
                         {showSidebar ? 'Hide Controls' : 'Show Controls'}
                     </button>

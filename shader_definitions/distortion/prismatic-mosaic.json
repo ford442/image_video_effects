@@ -16,20 +16,21 @@
       "id": "speed",
       "name": "Mosaic Speed",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "satBoost",
       "name": "Saturation Boost",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "depth-aware",
     "temporal-persistence",
-    "colour-masking"
+    "colour-masking",
+    "mouse-driven"
   ]
 }

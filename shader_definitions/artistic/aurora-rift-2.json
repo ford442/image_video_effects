@@ -3,5 +3,8 @@
   "name": "Aurora Rift V2",
   "url": "shaders/aurora-rift-2.wgsl",
   "category": "image",
-  "description": "Enhanced aurora effects with improved color gradients."
+  "description": "Enhanced aurora effects with improved color gradients.",
+  "features": [
+    "mouse-driven"
+  ]
 }

@@ -9,34 +9,35 @@
       "id": "bufferLength",
       "name": "Delay Length",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "mappingFunction",
       "name": "Delay Pattern",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "feedbackMix",
       "name": "Feedback Mix",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "motionSense",
       "name": "Motion Sensitivity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "temporal-persistence",
     "interactive",
-    "motion-detection"
+    "motion-detection",
+    "mouse-driven"
   ]
 }

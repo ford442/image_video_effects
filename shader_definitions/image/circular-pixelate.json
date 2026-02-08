@@ -1,13 +1,44 @@
 {
-    "id": "circular-pixelate",
-    "name": "Circular Pixelate",
-    "category": "image",
-    "description": "Renders the image as a grid of circles. Mouse controls density and radius.",
-    "url": "shaders/circular-pixelate.wgsl",
-    "params": [
-        { "name": "Density", "id": "density", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5 },
-        { "name": "Radius", "id": "radius", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.4 },
-        { "name": "Hardness", "id": "hardness", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8 },
-        { "name": "Bg Mix", "id": "bg_mix", "min": 0.0, "max": 1.0, "step": 0.01, "default": 1.0 }
-    ]
+  "id": "circular-pixelate",
+  "name": "Circular Pixelate",
+  "category": "image",
+  "description": "Renders the image as a grid of circles. Mouse controls density and radius.",
+  "url": "shaders/circular-pixelate.wgsl",
+  "params": [
+    {
+      "name": "Density",
+      "id": "density",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    },
+    {
+      "name": "Radius",
+      "id": "radius",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.4
+    },
+    {
+      "name": "Hardness",
+      "id": "hardness",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.8
+    },
+    {
+      "name": "Bg Mix",
+      "id": "bg_mix",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 1
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
 }

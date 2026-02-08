@@ -3,62 +3,63 @@
   "name": "Green Tracer World",
   "url": "shaders/green-tracer.wgsl",
   "category": "image",
-  "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night\u2011vision aesthetics.",
+  "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night‑vision aesthetics.",
   "params": [
     {
       "id": "trailLen",
       "name": "Trail Length",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "glowInt",
       "name": "Glow Intensity",
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "greenTint",
       "name": "Green Tint",
       "default": 0.8,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "noiseAmt",
       "name": "Film Grain",
       "default": 0.1,
-      "min": 0.0,
+      "min": 0,
       "max": 0.5
     },
     {
       "id": "motionThresh",
       "name": "Motion Threshold",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "depthInf",
       "name": "Depth Influence",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "trailFade",
       "name": "Trail Fade Rate",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
-    "temporal\u2011persistence",
-    "edge\u2011glow",
-    "film\u2011grain",
-    "depth\u2011aware"
+    "temporal‑persistence",
+    "edge‑glow",
+    "film‑grain",
+    "depth‑aware",
+    "mouse-driven"
   ]
 }

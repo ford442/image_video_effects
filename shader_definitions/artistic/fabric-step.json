@@ -9,35 +9,36 @@
       "id": "stiffness",
       "name": "Stiffness",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "tearThreshold",
       "name": "Tear Threshold",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "gravity",
       "name": "Gravity",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "damping",
       "name": "Damping",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "depth-aware",
     "temporal-persistence",
     "interactive",
-    "physics"
+    "physics",
+    "mouse-driven"
   ]
 }

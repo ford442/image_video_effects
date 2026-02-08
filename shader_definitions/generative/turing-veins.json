@@ -8,35 +8,43 @@
     {
       "name": "Scale 1",
       "type": "range",
-      "min": 0.0,
-      "max": 2.0,
-      "default": 1.0,
+      "min": 0,
+      "max": 2,
+      "default": 1,
       "desc": "Primary Turing pattern scale (depth-modulated)"
     },
     {
       "name": "Scale 2",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.6,
       "desc": "Secondary finer scale"
     },
     {
       "name": "Feed Rate",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5,
       "desc": "Reaction-diffusion activator/inhibitor balance"
     },
     {
       "name": "Vein Glow",
       "type": "range",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5,
       "desc": "Bioluminescent emission intensity"
     }
   ],
-  "features": ["generative", "procedural", "reaction-diffusion", "turing-patterns", "depth-aware", "biological"]
+  "features": [
+    "generative",
+    "procedural",
+    "reaction-diffusion",
+    "turing-patterns",
+    "depth-aware",
+    "biological",
+    "mouse-driven"
+  ]
 }

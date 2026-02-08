@@ -3,5 +3,8 @@
   "name": "Quantum Foam",
   "url": "shaders/quantum-foam.wgsl",
   "category": "image",
-  "description": "Quantum foam texture with spacetime fluctuations."
+  "description": "Quantum foam texture with spacetime fluctuations.",
+  "features": [
+    "mouse-driven"
+  ]
 }

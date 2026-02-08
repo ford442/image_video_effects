@@ -3,5 +3,8 @@
   "name": "Quantum Smear",
   "url": "shaders/quantum-smear.wgsl",
   "category": "image",
-  "description": "Quantum particle disintegration with stochastic advection and pointillist effects."
+  "description": "Quantum particle disintegration with stochastic advection and pointillist effects.",
+  "features": [
+    "mouse-driven"
+  ]
 }

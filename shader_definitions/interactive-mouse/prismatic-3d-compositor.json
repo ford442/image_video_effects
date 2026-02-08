@@ -5,10 +5,40 @@
   "category": "image",
   "description": "Adds parallax shifting, volumetric glow, chromatic aberration and final composite with depth-aware blending.",
   "params": [
-    { "id": "glowRadius", "name": "Glow Radius", "default": 1.0, "min": 0.0, "max": 10.0 },
-    { "id": "glowIntensity", "name": "Glow Intensity", "default": 1.0, "min": 0.0, "max": 4.0 },
-    { "id": "parallaxAmount", "name": "Parallax", "default": 1.0, "min": 0.0, "max": 4.0 },
-    { "id": "aberration", "name": "Aberration", "default": 0.02, "min": 0.0, "max": 0.2 }
+    {
+      "id": "glowRadius",
+      "name": "Glow Radius",
+      "default": 1,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "default": 1,
+      "min": 0,
+      "max": 4
+    },
+    {
+      "id": "parallaxAmount",
+      "name": "Parallax",
+      "default": 1,
+      "min": 0,
+      "max": 4
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.02,
+      "min": 0,
+      "max": 0.2
+    }
   ],
-  "features": ["multi-pass", "volumetric", "depth", "lighting"]
+  "features": [
+    "multi-pass",
+    "volumetric",
+    "depth",
+    "lighting",
+    "mouse-driven"
+  ]
 }

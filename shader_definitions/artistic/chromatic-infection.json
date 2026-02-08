@@ -9,35 +9,36 @@
       "id": "spreadSpeed",
       "name": "Spread Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "intensity",
       "name": "Infection Intensity",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "satThresh",
       "name": "Saturation Threshold",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "tendrilScale",
       "name": "Tendril Scale",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "depth-aware",
     "temporal-persistence",
     "colour-masking",
-    "organic-growth"
+    "organic-growth",
+    "mouse-driven"
   ]
 }

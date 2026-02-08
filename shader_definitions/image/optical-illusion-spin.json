@@ -1,13 +1,44 @@
 {
-    "id": "optical-illusion-spin",
-    "name": "Optical Illusion Spin",
-    "category": "image",
-    "description": "Slices the image into rotating concentric rings. Mouse adds a twisting force.",
-    "url": "shaders/optical-illusion-spin.wgsl",
-    "params": [
-        { "name": "Ring Count", "id": "rings", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.5 },
-        { "name": "Speed", "id": "speed", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2 },
-        { "name": "Twist Force", "id": "twist", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.6 },
-        { "name": "Alternating", "id": "alt", "min": 0.0, "max": 1.0, "step": 1.0, "default": 1.0 }
-    ]
+  "id": "optical-illusion-spin",
+  "name": "Optical Illusion Spin",
+  "category": "image",
+  "description": "Slices the image into rotating concentric rings. Mouse adds a twisting force.",
+  "url": "shaders/optical-illusion-spin.wgsl",
+  "params": [
+    {
+      "name": "Ring Count",
+      "id": "rings",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    },
+    {
+      "name": "Speed",
+      "id": "speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.2
+    },
+    {
+      "name": "Twist Force",
+      "id": "twist",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.6
+    },
+    {
+      "name": "Alternating",
+      "id": "alt",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "default": 1
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ]
 }

@@ -8,23 +8,26 @@
     {
       "name": "Green Lag",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5
     },
     {
       "name": "Blue Lag",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.8
     },
     {
       "name": "Feedback",
       "type": "f32",
-      "min": 0.0,
+      "min": 0,
       "max": 0.99,
-      "default": 0.0
+      "default": 0
     }
+  ],
+  "features": [
+    "mouse-driven"
   ]
 }

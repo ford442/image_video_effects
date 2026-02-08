@@ -3,5 +3,8 @@
   "name": "Nebulous Dream",
   "url": "shaders/nebulous-dream.wgsl",
   "category": "image",
-  "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields."
+  "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields.",
+  "features": [
+    "mouse-driven"
+  ]
 }

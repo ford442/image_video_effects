@@ -38,6 +38,7 @@
     "depth-aware",
     "temporal-persistence",
     "interactive",
-    "multi-mode"
+    "multi-mode",
+    "mouse-driven"
   ]
 }

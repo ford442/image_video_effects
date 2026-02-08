@@ -56,14 +56,17 @@ body {
     flex: 1;
     overflow: hidden;
     position: relative;
+    height: calc(100vh - 60px); /* Full height minus header */
 }
 
 /* Sidebar */
 .sidebar {
-    width: 320px;
+    width: 380px;
+    height: 100%;
     background-color: #181818;
     border-right: 1px solid #333;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     transition: transform 0.3s ease;
@@ -80,6 +83,7 @@ body {
 /* Canvas Area */
 .canvas-container {
     flex: 1;
+    height: 100%;
     background-color: #000;
     display: flex;
     justify-content: center;
@@ -100,7 +104,27 @@ canvas {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
+    min-height: 0; /* Important for flex scrolling */
+}
+
+/* Radio group horizontal layout for space efficiency */
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.radio-group input[type="radio"] {
+    margin: 0;
 }
 
 .control-group {
@@ -122,6 +146,47 @@ canvas {
     border-radius: 6px;
     padding: 10px;
     margin: 10px 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.stack-slot {
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.stack-slot:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Compact view controls */
+.view-controls-grid {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.view-controls-grid label {
+    margin-bottom: 0;
+    font-size: 11px;
+    color: #888;
+}
+
+.view-controls-grid input[type="range"] {
+    margin-top: 0;
+}
+
+/* Parameter grid for better space usage */
+.params-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.params-grid .control-group {
+    margin-bottom: 5px;
 }
 
 /* Inputs & UI Elements */
@@ -228,6 +293,21 @@ hr {
 
 .sidebar::-webkit-scrollbar-thumb:hover, .remote-content::-webkit-scrollbar-thumb:hover {
     background: #444;
+}
+
+/* Remote app specific styles */
+.remote-app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.remote-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
 }
 
 /* Remote button special style */

@@ -3,5 +3,8 @@
   "name": "Chromatic Manifold V2",
   "url": "shaders/chromatic-manifold-2.wgsl",
   "category": "image",
-  "description": "Enhanced 4D topological color manifold."
+  "description": "Enhanced 4D topological color manifold.",
+  "features": [
+    "mouse-driven"
+  ]
 }

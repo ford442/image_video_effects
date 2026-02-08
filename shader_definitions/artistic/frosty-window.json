@@ -9,33 +9,34 @@
       "id": "density",
       "name": "Frost Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "crystal_size",
       "name": "Crystal Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "blur",
       "name": "Blur Amount",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "sparkle",
       "name": "Sparkle",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "animated",
-    "crystalline"
+    "crystalline",
+    "mouse-driven"
   ]
 }

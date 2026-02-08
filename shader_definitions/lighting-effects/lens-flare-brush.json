@@ -10,28 +10,31 @@
       "type": "float",
       "default": 0.8,
       "min": 0.5,
-      "max": 1.0
+      "max": 1
     },
     {
       "name": "Intensity",
       "type": "float",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "name": "Stretch",
       "type": "float",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "name": "Color Shift",
       "type": "float",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
+  ],
+  "features": [
+    "mouse-driven"
   ]
 }

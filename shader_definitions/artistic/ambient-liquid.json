@@ -3,5 +3,8 @@
   "name": "Ambient Liquid",
   "url": "shaders/ambient-liquid.wgsl",
   "category": "image",
-  "description": "Gentle ambient liquid motion effects."
+  "description": "Gentle ambient liquid motion effects.",
+  "features": [
+    "mouse-driven"
+  ]
 }

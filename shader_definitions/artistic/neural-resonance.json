@@ -3,5 +3,8 @@
   "name": "Neural Resonance",
   "url": "shaders/neural-resonance.wgsl",
   "category": "image",
-  "description": "Runaway neural feedback loop with hallucinogenic pareidolic effects and breathing fractals."
+  "description": "Runaway neural feedback loop with hallucinogenic pareidolic effects and breathing fractals.",
+  "features": [
+    "mouse-driven"
+  ]
 }

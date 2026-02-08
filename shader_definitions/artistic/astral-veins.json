@@ -3,40 +3,41 @@
   "name": "Astral Veins",
   "url": "shaders/astral-veins.wgsl",
   "category": "image",
-  "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour\u2011cycle. Click to seed new veins.",
+  "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
   "params": [
     {
       "id": "speed",
       "name": "Flow Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "scale",
       "name": "Noise Scale",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "intensity",
       "name": "Glow Intensity",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "hueShift",
       "name": "Hue Shift",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "depth-aware",
     "temporal-persistence",
-    "interactive"
+    "interactive",
+    "mouse-driven"
   ]
 }

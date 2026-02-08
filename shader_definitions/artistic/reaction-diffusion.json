@@ -3,5 +3,8 @@
   "name": "Reaction-Diffusion",
   "url": "shaders/reaction-diffusion.wgsl",
   "category": "simulation",
-  "description": "Grey-Scott style color bleed with cross-channel inhibition."
+  "description": "Grey-Scott style color bleed with cross-channel inhibition.",
+  "features": [
+    "mouse-driven"
+  ]
 }

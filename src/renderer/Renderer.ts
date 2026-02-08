@@ -1,4 +1,4 @@
-import {RenderMode, ShaderEntry, InputSource, SlotParams} from './types';
+import { RenderMode, ShaderEntry, InputSource, SlotParams } from './types';
 
 export class Renderer {
     private canvas: HTMLCanvasElement;
@@ -45,7 +45,7 @@ export class Renderer {
 
     private shaderList: ShaderEntry[] = [];
     private inputSource: InputSource = 'image';
-    
+
     // Lifecycle flag to prevent race conditions
     private isDestroyed = false;
 
@@ -79,7 +79,7 @@ export class Renderer {
     }
 
     public addRipplePoint(x: number, y: number) {
-        this.ripplePoints.push({x, y, startTime: performance.now() / 1000.0});
+        this.ripplePoints.push({ x, y, startTime: performance.now() / 1000.0 });
     }
 
     public firePlasma(x: number, y: number, vx: number, vy: number) {
@@ -122,7 +122,7 @@ export class Renderer {
 
                 const dx = b2.x - b1.x;
                 const dy = b2.y - b1.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
+                const dist = Math.sqrt(dx * dx + dy * dy);
                 const minDist = b1.radius + b2.radius;
 
                 if (dist < minDist && dist > 0.0001) {
@@ -185,7 +185,7 @@ export class Renderer {
 
     public destroy(): void {
         this.isDestroyed = true; // Mark as destroyed immediately
-        
+
         if (this.imageTexture) this.imageTexture.destroy();
         if (this.videoTexture) this.videoTexture.destroy();
         if (this.depthTextureRead) this.depthTextureRead.destroy();
@@ -203,18 +203,18 @@ export class Renderer {
     public async init(): Promise<boolean> {
         if (this.isDestroyed) return false;
         if (!navigator.gpu) return false;
-        
+
         const adapter = await navigator.gpu.requestAdapter();
         if (this.isDestroyed) return false;
         if (!adapter) return false;
 
         const requiredFeatures: GPUFeatureName[] = [];
         const featureCheck = [
-            'float32-filterable', 'float32-blendable', 'clip-distances', 
-            'depth32float-stencil8', 'dual-source-blending', 'subgroups', 
+            'float32-filterable', 'float32-blendable', 'clip-distances',
+            'depth32float-stencil8', 'dual-source-blending', 'subgroups',
             'texture-component-swizzle', 'shader-f16'
         ];
-        
+
         featureCheck.forEach(f => {
             if (adapter.features.has(f)) requiredFeatures.push(f as GPUFeatureName);
         });
@@ -222,15 +222,15 @@ export class Renderer {
         // Request highest limits to prevent buffer size errors
         const requiredLimits: Record<string, number> = {};
         if (adapter.limits.maxBufferSize) {
-             requiredLimits.maxBufferSize = adapter.limits.maxBufferSize;
+            requiredLimits.maxBufferSize = adapter.limits.maxBufferSize;
         }
         if (adapter.limits.maxStorageBufferBindingSize) {
-             requiredLimits.maxStorageBufferBindingSize = adapter.limits.maxStorageBufferBindingSize;
+            requiredLimits.maxStorageBufferBindingSize = adapter.limits.maxStorageBufferBindingSize;
         }
         if (adapter.limits.maxTextureDimension2D) {
-             requiredLimits.maxTextureDimension2D = adapter.limits.maxTextureDimension2D;
+            requiredLimits.maxTextureDimension2D = adapter.limits.maxTextureDimension2D;
         }
-        
+
         // Initialize Device
         try {
             this.device = await adapter.requestDevice({
@@ -249,19 +249,19 @@ export class Renderer {
 
         this.context = this.canvas.getContext('webgpu')!;
         if (!this.context) {
-             console.error("Renderer: getContext('webgpu') returned null");
-             return false;
+            console.error("Renderer: getContext('webgpu') returned null");
+            return false;
         }
 
         this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
         try {
-            this.context.configure({device: this.device, colorSpace: "display-p3", format: this.presentationFormat, alphaMode: 'premultiplied', toneMapping: {mode: "extended"}});
+            this.context.configure({ device: this.device, colorSpace: "display-p3", format: this.presentationFormat, alphaMode: 'premultiplied', toneMapping: { mode: "extended" } });
         } catch (e) {
             console.warn("Renderer: Enhanced context configuration failed, falling back", e);
-            this.context.configure({device: this.device, format: this.presentationFormat, alphaMode: 'premultiplied'});
+            this.context.configure({ device: this.device, format: this.presentationFormat, alphaMode: 'premultiplied' });
         }
-        
+
         await this.fetchImageUrls();
         if (this.isDestroyed) return false;
 
@@ -275,7 +275,7 @@ export class Renderer {
         if (this.isDestroyed) return false;
 
         await this.loadRandomImage();
-        
+
         return !this.isDestroyed;
     }
 
@@ -295,9 +295,9 @@ export class Renderer {
                 'image',
                 'generative'
             ];
-            
+
             const allShaders: ShaderEntry[] = [];
-            
+
             for (const category of categories) {
                 if (this.isDestroyed) return;
                 try {
@@ -312,7 +312,7 @@ export class Renderer {
                     console.warn(`Failed to load category ${category}:`, e);
                 }
             }
-            
+
             this.shaderList = allShaders;
         } catch (e) {
             console.error("Failed to fetch shader list:", e);
@@ -338,8 +338,8 @@ export class Renderer {
             this.imageUrls = data.map((item: { url: string }) => item.url).filter(Boolean);
 
             if (this.imageUrls.length === 0) {
-                 console.warn("No image URLs received from backend.");
-                 this.imageUrls = ['https://i.imgur.com/vCNL2sT.jpeg'];
+                console.warn("No image URLs received from backend.");
+                this.imageUrls = ['https://i.imgur.com/vCNL2sT.jpeg'];
             }
         } catch (e) {
             console.error("Failed to fetch image list from backend:", e);
@@ -353,37 +353,37 @@ export class Renderer {
         let newTexture: GPUTexture | undefined;
 
         try {
-             // Use HTMLImageElement to avoid "valid external Instance reference" issues with ImageBitmap
-             const img = new Image();
-             img.crossOrigin = "Anonymous";
-             img.src = url;
-             await img.decode();
-             
-             if (this.isDestroyed) return undefined;
+            // Use HTMLImageElement to avoid "valid external Instance reference" issues with ImageBitmap
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = url;
+            await img.decode();
 
-             if (this.onImageDimensions) {
-                 this.onImageDimensions(img.naturalWidth, img.naturalHeight);
-             }
+            if (this.isDestroyed) return undefined;
 
-             newTexture = this.device.createTexture({
-                 size: [img.naturalWidth, img.naturalHeight],
-                 format: 'rgba32float',
-                 usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-             });
+            if (this.onImageDimensions) {
+                this.onImageDimensions(img.naturalWidth, img.naturalHeight);
+            }
 
-             this.device.queue.copyExternalImageToTexture(
-                 { source: img },
-                 { texture: newTexture, colorSpace: "display-p3" },
-                 [img.naturalWidth, img.naturalHeight]
-             );
+            newTexture = this.device.createTexture({
+                size: [img.naturalWidth, img.naturalHeight],
+                format: 'rgba32float',
+                usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+            });
 
-             // Swap textures only after successful load & copy
-             if (this.imageTexture) this.imageTexture.destroy();
-             this.imageTexture = newTexture;
-             this.createBindGroups();
+            this.device.queue.copyExternalImageToTexture(
+                { source: img },
+                { texture: newTexture, colorSpace: "display-p3" },
+                [img.naturalWidth, img.naturalHeight]
+            );
 
-             return url;
-        } catch(e) {
+            // Swap textures only after successful load & copy
+            if (this.imageTexture) this.imageTexture.destroy();
+            this.imageTexture = newTexture;
+            this.createBindGroups();
+
+            return url;
+        } catch (e) {
             console.error("Failed to load image:", url, e);
             // Clean up the new texture if it was created but not used
             if (newTexture) newTexture.destroy();
@@ -412,11 +412,11 @@ export class Renderer {
             this.depthTextureRead = this.device.createTexture(depthTextureDescriptor);
             this.depthTextureWrite = this.device.createTexture(depthTextureDescriptor);
         }
-        this.device.queue.writeTexture({texture: this.depthTextureRead}, data, {
+        this.device.queue.writeTexture({ texture: this.depthTextureRead }, data, {
             bytesPerRow: width * 4,
             rowsPerImage: height
         }, [width, height]);
-        this.device.queue.writeTexture({texture: this.depthTextureWrite}, data, {
+        this.device.queue.writeTexture({ texture: this.depthTextureWrite }, data, {
             bytesPerRow: width * 4,
             rowsPerImage: height
         }, [width, height]);
@@ -425,7 +425,7 @@ export class Renderer {
 
     private async createResources(): Promise<void> {
         if (this.isDestroyed) return;
-        const {width, height} = this.canvas;
+        const { width, height } = this.canvas;
         const safeWidth = Math.max(1, width);
         const safeHeight = Math.max(1, height);
 
@@ -438,8 +438,8 @@ export class Renderer {
         // Initialize to transparent black
         this.device.queue.writeTexture(
             { texture: this.emptyTexture },
-            new Float32Array([0, 0, 0, 1]), 
-            { bytesPerRow: 16 }, 
+            new Float32Array([0, 0, 0, 1]),
+            { bytesPerRow: 16 },
             [1, 1]
         );
 
@@ -477,8 +477,8 @@ export class Renderer {
         };
         this.depthTextureRead = this.device.createTexture(placeholderDepthDescriptor);
         this.depthTextureWrite = this.device.createTexture(placeholderDepthDescriptor);
-        this.device.queue.writeTexture({texture: this.depthTextureRead}, new Float32Array([0.0]), {bytesPerRow: 4}, [1, 1]);
-        this.device.queue.writeTexture({texture: this.depthTextureWrite}, new Float32Array([0.0]), {bytesPerRow: 4}, [1, 1]);
+        this.device.queue.writeTexture({ texture: this.depthTextureRead }, new Float32Array([0.0]), { bytesPerRow: 4 }, [1, 1]);
+        this.device.queue.writeTexture({ texture: this.depthTextureWrite }, new Float32Array([0.0]), { bytesPerRow: 4 }, [1, 1]);
 
         const rwTextureDesc: GPUTextureDescriptor = {
             size: [safeWidth, safeHeight],
@@ -498,11 +498,20 @@ export class Renderer {
         const dataTextureDescriptor: GPUTextureDescriptor = {
             size: [safeWidth, safeHeight],
             format: 'rgba32float',
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING,
         };
         this.dataTextureA = this.device.createTexture(dataStorageTextureDescriptor);
         this.dataTextureB = this.device.createTexture(dataStorageTextureDescriptor);
         this.dataTextureC = this.device.createTexture(dataTextureDescriptor);
+
+        // Initialize dataTextureC with zeros to prevent black first frames in generative shaders
+        const initialData = new Float32Array(safeWidth * safeHeight * 4);
+        this.device.queue.writeTexture(
+            { texture: this.dataTextureC },
+            initialData,
+            { bytesPerRow: safeWidth * 16 },
+            [safeWidth, safeHeight]
+        );
         const initialExtraData = new Float32Array(256);
         this.extraBuffer = this.device.createBuffer({
             size: initialExtraData.byteLength,
@@ -520,40 +529,40 @@ export class Renderer {
         if (this.isDestroyed) return;
 
         const commonConfig = {
-            vertex: {module: null as any, entryPoint: 'vs_main'},
-            fragment: {targets: [{format: this.presentationFormat}]},
-            primitive: {topology: 'triangle-strip' as GPUPrimitiveTopology}
+            vertex: { module: null as any, entryPoint: 'vs_main' },
+            fragment: { targets: [{ format: this.presentationFormat }] },
+            primitive: { topology: 'triangle-strip' as GPUPrimitiveTopology }
         };
 
         const staticShaders = ['galaxy.wgsl', 'imageVideo.wgsl', 'texture.wgsl'];
         const staticCodes = await Promise.all(staticShaders.map(name => fetch(`shaders/${name}`).then(r => r.text())));
         if (this.isDestroyed) return;
-        
+
         const [galaxyCode, imageVideoCode, textureCode] = staticCodes;
 
-        const galaxyModule = this.device.createShaderModule({code: galaxyCode});
-        const imageVideoModule = this.device.createShaderModule({code: imageVideoCode});
-        const textureModule = this.device.createShaderModule({code: textureCode});
+        const galaxyModule = this.device.createShaderModule({ code: galaxyCode });
+        const imageVideoModule = this.device.createShaderModule({ code: imageVideoCode });
+        const textureModule = this.device.createShaderModule({ code: textureCode });
 
         const galaxyPipeline = await this.device.createRenderPipelineAsync({
             layout: 'auto', ...commonConfig,
-            vertex: {module: galaxyModule, entryPoint: 'vs_main'},
-            fragment: {...commonConfig.fragment, module: galaxyModule, entryPoint: 'fs_main'},
-            primitive: {topology: 'triangle-list' as GPUPrimitiveTopology}
+            vertex: { module: galaxyModule, entryPoint: 'vs_main' },
+            fragment: { ...commonConfig.fragment, module: galaxyModule, entryPoint: 'fs_main' },
+            primitive: { topology: 'triangle-list' as GPUPrimitiveTopology }
         });
         this.pipelines.set('galaxy', galaxyPipeline);
 
         const imageVideoPipeline = await this.device.createRenderPipelineAsync({
             layout: 'auto', ...commonConfig,
-            vertex: {module: imageVideoModule, entryPoint: 'vs_main'},
-            fragment: {...commonConfig.fragment, module: imageVideoModule, entryPoint: 'fs_main'}
+            vertex: { module: imageVideoModule, entryPoint: 'vs_main' },
+            fragment: { ...commonConfig.fragment, module: imageVideoModule, entryPoint: 'fs_main' }
         });
         this.pipelines.set('imageVideo', imageVideoPipeline);
 
         const liquidRenderPipeline = await this.device.createRenderPipelineAsync({
             layout: 'auto', ...commonConfig,
-            vertex: {module: textureModule, entryPoint: 'vs_main'},
-            fragment: {...commonConfig.fragment, module: textureModule, entryPoint: 'fs_main'}
+            vertex: { module: textureModule, entryPoint: 'vs_main' },
+            fragment: { ...commonConfig.fragment, module: textureModule, entryPoint: 'fs_main' }
         });
         this.pipelines.set('liquid-render', liquidRenderPipeline);
 
@@ -583,25 +592,25 @@ export class Renderer {
 
     private async loadComputeShader(id: string): Promise<void> {
         if (this.pipelines.has(id) || this.loadingShaders.has(id)) return;
-        
+
         const entry = this.shaderList.find(s => s.id === id);
         if (!entry) return;
 
         this.loadingShaders.add(id);
-        
+
         try {
             const url = entry.url;
             const code = await fetch(url).then(r => r.text());
-            
+
             if (this.isDestroyed) return;
 
-            const module = this.device.createShaderModule({code});
+            const module = this.device.createShaderModule({ code });
 
             const pipeline = await this.device.createComputePipelineAsync({
                 layout: this.computePipelineLayout,
-                compute: {module, entryPoint: 'main'}
+                compute: { module, entryPoint: 'main' }
             });
-            
+
             if (this.isDestroyed) return;
             this.pipelines.set(entry.id, pipeline);
         } catch (e) {
@@ -613,35 +622,35 @@ export class Renderer {
 
     private createBindGroups(): void {
         if (this.isDestroyed) return;
-        if (!this.imageTexture || !this.filteringSampler || !this.nonFilteringSampler || !this.comparisonSampler || !this.depthTextureRead || !this.depthTextureWrite || !this.dataTextureA|| !this.dataTextureB || !this.dataTextureC || !this.extraBuffer || !this.computeUniformBuffer || !this.plasmaBuffer) return;
+        if (!this.imageTexture || !this.filteringSampler || !this.nonFilteringSampler || !this.comparisonSampler || !this.depthTextureRead || !this.depthTextureWrite || !this.dataTextureA || !this.dataTextureB || !this.dataTextureC || !this.extraBuffer || !this.computeUniformBuffer || !this.plasmaBuffer) return;
 
         if (this.videoTexture) {
             this.bindGroups.set('galaxy', this.device.createBindGroup({
                 layout: this.pipelines.get('galaxy')!.getBindGroupLayout(0),
                 entries: [
-                    {binding: 0, resource: this.filteringSampler},
-                    {binding: 2, resource: this.videoTexture.createView()},
-                    {binding: 3, resource: {buffer: this.galaxyUniformBuffer}}
+                    { binding: 0, resource: this.filteringSampler },
+                    { binding: 2, resource: this.videoTexture.createView() },
+                    { binding: 3, resource: { buffer: this.galaxyUniformBuffer } }
                 ]
             }));
             this.bindGroups.set('video', this.device.createBindGroup({
                 layout: this.pipelines.get('imageVideo')!.getBindGroupLayout(0),
-                entries: [{binding: 0, resource: this.filteringSampler}, {
+                entries: [{ binding: 0, resource: this.filteringSampler }, {
                     binding: 1,
                     resource: this.videoTexture.createView()
-                }, {binding: 2, resource: {buffer: this.imageVideoUniformBuffer}}]
+                }, { binding: 2, resource: { buffer: this.imageVideoUniformBuffer } }]
             }));
         }
         this.bindGroups.set('image', this.device.createBindGroup({
             layout: this.pipelines.get('imageVideo')!.getBindGroupLayout(0),
-            entries: [{binding: 0, resource: this.filteringSampler}, {
+            entries: [{ binding: 0, resource: this.filteringSampler }, {
                 binding: 1,
                 resource: this.imageTexture.createView()
-            }, {binding: 2, resource: {buffer: this.imageVideoUniformBuffer}}]
+            }, { binding: 2, resource: { buffer: this.imageVideoUniformBuffer } }]
         }));
         this.bindGroups.set('liquid-render', this.device.createBindGroup({
             layout: this.pipelines.get('liquid-render')!.getBindGroupLayout(0),
-            entries: [{binding: 0, resource: this.filteringSampler}, {
+            entries: [{ binding: 0, resource: this.filteringSampler }, {
                 binding: 1,
                 resource: this.writeTexture.createView()
             }]
@@ -654,19 +663,19 @@ export class Renderer {
         return this.device.createBindGroup({
             layout: pipeline.getBindGroupLayout(0),
             entries: [
-                {binding: 0, resource: this.filteringSampler},
-                {binding: 1, resource: inputView},
-                {binding: 2, resource: outputView},
-                {binding: 3, resource: {buffer: this.computeUniformBuffer}},
-                {binding: 4, resource: this.depthTextureRead.createView()},
-                {binding: 5, resource: this.nonFilteringSampler},
-                {binding: 6, resource: this.depthTextureWrite.createView()},
-                {binding: 7, resource: this.dataTextureA.createView()},
-                {binding: 8, resource: this.dataTextureB.createView()},
-                {binding: 9, resource: this.dataTextureC.createView()},
-                {binding: 10, resource: {buffer: this.extraBuffer}},
-                {binding: 11, resource: this.comparisonSampler},
-                {binding: 12, resource: {buffer: this.plasmaBuffer}},
+                { binding: 0, resource: this.filteringSampler },
+                { binding: 1, resource: inputView },
+                { binding: 2, resource: outputView },
+                { binding: 3, resource: { buffer: this.computeUniformBuffer } },
+                { binding: 4, resource: this.depthTextureRead.createView() },
+                { binding: 5, resource: this.nonFilteringSampler },
+                { binding: 6, resource: this.depthTextureWrite.createView() },
+                { binding: 7, resource: this.dataTextureA.createView() },
+                { binding: 8, resource: this.dataTextureB.createView() },
+                { binding: 9, resource: this.dataTextureC.createView() },
+                { binding: 10, resource: { buffer: this.extraBuffer } },
+                { binding: 11, resource: this.comparisonSampler },
+                { binding: 12, resource: { buffer: this.plasmaBuffer } },
             ],
         });
     }
@@ -709,8 +718,8 @@ export class Renderer {
                 this.createBindGroups();
             }
             this.device.queue.copyExternalImageToTexture(
-                {source: videoElement},
-                {texture: this.videoTexture},
+                { source: videoElement },
+                { texture: this.videoTexture },
                 [videoElement.videoWidth, videoElement.videoHeight]
             );
         }
@@ -727,41 +736,41 @@ export class Renderer {
                 this.loadComputeShader(generativeShaderId);
                 currentInputTexture = this.imageTexture || this.emptyTexture;
             } else {
-                 const genPipeline = this.pipelines.get(generativeShaderId) as GPUComputePipeline;
-                 const genUniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
-                 // Note: We still pass canvas dimensions (2048) to generative shaders
-                 // so they generate high-res details.
-                 genUniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
+                const genPipeline = this.pipelines.get(generativeShaderId) as GPUComputePipeline;
+                const genUniformArray = new Float32Array(12 + this.MAX_RIPPLES * 4);
+                // Note: We still pass canvas dimensions (2048) to generative shaders
+                // so they generate high-res details.
+                genUniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
 
-                 let genTargetX = mousePosition.x >= 0 ? mousePosition.x : 0.5;
-                 let genTargetY = mousePosition.y >= 0 ? mousePosition.y : 0.5;
-                 let genZoomW = isMouseDown ? 1.0 : 0.0;
-                 // Fix: Map to [Time, MouseX, MouseY, MouseDown] to match standard shader header
-                 genUniformArray.set([currentTime, genTargetX, genTargetY, genZoomW], 4);
+                let genTargetX = mousePosition.x >= 0 ? mousePosition.x : 0.5;
+                let genTargetY = mousePosition.y >= 0 ? mousePosition.y : 0.5;
+                let genZoomW = isMouseDown ? 1.0 : 0.0;
+                // Fix: Map to [Time, MouseX, MouseY, MouseDown] to match standard shader header
+                genUniformArray.set([currentTime, genTargetX, genTargetY, genZoomW], 4);
 
-                 this.device.queue.writeBuffer(this.computeUniformBuffer, 0, genUniformArray);
+                this.device.queue.writeBuffer(this.computeUniformBuffer, 0, genUniformArray);
 
-                 const dummyInput = this.imageTexture || this.videoTexture || this.emptyTexture;
-                 if (dummyInput && this.pingPongTexture2) {
-                     const genBindGroup = this.getComputeBindGroup(genPipeline, dummyInput.createView(), this.pingPongTexture2.createView());
-                     const genPassEncoder = this.device.createCommandEncoder();
-                     const genComputePass = genPassEncoder.beginComputePass();
-                     genComputePass.setPipeline(genPipeline);
-                     genComputePass.setBindGroup(0, genBindGroup);
-                     genComputePass.dispatchWorkgroups(Math.ceil(this.canvas.width / 8), Math.ceil(this.canvas.height / 8), 1);
-                     genComputePass.end();
-                     this.device.queue.submit([genPassEncoder.finish()]);
-                     currentInputTexture = this.pingPongTexture2;
-                 }
+                const dummyInput = this.imageTexture || this.videoTexture || this.emptyTexture;
+                if (dummyInput && this.pingPongTexture2) {
+                    const genBindGroup = this.getComputeBindGroup(genPipeline, dummyInput.createView(), this.pingPongTexture2.createView());
+                    const genPassEncoder = this.device.createCommandEncoder();
+                    const genComputePass = genPassEncoder.beginComputePass();
+                    genComputePass.setPipeline(genPipeline);
+                    genComputePass.setBindGroup(0, genBindGroup);
+                    genComputePass.dispatchWorkgroups(Math.ceil(this.canvas.width / 8), Math.ceil(this.canvas.height / 8), 1);
+                    genComputePass.end();
+                    this.device.queue.submit([genPassEncoder.finish()]);
+                    currentInputTexture = this.pingPongTexture2;
+                }
             }
         } else if ((this.inputSource === 'video' || this.inputSource === 'webcam') && this.videoTexture) {
             currentInputTexture = this.videoTexture;
         }
 
         const activeChain = modes.map((m, i) => ({ mode: m, params: slotParams[i] })).filter(item => {
-             return item.mode !== 'none' && this.shaderList.some(s => s.id === item.mode);
+            return item.mode !== 'none' && this.shaderList.some(s => s.id === item.mode);
         });
-        
+
         const readyChain = activeChain.filter(item => {
             if (this.pipelines.has(item.mode)) return true;
             this.loadComputeShader(item.mode);
@@ -770,9 +779,9 @@ export class Renderer {
 
         if (readyChain.length > 0) {
             if (modes.includes('plasma')) {
-                 this.updatePlasma(0.016);
-                 const plasmaData = new Float32Array(this.MAX_PLASMA_BALLS * 12);
-                 for (let i = 0; i < this.plasmaBalls.length; i++) {
+                this.updatePlasma(0.016);
+                const plasmaData = new Float32Array(this.MAX_PLASMA_BALLS * 12);
+                for (let i = 0; i < this.plasmaBalls.length; i++) {
                     const b = this.plasmaBalls[i];
                     const offset = i * 12;
                     plasmaData[offset + 0] = b.x; plasmaData[offset + 1] = b.y;
@@ -781,8 +790,8 @@ export class Renderer {
                     plasmaData[offset + 6] = b.b; plasmaData[offset + 7] = b.radius;
                     plasmaData[offset + 8] = b.age; plasmaData[offset + 9] = b.maxAge;
                     plasmaData[offset + 10] = b.seed; plasmaData[offset + 11] = 0.0;
-                 }
-                 this.device.queue.writeBuffer(this.plasmaBuffer, 0, plasmaData);
+                }
+                this.device.queue.writeBuffer(this.plasmaBuffer, 0, plasmaData);
             }
 
             const rippleLifetime = 4.0;
@@ -814,7 +823,7 @@ export class Renderer {
                     if (!isInfiniteZoom) zoomConfigW = isMouseDown ? 1.0 : 0.0;
                 }
 
-                uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0); 
+                uniformArray.set([currentTime, this.ripplePoints.length, this.canvas.width, this.canvas.height], 0);
 
                 // Fix: Standardize uniform mapping for mouse-driven and infinite-zoom shaders
                 // Standard header expects: x=Time, y=MouseX, z=MouseY, w=Param
@@ -864,7 +873,7 @@ export class Renderer {
         const renderPassDescriptor: GPURenderPassDescriptor = {
             colorAttachments: [{
                 view: textureView,
-                clearValue: {r: 0.0, g: 0.0, b: 0.0, a: 1.0},
+                clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
                 loadOp: 'clear' as GPULoadOp,
                 storeOp: 'store' as GPUStoreOp
             }]
@@ -876,57 +885,61 @@ export class Renderer {
         const galaxyPipeline = this.pipelines.get('galaxy') as GPURenderPipeline;
 
         if (primaryMode === 'galaxy' && galaxyPipeline && this.bindGroups.has('galaxy')) {
-             this.device.queue.writeBuffer(this.galaxyUniformBuffer, 0, new Float32Array([currentTime, zoom, panX, panY]));
-             passEncoder.setPipeline(galaxyPipeline);
-             passEncoder.setBindGroup(0, this.bindGroups.get('galaxy')!);
-             passEncoder.draw(6);
+            this.device.queue.writeBuffer(this.galaxyUniformBuffer, 0, new Float32Array([currentTime, zoom, panX, panY]));
+            passEncoder.setPipeline(galaxyPipeline);
+            passEncoder.setBindGroup(0, this.bindGroups.get('galaxy')!);
+            passEncoder.draw(6);
         } else {
-             const hasEffects = readyChain.length > 0;
-             const isGenerative = this.inputSource === 'generative';
-             
-             if (hasEffects || isGenerative) {
-                 if (isGenerative && !hasEffects && this.pingPongTexture2 && this.writeTexture) {
-                      const copyEncoder = this.device.createCommandEncoder();
-                      const safeCopyW = Math.min(this.canvas.width, this.pingPongTexture2.width, this.writeTexture.width);
-                      const safeCopyH = Math.min(this.canvas.height, this.pingPongTexture2.height, this.writeTexture.height);
-                      if (safeCopyW > 0 && safeCopyH > 0) {
-                          copyEncoder.copyTextureToTexture({ texture: this.pingPongTexture2 }, { texture: this.writeTexture }, [safeCopyW, safeCopyH]);
-                          this.device.queue.submit([copyEncoder.finish()]);
-                      }
-                 }
-                 if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
+            const hasEffects = readyChain.length > 0;
+            const isGenerative = this.inputSource === 'generative';
+
+            if (hasEffects || isGenerative) {
+                if (isGenerative && !hasEffects && this.pingPongTexture2 && this.writeTexture) {
+                    const copyEncoder = this.device.createCommandEncoder();
+                    const safeCopyW = Math.min(this.canvas.width, this.pingPongTexture2.width, this.writeTexture.width);
+                    const safeCopyH = Math.min(this.canvas.height, this.pingPongTexture2.height, this.writeTexture.height);
+                    if (safeCopyW > 0 && safeCopyH > 0) {
+                        copyEncoder.copyTextureToTexture({ texture: this.pingPongTexture2 }, { texture: this.writeTexture }, [safeCopyW, safeCopyH]);
+                        this.device.queue.submit([copyEncoder.finish()]);
+                    }
+                }
+                if (liquidRenderPipeline && this.bindGroups.has('liquid-render')) {
                     passEncoder.setPipeline(liquidRenderPipeline);
                     passEncoder.setBindGroup(0, this.bindGroups.get('liquid-render')!);
                     passEncoder.draw(4);
                 }
-             } else {
-                 // --- CRITICAL UPDATE: ASPECT RATIO FOR INPUTS ---
-                 const isVideo = (this.inputSource === 'video' || this.inputSource === 'webcam');
-                 if ((isVideo && this.videoTexture) || (!isVideo && this.imageTexture)) {
-                     const groupName = isVideo ? 'video' : 'image';
-                     const texture = isVideo ? this.videoTexture : this.imageTexture;
+            } else {
+                // --- CRITICAL UPDATE: ASPECT RATIO FOR INPUTS ---
+                const isVideo = (this.inputSource === 'video' || this.inputSource === 'webcam');
+                if ((isVideo && this.videoTexture) || (!isVideo && this.imageTexture)) {
+                    const groupName = isVideo ? 'video' : 'image';
+                    const texture = isVideo ? this.videoTexture : this.imageTexture;
 
-                     if (imageVideoPipeline && this.bindGroups.has(groupName) && texture) {
-                         const uniformArray = new Float32Array(8);
-                         // IMPORTANT: We pass 'viewWidth' and 'viewHeight' (screen size)
-                         // instead of 'canvas.width' (buffer size).
-                         // This tells the shader: "Calculate Cover fit based on this Viewport size"
-                         uniformArray.set([
-                             viewWidth,
-                             viewHeight,
-                             texture.width,
-                             texture.height
-                         ], 0);
+                    if (imageVideoPipeline && this.bindGroups.has(groupName) && texture) {
+                        const uniformArray = new Float32Array(8);
+                        // IMPORTANT: We pass 'viewWidth' and 'viewHeight' (screen size)
+                        // instead of 'canvas.width' (buffer size).
+                        // This tells the shader: "Calculate Cover fit based on this Viewport size"
+                        uniformArray.set([
+                            viewWidth,
+                            viewHeight,
+                            texture.width,
+                            texture.height
+                        ], 0);
 
-                         uniformArray.set([currentTime, 0, 0, 0], 4);
-                         this.device.queue.writeBuffer(this.imageVideoUniformBuffer, 0, uniformArray);
+                        // Pass mouse/time into fragment-path uniforms so fragment-only shaders can be interactive.
+                        // `mousePosition` and `isMouseDown` are parameters of render()
+                        const mX = (mousePosition && mousePosition.x >= 0) ? mousePosition.x : 0.5;
+                        const mY = (mousePosition && mousePosition.y >= 0) ? mousePosition.y : 0.5;
+                        uniformArray.set([currentTime, mX, mY, isMouseDown ? 1.0 : 0.0], 4);
+                        this.device.queue.writeBuffer(this.imageVideoUniformBuffer, 0, uniformArray);
 
-                         passEncoder.setPipeline(imageVideoPipeline);
-                         passEncoder.setBindGroup(0, this.bindGroups.get(groupName)!);
-                         passEncoder.draw(4);
-                     }
-                 }
-             }
+                        passEncoder.setPipeline(imageVideoPipeline);
+                        passEncoder.setBindGroup(0, this.bindGroups.get(groupName)!);
+                        passEncoder.draw(4);
+                    }
+                }
+            }
         }
 
         passEncoder.end();

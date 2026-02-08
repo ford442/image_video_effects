@@ -3,5 +3,8 @@
   "name": "Ethereal Swirl",
   "url": "shaders/ethereal-swirl.wgsl",
   "category": "image",
-  "description": "Ethereal swirling motion with soft gradients."
+  "description": "Ethereal swirling motion with soft gradients.",
+  "features": [
+    "mouse-driven"
+  ]
 }

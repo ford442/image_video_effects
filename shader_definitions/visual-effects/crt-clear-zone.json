@@ -8,30 +8,33 @@
     {
       "name": "Distortion",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5
     },
     {
       "name": "Aberration",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.3
     },
     {
       "name": "Zone Size",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.3
     },
     {
       "name": "Scanlines",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5
     }
+  ],
+  "features": [
+    "mouse-driven"
   ]
 }

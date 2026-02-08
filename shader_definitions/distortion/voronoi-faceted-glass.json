@@ -4,5 +4,8 @@
   "url": "shaders/voronoi-faceted-glass.wgsl",
   "category": "image",
   "description": "Cellular glass distortion effect.",
-  "params": []
+  "params": [],
+  "features": [
+    "mouse-driven"
+  ]
 }

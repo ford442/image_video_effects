@@ -38,6 +38,7 @@
     "depth-aware",
     "temporal-persistence",
     "chromatic-aberration",
-    "multi-mode"
+    "multi-mode",
+    "mouse-driven"
   ]
 }

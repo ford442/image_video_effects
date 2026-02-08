@@ -3,5 +3,8 @@
   "name": "ASCII Shockwave",
   "url": "shaders/ascii-shockwave.wgsl",
   "category": "image",
-  "description": "A matrix-style digital shockwave that quantizes the image into procedural characters."
+  "description": "A matrix-style digital shockwave that quantizes the image into procedural characters.",
+  "features": [
+    "mouse-driven"
+  ]
 }

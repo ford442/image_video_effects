@@ -3,5 +3,8 @@
   "name": "Navier-Stokes Dye",
   "url": "shaders/navier-stokes-dye.wgsl",
   "category": "simulation",
-  "description": "Velocity advection and dye injection with a pressure-like solve placeholder."
+  "description": "Velocity advection and dye injection with a pressure-like solve placeholder.",
+  "features": [
+    "mouse-driven"
+  ]
 }

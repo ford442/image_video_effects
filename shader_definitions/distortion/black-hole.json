@@ -2,5 +2,8 @@
   "id": "black-hole",
   "name": "Gravitational Lensing",
   "url": "shaders/black-hole.wgsl",
-  "category": "image"
+  "category": "image",
+  "features": [
+    "mouse-driven"
+  ]
 }

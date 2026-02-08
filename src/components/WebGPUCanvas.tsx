@@ -36,7 +36,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const videoRef = useRef<HTMLVideoElement>(null);
     const animationFrameId = useRef<number>(0);
     const lastMouseAddTime = useRef(0);
-    const dragStartPos = useRef<{x: number, y: number} | null>(null);
+    const dragStartPos = useRef<{ x: number, y: number } | null>(null);
     const dragStartTime = useRef<number>(0);
     const streamRef = useRef<MediaStream | null>(null);
 
@@ -60,14 +60,14 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         // Hook up dimensions listener - kept for potential future use or informational purposes,
         // but we are locking buffer size now.
         renderer.onImageDimensions = (w, h) => {
-             // We no longer resize the canvas based on image dimensions
-             // But we might want to log it or use it for aspect ratio logic if needed in future
+            // We no longer resize the canvas based on image dimensions
+            // But we might want to log it or use it for aspect ratio logic if needed in future
         };
 
         (async () => {
             const success = await renderer.init();
             if (success) {
-                 if (rendererRef && 'current' in rendererRef) {
+                if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<Renderer | null>).current = renderer;
                 }
 
@@ -118,55 +118,55 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         if (!videoRef.current) return;
 
         const handleVideoSource = async () => {
-             // Stop previous webcam stream if switching away or re-requesting
-             if (streamRef.current && inputSource !== 'webcam') {
+            // Stop previous webcam stream if switching away or re-requesting
+            if (streamRef.current && inputSource !== 'webcam') {
                 streamRef.current.getTracks().forEach(track => track.stop());
                 streamRef.current = null;
-             }
+            }
 
-             if (inputSource === 'webcam') {
-                 try {
-                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                     streamRef.current = stream;
-                     videoRef.current!.srcObject = stream;
-                     videoRef.current!.play().catch(console.error);
-                 } catch (e) {
-                     console.error("Error accessing webcam:", e);
-                     alert("Could not access webcam.");
-                     // Revert to image if webcam fails
-                     if (setInputSource) {
-                         setInputSource('image');
-                     }
-                 }
-             } else if (inputSource === 'video') {
-                 // Clean up srcObject if coming from webcam
-                 if (videoRef.current!.srcObject) {
-                     videoRef.current!.srcObject = null;
-                 }
+            if (inputSource === 'webcam') {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    streamRef.current = stream;
+                    videoRef.current!.srcObject = stream;
+                    videoRef.current!.play().catch(console.error);
+                } catch (e) {
+                    console.error("Error accessing webcam:", e);
+                    alert("Could not access webcam.");
+                    // Revert to image if webcam fails
+                    if (setInputSource) {
+                        setInputSource('image');
+                    }
+                }
+            } else if (inputSource === 'video') {
+                // Clean up srcObject if coming from webcam
+                if (videoRef.current!.srcObject) {
+                    videoRef.current!.srcObject = null;
+                }
 
-                 // Determine URL
-                 let src = '';
-                 if (videoSourceUrl) {
-                     src = videoSourceUrl; // Uploaded video (blob:)
-                 } else if (selectedVideo) {
-                     // Handle both local files and full bucket URLs
-                     src = selectedVideo.startsWith('http')
+                // Determine URL
+                let src = '';
+                if (videoSourceUrl) {
+                    src = videoSourceUrl; // Uploaded video (blob:)
+                } else if (selectedVideo) {
+                    // Handle both local files and full bucket URLs
+                    src = selectedVideo.startsWith('http')
                         ? selectedVideo
                         : `videos/${selectedVideo}`;
-                 }
+                }
 
-                 if (src && videoRef.current!.src !== src) {
-                     videoRef.current!.src = src;
-                     videoRef.current!.load(); // Force browser to acknowledge the new source immediately
-                     const playPromise = videoRef.current!.play();
-                     if (playPromise !== undefined) {
+                if (src && videoRef.current!.src !== src) {
+                    videoRef.current!.src = src;
+                    videoRef.current!.load(); // Force browser to acknowledge the new source immediately
+                    const playPromise = videoRef.current!.play();
+                    if (playPromise !== undefined) {
                         playPromise.catch(e => console.log("Video play failed:", e));
-                     }
-                 }
-             } else {
-                 // Image or Generative mode: pause video to save resources
-                 videoRef.current!.pause();
-             }
+                    }
+                }
+            } else {
+                // Image or Generative mode: pause video to save resources
+                videoRef.current!.pause();
+            }
         };
 
         handleVideoSource();
@@ -234,11 +234,20 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
         setIsMouseDown(true);
         updateMousePosition(event);
-        
-        // Check if any active mode supports interaction
-        const hasInteractiveMode = modes.some(m => m === 'ripple' || m === 'vortex' || m.startsWith('liquid'));
+
+        // Check if any active mode supports interaction (use shader metadata when available)
+        const hasInteractiveMode = (() => {
+            // Prefer renderer-provided metadata when available (covers many interactive shaders)
+            const rendererModes = rendererRef.current?.getAvailableModes?.() || [];
+            for (const mm of modes) {
+                const entry = rendererModes.find(s => s.id === mm);
+                if (entry?.features?.includes('mouse-driven') || entry?.features?.includes('splat') || mm === 'ripple' || mm === 'vortex' || mm.startsWith('liquid')) return true;
+            }
+            return false;
+        })();
+
         if (hasInteractiveMode) addRippleAtMouseEvent(event);
-        
+
         const plasmaMode = modes.includes('plasma');
         if (plasmaMode) {
             if (!canvasRef.current) return;
@@ -262,20 +271,28 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             const dy = currentY - dragStartPos.current.y;
             if (dt > 0.01) {
                 const vx = dx / dt; const vy = dy / dt;
-                if (Math.sqrt(vx*vx + vy*vy) > 0.1) rendererRef.current.firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
+                if (Math.sqrt(vx * vx + vy * vy) > 0.1) rendererRef.current.firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
             }
             dragStartPos.current = null;
         }
     };
 
-    const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-        updateMousePosition(event);
-        const hasInteractiveMode = modes.some(m => m === 'ripple' || m === 'vortex' || m.startsWith('liquid'));
+    const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement> | React.PointerEvent<HTMLCanvasElement>) => {
+        updateMousePosition(event as any);
+        const hasInteractiveMode = (() => {
+            const rendererModes = rendererRef.current?.getAvailableModes?.() || [];
+            for (const mm of modes) {
+                const entry = rendererModes.find(s => s.id === mm);
+                if (entry?.features?.includes('mouse-driven') || entry?.features?.includes('splat') || mm === 'ripple' || mm === 'vortex' || mm.startsWith('liquid')) return true;
+            }
+            return false;
+        })();
+
         if (isMouseDown && hasInteractiveMode) {
             const now = performance.now();
             if (now - lastMouseAddTime.current < 10) return;
             lastMouseAddTime.current = now;
-            addRippleAtMouseEvent(event);
+            addRippleAtMouseEvent(event as any);
         }
     };
 
@@ -316,6 +333,10 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
+                onPointerMove={handleCanvasMouseMove}
+                onPointerDown={handleMouseDown}
+                onPointerUp={handleMouseUp}
+                onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
             />
             <video
@@ -327,8 +348,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 playsInline
                 preload="auto"
                 onCanPlay={() => {
-                     // Ensure video plays when loaded
-                     videoRef.current?.play().catch(() => {});
+                    // Ensure video plays when loaded
+                    videoRef.current?.play().catch(() => { });
                 }}
                 style={{
                     position: 'absolute',

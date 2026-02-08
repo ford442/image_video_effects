@@ -9,35 +9,36 @@
       "id": "ior",
       "name": "Index of Refraction",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "lightSize",
       "name": "Light Size",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "dispersion",
       "name": "Chromatic Dispersion",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "intensity",
       "name": "Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "depth-aware",
     "temporal-persistence",
     "interactive",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "mouse-driven"
   ]
 }

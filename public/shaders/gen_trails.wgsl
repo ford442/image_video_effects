@@ -19,7 +19,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
 
   // Read history (trail)
-  let history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let history = textureLoad(dataTextureC, px, 0);
 
   let aspect = resolution.x / resolution.y;
   var p = uv * 2.0 - 1.0;

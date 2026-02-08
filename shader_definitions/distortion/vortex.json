@@ -2,5 +2,8 @@
   "id": "vortex",
   "name": "Clean Vortex",
   "url": "shaders/vortex.wgsl",
-  "category": "image"
+  "category": "image",
+  "features": [
+    "mouse-driven"
+  ]
 }
