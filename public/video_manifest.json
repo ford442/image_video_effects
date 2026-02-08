@@ -1,4 +1,52 @@
 {
-  "videos": [],
-  "updated_at": "2026-02-08T22:49:49.771Z"
+  "videos": [
+    {
+      "url": "https://storage.googleapis.com/my-sd35-space-images-2025/video/rainpiano.mp4",
+      "path": "video/rainpiano.mp4",
+      "tags": [
+        "rainpiano"
+      ]
+    },
+    {
+      "url": "https://storage.googleapis.com/my-sd35-space-images-2025/video/stitched_video_23164.mp4",
+      "path": "video/stitched_video_23164.mp4",
+      "tags": [
+        "stitched",
+        "video"
+      ]
+    },
+    {
+      "url": "https://storage.googleapis.com/my-sd35-space-images-2025/video/stitched_video_43717.mp4",
+      "path": "video/stitched_video_43717.mp4",
+      "tags": [
+        "stitched",
+        "video"
+      ]
+    },
+    {
+      "url": "https://storage.googleapis.com/my-sd35-space-images-2025/video/stitched_video_47524.mp4",
+      "path": "video/stitched_video_47524.mp4",
+      "tags": [
+        "stitched",
+        "video"
+      ]
+    },
+    {
+      "url": "https://storage.googleapis.com/my-sd35-space-images-2025/video/stitched_video_93824.mp4",
+      "path": "video/stitched_video_93824.mp4",
+      "tags": [
+        "stitched",
+        "video"
+      ]
+    },
+    {
+      "url": "https://storage.googleapis.com/my-sd35-space-images-2025/video/stitched_video_96048.mp4",
+      "path": "video/stitched_video_96048.mp4",
+      "tags": [
+        "stitched",
+        "video"
+      ]
+    }
+  ],
+  "updated_at": "2026-02-08T23:49:41.678Z"
 }

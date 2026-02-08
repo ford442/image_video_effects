@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const CONFIG = {
     bucket: process.env.GCS_BUCKET || 'my-sd35-space-images-2025',
     imagePrefix: process.env.GCS_IMAGE_PREFIX || 'stablediff',
-    videoPrefix: process.env.GCS_VIDEO_PREFIX || 'videos',
+    videoPrefix: process.env.GCS_VIDEO_PREFIX || 'video',
     pollInterval: parseInt(process.env.GCS_POLL_INTERVAL, 10) || 30000,
     publicDir: path.join(__dirname, '..', 'public'),
     manifestPath: path.join(__dirname, '..', 'public', 'image_manifest.json'),
