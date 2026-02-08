@@ -3204,6 +3204,72 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** The clean, mathematical curves of the particle tracks are key.
 
 
+### Suggestion: Pre-Raphaelite River Muse
+- **Date:** 2028-04-01
+- **Prompt:** "A hyper-detailed, romantic oil painting in the style of the Pre-Raphaelite Brotherhood (John Everett Millais). A young woman with flowing red hair floats in a stream surrounded by vibrant, botanically accurate wildflowers (poppies, daisies, violets). Her dress is embroidered silk. The lighting is soft, diffused sunlight filtering through weeping willows."
+- **Negative prompt:** "modern, photograph, digital art, cartoon, blurry background"
+- **Tags:** pre-raphaelite, painting, nature, romantic, floral
+- **Style / Reference:** Pre-Raphaelite Brotherhood, John Everett Millais
+- **Composition:** Landscape, eye level
+- **Color palette:** Vibrant Green, Floral Red/Blue, Earth Tones
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280401_pre_raphaelite.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the botanical accuracy of the plants.
+
+### Suggestion: Macro Reversible Sequins
+- **Date:** 2028-04-01
+- **Prompt:** "A tactile macro photography shot of reversible sequin fabric. Half the sequins are flipped to show matte black, while the other half show metallic gold. The texture of the individual plastic disks and the thread stitching is visible. Studio lighting catches the glint of the gold sequins."
+- **Negative prompt:** "flat, low resolution, blurry, drawing, messy"
+- **Tags:** sequins, fabric, texture, macro, reversible
+- **Style / Reference:** Macro Photography, Texture
+- **Composition:** Extreme close-up
+- **Color palette:** Matte Black, Metallic Gold
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280401_sequins.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the physical flip mechanism of the sequins.
+
+### Suggestion: Glowing Mycelium Network
+- **Date:** 2028-04-01
+- **Prompt:** "A cinematic, sci-fi macro shot of an underground mycelium network connecting plant roots. The fungal threads pulse with bioluminescent blue energy, transferring nutrients. The soil is dark and rich. Above, small glowing mushrooms sprout."
+- **Negative prompt:** "daylight, surface view, cartoon, dry soil, boring"
+- **Tags:** mycelium, nature, sci-fi, bioluminescence, underground
+- **Style / Reference:** Scientific Visualization, Avatar-esque
+- **Composition:** Cross-section macro
+- **Color palette:** Bioluminescent Blue, Soil Dark Brown, Root White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280401_mycelium.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the network connectivity.
+
+### Suggestion: Stipple Hedcut Portrait
+- **Date:** 2028-04-01
+- **Prompt:** "A black and white stipple portrait (hedcut) of a distinguished scientist, in the style of the Wall Street Journal illustrations. The image is formed entirely of tiny ink dots and short hatched lines. The background is white paper."
+- **Negative prompt:** "color, grey, photograph, smooth shading, pencil sketch"
+- **Tags:** stipple, hedcut, portrait, illustration, dotwork
+- **Style / Reference:** Wall Street Journal Hedcut, Stippling
+- **Composition:** Head and shoulders portrait
+- **Color palette:** Black Ink, White Paper
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20280401_hedcut.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The technique relies on density of dots for shading.
+
+### Suggestion: Hudson River School Valley
+- **Date:** 2028-04-01
+- **Prompt:** "A majestic, sweeping landscape painting in the style of the Hudson River School (Albert Bierstadt). A vast river valley is bathed in dramatic, glowing golden sunlight breaking through storm clouds. Towering mountains rise in the distance. Tiny deer graze in the foreground meadow."
+- **Negative prompt:** "modern, photo, flat lighting, simple, impressionist"
+- **Tags:** hudson river school, landscape, painting, epic, light
+- **Style / Reference:** Hudson River School, Albert Bierstadt
+- **Composition:** Wide panoramic view
+- **Color palette:** Golden Light, Atmospheric Blue, lush Green
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20280401_hudson_valley.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the 'sublime' quality of the light and scale.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -3226,9 +3292,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Neo-Expressionism, Hard Surface Modeling, Stipple, Crosshatching, Pre-Raphaelite, Ashcan School, Hudson River School.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Sequin, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Organza.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Bioluminescent Plankton, Geyser, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Space Junk, Mycelium Network.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Neo-Expressionism, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Magic Realism.
+- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Organza, Cracked Clay.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Bioluminescent Plankton, Geyser, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Space Junk, Lava Lamp.
 
 ---
 
