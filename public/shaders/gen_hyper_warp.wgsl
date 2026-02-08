@@ -62,10 +62,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let px = vec2<i32>(global_id.xy);
 
     // --- Feedback and Coordinates ---
-    // Sample a slightly offset point for reaction-diffusion effect
-    let feedback_offset = vec2<i32>(i32((noise(uv * 4.0 + time) - 0.5) * 0.005 * resolution.x), 
-                                     i32((noise(uv * 4.0 + time + 1.0) - 0.5) * 0.005 * resolution.y));
-    let history = textureLoad(dataTextureC, px + feedback_offset, 0).rgb;
+    // Sample current pixel for feedback effect
+    let history = textureLoad(dataTextureC, px, 0).rgb;
 
     let aspect = resolution.x / resolution.y;
     var p = uv - 0.5;
