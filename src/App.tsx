@@ -30,6 +30,23 @@ const FALLBACK_IMAGES = [
     "https://images.unsplash.com/photo-1605218427306-633ba8546381?q=80&w=2669&auto=format&fit=crop"  // Geometry
 ];
 
+// Sample videos for when bucket has no videos
+const FALLBACK_VIDEOS = [
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4"
+];
+
 const defaultSlotParams: SlotParams = {
     zoomParam1: 0.99,
     zoomParam2: 1.01,
@@ -181,7 +198,7 @@ function MainApp() {
                 }
             }
 
-            // 3. Last Resort: Robust Unsplash Fallback
+            // 3. Last Resort: Fallbacks for images and videos
             if (manifest.length === 0) {
                 console.warn("Image manifest empty. Using robust Unsplash fallback.");
                 manifest = FALLBACK_IMAGES.map(url => ({
@@ -189,6 +206,12 @@ function MainApp() {
                     tags: ['fallback', 'unsplash', 'demo'],
                     description: 'Demo Image'
                 }));
+            }
+            
+            // Video fallback
+            if (videos.length === 0) {
+                console.warn("No videos found. Using sample videos.");
+                videos = FALLBACK_VIDEOS;
             }
 
             setImageManifest(manifest);
