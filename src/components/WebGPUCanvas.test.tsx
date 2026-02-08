@@ -27,6 +27,7 @@ test('mouse down emits ripple for mouse-driven shader', () => {
             setMousePosition={setMousePosition}
             isMouseDown={false}
             setIsMouseDown={setIsMouseDown}
+            isMuted={false}
             inputSource={'image'}
             selectedVideo={''}
             apiBaseUrl={''}
