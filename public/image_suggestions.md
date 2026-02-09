@@ -3269,6 +3269,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the 'sublime' quality of the light and scale.
 
+### Suggestion: Futurist Speed Cyclist
+- **Date:** 2028-04-15
+- **Prompt:** "A dynamic painting of a cyclist racing, in the style of Italian Futurism (Umberto Boccioni). The figure and the bicycle are fractured into geometric shards of motion. Force lines streak across the canvas, conveying intense speed and energy. The background is a blur of city lights."
+- **Negative prompt:** "static, still, realistic photo, blurry, impressionist"
+- **Tags:** futurism, abstract, speed, cycling, art
+- **Style / Reference:** Italian Futurism, Umberto Boccioni
+- **Composition:** Dynamic diagonal
+- **Color palette:** Electric Blue, Red, Metallic Grey, Yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280415_futurist_cyclist.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the 'force lines' and the sensation of movement.
+
+### Suggestion: Northern Renaissance Vanitas
+- **Date:** 2028-04-15
+- **Prompt:** "A hyper-detailed Northern Renaissance still life painting (Vanitas). A polished skull sits on a wooden table next to a peeling lemon, an hourglass with running sand, and a silver goblet reflecting a window. The lighting is cool and diffuse, highlighting the textures of bone and metal."
+- **Negative prompt:** "loose brushstrokes, blurry, modern, bright, happy"
+- **Tags:** northern renaissance, vanitas, still life, skull, art
+- **Style / Reference:** Northern Renaissance, Hans Holbein the Younger, Jan van Eyck
+- **Composition:** Still life arrangement
+- **Color palette:** Earth tones, Silver, Lemon Yellow, Bone White
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280415_vanitas.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The objects should be symbolic and rendered with extreme precision.
+
+### Suggestion: Arctic Sundog Phenomenon
+- **Date:** 2028-04-15
+- **Prompt:** "A wide landscape shot of a frozen Arctic tundra. The sun is low on the horizon, flanked by two bright 'mock suns' (sundogs) and a 22-degree halo caused by ice crystals in the air. The snow sparkles with diamond dust. The sky is a pale, icy blue."
+- **Negative prompt:** "warm, green, summer, rain, dark"
+- **Tags:** sundog, halo, arctic, winter, weather
+- **Style / Reference:** Landscape Photography, Atmospheric
+- **Composition:** Wide angle, centered sun
+- **Color palette:** Ice Blue, White, Pale Yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280415_sundog.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the optical phenomenon clearly.
+
+### Suggestion: Hydroelectric Turbine Hall
+- **Date:** 2028-04-15
+- **Prompt:** "A cinematic interior shot of a massive hydroelectric power plant turbine hall. A long row of giant, cylindrical generators stretches into the distance. The architecture is industrial and brutalist, with concrete walls and high ceilings. Cold fluorescent lights reflect off the polished floor."
+- **Negative prompt:** "messy, people, wood, warm, cozy"
+- **Tags:** industrial, infrastructure, power plant, brutalist, interior
+- **Style / Reference:** Industrial Photography, Cinematic
+- **Composition:** One-point perspective
+- **Color palette:** Concrete Grey, Industrial Green, Fluorescent White
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20280415_hydro_turbine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the repetition and scale of the machinery.
+
+### Suggestion: Parched Earth Texture
+- **Date:** 2028-04-15
+- **Prompt:** "A hyper-realistic texture shot of a dried lake bed. The cracked clay ground forms a puzzle-like pattern of polygons. The edges of the cracks are curled up slightly. The lighting is harsh, casting deep shadows within the cracks, emphasizing the depth and dryness."
+- **Negative prompt:** "water, wet, mud, grass, blurry"
+- **Tags:** texture, drought, clay, cracked, nature
+- **Style / Reference:** Nature Photography, Texture Study
+- **Composition:** Top-down (flat lay)
+- **Color palette:** Beige, Tan, Shadow Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280415_parched_earth.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The depth of the cracks is the defining feature.
+
 
 ## Attribution & legal
 

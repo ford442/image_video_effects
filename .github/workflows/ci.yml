@@ -59,6 +59,9 @@ jobs:
     - name: Run ESLint
       run: npx eslint src --ext .ts,.tsx --max-warnings=0 || true
     
+    - name: Generate shader lists
+      run: node scripts/generate_shader_lists.js
+
     - name: Validate JSON manifests
       run: |
         for f in public/shader-lists/*.json; do
