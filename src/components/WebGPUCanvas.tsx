@@ -329,6 +329,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         >
             <canvas
                 ref={canvasRef}
+                data-testid="webgpu-canvas"
                 onMouseMove={handleCanvasMouseMove}
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
