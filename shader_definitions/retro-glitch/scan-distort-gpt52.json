@@ -1,0 +1,42 @@
+{
+    "id": "scan-distort-gpt52",
+    "name": "Scan Distort Matrix gpt52",
+    "url": "shaders/scan-distort-gpt52.wgsl",
+    "category": "image",
+    "description": "High-density scanlines with rolling jitter, curvature, and chromatic tearing.",
+    "params": [
+        {
+            "id": "lineDensity",
+            "name": "Line Density",
+            "default": 0.6,
+            "min": 0,
+            "max": 1
+        },
+        {
+            "id": "bend",
+            "name": "Curvature",
+            "default": 0.35,
+            "min": 0,
+            "max": 1
+        },
+        {
+            "id": "glitch",
+            "name": "Glitch Jitter",
+            "default": 0.4,
+            "min": 0,
+            "max": 1
+        },
+        {
+            "id": "roll",
+            "name": "Roll Speed",
+            "default": 0.5,
+            "min": 0,
+            "max": 1
+        }
+    ],
+    "features": [
+        "mouse-driven",
+        "glitch",
+        "animated"
+    ]
+}

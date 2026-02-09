@@ -1,0 +1,11 @@
+{
+  "id": "chromatic-folds-gemini",
+  "name": "Chromatic Folds Gemini",
+  "url": "shaders/chromatic-folds-gemini.wgsl",
+  "category": "image",
+  "description": "An advanced geometric color folding and warping effect with dynamic, time-driven animation, fractal layering, and interactive, mouse-driven vortex manipulation.",
+  "features": [
+    "mouse-driven",
+    "time-driven"
+  ]
+}

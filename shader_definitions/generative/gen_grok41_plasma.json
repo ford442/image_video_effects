@@ -1,0 +1,10 @@
+{
+    "id": "gen-grok41-plasma",
+    "name": "Grok41 Plasma Waves",
+    "url": "shaders/gen_grok41_plasma.wgsl",
+    "category": "generative",
+    "description": "Classic multi-layered plasma effect with mouse-controlled warping and glow.",
+    "features": [
+        "mouse-driven"
+    ]
+}

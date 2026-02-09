@@ -1,0 +1,40 @@
+{
+    "id": "kaleido-scope-grokcf1",
+    "name": "Kaleido-Scope Prism grokcf1",
+    "url": "shaders/kaleido-scope-grokcf1.wgsl",
+    "category": "geometric",
+    "description": "Enhanced kaleidoscope with prism dispersion, reflections, and chromatic effects.",
+    "features": [
+        "mouse-driven"
+    ],
+    "params": [
+        {
+            "id": "segments",
+            "name": "Segments",
+            "default": 0.3,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "speed",
+            "name": "Rotation",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "zoom",
+            "name": "Zoom",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 1.0
+        },
+        {
+            "id": "offset",
+            "name": "Ring Offset",
+            "default": 0.0,
+            "min": 0.0,
+            "max": 1.0
+        }
+    ]
+}

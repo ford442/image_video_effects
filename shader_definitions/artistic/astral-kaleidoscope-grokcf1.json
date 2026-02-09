@@ -1,0 +1,11 @@
+{
+  "id": "astral-kaleidoscope-grokcf1",
+  "name": "Astral Kaleidoscope grokcf1",
+  "url": "shaders/astral-kaleidoscope-grokcf1.wgsl",
+  "category": "image",
+  "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+  "features": [
+    "mouse-driven",
+    "time-driven"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+    "id": "gen-grok4-life",
+    "name": "Grok4 Cellular Life",
+    "url": "shaders/gen_grok4_life.wgsl",
+    "category": "generative",
+    "description": "Conway's Game of Life simulation with mouse drawing and random seeding.",
+    "features": [
+        "mouse-driven"
+    ]
+}

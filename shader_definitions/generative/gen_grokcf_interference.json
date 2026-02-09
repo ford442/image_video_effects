@@ -1,0 +1,10 @@
+{
+    "id": "gen-grokcf-interference",
+    "name": "Grokcf Wave Interference",
+    "url": "shaders/gen_grokcf_interference.wgsl",
+    "category": "generative",
+    "description": "Multi-layered sine wave interference patterns modulated by mouse position.",
+    "features": [
+        "mouse-driven"
+    ]
+}

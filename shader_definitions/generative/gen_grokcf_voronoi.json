@@ -1,0 +1,10 @@
+{
+    "id": "gen-grokcf-voronoi",
+    "name": "Grokcf Animated Voronoi",
+    "url": "shaders/gen_grokcf_voronoi.wgsl",
+    "category": "generative",
+    "description": "Procedural Voronoi diagram with animated cells and mouse-influenced positioning.",
+    "features": [
+        "mouse-driven"
+    ]
+}

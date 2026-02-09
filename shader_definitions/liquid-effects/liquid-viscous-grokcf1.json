@@ -1,0 +1,7 @@
+{
+    "id": "liquid-viscous-grokcf1",
+    "name": "Liquid Viscous Nebula grokcf1",
+    "url": "shaders/liquid-viscous-grokcf1.wgsl",
+    "category": "image",
+    "description": "Enhanced viscous liquid with nebula glow, multi-layer flow, and cosmic viscosity."
+}

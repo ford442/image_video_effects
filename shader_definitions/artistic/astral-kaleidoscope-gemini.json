@@ -1,0 +1,11 @@
+{
+  "id": "astral-kaleidoscope-gemini",
+  "name": "Astral Kaleidoscope Gemini",
+  "url": "shaders/astral-kaleidoscope-gemini.wgsl",
+  "category": "image",
+  "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+  "features": [
+    "mouse-driven",
+    "time-driven"
+  ]
+}

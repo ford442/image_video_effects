@@ -1,0 +1,11 @@
+{
+  "id": "physarum-grokcf1",
+  "name": "Physarum grokcf1",
+  "url": "shaders/physarum-grokcf1.wgsl",
+  "category": "simulation",
+  "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
+  "features": [
+    "mouse-driven",
+    "time-driven"
+  ]
+}
