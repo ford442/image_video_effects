@@ -1,0 +1,14 @@
+{
+  "id": "kimi-chromatic-warp",
+  "name": "Kimi Chromatic Warp",
+  "url": "shaders/kimi_chromatic_warp.wgsl",
+  "category": "interactive-mouse",
+  "description": "RGB channel separation and prismatic distortion effects that intensify near the cursor with swirling motion.",
+  "features": ["mouse-driven", "interactive", "chromatic", "prism", "warp"],
+  "params": [
+    {"id": "warpRadius", "name": "Warp Radius", "min": 0, "max": 1, "default": 0.5, "step": 0.01},
+    {"id": "warpStrength", "name": "Warp Strength", "min": 0, "max": 1, "default": 0.3, "step": 0.01},
+    {"id": "chromaticSpread", "name": "RGB Spread", "min": 0, "max": 1, "default": 0.4, "step": 0.01},
+    {"id": "rotationSpeed", "name": "Twist Speed", "min": 0, "max": 1, "default": 0.3, "step": 0.01}
+  ]
+}

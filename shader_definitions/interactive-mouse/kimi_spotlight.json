@@ -1,0 +1,14 @@
+{
+  "id": "kimi-spotlight",
+  "name": "Kimi Spotlight",
+  "url": "shaders/kimi_spotlight.wgsl",
+  "category": "interactive-mouse",
+  "description": "Flashlight effect that reveals full color under the beam while surroundings are desaturated and darkened.",
+  "features": ["mouse-driven", "interactive", "spotlight", "reveal"],
+  "params": [
+    {"id": "spotSize", "name": "Spotlight Size", "min": 0, "max": 1, "default": 0.5, "step": 0.01},
+    {"id": "spotSoftness", "name": "Edge Softness", "min": 0, "max": 1, "default": 0.3, "step": 0.01},
+    {"id": "edgeDarkness", "name": "Edge Darkness", "min": 0, "max": 1, "default": 0.7, "step": 0.01},
+    {"id": "saturationBoost", "name": "Color Boost", "min": 0, "max": 1, "default": 0.5, "step": 0.01}
+  ]
+}
