@@ -3334,6 +3334,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The depth of the cracks is the defining feature.
 
+### Suggestion: Magic Realism Cottage
+- **Date:** 2028-04-15
+- **Prompt:** "A serene Magic Realism painting of a quaint thatched cottage floating gently in the mid-air above a rolling green meadow. The cottage is tethered to the ground by a single thin red ribbon. Fluffy white clouds drift right past the windows. The lighting is soft and dreamlike."
+- **Negative prompt:** "dark, scary, torn ribbon, falling, messy"
+- **Tags:** magic realism, fantasy, surreal, floating, peaceful
+- **Style / Reference:** Magic Realism, Rene Magritte
+- **Composition:** Centered, floating
+- **Color palette:** Sky Blue, Meadow Green, White, Red Ribbon
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280415_magic_cottage.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the surreal tranquility.
+
+### Suggestion: Natural Sponge Macro
+- **Date:** 2028-04-15
+- **Prompt:** "A high-resolution macro photography shot of a natural sea sponge. The complex, porous structure is highlighted by side lighting, revealing deep caverns and delicate fibrous networks. The color is a warm, organic golden-brown against a black background."
+- **Negative prompt:** "synthetic sponge, yellow square, kitchen sponge, blurry"
+- **Tags:** sponge, macro, texture, nature, organic
+- **Style / Reference:** Macro Photography, Texture
+- **Composition:** Extreme close-up
+- **Color palette:** Golden Brown, Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280415_sponge_macro.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the organic irregularity of the pores.
+
+### Suggestion: Steampunk Iron Horse
+- **Date:** 2028-04-15
+- **Prompt:** "A dramatic, cinematic angle of a massive Steampunk steam locomotive thundering across a high viaduct. The engine is covered in brass gears, pressure gauges, and steam vents. Thick white steam billows out, blending with the snowy mountain peaks in the background."
+- **Negative prompt:** "modern train, diesel, electric, toy, clean"
+- **Tags:** steampunk, train, locomotive, cinematic, industrial
+- **Style / Reference:** Steampunk, Cinematic Concept Art
+- **Composition:** Low angle, dynamic motion
+- **Color palette:** Brass Gold, Steam White, Steel Grey, Mountain Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280415_steampunk_train.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the sheer power and scale of the machine.
+
+### Suggestion: Neo-Expressionist Street
+- **Date:** 2028-05-01
+- **Prompt:** "A raw, energetic painting in the style of Neo-Expressionism (Jean-Michel Basquiat). A chaotic city street scene is depicted with rough, frenetic brushstrokes, graffiti-like scrawls, and bold, clashing colors (red, yellow, black). Skulls and crowns are hidden in the abstraction."
+- **Negative prompt:** "realistic, smooth, polite, tidy, digital art"
+- **Tags:** neo-expressionism, basquiat, painting, abstract, urban
+- **Style / Reference:** Neo-Expressionism, Jean-Michel Basquiat
+- **Composition:** Chaotic, all-over
+- **Color palette:** Red, Yellow, Black, White
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20280501_neo_expressionism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The energy should feel spontaneous and untrained.
+
+### Suggestion: Geyser Eruption
+- **Date:** 2028-05-01
+- **Prompt:** "A spectacular landscape shot of a massive geyser erupting at sunset. The column of boiling water shoots high into the air, backlit by the orange sun. Steam clouds glow gold and pink. The ground is colorful mineral-stained thermal crust (yellow, ochre, rust)."
+- **Negative prompt:** "small splash, overcast, boring, flat lighting"
+- **Tags:** geyser, landscape, nature, sunset, thermal
+- **Style / Reference:** Landscape Photography, National Geographic
+- **Composition:** Wide shot, vertical emphasis
+- **Color palette:** Sunset Orange, Steam White, Mineral Yellow, Rust
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20280501_geyser.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Backlighting through the steam is essential.
+
 
 ## Attribution & legal
 
@@ -3357,9 +3422,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Neo-Expressionism, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Magic Realism.
-- **Materials:** Cork, Chainmail, Fur, Sponges, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Organza, Cracked Clay.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Steampunk Locomotive, Holographic Statue, Bioluminescent Plankton, Geyser, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Space Junk, Lava Lamp.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Organza, Cracked Clay.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Space Junk, Lava Lamp.
 
 ---
 
