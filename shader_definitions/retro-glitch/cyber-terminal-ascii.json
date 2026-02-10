@@ -1,0 +1,12 @@
+{
+  "id": "cyber-terminal-ascii",
+  "name": "Cyber Terminal ASCII",
+  "category": "image",
+  "url": "shaders/cyber-terminal-ascii.wgsl",
+  "features": ["mouse-driven"],
+  "params": [
+    { "name": "Grid Density", "id": "density", "min": 10.0, "max": 200.0, "step": 1.0, "default": 80.0 },
+    { "name": "Color Mode", "id": "color_mode", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.0 },
+    { "name": "Glow", "id": "glow", "min": 0.0, "max": 2.0, "step": 0.1, "default": 1.0 }
+  ]
+}
