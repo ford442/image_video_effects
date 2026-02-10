@@ -1,61 +1,85 @@
-# New Shader Plan: Procedural Cyber Terminal (ASCII)
+# New Shader Plan: Bubble Chamber
 
 ## Overview
-This shader transforms the input video feed or image into a high-tech, procedural ASCII terminal display. Unlike traditional ASCII filters that rely on font textures, this shader will generate character glyphs (e.g., `. : - = + * # @`) mathematically using Signed Distance Functions (SDFs) within the fragment shader. This allows for infinite resolution scaling and a unique "digital" aesthetic.
+This shader simulates the visual aesthetic of a bubble chamber, where subatomic particles leave spiraling ionization trails as they move through a magnetic field. The shader uses a feedback loop to create persistent, fading trails that curve based on a simulated magnetic field centered on the mouse cursor.
 
 ## Features
-1.  **Grid Quantization**: The image is divided into a dynamic grid of cells (e.g., 80x25 to 160x50), adjustable via zoom parameters.
-2.  **Procedural Glyphs**: A set of 8-10 distinct characters drawn procedurally based on pixel coordinates within each cell.
-3.  **Luminance Mapping**: The brightness of the underlying image determines which character is drawn (darker = empty/dot, brighter = dense characters like `#` or `@`).
-4.  **Interactive "Decoder"**:
-    -   **Mouse Interaction**: The mouse cursor acts as a "decoder lens".
-    -   **Effect**: Cells near the mouse cursor switch from standard ASCII to "Binary" (0/1) or "Hex" mode, and brighten significantly, simulating a hacking tool or data inspector.
-5.  **Aesthetic Styles**:
-    -   **Monochrome**: Classic Phosphor Green or Amber.
-    -   **Full Color**: The characters take the color of the underlying image.
-    -   **CRT Vignette**: Subtle scanlines and corner darkening for retro realism.
+- **Generative Trails**: Particles are probabilistically spawned based on the luminance of the input image. Brighter areas emit more particles.
+- **Magnetic Field Simulation**: Trails spiral inwards or outwards based on the "magnetic field" controlled by the mouse position.
+- **Feedback Loop**: Uses previous frame data (`dataTextureC`) to advect and decay trails, creating smooth, organic motion.
+- **Interactive Control**:
+  - **Mouse**: Sets the center of the magnetic field.
+  - **Param 1 (Field Strength)**: Controls the tightness and speed of the spiraling motion.
+  - **Param 2 (Decay)**: Controls how fast the trails fade (persistence).
+  - **Param 3 (Ionization Rate)**: Controls the probability of new particles spawning from the source image.
+  - **Param 4 (Color Shift)**: Adds a subtle color shift to the trails over time.
 
-## Technical Implementation Details
+## Technical Implementation
+- **File**: `public/shaders/bubble-chamber.wgsl`
+- **Type**: Compute Shader
+- **Bindings**:
+  - `readTexture`: Input image (source for particle generation).
+  - `dataTextureC`: Previous frame (source for feedback/advection).
+  - `writeTexture`: Output image.
+  - `dataTextureA`: Persistent state (next frame's history).
+- **Algorithm (Pseudo-code)**:
+  ```wgsl
+  // 1. Calculate Velocity Field
+  let mouse_pos = u.zoom_config.yz;
+  let to_mouse = uv - mouse_pos;
+  let dist = length(to_mouse);
+  // Tangential component (magnetic spiral)
+  let tangent = vec2(-to_mouse.y, to_mouse.x) / (dist + 0.001);
+  // Radial component (drift)
+  let radial = normalize(to_mouse);
+  // Combine based on Field Strength
+  let strength = u.zoom_params.x * 0.01;
+  let velocity = (tangent + radial * 0.1) * strength;
 
-### 1. Grid Logic
--   **Uniforms**: `u.zoom_params.x` controls grid density (font size).
--   **Cell Coordinates**: `floor(uv * grid_size)` determines the cell ID.
--   **Local Coordinates**: `fract(uv * grid_size)` gives the UV 0-1 within each character cell.
+  // 2. Advection (Sample History)
+  // Look backwards along the velocity vector
+  let sample_uv = uv - velocity;
+  let history = textureSampleLevel(dataTextureC, u_sampler, sample_uv, 0.0);
 
-### 2. Glyph Generation (SDFs)
-We will implement a function `get_character(id, uv)` that returns a float (coverage/alpha).
--   **ID 0 (Empty)**: Returns 0.0.
--   **ID 1 (.)**: `smoothstep(radius, radius-aa, length(uv - center))`.
--   **ID 2 (:)**: Two dots.
--   **ID 3 (-)**: Horizontal line SDF (box).
--   **ID 4 (+)**: Cross SDF (union of two boxes).
--   **ID 5 (*)**: Star SDF (rotated crosses).
--   **ID 6 (=)**: Double line.
--   **ID 7 (#)**: Hash/Grid SDF.
--   **ID 8 (@)**: Circle + spiral/inner details.
+  // 3. Decay
+  let decay = u.zoom_params.y; // e.g., 0.95
+  let decayed_history = history * decay;
 
-### 3. Sampling & Mapping
--   Sample the `readTexture` at the center of the current cell.
--   Compute luminance: `dot(color.rgb, vec3(0.299, 0.587, 0.114))`.
--   Map luminance (0.0 - 1.0) to a character ID range (e.g., 0 to 8).
--   Apply a "quantization" step to make the changes snappy (floor/step functions).
+  // 4. Emission (Sparks)
+  let input_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let luminance = dot(input_color.rgb, vec3(0.299, 0.587, 0.114));
+  let rand = random(uv, u.config.x); // Helper function
+  let spawn_rate = u.zoom_params.z;
+  var spark = vec4(0.0);
+  if (rand < luminance * spawn_rate) {
+    spark = vec4(1.0, 1.0, 1.0, 1.0); // White spark
+  }
 
-### 4. Interactive Layer
--   Calculate distance from current cell center to `u.zoom_config.yz` (mouse position).
--   If `distance < radius`, modify the mapping logic:
-    -   Force character set to "Binary" (0 or 1 based on luminance threshold).
-    -   Invert colors or boost brightness.
-    -   Add a "glitch" offset to the cell sampling.
+  // 5. Composition
+  let output = max(decayed_history, spark);
 
-### 5. Post-Processing
--   Multiply the final character color by a scanline pattern: `sin(uv.y * resolution.y * 2.0)`.
--   Apply a vignette mask based on distance from screen center.
+  // 6. Write Output
+  textureStore(writeTexture, gid.xy, output);
+  textureStore(dataTextureA, gid.xy, output);
+  ```
 
-## File Structure
--   **Filename**: `public/shaders/cyber-terminal-ascii.wgsl`
--   **Category**: "digital" (in shader list JSON).
+## Image Suggestion Draft
+*To be added to `public/image_suggestions.md` in the implementation phase:*
 
-## Why This Shader?
--   **Uniqueness**: Fills a gap in the "Cyber/Digital" category for true text-mode effects.
--   **Technical Merit**: Demonstrates advanced procedural SDF drawing techniques.
--   **Interactivity**: Provides a fun, meaningful interaction (decoding/inspecting) rather than just distortion.
+```markdown
+### Agent Suggestion: Particle Collider Event — @jules — 2024-05-23
+- **Prompt:** "A scientific visualization of a high-energy particle collision inside a detector (like the LHC). Tracks of subatomic particles spiral outwards in golden, blue, and red curves from a central collision point. The background is the dark metallic machinery of the detector."
+- **Negative prompt:** "space, stars, explosion, fire, cartoon"
+- **Tags:** particle physics, science, collider, abstract, visualization
+- **Ref image:** `public/images/suggestions/20240523_particle_collision.jpg`
+- **Notes / agent context:** Ideally suited for the 'Bubble Chamber' shader which simulates these exact spiraling tracks.
+- **Status:** proposed
+```
+
+## Execution Steps (Future Implementation)
+1. **Create Shader File**: `public/shaders/bubble-chamber.wgsl` with the standard header and the implementation described above.
+2. **Register Shader**: Run `node scripts/generate_shader_lists.js` to add the new shader to the application's list.
+3. **Add Image Suggestion**: Append the "Image Suggestion Draft" block above to `public/image_suggestions.md`.
+4. **Verify**:
+   - Check if the shader compiles and runs.
+   - Verify `public/shader-lists/*.json` contains the new entry.
