@@ -3400,6 +3400,71 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Backlighting through the steam is essential.
 
 
+### Suggestion: Cloisonné Enamel Pin
+- **Date:** 2028-05-15
+- **Prompt:** "A high-resolution macro studio shot of a vintage Cloisonné enamel pin in the shape of a hummingbird. Thin gold wires separate cells filled with vibrant, glossy vitreous enamel in shades of teal, emerald, and sapphire. The metal edges gleam under the studio light."
+- **Negative prompt:** "drawing, vector, flat, low resolution, plastic"
+- **Tags:** cloisonné, enamel, jewelry, macro, craft
+- **Style / Reference:** Cloisonné, Jewelry Photography
+- **Composition:** Extreme close-up
+- **Color palette:** Teal, Emerald, Sapphire, Gold
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280515_cloisonne_pin.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the glossy texture of the enamel and the metallic partitions.
+
+### Suggestion: Space Junk Orbit
+- **Date:** 2028-05-15
+- **Prompt:** "A cinematic wide shot of Earth's orbit cluttered with space junk. Broken satellites, spent rocket stages, and twisted metallic debris float in the foreground against the curvature of the blue Earth. The sun flares off a piece of gold foil, creating lens flare."
+- **Negative prompt:** "clean space, stars only, cartoon, painting, low detail"
+- **Tags:** space junk, sci-fi, orbit, earth, debris
+- **Style / Reference:** Sci-Fi Concept Art, Realistic Space
+- **Composition:** Wide shot, orbital perspective
+- **Color palette:** Earth Blue, Black, Metallic Silver/Gold
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280515_space_junk.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The sense of clutter and danger is important.
+
+### Suggestion: Color Field Abstraction
+- **Date:** 2028-05-15
+- **Prompt:** "A monumental abstract painting in the style of Color Field expressionism (Mark Rothko). Large, soft-edged rectangles of luminous rust-orange and deep maroon float on a dark purple canvas background. The paint texture is thin and stained into the weave, creating an emotional, meditative atmosphere."
+- **Negative prompt:** "hard edges, geometric, figures, messy, bright pop colors"
+- **Tags:** color field, abstract, painting, rothko, minimalist
+- **Style / Reference:** Color Field Painting, Mark Rothko
+- **Composition:** Abstract layered rectangles
+- **Color palette:** Rust Orange, Maroon, Deep Purple
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280515_color_field.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the soft transition between the colors.
+
+### Suggestion: Wicker Weave Macro
+- **Date:** 2028-05-15
+- **Prompt:** "A close-up texture shot of a hand-woven rattan wicker chair. The golden-brown natural fibers are interlaced in a complex pattern. Sunlight rakes across the surface, highlighting the fibrous texture, dust motes, and slight fraying of the material."
+- **Negative prompt:** "plastic, smooth, perfect, dark, blurry"
+- **Tags:** wicker, rattan, texture, macro, craft
+- **Style / Reference:** Macro Photography, Texture
+- **Composition:** Extreme close-up
+- **Color palette:** Golden Brown, Natural Tan
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280515_wicker_weave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lighting should emphasize the depth of the weave.
+
+### Suggestion: Lava Lamp Flow
+- **Date:** 2028-05-15
+- **Prompt:** "A mesmerizing close-up of a retro 1970s lava lamp. Large, amorphous blobs of red wax stretch and morph as they float upwards in purple liquid. The backlighting makes the wax glow from within. Tiny bubbles and currents are visible."
+- **Negative prompt:** "modern lamp, solid plastic, dark, boring, static"
+- **Tags:** lava lamp, retro, 70s, abstract, liquid
+- **Style / Reference:** Retro Photography, Abstract
+- **Composition:** Close-up on the bottle
+- **Color palette:** Neon Red, Purple, Glow
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20280515_lava_lamp.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the translucency and inner glow of the wax.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -3422,9 +3487,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Color Field Painting, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Wicker, Enamel, Pewter, Alabaster, Organza, Cracked Clay.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Space Junk, Lava Lamp.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel.
 
 ---
 
