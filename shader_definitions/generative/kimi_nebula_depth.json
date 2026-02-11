@@ -1,0 +1,8 @@
+{
+  "id": "kimi-nebula-depth",
+  "name": "Kimi Nebula Depth",
+  "url": "shaders/kimi_nebula_depth.wgsl",
+  "category": "generative",
+  "description": "Volumetric nebula with 3D noise, ray marching, and depth-based color grading.",
+  "features": ["mouse-driven", "generative", "volumetric", "3d"]
+}

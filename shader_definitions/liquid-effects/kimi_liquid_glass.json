@@ -1,0 +1,8 @@
+{
+  "id": "kimi-liquid-glass",
+  "name": "Kimi Liquid Glass",
+  "url": "shaders/kimi_liquid_glass.wgsl",
+  "category": "liquid-effects",
+  "description": "Realistic liquid surface with caustics, chromatic refraction, and specular highlights.",
+  "features": ["mouse-driven", "liquid", "caustics", "refraction"]
+}
