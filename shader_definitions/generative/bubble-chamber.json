@@ -1,0 +1,8 @@
+{
+  "id": "bubble-chamber",
+  "name": "Bubble Chamber",
+  "url": "shaders/bubble-chamber.wgsl",
+  "category": "generative",
+  "description": "Simulates subatomic particle trails in a magnetic field using a feedback loop.",
+  "features": ["mouse-driven", "feedback"]
+}
