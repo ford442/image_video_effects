@@ -3465,6 +3465,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the translucency and inner glow of the wax.
 
+### Suggestion: Ancient Bonsai
+- **Date:** 2028-06-01
+- **Prompt:** "A majestic, centuries-old Juniper bonsai tree displayed in a minimalist gallery setting. The gnarled, twisted driftwood trunk (jin and shari) contrasts with the manicured pads of vibrant green foliage. Dramatic spotlighting creates stark shadows on the mossy soil."
+- **Negative prompt:** "plastic, fake, outdoor forest, blurry, low resolution"
+- **Tags:** bonsai, nature, macro, still life, zen
+- **Style / Reference:** Studio Photography, Wabi-Sabi
+- **Composition:** Eye level, centered
+- **Color palette:** Dark Green, Wood Brown, Black, Moss Green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280601_bonsai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the texture of the bark and the needle pads.
+
+### Suggestion: Deconstructivist Architecture
+- **Date:** 2028-06-01
+- **Prompt:** "A wide architectural shot of a Deconstructivist building (Frank Gehry style). The structure is a chaotic assemblage of sweeping titanium curves, fragmented glass volumes, and tilted walls. It glimmers silver and gold in the afternoon sun against a deep blue sky."
+- **Negative prompt:** "square, boxy, brick, traditional, boring"
+- **Tags:** architecture, deconstructivism, abstract, modern, metallic
+- **Style / Reference:** Deconstructivism, Frank Gehry, Zaha Hadid
+- **Composition:** Low angle, looking up
+- **Color palette:** Titanium Silver, Sky Blue, Gold reflection
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20280601_deconstructivist.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the fluid, non-rectilinear forms.
+
+### Suggestion: Harris Tweed Macro
+- **Date:** 2028-06-01
+- **Prompt:** "A macro photography texture shot of authentic Harris Tweed fabric. The coarse, hairy cheviot wool yarns are woven in a herringbone pattern. Close inspection reveals flecks of dyed wool in heather purple, moss green, and rust orange embedded in the grey yarn."
+- **Negative prompt:** "smooth, cotton, polyester, printed pattern, blurry"
+- **Tags:** tweed, fabric, texture, macro, wool
+- **Style / Reference:** Macro Photography, Textile
+- **Composition:** Flat lay texture
+- **Color palette:** Grey, Rust, Moss Green, Heather
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280601_harris_tweed.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The 'hairy' texture of the wool is essential.
+
+### Suggestion: North Sea Oil Rig
+- **Date:** 2028-06-01
+- **Prompt:** "A cinematic wide shot of a massive offshore oil rig in the North Sea during a heavy storm. Giant waves crash against the rusted steel pylons. The structure is a maze of pipes and cranes, illuminated by harsh industrial floodlights and a roaring gas flare."
+- **Negative prompt:** "calm sea, sunny, clean, toy, low detail"
+- **Tags:** industrial, ocean, storm, oil rig, cinematic
+- **Style / Reference:** Industrial Photography, Cinematic
+- **Composition:** Wide shot, slightly low angle
+- **Color palette:** Storm Grey, Industrial Yellow, Flare Orange, Seafoam White
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20280601_oil_rig.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Contrast the warm industrial lights with the cold, dark ocean.
+
+### Suggestion: Tsunami Wave
+- **Date:** 2028-06-01
+- **Prompt:** "A terrifyingly realistic seascape of a massive tsunami wave moments before breaking. The wall of water towers over the viewer, dark teal and ominous. The crest is a churning mass of white foam. The water surface is textured with ripples and spray."
+- **Negative prompt:** "surfing, sunny beach, blue water, painting, cartoon"
+- **Tags:** tsunami, wave, ocean, danger, nature
+- **Style / Reference:** Landscape Photography, Disaster Movie
+- **Composition:** Low angle, looking up at the wave face
+- **Color palette:** Deep Teal, Foam White, Dark Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280601_tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the scale and power of the water.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
