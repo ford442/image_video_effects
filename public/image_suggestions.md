@@ -3530,6 +3530,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the scale and power of the water.
 
+### Suggestion: Giant's Causeway Basalt
+- **Date:** 2028-06-15
+- **Prompt:** "A dramatic landscape photograph of hexagonal basalt columns at the Giant's Causeway. The interlocking volcanic stones form natural steps leading into a rough ocean. The wet black rock reflects the moody, overcast sky. Long exposure blurs the crashing waves into a white mist."
+- **Negative prompt:** "brick, man-made, square stones, sunny, dry"
+- **Tags:** landscape, basalt, geology, nature, dramatic
+- **Style / Reference:** Landscape Photography, National Geographic
+- **Composition:** Wide angle, leading lines
+- **Color palette:** Volcanic Black, Ocean Blue, White Foam, Grey Sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280615_basalt.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the geometric regularity of the natural rock formation.
+
+### Suggestion: Kaleidoscope Mandala
+- **Date:** 2028-06-15
+- **Prompt:** "A mesmerizing, perfectly symmetrical kaleidoscope pattern. Fragments of translucent colored glass (ruby red, sapphire blue, amber) and mirrors create an intricate, fractal-like mandala. Backlighting makes the colors glow with intense vibrancy against a black void."
+- **Negative prompt:** "asymmetrical, messy, painting, dull colors, opaque"
+- **Tags:** kaleidoscope, abstract, pattern, glass, mandala
+- **Style / Reference:** Abstract Art, Psychedelic
+- **Composition:** Centered, radial symmetry
+- **Color palette:** Jewel Tones, Black Background
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280615_kaleidoscope.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Symmetrical precision and translucency are key.
+
+### Suggestion: Savanna Termite Mound
+- **Date:** 2028-06-15
+- **Prompt:** "A low-angle shot of a massive, cathedral-like termite mound rising from the African savanna. The red clay structure is tall and jagged, glowing in the warm light of a setting sun. In the background, a flat-topped acacia tree is silhouetted against a purple twilight sky."
+- **Negative prompt:** "small mound, dirt pile, forest, daytime, snow"
+- **Tags:** nature, landscape, insect architecture, africa, sunset
+- **Style / Reference:** Nature Photography, Documentary
+- **Composition:** Low angle, environmental portrait
+- **Color palette:** Red Clay, Sunset Orange, Twilight Purple, Silhouette Black
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20280615_termite_mound.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the architectural scale of the mound.
+
+### Suggestion: Synthetist Breton Landscape
+- **Date:** 2028-06-15
+- **Prompt:** "A landscape painting in the style of Synthetism (Paul Gauguin). Bold, flat areas of pure, unnatural color (red grass, yellow sky) are separated by dark, rhythmic outlines. The composition is flattened, emphasizing the decorative pattern of the rolling hills and trees."
+- **Negative prompt:** "realistic, detailed shading, gradient, impressionist, 3D"
+- **Tags:** synthetism, painting, cloisonnism, landscape, abstract
+- **Style / Reference:** Synthetism, Paul Gauguin, Émile Bernard
+- **Composition:** Flat, decorative
+- **Color palette:** Red, Yellow, Dark Blue, Green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280615_synthetism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The dark outlines (Cloisonnism) and flat color fields are essential.
+
+### Suggestion: Corduroy Fabric Macro
+- **Date:** 2028-06-15
+- **Prompt:** "A macro photography texture shot of vintage mustard yellow corduroy fabric. The parallel vertical ridges (wales) are soft and velvety. The lighting is directional, creating deep shadows in the channels between the ridges, highlighting the tactile weave of the cotton."
+- **Negative prompt:** "smooth, denim, silk, flat, printed pattern"
+- **Tags:** corduroy, fabric, texture, macro, vintage
+- **Style / Reference:** Macro Photography, Texture
+- **Composition:** Flat lay texture
+- **Color palette:** Mustard Yellow, Shadow Brown
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280615_corduroy.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lighting must reveal the depth of the ridges.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
