@@ -1,22 +1,24 @@
-# New Shader Plan: Hyper Labyrinth
+# New Shader Plan: Fractal Clockwork
 
 ## Overview
-"Hyper Labyrinth" is a generative 3D shader that visualizes a 4D maze structure. By rotating the 4D maze and taking a 3D slice (the visible world), the walls of the labyrinth appear to morph, shift, and reconfigure themselves seamlessly over time. The aesthetic is "Neon/Cyber" with glowing path markers and a dark, reflective atmosphere.
+"Fractal Clockwork" is a 3D generative shader that visualizes an infinite, procedural machine composed of interlocking gears and cogs. The shader uses raymarching with domain repetition to create a vast field of mechanical components that rotate in sync. The aesthetic is "Steampunk/Clockpunk" with metallic materials (brass, gold, steel) and intricate details.
 
 ## Features
-- **4D Geometry**: The maze is generated in 4D space. Time drives the rotation in the 4th dimension, causing the 3D cross-section to evolve.
-- **Raymarching**: Uses signed distance fields (SDF) to render the geometry.
-- **Neon Aesthetics**: The maze walls are dark, while the grid floors and path centers emit a neon glow (cyan/magenta).
-- **Interactive Camera**: The mouse controls the camera's viewing angle (orbit or fly-through).
-- **Dynamic Complexity**: User parameters control the scale of the maze and the speed of the 4D morphing.
+- **Infinite Gear Field**: Uses modulo arithmetic to repeat gear structures across the XZ plane.
+- **Raymarching**: Signed Distance Fields (SDF) define the gear geometry, including teeth and axles.
+- **Synchronized Animation**: Gears rotate based on time, with adjacent gears rotating in opposite directions to simulate mechanical meshing.
+- **Metallic Shading**: Physically-based rendering approximation for metallic surfaces with specular highlights.
+- **Interactive Camera**: Mouse controls the camera orbit and zoom level.
+- **Fractal Detail**: Smaller gears are nested or placed in the gaps of larger gears (optional complexity).
 
 ## Technical Implementation
-- **File**: `public/shaders/gen-hyper-labyrinth.wgsl`
+- **File**: `public/shaders/gen-fractal-clockwork.wgsl`
 - **Category**: `generative`
+- **Tags**: `["steampunk", "mechanical", "3d", "raymarching", "gears"]`
 - **Algorithm**:
-    - **SDF**: A grid-based SDF using trigonometric functions or modular arithmetic to define walls.
-    - **4D Rotation**: A rotation matrix involving the W-axis is applied to the input coordinate before the SDF evaluation.
-    - **Lighting**: Standard Phong shading combined with an emissive component derived from the SDF (e.g., proximity to the center of a corridor).
+    - **SDF**: A `sdGear` function that combines a cylinder with a radial repetition of teeth (using `atan` and `smoothstep`).
+    - **Domain Repetition**: `p.xz = mod(p.xz, spacing) - 0.5 * spacing`.
+    - **Checkerboard Rotation**: `((cell_id.x + cell_id.y) % 2.0) * 2.0 - 1.0` determines rotation direction.
 
 ## Proposed Code Structure (Draft)
 
@@ -26,7 +28,7 @@
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-// ... (other bindings)
+// ... (standard bindings)
 
 struct Uniforms {
     config: vec4<f32>,
@@ -35,95 +37,95 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-// 4D Rotation
-fn rotate4D(p: vec4<f32>, angle: f32) -> vec4<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    // Rotate in XW plane
-    return vec4<f32>(
-        p.x * c - p.w * s,
-        p.y,
-        p.z,
-        p.x * s + p.w * c
-    );
+// Rotation Matrix
+fn rot2D(a: f32) -> mat2x2<f32> {
+    let c = cos(a);
+    let s = sin(a);
+    return mat2x2<f32>(c, -s, s, c);
 }
 
-// Map function (SDF)
-fn map(pos3: vec3<f32>) -> vec2<f32> {
-    // 1. Transform 3D pos to 4D (w depends on time or constant)
-    var p4 = vec4<f32>(pos3, 1.0);
+// Gear SDF
+fn sdGear(p: vec3<f32>, radius: f32, teeth: f32, thickness: f32, time: f32) -> f32 {
+    // Rotate
+    let p_rot = vec3<f32>(rot2D(time) * p.xy, p.z); // Rotate around Z axis if gear is flat on XY?
+    // Actually let's assume gear is flat on XZ plane (y is up)
 
-    // 2. Apply 4D rotation driven by time/params
-    let speed = mix(0.1, 2.0, u.zoom_params.y);
-    p4 = rotate4D(p4, u.config.x * speed);
+    // Convert to polar
+    let r = length(p.xz);
+    let a = atan2(p.z, p.x) + time;
 
-    // 3. Maze generation logic (e.g., Gyroid or Grid)
-    // Gyroid: sin(x)cos(y) + sin(y)cos(z) + sin(z)cos(x) = 0
-    // 4D Gyroid: sin(x)cos(y) + sin(y)cos(z) + sin(z)cos(w) + sin(w)cos(x)
+    // Teeth
+    // Simple sine teeth: radius + sin(a * teeth) * depth
+    // Or square teeth
+    let tooth_depth = 0.05 * radius;
+    let d_teeth = smoothstep(-0.5, 0.5, sin(a * teeth)) * tooth_depth;
 
-    let scale = mix(1.0, 5.0, u.zoom_params.x);
-    let q = p4 * scale;
+    let d_cylinder = r - (radius + d_teeth);
+    let d_height = abs(p.y) - thickness;
 
-    let val = sin(q.x)*cos(q.y) + sin(q.y)*cos(q.z) + sin(q.z)*cos(q.w) + sin(q.w)*cos(q.x);
+    // Axle hole
+    let d_axle = r - radius * 0.2;
 
-    // Thickness threshold
-    let thickness = mix(0.1, 1.0, u.zoom_params.w); // Wall thickness
-    let d = abs(val) - thickness * 0.5;
-
-    // Scale distance back
-    return vec2<f32>(d * 0.5 / scale, 1.0); // 1.0 = material ID
+    // Combine
+    let gear = max(d_cylinder, d_height);
+    return max(gear, -d_axle);
 }
 
+// Map Function
+fn map(p: vec3<f32>) -> vec2<f32> {
+    let spacing = 4.0;
+    let cell_id = floor((p.xz + spacing * 0.5) / spacing);
+    var q = p;
+    q.x = (fract((p.x + spacing * 0.5) / spacing) - 0.5) * spacing;
+    q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;
+
+    // Checkerboard rotation direction
+    let direction = ((cell_id.x + cell_id.y) % 2.0) * 2.0 - 1.0;
+    let speed = u.zoom_params.z * 2.0 + 0.5;
+    let time = u.config.x * speed * direction;
+
+    // Gear params
+    let radius = 1.8;
+    let teeth = 12.0;
+    let thickness = 0.2;
+
+    let d = sdGear(q, radius, teeth, thickness, time);
+
+    // Floor
+    let d_floor = p.y + 1.0;
+
+    return vec2<f32>(min(d, d_floor), 1.0);
+}
+
+// Raymarch Function
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
-    // Standard raymarching loop
     var t = 0.0;
     for(var i=0; i<100; i++) {
         let p = ro + rd * t;
         let d = map(p).x;
-        if(d < 0.001 || t > 50.0) { break; }
+        if(d < 0.001 || t > 100.0) { break; }
         t += d;
     }
-    return vec2<f32>(t, 0.0); // Material ID handling needed
+    return vec2<f32>(t, 0.0);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    // ... setup UVs and Camera ...
-
-    // Mouse interaction for Camera Angle
-    let mouse = u.zoom_config.yz;
-    // ...
-
-    // Render
-    let t = raymarch(ro, rd).x;
-
-    // Shading
-    var color = vec3<f32>(0.0);
-    if(t < 50.0) {
-        let p = ro + rd * t;
-        // Calculate Normal
-        // ...
-
-        // Coloring based on 4D coordinate or normal
-        color = vec3<f32>(0.1, 0.8, 0.9); // Base Cyan
-
-        // Add glow based on proximity to gyroid center
-        let glow = 1.0 / (1.0 + t * t * 0.1);
-        color += vec3<f32>(1.0, 0.2, 0.8) * glow; // Magenta glow
-    }
-
+    // ... Camera Setup ...
+    // ... Rendering Loop ...
+    // ... Shading (Metallic) ...
     textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
 }
 ```
 
 ## Parameters
-- **Mouse**: Orbit Camera.
-- **Param 1 (Scale)**: Zoom/Density of the maze.
-- **Param 2 (Morph)**: Speed of the 4D rotation.
-- **Param 3 (Glow)**: Intensity of the neon glow.
-- **Param 4 (Thickness)**: Thickness of the maze walls.
+- **Zoom (Params X)**: Scale of the gears / Camera Distance.
+- **Teeth (Params Y)**: Number of teeth on gears (complexity).
+- **Speed (Params Z)**: Rotation speed.
+- **Color/Material (Params W)**: Shift between Gold, Brass, and Steel.
 
 ## Integration Steps
-1.  **Create Shader**: `public/shaders/gen-hyper-labyrinth.wgsl`
-2.  **Create Definition**: `shader_definitions/generative/gen-hyper-labyrinth.json`
-3.  **Validation**: Verify compilation and effect in the "Generative" category.
+1.  **Create Shader**: `public/shaders/gen-fractal-clockwork.wgsl`
+2.  **Create Definition**: `shader_definitions/generative/gen-fractal-clockwork.json`
+3.  **Run Scripts**: `node scripts/generate_shader_lists.js`
+4.  **Verification**: Test in browser.
