@@ -1,0 +1,43 @@
+{
+  "id": "gen-hyper-labyrinth",
+  "name": "Hyper Labyrinth",
+  "url": "shaders/gen-hyper-labyrinth.wgsl",
+  "category": "generative",
+  "description": "3D slice of a 4D maze structure with neon aesthetics. Time drives rotation in the 4th dimension.",
+  "features": ["mouse-driven"],
+  "tags": ["neon", "cyber", "maze", "4d", "generative", "raymarching"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Scale / Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Morph Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Wall Thickness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

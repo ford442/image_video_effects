@@ -3594,6 +3594,70 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20280615_corduroy.jpg`
 - **License / Attribution:** CC0
 - **Notes:** The lighting must reveal the depth of the ridges.
+### Suggestion: Hard Surface Mecha Helmet
+- **Date:** 2028-06-15
+- **Prompt:** "A clean, high-fidelity 3D render of a sci-fi mecha helmet in the 'Hard Surface' modeling style. The design features precise panel lines, functional vents, and a mix of matte grey and glossy white materials. Studio lighting emphasizes the smooth curves and sharp edges."
+- **Negative prompt:** "organic, bio-mechanical, messy, rusty, low poly"
+- **Tags:** hard surface, 3d, sci-fi, mecha, helmet
+- **Style / Reference:** Hard Surface Modeling, Industrial Design
+- **Composition:** 3/4 view, studio background
+- **Color palette:** White, Grey, Orange accents
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280615_hard_surface.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the precision of the geometry.
+
+### Suggestion: Sandpaper Desert Abstract
+- **Date:** 2028-06-15
+- **Prompt:** "A macro photography shot of coarse-grit brown sandpaper. The lighting is low and raking, casting long shadows from the individual abrasive grains, making the texture look like a rocky Martian desert landscape from above."
+- **Negative prompt:** "smooth, paper, flat lighting, blurry"
+- **Tags:** sandpaper, macro, texture, abstract, landscape
+- **Style / Reference:** Macro Photography, Abstract
+- **Composition:** Top-down macro
+- **Color palette:** Rust Brown, Tan, Shadow Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280615_sandpaper.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use the scale ambiguity to create a landscape effect.
+
+### Suggestion: Morning Dew Spiderweb
+- **Date:** 2028-06-15
+- **Prompt:** "A delicate macro shot of a spiderweb covered in morning dew. Thousands of tiny water droplets cling to the silk strands. Each droplet acts as a lens, refracting the green garden background. The depth of field is very shallow."
+- **Negative prompt:** "dry web, messy background, scary spider, cartoon"
+- **Tags:** spiderweb, dew, macro, nature, bokeh
+- **Style / Reference:** Macro Photography, Nature
+- **Composition:** Centered web
+- **Color palette:** Silver (web), blurred Green background
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280615_spiderweb.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the refraction in the droplets.
+
+### Suggestion: Ashcan School Boxing Match
+- **Date:** 2028-06-15
+- **Prompt:** "A gritty, dynamic oil painting in the style of the Ashcan School (George Bellows). Two boxers fight in a smoky, dimly lit ring. The brushwork is loose, dark, and energetic. The crowd in the shadows is a sea of vague faces."
+- **Negative prompt:** "bright, clean, modern, digital art, photorealistic"
+- **Tags:** ashcan school, painting, boxing, gritty, american realism
+- **Style / Reference:** Ashcan School, George Bellows
+- **Composition:** Eye level, dynamic action
+- **Color palette:** Dark Brown, Black, Smoky Grey, Flesh Tones
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280615_ashcan_boxing.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the raw energy and the dark atmosphere.
+
+### Suggestion: Wet Slate Texture
+- **Date:** 2028-06-15
+- **Prompt:** "A top-down texture shot of wet, dark grey slate tiles. Rainwater coats the uneven, flaky surface of the rock, creating specular highlights. The layers of the sedimentary stone are visible at the chipped edges."
+- **Negative prompt:** "dry, smooth, concrete, artificial tile, seamless texture"
+- **Tags:** slate, rock, texture, wet, rain
+- **Style / Reference:** Texture Photography, Nature
+- **Composition:** Flat lay
+- **Color palette:** Dark Grey, Blue-Grey, White reflections
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280615_wet_slate.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The wetness enhances the color and contrast of the stone.
 
 ## Attribution & legal
 
