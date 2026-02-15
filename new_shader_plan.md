@@ -20,9 +20,36 @@
     - **Domain Repetition**: `p.xz = mod(p.xz, spacing) - 0.5 * spacing`.
     - **Checkerboard Rotation**: `((cell_id.x + cell_id.y) % 2.0) * 2.0 - 1.0` determines rotation direction.
 
-## Proposed Code Structure (Draft)
+### Core Algorithm
+- **3D Cellular Noise (Voronoi/Worley):** Used to generate the base structure.
+- **Filament Metric:** Calculate `F2 - F1` (distance to 2nd closest point minus distance to 1st closest point).
+  - High values (where `F1` is small) represent cell centers (voids).
+  - Low values (where `F1 ≈ F2`) represent cell boundaries (filaments).
+  - Inverting this value (`1.0 / (F2 - F1 + epsilon)`) creates bright lines at the boundaries.
+- **Domain Warping:** Apply FBM noise to the input coordinates before sampling the Voronoi noise to distort the straight lines into organic, flowing curves.
+- **Density Accumulation:** Raymarch or sample multiple layers of noise to build up density.
+
+### Mouse Interaction
+- **Gravity Well:** Calculate vector from current pixel to mouse position.
+- **Distortion:** Apply a non-linear displacement to the UV coordinates based on distance to mouse (stronger near mouse, falling off with distance).
+- **Formula:** `uv -= normalize(uv - mouse) * strength * smoothstep(radius, 0.0, dist)`
+
+### Color Mapping
+- Map the accumulated density to a color gradient.
+- **Low Density:** Black/Deep Blue.
+- **Medium Density:** Purple/Magenta.
+- **High Density:** Cyan/White.
+- **Bloom:** Use `smoothstep` to create a glowing halo around filaments.
+
+## Proposed Code Structure (WGSL)
 
 ```wgsl
+// ----------------------------------------------------------------
+//  Cosmic Web Filament - Generative simulation of dark matter web
+//  Category: generative
+//  Features: mouse-driven, organic structure
+// ----------------------------------------------------------------
+
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -31,10 +58,10 @@
 // ... (standard bindings)
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // x: time, y: aspect, z: resX, w: resY
+  zoom_config: vec4<f32>,  // xy: center, z: zoom, w: unused (Mouse: yz)
+  zoom_params: vec4<f32>,  // x: warpStrength, y: density, z: speed, w: colorShift
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Rotation Matrix
@@ -115,6 +142,57 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ... Rendering Loop ...
     // ... Shading (Metallic) ...
     textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+
+    // Simple depth based on density
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(density, 0.0, 0.0, 0.0));
+}
+```
+
+## Proposed JSON Definition (`shader_definitions/generative/cosmic-web.json`)
+
+```json
+{
+  "id": "cosmic-web",
+  "name": "Cosmic Web Filament",
+  "url": "shaders/cosmic-web.wgsl",
+  "category": "generative",
+  "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well.",
+  "tags": ["space", "procedural", "organic", "scifi", "dark-matter"],
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Filament Density",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Flow Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
 }
 ```
 
