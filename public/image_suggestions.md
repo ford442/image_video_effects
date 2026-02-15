@@ -3595,6 +3595,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The wetness enhances the color and contrast of the stone.
 
+### Suggestion: Graphene Atomic Lattice
+- **Date:** 2028-06-15
+- **Prompt:** "A scientific visualization of a single sheet of Graphene. The hexagonal lattice structure of carbon atoms glows with a faint blue electric field. The background is a dark void. Shallow depth of field focuses on the foreground atoms, blurring the distant grid."
+- **Negative prompt:** "messy, organic, blurry, low resolution, drawing"
+- **Tags:** graphene, science, atomic, 3d, macro
+- **Style / Reference:** Scientific Visualization, 3D Render
+- **Composition:** Macro texture, depth of field
+- **Color palette:** Electric Blue, Carbon Black, Void
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280615_graphene.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the hexagonal geometry and the glow.
+
+### Suggestion: Crosshatch Seafarer
+- **Date:** 2028-06-15
+- **Prompt:** "A detailed pen and ink crosshatching portrait of an old weathered sailor. Thousands of intersecting fine black ink lines create the shading and texture of his wrinkled skin and thick beard. The style resembles an old engraving or banknote portrait."
+- **Negative prompt:** "color, grey wash, pencil, smudge, smooth shading"
+- **Tags:** crosshatching, ink, portrait, engraving, art
+- **Style / Reference:** Pen and Ink, Engraving
+- **Composition:** Portrait, centered
+- **Color palette:** Black Ink, White Paper
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20280615_crosshatch_sailor.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The shading must come from the density of the lines, not grey wash.
+
+### Suggestion: Wind Tunnel Streamlines
+- **Date:** 2028-06-15
+- **Prompt:** "A sleek silver concept car inside an industrial wind tunnel. Streams of white smoke flow smoothly over the aerodynamic curves of the vehicle. A sheet of green laser light slices through the smoke, revealing the turbulence. Dark, technical background."
+- **Negative prompt:** "static smoke, messy, cartoon, drawing, daylight"
+- **Tags:** wind tunnel, aerodynamic, car, smoke, industrial
+- **Style / Reference:** Industrial Photography, Scientific
+- **Composition:** Side profile, dynamic flow
+- **Color palette:** Silver, Laser Green, Smoke White, Black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20280615_wind_tunnel.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the smooth laminar flow of the smoke.
+
+### Suggestion: Neon Sign Boneyard
+- **Date:** 2028-07-01
+- **Prompt:** "A cinematic shot of a 'neon boneyard' at night. Piles of discarded, rusted vintage neon signs (motel, diner, cocktails) lie in tall grass. Some are still flickering and buzzing, casting eerie red and blue light on the wet ground. Rain falls softly."
+- **Negative prompt:** "clean, new signs, city street, daylight, flat"
+- **Tags:** neon, abandoned, vintage, atmospheric, night
+- **Style / Reference:** Urban Exploration, Cinematic
+- **Composition:** Wide shot, chaotic piles
+- **Color palette:** Neon Red, Blue, Rust, Grass Green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280701_neon_boneyard.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The juxtaposition of light and decay is the theme.
+
+### Suggestion: Basalt Column Coast
+- **Date:** 2028-07-01
+- **Prompt:** "A dramatic landscape photograph of a coastline made of hexagonal basalt columns (like the Giant's Causeway). The dark, geometric rock formations step down into a rough, foaming ocean. The sky is overcast and moody, enhancing the alien look of the geology."
+- **Negative prompt:** "round rocks, sand beach, sunny, bright, boring"
+- **Tags:** basalt, geology, landscape, coast, geometric
+- **Style / Reference:** Landscape Photography, National Geographic
+- **Composition:** Wide shot, leading lines
+- **Color palette:** Basalt Black, Ocean Blue, Foam White, Grey Sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280701_basalt_coast.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the hexagonal geometry of the rocks.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
