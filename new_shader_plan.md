@@ -1,119 +1,132 @@
-# New Shader Plan: Fractal Clockwork
+# New Shader Plan: Cosmic Jellyfish
 
-## 1. Overview
-The "Fractal Clockwork" shader is a generative 3D visualization of an infinite lattice of interlocking, rotating gears. It leverages raymarching with domain repetition to create a dense, steampunk-inspired mechanical environment. The rotation of the gears is synchronized based on their grid position to simulate a cohesive mechanism.
+## Overview
+**Shader ID:** `cosmic-jellyfish`
+**Name:** Cosmic Jellyfish
+**Category:** `generative`
+**Tags:** `["3d", "raymarching", "bioluminescent", "space", "organic", "calm"]`
 
-## 2. Technical Implementation
+## Description
+A single-pass raymarching shader that renders a majestic, translucent jellyfish floating in a cosmic void. The jellyfish features a pulsating bell and undulating tentacles. The scene is illuminated by the jellyfish's own internal bioluminescence and a distant starfield.
 
-### Category
-- `generative`
+## Features
+- **Procedural 3D Geometry:** Uses Signed Distance Functions (SDFs) to model the bell (ellipsoid/sphere with modification) and tentacles (sine-distorted cylinders/capsules).
+- **Bioluminescence:** The jellyfish core glows, and the tentacles have emissive tips.
+- **Dynamic Animation:** The bell expands and contracts rhythmically (breathing). Tentacles wave gently using domain repetition and time-based sine offsets.
+- **Cosmic Environment:** A simple procedural starfield background.
+- **Interactive Camera:** Mouse movement orbits the camera around the jellyfish.
 
-### Filenames
-- WGSL: `public/shaders/fractal-clockwork.wgsl`
-- JSON: `shader_definitions/generative/fractal-clockwork.json`
+## Uniforms Mapping
+- **`u.config.x` (Time):** Drives the pulsation and tentacle animation.
+- **`u.zoom_config.yz` (Mouse):** Controls the camera orbit angles (yaw and pitch).
+- **`u.zoom_params.x` (Pulse Speed):** Controls the speed of the jellyfish's breathing cycle.
+- **`u.zoom_params.y` (Tentacle Activity):** Controls the amplitude/frequency of the tentacle wave.
+- **`u.zoom_params.z` (Hue Shift):** Shifts the base color of the bioluminescence.
+- **`u.zoom_params.w` (Glow Intensity):** Controls the brightness of the internal glow and rim lighting.
 
-### ID
-- `fractal-clockwork`
+## Technical Implementation
 
-### Tags
-- `steampunk`, `gears`, `clockwork`, `infinite`, `3d`, `raymarching`, `generative`, `mechanical`
+### Raymarching Strategy
+- **SDF Composition:**
+    - `sdBell`: A sphere distorted by a cosine function on the bottom to create the bell shape.
+    - `sdTentacles`: Several instances of vertical capsules, displaced by sine waves (`p.x += sin(p.y * freq + time)`).
+    - `Union`: Smooth union (`smin`) to blend the bell and tentacles organically.
+- **Volume/Translucency:**
+    - Instead of opaque surface rendering, we can accumulate color along the ray (volumetric rendering) or use a "thick glass" approximation by marching inside the SDF or using the normal for Fresnel effects.
+    - Simplified approach for performance: Render the surface, but add an "inner glow" term based on the distance to the core SDF, and mix with a fresnel rim light.
 
-### Core Technique: Raymarching with Domain Repetition
-The scene is constructed using Signed Distance Functions (SDFs). Instead of defining thousands of individual gears, we define a single gear SDF and repeat it infinitely across space using the modulo operator (`mod`).
-
-### Logic Details
-1.  **Gear SDF (`sdGear`)**:
-    -   Base shape: A cylinder with a central hole.
-    -   Teeth: A radial repetition of a tooth shape (e.g., box or trapezoid) added to the cylinder's outer radius.
-    -   Spokes/Details: Subtractive shapes to create spokes or patterns on the gear face.
-2.  **Domain Repetition**:
-    -   Space is divided into a grid (e.g., `spacing = 4.0`).
-    -   `p_local = mod(p, spacing) - spacing * 0.5`.
-    -   This creates an infinite field of cells, each containing a gear.
-3.  **Synchronized Rotation**:
-    -   To simulate meshing gears, adjacent gears must rotate in opposite directions.
-    -   We determine the "grid cell index": `cell_id = floor(p / spacing)`.
-    -   Rotation Direction: `dir = ((cell_id.x + cell_id.y + cell_id.z) % 2.0 == 0.0) ? 1.0 : -1.0`.
-    -   Rotation Angle: `angle = time * speed * dir`.
-    -   The coordinate space for the gear is rotated by this angle *before* evaluating the SDF.
-4.  **Camera**:
-    -   Orbit camera controlled by mouse (`u.zoom_config.yz`).
-    -   Allows the user to fly through or orbit the mechanism.
-5.  **Lighting & Material**:
-    -   Material: Metallic (high specular, low roughness).
-    -   Lighting: Directional light + Rim lighting to accentuate edges.
-    -   Fog: Applied based on distance to fade out distant gears and add depth.
-
-## 3. Parameter Mapping (`u.zoom_params`)
-| Param | Name | Description | Range | Default |
-| :--- | :--- | :--- | :--- | :--- |
-| `x` | **Gear Density / Scale** | Controls the spacing and size of the gears. | 0.1 - 2.0 | 0.5 |
-| `y` | **Rotation Speed** | Controls how fast the gears spin. | 0.0 - 5.0 | 1.0 |
-| `z` | **Complexity** | Controls the number of teeth and detail level. | 4 - 32 (int) | 0.5 (mapped) |
-| `w` | **Metallic / Color** | Adjusts the metallic shine or color tint (Brass vs Chrome). | 0.0 - 1.0 | 0.8 |
-
-## 4. Proposed Code Skeleton (WGSL)
+### Proposed Code Structure
 
 ```wgsl
-// ... Standard Header ...
+// ... standard header ...
 
-struct Uniforms { ... };
+struct Uniforms {
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
 
-// Rotation helper
-fn rot2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return vec2<f32>(p.x * c - p.y * s, p.x * s + p.y * c);
+// ... noise/hash functions ...
+
+// Rotation matrix
+fn rot(a: f32) -> mat2x2<f32> {
+    let s = sin(a);
+    let c = cos(a);
+    return mat2x2<f32>(c, -s, s, c);
 }
 
-// SDF for a single Gear
-fn sdGear(p: vec3<f32>, radius: f32, thickness: f32, teeth: f32) -> f32 {
-    // 1. Cylinder body
-    let d_cyl = length(p.xy) - radius;
-    let d_thick = abs(p.z) - thickness;
-    let base = max(d_cyl, d_thick);
+// SDF for the Jellyfish
+fn map(p: vec3<f32>, time: f32) -> f32 {
+    // Pulse animation
+    let pulse = sin(time * u.zoom_params.x * 2.0) * 0.1;
 
-    // 2. Teeth (Radial repetition)
-    let angle = atan2(p.y, p.x);
-    let r = length(p.xy);
+    // Bell (Ellipsoid-ish)
+    var p_bell = p;
+    p_bell.y -= 0.5;
+    // Stretch
+    let d_bell = length(p_bell / vec3<f32>(1.0 + pulse, 0.8 - pulse, 1.0 + pulse)) * 0.8 - 0.5;
 
-    // Teeth logic: add bumps to radius
-    // sector = round(angle / (2pi/teeth))
-    // ... logic to shape teeth ...
+    // Hollow out bottom
+    let d_hollow = length(p_bell + vec3<f32>(0.0, 0.5, 0.0)) - 0.4;
+    let bell_final = max(d_bell, -d_hollow);
 
-    // Return combined distance
-    return base; // Placeholder
+    // Tentacles
+    var d_tentacles = 100.0;
+    // ... loop for tentacles with sine displacement ...
+
+    return min(bell_final, d_tentacles); // or smin
 }
 
-fn map(p: vec3<f32>) -> vec2<f32> {
-    let spacing = 4.0;
-    let id = floor(p / spacing);
-    let p_local = (fract(p / spacing) - 0.5) * spacing;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    // ... resolution, uv, mouse setup ...
 
-    // Alternate rotation based on checkerboard pattern of IDs
-    let check = mod(id.x + id.y + id.z, 2.0);
-    let dir = sign(check - 0.5); // -1 or 1
+    // Camera
+    let mouse = u.zoom_config.yz * 2.0 - 1.0;
+    var ro = vec3<f32>(0.0, 0.0, -3.0);
+    // Rotate camera based on mouse
+    ro.yz = rot(mouse.y) * ro.yz;
+    ro.xz = rot(mouse.x) * ro.xz;
 
-    let time = u.config.x * u.zoom_params.y;
+    let rd = normalize(vec3<f32>(uv, 1.0)); // Need proper camera matrix
 
-    // Rotate gear in local space
-    // Assuming gears lie flat on XY plane? No, let's make a 3D lattice.
-    // Maybe interlocking perpendicular gears? That's harder.
-    // Let's stick to a stack of gears or a grid of gears on a plane first,
-    // or simply 3D grid of floating gears.
+    // Raymarch loop
+    var t = 0.0;
+    var glow = 0.0;
+    for(var i=0; i<64; i++) {
+        let p = ro + rd * t;
+        let d = map(p, u.config.x);
 
-    // Let's rotate p_local.xy
-    let p_rot = vec3<f32>(rot2D(p_local.xy, time * dir), p_local.z);
+        // Accumulate glow near the surface
+        glow += 1.0 / (1.0 + d * d * 20.0);
 
-    let d = sdGear(p_rot, 1.0, 0.2, 12.0);
+        if (d < 0.001 || t > 10.0) { break; }
+        t += d;
+    }
 
-    return vec2<f32>(d, 1.0); // 1.0 = material ID
+    // Coloring
+    var col = vec3<f32>(0.0);
+    // Add Starfield background
+
+    if (t < 10.0) {
+        // Hit surface - add rim light and base color
+        let p = ro + rd * t;
+        // let n = calcNormal(p);
+        // ... lighting logic ...
+    }
+
+    // Add accumulated glow (bioluminescence)
+    let glowColor = vec3<f32>(0.1, 0.4, 0.9); // Base Blue
+    // Apply Hue Shift (u.zoom_params.z)
+
+    col += glow * glowColor * u.zoom_params.w * 0.05;
+
+    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
 }
-
-// ... Raymarch Loop & Main ...
 ```
 
-## 5. Potential Challenges
--   **Interlocking in 3D**: Real 3D gears (like worm gears or bevel gears) are complex to model with simple SDFs. A grid of parallel gears (like a clock interior) is easier and visually effective. We can offset layers (Z-axis) to make them look like they are stacked on shafts.
--   **Aliasing**: High frequency details (teeth) might shimmer. Raymarching steps need to be careful, or use TAA (not available here). Smoothstep teeth edges can help.
--   **Performance**: Infinite repetition is cheap, but complex SDFs can be slow. Keep the gear SDF efficient.
+## Next Steps
+1. Create `public/shaders/cosmic-jellyfish.wgsl` with the implementation.
+2. Create `shader_definitions/generative/cosmic-jellyfish.json`.
+3. Verify using `scripts/generate_shader_lists.js` and `scripts/check_duplicates.js`.
