@@ -3595,6 +3595,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The wetness enhances the color and contrast of the stone.
 
+### Suggestion: Graphene Lattice
+- **Date:** 2028-07-01
+- **Prompt:** "A high-fidelity scientific visualization of a single sheet of Graphene. The hexagonal honeycomb lattice of carbon atoms floats in a dark void. The atoms are represented as glowing spheres connected by bonds. The sheet ripples like a nanoscopic fabric."
+- **Negative prompt:** "complex 3D structure, diamond, messy, low resolution, drawing"
+- **Tags:** science, graphene, material, physics, 3d
+- **Style / Reference:** Scientific Visualization
+- **Composition:** Centered, abstract
+- **Color palette:** Glowing Blue, Black, White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280701_graphene.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the hexagonal pattern.
+
+### Suggestion: Neon Gas Tube
+- **Date:** 2028-07-01
+- **Prompt:** "A close-up macro photography shot of a lit neon sign tube. The glass tube glows with an intense, buzzing red light from the neon gas inside. Dark paint blocks out sections of the tube. Dust motes dance in the red glow against a dark brick background."
+- **Negative prompt:** "led, digital sign, flat, cartoon, daylight"
+- **Tags:** neon, light, macro, texture, urban
+- **Style / Reference:** Macro Photography, Urban
+- **Composition:** Extreme close-up
+- **Color palette:** Neon Red, Brick Black, Orange glow
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280701_neon_tube.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The glow should look volumetric.
+
+### Suggestion: Synthetism Landscape
+- **Date:** 2028-07-01
+- **Prompt:** "A vibrant landscape painting in the style of Synthetism (Paul Gauguin, Émile Bernard). Large, flat areas of bold, unnatural color are separated by dark outlines (Cloisonnism). A red meadow sits beneath a yellow sky. The forms are simplified and symbolic, lacking detail."
+- **Negative prompt:** "realistic, gradient, shading, 3D, detailed"
+- **Tags:** synthetism, painting, cloisonnism, abstract, landscape
+- **Style / Reference:** Synthetism, Post-Impressionism
+- **Composition:** Simplified, flat
+- **Color palette:** Red, Yellow, Blue, Black outlines
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280701_synthetism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the flatness and the outlines.
+
+### Suggestion: Corduroy Texture
+- **Date:** 2028-07-01
+- **Prompt:** "A macro texture shot of vintage mustard-yellow corduroy fabric. The parallel vertical ridges (wales) are soft and velvety, catching the light. The grooves between them show the weave of the base fabric. The material looks worn and comfortable."
+- **Negative prompt:** "denim, smooth, silk, pattern, distant"
+- **Tags:** corduroy, fabric, texture, macro, vintage
+- **Style / Reference:** Macro Photography, Texture
+- **Composition:** Flat lay texture
+- **Color palette:** Mustard Yellow, shadow brown
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280701_corduroy.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The light should rake across the ridges.
+
+### Suggestion: Offshore Wind Farm
+- **Date:** 2028-07-01
+- **Prompt:** "A majestic landscape shot of an offshore wind farm at twilight. Rows of massive white turbines extend to the horizon in the calm sea. The blades are blurred by motion. The sky is a deep indigo with a faint orange glow on the horizon."
+- **Negative prompt:** "land, mountains, sunny, noisy, chaotic"
+- **Tags:** wind farm, energy, landscape, ocean, calm
+- **Style / Reference:** Landscape Photography, Minimalist
+- **Composition:** Wide shot, repetition
+- **Color palette:** Indigo, White, Sunset Orange
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20280701_wind_farm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use slow shutter speed for the blades.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -3617,9 +3682,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar.
 
 ---
 
