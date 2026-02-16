@@ -77,6 +77,13 @@ fn fbm(p: vec3<f32>) -> f32 {
     return v;
 }
 
+// Hue rotation using Rodrigues' rotation formula
+fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
+    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
+    let cosAngle = cos(shift);
+    return vec3<f32>(color * cosAngle + cross(k, color) * sin(shift) + k * dot(k, color) * (1.0 - cosAngle));
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -90,16 +97,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseRaw = u.zoom_config.yz;
     let mouse = (mouseRaw - 0.5) * vec2<f32>(resolution.x / resolution.y, 1.0) + 0.5;
 
-    // We don't necessarily need click state if we want constant interaction,
-    // but typically u.zoom_config.w stores click count or similar.
-    // The plan suggests "click state or always active". Let's make it always active but stronger on click if we wanted.
-    // For now, simple distance based pull.
-
     let toMouse = mouse - uv;
     let distMouse = length(toMouse);
-    // Avoid division by zero in normalize if dist is very small
+    
+    // Safe normalization avoiding division by zero
     let dirToMouse = select(vec2<f32>(0.0), normalize(toMouse), distMouse > 0.001);
-
     let pullStrength = 0.3 * smoothstep(0.8, 0.0, distMouse);
 
     // Warp UV towards mouse
@@ -123,11 +125,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let density = smoothstep(0.0, 1.0, filament * u.zoom_params.y);
 
     // Color Palette
-    // Apply color shift
-    let shift = u.zoom_params.w;
-    let colVoid = vec3<f32>(0.05, 0.0, 0.1) + vec3<f32>(shift * 0.1, 0.0, shift * 0.2);
-    let colFilament = vec3<f32>(0.2, 0.6, 1.0) + vec3<f32>(shift, -shift * 0.5, -shift * 0.5);
+    let colVoid = vec3<f32>(0.05, 0.0, 0.1);
+    var colFilament = vec3<f32>(0.2, 0.6, 1.0);
     let colCore = vec3<f32>(1.0, 1.0, 1.0);
+
+    // Apply color shift using proper hue rotation
+    colFilament = hueShift(colFilament, u.zoom_params.w * 6.28);
 
     var color = mix(colVoid, colFilament, density);
     color = mix(color, colCore, smoothstep(0.8, 1.0, density));
