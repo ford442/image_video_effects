@@ -77,6 +77,7 @@ fn fbm(p: vec3<f32>) -> f32 {
     return v;
 }
 
+// Hue rotation using Rodrigues' rotation formula
 fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
     let k = vec3<f32>(0.57735, 0.57735, 0.57735);
     let cosAngle = cos(shift);
@@ -95,14 +96,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse Interaction (Gravity Well)
     let mouseRaw = u.zoom_config.yz;
     let mouse = (mouseRaw - 0.5) * vec2<f32>(resolution.x / resolution.y, 1.0) + 0.5;
-    let isMouseDown = u.zoom_config.w > 0.0; // Use click state or always active?
 
     let toMouse = mouse - uv;
     let distMouse = length(toMouse);
+    
+    // Safe normalization avoiding division by zero
+    let dirToMouse = select(vec2<f32>(0.0), normalize(toMouse), distMouse > 0.001);
     let pullStrength = 0.3 * smoothstep(0.8, 0.0, distMouse);
 
     // Warp UV towards mouse
-    uv += normalize(toMouse) * pullStrength;
+    uv += dirToMouse * pullStrength;
 
     // Domain Warping for Organic Look
     var p = vec3<f32>(uv * 3.0, time * 0.1);
@@ -126,7 +129,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var colFilament = vec3<f32>(0.2, 0.6, 1.0);
     let colCore = vec3<f32>(1.0, 1.0, 1.0);
 
-    // Apply color shift
+    // Apply color shift using proper hue rotation
     colFilament = hueShift(colFilament, u.zoom_params.w * 6.28);
 
     var color = mix(colVoid, colFilament, density);
