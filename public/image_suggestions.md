@@ -3660,6 +3660,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Emphasize the hexagonal geometry of the rocks.
 
+### Suggestion: Tachisme Action Painting
+- **Date:** 2028-07-15
+- **Prompt:** "A chaotic, energetic abstract painting in the style of Tachisme. Spontaneous splotches, drips, and blobs of thick oil paint are flung onto the canvas. There is no central focal point, just a field of raw emotion and gesture. Colors are deep crimson, jet black, and splashes of titanium white."
+- **Negative prompt:** "realistic, figurative, smooth, digital art, vector"
+- **Tags:** tachisme, abstract, painting, energetic, chaos
+- **Style / Reference:** Tachisme, Abstract Expressionism
+- **Composition:** All-over composition
+- **Color palette:** Crimson, Black, White
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280715_tachisme.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the spontaneity and texture of the paint drips.
+
+### Suggestion: Kaleidoscopic Flower Mandala
+- **Date:** 2028-07-15
+- **Prompt:** "A mesmerizing kaleidoscope pattern formed from photographic elements of vibrant tropical flowers (orchids, hibiscus, bird of paradise). The image is perfectly symmetrical, radiating from the center in complex, repeating geometric layers. The background is deep black to make the colors pop."
+- **Negative prompt:** "asymmetrical, messy, drawing, low resolution, blurry"
+- **Tags:** kaleidoscope, mandala, floral, geometric, pattern
+- **Style / Reference:** Kaleidoscope Photography, Psychedelic Art
+- **Composition:** Centered, radial symmetry
+- **Color palette:** Hot Pink, Orange, Purple, Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280715_kaleidoscope.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The symmetry must be perfect.
+
+### Suggestion: Hard Edge Geometric Abstraction
+- **Date:** 2028-07-15
+- **Prompt:** "A minimalist Hard Edge painting featuring sharp, clean transitions between flat areas of uniform color. Large geometric shapes (circles, arcs, and squares) intersect with precise edges. The paint application is smooth with no visible brushstrokes."
+- **Negative prompt:** "texture, brushstrokes, gradient, messy, realistic"
+- **Tags:** hard edge, abstract, geometric, painting, minimalist
+- **Style / Reference:** Hard Edge Painting, Ellsworth Kelly
+- **Composition:** Geometric, balanced
+- **Color palette:** Cobalt Blue, Canary Yellow, Stark White
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20280715_hard_edge.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The edges must be razor-sharp.
+
+### Suggestion: Floating Chiffon Scarf
+- **Date:** 2028-08-01
+- **Prompt:** "A dreamy, ethereal photography shot of a long piece of sheer pink chiffon fabric floating in the wind against a clear blue sky. Sunlight filters through the translucent material, creating soft folds and varying levels of opacity. The fabric looks weightless."
+- **Negative prompt:** "heavy fabric, opaque, cotton, dark, indoor"
+- **Tags:** chiffon, fabric, ethereal, wind, texture
+- **Style / Reference:** Fashion Photography, Abstract
+- **Composition:** Centered, floating
+- **Color palette:** Pastel Pink, Sky Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280801_chiffon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the translucency and the fluid shape of the fabric.
+
+### Suggestion: Synthetism Breton Landscape
+- **Date:** 2028-08-01
+- **Prompt:** "A landscape painting of the Brittany coast in the style of Synthetism (Paul Gauguin). Flat areas of bold, unnatural color (red ground, yellow trees, blue rocks) are separated by dark, rhythmic outlines. The composition is simplified, decorative, and expressive."
+- **Negative prompt:** "realistic, detailed, 3D, perspective, impressionist"
+- **Tags:** synthetism, painting, landscape, cloisonnism, art
+- **Style / Reference:** Synthetism, Paul Gauguin, Emile Bernard
+- **Composition:** Flat, decorative
+- **Color palette:** Red, Yellow, Indigo, Black outlines
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280801_synthetism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The dark outlines and flat colors are the defining features.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
