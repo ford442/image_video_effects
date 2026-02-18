@@ -3725,6 +3725,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The dark outlines and flat colors are the defining features.
 
+### Suggestion: Neoclassical Marble Hall
+- **Date:** 2028-09-01
+- **Prompt:** "A grand, photorealistic interior shot of a Neoclassical hall. Massive white marble columns with Corinthian capitals line the room. A polished checkerboard floor reflects the light. Statues of greek heroes stand in alcoves. Soft, natural light streams in from high clerestory windows."
+- **Negative prompt:** "modern, clutter, dark, dirt, low resolution"
+- **Tags:** neoclassicism, architecture, marble, interior, grand
+- **Style / Reference:** Neoclassical Architecture, Photorealism
+- **Composition:** One-point perspective, wide angle
+- **Color palette:** Marble White, Gold, Stone Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280901_neoclassical.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the symmetry and the pristine nature of the marble.
+
+### Suggestion: Iridescent Cellophane Sculpture
+- **Date:** 2028-09-01
+- **Prompt:** "A studio macro shot of an abstract sculpture made of crumpled iridescent cellophane. The material is translucent and crinkled, refracting light into sharp shards of cyan, magenta, and yellow. It floats against a stark black background."
+- **Negative prompt:** "smooth, opaque, plastic bag, dull, blurry"
+- **Tags:** cellophane, plastic, iridescent, abstract, macro
+- **Style / Reference:** Studio Photography, Abstract
+- **Composition:** Centered object
+- **Color palette:** Iridescent Cyan, Magenta, Yellow, Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280901_cellophane.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The sharp, crinkled texture is the key.
+
+### Suggestion: Supernova Remnant
+- **Date:** 2028-09-01
+- **Prompt:** "A spectacular space telescope image of a supernova remnant. Expanding shells of ionized gas glow in vibrant shockwaves of red (sulfur), green (hydrogen), and blue (oxygen). A dense starfield fills the background. The structure is chaotic and filamentary."
+- **Negative prompt:** "planet, atmosphere, cartoon, painting, lowres"
+- **Tags:** supernova, space, astronomy, nebula, colorful
+- **Style / Reference:** Astrophotography, Hubble/Webb
+- **Composition:** Wide cosmic view
+- **Color palette:** Nebula Red, Green, Blue, Star White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20280901_supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Mimic the false-color palette used in scientific astrophotography.
+
+### Suggestion: Tide Pool Microcosm
+- **Date:** 2028-09-01
+- **Prompt:** "A top-down, crystal-clear view into a rocky tide pool. Colorful starfish (ochre and purple) cling to the rocks. Green sea anemones wave their tentacles. Barnacles and small crabs are visible. The water surface is still, reflecting the sky."
+- **Negative prompt:** "murky, dry, sand only, blurry, drawing"
+- **Tags:** tide pool, nature, ocean, marine life, colorful
+- **Style / Reference:** Nature Photography, National Geographic
+- **Composition:** Top-down (flat lay)
+- **Color palette:** Starfish Orange, Purple, Anemone Green, Rock Grey
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280901_tide_pool.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the water looks transparent but present.
+
+### Suggestion: Misty Fjord Kayak
+- **Date:** 2028-09-01
+- **Prompt:** "A serene, moody landscape shot of a kayak floating in a massive Norwegian fjord. Towering, steep cliffs rise vertically from the dark, glassy water, disappearing into low-hanging mist. The scale is immense. The lighting is soft and diffuse."
+- **Negative prompt:** "sunny, bright, busy, motorboat, tropical"
+- **Tags:** fjord, landscape, moody, nature, kayak
+- **Style / Reference:** Landscape Photography, Cinematic
+- **Composition:** Wide shot, tiny subject (kayak) for scale
+- **Color palette:** Slate Grey, Deep Blue, Mist White, Kayak Red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280901_fjord.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the verticality of the cliffs and the smallness of the kayak.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -3747,9 +3812,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Wind Farm, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Gothic Revival, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Bronze, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate.
+- **Subjects:** Geode, Iceberg, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Airport, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Concert, Wind Farm, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel.
 
 ---
 
