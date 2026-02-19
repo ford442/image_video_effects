@@ -344,3 +344,797 @@ hr {
     color: #fff;
     border-color: #666;
 }
+
+/* =====================================================
+   WEBCAM / SELFIE MODE STYLES
+   ===================================================== */
+
+/* Webcam Button - Premium Style */
+.webcam-btn {
+    background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
+    border: none;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(238, 90, 90, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.webcam-btn:hover {
+    background: linear-gradient(145deg, #ff7b7b, #ff6b6b);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(238, 90, 90, 0.4);
+}
+
+.webcam-btn:active {
+    transform: translateY(0);
+}
+
+.webcam-btn.active {
+    background: linear-gradient(145deg, #4ade80, #22c55e);
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+}
+
+.webcam-btn.active:hover {
+    background: linear-gradient(145deg, #5ee88f, #4ade80);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+/* Webcam Error Message */
+.webcam-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #fca5a5;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* Webcam Shader Suggestions Section */
+.webcam-shaders-section {
+    background: linear-gradient(145deg, rgba(97, 218, 251, 0.08), rgba(97, 218, 251, 0.03));
+    border: 1px solid rgba(97, 218, 251, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.webcam-shaders-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #61dafb;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webcam-shaders-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.webcam-shader-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: none;
+    font-weight: 500;
+}
+
+.webcam-shader-chip:hover {
+    background: rgba(97, 218, 251, 0.15);
+    border-color: rgba(97, 218, 251, 0.4);
+    color: #61dafb;
+    transform: scale(1.02);
+}
+
+.webcam-shader-chip.active {
+    background: linear-gradient(145deg, #61dafb, #4a9fbf);
+    color: #121212;
+    border-color: #61dafb;
+    font-weight: 600;
+}
+
+/* Canvas Webcam Mode */
+.canvas-wrapper {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.canvas-wrapper.webcam-active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 3px solid #22c55e;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 10;
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.2);
+    }
+}
+
+.webcam-canvas {
+    border-radius: 4px;
+}
+
+/* Live Recording Indicator */
+.webcam-indicator {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    z-index: 20;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.recording-dot {
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(0.85);
+    }
+}
+
+/* =====================================================
+   🎰 ROULETTE / SURPRISE ME STYLES
+   ===================================================== */
+
+.roulette-section {
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05));
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 15px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.roulette-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 215, 0, 0.1) 50%,
+        transparent 70%
+    );
+    animation: shimmer 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.roulette-btn {
+    width: 100%;
+    background: linear-gradient(145deg, #ffd700, #ff8c00);
+    border: none;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 
+        0 4px 15px rgba(255, 215, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.roulette-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 
+        0 6px 25px rgba(255, 215, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.roulette-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.roulette-btn.spinning {
+    animation: slot-machine-shake 0.3s ease-in-out;
+}
+
+@keyframes slot-machine-shake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-5px) rotate(-2deg); }
+    20% { transform: translateX(5px) rotate(2deg); }
+    30% { transform: translateX(-5px) rotate(-2deg); }
+    40% { transform: translateX(5px) rotate(2deg); }
+    50% { transform: translateX(-3px) rotate(-1deg); }
+    60% { transform: translateX(3px) rotate(1deg); }
+    70% { transform: translateX(-2px) rotate(-1deg); }
+    80% { transform: translateX(2px) rotate(1deg); }
+    90% { transform: translateX(-1px) rotate(0deg); }
+}
+
+.roulette-icon {
+    font-size: 24px;
+    animation: bounce 0.5s ease infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-3px); }
+}
+
+.roulette-text {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.chaos-mode-toggle {
+    margin-top: 12px;
+    z-index: 1;
+    position: relative;
+}
+
+.chaos-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.chaos-label:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.chaos-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #ff8c00;
+}
+
+.chaos-text {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ff8c00;
+}
+
+.chaos-text small {
+    font-size: 11px;
+    color: #888;
+    font-weight: normal;
+}
+
+.roulette-shortcut-hint {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #666;
+}
+
+.roulette-shortcut-hint kbd {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: monospace;
+    color: #aaa;
+}
+
+/* Roulette Flash Overlay */
+.roulette-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.15s ease-out;
+}
+
+.roulette-flash.flash-active {
+    opacity: 0.3;
+    transition: opacity 0.05s ease-out;
+}
+
+/* Confetti Styles */
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10000;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confetti-fall 3s ease-out forwards;
+    border-radius: 2px;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg) scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* Chaos Mode Active Indicator */
+.chaos-active-indicator {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    background: linear-gradient(145deg, #ff4757, #ff6348);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 100;
+    animation: chaos-pulse 1s ease-in-out infinite;
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+}
+
+@keyframes chaos-pulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+    }
+    50% { 
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(255, 71, 87, 0.6);
+    }
+}
+
+/* =====================================================
+   ⏺️ RECORD & SHARE STYLES
+   ===================================================== */
+
+/* Record Section */
+.record-section {
+    background: linear-gradient(145deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.04));
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.record-btn {
+    width: 100%;
+    background: linear-gradient(145deg, #ef4444, #dc2626);
+    border: none;
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.record-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+}
+
+.record-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.record-btn.recording {
+    background: linear-gradient(145deg, #7f1d1d, #991b1b);
+    animation: record-pulse 1s ease-in-out infinite;
+}
+
+@keyframes record-pulse {
+    0%, 100% { 
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+    }
+    50% { 
+        box-shadow: 0 4px 25px rgba(239, 68, 68, 0.8);
+    }
+}
+
+.record-icon {
+    font-size: 20px;
+}
+
+.record-text {
+    position: relative;
+    z-index: 1;
+}
+
+.record-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    animation: pulse-ring 1.5s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+.recording-progress {
+    margin-top: 10px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.recording-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    transition: width 1s linear;
+}
+
+.record-hint {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #888;
+}
+
+/* Recording Indicator Overlay */
+.recording-indicator-overlay {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    z-index: 100;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    animation: record-overlay-pulse 1s ease-in-out infinite;
+}
+
+.recording-dot-large {
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+@keyframes record-overlay-pulse {
+    0%, 100% { 
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% { 
+        box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.3);
+    }
+}
+
+/* =====================================================
+   SHARE MODAL STYLES
+   ===================================================== */
+
+.share-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.share-modal {
+    background: linear-gradient(145deg, #1e1e1e, #181818);
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.share-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 28px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.share-modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.share-modal-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.share-modal-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 24px;
+    color: #fff;
+}
+
+.share-modal-header p {
+    margin: 0;
+    color: #888;
+    font-size: 14px;
+}
+
+.share-link-section {
+    margin-bottom: 25px;
+}
+
+.share-link-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.share-link-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.share-link-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 12px 15px;
+    color: #fff;
+    font-size: 13px;
+    font-family: monospace;
+    outline: none;
+}
+
+.share-link-input:focus {
+    border-color: #61dafb;
+}
+
+.share-copy-btn {
+    background: linear-gradient(145deg, #61dafb, #4a9fbf);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: #121212;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.share-copy-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(97, 218, 251, 0.3);
+}
+
+.share-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.share-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.share-btn.twitter {
+    background: linear-gradient(145deg, #1da1f2, #0d8bd9);
+    color: white;
+}
+
+.share-btn.twitter:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(29, 161, 242, 0.4);
+}
+
+.share-btn.tiktok {
+    background: linear-gradient(145deg, #ff0050, #00f2ea);
+    color: white;
+    background-size: 200% 200%;
+    animation: tiktok-gradient 3s ease infinite;
+}
+
+@keyframes tiktok-gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.share-btn.tiktok:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 0, 80, 0.4);
+}
+
+.share-modal-footer {
+    text-align: center;
+}
+
+.share-done-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #444;
+    color: #fff;
+    padding: 12px 40px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.share-done-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #666;
+}
