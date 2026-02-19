@@ -3790,6 +3790,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Emphasize the verticality of the cliffs and the smallness of the kayak.
 
+### Suggestion: Gothic Revival Skyscraper
+- **Date:** 2028-09-15
+- **Prompt:** "A towering Neo-Gothic skyscraper rising above a modern metropolis at twilight. The building features flying buttresses, pointed arches, and gargoyles, but is constructed from sleek steel and glass. Fog swirls around the illuminated spire."
+- **Negative prompt:** "old stone, ruins, medieval, blurry, low angle"
+- **Tags:** gothic revival, architecture, skyscraper, city, atmospheric
+- **Style / Reference:** Architectural Visualization, Gotham City
+- **Composition:** Low angle, looking up
+- **Color palette:** Steel Blue, Fog Grey, Warm Window Light
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280915_gothic_skyscraper.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Contrast the historic style with modern materials.
+
+### Suggestion: Iceberg Underwater Cathedral
+- **Date:** 2028-09-15
+- **Prompt:** "A split-level landscape shot of a massive iceberg in the Antarctic. Above the water, it is a blinding white jagged peak. Below the waterline, the ice forms a deep blue, cathedral-like structure with caves and ridges fading into the abyss."
+- **Negative prompt:** "water only, sky only, dark, scary, dirty ice"
+- **Tags:** iceberg, underwater, landscape, nature, split-level
+- **Style / Reference:** Nature Photography, National Geographic
+- **Composition:** Split-level (half over/under water)
+- **Color palette:** Ice White, Deep Ocean Blue, Cyan
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20280915_iceberg.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The gradient of blue in the underwater ice is crucial.
+
+### Suggestion: Cathedral Termite Mound
+- **Date:** 2028-09-15
+- **Prompt:** "A majestic, castle-like termite mound standing tall in the African savanna at golden hour. The red clay structure is incredibly detailed, with spires and ventilation chimneys. Silhouetted acacia trees and a setting sun are in the background."
+- **Negative prompt:** "small ant hill, dirt pile, blurry, noon lighting"
+- **Tags:** termite mound, nature, landscape, texture, savanna
+- **Style / Reference:** Nature Photography, Macro texture
+- **Composition:** Eye level, environmental portrait
+- **Color palette:** Red Clay, Golden Sunlight, Savanna Green
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20280915_termite_mound.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the architectural complexity of the mound.
+
+### Suggestion: Fireworks Reflection
+- **Date:** 2028-09-15
+- **Prompt:** "A long-exposure photograph of a grand fireworks display over a calm bay. Bursts of red, gold, and green light flower in the night sky. The smooth water surface acts as a mirror, creating perfect, elongated reflections of the explosions."
+- **Negative prompt:** "smoke obscuring view, short exposure, dots, daytime"
+- **Tags:** fireworks, long exposure, night, reflection, celebration
+- **Style / Reference:** Night Photography, Long Exposure
+- **Composition:** Wide shot, symmetry
+- **Color palette:** Black, Neon Red, Gold, Green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20280915_fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The long exposure trails are the key aesthetic.
+
+### Suggestion: Weaver Bird Nests
+- **Date:** 2028-09-15
+- **Prompt:** "A telephoto shot of a colony of intricate weaver bird nests hanging from the branches of a thorny acacia tree. The nests are spherical and woven from green and yellow grass blades. A bright yellow weaver bird is perched at the entrance of one nest."
+- **Negative prompt:** "messy, studio, drawing, cartoon, dead tree"
+- **Tags:** bird nest, nature, wildlife, texture, weaving
+- **Style / Reference:** Wildlife Photography, National Geographic
+- **Composition:** Close-up, depth of field
+- **Color palette:** Grass Green, Straw Yellow, Sky Blue
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20280915_weaver_nests.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the woven texture of the grass.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -3812,9 +3877,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Gothic Revival, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Mannerism.
 - **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Bronze, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate.
-- **Subjects:** Geode, Iceberg, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Airport, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Concert, Wind Farm, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel.
+- **Subjects:** Geode, DNA Helix, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Airport, Oasis, Ant Farm, Beehive, Beaver Dam, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Concert, Wind Farm, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Meteor Shower, Glacier Cave, Bamboo Forest, Coral Spawning.
 
 ---
 
