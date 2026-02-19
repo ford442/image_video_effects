@@ -136,7 +136,6 @@ function MainApp() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // --- State: Mouse Interaction ---
     const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
@@ -149,7 +148,6 @@ function MainApp() {
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
-    const canvasContainerRef = useRef<HTMLDivElement | null>(null);
 
     // --- Helpers ---
     const setMode = useCallback((index: number, mode: RenderMode) => {
@@ -691,6 +689,20 @@ function MainApp() {
     // Restore state from URL hash on load
     useEffect(() => {
         restoreStateFromHash();
+    }, [restoreStateFromHash]);
+
+    const stopRecording = useCallback(() => {
+        if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+            recordingTimerRef.current = null;
+        }
+
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+        }
+
+        setIsRecording(false);
+        setRecordingCountdown(8);
     }, []);
 
     const startRecording = useCallback(async () => {
@@ -773,21 +785,7 @@ function MainApp() {
             console.error('Recording failed:', e);
             setStatus('❌ Recording failed. Browser may not support this feature.');
         }
-    }, [generateShareableLink]);
-
-    const stopRecording = useCallback(() => {
-        if (recordingTimerRef.current) {
-            clearInterval(recordingTimerRef.current);
-            recordingTimerRef.current = null;
-        }
-        
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            mediaRecorderRef.current.stop();
-        }
-        
-        setIsRecording(false);
-        setRecordingCountdown(8);
-    }, []);
+    }, [generateShareableLink, stopRecording]);
 
     // Cleanup recording on unmount
     useEffect(() => {
