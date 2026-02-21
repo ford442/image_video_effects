@@ -15,6 +15,13 @@ LOCAL_DIRECTORY = "build"
 # The directory on the server where the files should go (e.g., 'public_html/wasm-game').
 REMOTE_DIRECTORY = "test.1ink.us/image_video_effects"
 
+from paramiko import SCPClient  # Add this import
+
+def upload_directory_scp(scp_client, local_path, remote_path):
+    """Upload using SCP."""
+    print(f"Uploading directory: {local_path} -> {remote_path}")
+    scp_client.put(local_path, remote_path, recursive=True)  # Handles files/dirs recursively
+
 def upload_directory(sftp_client, local_path, remote_path):
     """
     Recursively uploads a directory and its contents to the remote server.
@@ -52,13 +59,16 @@ def main():
         print("Connecting to server...")
         transport.connect(username=USERNAME, password=password)
         print("Connection successful!")
+        scp = SCPClient(transport)  # Use SCP instead of SFTP
 
         # Create an SFTP client from the transport
         sftp = paramiko.SFTPClient.from_transport(transport)
         print(f"Starting upload of '{LOCAL_DIRECTORY}' to '{REMOTE_DIRECTORY}'...")
-
+        upload_directory_scp(scp, LOCAL_DIRECTORY, REMOTE_DIRECTORY)
+        scp.close()
+        transport.close()
         # Start the recursive upload
-        upload_directory(sftp, LOCAL_DIRECTORY, REMOTE_DIRECTORY)
+        # upload_directory(sftp, LOCAL_DIRECTORY, REMOTE_DIRECTORY)
 
         print("\n✅ Deployment complete!")
 
@@ -77,4 +87,5 @@ if __name__ == "__main__":
         print(f"Error: Local directory '{LOCAL_DIRECTORY}' not found. Did you run 'npm run build' first?")
     else:
         main()
+
 
