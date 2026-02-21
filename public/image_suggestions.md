@@ -3920,6 +3920,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ensure the meteor streaks look like light trails, not solid objects.
 
+### Suggestion: Arashiyama Bamboo Lanterns
+- **Date:** 2028-10-15
+- **Prompt:** "A magical night scene in the Arashiyama Bamboo Grove. Towering green bamboo stalks stretch endlessly upwards. The path is illuminated by hundreds of warm, glowing paper lanterns floating in the air. Fireflies dance in the mist. The atmosphere is ethereal and serene."
+- **Negative prompt:** "daylight, sun, tourists, messy, scary, dark"
+- **Tags:** bamboo, forest, lantern, night, atmospheric
+- **Style / Reference:** Landscape Photography, Fantasy
+- **Composition:** Vertical, leading lines
+- **Color palette:** Bamboo Green, Lantern Gold, Mist White, Night Blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20281015_bamboo_lanterns.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the verticality of the bamboo and the glow of the lanterns.
+
+### Suggestion: Coral Spawning Spectacle
+- **Date:** 2028-10-15
+- **Prompt:** "A spectacular underwater macro shot of a coral reef during a mass spawning event. Billions of tiny pink and orange gametes are released into the water column like an underwater snowstorm. The scene is lit by moonlight filtering from the surface and bioluminescence."
+- **Negative prompt:** "fish, murky, daylight, low resolution, blurry"
+- **Tags:** coral, spawning, underwater, macro, nature
+- **Style / Reference:** Underwater Photography, National Geographic
+- **Composition:** Macro, chaotic but beautiful
+- **Color palette:** Coral Pink, Orange, Deep Blue, Moonlight White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20281015_coral_spawning.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the density of the spawn.
+
+### Suggestion: Glacial Blue Cave
+- **Date:** 2028-10-15
+- **Prompt:** "Inside a mesmerizing glacial ice cave. The walls are made of translucent, scalloped blue ice that glows with transmitted sunlight. The floor is a frozen river. The texture of the ice bubbles and cracks is visible in high detail."
+- **Negative prompt:** "rock cave, dark, dirty ice, snow, surface"
+- **Tags:** glacier, ice cave, nature, texture, blue
+- **Style / Reference:** Landscape Photography, Abstract
+- **Composition:** Interior view, leading lines
+- **Color palette:** Ice Blue, Cyan, White, Deep Blue
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20281015_ice_cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The translucency of the blue ice is the key visual.
+
+### Suggestion: Golden Hive Interior
+- **Date:** 2028-10-15
+- **Prompt:** "A macro photography shot from inside a honeybee hive. Golden hexagonal honeycomb cells are filled with glistening honey and pollen. Worker bees crawl over the surface. The lighting is warm and amber, creating a cozy, busy atmosphere."
+- **Negative prompt:** "outside hive, swarm, scary, wasp, dirt"
+- **Tags:** beehive, honey, macro, nature, texture
+- **Style / Reference:** Macro Photography, Nature
+- **Composition:** Extreme close-up
+- **Color palette:** Honey Gold, Amber, Bee Yellow/Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20281015_beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the geometric perfection of the honeycomb.
+
+### Suggestion: Futuristic Eco-Airport
+- **Date:** 2028-10-15
+- **Prompt:** "A wide, cinematic shot of a futuristic Solarpunk airport hub. The terminal is a massive organic structure made of glass and timber, filled with hanging gardens. Silent, electric aircraft with blended-wing bodies are docked at the gates. Sunlight floods the atrium."
+- **Negative prompt:** "concrete, smog, grey, traditional plane, busy crowds"
+- **Tags:** airport, solarpunk, futuristic, architecture, sci-fi
+- **Style / Reference:** Architectural Visualization, Solarpunk
+- **Composition:** Wide interior/exterior blend
+- **Color palette:** Sky Blue, Leaf Green, Timber Brown, Glass White
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20281015_eco_airport.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Combine high-tech transport with lush nature.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -3942,9 +4007,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Bronze, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate.
-- **Subjects:** Geode, DNA Helix, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Airport, Oasis, Ant Farm, Beehive, Beaver Dam, Spider Web, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Bioluminescent Plankton, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Glacier Cave, Bamboo Forest, Coral Spawning.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Neo-Futurism, Orphism, Rayonism.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Bronze, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Chalk, Clay, Resin, Smoke, Dry Ice.
+- **Subjects:** Geode, DNA Helix, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Oasis, Ant Farm, Beaver Dam, Spider Web, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Bioluminescent Plankton, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Victorian Opera House, Pyrite Cube, Dry Ice Fog, Hot Air Balloon Festival, Deep Sea Submersible.
 
 ---
 
