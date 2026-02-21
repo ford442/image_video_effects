@@ -62,7 +62,7 @@ def main():
         scp = SCPClient(transport)  # Use SCP instead of SFTP
 
         # Create an SFTP client from the transport
-        sftp = paramiko.SFTPClient.from_transport(transport)
+        #sftp = paramiko.SFTPClient.from_transport(transport)
         print(f"Starting upload of '{LOCAL_DIRECTORY}' to '{REMOTE_DIRECTORY}'...")
         upload_directory_scp(scp, LOCAL_DIRECTORY, REMOTE_DIRECTORY)
         scp.close()
@@ -87,5 +87,6 @@ if __name__ == "__main__":
         print(f"Error: Local directory '{LOCAL_DIRECTORY}' not found. Did you run 'npm run build' first?")
     else:
         main()
+
 
 
