@@ -27,10 +27,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 struct Uniforms {
-  config: vec4<f32>;
-  zoom_config: vec4<f32>;
-  zoom_params: vec4<f32>;
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>
 };
 
 // Mapping notes:
