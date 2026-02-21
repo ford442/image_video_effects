@@ -3855,6 +3855,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Focus on the woven texture of the grass.
 
+### Suggestion: Mannerist Hologram Portrait
+- **Date:** 2028-10-01
+- **Prompt:** "A futuristic holographic portrait of a noble figure, rendered in the style of Mannerism (Parmigianino). The figure has an elongated neck and fingers, glowing with neon blue and pink light. The hologram flickers slightly, revealing a dark, tech-noir city in the background."
+- **Negative prompt:** "photorealistic, proportional, normal, daylight, solid"
+- **Tags:** mannerism, hologram, sci-fi, portrait, neon
+- **Style / Reference:** Mannerism, Cyberpunk
+- **Composition:** Portrait, elongated verticality
+- **Color palette:** Neon Blue, Hot Pink, Black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20281001_mannerist_hologram.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The elongation of the figure is the key Mannerist element.
+
+### Suggestion: Iridescent Metamorphosis
+- **Date:** 2028-10-01
+- **Prompt:** "A macro photography shot of a translucent alien cocoon hanging from a bioluminescent vine in a dark forest. Inside the cocoon, a glowing, shifting silhouette of a creature is visible. The surface of the cocoon is wet and iridescent, reflecting the surrounding jungle lights."
+- **Negative prompt:** "dry, opaque, butterfly, daylight, cartoon"
+- **Tags:** cocoon, alien, macro, nature, bioluminescence
+- **Style / Reference:** Macro Photography, Sci-Fi Nature
+- **Composition:** Close-up, centered
+- **Color palette:** Bioluminescent Green, Iridescent Pearl, Black
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20281001_alien_cocoon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the translucency and the mystery of what's inside.
+
+### Suggestion: Holographic Concert
+- **Date:** 2028-10-01
+- **Prompt:** "A massive stadium concert scene where the performers are giant, towering holographic avatars made of pure light. They loom over a sea of thousands of fans holding glow sticks. Lasers cut through the stage fog. The scale is immense and electric."
+- **Negative prompt:** "small stage, empty, daytime, acoustic, boring"
+- **Tags:** concert, hologram, cyberpunk, crowd, atmospheric
+- **Style / Reference:** Concert Photography, Cyberpunk
+- **Composition:** Wide angle, looking over the crowd
+- **Color palette:** Laser Green, Stage Purple, Electric Blue
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20281001_holographic_concert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the scale of the holograms compared to the crowd.
+
+### Suggestion: Offshore Wind Array
+- **Date:** 2028-10-01
+- **Prompt:** "A minimalist, high-angle aerial drone shot of an endless grid of white offshore wind turbines emerging from heavy morning fog. The dark grey ocean is calm. The turbines fade into the white mist in the distance, creating a sense of infinity and silence."
+- **Negative prompt:** "sunny, blue sky, land, birds, messy"
+- **Tags:** wind farm, ocean, minimalist, fog, aerial
+- **Style / Reference:** Aerial Photography, Minimalism
+- **Composition:** Symmetrical, repetition
+- **Color palette:** Fog White, Turbine White, Ocean Grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20281001_wind_farm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The repetition and the fading into fog are crucial.
+
+### Suggestion: Perseid Meteor Shower
+- **Date:** 2028-10-01
+- **Prompt:** "A breathtaking long-exposure landscape shot of the Perseid meteor shower over a red rock desert canyon. Star trails form concentric circles around Polaris. Bright, colorful meteor streaks (green and gold) cut across the purple night sky. The canyon is dimly lit by starlight."
+- **Negative prompt:** "daylight, clouds, airplane trails, noisy, short exposure"
+- **Tags:** meteor shower, astronomy, landscape, desert, long exposure
+- **Style / Reference:** Astrophotography, Long Exposure
+- **Composition:** Wide landscape, sky dominant
+- **Color palette:** Night Sky Purple, Star Trail White, Meteor Green/Gold
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20281001_meteor_shower.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure the meteor streaks look like light trails, not solid objects.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -3877,9 +3942,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Mannerism.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism.
 - **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Bronze, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate.
-- **Subjects:** Geode, DNA Helix, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Airport, Oasis, Ant Farm, Beehive, Beaver Dam, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Concert, Wind Farm, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Meteor Shower, Glacier Cave, Bamboo Forest, Coral Spawning.
+- **Subjects:** Geode, DNA Helix, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Airport, Oasis, Ant Farm, Beehive, Beaver Dam, Spider Web, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Bioluminescent Plankton, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Glacier Cave, Bamboo Forest, Coral Spawning.
 
 ---
 
