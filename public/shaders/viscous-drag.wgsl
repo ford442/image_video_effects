@@ -98,7 +98,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mix current offset with average neighbor offset based on viscosity
     let diffusedOffset = mix(prevOffset, avg, viscosity);
 
-    let newOffset = diffusedOffset * recovery + force;
+    var newOffset = diffusedOffset * recovery + force;
 
     // Clamp offset to avoid crazy artifacts
     newOffset = clamp(newOffset, vec2<f32>(-0.5), vec2<f32>(0.5));
