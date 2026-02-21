@@ -1,86 +1,101 @@
-# New Shader Plan: Generative: Neuro-Cosmos
+# New Shader Plan: Micro-Cosmos
 
-## Concept
-A mesmerizing 3D generative visualization of a "Neuro-Cosmos" — a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe. The scene consists of an infinite, self-repeating 3D web of glowing nodes (neurons/stars) connected by filament-like structures (synapses/dark matter bridges), with pulses of energy traveling through them.
+## 1. Concept
+**Shader Name**: Micro-Cosmos
+**ID**: `gen-micro-cosmos`
+**Category**: Generative
+**Description**: A generative simulation of microscopic life forms drifting in a fluid medium. Features translucent, gooey cell membranes, internal organelles, and floating particulate matter (marine snow), all rendered with raymarching and fake subsurface scattering.
 
-## Metadata
-- **ID:** `gen-neuro-cosmos`
-- **Name:** Neuro-Cosmos
-- **Category:** Generative
-- **Tags:** ["network", "neural", "cosmic", "web", "3d", "raymarching", "voronoi", "glowing", "cyber"]
+## 2. Visual Style
+-   **Environment**: Deep blue/cyan/purple fluid background with vignettes, creating a sense of depth and immersion.
+-   **Entities**: Soft, glowing, translucent entities (amoebas, paramecia) with varying sizes and shapes. Some contain smaller, denser spheres (organelles).
+-   **Motion**: Organic, fluid motion. Entities wobble and drift slowly, influenced by simulated currents and Brownian motion.
+-   **Lighting**: Rim lighting (Fresnel) to emphasize the translucent membranes. Inner glow (emission) for organelles. Soft shadows and absorption (Beer's Law approximation) to simulate fluid density.
+-   **Depth of Field**: Blur effect for distant objects to enhance the microscopic scale.
 
-## Features
-1.  **Infinite 3D Web:** Uses 3D Cellular Noise (Voronoi) metrics to generate an organic, interconnected lattice structure.
-    - `F1` (closest feature point) defines the cell centers (Neurons).
-    - `F2 - F1` (difference between second and first closest) defines the cell boundaries (Synaptic Web).
-2.  **Dynamic Energy Pulses:** Signals travel along the web strands, simulated by modulating the emission based on time and distance from cell centers.
-3.  **Volumetric Glow:** A "fog" accumulation step during raymarching or a post-process glow based on the SDF distance to create a dreamy, ethereal atmosphere.
-4.  **Interactive Camera:** Mouse controls the camera orbit (Yaw/Pitch) to explore the structure.
-5.  **Interactive Excitation:** Mouse clicks or proximity could trigger "bursts" of activity in the network.
+## 3. Technical Implementation (WGSL)
 
-## Parameters (Uniforms)
-The shader will utilize the standard `Uniforms` struct:
-- `u.config.x` (Time): Drivers the pulse animation and camera drift.
-- `u.zoom_config.yz` (Mouse): Controls camera rotation.
-- `u.zoom_params`:
-    - `x`: **Network Density** (Scales the Voronoi grid).
-    - `y`: **Pulse Speed** (Speed of energy signals).
-    - `z`: **Glow Intensity** (Brightness of the web and nodes).
-    - `w`: **Connection Thickness** (Adjusts the `F2-F1` threshold for web strands).
+### SDF Primitives
+-   `sdEllipsoid(p, r)`: Base shape for cells.
+-   `sdSphere(p, s)`: Organelles.
+-   **Displacement**: `d += sin(p.x * 10.0 + time) * 0.1` applied to the base shape to create wobbling membranes.
+-   `smin(d1, d2, k)`: Smooth minimum function to blend cells together softly, mimicking fluid tension and cell fusion/division.
 
-## Proposed Code Structure
+### Domain Repetition
+-   Infinite grid using `mod` (or `fract`) on `p.xz` (or `p.xyz`).
+-   Random offsets per cell using `hash(id)` to break uniformity in position, size, and rotation.
+-   Use `zoom_params.x` (Population Density) to control the grid size or probability of spawning a cell.
 
-### 1. Hash Function
-Standard 3D hash for Voronoi feature point generation.
-```wgsl
-fn hash33(p: vec3<f32>) -> vec3<f32> {
-    let p3 = fract(p * vec3<f32>(.1031, .1030, .0973));
-    let p3_mod = p3 + dot(p3, p3.yxz + 33.33);
-    return fract((p3_mod.xxy + p3_mod.yxx) * p3_mod.zyx);
-}
-```
+### Movement Logic
+-   `p.y += time * speed`: Vertical drift.
+-   `p.xz += flow * time`: Horizontal drift.
+-   `rotate2D` based on time and random seed for tumbling motion.
+-   **Mouse Interaction**: Mouse position (`u.zoom_config.yz`) acts as an attractor or repulsor point, modifying the flow field or density near the cursor.
 
-### 2. Voronoi / SDF Logic
-Calculate `F1` and `F2` distances to generate the geometry.
-```wgsl
-fn voronoiMap(p: vec3<f32>) -> vec4<f32> {
-    // Returns vec4(d, cell_id_hash, edge_dist, ...)
-    // ... implementation of 3x3x3 neighbor search ...
-    // Calculate d = min(d, distance(p, neighbor_pos))
-    // Keep track of F1 and F2
-    // Result:
-    // Dist to Neuron Surface = F1 - radius
-    // Dist to Synapse = (F2 - F1) - thickness
-    // Smooth min to blend them.
-}
-```
+### Lighting Model
+-   **Rim Light**: `pow(1.0 - dot(n, -rd), 3.0)` for membrane edges.
+-   **Translucency**: Fake SSS by blending background color with object color based on thickness (SDF distance).
+-   **Absorption**: Darken color based on distance `t` (fog).
 
-### 3. Raymarching
-Standard raymarching loop with:
-- `map()` calls.
-- Accumulation of "glow" (translucency/additive color) when the ray is close to geometry, to simulate volume.
-- Early exit on hit or max distance.
+### Uniforms Mapping
+-   `u.zoom_params.x`: **Population Density** (0.0 - 1.0) -> Controls grid cell size or spawn probability.
+-   `u.zoom_params.y`: **Fluid Viscosity/Speed** (0.0 - 1.0) -> Controls drift speed and wobble frequency.
+-   `u.zoom_params.z`: **Membrane Glow** (0.0 - 1.0) -> Controls the intensity of the rim light and emission.
+-   `u.zoom_params.w`: **Color Shift** (0.0 - 1.0) -> Shifts the hue of the environment and organisms.
+-   `u.zoom_config.yz`: **Mouse Interaction** (Attract/Repel).
 
-### 4. Coloring
-- **Nodes:** Bright white/gold centers fading to blue/purple.
-- **Strands:** Darker blue/cyan, lighting up with pulses.
-- **Pulse Logic:** `sin(dist_along_strand - time * speed)` to modulate brightness.
-
-## JSON Configuration (`gen-neuro-cosmos.json`)
+## 4. JSON Configuration Draft (`shader_definitions/generative/gen-micro-cosmos.json`)
 ```json
 {
-  "name": "Neuro-Cosmos",
-  "id": "gen-neuro-cosmos",
-  "type": "generative",
-  "source": "shaders/gen-neuro-cosmos.wgsl",
-  "uniforms": {
-    "zoom_params": {
-      "x": 1.0,
-      "y": 1.0,
-      "z": 0.5,
-      "w": 0.1
+  "id": "gen-micro-cosmos",
+  "name": "Micro-Cosmos",
+  "url": "shaders/gen-micro-cosmos.wgsl",
+  "category": "generative",
+  "description": "A microscopic view of a teeming liquid universe, filled with procedural microorganisms, drifting particles, and organic structures.",
+  "tags": ["biological", "organic", "microscopic", "liquid", "life", "floating", "generative"],
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Population Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Fluid Activity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Membrane Glow",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
     }
-  },
-  "tags": ["network", "neural", "cosmic", "3d", "generative"]
+  ]
 }
 ```
+
+## 5. Implementation Steps
+1.  **File Creation**: Create `shader_definitions/generative/gen-micro-cosmos.json` with the JSON content above.
+2.  **WGSL Skeleton**: Create `public/shaders/gen-micro-cosmos.wgsl` using the standard header from `gen-alien-flora.wgsl`.
+3.  **SDF Implementation**: Write the `map` function with `sdEllipsoid`, `sdSphere`, and domain repetition logic.
+4.  **Raymarching Loop**: Implement the standard raymarching loop.
+5.  **Lighting & Color**: Implement the custom lighting model for translucency and rim light.
+6.  **Integration**: Run `node scripts/generate_shader_lists.js` to register the new shader.
+7.  **Verification**: Test in browser (or via `CI=true npm test` for basic checks).
