@@ -240,6 +240,7 @@ def watch_mode(bucket: str):
 
 
 def main():
+    global POLL_INTERVAL
     parser = argparse.ArgumentParser(
         description='Watch GCS bucket and update image/video manifests'
     )
@@ -254,7 +255,6 @@ def main():
     
     args = parser.parse_args()
     
-    global POLL_INTERVAL
     POLL_INTERVAL = args.interval
     
     if args.daemon:
