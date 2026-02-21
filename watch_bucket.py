@@ -38,7 +38,7 @@ DEFAULT_BUCKET = os.getenv('GCS_BUCKET', 'my-sd35-space-images-2025')
 PROJECT_ID = os.getenv('GCS_PROJECT', 'sanguine-medley-204807')
 
 IMAGE_PREFIX = os.getenv('GCS_IMAGE_PREFIX', 'stablediff')
-VIDEO_PREFIX = os.getenv('GCS_VIDEO_PREFIX', 'videos')
+VIDEO_PREFIX = os.getenv('GCS_VIDEO_PREFIX', 'video')
 
 PUBLIC_DIR = Path('public')
 MANIFEST_PATH = PUBLIC_DIR / 'image_manifest.json'
@@ -172,14 +172,14 @@ def compute_manifest_hash(manifest: Dict) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
 
-def save_manifest(images: List[Dict], videos: List[Dict]) -> bool:
+def save_manifest(images: List[Dict], video: List[Dict]) -> bool:
     """Save manifests and return True if changes were detected."""
     global _last_manifest_hash
     
     # Build combined manifest
     manifest = {
         "images": images,
-        "videos": videos,
+        "video": video,
         "updated_at": datetime.now().isoformat()
     }
     
@@ -199,7 +199,7 @@ def save_manifest(images: List[Dict], videos: List[Dict]) -> bool:
     
     # Save video-only manifest for backward compatibility
     video_manifest = {
-        "videos": videos,
+        "video": video,
         "updated_at": datetime.now().isoformat()
     }
     with open(VIDEO_MANIFEST_PATH, 'w') as f:
@@ -213,17 +213,17 @@ def sync_bucket(bucket: str) -> Tuple[int, int]:
     log(f"Scanning bucket: {bucket}")
     
     images = list_blobs(bucket, IMAGE_PREFIX)
-    videos = list_blobs(bucket, VIDEO_PREFIX)
+    video = list_blobs(bucket, VIDEO_PREFIX)
     
     log(f"Found {len(images)} images in '{IMAGE_PREFIX}/'")
-    log(f"Found {len(videos)} videos in '{VIDEO_PREFIX}/'")
+    log(f"Found {len(video)} video in '{VIDEO_PREFIX}/'")
     
-    if save_manifest(images, videos):
-        log(f"Updated {MANIFEST_PATH} ({len(images)} images, {len(videos)} videos)")
+    if save_manifest(images, video):
+        log(f"Updated {MANIFEST_PATH} ({len(images)} images, {len(video)} video)")
     else:
         log("No changes detected")
     
-    return len(images), len(videos)
+    return len(images), len(video)
 
 
 def watch_mode(bucket: str):
