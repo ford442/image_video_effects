@@ -3997,6 +3997,70 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/micro_cosmos.jpg`
 - **License / Attribution:** CC0
 - **Notes:** Generative shader concept 'Micro-Cosmos'.
+### Suggestion: Orphic Sound Waves
+- **Date:** 2028-11-01
+- **Prompt:** "A vibrant abstract painting in the style of Orphism (Robert Delaunay). Circular forms and colorful discs intersect to visualize the rhythm of music. Bright, contrasting colors (orange, blue, green) create a sensation of movement and vibration. The composition is dynamic and non-representational."
+- **Negative prompt:** "realistic, figurative, dull colors, black and white, photograph"
+- **Tags:** orphism, abstract, painting, colorful, music
+- **Style / Reference:** Orphism, Robert Delaunay, Sonia Delaunay
+- **Composition:** Circular, rhythmic
+- **Color palette:** Rainbow, contrasting complementary colors
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20281101_orphism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the "simultaneity" of colors and circular geometry.
+
+### Suggestion: Foggy Victorian Opera
+- **Date:** 2028-11-01
+- **Prompt:** "A dramatic, atmospheric shot of the stage in a grand Victorian Opera House. The stage is filled with swirling, heavy dry ice fog. A single spotlight cuts through the mist, illuminating a masked figure in a black cape. The ornate gold balconies are faintly visible in the background gloom."
+- **Negative prompt:** "bright, daylight, modern, clean, neon, cartoon"
+- **Tags:** opera, victorian, fog, atmospheric, dramatic
+- **Style / Reference:** Cinematic, Gothic, Phantom of the Opera
+- **Composition:** Wide shot from audience
+- **Color palette:** Deep Red (curtains), Fog White, Gold, Shadow Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20281101_opera_fog.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The density of the dry ice fog is the key texture.
+
+### Suggestion: Pyrite Cube Cluster
+- **Date:** 2028-11-01
+- **Prompt:** "A high-resolution macro photography shot of a natural cluster of Iron Pyrite (Fool's Gold) crystals. The perfect metallic cubes interlock with each other. The surfaces are brassy-yellow and highly reflective, showing natural striations. The background is a dark slate rock."
+- **Negative prompt:** "gold bar, jewelry, processed metal, blurry, low resolution"
+- **Tags:** pyrite, crystal, macro, geometry, mineral
+- **Style / Reference:** Macro Photography, Mineralogy
+- **Composition:** Extreme close-up
+- **Color palette:** Metallic Gold/Brass, Slate Grey
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20281101_pyrite.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the perfect cubic geometry which occurs naturally.
+
+### Suggestion: Rayonist Night City
+- **Date:** 2028-11-01
+- **Prompt:** "An abstract painting of a modern city at night in the style of Rayonism (Mikhail Larionov). Beams of light ('rays') fracture the image, representing the reflection of neon signs and streetlights. The buildings are dissolved into intersecting lines of light and energy."
+- **Negative prompt:** "realistic, detailed buildings, smooth, traditional landscape"
+- **Tags:** rayonism, abstract, city, night, painting
+- **Style / Reference:** Rayonism, Mikhail Larionov, Natalia Goncharova
+- **Composition:** Diagonal rays, fragmented
+- **Color palette:** Neon Blue, Yellow, Red, Black
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20281101_rayonism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the "rays" of light rather than the objects themselves.
+
+### Suggestion: Sunrise Balloon Festival
+- **Date:** 2028-11-01
+- **Prompt:** "An Impressionist style painting of a hot air balloon festival over the rocky landscape of Cappadocia at sunrise. Hundreds of colorful balloons dot the sky. The light is soft and dappled. Loose brushstrokes capture the movement of the air and the texture of the rocks."
+- **Negative prompt:** "photograph, sharp, digital art, night, storm"
+- **Tags:** impressionism, hot air balloon, landscape, sky, painting
+- **Style / Reference:** Impressionism, Claude Monet
+- **Composition:** Wide landscape
+- **Color palette:** Pastel Pink, Sky Blue, Rock Ochre, Balloon colors
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20281101_balloon_fest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The atmosphere should feel airy and light.
 
 ## Attribution & legal
 
@@ -4020,9 +4084,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Neo-Futurism, Orphism, Rayonism.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Bronze, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Chalk, Clay, Resin, Smoke, Dry Ice.
-- **Subjects:** Geode, DNA Helix, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Oasis, Ant Farm, Beaver Dam, Spider Web, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Bioluminescent Plankton, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Victorian Opera House, Pyrite Cube, Dry Ice Fog, Hot Air Balloon Festival, Deep Sea Submersible.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Metaphysical Art, Hard Edge Painting, Tachisme, Synthetism, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Neo-Futurism, Maximalism, Silkpunk, Biomorphism, Abstract Expressionism.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Graphene, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Neon Gas, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Bronze, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Corduroy, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Chalk, Clay, Resin, Smoke, Vinyl, Geopolymer, Spider Silk.
+- **Subjects:** Geode, DNA Helix, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Oasis, Ant Farm, Beaver Dam, Spider Web, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Bioluminescent Plankton, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Deep Sea Submersible, Comet, Asteroid Belt, Exoplanet, Satellite, Orbital Habitat, Lunar Base.
 
 ---
 
