@@ -3985,6 +3985,19 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Combine high-tech transport with lush nature.
 
+### Micro-Cosmos
+- **Date:** 2024-05-27
+- **Prompt:** "A microscopic view of a teeming liquid universe, filled with procedural microorganisms, drifting particles, and organic structures. Deep blue/cyan/purple fluid background with vignettes."
+- **Negative prompt:** macroscopic, blurry, low resolution, artifacts, solid background
+- **Tags:** biological, organic, microscopic, liquid, life, floating, generative
+- **Style / Reference:** Scientific Visualization, Electron Microscope
+- **Composition:** Close-up, Depth of Field
+- **Color palette:** Deep Blue, Cyan, Purple, Bioluminescent Orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/micro_cosmos.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Generative shader concept 'Micro-Cosmos'.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

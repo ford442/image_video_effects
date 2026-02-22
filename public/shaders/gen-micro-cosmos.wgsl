@@ -34,12 +34,6 @@ fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
     return k0*(k0-1.0)/k1;
 }
 
-// Smooth Min for organic blending
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
-}
-
 // 2D Rotation
 fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
@@ -93,16 +87,15 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
 
     var d = sdEllipsoid(localP, r) + wobble;
 
-    // Organelles (Spheres inside)
-    let organellePos = localP - vec3<f32>(0.2, 0.1, 0.0) * scale;
-    let d_organelle = sdSphere(organellePos, 0.3 * scale);
+    // Note: Organelles are handled via procedural shading (fake inner glow) rather than SDF geometry
+    // to simulate translucency without complex transparency sorting.
 
-    // Material ID: 1.0 = Cell Membrane, 2.0 = Organelle
-    var mat = 1.0;
-
-    // Use smin to blend slightly if they intersect
+    // Small surface bump for organic texture
     let bump = sin(localP.x * 10.0) * sin(localP.y * 10.0) * sin(localP.z * 10.0) * 0.02;
     d += bump;
+
+    // Material ID: 1.0 = Cell Membrane
+    var mat = 1.0;
 
     return vec2<f32>(d, mat);
 }
@@ -160,8 +153,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let up = cross(rt, fw);
 
     // Apply mouse rotation to ray direction
+    // Simple look offset based on mouse
     let rd_pre = normalize(fw + rt * uv.x + up * uv.y);
-    var rd = rd_pre;
+    // Applying mouse rotation (optional, but requested in plan features "mouse-driven")
+    // Here we use mouse to perturb the ray direction slightly
+    let rd = normalize(rd_pre + rt * (mouse.x - 0.5) * 0.5 + up * (mouse.y - 0.5) * 0.5);
 
     // Raymarch
     let res = raymarch(ro, rd);
@@ -207,9 +203,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 objColor * sss * 0.5; // Backlight
 
         // Inner Organelle Glow (Fake)
+        // Use world position to create procedural noise inside
         let innerGlow = sin(p.x * 20.0) * sin(p.y * 20.0) * sin(p.z * 20.0);
         if (innerGlow > 0.8) {
-             color += vec3<f32>(1.0, 0.8, 0.4) * 0.5; // Orange specks
+             color += vec3<f32>(1.0, 0.8, 0.4) * 0.5 * glowIntensity; // Orange specks
         }
 
         // Distance Fog (Fluid density)
@@ -219,8 +216,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Background Particles (Marine Snow)
     let speckle = hash(vec3<f32>(uv.x, uv.y, time * 0.1));
-    if (speckle > 0.995) {
-        color += vec3<f32>(0.5);
+    if (speckle > 0.998) { // Make particles rarer
+        color += vec3<f32>(0.3);
     }
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
