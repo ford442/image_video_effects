@@ -1,125 +1,111 @@
-# Biomechanical Hive - New Generative Shader Plan
+# New Shader Plan: Crystal Caverns
 
 ## Concept
-A dark, atmospheric, and infinite 3D tunnel structure inspired by H.R. Giger's biomechanical art. The scene blends organic, fleshy curves with cold, industrial metallic components. The tunnel "breathes" with a slow, pulsating rhythm, and cables or veins intertwine along the walls. The viewer moves constantly forward through this alien architecture.
+"Crystal Caverns" is a 3D generative shader that creates an infinite, procedurally generated cave system filled with glowing, jagged crystals. The shader uses raymarching to render the rocky terrain and the translucent crystals, with dynamic lighting effects to simulate bioluminescence and refraction. The user can navigate through the caverns, and adjust parameters to change the density, color, and glow of the crystals.
 
 ## Metadata
-- **ID:** `gen-biomechanical-hive`
-- **Name:** Biomechanical Hive
-- **Category:** Generative
-- **Tags:** ["3d", "raymarching", "sci-fi", "horror", "organic", "metallic", "tunnel", "dark"]
+- **ID**: `gen-crystal-caverns`
+- **Name**: Crystal Caverns
+- **Category**: `generative`
+- **Tags**: `["crystal", "cave", "3d", "raymarching", "generative", "fantasy", "glowing"]`
+- **Description**: An infinite, procedural cave system illuminated by clusters of glowing crystals.
 
 ## Features
-- **Infinite Tunnel:** Uses domain repetition (modulo arithmetic) to create an endless corridor.
-- **Organic/Industrial Blend:** Smooth blending (`smin`) combines rigid geometric shapes (ribs, pipes) with organic noise displacement.
-- **Atmospheric Lighting:** Dark fog fades distant structures into blackness. High specular highlights simulate wet, slimy surfaces.
-- **Pulse Animation:** The entire structure subtly expands and contracts, simulating breathing.
-- **Interactive Camera:** Mouse position controls the camera's looking direction (yaw/pitch) while movement is automatic forward.
+- **Infinite Terrain**: Uses FBM noise and domain repetition to create endless cave structures.
+- **Translucent Crystals**: Rendered with a custom material shader that approximates refraction and internal reflection.
+- **Dynamic Lighting**: Point lights emanate from the crystals, illuminating the surrounding rock.
+- **Mouse Interaction**: Mouse movement controls the camera view (pitch/yaw) or the position of a "lantern" light.
+- **Parameters**: Adjustable crystal density, color palette, glow intensity, and cave scale.
 
 ## Proposed Code Structure (WGSL)
 
-### Uniforms
-Standard `Uniforms` struct.
-- `u.zoom_config.yz`: Mouse X/Y for camera look.
-- `u.time`: Animation driver.
-- `u.zoom_params`:
-    - `x`: Pulse Speed / Breathing Rate
-    - `y`: Structural Complexity (Noise scale/amount)
-    - `z`: Metallic Shine (Specular intensity)
-    - `w`: Fog Density
+### Header
+Standard shader header with uniforms and texture bindings.
 
 ### Helper Functions
-- `sdSphere`, `sdTorus`, `sdCylinder`: Basic primitives.
-- `smin(a, b, k)`: Polynomial smooth minimum for blending shapes organically.
-- `rot2D(angle)`: 2D rotation matrix for twisting the tunnel.
+- `rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32>`: Rotates a 2D vector.
+- `fbm(p: vec3<f32>) -> f32`: Fractal Brownian Motion for terrain noise.
+- `sdOctahedron(p: vec3<f32>, s: f32) -> f32`: Signed Distance Function for an octahedron (crystal shape).
+- `sdBox(p: vec3<f32>, b: vec3<f32>) -> f32`: SDF for a box (alternative crystal shape).
+- `opUnion(d1: f32, d2: f32) -> f32`: Union of two SDFs.
+- `opSmoothUnion(d1: f32, d2: f32, k: f32) -> f32`: Smooth union for organic blending.
+- `opSubtraction(d1: f32, d2: f32) -> f32`: Subtraction for carving caves.
 
 ### Map Function
-```wgsl
-fn map(p: vec3<f32>) -> f32 {
-    // 1. Domain Repetition for infinite tunnel
-    let period = 4.0;
-    let cell_z = floor(p.z / period);
-    let z = (fract(p.z / period) - 0.5) * period; // centered z in cell
-    let q = vec3<f32>(p.x, p.y, z);
+`fn map(p: vec3<f32>) -> vec2<f32>`
+- **Terrain**: Generate a large-scale noise field (`fbm`) to define the cave walls. Use `abs(p.y) - height` or similar to create floor/ceiling, perturbed by noise.
+- **Crystals**: Use domain repetition (`mod`) to place crystals at regular intervals on the floor and ceiling. Vary their size and rotation based on position hash.
+- **Combination**: Combine terrain and crystals using `min`. Return `vec2(distance, material_id)`. Material ID 1.0 for rock, 2.0 for crystal.
 
-    // 2. Base Tunnel Shape (Cylinder)
-    let tunnel_radius = 3.0 + sin(p.z * 0.5 + u.time * u.zoom_params.x) * 0.2; // Breathing
-    let tunnel = -(length(q.xy) - tunnel_radius); // Inside cylinder
+### Raymarching Loop
+`fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32>`
+- Standard raymarching loop with a max distance and epsilon.
+- Accumulate glow/fog based on distance to crystals (optional optimization).
 
-    // 3. Ribs (Torus segments)
-    // Repeat ribs every period
-    let rib_radius = tunnel_radius - 0.2;
-    let rib_thickness = 0.3;
-    let ribs = sdTorus(q, vec2<f32>(rib_radius, rib_thickness));
+### Shading
+`fn render(ro: vec3<f32>, rd: vec3<f32>, t: f32, m: f32) -> vec3<f32>`
+- Calculate normal `n`.
+- **Rock Material (m=1.0)**:
+    - Diffuse lighting from crystal positions (approximated).
+    - Specular highlights (wet rock look).
+    - Ambient occlusion.
+- **Crystal Material (m=2.0)**:
+    - Emissive color (glow).
+    - Specular highlights (sharp).
+    - Fake refraction/transmission (modify normal based on view angle).
+    - Rim lighting.
+- **Fog**: Distance-based exponential fog to fade to black/background color.
 
-    // 4. Cables / Veins (Twisted cylinders along walls)
-    let cable_angle = atan2(q.y, q.x) * 3.0 + p.z * 0.5;
-    let cable_dist = length(q.xy) - (tunnel_radius - 0.5 + sin(cable_angle) * 0.2);
+### Main Function
+- Setup camera based on `u.config` (time) and `u.zoom_config` (mouse).
+- Calculate ray direction `rd`.
+- Call `raymarch`.
+- Call `render`.
+- Apply post-processing (gamma correction, vignetting).
 
-    // 5. Combine with smooth blend
-    var d = smin(tunnel, ribs, 0.5);
-    d = smin(d, cable_dist, 0.3);
+## JSON Configuration
 
-    // 6. Detail Noise (Texture)
-    let noise = sin(p.x * 5.0) * sin(p.y * 5.0) * sin(p.z * 5.0) * 0.05 * u.zoom_params.y;
-
-    return d + noise;
-}
-```
-
-### Main Rendering Loop (Raymarching)
-- Ray origin moves forward: `ro = vec3(0.0, 0.0, u.time * 2.0)`.
-- Ray direction `rd` is rotated by mouse input.
-- Standard raymarching loop (max steps ~64-128, epsilon 0.001).
-- Compute normal using finite differences.
-- Lighting:
-    - **Ambient:** Dark blue/grey.
-    - **Diffuse:** Directional light from "headlamp".
-    - **Specular:** High intensity, sharp falloff for "wet" look (controlled by param Z).
-- Apply fog based on distance `t`.
-
-## JSON Configuration (`shader_definitions/generative/gen-biomechanical-hive.json`)
 ```json
 {
-  "id": "gen-biomechanical-hive",
-  "name": "Biomechanical Hive",
-  "url": "shaders/gen-biomechanical-hive.wgsl",
+  "id": "gen-crystal-caverns",
+  "name": "Crystal Caverns",
+  "url": "shaders/gen-crystal-caverns.wgsl",
   "category": "generative",
-  "description": "An infinite, breathing biomechanical tunnel blending organic curves with industrial structure. Features wet metallic surfaces and atmospheric depth.",
-  "tags": ["3d", "raymarching", "sci-fi", "horror", "organic", "metallic", "tunnel", "dark"],
+  "description": "An infinite, procedural cave system illuminated by clusters of glowing crystals.",
+  "tags": ["crystal", "cave", "3d", "raymarching", "generative", "fantasy", "glowing"],
   "features": ["mouse-driven"],
   "params": [
     {
       "id": "param1",
-      "name": "Pulse Speed",
-      "default": 1.0,
+      "name": "Crystal Density",
+      "default": 0.5,
       "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Complexity",
-      "default": 1.0,
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Glow Intensity",
+      "default": 0.8,
       "min": 0.0,
       "max": 2.0,
       "step": 0.1
     },
     {
-      "id": "param3",
-      "name": "Wetness / Shine",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
-    },
-    {
       "id": "param4",
-      "name": "Fog Density",
+      "name": "Cave Scale",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.1
     }
   ]
 }
