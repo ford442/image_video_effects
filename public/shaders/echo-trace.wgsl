@@ -25,7 +25,7 @@ fn hue_shift(color: vec3<f32>, shift: f32) -> vec3<f32> {
     return vec3<f32>(color * cos_angle + cross(k, color) * sin(shift) + k * dot(k, color) * (1.0 - cos_angle));
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
     let coords = vec2<i32>(global_id.xy);

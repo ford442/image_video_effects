@@ -140,9 +140,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  6️⃣  Sample & output (image stays sharp – no blur/haze overlay)
     // -----------------------------------------------------------------
     let outCol = textureSampleLevel(videoTex, videoSampler, finalUV, 0.0).rgb;
-    textureStore(outTex, gid.xy, vec4<f32>(outCol, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
 
     // Depth is also displaced for consistency
     let outD = textureSampleLevel(depthTex, depthSampler, uv + displacement, 0.0).r;
-    textureStore(outDepth, gid.xy, vec4<f32>(outD, 0.0, 0.0, 0.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(outD, 0.0, 0.0, 0.0));
 }

@@ -21,13 +21,14 @@ Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Sh
 
 **Pixelocity** is a React-based web application that runs GPU shader effects using WebGPU. It features:
 
-- **530+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
+- **560+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
 - **Real-time interactive effects** with mouse-driven ripples and distortions
-- **AI-powered depth estimation** using DPT-Hybrid-MIDAS model
-- **AI VJ Mode** (Alucinate) that auto-generates visual stacks using LLM
-- **Multi-slot shader stacking** - up to 3 effects can be chained
+- **AI-powered depth estimation** using DPT-Hybrid-MIDAS model via Xenova Transformers
+- **AI VJ Mode** (Alucinate) that auto-generates visual stacks using WebLLM (Gemma-2-2b)
+- **Multi-slot shader stacking** - up to 3 effects can be chained together
 - **Multiple input sources** - images, videos, webcam, and procedural generation
 - **WebGPU compute shaders** for high-performance real-time rendering
+- **Remote control mode** via BroadcastChannel API
 
 ### Browser Requirements
 - Chrome 113+, Edge 113+, or Firefox Nightly (with `dom.webgpu.enabled` flag)
@@ -41,12 +42,12 @@ Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Sh
 image_video_effects/
 ├── package.json                 # Dependencies and npm scripts
 ├── tsconfig.json               # TypeScript configuration
-├── webpack.config.js           # Build configuration
+├── webpack.config.js           # Build configuration (minimal, for main.ts bundle)
 ├── public/
 │   ├── index.html              # HTML entry point
-│   ├── shaders/                # WGSL shader files (530+ files)
+│   ├── shaders/                # WGSL shader files (560+ files)
 │   │   ├── liquid.wgsl
-│   │   ├── liquid-*.wgsl
+│   │   ├── liquid-*.wgsl       # Various liquid effects
 │   │   ├── texture.wgsl        # Final render pass shader
 │   │   ├── imageVideo.wgsl     # Image/video display shader
 │   │   └── galaxy.wgsl         # Procedural galaxy shader
@@ -75,7 +76,10 @@ image_video_effects/
 │   ├── image/                  # Image processing effects
 │   └── generative/             # Procedural generation shaders
 ├── scripts/
-│   └── generate_shader_lists.js  # Generates shader-lists from definitions
+│   ├── generate_shader_lists.js  # Generates shader-lists from definitions
+│   ├── check_duplicates.js       # Utility to check for duplicate shader IDs
+│   ├── watch-bucket.js           # Google Cloud Storage bucket watcher
+│   └── watch-bucket-simple.js    # Simplified bucket watcher
 └── src/
     ├── index.tsx               # React entry point (switches MainApp/RemoteApp)
     ├── App.tsx                 # Main application component
@@ -132,6 +136,12 @@ npm test
 
 # Eject from Create React App (DANGEROUS - one way)
 npm run eject
+
+# Bucket sync commands (for Google Cloud Storage)
+npm run bucket:sync        # Sync bucket contents
+npm run bucket:watch       # Watch bucket for changes
+npm run bucket:sync-full   # Full sync with processing
+npm run bucket:watch-full  # Full watch with processing
 ```
 
 ### Pre-build Script
@@ -139,7 +149,8 @@ The `prestart` and `prebuild` scripts automatically run `scripts/generate_shader
 1. Reads all JSON files from `shader_definitions/` subdirectories
 2. Validates shader IDs (no duplicates)
 3. Verifies WGSL files exist
-4. Generates combined JSON files in `public/shader-lists/`
+4. Validates WGSL content for common errors
+5. Generates combined JSON files in `public/shader-lists/`
 
 ---
 
@@ -148,11 +159,14 @@ The `prestart` and `prebuild` scripts automatically run `scripts/generate_shader
 ### Ping-Pong Texture System
 The renderer uses a **multi-pass compute shader chain**:
 
-1. **Input Source** → readTexture (image, video, or generative)
+1. **Input Source** → readTexture (image, video, webcam, or generative)
 2. **Compute Pass 1** (Slot 0 shader) → pingPongTexture1
 3. **Compute Pass 2** (Slot 1 shader) → pingPongTexture2
 4. **Compute Pass 3** (Slot 2 shader) → writeTexture
 5. **Render Pass** → Screen (using `texture.wgsl`)
+
+### Fixed Internal Resolution
+The canvas uses a fixed internal resolution of **2048x2048** for all rendering operations. The display size is tracked separately for aspect ratio calculations.
 
 ### Shader Bindings (IMMUTABLE)
 Every compute shader MUST declare exactly these bindings:
@@ -207,7 +221,7 @@ This matches the dispatch: `dispatchWorkgroups(Math.ceil(width/8), Math.ceil(hei
 | `simulation` | Physics, cellular automata | 16+ |
 | `geometric` | Geometric patterns, tessellations | 10+ |
 | `image` | Image processing effects | 50+ |
-| `generative` | Procedural generation (no input needed) | 14+ |
+| `generative` | Procedural generation (no input needed) | 30+ |
 
 ---
 
@@ -502,6 +516,7 @@ All textures must match the canvas size (2048x2048 internal resolution). The ren
 - Video sources must support CORS
 - No sensitive data is stored locally
 - AI models are loaded from HuggingFace/CDN
+- File uploads are handled via File API and Blob URLs
 
 ---
 

@@ -90,4 +90,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var color = vec3<f32>(r, g, b) + highlight;
 
     textureStore(outTex, gid.xy, vec4<f32>(color, 1.0));
+
+    // Pass through depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

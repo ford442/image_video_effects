@@ -21,7 +21,7 @@ struct Uniforms {
 };
 
 // Minimal agent update: extraBuffer encodes packed agent state triples [x, y, angle]
-@compute @workgroup_size(64, 1, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let idx = gid.x;
   if (idx * 3u + 2u >= arrayLength(&extraBuffer)) { return; }

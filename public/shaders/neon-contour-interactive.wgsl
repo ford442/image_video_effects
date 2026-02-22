@@ -103,5 +103,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         finalColor += neonColor * (0.2 - dist) * 2.0 * glowIntensity;
     }
 
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 }

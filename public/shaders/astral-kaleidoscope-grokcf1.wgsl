@@ -197,13 +197,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let shimmer = noise(uv * 10.0 + time) * 0.05;
     let feedback = max(color, prev * decay + shimmer);
     
-    textureStore(historyBuf, gid.xy, vec4<f32>(feedback, 1.0));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(feedback, 1.0));
     
     // -----------------------------------------------------------------
     //  7️⃣  Final Output
     // ---------------------------------------------------------------
     let finalCol = mix(color, feedback, 0.6); // Slightly more feedback visibility
     
-    textureStore(outTex, gid.xy, vec4<f32>(finalCol, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

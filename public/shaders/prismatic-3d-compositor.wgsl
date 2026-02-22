@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // 2) Volumetric glow
     let glowRadius = u.zoom_params.x * 0.01;
     let glowIntensity = u.zoom_params.y;
-    let glowThreshold = if (arrayLength(&extraBuffer) > 2u) { extraBuffer[2] } else { 0.2 };
+    let glowThreshold = 0.2;
 
     var glow = vec3<f32>(0.0);
     var count = 0.0;
@@ -86,13 +86,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // 4) Composite with video (video assumed bound to historyTex via renderer when desired) - here we just mix with original readTexture
     let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     // blend params: videoBlend in extraBuffer[0], glowThreshold in extraBuffer[1], depthSharpness in extraBuffer[2]
-    let videoBlend = if (arrayLength(&extraBuffer) > 0u) { extraBuffer[0] } else { 0.5 };
+    let videoBlend = 0.5;
     let finalColor = mix(videoColor, aberrantColor + glow * glowIntensity, videoBlend);
 
     // 5) Temporal feedback using history stored in dataTextureA (optional)
-    let prev = textureSampleLevel(dataTextureC, comparison_sampler, uv, 0.0).rgb; // fallback attempt (may be unused)
+    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb; // fallback attempt (may be unused)
     let feedback = mix(finalColor, prev, 0.85);
 
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
