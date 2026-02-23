@@ -1,69 +1,154 @@
-# New Shader Plan: Crystal Caverns
+# New Shader Plan: Fractal Clockwork
 
-## Concept
-"Crystal Caverns" is a 3D generative shader that creates an infinite, procedurally generated cave system filled with glowing, jagged crystals. The shader uses raymarching to render the rocky terrain and the translucent crystals, with dynamic lighting effects to simulate bioluminescence and refraction. The user can navigate through the caverns, and adjust parameters to change the density, color, and glow of the crystals.
-
-## Metadata
-- **ID**: `gen-crystal-caverns`
-- **Name**: Crystal Caverns
-- **Category**: `generative`
-- **Tags**: `["crystal", "cave", "3d", "raymarching", "generative", "fantasy", "glowing"]`
-- **Description**: An infinite, procedural cave system illuminated by clusters of glowing crystals.
+## Overview
+"Fractal Clockwork" is a 3D generative shader that visualizes an infinite, procedural machine composed of interlocking gears and cogs. The shader uses raymarching with domain repetition to create a vast field of mechanical components that rotate in sync. The aesthetic is "Steampunk/Clockpunk" with metallic materials (brass, gold, steel) and intricate details.
 
 ## Features
-- **Infinite Terrain**: Uses FBM noise and domain repetition to create endless cave structures.
-- **Translucent Crystals**: Rendered with a custom material shader that approximates refraction and internal reflection.
-- **Dynamic Lighting**: Point lights emanate from the crystals, illuminating the surrounding rock.
-- **Mouse Interaction**: Mouse movement controls the camera view (pitch/yaw) or the position of a "lantern" light.
-- **Parameters**: Adjustable crystal density, color palette, glow intensity, and cave scale.
+- **Infinite Gear Field**: Uses modulo arithmetic to repeat gear structures across the XZ plane.
+- **Raymarching**: Signed Distance Fields (SDF) define the gear geometry, including teeth and axles.
+- **Synchronized Animation**: Gears rotate based on time, with adjacent gears rotating in opposite directions to simulate mechanical meshing.
+- **Metallic Shading**: Physically-based rendering approximation for metallic surfaces with specular highlights.
+- **Interactive Camera**: Mouse controls the camera orbit and zoom level.
+- **Fractal Detail**: Smaller gears are nested or placed in the gaps of larger gears (optional complexity).
+
+## Technical Implementation
+- **File**: `public/shaders/gen-fractal-clockwork.wgsl`
+- **Category**: `generative`
+- **Tags**: `["steampunk", "mechanical", "3d", "raymarching", "gears"]`
+- **Algorithm**:
+    - **SDF**: A `sdGear` function that combines a cylinder with a radial repetition of teeth (using `atan` and `smoothstep`).
+    - **Domain Repetition**: `p.xz = mod(p.xz, spacing) - 0.5 * spacing`.
+    - **Checkerboard Rotation**: `((cell_id.x + cell_id.y) % 2.0) * 2.0 - 1.0` determines rotation direction.
+
+### Core Algorithm
+- **3D Cellular Noise (Voronoi/Worley):** Used to generate the base structure.
+- **Filament Metric:** Calculate `F2 - F1` (distance to 2nd closest point minus distance to 1st closest point).
+  - High values (where `F1` is small) represent cell centers (voids).
+  - Low values (where `F1 ≈ F2`) represent cell boundaries (filaments).
+  - Inverting this value (`1.0 / (F2 - F1 + epsilon)`) creates bright lines at the boundaries.
+- **Domain Warping:** Apply FBM noise to the input coordinates before sampling the Voronoi noise to distort the straight lines into organic, flowing curves.
+- **Density Accumulation:** Raymarch or sample multiple layers of noise to build up density.
+
+### Mouse Interaction
+- **Gravity Well:** Calculate vector from current pixel to mouse position.
+- **Distortion:** Apply a non-linear displacement to the UV coordinates based on distance to mouse (stronger near mouse, falling off with distance).
+- **Formula:** `uv -= normalize(uv - mouse) * strength * smoothstep(radius, 0.0, dist)`
+
+### Color Mapping
+- Map the accumulated density to a color gradient.
+- **Low Density:** Black/Deep Blue.
+- **Medium Density:** Purple/Magenta.
+- **High Density:** Cyan/White.
+- **Bloom:** Use `smoothstep` to create a glowing halo around filaments.
 
 ## Proposed Code Structure (WGSL)
 
-### Header
-Standard shader header with uniforms and texture bindings.
+```wgsl
+// ----------------------------------------------------------------
+//  Cosmic Web Filament - Generative simulation of dark matter web
+//  Category: generative
+//  Features: mouse-driven, organic structure
+// ----------------------------------------------------------------
 
-### Helper Functions
-- `rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32>`: Rotates a 2D vector.
-- `fbm(p: vec3<f32>) -> f32`: Fractal Brownian Motion for terrain noise.
-- `sdOctahedron(p: vec3<f32>, s: f32) -> f32`: Signed Distance Function for an octahedron (crystal shape).
-- `sdBox(p: vec3<f32>, b: vec3<f32>) -> f32`: SDF for a box (alternative crystal shape).
-- `opUnion(d1: f32, d2: f32) -> f32`: Union of two SDFs.
-- `opSmoothUnion(d1: f32, d2: f32, k: f32) -> f32`: Smooth union for organic blending.
-- `opSubtraction(d1: f32, d2: f32) -> f32`: Subtraction for carving caves.
+// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+// ... (standard bindings)
 
-### Map Function
-`fn map(p: vec3<f32>) -> vec2<f32>`
-- **Terrain**: Generate a large-scale noise field (`fbm`) to define the cave walls. Use `abs(p.y) - height` or similar to create floor/ceiling, perturbed by noise.
-- **Crystals**: Use domain repetition (`mod`) to place crystals at regular intervals on the floor and ceiling. Vary their size and rotation based on position hash.
-- **Combination**: Combine terrain and crystals using `min`. Return `vec2(distance, material_id)`. Material ID 1.0 for rock, 2.0 for crystal.
+struct Uniforms {
+  config: vec4<f32>,       // x: time, y: aspect, z: resX, w: resY
+  zoom_config: vec4<f32>,  // xy: center, z: zoom, w: unused (Mouse: yz)
+  zoom_params: vec4<f32>,  // x: warpStrength, y: density, z: speed, w: colorShift
+  ripples: array<vec4<f32>, 50>,
+};
 
-### Raymarching Loop
-`fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32>`
-- Standard raymarching loop with a max distance and epsilon.
-- Accumulate glow/fog based on distance to crystals (optional optimization).
+// Rotation Matrix
+fn rot2D(a: f32) -> mat2x2<f32> {
+    let c = cos(a);
+    let s = sin(a);
+    return mat2x2<f32>(c, -s, s, c);
+}
 
-### Shading
-`fn render(ro: vec3<f32>, rd: vec3<f32>, t: f32, m: f32) -> vec3<f32>`
-- Calculate normal `n`.
-- **Rock Material (m=1.0)**:
-    - Diffuse lighting from crystal positions (approximated).
-    - Specular highlights (wet rock look).
-    - Ambient occlusion.
-- **Crystal Material (m=2.0)**:
-    - Emissive color (glow).
-    - Specular highlights (sharp).
-    - Fake refraction/transmission (modify normal based on view angle).
-    - Rim lighting.
-- **Fog**: Distance-based exponential fog to fade to black/background color.
+// Gear SDF
+fn sdGear(p: vec3<f32>, radius: f32, teeth: f32, thickness: f32, time: f32) -> f32 {
+    // Rotate
+    let p_rot = vec3<f32>(rot2D(time) * p.xy, p.z); // Rotate around Z axis if gear is flat on XY?
+    // Actually let's assume gear is flat on XZ plane (y is up)
 
-### Main Function
-- Setup camera based on `u.config` (time) and `u.zoom_config` (mouse).
-- Calculate ray direction `rd`.
-- Call `raymarch`.
-- Call `render`.
-- Apply post-processing (gamma correction, vignetting).
+    // Convert to polar
+    let r = length(p.xz);
+    let a = atan2(p.z, p.x) + time;
 
-## JSON Configuration
+    // Teeth
+    // Simple sine teeth: radius + sin(a * teeth) * depth
+    // Or square teeth
+    let tooth_depth = 0.05 * radius;
+    let d_teeth = smoothstep(-0.5, 0.5, sin(a * teeth)) * tooth_depth;
+
+    let d_cylinder = r - (radius + d_teeth);
+    let d_height = abs(p.y) - thickness;
+
+    // Axle hole
+    let d_axle = r - radius * 0.2;
+
+    // Combine
+    let gear = max(d_cylinder, d_height);
+    return max(gear, -d_axle);
+}
+
+// Map Function
+fn map(p: vec3<f32>) -> vec2<f32> {
+    let spacing = 4.0;
+    let cell_id = floor((p.xz + spacing * 0.5) / spacing);
+    var q = p;
+    q.x = (fract((p.x + spacing * 0.5) / spacing) - 0.5) * spacing;
+    q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;
+
+    // Checkerboard rotation direction
+    let direction = ((cell_id.x + cell_id.y) % 2.0) * 2.0 - 1.0;
+    let speed = u.zoom_params.z * 2.0 + 0.5;
+    let time = u.config.x * speed * direction;
+
+    // Gear params
+    let radius = 1.8;
+    let teeth = 12.0;
+    let thickness = 0.2;
+
+    let d = sdGear(q, radius, teeth, thickness, time);
+
+    // Floor
+    let d_floor = p.y + 1.0;
+
+    return vec2<f32>(min(d, d_floor), 1.0);
+}
+
+// Raymarch Function
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
+    var t = 0.0;
+    for(var i=0; i<100; i++) {
+        let p = ro + rd * t;
+        let d = map(p).x;
+        if(d < 0.001 || t > 100.0) { break; }
+        t += d;
+    }
+    return vec2<f32>(t, 0.0);
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    // ... Camera Setup ...
+    // ... Rendering Loop ...
+    // ... Shading (Metallic) ...
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+
+    // Simple depth based on density
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(density, 0.0, 0.0, 0.0));
+}
+```
+
+## Proposed JSON Definition (`shader_definitions/generative/cosmic-web.json`)
 
 ```json
 {
@@ -110,3 +195,15 @@ Standard shader header with uniforms and texture bindings.
   ]
 }
 ```
+
+## Parameters
+- **Zoom (Params X)**: Scale of the gears / Camera Distance.
+- **Teeth (Params Y)**: Number of teeth on gears (complexity).
+- **Speed (Params Z)**: Rotation speed.
+- **Color/Material (Params W)**: Shift between Gold, Brass, and Steel.
+
+## Integration Steps
+1.  **Create Shader**: `public/shaders/gen-fractal-clockwork.wgsl`
+2.  **Create Definition**: `shader_definitions/generative/gen-fractal-clockwork.json`
+3.  **Run Scripts**: `node scripts/generate_shader_lists.js`
+4.  **Verification**: Test in browser.
