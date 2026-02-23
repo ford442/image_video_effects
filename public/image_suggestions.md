@@ -885,6 +885,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The atmosphere should feel airy and light.
 
+### Suggestion: Vaporwave Mall Statue
+- **Date:** 2028-11-15
+- **Prompt:** "A nostalgic Vaporwave aesthetic scene inside a deserted 1980s shopping mall. A pristine white marble bust of Helios floats above a checkerboard floor. The scene is bathed in neon pink and cyan lighting. Palm trees and a CRT television displaying static are in the background."
+- **Negative prompt:** "realistic, dark, gritty, modern, high contrast"
+- **Tags:** vaporwave, aesthetic, 80s, surreal, neon
+- **Style / Reference:** Vaporwave, Glitch Art
+- **Composition:** Centered, surreal
+- **Color palette:** Neon Pink, Cyan, Marble White, Palm Green
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20281115_vaporwave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the dreamy, nostalgic, and slightly glitchy atmosphere.
+
+### Suggestion: Infrared Aerochrome Forest
+- **Date:** 2028-11-15
+- **Prompt:** "A surreal landscape photograph taken with Kodak Aerochrome infrared film. A dense forest covers rolling hills. The foliage is a vibrant, shocking pink/magenta, contrasting deeply with the teal-blue sky and a dark blue river winding through the trees."
+- **Negative prompt:** "green trees, realistic colors, digital filter, low saturation"
+- **Tags:** infrared, aerochrome, landscape, surreal, pink
+- **Style / Reference:** Infrared Photography, Kodak Aerochrome
+- **Composition:** Wide landscape
+- **Color palette:** Magenta, Pink, Teal, Dark Blue
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20281115_aerochrome.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The key is the false-color effect where green becomes pink.
+
+### Suggestion: Urban Double Exposure
+- **Date:** 2028-11-15
+- **Prompt:** "A striking double exposure photography portrait. The silhouette of a thoughtful woman's profile is filled with a bustling night cityscape (New York). Streetlights and skyscraper windows form the details of her face. The background is pure white."
+- **Negative prompt:** "single exposure, messy, colorful background, cartoon"
+- **Tags:** double exposure, portrait, city, surreal, monochrome
+- **Style / Reference:** Double Exposure Photography
+- **Composition:** Profile silhouette
+- **Color palette:** Black, White, Amber City Lights
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20281115_double_exposure.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ensure a clean blend between the silhouette and the city.
+
+### Suggestion: Ferrofluid Magnetism
+- **Date:** 2028-11-15
+- **Prompt:** "A macro shot of a black ferrofluid sculpture under a strong magnetic field. The liquid forms sharp, rhythmic spikes and alien organic shapes. Reflections of studio softboxes trace the glossy, oil-like surface. The background is a gradient of dark grey."
+- **Negative prompt:** "water, solid metal, dry, low resolution, blurry"
+- **Tags:** ferrofluid, macro, abstract, science, fluid
+- **Style / Reference:** Macro Photography, Abstract
+- **Composition:** Centered macro
+- **Color palette:** Black, Metallic Grey, White Reflections
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20281115_ferrofluid.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the spiked texture and the liquid gloss.
+
+### Suggestion: Bauhaus Geometric Poster
+- **Date:** 2028-11-15
+- **Prompt:** "A graphic design poster in the style of the Bauhaus school. Simple geometric shapes (red circle, blue square, yellow triangle) are balanced asymmetrically on a beige paper texture background. Strong diagonal black lines connect the forms. Typography is sans-serif and minimal."
+- **Negative prompt:** "realistic, 3D, ornate, cluttered, messy"
+- **Tags:** bauhaus, graphic design, geometric, minimal, abstract
+- **Style / Reference:** Bauhaus, Constructivism
+- **Composition:** Asymmetrical, balanced
+- **Color palette:** Primary Red, Blue, Yellow, Black, Beige
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20281115_bauhaus.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Adhere strictly to primary colors and geometric primitives.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -907,8 +972,8 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Double Exposure, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Infrared Photography, Kinetic Art, Brutalist Web Design, Vaporwave, Solarpunk, Bauhaus, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Aerogel, Ferrofluid, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Ukiyo-e, Low Key Photography, Brutalist Architecture.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Aerogel, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar, Bismuth.
 - **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar.
 
 ---
