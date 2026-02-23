@@ -90,16 +90,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
 
-  var uv = (vec2<f32>(id.xy) / res - 0.5) * vec2<f32>(res.x / res.y, 1.0) * u.zoom_config.z;
+  // Standard UV calculation
+  let uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
 
   let gearScale = u.zoom_params.x * 1.5 + 0.5;
   let teeth = mix(6.0, 24.0, u.zoom_params.y);
   let speed = u.zoom_params.z * 5.0;
   let material = u.zoom_params.w * 2.0;
 
-  let mouseAngle = mouse.x * 6.28;
-  var ro = vec3<f32>(sin(mouseAngle) * 12.0, 8.0 + sin(time * 0.5) * 2.0, cos(mouseAngle) * 12.0);
-  let lookAt = vec3<f32>(0.0, 2.0, 0.0);
+  // Orbit camera logic
+  let yaw = mouse.x * 6.28;
+  let height = mouse.y * 14.0 + 1.0; // Height control
+  let dist = 12.0;
+
+  var ro = vec3<f32>(sin(yaw) * dist, height, cos(yaw) * dist);
+  let lookAt = vec3<f32>(0.0, 0.0, 0.0);
   let fwd = normalize(lookAt - ro);
   let right = normalize(cross(vec3<f32>(0.0,1.0,0.0), fwd));
   let up = cross(fwd, right);
