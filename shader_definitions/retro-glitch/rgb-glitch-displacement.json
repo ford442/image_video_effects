@@ -6,7 +6,7 @@
   "description": "Digital glitch effect with RGB channel displacement, block glitches, scanlines, pixel sorting, and datamosh effects. Mouse-reactive wave displacement and chromatic aberration.",
   "tags": ["glitch", "rgb", "digital", "scanlines", "chromatic", "datamosh", "retro"],
   "features": ["mouse-driven"],
-  "author": "minimax.ai",
+  "author": "Kimi",
   "params": [
     {
       "id": "glitchIntensity",

@@ -6,7 +6,7 @@
   "description": "Raymarched volumetric clouds with nebula coloring. Features procedural cloud generation with FBM noise, dynamic color palettes, and animated camera movement through a cosmic nebula.",
   "tags": ["generative", "nebula", "clouds", "volumetric", "raymarch", "space", "cosmic", "procedural"],
   "features": ["raymarched"],
-  "author": "minimax.ai",
+  "author": "Kimi",
   "params": [
     {
       "id": "cloudDensity",

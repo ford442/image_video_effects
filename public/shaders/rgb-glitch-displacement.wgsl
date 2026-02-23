@@ -2,7 +2,7 @@
 //  RGB Glitch Displacement - Digital glitch effect with RGB channel displacement
 //  Category: retro-glitch
 //  Features: mouse-driven
-//  Author: minimax.ai
+//  Author: Kimi
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

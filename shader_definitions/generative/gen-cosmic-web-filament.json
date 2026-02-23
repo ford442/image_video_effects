@@ -1,0 +1,44 @@
+{
+  "id": "gen-cosmic-web-filament",
+  "name": "Cosmic Web Filament",
+  "url": "shaders/gen-cosmic-web-filament.wgsl",
+  "category": "generative",
+  "description": "Dark matter web with Voronoi filaments, FBM warping, and mouse gravity wells. Hypnotic cosmic structure with purple-to-cyan gradients.",
+  "tags": ["generative", "cosmic", "voronoi", "filament", "organic", "dark-matter", "web", "gravity"],
+  "features": ["mouse-driven"],
+  "author": "ford442",
+  "params": [
+    {
+      "id": "warp",
+      "name": "Warp Strength",
+      "default": 0.33,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "density",
+      "name": "Filament Density",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "color",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

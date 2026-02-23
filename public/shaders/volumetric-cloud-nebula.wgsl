@@ -2,7 +2,7 @@
 //  Volumetric Cloud Nebula - Raymarched volumetric clouds with nebula coloring
 //  Category: generative
 //  Features: raymarched
-//  Author: minimax.ai
+//  Author: Kimi
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

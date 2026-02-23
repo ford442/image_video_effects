@@ -3,41 +3,43 @@
   "name": "Fractal Clockwork",
   "url": "shaders/gen-fractal-clockwork.wgsl",
   "category": "generative",
-  "description": "An infinite, procedurally generated field of interlocking gears and clockwork mechanisms.",
-  "tags": ["steampunk", "mechanical", "gears", "fractal", "raymarching", "3d", "metal"],
+  "description": "Infinite interlocking brass gears rotating in perfect mechanical sync. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
+  "tags": ["steampunk", "mechanical", "3d", "raymarching", "gears", "metallic", "brass", "clockwork"],
   "features": ["mouse-driven"],
+  "author": "ford442",
   "params": [
     {
-      "id": "param1",
-      "name": "Gear Density",
-      "default": 1.0,
-      "min": 0.5,
-      "max": 2.0,
-      "step": 0.1
-    },
-    {
-      "id": "param2",
-      "name": "Rotation Speed",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "id": "param3",
-      "name": "Metallic Shine",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
-    },
-    {
-      "id": "param4",
-      "name": "Glow Intensity",
+      "id": "scale",
+      "name": "Gear Scale",
       "default": 0.5,
       "min": 0.0,
-      "max": 2.0,
-      "step": 0.1
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "teeth",
+      "name": "Teeth Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Rotation Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "material",
+      "name": "Material",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "labels": ["Brass", "Steel", "Gold"]
     }
   ]
 }
