@@ -128,7 +128,7 @@ fn spectralPower(col: vec3<f32>, pattern: f32) -> vec3<f32> {
     let safeCol = max(col, vec3<f32>(0.001));
     let high = pow(safeCol, vec3<f32>(2.2));
     let low = sqrt(safeCol);
-    let band = sin(safeCol * PI);
+    let band = sin(safeCol * 3.145679);
     return mix(low, high, pattern) + band * pattern * 0.15;
 }
 
@@ -231,7 +231,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let spectral = spectralPower(diffused, pattern);
     let finalCol = mix(srcCol, spectral, 1.0) + shimmer;
 
-    textureStore(outTex, gid.xy, vec4<f32>(finalCol, 1.0));
-    textureStore(historyBuf, gid.xy, vec4<f32>(diffused, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(diffused, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -19,7 +19,7 @@ struct Uniforms {
     ripples: array<vec4<f32>, 32>,
 };
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
     let coords = vec2<i32>(global_id.xy);
@@ -87,4 +87,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     textureStore(writeTexture, coords, final_color);
+    
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

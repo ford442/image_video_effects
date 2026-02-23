@@ -236,7 +236,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     let prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).rgb;
     let persist = max(prev * 0.95, outCol * finalSpread);
-    textureStore(infectionBuf, gid.xy, vec4<f32>(persist, 1.0));
+    textureStore(infectionBuf, vec2<i32>(gid.xy), vec4<f32>(persist, 1.0));
     
     // Blend persistence trail
     outCol = max(outCol, persist * 0.2);
@@ -244,6 +244,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  🔟  Output
     // -----------------------------------------------------------------
-    textureStore(outTex, gid.xy, vec4<f32>(outCol, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

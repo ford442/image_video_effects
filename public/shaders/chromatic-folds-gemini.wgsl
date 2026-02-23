@@ -151,7 +151,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
   let finalColor = mix(foldedColor, prev, feedbackStrength);
   
-  textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
-  textureStore(outDepth, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(feedbackOut, gid.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 }

@@ -41,6 +41,24 @@ interface ControlsProps {
     isAiVjMode: boolean;
     onToggleAiVj: () => void;
     aiVjStatus: AIStatus;
+    // Webcam Props
+    isWebcamActive?: boolean;
+    onStartWebcam?: () => void;
+    onStopWebcam?: () => void;
+    webcamError?: string | null;
+    showWebcamShaderSuggestions?: boolean;
+    webcamFunShaders?: string[];
+    onApplyWebcamShader?: (shaderId: string) => void;
+    // Roulette Props
+    onRoulette?: () => void;
+    isRouletteActive?: boolean;
+    chaosModeEnabled?: boolean;
+    setChaosModeEnabled?: (enabled: boolean) => void;
+    // Recording Props
+    isRecording?: boolean;
+    recordingCountdown?: number;
+    onStartRecording?: () => void;
+    onStopRecording?: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -64,7 +82,22 @@ const Controls: React.FC<ControlsProps> = ({
     activeGenerativeShader, setActiveGenerativeShader,
     isAiVjMode,
     onToggleAiVj,
-    aiVjStatus
+    aiVjStatus,
+    isWebcamActive = false,
+    onStartWebcam,
+    onStopWebcam,
+    webcamError,
+    showWebcamShaderSuggestions = false,
+    webcamFunShaders = [],
+    onApplyWebcamShader,
+    onRoulette,
+    isRouletteActive = false,
+    chaosModeEnabled = false,
+    setChaosModeEnabled,
+    isRecording = false,
+    recordingCountdown = 8,
+    onStartRecording,
+    onStopRecording
 }) => {
     // Filter modes based on category
     const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
@@ -145,6 +178,73 @@ const Controls: React.FC<ControlsProps> = ({
                 </select>
             </div>
 
+            {/* --- 🎰 Roulette Section --- */}
+            <div className="roulette-section">
+                <button 
+                    onClick={onRoulette}
+                    className={`roulette-btn ${isRouletteActive ? 'spinning' : ''}`}
+                    title="Press 'R' to spin!"
+                >
+                    <span className="roulette-icon">🎰</span>
+                    <span className="roulette-text">Surprise Me!</span>
+                </button>
+                
+                <div className="chaos-mode-toggle">
+                    <label className="chaos-label">
+                        <input
+                            type="checkbox"
+                            checked={chaosModeEnabled}
+                            onChange={(e) => setChaosModeEnabled?.(e.target.checked)}
+                        />
+                        <span className="chaos-text">
+                            🔥 Chaos Mode
+                            <small>Auto-switch every 6-10s</small>
+                        </span>
+                    </label>
+                </div>
+                
+                <div className="roulette-shortcut-hint">
+                    Press <kbd>R</kbd> to spin
+                </div>
+            </div>
+
+            {/* --- ⏺️ Record & Share Section --- */}
+            <div className="record-section">
+                <button 
+                    onClick={isRecording ? onStopRecording : onStartRecording}
+                    className={`record-btn ${isRecording ? 'recording' : ''}`}
+                    disabled={isRecording && recordingCountdown <= 0}
+                >
+                    {isRecording ? (
+                        <>
+                            <span className="record-icon">⏹️</span>
+                            <span className="record-text">
+                                Recording {recordingCountdown}s
+                            </span>
+                            <span className="record-pulse"></span>
+                        </>
+                    ) : (
+                        <>
+                            <span className="record-icon">⏺️</span>
+                            <span className="record-text">Record 8s Clip</span>
+                        </>
+                    )}
+                </button>
+                
+                {isRecording && (
+                    <div className="recording-progress">
+                        <div 
+                            className="recording-bar" 
+                            style={{ width: `${((8 - recordingCountdown) / 8) * 100}%` }}
+                        />
+                    </div>
+                )}
+                
+                <div className="record-hint">
+                    Capture & share your creation
+                </div>
+            </div>
+
             {/* --- Stack / Slot Selection --- */}
             <div className="stack-controls">
                 {[0, 1, 2].map(i => (
@@ -183,9 +283,22 @@ const Controls: React.FC<ControlsProps> = ({
             {/* --- Source Specific Controls --- */}
             {inputSource === 'image' && (
                 <>
-                    <div className="control-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
-                        <button onClick={onUploadImageTrigger}>Upload Img</button>
-                        <button onClick={onNewImage}>Random Img</button>
+                    <div className="control-group" style={{ marginTop: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                            <button onClick={onUploadImageTrigger}>📁 Upload Img</button>
+                            <button onClick={onNewImage}>🎲 Random Img</button>
+                        </div>
+                        <button 
+                            onClick={isWebcamActive ? onStopWebcam : onStartWebcam}
+                            className={`webcam-btn ${isWebcamActive ? 'active' : ''}`}
+                        >
+                            {isWebcamActive ? '⏹️ Stop Webcam' : '📹 Use Webcam'}
+                        </button>
+                        {webcamError && (
+                            <div className="webcam-error">
+                                ⚠️ {webcamError}
+                            </div>
+                        )}
                     </div>
                      <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
                     <div className="control-group">
@@ -241,6 +354,30 @@ const Controls: React.FC<ControlsProps> = ({
                      <label style={{display: 'flex', alignItems: 'center'}}>
                         <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{marginRight: '5px'}}/> Mute Audio
                      </label>
+                </div>
+            )}
+
+            {/* --- Webcam Shader Suggestions --- */}
+            {showWebcamShaderSuggestions && isWebcamActive && (
+                <div className="webcam-shaders-section">
+                    <div className="webcam-shaders-header">
+                        <span>✨ Fun Effects for Webcam</span>
+                    </div>
+                    <div className="webcam-shaders-grid">
+                        {availableModes
+                            .filter(m => webcamFunShaders.includes(m.id))
+                            .slice(0, 12)
+                            .map(shader => (
+                                <button
+                                    key={shader.id}
+                                    className={`webcam-shader-chip ${modes[0] === shader.id ? 'active' : ''}`}
+                                    onClick={() => onApplyWebcamShader?.(shader.id)}
+                                    title={shader.description || shader.name}
+                                >
+                                    {shader.name}
+                                </button>
+                            ))}
+                    </div>
                 </div>
             )}
 

@@ -27,10 +27,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 struct Uniforms {
-  config: vec4<f32>;
-  zoom_config: vec4<f32>;
-  zoom_params: vec4<f32>;
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Mapping notes:
@@ -71,7 +71,7 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return rgb + vec3<f32>(v - c);
 }
 
-@compute @workgroup_size(8,8,1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     let uv = vec2<f32>(gid.xy) / dims;
@@ -125,14 +125,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let litColor = rainbow * (diffuse + 0.3) + vec3<f32>(1.0,1.0,1.0) * specular;
 
-    // Depth-based fog parameters can be supplied in extraBuffer[0..3]
-    let fogStart = if (arrayLength(&extraBuffer) > 0u) { extraBuffer[0] } else { 0.5 };
-    let fogEnd = if (arrayLength(&extraBuffer) > 1u) { extraBuffer[1] } else { 2.0 };
+    // Depth-based fog parameters
+    let fogStart = 0.5;
+    let fogEnd = 2.0;
     let depth = length(viewPos) + cloudDensity;
     let fogFactor = smoothstep(fogStart, fogEnd, depth);
     let fogColor = vec3<f32>(0.1, 0.0, 0.2);
     let finalColor = mix(litColor, fogColor, fogFactor);
 
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

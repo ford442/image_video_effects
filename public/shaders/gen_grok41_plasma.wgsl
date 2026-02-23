@@ -1,8 +1,8 @@
 struct Uniforms {
-  config: vec4&lt;f32&gt;,
-  zoom_config: vec4&lt;f32&gt;,
-  zoom_params: vec4&lt;f32&gt;,
-  ripples: array&lt;vec4&lt;f32&gt;, 50&gt;,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>
 };
 
 @group(0) @binding(0) var u_sampler: sampler;

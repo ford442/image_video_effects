@@ -38,7 +38,7 @@ DEFAULT_BUCKET = os.getenv('GCS_BUCKET', 'my-sd35-space-images-2025')
 PROJECT_ID = os.getenv('GCS_PROJECT', 'sanguine-medley-204807')
 
 IMAGE_PREFIX = os.getenv('GCS_IMAGE_PREFIX', 'stablediff')
-VIDEO_PREFIX = os.getenv('GCS_VIDEO_PREFIX', 'videos')
+VIDEO_PREFIX = os.getenv('GCS_VIDEO_PREFIX', 'video')
 
 PUBLIC_DIR = Path('public')
 MANIFEST_PATH = PUBLIC_DIR / 'image_manifest.json'
@@ -65,54 +65,54 @@ def get_public_gcs_url(bucket: str, blob_name: str) -> str:
     return f"https://storage.googleapis.com/{bucket}/{blob_name}"
 
 
+import urllib.request
+import xml.etree.ElementTree as ET
+
 def list_blobs_public(bucket: str, prefix: str) -> List[Dict]:
-    """List blobs using public GCS XML API (no auth required for public buckets)."""
-    url = f"https://storage.googleapis.com/{bucket}?prefix={prefix}&delimiter=/"
-    
-    try:
-        with urllib.request.urlopen(url, timeout=30) as response:
-            xml_content = response.read()
-    except urllib.error.HTTPError as e:
-        log(f"Error accessing bucket (HTTP {e.code}): {e.reason}")
-        if e.code == 403:
-            log("Bucket may not be public. Try setting GOOGLE_APPLICATION_CREDENTIALS.")
-        return []
-    except Exception as e:
-        log(f"Error fetching bucket listing: {e}")
-        return []
-    
-    root = ET.fromstring(xml_content)
-    
-    # XML namespace
-    ns = {'gcs': 'http://doc.s3.amazonaws.com/2006-03-01'}
-    
+    """List all blobs under prefix using public GCS XML API."""
     results = []
-    for content in root.findall('.//gcs:Contents', ns):
-        key_elem = content.find('gcs:Key', ns)
-        if key_elem is None:
-            continue
+    marker = None
+    
+    while True:
+        url = f"https://storage.googleapis.com/{bucket}?prefix={prefix}"
+        if marker:
+            url += f"&marker={marker}"
+        
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                xml_content = response.read()
+        except Exception as e:
+            log(f"Error fetching bucket listing: {e}")
+            break
+        
+        root = ET.fromstring(xml_content)
+        ns = {'gcs': 'http://doc.s3.amazonaws.com/2006-03-01'}
+        
+        for content in root.findall('.//gcs:Contents', ns):
+            key_elem = content.find('gcs:Key', ns)
+            if key_elem is None:
+                continue
             
-        blob_name = key_elem.text
-        if blob_name.endswith('/'):
-            continue  # Skip directories
+            blob_name = key_elem.text
+            if not blob_name.startswith(prefix):
+                continue
+            
+            # Check file extension
+            ext = Path(blob_name).suffix.lower()
+            if ext in IMAGE_EXTENSIONS | VIDEO_EXTENSIONS:
+                results.append({
+                    "name": Path(blob_name).name,
+                    "url": get_public_gcs_url(bucket, blob_name),
+                    "size": int(content.find('gcs:Size', ns).text) if content.find('gcs:Size', ns) is not None else 0,
+                    "last_modified": content.find('gcs:LastModified', ns).text if content.find('gcs:LastModified', ns) is not None else ""
+                })
         
-        ext = Path(blob_name).suffix.lower()
-        if ext not in IMAGE_EXTENSIONS and ext not in VIDEO_EXTENSIONS:
-            continue
-        
-        # Generate tags from filename
-        filename = Path(blob_name).name
-        name_no_ext = Path(blob_name).stem
-        
-        # Split by underscores, dashes, or spaces
-        tags = name_no_ext.replace('_', ' ').replace('-', ' ').split()
-        tags = [t.lower() for t in tags if len(t) > 2 and not t.isdigit()]
-        
-        results.append({
-            "url": get_public_gcs_url(bucket, blob_name),
-            "path": blob_name,  # Keep relative path for reference
-            "tags": list(set(tags))  # Remove duplicates
-        })
+        # Check for more pages
+        next_marker = root.find('.//gcs:NextMarker', ns)
+        if next_marker is not None:
+            marker = next_marker.text
+        else:
+            break
     
     return results
 
@@ -172,14 +172,14 @@ def compute_manifest_hash(manifest: Dict) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
 
-def save_manifest(images: List[Dict], videos: List[Dict]) -> bool:
+def save_manifest(images: List[Dict], video: List[Dict]) -> bool:
     """Save manifests and return True if changes were detected."""
     global _last_manifest_hash
     
     # Build combined manifest
     manifest = {
         "images": images,
-        "videos": videos,
+        "video": video,
         "updated_at": datetime.now().isoformat()
     }
     
@@ -199,7 +199,7 @@ def save_manifest(images: List[Dict], videos: List[Dict]) -> bool:
     
     # Save video-only manifest for backward compatibility
     video_manifest = {
-        "videos": videos,
+        "video": video,
         "updated_at": datetime.now().isoformat()
     }
     with open(VIDEO_MANIFEST_PATH, 'w') as f:
@@ -213,17 +213,17 @@ def sync_bucket(bucket: str) -> Tuple[int, int]:
     log(f"Scanning bucket: {bucket}")
     
     images = list_blobs(bucket, IMAGE_PREFIX)
-    videos = list_blobs(bucket, VIDEO_PREFIX)
+    video = list_blobs(bucket, VIDEO_PREFIX)
     
     log(f"Found {len(images)} images in '{IMAGE_PREFIX}/'")
-    log(f"Found {len(videos)} videos in '{VIDEO_PREFIX}/'")
+    log(f"Found {len(video)} video in '{VIDEO_PREFIX}/'")
     
-    if save_manifest(images, videos):
-        log(f"Updated {MANIFEST_PATH} ({len(images)} images, {len(videos)} videos)")
+    if save_manifest(images, video):
+        log(f"Updated {MANIFEST_PATH} ({len(images)} images, {len(video)} video)")
     else:
         log("No changes detected")
     
-    return len(images), len(videos)
+    return len(images), len(video)
 
 
 def watch_mode(bucket: str):
@@ -240,6 +240,7 @@ def watch_mode(bucket: str):
 
 
 def main():
+    global POLL_INTERVAL
     parser = argparse.ArgumentParser(
         description='Watch GCS bucket and update image/video manifests'
     )
@@ -254,7 +255,6 @@ def main():
     
     args = parser.parse_args()
     
-    global POLL_INTERVAL
     POLL_INTERVAL = args.interval
     
     if args.daemon:

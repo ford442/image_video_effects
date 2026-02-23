@@ -8,6 +8,9 @@
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var depthTex:   texture_2d<f32>;
+@group(0) @binding(5) var depthSampler: sampler;
+@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>; // Write to history
 @group(0) @binding(9) var feedbackTex: texture_2d<f32>; // Read from history
 
@@ -104,4 +107,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Write to screen
     textureStore(outTex, gid.xy, finalColor);
+
+    // Pass through depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

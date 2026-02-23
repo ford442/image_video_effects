@@ -22,6 +22,9 @@ interface WebGPUCanvasProps {
     setInputSource?: (source: InputSource) => void; // Added for error handling
     activeGenerativeShader?: string;
     apiBaseUrl: string;
+    // Webcam Props
+    isWebcamActive?: boolean;
+    webcamVideoElement?: HTMLVideoElement | null;
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
@@ -29,7 +32,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
-    setInputSource, activeGenerativeShader, apiBaseUrl
+    setInputSource, activeGenerativeShader, apiBaseUrl,
+    isWebcamActive = false,
+    webcamVideoElement
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -112,6 +117,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             rendererRef.current.setInputSource(inputSource);
         }
     }, [inputSource, rendererRef]);
+
+    // Handle webcam video element
+    useEffect(() => {
+        if (isWebcamActive && webcamVideoElement && videoRef.current) {
+            // Use the provided webcam video element
+            videoRef.current.srcObject = webcamVideoElement.srcObject;
+            videoRef.current.play().catch(console.error);
+        }
+    }, [isWebcamActive, webcamVideoElement]);
 
     // Handle Input Source & Video Source Changes
     useEffect(() => {
@@ -315,6 +329,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     return (
         <div
             ref={containerRef}
+            className={`canvas-wrapper ${isWebcamActive ? 'webcam-active' : ''}`}
             style={{
                 width: '100%',
                 height: '100%',
@@ -327,6 +342,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 backgroundColor: '#000' // Optional: letterboxing color
             }}
         >
+            {isWebcamActive && (
+                <div className="webcam-indicator">
+                    <span className="recording-dot"></span>
+                    LIVE
+                </div>
+            )}
             <canvas
                 ref={canvasRef}
                 data-testid="webgpu-canvas"
@@ -339,6 +360,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
+                className={isWebcamActive ? 'webcam-canvas' : ''}
             />
             <video
                 ref={videoRef}

@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let newPhase = prevPhase + curlMag * 0.1 + 0.01; // Constant drift + curl-driven spin
     
     // Write new phase for next frame
-    textureStore(outDepth, global_id.xy, vec4<f32>(newPhase, 0.0, 0.0, 0.0));
+    textureStore(outDepth, vec2<i32>(global_id.xy), vec4<f32>(newPhase, 0.0, 0.0, 0.0));
     
     // 3. Distort UVs based on Phase and Velocity
     // We use the accumulated phase to rotate the sampling vector
@@ -118,5 +118,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalRGB = 1.0 - finalRGB;
     }
     
-    textureStore(outTex, global_id.xy, vec4<f32>(finalRGB, 1.0));
+    textureStore(outTex, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, 1.0));
 }

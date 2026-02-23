@@ -27,7 +27,7 @@ struct Uniforms {
 @group(0) @binding(11) var comparisonSampler: sampler_comparison;
 @group(0) @binding(12) var plasmaTexture: texture_2d<f32>;
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = textureDimensions(outputTexture);
     if (global_id.x >= dims.x || global_id.y >= dims.y) {
@@ -55,5 +55,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSample(inputTexture, s, warped_uv).g;
     let b = textureSample(inputTexture, s, warped_uv - vec2(shift_amount, shift_amount)).b;
 
-    textureStore(outputTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+    textureStore(outputTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
+    
+    // Pass through depth
+    let depth = textureSampleLevel(depthTexture, linearSampler, uv, 0.0).r;
+    textureStore(depthOutputTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

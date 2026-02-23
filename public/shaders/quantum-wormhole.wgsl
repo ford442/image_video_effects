@@ -169,11 +169,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalRGB = warpedPrev * persistence + newRGB * (1.0 - persistence);
 
     // Store for next frame
-    textureStore(persistBuf, gid.xy, vec4<f32>(finalRGB, 1.0));
+    textureStore(persistBuf, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
 
     // -----------------------------------------------------------------
     //  Output (HDR allowed for glow effects)
     // -----------------------------------------------------------------
-    textureStore(outTex, gid.xy, vec4<f32>(finalRGB, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
