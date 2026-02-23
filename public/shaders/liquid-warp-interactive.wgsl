@@ -86,5 +86,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let finalColor = vec3<f32>(r, color.g, b);
 
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+
+    // Write depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

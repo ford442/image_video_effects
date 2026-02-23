@@ -21,7 +21,7 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ------------------------------
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
@@ -71,4 +71,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * 0.1;
 
   textureStore(writeTexture, coord, vec4<f32>(final_col + base, 1.0));
+
+  // Pass through depth
+  let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

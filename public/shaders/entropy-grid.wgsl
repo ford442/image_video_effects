@@ -24,7 +24,7 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
     let uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
@@ -74,4 +74,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

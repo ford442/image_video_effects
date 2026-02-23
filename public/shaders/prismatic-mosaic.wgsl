@@ -78,8 +78,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Determine if tile contains strong colour (saturation > threshold)
     let hsv = rgb2hsv(tileCol);
+    
+    // Get depth for passthrough
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    
     if (hsv.y < 0.3) { // low saturation -> keep original
-        textureStore(outTex, gid.xy, vec4<f32>(src, 1.0));
+        textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(src, 1.0));
+        textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
     }
 
@@ -87,5 +92,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let newHue = fract(hsv.x + speed * time * 0.05);
     let boostedSat = min(hsv.y + satBoost, 1.0);
     let outCol = hsv2rgb(newHue, boostedSat, hsv.z);
-    textureStore(outTex, gid.xy, vec4<f32>(outCol, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

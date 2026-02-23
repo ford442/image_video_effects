@@ -21,7 +21,7 @@ struct Uniforms {
 };
 
 // bitonic sort per workgroup skeleton: use dataTextureA as pixel buffer
-@compute @workgroup_size(256, 1, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(workgroup_id) group_id: vec3<u32>) {
   let idx = local_id.x;
   let pixel_idx = group_id.x * 256u + idx;
@@ -63,4 +63,8 @@ fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(workgroup_id
   
   // Store directly to output (placeholder) - full bitonic implementation would use workgroup memory
   textureStore(writeTexture, vec2<i32>(i32(x), i32(y)), a);
+  
+  // Pass through depth
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, vec2<i32>(i32(x), i32(y)), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

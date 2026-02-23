@@ -103,7 +103,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         trail = trail * trailFade;
     }
     // Store for next frame
-    textureStore(prevFrame, gid.xy, vec4<f32>(trail, 1.0));
+    textureStore(prevFrame, vec2<i32>(gid.xy), vec4<f32>(trail, 1.0));
 
     // -----------------------------------------------------------------
     //  5️⃣  Green tint & colour grading
@@ -131,6 +131,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Depth influence can modulate overall intensity
     outCol *= 1.0 - depthInf * depth * 0.3;
 
-    textureStore(outTex, gid.xy, vec4<f32>(outCol, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

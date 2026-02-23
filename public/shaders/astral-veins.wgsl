@@ -192,7 +192,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Fade out old glow and add the new one
     prev = prev * 0.94 + glow * 0.06;
     // Store for next frame
-    textureStore(growthBuf, gid.xy, vec4<f32>(prev,0.0,0.0,1.0));
+    textureStore(growthBuf, vec2<i32>(gid.xy), vec4<f32>(prev,0.0,0.0,1.0));
 
     // Use the persisted glow to give a soft halo around the veins
     let halo = prev * 0.4;
@@ -208,6 +208,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ---------------------------------------------------------------
     //  🔟  Write final colour & depth
     // ---------------------------------------------------------------
-    textureStore(outTex, gid.xy, vec4<f32>(outCol,1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth,0.0,0.0,0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol,1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
 }

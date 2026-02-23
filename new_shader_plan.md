@@ -152,45 +152,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
 ```json
 {
-  "id": "cosmic-web",
-  "name": "Cosmic Web Filament",
-  "url": "shaders/cosmic-web.wgsl",
+  "id": "gen-crystal-caverns",
+  "name": "Crystal Caverns",
+  "url": "shaders/gen-crystal-caverns.wgsl",
   "category": "generative",
-  "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well.",
-  "tags": ["space", "procedural", "organic", "scifi", "dark-matter"],
+  "description": "An infinite, procedural cave system illuminated by clusters of glowing crystals.",
+  "tags": ["crystal", "cave", "3d", "raymarching", "generative", "fantasy", "glowing"],
   "features": ["mouse-driven"],
   "params": [
     {
       "id": "param1",
-      "name": "Warp Strength",
+      "name": "Crystal Density",
       "default": 0.5,
       "min": 0.0,
-      "max": 2.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Filament Density",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "id": "param3",
-      "name": "Flow Speed",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
-    },
-    {
-      "id": "param4",
       "name": "Color Shift",
       "default": 0.0,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Glow Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Cave Scale",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.1
     }
   ]
 }

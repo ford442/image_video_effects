@@ -14,6 +14,45 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 const seenIds = new Map(); // Map<id, category/filename>
 const missingFiles = [];
 const skippedDuplicates = [];
+const invalidShaders = [];  // Shaders with fatal WGSL content errors
+const warnShaders = [];     // Shaders with non-fatal WGSL content warnings
+
+/**
+ * Validates WGSL shader content for common issues that would cause runtime failures.
+ * Returns { fatal: string|null, warnings: string[] }
+ */
+function validateWgslContent(wgslContent, id) {
+    const warnings = [];
+
+    // Fatal: empty file cannot be compiled
+    if (wgslContent.trim().length === 0) {
+        return { fatal: 'empty WGSL file', warnings };
+    }
+
+    // Fatal: missing @compute attribute means no compute entry point
+    if (!/@compute/.test(wgslContent)) {
+        return { fatal: 'missing @compute entry point', warnings };
+    }
+
+    // Fatal: missing fn main means the pipeline cannot be created
+    if (!/fn main\s*\(/.test(wgslContent)) {
+        return { fatal: 'missing fn main() entry point', warnings };
+    }
+
+    // Warning: workgroup size should be (8, 8, 1) to match renderer dispatch
+    if (!/@workgroup_size\s*\(\s*8\s*,\s*8\s*,\s*1\s*\)/.test(wgslContent)) {
+        const ws = wgslContent.match(/@workgroup_size\s*\([^)]+\)/);
+        const detail = ws ? `found ${ws[0]}` : 'no @workgroup_size attribute found';
+        warnings.push(`unexpected workgroup_size: ${detail} (expected @workgroup_size(8, 8, 1))`);
+    }
+
+    // Warning: no textureStore means nothing will be written to the output texture
+    if (!/textureStore\s*\(/.test(wgslContent)) {
+        warnings.push('no textureStore call — output texture will not be written');
+    }
+
+    return { fatal: null, warnings };
+}
 
 console.log("Generating shader lists...");
 
@@ -62,6 +101,19 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
                     return;
                 }
 
+                // 3. Validate WGSL content for common runtime failures
+                const wgslContent = fs.readFileSync(wgslPath, 'utf-8');
+                const { fatal, warnings } = validateWgslContent(wgslContent, id);
+                if (fatal) {
+                    console.warn(`WARNING: Invalid WGSL for '${id}' in ${category}/${file}: ${fatal} - SKIPPING`);
+                    invalidShaders.push({ id, file: `${category}/${file}`, reason: fatal });
+                    return;
+                }
+                if (warnings.length > 0) {
+                    warnings.forEach(w => console.warn(`WARNING: '${id}' (${category}/${file}): ${w}`));
+                    warnShaders.push({ id, file: `${category}/${file}`, warnings });
+                }
+
                 // Passed checks
                 seenIds.set(id, `${category}/${file}`);
                 validShaders.push(shaderDef);
@@ -86,6 +138,14 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
     if (missingFiles.length > 0) {
         console.log(`\nSKIPPED MISSING FILES (${missingFiles.length}):`);
         missingFiles.forEach(f => console.log(`  - ${f.id} (wgsl: ${f.path})`));
+    }
+    if (invalidShaders.length > 0) {
+        console.log(`\nSKIPPED INVALID SHADERS (${invalidShaders.length}):`);
+        invalidShaders.forEach(s => console.log(`  - ${s.id} (${s.file}): ${s.reason}`));
+    }
+    if (warnShaders.length > 0) {
+        console.log(`\nSHADERS WITH WARNINGS (${warnShaders.length}):`);
+        warnShaders.forEach(s => s.warnings.forEach(w => console.log(`  - ${s.id} (${s.file}): ${w}`)));
     }
     console.log("\nDone.");
 

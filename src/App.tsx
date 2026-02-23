@@ -8,6 +8,18 @@ import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 import './style.css';
 
+// --- Webcam Fun Shaders ---
+const WEBCAM_FUN_SHADERS = [
+    'liquid', 'liquid-chrome-ripple', 'liquid-rainbow', 'liquid-swirl',
+    'neon-pulse', 'neon-edge-pulse', 'neon-fluid-warp', 'neon-warp',
+    'vortex', 'vortex-distortion', 'vortex-warp', 'chroma-vortex',
+    'distortion', 'chromatic-folds', 'holographic-projection', 'cyber-glitch-hologram',
+    'kaleidoscope', 'kaleido-scope', 'fractal-kaleidoscope', 'astral-kaleidoscope',
+    'rgb-fluid', 'rgb-ripple-distortion', 'rgb-shift-brush',
+    'pixel-sorter', 'pixel-sort-glitch', 'ascii-shockwave',
+    'magnetic-field', 'magnetic-pixels', 'magnetic-rgb'
+];
+
 // --- Configuration ---
 env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
@@ -102,6 +114,29 @@ function MainApp() {
     // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
 
+    // --- State: Webcam ---
+    const [isWebcamActive, setIsWebcamActive] = useState(false);
+    const [webcamError, setWebcamError] = useState<string | null>(null);
+    const [showWebcamShaderSuggestions, setShowWebcamShaderSuggestions] = useState(false);
+    const videoElementRef = useRef<HTMLVideoElement | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+
+    // --- State: Roulette ---
+    const [isRouletteActive, setIsRouletteActive] = useState(false);
+    const [chaosModeEnabled, setChaosModeEnabled] = useState(false);
+    const [rouletteFirstUse, setRouletteFirstUse] = useState(true);
+    const [showConfetti, setShowConfetti] = useState(false);
+    const chaosIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // --- State: Recording ---
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingCountdown, setRecordingCountdown] = useState(8);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareableLink, setShareableLink] = useState('');
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const recordedChunksRef = useRef<Blob[]>([]);
+    const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
     // --- State: Mouse Interaction ---
     const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
     const [isMouseDown, setIsMouseDown] = useState(false);
@@ -112,6 +147,7 @@ function MainApp() {
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
 
     // --- Helpers ---
     const setMode = useCallback((index: number, mode: RenderMode) => {
@@ -351,6 +387,418 @@ function MainApp() {
         }
     }, [handleNewRandomImage]);
 
+    // --- Webcam Handlers ---
+    const startWebcam = useCallback(async () => {
+        try {
+            setWebcamError(null);
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+            streamRef.current = stream;
+            
+            // Create hidden video element
+            if (!videoElementRef.current) {
+                const video = document.createElement('video');
+                video.autoplay = true;
+                video.playsInline = true;
+                video.muted = true;
+                video.style.position = 'absolute';
+                video.style.width = '1px';
+                video.style.height = '1px';
+                video.style.opacity = '0';
+                video.style.pointerEvents = 'none';
+                video.style.zIndex = '-1';
+                document.body.appendChild(video);
+                videoElementRef.current = video;
+            }
+            
+            videoElementRef.current.srcObject = stream;
+            await videoElementRef.current.play();
+            
+            setIsWebcamActive(true);
+            setInputSource('webcam');
+            setShaderCategory('image');
+            setShowWebcamShaderSuggestions(true);
+            setStatus('📹 Webcam active! Try fun shaders below.');
+        } catch (err: any) {
+            console.error('Webcam error:', err);
+            setWebcamError(err.name === 'NotAllowedError' 
+                ? 'Camera permission denied. Please allow camera access and try again.' 
+                : 'Failed to access webcam. Please check your camera.');
+            setStatus('❌ Camera permission denied');
+        }
+    }, []);
+
+    const stopWebcam = useCallback(() => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        if (videoElementRef.current) {
+            videoElementRef.current.pause();
+            videoElementRef.current.srcObject = null;
+        }
+        setIsWebcamActive(false);
+        setInputSource('image');
+        setShowWebcamShaderSuggestions(false);
+        setStatus('Webcam stopped');
+    }, []);
+
+    const applyWebcamFunShader = useCallback((shaderId: string) => {
+        setMode(0, shaderId as RenderMode);
+        setActiveSlot(0);
+    }, [setMode]);
+
+    // Cleanup webcam on unmount
+    useEffect(() => {
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+            if (videoElementRef.current) {
+                videoElementRef.current.remove();
+            }
+            if (chaosIntervalRef.current) {
+                clearInterval(chaosIntervalRef.current);
+            }
+        };
+    }, []);
+
+    // --- Roulette / Chaos Mode Functions ---
+    const getRandomShader = useCallback((): ShaderEntry | null => {
+        if (availableModes.length === 0) return null;
+        // Filter out 'none' and ensure valid shader entries
+        const validShaders = availableModes.filter(s => s.id && s.id !== 'none');
+        if (validShaders.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * validShaders.length);
+        return validShaders[randomIndex];
+    }, [availableModes]);
+
+    const randomizeSlotParams = useCallback((): SlotParams => {
+        // Generate random values within sensible ranges for fun effects
+        return {
+            zoomParam1: 0.3 + Math.random() * 0.7,      // 0.3 - 1.0
+            zoomParam2: 0.5 + Math.random() * 0.5,      // 0.5 - 1.0
+            zoomParam3: Math.random() * 1.0,            // 0.0 - 1.0
+            zoomParam4: Math.random() * 1.0,            // 0.0 - 1.0
+            lightStrength: 0.5 + Math.random() * 1.5,   // 0.5 - 2.0
+            ambient: 0.1 + Math.random() * 0.4,         // 0.1 - 0.5
+            normalStrength: 0.05 + Math.random() * 0.25,// 0.05 - 0.3
+            fogFalloff: 2.0 + Math.random() * 6.0,      // 2.0 - 8.0
+            depthThreshold: 0.3 + Math.random() * 0.5,  // 0.3 - 0.8
+        };
+    }, []);
+
+    const triggerRoulette = useCallback(() => {
+        const randomShader = getRandomShader();
+        if (!randomShader) {
+            setStatus('No shaders available for Roulette!');
+            return;
+        }
+
+        // Flash effect
+        if (rouletteFlashRef.current) {
+            rouletteFlashRef.current.classList.add('flash-active');
+            setTimeout(() => {
+                rouletteFlashRef.current?.classList.remove('flash-active');
+            }, 300);
+        }
+
+        // Apply random shader to slot 0
+        setMode(0, randomShader.id as RenderMode);
+        setActiveSlot(0);
+
+        // Randomize parameters for fresh look
+        const newParams = randomizeSlotParams();
+        updateSlotParam(0, newParams);
+
+        // Show confetti on first use
+        if (rouletteFirstUse) {
+            setShowConfetti(true);
+            setRouletteFirstUse(false);
+            setTimeout(() => setShowConfetti(false), 3000);
+        }
+
+        setStatus(`🎰 Roulette: ${randomShader.name}`);
+        setIsRouletteActive(true);
+        setTimeout(() => setIsRouletteActive(false), 500);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, rouletteFirstUse]);
+
+    // Chaos Mode effect
+    useEffect(() => {
+        if (chaosModeEnabled) {
+            // Initial trigger
+            triggerRoulette();
+            // Set up interval (6-10 seconds random)
+            chaosIntervalRef.current = setInterval(() => {
+                triggerRoulette();
+            }, 6000 + Math.random() * 4000);
+        } else {
+            if (chaosIntervalRef.current) {
+                clearInterval(chaosIntervalRef.current);
+                chaosIntervalRef.current = null;
+            }
+        }
+
+        return () => {
+            if (chaosIntervalRef.current) {
+                clearInterval(chaosIntervalRef.current);
+            }
+        };
+    }, [chaosModeEnabled, triggerRoulette]);
+
+    // Keyboard shortcut for Roulette
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'r' || e.key === 'R') {
+                // Don't trigger if user is typing in an input
+                if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                    return;
+                }
+                triggerRoulette();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [triggerRoulette]);
+
+    // --- Recording & Share Functions ---
+    const generateShareableLink = useCallback(() => {
+        const params = new URLSearchParams();
+        
+        // Current shader/mode
+        params.set('shader', modes[0]);
+        params.set('slot', activeSlot.toString());
+        
+        // Current slot parameters
+        const params1 = slotParams[activeSlot];
+        if (params1) {
+            params.set('p1', params1.zoomParam1.toFixed(2));
+            params.set('p2', params1.zoomParam2.toFixed(2));
+            params.set('p3', params1.zoomParam3.toFixed(2));
+            params.set('p4', params1.zoomParam4.toFixed(2));
+            params.set('light', params1.lightStrength.toFixed(2));
+            params.set('ambient', params1.ambient.toFixed(2));
+        }
+        
+        // Input source and related state
+        params.set('source', inputSource);
+        if (inputSource === 'webcam') {
+            params.set('webcam', 'true');
+        }
+        if (currentImageUrl) {
+            params.set('img', encodeURIComponent(currentImageUrl));
+        }
+        
+        // View settings
+        params.set('zoom', zoom.toFixed(2));
+        params.set('panX', panX.toFixed(2));
+        params.set('panY', panY.toFixed(2));
+        
+        // Generative shader if active
+        if (inputSource === 'generative' && activeGenerativeShader) {
+            params.set('gen', activeGenerativeShader);
+        }
+        
+        const hash = params.toString();
+        const baseUrl = window.location.origin + window.location.pathname;
+        return `${baseUrl}#${hash}`;
+    }, [modes, activeSlot, slotParams, inputSource, currentImageUrl, zoom, panX, panY, activeGenerativeShader]);
+
+    const restoreStateFromHash = useCallback(() => {
+        const hash = window.location.hash.slice(1); // Remove #
+        if (!hash) return;
+        
+        try {
+            const params = new URLSearchParams(hash);
+            
+            // Restore shader/mode
+            const shader = params.get('shader');
+            if (shader) {
+                setMode(0, shader as RenderMode);
+            }
+            
+            // Restore active slot
+            const slot = params.get('slot');
+            if (slot) {
+                setActiveSlot(parseInt(slot, 10));
+            }
+            
+            // Restore slot parameters
+            const updates: Partial<SlotParams> = {};
+            const p1 = params.get('p1');
+            const p2 = params.get('p2');
+            const p3 = params.get('p3');
+            const p4 = params.get('p4');
+            const light = params.get('light');
+            const ambient = params.get('ambient');
+            
+            if (p1) updates.zoomParam1 = parseFloat(p1);
+            if (p2) updates.zoomParam2 = parseFloat(p2);
+            if (p3) updates.zoomParam3 = parseFloat(p3);
+            if (p4) updates.zoomParam4 = parseFloat(p4);
+            if (light) updates.lightStrength = parseFloat(light);
+            if (ambient) updates.ambient = parseFloat(ambient);
+            
+            if (Object.keys(updates).length > 0) {
+                updateSlotParam(slot ? parseInt(slot, 10) : 0, updates);
+            }
+            
+            // Restore input source
+            const source = params.get('source');
+            if (source) {
+                setInputSource(source as InputSource);
+                if (source === 'webcam') {
+                    // Will need to trigger webcam start separately
+                    setTimeout(() => startWebcam(), 1000);
+                }
+            }
+            
+            // Restore image URL if present
+            const img = params.get('img');
+            if (img && source !== 'webcam') {
+                handleLoadImage(decodeURIComponent(img));
+            }
+            
+            // Restore view settings
+            const zoomVal = params.get('zoom');
+            const panXVal = params.get('panX');
+            const panYVal = params.get('panY');
+            if (zoomVal) setZoom(parseFloat(zoomVal));
+            if (panXVal) setPanX(parseFloat(panXVal));
+            if (panYVal) setPanY(parseFloat(panYVal));
+            
+            // Restore generative shader
+            const gen = params.get('gen');
+            if (gen) {
+                setActiveGenerativeShader(gen);
+                setInputSource('generative');
+            }
+            
+            setStatus('🎉 Shared state restored!');
+        } catch (e) {
+            console.error('Failed to restore state from hash:', e);
+        }
+    }, [setMode, setActiveSlot, updateSlotParam, setInputSource, setZoom, setPanX, setPanY, setActiveGenerativeShader, handleLoadImage, startWebcam]);
+
+    // Restore state from URL hash on load
+    useEffect(() => {
+        restoreStateFromHash();
+    }, [restoreStateFromHash]);
+
+    const stopRecording = useCallback(() => {
+        if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+            recordingTimerRef.current = null;
+        }
+
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+        }
+
+        setIsRecording(false);
+        setRecordingCountdown(8);
+    }, []);
+
+    const startRecording = useCallback(async () => {
+        // Find the canvas element
+        const canvas = document.querySelector('canvas[data-testid="webgpu-canvas"]') as HTMLCanvasElement;
+        if (!canvas) {
+            setStatus('❌ Canvas not found for recording');
+            return;
+        }
+        
+        try {
+            // Capture stream at 60fps
+            const stream = canvas.captureStream(60);
+            
+            // Try VP9 first, fall back to VP8 or default
+            let mimeType = 'video/webm;codecs=vp9';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = 'video/webm;codecs=vp8';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                }
+            }
+            
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType,
+                videoBitsPerSecond: 8000000 // 8 Mbps for good quality
+            });
+            
+            mediaRecorderRef.current = mediaRecorder;
+            recordedChunksRef.current = [];
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    recordedChunksRef.current.push(e.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                
+                // Auto-download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pixelocity-clip-${Date.now()}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // Generate shareable link
+                const link = generateShareableLink();
+                setShareableLink(link);
+                setShowShareModal(true);
+                
+                setStatus('✅ Recording saved! Download started.');
+                
+                // Cleanup
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            };
+            
+            // Start recording
+            mediaRecorder.start(100); // Collect data every 100ms
+            setIsRecording(true);
+            setRecordingCountdown(8);
+            setStatus('🔴 Recording... 8s');
+            
+            // Countdown timer
+            let count = 8;
+            recordingTimerRef.current = setInterval(() => {
+                count -= 1;
+                setRecordingCountdown(count);
+                setStatus(`🔴 Recording... ${count}s`);
+                
+                if (count <= 0) {
+                    stopRecording();
+                }
+            }, 1000);
+            
+        } catch (e) {
+            console.error('Recording failed:', e);
+            setStatus('❌ Recording failed. Browser may not support this feature.');
+        }
+    }, [generateShareableLink, stopRecording]);
+
+    // Cleanup recording on unmount
+    useEffect(() => {
+        return () => {
+            if (recordingTimerRef.current) {
+                clearInterval(recordingTimerRef.current);
+            }
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                mediaRecorderRef.current.stop();
+            }
+        };
+    }, []);
+
     // --- Remote Control Sync ---
     // Build full state object for syncing
     const buildFullState = useCallback((): FullState => ({
@@ -484,6 +932,23 @@ function MainApp() {
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                         onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
+                        isWebcamActive={isWebcamActive}
+                        onStartWebcam={startWebcam}
+                        onStopWebcam={stopWebcam}
+                        webcamError={webcamError}
+                        showWebcamShaderSuggestions={showWebcamShaderSuggestions}
+                        webcamFunShaders={WEBCAM_FUN_SHADERS}
+                        onApplyWebcamShader={applyWebcamFunShader}
+                        // Roulette props
+                        onRoulette={triggerRoulette}
+                        isRouletteActive={isRouletteActive}
+                        chaosModeEnabled={chaosModeEnabled}
+                        setChaosModeEnabled={setChaosModeEnabled}
+                        // Recording props
+                        isRecording={isRecording}
+                        recordingCountdown={recordingCountdown}
+                        onStartRecording={startRecording}
+                        onStopRecording={stopRecording}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -497,6 +962,8 @@ function MainApp() {
                         activeGenerativeShader={activeGenerativeShader}
                         selectedVideo={selectedVideo}
                         apiBaseUrl={API_BASE_URL}
+                        isWebcamActive={isWebcamActive}
+                        webcamVideoElement={videoElementRef.current}
                     />
                     <div className="status-bar">
                         {isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}
@@ -505,6 +972,116 @@ function MainApp() {
             </div>
             <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={() => {}} />
             <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={() => {}} />
+            
+            {/* Roulette Flash Overlay */}
+            <div 
+                ref={rouletteFlashRef} 
+                className="roulette-flash"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'white',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    zIndex: 9999,
+                    transition: 'opacity 0.15s ease-out'
+                }}
+            />
+            
+            {/* Confetti Container */}
+            {showConfetti && (
+                <div className="confetti-container">
+                    {Array.from({ length: 50 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className="confetti-piece"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                animationDelay: `${Math.random() * 2}s`,
+                                backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dfe6e9', '#fd79a8'][Math.floor(Math.random() * 7)]
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+            
+            {/* Chaos Mode Indicator */}
+            {chaosModeEnabled && (
+                <div className="chaos-active-indicator">
+                    🔥 CHAOS MODE ON
+                </div>
+            )}
+            
+            {/* Recording Indicator Overlay */}
+            {isRecording && (
+                <div className="recording-indicator-overlay">
+                    <div className="recording-dot-large"></div>
+                    <span>REC {recordingCountdown}s</span>
+                </div>
+            )}
+            
+            {/* Share Modal */}
+            {showShareModal && (
+                <div className="share-modal-overlay" onClick={() => setShowShareModal(false)}>
+                    <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="share-modal-close" onClick={() => setShowShareModal(false)}>×</button>
+                        
+                        <div className="share-modal-header">
+                            <h2>🎉 Clip Recorded!</h2>
+                            <p>Your video has been downloaded. Share your creation!</p>
+                        </div>
+                        
+                        <div className="share-link-section">
+                            <label>Shareable Link:</label>
+                            <div className="share-link-input-group">
+                                <input 
+                                    type="text" 
+                                    value={shareableLink} 
+                                    readOnly 
+                                    className="share-link-input"
+                                />
+                                <button 
+                                    className="share-copy-btn"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(shareableLink);
+                                        setStatus('🔗 Link copied to clipboard!');
+                                    }}
+                                >
+                                    📋 Copy
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="share-buttons">
+                            <a 
+                                href={`https://twitter.com/intent/tweet?text=Check+out+my+Pixelocity+creation!&url=${encodeURIComponent(shareableLink)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="share-btn twitter"
+                            >
+                                🐦 Share on Twitter
+                            </a>
+                            <a 
+                                href={`https://www.tiktok.com/upload?referer=${encodeURIComponent(shareableLink)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="share-btn tiktok"
+                            >
+                                🎵 Post on TikTok
+                            </a>
+                        </div>
+                        
+                        <div className="share-modal-footer">
+                            <button className="share-done-btn" onClick={() => setShowShareModal(false)}>
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

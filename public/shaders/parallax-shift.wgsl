@@ -16,10 +16,10 @@ struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples: array<f32, 20>,
+  ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<f32>(u.config.zw);
     let coords = vec2<i32>(global_id.xy);
