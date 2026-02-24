@@ -3,40 +3,41 @@
   "name": "Kimi Flock Symphony",
   "url": "shaders/kimi_flock_symphony.wgsl",
   "category": "generative",
-  "description": "Advanced particle flocking simulation with musical visualization and boid behavior. Features separation, alignment, cohesion, and mouse interaction.",
+  "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
+  "tags": ["boids", "flocking", "generative", "particles", "musical", "interactive"],
   "features": ["mouse-driven"],
-  "tags": ["boids", "simulation", "flocking", "generative", "particles"],
+  "author": "Kimi",
   "params": [
     {
-      "id": "trail",
+      "id": "trail_length",
       "name": "Trail Length",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "glow",
+      "id": "glow_radius",
       "name": "Glow Radius",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "color",
+      "id": "color_shift",
       "name": "Color Shift",
-      "default": 0,
-      "min": 0,
-      "max": 1,
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
       "id": "density",
-      "name": "Density",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
+      "name": "Particle Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     }
   ]
