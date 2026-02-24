@@ -1,90 +1,88 @@
-# New Shader Plan: Bioluminescent Abyss
+# New Shader Plan: Biomechanical Hive
 
 ## Concept
-An infinite, deep underwater landscape populated by swaying tube worms and thermal vents. The scene is dark, lit primarily by the glowing tips of the flora and faint overhead caustics. This shader aims to capture the serene yet alien atmosphere of the deep ocean.
+An infinite, claustrophobic structure composed of hexagonal cells that blur the line between industrial machinery and organic tissue. The walls are ribbed with metallic piping that seems to breathe, and the centers of the cells glow with a pulsating, embryonic light. The scene evokes the aesthetic of H.R. Giger—alien, dark, and intricately detailed.
 
 ## Metadata
-- **Name:** `gen-bioluminescent-abyss.wgsl`
+- **Name:** `gen-biomechanical-hive.wgsl`
 - **Category:** `generative`
-- **Tags:** `["underwater", "organic", "bioluminescence", "raymarching", "volumetric"]`
+- **Tags:** `["scifi", "biomechanical", "giger", "alien", "raymarching", "horror"]`
 - **Author:** Jules
 
 ## Features
-- **Infinite Terrain:** Procedural seabed using FBM noise.
-- **Dynamic Flora:** swaying tube worms that react to "current" (time).
-- **Atmosphere:** Deep blue exponential fog and fake caustic projections.
-- **Interactive:** Mouse controls camera orbit; sliders control density, current, and glow.
+- **Hexagonal Tiling:** Uses domain repetition with modulo arithmetic to create an infinite honeycomb structure.
+- **Organic/Industrial Blend:** SDFs combining sharp geometric forms (pipes, hex prisms) with smooth blending (`smin`) and noise-based displacement to simulate fleshy overgrowth.
+- **Pulsating Atmosphere:** The lighting intensity and color shift rhythmically, simulating a heartbeat or breathing.
+- **Interactive Camera:** Mouse controls the camera angle to inspect the details of the hive.
 
 ## Uniforms Mapping
 | Uniform | Parameter | Description |
 | :--- | :--- | :--- |
-| `u.zoom_params.x` | **Density** | Controls the spacing/count of the tube worms. |
-| `u.zoom_params.y` | **Current** | Controls the speed and amplitude of the swaying motion. |
-| `u.zoom_params.z` | **Glow** | Intensity of the bioluminescent tips. |
-| `u.zoom_params.w` | **Color** | Shift the hue of the bioluminescence (Cyan -> Magenta -> Green). |
+| `u.zoom_params.x` | **Cell Density** | Controls the scale of the hexagonal grid (zoom level). |
+| `u.zoom_params.y` | **Pulse Speed** | Speed of the rhythmic lighting and wall breathing. |
+| `u.zoom_params.z` | **Biomass** | Amount of "organic" noise/displacement applied to the structure. |
+| `u.zoom_params.w` | **Hue Shift** | Shifts the core color (e.g., from Amber to Alien Green or Bloody Red). |
 | `u.zoom_config.yz` | **Camera** | Mouse X/Y maps to camera Yaw/Pitch. |
 
 ## Proposed Code Structure (WGSL)
 
 ### Header
-Standard include of bindings and Uniforms struct.
+Standard bindings and `Uniforms` struct.
 
-### SDF Primitives
-- `sdCappedCylinder`: For tube worms.
-- `sdCone`: For thermal vents.
-- `smin`: Smooth minimum for blending base of worms with terrain.
+### Helper Functions
+- `sdHexPrism(p: vec3<f32>, h: vec2<f32>) -> f32`: Signed distance for hexagonal cells.
+- `opRepLim(p: vec3<f32>, c: f32, l: vec3<f32>) -> vec3<f32>`: Limited domain repetition (or infinite `mod`).
+- `smin(a: f32, b: f32, k: f32) -> f32`: Smooth minimum for organic blending.
 
 ### Map Function
 ```wgsl
 fn map(p: vec3<f32>) -> vec2<f32> {
-    // 1. Terrain
-    let d_floor = p.y + 2.0 + fbm(p.xz * 0.1) * 1.0;
+    // 1. Domain Repetition (Hexagonal Grid)
+    // Convert to hex coordinates for tiling
+    let size = mix(4.0, 1.5, u.zoom_params.x);
+    let q = p;
+    // ... Hex grid logic (staggered rows) ...
 
-    // 2. Tube Worms (Domain Repetition)
-    let cell_size = mix(8.0, 2.0, u.zoom_params.x); // Density control
-    let id = floor(p.xz / cell_size);
-    let q = (fract(p.xz / cell_size) - 0.5) * cell_size;
+    // 2. Base Geometry
+    // The wall structure
+    let d_hex = sdHexPrism(local_p, vec2(size * 0.4, 10.0)) - 0.2;
 
-    // Randomize height and sway offset based on ID
-    let h = hash(id);
+    // 3. Details (Pipes/Ribs)
+    let d_pipes = length(vec2(local_p.x, local_p.z % 0.5)) - 0.05;
 
-    // Swaying Logic
-    let sway = sin(u.config.x * u.zoom_params.y + h * 10.0) * (q.y * 0.1);
-    let p_worm = vec3(q.x + sway, p.y, q.y);
+    // 4. Organic Displacement
+    let breathing = sin(u.config.x * u.zoom_params.y) * 0.1;
+    let noise = fbm(p * 0.5 + u.config.x * 0.1);
+    let d_organic = d_hex + noise * u.zoom_params.z + breathing;
 
-    let d_worm = sdCappedCylinder(p_worm, 2.0 + h, 0.1);
+    // 5. Smooth Blend
+    let d = smin(d_organic, d_pipes, 0.5);
 
-    // Material ID: 1.0 = Floor, 2.0 = Worm Body, 3.0 = Glowing Tip
+    // Material ID based on position (Core vs Wall)
+    let mat = select(1.0, 2.0, length(local_p.xy) < size * 0.2); // 2.0 = Glowing Core
 
-    // Logic to distinguish tip from body (simple height check)
-    var mat = 1.0;
-    if (d_worm < d_floor) {
-        mat = select(2.0, 3.0, p_worm.y > (2.0 + h - 0.2));
-    }
-
-    return vec2(min(d_floor, d_worm), mat);
+    return vec2(d, mat);
 }
 ```
 
 ### Lighting & Rendering
-- **Base Color:** Dark grey/blue for rock/worms.
-- **Emissive:** If `mat == 3.0`, add bright color based on `zoom_params.w`.
-- **Fog:** `mix(finalColor, deepBlue, 1.0 - exp(-t * 0.05))`
-- **Caustics:** Project a domain-warped noise texture from world coordinates onto objects.
+- **Lighting Model:** Phong with strong specular for the "slime" look.
+- **Volumetric Fog:** Dark fog to hide the distance and add mood.
+- **Emissive:** Inner core glows brightly based on the pulse.
 
 ## JSON Configuration
 ```json
 {
-  "name": "Bioluminescent Abyss",
-  "label": "Bio Abyss",
+  "name": "Biomechanical Hive",
+  "label": "Hive",
   "uniforms": {
     "zoom_params": {
       "x": 0.5,
       "y": 0.5,
-      "z": 0.8,
+      "z": 0.3,
       "w": 0.0
     }
   },
-  "tags": ["underwater", "generative", "3d"]
+  "tags": ["scifi", "alien", "generative"]
 }
 ```
