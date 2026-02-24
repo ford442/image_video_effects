@@ -950,6 +950,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Adhere strictly to primary colors and geometric primitives.
 
+### Suggestion: Bismuth Crystal Hoppers
+- **Date:** 2028-12-01
+- **Prompt:** "A macro photography shot of a synthetic Bismuth crystal. The geometric 'hopper' structure forms a spiraling, stair-step labyrinth. The surface oxidization creates a vibrant iridescent rainbow of colors: metallic blues, purples, golds, and pinks. The background is a clean dark grey."
+- **Negative prompt:** "rock, dirt, organic, dull colors, blurry"
+- **Tags:** bismuth, crystal, macro, geometry, iridescent
+- **Style / Reference:** Macro Photography, Mineralogy
+- **Composition:** Extreme close-up
+- **Color palette:** Iridescent Rainbow, Metallic
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20281201_bismuth.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the right angles and the rainbow oxidation.
+
+### Suggestion: Dyson Sphere Construction
+- **Date:** 2028-12-01
+- **Prompt:** "A colossal sci-fi concept art piece depicting the construction of a Dyson Sphere around a blue giant star. Hexagonal solar panels the size of continents are being assembled by swarms of spacecraft. The star's light bursts through the gaps in the megastructure. The scale is incomprehensible."
+- **Negative prompt:** "small planet, moon, cartoon, empty space, asteroid"
+- **Tags:** dyson sphere, sci-fi, space, megastructure, epic
+- **Style / Reference:** Sci-Fi Concept Art, Space Art
+- **Composition:** Wide shot, cosmic scale
+- **Color palette:** Star Blue, Panel Black/Silver, Silhouette
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20281201_dyson_sphere.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Convey the immense scale of the structure against the star.
+
+### Suggestion: Pixel Sorting Portrait
+- **Date:** 2028-12-01
+- **Prompt:** "A digital glitch art portrait of a cyberpunk hacker. The image is heavily processed with a 'pixel sorting' effect, where rows of pixels are dragged downwards based on luminance. The face is fragmented into cascading vertical lines of neon code and color, dissolving into digital noise."
+- **Negative prompt:** "clean, realistic, painting, smooth, normal"
+- **Tags:** pixel sorting, glitch art, cyberpunk, portrait, digital
+- **Style / Reference:** Glitch Art, Datamoshing
+- **Composition:** Portrait, centered
+- **Color palette:** Neon Green, Black, Static White, Magenta
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20281201_pixel_sort.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The vertical streaking effect is the defining feature.
+
+### Suggestion: Bioluminescent Bay
+- **Date:** 2028-12-01
+- **Prompt:** "A magical night landscape of a tropical bay filled with bioluminescent plankton. A wooden boat cuts through the dark water, leaving a glowing trail of electric blue light. The stars above reflect on the calm surface. Palm trees silhouette against the night sky."
+- **Negative prompt:** "daylight, sun, murky, green water, city lights"
+- **Tags:** bioluminescence, nature, ocean, night, magical
+- **Style / Reference:** Landscape Photography, Travel
+- **Composition:** Wide shot
+- **Color palette:** Electric Blue, Night Black, Star White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20281201_bio_bay.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the glow of the water where it is disturbed.
+
+### Suggestion: Damascus Steel Pattern
+- **Date:** 2028-12-01
+- **Prompt:** "A high-resolution macro texture shot of a hand-forged Damascus steel knife blade. The intricate, wavy water-like pattern of the folded steel layers is clearly visible. The metal is etched to reveal the contrast between the dark and light steel. Studio lighting highlights the grain."
+- **Negative prompt:** "stainless steel, smooth, rust, blurry, scratches"
+- **Tags:** damascus steel, metal, texture, macro, craft
+- **Style / Reference:** Macro Photography, Product Photography
+- **Composition:** Flat lay texture
+- **Color palette:** Steel Grey, Silver, Black, Charcoal
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20281201_damascus.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The contrast in the folded metal pattern is key.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -972,9 +1037,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pixel Sorting, Pointillism, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Ukiyo-e, Low Key Photography, Brutalist Architecture.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Damascus Steel, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Aerogel, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar, Bismuth.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Dyson Sphere, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Bioluminescent Bay, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar.
+- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pointillism, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Ukiyo-e, Low Key Photography, Brutalist Architecture, Art Nouveau, Kintsugi.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Aerogel, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar, Origami, Steampunk Airship, Circuit Board Macro.
 
 ---
 
