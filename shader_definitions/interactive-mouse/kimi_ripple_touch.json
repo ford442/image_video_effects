@@ -2,13 +2,50 @@
   "id": "kimi-ripple-touch",
   "name": "Kimi Ripple Touch",
   "url": "shaders/kimi_ripple_touch.wgsl",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "description": "Interactive water ripple effect at mouse position with expanding waves and chromatic aberration.",
-  "features": ["mouse-driven", "interactive", "ripple", "water"],
+  "features": [
+    "mouse-driven",
+    "interactive",
+    "ripple",
+    "water"
+  ],
   "params": [
-    {"id": "rippleCount", "name": "Ripple Count", "min": 0, "max": 1, "default": 0.5, "step": 0.01},
-    {"id": "rippleSpeed", "name": "Ripple Speed", "min": 0, "max": 1, "default": 0.5, "step": 0.01},
-    {"id": "rippleStrength", "name": "Distortion", "min": 0, "max": 1, "default": 0.3, "step": 0.01},
-    {"id": "rippleDecay", "name": "Decay Rate", "min": 0, "max": 1, "default": 0.5, "step": 0.01}
+    {
+      "id": "rippleCount",
+      "name": "Ripple Count",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01
+    },
+    {
+      "id": "rippleSpeed",
+      "name": "Ripple Speed",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01
+    },
+    {
+      "id": "rippleStrength",
+      "name": "Distortion",
+      "min": 0,
+      "max": 1,
+      "default": 0.3,
+      "step": 0.01
+    },
+    {
+      "id": "rippleDecay",
+      "name": "Decay Rate",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

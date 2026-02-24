@@ -40,5 +40,9 @@
     "colour-masking",
     "organic-growth",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -4,7 +4,10 @@
   "url": "shaders/sphere-projection.wgsl",
   "category": "image",
   "description": "Projects the image onto a 3D sphere that can be rotated with the mouse.",
-  "features": ["mouse-driven", "3d"],
+  "features": [
+    "mouse-driven",
+    "3d"
+  ],
   "params": [
     {
       "id": "zoom",
@@ -27,5 +30,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

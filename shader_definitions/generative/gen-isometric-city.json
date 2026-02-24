@@ -4,7 +4,9 @@
   "url": "shaders/gen-isometric-city.wgsl",
   "category": "generative",
   "description": "An infinite procedural isometric city with neon lights and traffic.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "density",
@@ -27,5 +29,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "procedural",
+    "generative"
   ]
 }

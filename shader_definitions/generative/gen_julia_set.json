@@ -4,5 +4,11 @@
   "url": "shaders/gen_julia_set.wgsl",
   "category": "generative",
   "description": "Animated Julia Set fractal controlled by mouse position.",
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

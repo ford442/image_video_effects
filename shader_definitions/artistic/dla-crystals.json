@@ -39,5 +39,9 @@
     "interactive",
     "fractal",
     "mouse-driven"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
   ]
 }

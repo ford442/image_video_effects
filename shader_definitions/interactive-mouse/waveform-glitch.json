@@ -4,11 +4,41 @@
   "category": "image",
   "url": "shaders/waveform-glitch.wgsl",
   "description": "Horizontal wave distortion controlled by mouse position (X=Freq, Y=Amp).",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
-    { "name": "Base Amp", "id": "baseAmp", "default": 0.1, "min": 0.0, "max": 1.0 },
-    { "name": "Speed", "id": "speed", "default": 0.2, "min": 0.0, "max": 1.0 },
-    { "name": "RGB Split", "id": "rgbSplit", "default": 0.2, "min": 0.0, "max": 1.0 },
-    { "name": "Content React", "id": "contentReact", "default": 0.0, "min": 0.0, "max": 1.0 }
+    {
+      "name": "Base Amp",
+      "id": "baseAmp",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Speed",
+      "id": "speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "RGB Split",
+      "id": "rgbSplit",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Content React",
+      "id": "contentReact",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

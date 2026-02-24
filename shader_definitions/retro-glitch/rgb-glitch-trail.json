@@ -38,5 +38,9 @@
     "mouse-driven",
     "chromatic",
     "trail"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

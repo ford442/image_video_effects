@@ -1,14 +1,45 @@
 {
-    "id": "cyber-slit-scan",
-    "label": "Cyber Slit Scan",
-    "url": "shaders/cyber-slit-scan.wgsl",
-    "category": "interactive-mouse",
-    "features": ["mouse-driven", "webcam"],
-    "description": "Slit-scan effect with cyberpunk artifacts controlled by mouse position.",
-    "params": [
-        { "name": "Scan Speed", "type": "float", "default": 0.2, "min": 0.0, "max": 1.0 },
-        { "name": "Bit Crush", "type": "float", "default": 0.1, "min": 0.0, "max": 1.0 },
-        { "name": "Hue Shift", "type": "float", "default": 0.0, "min": 0.0, "max": 1.0 },
-        { "name": "Unused", "type": "float", "default": 0.0, "min": 0.0, "max": 1.0 }
-    ]
+  "id": "cyber-slit-scan",
+  "label": "Cyber Slit Scan",
+  "url": "shaders/cyber-slit-scan.wgsl",
+  "category": "interactive",
+  "features": [
+    "mouse-driven",
+    "webcam"
+  ],
+  "description": "Slit-scan effect with cyberpunk artifacts controlled by mouse position.",
+  "params": [
+    {
+      "name": "Scan Speed",
+      "type": "float",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Bit Crush",
+      "type": "float",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Hue Shift",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Unused",
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
+  ]
 }

@@ -4,8 +4,20 @@
   "url": "shaders/gen-cosmic-web-filament.wgsl",
   "category": "generative",
   "description": "Dark matter web with Voronoi filaments, FBM warping, and mouse gravity wells. Hypnotic cosmic structure with purple-to-cyan gradients.",
-  "tags": ["generative", "cosmic", "voronoi", "filament", "organic", "dark-matter", "web", "gravity"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "generative",
+    "cosmic",
+    "voronoi",
+    "filament",
+    "organic",
+    "dark-matter",
+    "web",
+    "gravity",
+    "procedural"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "author": "ford442",
   "params": [
     {

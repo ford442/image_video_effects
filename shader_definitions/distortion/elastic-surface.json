@@ -38,5 +38,9 @@
     "animated",
     "wave",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

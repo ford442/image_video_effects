@@ -3,5 +3,9 @@
   "name": "Spectrum Bleed",
   "url": "shaders/spectrum-bleed.wgsl",
   "category": "image",
-  "description": "Color channel separation and bleeding effects."
+  "description": "Color channel separation and bleeding effects.",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

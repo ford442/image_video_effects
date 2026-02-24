@@ -1,14 +1,44 @@
 {
-    "id": "mirror-dimension",
-    "name": "Mirror Dimension",
-    "url": "shaders/mirror-dimension.wgsl",
-    "category": "artistic",
-    "description": "A rotating kaleidoscope that fractures reality. Mouse moves the center of symmetry.",
-    "features": ["mouse-driven"],
-    "params": [
-        { "id": "segments", "name": "Segments", "min": 0.0, "max": 1.0, "default": 0.5 },
-        { "id": "rotation-speed", "name": "Spin Speed", "min": 0.0, "max": 1.0, "default": 0.6 },
-        { "id": "offset", "name": "Shift", "min": 0.0, "max": 1.0, "default": 0.0 },
-        { "id": "zoom", "name": "Zoom", "min": 0.0, "max": 1.0, "default": 0.5 }
-    ]
+  "id": "mirror-dimension",
+  "name": "Mirror Dimension",
+  "url": "shaders/mirror-dimension.wgsl",
+  "category": "artistic",
+  "description": "A rotating kaleidoscope that fractures reality. Mouse moves the center of symmetry.",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "segments",
+      "name": "Segments",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "id": "rotation-speed",
+      "name": "Spin Speed",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6
+    },
+    {
+      "id": "offset",
+      "name": "Shift",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.0
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    }
+  ],
+  "tags": [
+    "stylized",
+    "artistic"
+  ]
 }

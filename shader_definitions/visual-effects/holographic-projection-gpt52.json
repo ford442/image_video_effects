@@ -1,42 +1,47 @@
 {
-    "id": "holographic-projection-gpt52",
-    "name": "Holo Projection Prism gpt52",
-    "url": "shaders/holographic-projection-gpt52.wgsl",
-    "category": "visual-effects",
-    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
-    "features": [
-        "mouse-driven",
-        "glitch",
-        "animated"
-    ],
-    "params": [
-        {
-            "id": "scanSpeed",
-            "name": "Scan Speed",
-            "min": 0.0,
-            "max": 5.0,
-            "default": 1.2
-        },
-        {
-            "id": "glitch",
-            "name": "Glitch Amount",
-            "min": 0.0,
-            "max": 1.0,
-            "default": 0.35
-        },
-        {
-            "id": "hue",
-            "name": "Holo Tint",
-            "min": 0.0,
-            "max": 1.0,
-            "default": 0.15
-        },
-        {
-            "id": "focus",
-            "name": "Focus Strength",
-            "min": 0.0,
-            "max": 1.0,
-            "default": 0.85
-        }
-    ]
+  "id": "holographic-projection-gpt52",
+  "name": "Holo Projection Prism gpt52",
+  "url": "shaders/holographic-projection-gpt52.wgsl",
+  "category": "visual-effects",
+  "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+  "features": [
+    "mouse-driven",
+    "glitch",
+    "animated"
+  ],
+  "params": [
+    {
+      "id": "scanSpeed",
+      "name": "Scan Speed",
+      "min": 0.0,
+      "max": 5.0,
+      "default": 1.2
+    },
+    {
+      "id": "glitch",
+      "name": "Glitch Amount",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.35
+    },
+    {
+      "id": "hue",
+      "name": "Holo Tint",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.15
+    },
+    {
+      "id": "focus",
+      "name": "Focus Strength",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.85
+    }
+  ],
+  "tags": [
+    "vfx",
+    "particles",
+    "glow"
+  ]
 }

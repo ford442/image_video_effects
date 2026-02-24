@@ -3,7 +3,9 @@
   "name": "Vortex Distortion",
   "url": "shaders/vortex-distortion.wgsl",
   "category": "distortion",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "description": "A swirling vortex centered on the mouse that twists the image and adds chromatic aberration.",
   "params": [
     {
@@ -34,5 +36,10 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform"
   ]
 }

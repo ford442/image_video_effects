@@ -37,5 +37,9 @@
   "features": [
     "mouse-driven",
     "distortion"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

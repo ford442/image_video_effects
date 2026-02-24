@@ -39,5 +39,9 @@
     "temporal-persistence",
     "chromatic-aberration",
     "sci-fi"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

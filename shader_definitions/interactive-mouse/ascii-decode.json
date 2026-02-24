@@ -2,8 +2,10 @@
   "id": "ascii-decode",
   "name": "ASCII Decode",
   "url": "shaders/ascii-decode.wgsl",
-  "category": "interactive-mouse",
-  "features": ["mouse-driven"],
+  "category": "interactive",
+  "features": [
+    "mouse-driven"
+  ],
   "description": "Renders the view as a digital ASCII matrix. Mouse movement acts as a decoding lens.",
   "params": [
     {
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

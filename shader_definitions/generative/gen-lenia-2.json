@@ -4,8 +4,21 @@
   "url": "shaders/gen-lenia-2.wgsl",
   "category": "generative",
   "description": "Advanced 4-species Lenia with 4 distinct kernels (Ring, Disk, Gaussian, Sharp Cross). Creatures evolve, compete, and merge. Mouse feeds different species. Truly alive.",
-  "tags": ["lenia", "multi-species", "4-kernels", "organic", "creature", "cellular-automata", "evolution", "advanced"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "lenia",
+    "multi-species",
+    "4-kernels",
+    "organic",
+    "creature",
+    "cellular-automata",
+    "evolution",
+    "advanced",
+    "procedural",
+    "generative"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "author": "ford442",
   "params": [
     {

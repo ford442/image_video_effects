@@ -37,5 +37,9 @@
   "features": [
     "mouse-driven",
     "temporal-persistence"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

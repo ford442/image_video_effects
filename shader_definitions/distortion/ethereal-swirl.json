@@ -6,5 +6,9 @@
   "description": "Ethereal swirling motion with soft gradients.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

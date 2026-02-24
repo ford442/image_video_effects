@@ -4,5 +4,11 @@
   "url": "shaders/ink-marbling.wgsl",
   "category": "image",
   "description": "Distorts the image with fluid, ink-like domain warping.",
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

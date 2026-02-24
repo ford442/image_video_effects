@@ -6,5 +6,9 @@
   "description": "Gentle ambient liquid motion effects.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -3,12 +3,43 @@
   "name": "Lichtenberg Fractal",
   "description": "Simulates high-voltage electrical branching patterns (Lichtenberg figures) that grow from the mouse cursor.",
   "url": "shaders/lichtenberg-fractal.wgsl",
-  "category": "shader",
-  "features": ["mouse-driven", "simulation"],
+  "category": "generative",
+  "features": [
+    "mouse-driven",
+    "simulation"
+  ],
   "params": [
-    { "id": "speed", "name": "Growth Speed", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "branching", "name": "Branching Factor", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "intensity", "name": "Burn Intensity", "default": 0.6, "min": 0.0, "max": 1.0 },
-    { "id": "clear", "name": "Clear Canvas", "default": 0.0, "min": 0.0, "max": 1.0 }
+    {
+      "id": "speed",
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "branching",
+      "name": "Branching Factor",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "intensity",
+      "name": "Burn Intensity",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "clear",
+      "name": "Clear Canvas",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "procedural",
+    "generative"
   ]
 }

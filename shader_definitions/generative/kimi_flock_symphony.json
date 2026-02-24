@@ -4,8 +4,18 @@
   "url": "shaders/kimi_flock_symphony.wgsl",
   "category": "generative",
   "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
-  "tags": ["boids", "flocking", "generative", "particles", "musical", "interactive"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "boids",
+    "flocking",
+    "generative",
+    "particles",
+    "musical",
+    "interactive",
+    "procedural"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "author": "Kimi",
   "params": [
     {

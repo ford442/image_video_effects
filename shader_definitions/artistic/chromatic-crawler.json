@@ -6,5 +6,9 @@
   "description": "Chaotic color-swapping regions that crawl across the screen with Voronoi-based patterns.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

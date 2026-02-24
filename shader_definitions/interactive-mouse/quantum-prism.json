@@ -1,7 +1,13 @@
 {
-    "id": "quantum-prism",
-    "label": "Quantum Prism",
-    "url": "shaders/quantum-prism.wgsl",
-    "category": "image",
-    "features": ["mouse-driven"]
+  "id": "quantum-prism",
+  "label": "Quantum Prism",
+  "url": "shaders/quantum-prism.wgsl",
+  "category": "image",
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

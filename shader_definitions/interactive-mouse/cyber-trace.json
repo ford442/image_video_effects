@@ -2,9 +2,11 @@
   "id": "cyber-trace",
   "name": "Cyber Trace",
   "url": "shaders/cyber-trace.wgsl",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "description": "A glowing neon trail that follows your mouse cursor and reacts to clicks, overlaid on the video feed.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "decay",
@@ -34,5 +36,9 @@
       "max": 0.2,
       "default": 0.05
     }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

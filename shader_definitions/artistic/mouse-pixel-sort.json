@@ -4,7 +4,9 @@
   "url": "shaders/mouse-pixel-sort.wgsl",
   "category": "image",
   "description": "Luminance-based pixel sorting controlled by mouse proximity.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "threshold",
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

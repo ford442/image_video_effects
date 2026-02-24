@@ -13,7 +13,7 @@ The TypeScript rendering engine (`Renderer.ts`) is **IMMUTABLE INFRASTRUCTURE**.
 * **DO NOT** attempt to add new bindings or uniforms.
 * **DO NOT** ask to install new npm packages.
 
-Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Shaders** that fit the *existing* interface.
+Your SOLE task is to create visual effects by writing **WGSL Compute Shaders** that fit the *existing* interface.
 
 ---
 
@@ -21,7 +21,7 @@ Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Sh
 
 **Pixelocity** is a React-based web application that runs GPU shader effects using WebGPU. It features:
 
-- **560+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
+- **575+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
 - **Real-time interactive effects** with mouse-driven ripples and distortions
 - **AI-powered depth estimation** using DPT-Hybrid-MIDAS model via Xenova Transformers
 - **AI VJ Mode** (Alucinate) that auto-generates visual stacks using WebLLM (Gemma-2-2b)
@@ -29,10 +29,12 @@ Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Sh
 - **Multiple input sources** - images, videos, webcam, and procedural generation
 - **WebGPU compute shaders** for high-performance real-time rendering
 - **Remote control mode** via BroadcastChannel API
+- **Recording and sharing** - capture 8-second video clips with shareable links
 
 ### Browser Requirements
 - Chrome 113+, Edge 113+, or Firefox Nightly (with `dom.webgpu.enabled` flag)
 - WebGPU support is mandatory
+- HTTPS or localhost required for WebGPU and camera access
 
 ---
 
@@ -45,12 +47,13 @@ image_video_effects/
 ├── webpack.config.js           # Build configuration (minimal, for main.ts bundle)
 ├── public/
 │   ├── index.html              # HTML entry point
-│   ├── shaders/                # WGSL shader files (560+ files)
-│   │   ├── liquid.wgsl
+│   ├── shaders/                # WGSL shader files (575+ files)
+│   │   ├── liquid.wgsl         # Base liquid effect
 │   │   ├── liquid-*.wgsl       # Various liquid effects
 │   │   ├── texture.wgsl        # Final render pass shader
 │   │   ├── imageVideo.wgsl     # Image/video display shader
-│   │   └── galaxy.wgsl         # Procedural galaxy shader
+│   │   ├── galaxy.wgsl         # Procedural galaxy shader
+│   │   └── ...                 # 570+ more shader files
 │   └── shader-lists/           # GENERATED - DO NOT EDIT DIRECTLY
 │       ├── liquid-effects.json
 │       ├── interactive-mouse.json
@@ -90,10 +93,14 @@ image_video_effects/
     ├── components/
     │   ├── Controls.tsx        # UI controls panel
     │   ├── Controls.test.tsx   # Test file
-    │   └── WebGPUCanvas.tsx    # Canvas wrapper with mouse handling
-    └── renderer/
-        ├── Renderer.ts         # WebGPU rendering engine (IMMUTABLE)
-        └── types.ts            # TypeScript type definitions
+    │   ├── WebGPUCanvas.tsx    # Canvas wrapper with mouse handling
+    │   ├── ShaderBrowser.tsx   # Shader browser component
+    │   └── ShaderBrowser.css   # Shader browser styles
+    ├── renderer/
+    │   ├── Renderer.ts         # WebGPU rendering engine (IMMUTABLE)
+    │   └── types.ts            # TypeScript type definitions
+    └── services/
+        └── shaderApi.ts        # Shader API service
 ```
 
 ---
@@ -110,10 +117,11 @@ image_video_effects/
 | Testing | Jest + React Testing Library |
 
 ### Key Dependencies
-- `@xenova/transformers` - AI depth estimation (DPT-Hybrid-MIDAS)
-- `@mlc-ai/web-llm` - In-browser LLM for AI VJ
+- `@xenova/transformers` - AI depth estimation (DPT-Hybrid-MIDAS) and image captioning
+- `@mlc-ai/web-llm` - In-browser LLM for AI VJ (Gemma-2-2b-it)
 - `@webgpu/types` - WebGPU type definitions
 - `playwright` - Browser automation
+- `react` / `react-dom` - React framework v19
 
 ---
 
@@ -167,6 +175,12 @@ The renderer uses a **multi-pass compute shader chain**:
 
 ### Fixed Internal Resolution
 The canvas uses a fixed internal resolution of **2048x2048** for all rendering operations. The display size is tracked separately for aspect ratio calculations.
+
+### Input Sources
+- `image` - Static images from URL, upload, or manifest
+- `video` - Video files from URL or upload
+- `webcam` - Live webcam feed via getUserMedia
+- `generative` - Procedural shaders that generate output without input
 
 ### Shader Bindings (IMMUTABLE)
 Every compute shader MUST declare exactly these bindings:
@@ -485,6 +499,28 @@ The app supports remote control via `BroadcastChannel`:
 
 Remote mode mirrors the controls UI and syncs state to the main app.
 
+### Sync Protocol
+The sync system uses a `BroadcastChannel` named `webgpu_remote_control_channel` with message types:
+- `HELLO` - Remote connects, requests full state
+- `HEARTBEAT` - Keepalive from main app
+- `STATE_FULL` - Full state dump from main app
+- `CMD_*` - Command messages from remote to main
+
+---
+
+## Recording and Sharing
+
+The app supports recording 8-second video clips:
+- Uses `canvas.captureStream(60)` for 60fps capture
+- Encodes to WebM format (VP9/VP8)
+- Auto-downloads the recording
+- Generates shareable URL with current state encoded in hash
+
+### Shareable URL Format
+```
+http://localhost:3000#shader=liquid&slot=0&p1=0.50&p2=0.50&source=image&img=...
+```
+
 ---
 
 ## Troubleshooting
@@ -517,6 +553,7 @@ All textures must match the canvas size (2048x2048 internal resolution). The ren
 - No sensitive data is stored locally
 - AI models are loaded from HuggingFace/CDN
 - File uploads are handled via File API and Blob URLs
+- Remote control uses BroadcastChannel (same-origin only)
 
 ---
 
@@ -532,7 +569,7 @@ This creates a `build/` directory with static files ready for hosting.
 ### Deployment Requirements
 - HTTPS (for WebGPU and camera access)
 - CORS-enabled hosting for images/videos
-- Modern browser support
+- Modern browser support (Chrome 113+, Edge 113+)
 
 ---
 

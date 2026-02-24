@@ -1,42 +1,46 @@
 {
-    "id": "divine-light-gpt52",
-    "name": "Divine Light Cathedral gpt52",
-    "url": "shaders/divine-light-gpt52.wgsl",
-    "category": "image",
-    "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
-    "params": [
-        {
-            "id": "intensity",
-            "name": "Ray Intensity",
-            "default": 0.6,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "decay",
-            "name": "Ray Decay",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "density",
-            "name": "Ray Density",
-            "default": 0.6,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "threshold",
-            "name": "Brightness Filter",
-            "default": 0.45,
-            "min": 0.0,
-            "max": 1.0
-        }
-    ],
-    "features": [
-        "mouse-driven",
-        "volumetric",
-        "atmospheric"
-    ]
+  "id": "divine-light-gpt52",
+  "name": "Divine Light Cathedral gpt52",
+  "url": "shaders/divine-light-gpt52.wgsl",
+  "category": "image",
+  "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Ray Intensity",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "decay",
+      "name": "Ray Decay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "density",
+      "name": "Ray Density",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "threshold",
+      "name": "Brightness Filter",
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "volumetric",
+    "atmospheric"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

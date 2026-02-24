@@ -4,8 +4,17 @@
   "url": "shaders/cosmic-web.wgsl",
   "category": "generative",
   "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well.",
-  "tags": ["space", "procedural", "organic", "scifi", "dark-matter"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "space",
+    "procedural",
+    "organic",
+    "scifi",
+    "dark-matter",
+    "generative"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "param1",

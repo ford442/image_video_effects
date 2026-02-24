@@ -3,7 +3,10 @@
   "name": "Spectral Glitch Sort",
   "url": "shaders/spectral-glitch-sort.wgsl",
   "category": "retro-glitch",
-  "features": ["mouse-driven", "chromatic-aberration"],
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration"
+  ],
   "description": "Displaces pixels based on their brightness, creating a glitchy sorting effect controlled by the mouse.",
   "params": [
     {
@@ -34,5 +37,10 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "glitch",
+    "retro",
+    "vintage"
   ]
 }

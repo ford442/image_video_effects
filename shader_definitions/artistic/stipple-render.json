@@ -5,10 +5,40 @@
   "category": "artistic",
   "description": "Converts the image to a stippled ink drawing with dynamic density based on mouse position.",
   "params": [
-    { "name": "Dot Scale", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.5 },
-    { "name": "Contrast", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.5 },
-    { "name": "Focus Radius", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.5 },
-    { "name": "Color Reveal", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.3 }
+    {
+      "name": "Dot Scale",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Contrast",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Focus Radius",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Color Reveal",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3
+    }
   ],
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "stylized",
+    "artistic"
+  ]
 }

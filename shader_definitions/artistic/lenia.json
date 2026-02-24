@@ -6,5 +6,9 @@
   "description": "Continuous cellular automata (Lenia) with ring kernel growth functions.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
   ]
 }

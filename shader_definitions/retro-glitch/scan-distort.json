@@ -3,12 +3,33 @@
   "label": "Scan Distort",
   "category": "image",
   "url": "shaders/scan-distort.wgsl",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": {
     "zoom_params": {
-      "x": { "name": "Line Count", "default": 0.5, "min": 0.0, "max": 1.0 },
-      "y": { "name": "Bend", "default": 0.5, "min": 0.0, "max": 1.0 },
-      "z": { "name": "Scroll", "default": 0.2, "min": 0.0, "max": 1.0 }
+      "x": {
+        "name": "Line Count",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "y": {
+        "name": "Bend",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "z": {
+        "name": "Scroll",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      }
     }
-  }
+  },
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

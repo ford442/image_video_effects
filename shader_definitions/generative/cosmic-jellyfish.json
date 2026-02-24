@@ -4,8 +4,19 @@
   "url": "shaders/cosmic-jellyfish.wgsl",
   "category": "generative",
   "description": "A majestic, translucent jellyfish floating in a cosmic void, with bioluminescent glow and rhythmic pulsation.",
-  "tags": ["3d", "raymarching", "bioluminescent", "space", "organic", "calm"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "3d",
+    "raymarching",
+    "bioluminescent",
+    "space",
+    "organic",
+    "calm",
+    "procedural",
+    "generative"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "param1",

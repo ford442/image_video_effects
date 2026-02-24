@@ -6,9 +6,37 @@
   "features": [],
   "description": "Creates trailing echoes of movement by blending past frames with spatial offsets.",
   "params": [
-    { "name": "Decay Rate", "id": "zoomParam1", "default": 0.7, "min": 0.0, "max": 1.0 },
-    { "name": "Echo X", "id": "zoomParam2", "default": 0.55, "min": 0.0, "max": 1.0 },
-    { "name": "Echo Y", "id": "zoomParam3", "default": 0.55, "min": 0.0, "max": 1.0 },
-    { "name": "Hue Shift", "id": "zoomParam4", "default": 0.2, "min": 0.0, "max": 1.0 }
+    {
+      "name": "Decay Rate",
+      "id": "zoomParam1",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Echo X",
+      "id": "zoomParam2",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Echo Y",
+      "id": "zoomParam3",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Hue Shift",
+      "id": "zoomParam4",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

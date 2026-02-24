@@ -40,5 +40,9 @@
     "interactive",
     "multi-mode",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

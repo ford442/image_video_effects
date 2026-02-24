@@ -3,5 +3,9 @@
   "name": "Fractal Kaleidoscope",
   "url": "shaders/fractal-kaleidoscope.wgsl",
   "category": "image",
-  "description": "Fractal patterns in a kaleidoscope arrangement."
+  "description": "Fractal patterns in a kaleidoscope arrangement.",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

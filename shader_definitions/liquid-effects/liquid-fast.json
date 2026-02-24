@@ -3,5 +3,9 @@
   "name": "Liquid Fast",
   "url": "shaders/liquid-fast.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

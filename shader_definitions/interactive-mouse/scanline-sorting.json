@@ -41,5 +41,9 @@
   "features": [
     "mouse-driven",
     "sorting"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

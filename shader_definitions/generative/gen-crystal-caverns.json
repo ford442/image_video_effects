@@ -4,8 +4,20 @@
   "url": "shaders/gen-crystal-caverns.wgsl",
   "category": "generative",
   "description": "An infinite, procedural cave system illuminated by clusters of glowing crystals. Features stalactites, crystal clusters, and mouse-controlled light.",
-  "tags": ["crystal", "cave", "3d", "raymarching", "fantasy", "glowing", "stalactites", "procedural"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "crystal",
+    "cave",
+    "3d",
+    "raymarching",
+    "fantasy",
+    "glowing",
+    "stalactites",
+    "procedural",
+    "generative"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "author": "ford442",
   "params": [
     {

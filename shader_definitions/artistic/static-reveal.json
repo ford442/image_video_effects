@@ -4,11 +4,41 @@
   "url": "shaders/static-reveal.wgsl",
   "category": "image",
   "description": "The screen is covered in static noise. Scratch with the mouse to reveal the video underneath.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
-    { "id": "decay", "name": "Regrowth Speed", "default": 0.01, "min": 0.0, "max": 0.1 },
-    { "id": "radius", "name": "Brush Size", "default": 0.3, "min": 0.05, "max": 0.5 },
-    { "id": "noise", "name": "Static Intensity", "default": 1.0, "min": 0.0, "max": 1.0 },
-    { "id": "unused", "name": "Unused", "default": 0.0, "min": 0.0, "max": 1.0 }
+    {
+      "id": "decay",
+      "name": "Regrowth Speed",
+      "default": 0.01,
+      "min": 0.0,
+      "max": 0.1
+    },
+    {
+      "id": "radius",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0.05,
+      "max": 0.5
+    },
+    {
+      "id": "noise",
+      "name": "Static Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "unused",
+      "name": "Unused",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

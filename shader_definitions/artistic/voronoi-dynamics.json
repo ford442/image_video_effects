@@ -2,7 +2,7 @@
   "id": "voronoi-dynamics",
   "name": "Voronoi Bubbles",
   "url": "shaders/voronoi-dynamics.wgsl",
-  "category": "tessellation",
+  "category": "geometric",
   "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
   "params": [
     {
@@ -39,5 +39,9 @@
     "depth-aware",
     "physics",
     "mouse-driven"
+  ],
+  "tags": [
+    "geometric",
+    "pattern"
   ]
 }

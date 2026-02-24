@@ -4,5 +4,11 @@
   "url": "shaders/gen_wave_equation.wgsl",
   "category": "generative",
   "description": "Realistic water ripple simulation with wave interference.",
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

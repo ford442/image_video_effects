@@ -1,10 +1,14 @@
 {
-    "id": "gen-grok41-mandelbrot",
-    "name": "Grok41 Mandelbrot Explorer",
-    "url": "shaders/gen_grok41_mandelbrot.wgsl",
-    "category": "generative",
-    "description": "Animated zooming Mandelbrot fractal set with mouse and time controls.",
-    "features": [
-        "mouse-driven"
-    ]
+  "id": "gen-grok41-mandelbrot",
+  "name": "Grok41 Mandelbrot Explorer",
+  "url": "shaders/gen_grok41_mandelbrot.wgsl",
+  "category": "generative",
+  "description": "Animated zooming Mandelbrot fractal set with mouse and time controls.",
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

@@ -5,10 +5,41 @@
   "category": "visual-effects",
   "description": "Simulates CRT phosphor persistence. Bright areas leave trails. Mouse acts as an electron beam.",
   "params": [
-    { "name": "Persistence", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.8 },
-    { "name": "Beam Intensity", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.5 },
-    { "name": "Beam Size", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.2 },
-    { "name": "Color Drift", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.0 }
+    {
+      "name": "Persistence",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "name": "Beam Intensity",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Beam Size",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    },
+    {
+      "name": "Color Drift",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.0
+    }
   ],
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "vfx",
+    "particles",
+    "glow"
+  ]
 }

@@ -3,5 +3,9 @@
   "name": "Digital Waves",
   "url": "shaders/digital-waves.wgsl",
   "category": "image",
-  "description": "Digital wave interference patterns."
+  "description": "Digital wave interference patterns.",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

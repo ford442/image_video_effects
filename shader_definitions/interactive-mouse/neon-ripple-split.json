@@ -2,7 +2,7 @@
   "id": "neon-ripple-split",
   "name": "Neon Ripple Split",
   "url": "shaders/neon-ripple-split.wgsl",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "description": "A reactive ripple effect that separates RGB channels and adds a neon glow based on mouse movement and clicks.",
   "params": [
     {
@@ -36,5 +36,9 @@
   ],
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

@@ -4,8 +4,20 @@
   "url": "shaders/gen-alien-flora.wgsl",
   "category": "generative",
   "description": "An infinite procedural forest of bioluminescent alien vegetation with swaying mushrooms and atmospheric fog.",
-  "tags": ["nature", "plants", "bioluminescent", "raymarching", "3d", "organic", "forest"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "nature",
+    "plants",
+    "bioluminescent",
+    "raymarching",
+    "3d",
+    "organic",
+    "forest",
+    "procedural",
+    "generative"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "param1",

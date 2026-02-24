@@ -4,8 +4,19 @@
   "url": "shaders/gen-hyper-labyrinth.wgsl",
   "category": "generative",
   "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure.",
-  "features": ["mouse-driven"],
-  "tags": ["neon", "cyber", "maze", "4d", "generative", "abstract", "geometric"],
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "neon",
+    "cyber",
+    "maze",
+    "4d",
+    "generative",
+    "abstract",
+    "geometric",
+    "procedural"
+  ],
   "params": [
     {
       "id": "scale",

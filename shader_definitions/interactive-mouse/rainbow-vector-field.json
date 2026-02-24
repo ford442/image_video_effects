@@ -5,10 +5,42 @@
   "category": "image",
   "description": "Generates a base rainbow pattern and computes a displacement field (stored to depth) for a follow-up prismatic feedback pass.",
   "params": [
-    { "id": "frequency", "name": "Frequency", "default": 4.0, "min": 0.1, "max": 12.0 },
-    { "id": "saturation", "name": "Saturation", "default": 0.8, "min": 0.0, "max": 1.0 },
-    { "id": "brightness", "name": "Brightness", "default": 1.0, "min": 0.0, "max": 2.0 },
-    { "id": "displacementScale", "name": "Displacement Scale", "default": 0.5, "min": 0.0, "max": 2.0 }
+    {
+      "id": "frequency",
+      "name": "Frequency",
+      "default": 4.0,
+      "min": 0.1,
+      "max": 12.0
+    },
+    {
+      "id": "saturation",
+      "name": "Saturation",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "brightness",
+      "name": "Brightness",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0
+    },
+    {
+      "id": "displacementScale",
+      "name": "Displacement Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0
+    }
   ],
-  "features": ["multi-pass", "mouse-driven", "color"]
+  "features": [
+    "multi-pass",
+    "mouse-driven",
+    "color"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

@@ -4,5 +4,12 @@
   "url": "shaders/frost-reveal.wgsl",
   "category": "image",
   "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction.",
-  "features": ["mouse-driven", "interactive"]
+  "features": [
+    "mouse-driven",
+    "interactive"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

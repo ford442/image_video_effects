@@ -38,5 +38,9 @@
     "mouse-driven",
     "physics",
     "interactive"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

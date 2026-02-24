@@ -2,8 +2,10 @@
   "id": "energy-shield",
   "name": "Energy Shield",
   "url": "shaders/energy-shield.wgsl",
-  "category": "interactive-mouse",
-  "features": ["mouse-driven"],
+  "category": "interactive",
+  "features": [
+    "mouse-driven"
+  ],
   "description": "A hexagonal energy grid that lights up and ripples upon mouse interaction.",
   "params": [
     {
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

@@ -31,5 +31,9 @@
       "min": 0,
       "max": 1
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

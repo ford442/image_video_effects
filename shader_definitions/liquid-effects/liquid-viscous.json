@@ -3,5 +3,9 @@
   "name": "Liquid Viscous",
   "url": "shaders/liquid-viscous.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

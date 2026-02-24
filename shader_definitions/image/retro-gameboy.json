@@ -1,14 +1,44 @@
 {
-    "id": "retro-gameboy",
-    "name": "Retro Game Boy",
-    "category": "image",
-    "description": "Simulates a classic handheld green dot-matrix display.",
-    "url": "shaders/retro-gameboy.wgsl",
-    "features": ["mouse-driven"],
-    "params": [
-        { "id": "pixel_size", "name": "Pixel Size", "default": 0.5, "min": 0.0, "max": 1.0 },
-        { "id": "contrast", "name": "Contrast", "default": 0.5, "min": 0.0, "max": 1.0 },
-        { "id": "grid_strength", "name": "Grid Strength", "default": 0.5, "min": 0.0, "max": 1.0 },
-        { "id": "shadow_offset", "name": "Shadow Offset", "default": 0.3, "min": 0.0, "max": 1.0 }
-    ]
+  "id": "retro-gameboy",
+  "name": "Retro Game Boy",
+  "category": "image",
+  "description": "Simulates a classic handheld green dot-matrix display.",
+  "url": "shaders/retro-gameboy.wgsl",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "pixel_size",
+      "name": "Pixel Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "contrast",
+      "name": "Contrast",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "grid_strength",
+      "name": "Grid Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shadow_offset",
+      "name": "Shadow Offset",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

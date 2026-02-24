@@ -38,5 +38,12 @@
       "max": 1.0
     }
   ],
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "vfx",
+    "particles",
+    "glow"
+  ]
 }

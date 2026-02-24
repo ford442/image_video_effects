@@ -11,6 +11,7 @@ export interface ShaderMeta {
   stars: number;
   rating_count: number;
   thumbnail?: string;
+  category?: string;
 }
 
 export interface ShaderUploadData {
@@ -24,6 +25,12 @@ export interface ShaderListParams {
   category?: string;
   minStars?: number;
   sortBy?: 'date' | 'rating' | 'name' | 'last_played' | 'genre';
+}
+
+export interface CategoryGroup {
+  label: string;
+  description: string;
+  subcategories: string[];
 }
 
 export const shaderApi = {
@@ -88,6 +95,12 @@ export const shaderApi = {
       body: formData,
     });
     if (!response.ok) throw new Error('Update failed');
+    return response.json();
+  },
+
+  async getCategories(): Promise<{ groups: Record<string, CategoryGroup>; all_categories: string[] }> {
+    const response = await fetch(`${API_BASE}/api/shaders/categories`);
+    if (!response.ok) throw new Error('Failed to fetch categories');
     return response.json();
   },
 };

@@ -312,11 +312,83 @@ class SortBy(str, Enum):
     genre = "genre"
 
 class ShaderCategory(str, Enum):
+    # Main categories matching folder structure
+    interactive = "interactive"
     generative = "generative"
+    distortion = "distortion"
+    image = "image"
+    artistic = "artistic"
+    retro_glitch = "retro-glitch"
+    simulation = "simulation"
+    geometric = "geometric"
+    visual_effects = "visual-effects"
+    liquid = "liquid"
+    lighting = "lighting"
+    
+    # Legacy/alias categories for backward compatibility
     reactive = "reactive"
     transition = "transition"
     filter = "filter"
-    distortion = "distortion"
+    # Additional categories found in JSON files
+    tessellation = "tessellation"
+    geometry = "geometry"
+    warp = "warp"
+    feedback = "feedback"
+    shader = "shader"
+
+# Category hierarchy for UI organization
+CATEGORY_GROUPS = {
+    "interactive": {
+        "label": "🖱️ Interactive",
+        "description": "Mouse and touch-driven effects",
+        "subcategories": ["interactive"]
+    },
+    "generative": {
+        "label": "✨ Generative",
+        "description": "Procedural and algorithmic art",
+        "subcategories": ["generative", "simulation"]
+    },
+    "distortion": {
+        "label": "🔮 Distortion",
+        "description": "Warp, bend, and transform space",
+        "subcategories": ["distortion", "warp"]
+    },
+    "image": {
+        "label": "🖼️ Image",
+        "description": "Filters, color grading, and adjustments",
+        "subcategories": ["image", "filter"]
+    },
+    "artistic": {
+        "label": "🎨 Artistic",
+        "description": "Stylized looks and painterly effects",
+        "subcategories": ["artistic"]
+    },
+    "retro": {
+        "label": "📺 Retro & Glitch",
+        "description": "Vintage, analog, and digital corruption",
+        "subcategories": ["retro-glitch", "glitch"]
+    },
+    "geometric": {
+        "label": "📐 Geometric",
+        "description": "Patterns, tessellation, and shapes",
+        "subcategories": ["geometric", "tessellation", "geometry"]
+    },
+    "visual": {
+        "label": "🎬 Visual Effects",
+        "description": "Particles, glow, overlays, and VFX",
+        "subcategories": ["visual-effects", "lighting"]
+    },
+    "liquid": {
+        "label": "💧 Liquid",
+        "description": "Fluid, water, oil, and viscous effects",
+        "subcategories": ["liquid"]
+    },
+    "other": {
+        "label": "🔧 Other",
+        "description": "Miscellaneous and specialized effects",
+        "subcategories": ["transition", "feedback", "shader", "reactive"]
+    }
+}
 @app.get("/api/songs", response_model=List[MetaData])
 async def list_library(
     type: Optional[str] = Query(None),
@@ -937,10 +1009,17 @@ async def get_shader_code(shader_id: str):
 
 @app.get("/api/shaders")
 async def list_shaders(
-    category: Optional[ShaderCategory] = Query(None),  # ← Use Enum here
+    category: Optional[ShaderCategory] = Query(None),
     min_stars: float = Query(0.0, ge=0, le=5),
     sort_by: SortBy = Query(SortBy.rating)
 ):
+    """List shaders with optional category filter.
+    
+    Category filtering checks:
+    1. Exact match on category field
+    2. Match in tags array
+    3. For group categories, matches any subcategory
+    """
     cache_key = f"shaders:list:{category}:{min_stars}:{sort_by}"
     cached = await cache.get(cache_key)
     if cached:
@@ -950,23 +1029,53 @@ async def list_shaders(
         index = await run_io(_read_json_sync, config["index"])
         if not isinstance(index, list):
             index = []
+        
         # Filters
         if category:
-            index = [s for s in index if category.value in s.get("tags", []) or category.value.lower() in s.get("description", "").lower()]
+            cat_value = category.value
+            # Get subcategories if this is a group category
+            subcats = CATEGORY_GROUPS.get(cat_value, {}).get("subcategories", [cat_value])
+            
+            def matches_category(shader):
+                # Check category field
+                shader_cat = shader.get("category", "")
+                if shader_cat in subcats:
+                    return True
+                # Check tags
+                tags = shader.get("tags", [])
+                if any(tag in subcats for tag in tags):
+                    return True
+                # Check description for category keywords
+                desc = shader.get("description", "").lower()
+                return any(subcat.lower() in desc for subcat in subcats)
+            
+            index = [s for s in index if matches_category(s)]
+        
         if min_stars > 0:
             index = [s for s in index if s.get("stars", 0) >= min_stars]
+        
         # Sort
-        reverse = sort_by in ["rating", "date"]  # Desc for rating/date
+        reverse = sort_by in ["rating", "date"]
         if sort_by == "rating":
             index.sort(key=lambda s: s.get("stars", 0), reverse=reverse)
         elif sort_by == "date":
             index.sort(key=lambda s: s.get("date", ""), reverse=reverse)
         elif sort_by == "name":
             index.sort(key=lambda s: s.get("name", "").lower())
-        await cache.set(cache_key, index, ttl=300)  # 5 min cache
+        
+        await cache.set(cache_key, index, ttl=300)
         return index
     except Exception as e:
         raise HTTPException(500, f"Failed to list shaders: {str(e)}")
+
+
+@app.get("/api/shaders/categories")
+async def list_categories():
+    """Return the category hierarchy for UI rendering."""
+    return {
+        "groups": CATEGORY_GROUPS,
+        "all_categories": [c.value for c in ShaderCategory]
+    }
 @app.post("/api/shaders/upload")
 async def upload_shader(
     file: UploadFile = File(...),  # The .wgsl file

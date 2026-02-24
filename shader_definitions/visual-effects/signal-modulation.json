@@ -1,45 +1,49 @@
 {
-    "id": "signal-modulation",
-    "name": "Signal Modulation",
-    "category": "image",
-    "url": "shaders/signal-modulation.wgsl",
-    "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
-    "features": [
-        "mouse-driven",
-        "visual-effect"
-    ],
-    "params": [
-        {
-            "id": "freq",
-            "name": "Base Frequency",
-            "type": "float",
-            "default": 0.2,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "amp",
-            "name": "Distortion Amt",
-            "type": "float",
-            "default": 0.1,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "speed",
-            "name": "Scroll Speed",
-            "type": "float",
-            "default": 0.3,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "shift",
-            "name": "Color Split",
-            "type": "float",
-            "default": 0.2,
-            "min": 0.0,
-            "max": 1.0
-        }
-    ]
+  "id": "signal-modulation",
+  "name": "Signal Modulation",
+  "category": "image",
+  "url": "shaders/signal-modulation.wgsl",
+  "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
+  "features": [
+    "mouse-driven",
+    "visual-effect"
+  ],
+  "params": [
+    {
+      "id": "freq",
+      "name": "Base Frequency",
+      "type": "float",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "amp",
+      "name": "Distortion Amt",
+      "type": "float",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "speed",
+      "name": "Scroll Speed",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "shift",
+      "name": "Color Split",
+      "type": "float",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

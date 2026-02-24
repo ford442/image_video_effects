@@ -1,42 +1,48 @@
 {
-    "id": "aero-chromatics",
-    "name": "Aero Chromatics",
-    "category": "simulation",
-    "url": "shaders/aero-chromatics.wgsl",
-    "features": ["mouse-driven"],
-    "description": "Wind tunnel simulation where image brightness determines aerodynamic drag, creating chromatic smoke trails.",
-    "params": [
-        {
-            "id": "wind-strength",
-            "name": "Wind Force",
-            "type": "float",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "decay",
-            "name": "Smoke Decay",
-            "type": "float",
-            "default": 0.8,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "chroma",
-            "name": "Chromatic Split",
-            "type": "float",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "source-mix",
-            "name": "Source Intensity",
-            "type": "float",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 1.0
-        }
-    ]
+  "id": "aero-chromatics",
+  "name": "Aero Chromatics",
+  "category": "simulation",
+  "url": "shaders/aero-chromatics.wgsl",
+  "features": [
+    "mouse-driven"
+  ],
+  "description": "Wind tunnel simulation where image brightness determines aerodynamic drag, creating chromatic smoke trails.",
+  "params": [
+    {
+      "id": "wind-strength",
+      "name": "Wind Force",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "decay",
+      "name": "Smoke Decay",
+      "type": "float",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic Split",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "source-mix",
+      "name": "Source Intensity",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "simulation",
+    "physics"
+  ]
 }

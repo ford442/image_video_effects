@@ -1,6 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { shaderApi, ShaderMeta } from '../services/shaderApi';
+import { shaderApi, ShaderMeta, CategoryGroup } from '../services/shaderApi';
 import './ShaderBrowser.css';
+
+// Category hierarchy for UI organization
+const CATEGORY_GROUPS: Record<string, CategoryGroup> = {
+  interactive: {
+    label: '🖱️ Interactive',
+    description: 'Mouse and touch-driven effects',
+    subcategories: ['interactive']
+  },
+  generative: {
+    label: '✨ Generative',
+    description: 'Procedural and algorithmic art',
+    subcategories: ['generative', 'simulation']
+  },
+  distortion: {
+    label: '🔮 Distortion',
+    description: 'Warp, bend, and transform space',
+    subcategories: ['distortion', 'warp']
+  },
+  image: {
+    label: '🖼️ Image',
+    description: 'Filters, color grading, and adjustments',
+    subcategories: ['image', 'filter']
+  },
+  artistic: {
+    label: '🎨 Artistic',
+    description: 'Stylized looks and painterly effects',
+    subcategories: ['artistic']
+  },
+  retro: {
+    label: '📺 Retro & Glitch',
+    description: 'Vintage, analog, and digital corruption',
+    subcategories: ['retro-glitch', 'glitch']
+  },
+  geometric: {
+    label: '📐 Geometric',
+    description: 'Patterns, tessellation, and shapes',
+    subcategories: ['geometric', 'tessellation', 'geometry']
+  },
+  visual: {
+    label: '🎬 Visual Effects',
+    description: 'Particles, glow, overlays, and VFX',
+    subcategories: ['visual-effects', 'lighting']
+  },
+  liquid: {
+    label: '💧 Liquid',
+    description: 'Fluid, water, oil, and viscous effects',
+    subcategories: ['liquid']
+  },
+  other: {
+    label: '🔧 Other',
+    description: 'Miscellaneous and specialized effects',
+    subcategories: ['transition', 'feedback', 'shader', 'reactive']
+  }
+};
 
 export const ShaderBrowser: React.FC<{
   onSelect: (shader: ShaderMeta, code: string) => void;
@@ -13,6 +67,7 @@ export const ShaderBrowser: React.FC<{
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDesc, setEditDesc] = useState('');
   const [editTags, setEditTags] = useState('');
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   useEffect(() => {
     loadShaders();
@@ -109,13 +164,14 @@ export const ShaderBrowser: React.FC<{
           value={category} 
           onChange={e => setCategory(e.target.value)}
           className="shader-category"
+          title={category ? CATEGORY_GROUPS[category]?.description || 'Select a category' : 'All shader categories'}
         >
-          <option value="">All Categories</option>
-          <option value="generative">Generative</option>
-          <option value="reactive">Reactive</option>
-          <option value="transition">Transition</option>
-          <option value="filter">Filter</option>
-          <option value="distortion">Distortion</option>
+          <option value="">All Categories ({shaders.length} shaders)</option>
+          {Object.entries(CATEGORY_GROUPS).map(([key, group]) => (
+            <option key={key} value={key}>
+              {group.label}
+            </option>
+          ))}
         </select>
         <label className="shader-upload-btn">
           Upload .wgsl

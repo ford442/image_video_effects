@@ -6,5 +6,9 @@
   "description": "Geometric color folding and warping effects.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -38,5 +38,9 @@
     "mouse-driven",
     "temporal-persistence",
     "chromatic-aberration"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

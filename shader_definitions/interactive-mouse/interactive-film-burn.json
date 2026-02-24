@@ -38,5 +38,9 @@
     "mouse-driven",
     "noise",
     "texture"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

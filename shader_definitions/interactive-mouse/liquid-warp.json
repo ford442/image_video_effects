@@ -2,8 +2,10 @@
   "id": "liquid-warp",
   "name": "Liquid Warp",
   "url": "shaders/liquid-warp.wgsl",
-  "category": "interactive-mouse",
-  "features": ["mouse-driven"],
+  "category": "interactive",
+  "features": [
+    "mouse-driven"
+  ],
   "description": "Fluid-like distortion where mouse movement pushes and swirls pixels.",
   "params": [
     {
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

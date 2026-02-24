@@ -2,5 +2,9 @@
   "id": "galaxy-sim",
   "name": "Galaxy",
   "url": "shaders/galaxy-compute.wgsl",
-  "category": "shader"
+  "category": "generative",
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

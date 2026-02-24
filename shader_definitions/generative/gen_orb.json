@@ -4,5 +4,11 @@
   "url": "shaders/gen_orb.wgsl",
   "category": "generative",
   "description": "A glowing orb that follows the mouse cursor.",
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

@@ -38,5 +38,9 @@
     "mouse-driven",
     "interactive",
     "stateful"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -37,5 +37,9 @@
   "features": [
     "mouse-driven",
     "glow"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

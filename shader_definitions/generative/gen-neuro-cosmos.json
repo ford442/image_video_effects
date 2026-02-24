@@ -4,8 +4,22 @@
   "url": "shaders/gen-neuro-cosmos.wgsl",
   "category": "generative",
   "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe.",
-  "tags": ["network", "neural", "cosmic", "web", "3d", "raymarching", "voronoi", "glowing", "cyber"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "network",
+    "neural",
+    "cosmic",
+    "web",
+    "3d",
+    "raymarching",
+    "voronoi",
+    "glowing",
+    "cyber",
+    "procedural",
+    "generative"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "param1",

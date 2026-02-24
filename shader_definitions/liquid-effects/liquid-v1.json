@@ -3,5 +3,9 @@
   "name": "Liquid (Ambient)",
   "url": "shaders/liquid-v1.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

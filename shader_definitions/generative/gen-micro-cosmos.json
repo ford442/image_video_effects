@@ -4,8 +4,19 @@
   "url": "shaders/gen-micro-cosmos.wgsl",
   "category": "generative",
   "description": "A microscopic view of a teeming liquid universe, filled with procedural microorganisms, drifting particles, and organic structures.",
-  "tags": ["biological", "organic", "microscopic", "liquid", "life", "floating", "generative"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "biological",
+    "organic",
+    "microscopic",
+    "liquid",
+    "life",
+    "floating",
+    "generative",
+    "procedural"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "param1",

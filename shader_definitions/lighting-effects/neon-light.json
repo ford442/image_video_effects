@@ -38,5 +38,9 @@
     "glow",
     "neon",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

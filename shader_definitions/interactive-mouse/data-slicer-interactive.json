@@ -2,7 +2,7 @@
   "id": "data-slicer-interactive",
   "name": "Data Slicer",
   "url": "shaders/data-slicer-interactive.wgsl",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "description": "Glitchy horizontal slicing controlled by mouse vertical position.",
   "params": [
     {
@@ -37,5 +37,9 @@
   "features": [
     "mouse-driven",
     "glitch"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

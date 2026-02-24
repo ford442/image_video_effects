@@ -38,5 +38,9 @@
     "distortion",
     "retro",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

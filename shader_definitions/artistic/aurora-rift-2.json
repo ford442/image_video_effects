@@ -6,5 +6,9 @@
   "description": "Enhanced aurora effects with improved color gradients.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

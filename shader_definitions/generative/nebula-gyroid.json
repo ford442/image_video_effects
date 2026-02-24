@@ -4,8 +4,22 @@
   "url": "shaders/nebula-gyroid.wgsl",
   "category": "generative",
   "description": "Ethereal, flowing organic form created with raymarched gyroid SDFs. Features iridescent lighting, multiple blended gyroid layers, and mouse-reactive domain warping for a fluid geometry effect.",
-  "tags": ["generative", "gyroid", "raymarch", "iridescent", "organic", "nebula", "sdf", "fluid", "geometry"],
-  "features": ["raymarched", "mouse-driven"],
+  "tags": [
+    "generative",
+    "gyroid",
+    "raymarch",
+    "iridescent",
+    "organic",
+    "nebula",
+    "sdf",
+    "fluid",
+    "geometry",
+    "procedural"
+  ],
+  "features": [
+    "raymarched",
+    "mouse-driven"
+  ],
   "author": "minimax.ai",
   "params": [
     {

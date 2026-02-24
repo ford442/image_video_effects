@@ -4,11 +4,41 @@
   "url": "shaders/elastic-chromatic.wgsl",
   "category": "image",
   "description": "Simulates color channel lag (ghosting) that responds to mouse proximity.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
-    { "id": "lagR", "name": "Red Lag", "default": 0.8, "min": 0.0, "max": 0.99 },
-    { "id": "lagB", "name": "Blue Lag", "default": 0.6, "min": 0.0, "max": 0.99 },
-    { "id": "influence", "name": "Mouse Drag", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "unused", "name": "Unused", "default": 0.0, "min": 0.0, "max": 1.0 }
+    {
+      "id": "lagR",
+      "name": "Red Lag",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 0.99
+    },
+    {
+      "id": "lagB",
+      "name": "Blue Lag",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 0.99
+    },
+    {
+      "id": "influence",
+      "name": "Mouse Drag",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "unused",
+      "name": "Unused",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -38,5 +38,9 @@
     "mouse-driven",
     "glitch",
     "chromatic-aberration"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

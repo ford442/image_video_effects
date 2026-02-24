@@ -1,37 +1,43 @@
 {
-    "id": "codebreaker-reveal",
-    "label": "Codebreaker Reveal",
-    "category": "interactive-mouse",
-    "url": "shaders/codebreaker-reveal.wgsl",
-    "features": ["mouse-driven"],
-    "params": [
-        {
-            "id": "param1",
-            "name": "Reveal Radius",
-            "default": 0.3,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "param2",
-            "name": "Rain Speed",
-            "default": 0.2,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "param3",
-            "name": "Code Density",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "param4",
-            "name": "Glow Intensity",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 1.0
-        }
-    ]
+  "id": "codebreaker-reveal",
+  "label": "Codebreaker Reveal",
+  "category": "interactive",
+  "url": "shaders/codebreaker-reveal.wgsl",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Reveal Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "param2",
+      "name": "Rain Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "param3",
+      "name": "Code Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "param4",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
+  ]
 }

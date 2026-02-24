@@ -4,8 +4,21 @@
   "url": "shaders/iridescent-oil-slick.wgsl",
   "category": "artistic",
   "description": "Mesmerizing thin-film interference simulation that recreates the rainbow patterns of oil on water or soap bubbles. Features flowing organic motion, hexagonal bubble cells, and mouse-reactive disturbances.",
-  "tags": ["iridescent", "oil", "soap-bubble", "interference", "rainbow", "organic", "flowing", "kaleidoscope", "artistic"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "iridescent",
+    "oil",
+    "soap-bubble",
+    "interference",
+    "rainbow",
+    "organic",
+    "flowing",
+    "kaleidoscope",
+    "artistic",
+    "stylized"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
   "author": "Kimi",
   "params": [
     {
