@@ -949,6 +949,18 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20281115_bauhaus.jpg`
 - **License / Attribution:** CC0
 - **Notes:** Adhere strictly to primary colors and geometric primitives.
+### Suggestion: Fractal Clockwork
+- **Date:** 2025-05-27
+- **Prompt:** "An infinite, procedural machine composed of interlocking brass and steel gears rotating in perfect mechanical sync. Steampunk aesthetic with metallic PBR shading and intricate details. The gears stretch endlessly into the distance, driven by a hidden clockwork mechanism."
+- **Negative prompt:** "organic, biology, soft, messy, rust, broken"
+- **Tags:** steampunk, mechanical, gears, 3d, raymarching
+- **Style / Reference:** Steampunk, Clockwork, 3D Render
+- **Composition:** Infinite perspective, macro details
+- **Color palette:** Brass, Gold, Steel, Dark Oil
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/fractal_clockwork.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Generative shader concept 'Fractal Clockwork'.
 
 ## Attribution & legal
 
