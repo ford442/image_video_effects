@@ -1015,6 +1015,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The contrast in the folded metal pattern is key.
 
+### Suggestion: Floral Scanography
+- **Date:** 2025-01-27
+- **Prompt:** "A high-resolution scanography image of withered tulips and dried fern leaves pressed against the glass scanner bed. The depth of field is extremely shallow, with only the points of contact in sharp focus. The background is pitch black. The lighting is harsh and direct, typical of a scanner bar, revealing minute textures and dust."
+- **Negative prompt:** "camera photo, bokeh, blurry, distant, 3D render"
+- **Tags:** scanography, floral, texture, macro, artistic
+- **Style / Reference:** Scanography, Scanner Art
+- **Composition:** Flat lay, pressed against glass
+- **Color palette:** Faded Green, Dried Brown, Black Background
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20250127_scanography.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the unique lighting and lack of conventional depth of field.
+
+### Suggestion: Vantablack Monolith
+- **Date:** 2025-01-27
+- **Prompt:** "A minimalist photography shot of a perfect sphere coated in Vantablack (the blackest material on Earth) sitting on a pure white infinity surface. The object reflects absolutely no light, appearing as a 2D void or hole in reality. Soft studio shadows anchor it to the ground."
+- **Negative prompt:** "reflections, glossy, grey, texture on sphere, noise"
+- **Tags:** vantablack, abstract, minimalist, science, surreal
+- **Style / Reference:** Product Photography, Minimalism
+- **Composition:** Centered, negative space
+- **Color palette:** Pure Black (#000000), Pure White (#FFFFFF)
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20250127_vantablack.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The sphere must look totally flat and devoid of shading.
+
+### Suggestion: Volcanic Lightning Storm
+- **Date:** 2025-01-27
+- **Prompt:** "A terrifying and majestic long-exposure shot of a volcanic eruption at night. A massive column of thick grey ash billows upwards. Jagged, violet-white streaks of 'dirty thunderstorm' lightning branch frantically through the smoke cloud. Glowing magma bombs are thrown into the air."
+- **Negative prompt:** "daylight, blue sky, clear, cgi, cartoon"
+- **Tags:** volcanic lightning, volcano, nature, storm, dramatic
+- **Style / Reference:** Landscape Photography, National Geographic
+- **Composition:** Wide shot, vertical emphasis
+- **Color palette:** Ash Grey, Magma Red, Lightning Violet, Night Black
+- **Aspect ratio:** 2:3
+- **Reference images:** `public/images/suggestions/20250127_volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the chaos and the contrast between the red lava and purple lightning.
+
+### Suggestion: Cyberpunk Ukiyo-e
+- **Date:** 2025-01-27
+- **Prompt:** "A woodblock print (Ukiyo-e) depicting a futuristic Cyberpunk Tokyo. The Great Wave off Kanagawa is reimagined as a tsunami of fiber-optic cables. A cyborg samurai stands in the foreground. The style features bold black outlines, flat colors, and textured washi paper grain."
+- **Negative prompt:** "photorealistic, 3D, digital painting, smooth gradient, glossy"
+- **Tags:** ukiyo-e, cyberpunk, woodblock print, japan, style fusion
+- **Style / Reference:** Ukiyo-e, Hokusai, Cyberpunk
+- **Composition:** Traditional landscape perspective
+- **Color palette:** Prussian Blue, Neon Pink, Paper Tan
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20250127_ukiyo_e.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Strict adherence to the flat, outlined woodblock style is required.
+
+### Suggestion: Aerogel Smoke
+- **Date:** 2025-01-27
+- **Prompt:** "A macro studio shot of a piece of blue Aerogel ('frozen smoke') held between metal calipers. The material is ghostly, translucent, and ethereal, scattering blue light like the sky. A flame from a bunsen burner touches one side, but a flower on the other side remains unburned, demonstrating insulation."
+- **Negative prompt:** "solid glass, plastic, opaque, dark, blurry"
+- **Tags:** aerogel, material, science, translucent, macro
+- **Style / Reference:** Scientific Photography, Macro
+- **Composition:** Close-up profile
+- **Color palette:** Ethereal Blue, Flame Orange, Metal Silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20250127_aerogel.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the unique 'holographic' density of the material.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1037,9 +1102,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Scanography, Glitch Art, Pointillism, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Ukiyo-e, Low Key Photography, Brutalist Architecture, Art Nouveau, Kintsugi.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Soap Bubbles, Vantablack, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Aerogel, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Volcanic Lightning, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar, Origami, Steampunk Airship, Circuit Board Macro.
+- **Styles:** Matte Painting, Baroque, Gothic, Glitch Art, Pointillism, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Brutalist Architecture, Art Nouveau, Kintsugi, Memphis Design, Cyanotype.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Soap Bubbles, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar, Perovskite.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar, Origami, Steampunk Airship, Circuit Board Macro, Rogue Wave, Skyhook.
 
 ---
 
