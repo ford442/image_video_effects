@@ -1080,6 +1080,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the unique 'holographic' density of the material.
 
+### Suggestion: Kintsugi Bowl
+- **Date:** 2029-01-15
+- **Prompt:** "A high-resolution studio shot of a shattered black ceramic tea bowl repaired with Kintsugi (gold joinery). The veins of gold lacquer stand out brightly against the matte black pottery. Soft, dramatic lighting highlights the texture of the ceramic and the gleam of the gold."
+- **Negative prompt:** "plastic, messy, low resolution, drawing, white ceramic"
+- **Tags:** kintsugi, ceramic, gold, macro, wabi-sabi
+- **Style / Reference:** Product Photography, Wabi-Sabi
+- **Composition:** Centered, eye level
+- **Color palette:** Matte Black, Gold
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20290115_kintsugi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the contrast between the black and gold.
+
+### Suggestion: Black Opal Macro
+- **Date:** 2029-01-15
+- **Prompt:** "An extreme macro photography shot of a polished Black Opal gemstone. The stone displays a vibrant play-of-color with flashes of neon red, electric green, and deep blue trapped inside the dark body. The pattern resembles a nebula or a galaxy."
+- **Negative prompt:** "blurry, dull, white opal, drawing, cartoon"
+- **Tags:** opal, gemstone, macro, texture, colorful
+- **Style / Reference:** Macro Photography, Mineralogy
+- **Composition:** Extreme close-up
+- **Color palette:** Black, Neon Red, Green, Blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20290115_opal.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the depth and internal fire of the stone.
+
+### Suggestion: Space Elevator Terminal
+- **Date:** 2029-01-15
+- **Prompt:** "A majestic sci-fi concept art piece looking down from a Space Elevator orbital terminal. The tether stretches down through the clouds to the Earth's surface far below. High-tech shuttles are docking. The curve of the Earth is visible with a sunrise cresting over the horizon."
+- **Negative prompt:** "cartoon, low detail, empty space, flat"
+- **Tags:** space elevator, sci-fi, space, orbit, megastructure
+- **Style / Reference:** Sci-Fi Concept Art, Syd Mead
+- **Composition:** High angle, looking down
+- **Color palette:** Earth Blue, Cloud White, Metallic Silver, Sunrise Gold
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20290115_space_elevator.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the dizzying height and the tether line.
+
+### Suggestion: Pointillist River Bank
+- **Date:** 2029-02-01
+- **Prompt:** "A bright, vibrant landscape painting in the style of Pointillism (Georges Seurat). Thousands of distinct small dots of pure color blend to form a scene of people relaxing on a grassy river bank on a sunny afternoon. The water ripples with multicolored dots."
+- **Negative prompt:** "smooth, blended, brushstrokes, dark, photo"
+- **Tags:** pointillism, painting, impressionism, landscape, dots
+- **Style / Reference:** Pointillism, Neo-Impressionism, Georges Seurat
+- **Composition:** Wide shot
+- **Color palette:** Grass Green, Sky Blue, Sunlight Yellow
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20290201_pointillism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The image must be composed of dots (stippling).
+
+### Suggestion: Iridescent Soap Bubble
+- **Date:** 2029-02-01
+- **Prompt:** "A macro photography shot of a single soap bubble floating against a black background. The thin film interferes with light to create swirling, psychedelic bands of magenta, cyan, and yellow oil-slick colors. A distorted reflection of the studio lights is visible on the surface."
+- **Negative prompt:** "multiple bubbles, foam, blurry, dull, white"
+- **Tags:** soap bubble, macro, iridescent, abstract, physics
+- **Style / Reference:** Macro Photography, Abstract
+- **Composition:** Centered bubble
+- **Color palette:** Iridescent Cyan, Magenta, Yellow, Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20290201_soap_bubble.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the fluid turbulence on the bubble's surface.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1102,9 +1167,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Glitch Art, Pointillism, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Brutalist Architecture, Art Nouveau, Kintsugi, Memphis Design, Cyanotype.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Soap Bubbles, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Opal, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar, Perovskite.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Space Elevator, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar, Origami, Steampunk Airship, Circuit Board Macro, Rogue Wave, Skyhook.
+- **Styles:** Matte Painting, Baroque, Gothic, Glitch Art, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Brutalist Architecture, Art Nouveau, Memphis Design, Cyanotype, Suprematism, Fauvism.
+- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Liquid Nitrogen, Velvet.
+- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar, Origami, Steampunk Airship, Circuit Board Macro, Rogue Wave, Skyhook, O'Neill Cylinder.
 
 ---
 
