@@ -1,79 +1,92 @@
-# New Shader Plan: Quantum Neural Lace
+# New Shader Plan: Brutalist Monument
 
 ## 1. Concept
-**Title:** Quantum Neural Lace
-**Description:** A mesmerizing 3D visualization of a hyper-advanced neural interface. It features a crystalline lattice of quantum nodes connected by pulsating, organic fiber-optic strands. The structure floats in a void of digital particulate matter. The aesthetic blends cyberpunk hard-tech with organic fluidity.
+**Name:** Brutalist Monument
+**File ID:** `gen-brutalist-monument`
+**Category:** Generative
+**Description:** A massive, atmospheric architectural environment inspired by brutalism. Features infinite repeating concrete megastructures and a mysterious floating artifact.
+**Visual Style:**
+*   **Palette:** Monochrome concrete (light gray to dark gray), contrasted with a single bold color (e.g., gold or black) for the artifact.
+*   **Lighting:** Strong directional light (harsh shadows) combined with volumetric fog for depth.
+*   **Texture:** Noise-based bump mapping to simulate concrete surface imperfections.
+*   **Composition:** Vertical emphasis, towering slabs, monumental scale.
 
 ## 2. Metadata
-- **Category:** `generative`
-- **Tags:** `["cyber", "network", "3d", "raymarching", "scifi", "glowing", "lattice"]`
-- **Features:** `["raymarched", "mouse-driven"]`
+*   **Tags:** `["brutalism", "architecture", "atmospheric", "3d", "raymarching", "monumental"]`
+*   **Author:** AI
+*   **License:** MIT
 
-## 3. Features & Controls
-- **Mouse Interaction:**
-  - `Mouse X`: Rotates the camera view around the lattice.
-  - `Mouse Y`: Controls the "system load" - higher Y increases pulse speed and fiber brightness.
-- **Parameters (`u.zoom_params`):**
-  - `Param 1` (x): **Lattice Density** - Controls the spacing between nodes.
-  - `Param 2` (y): **Pulse Frequency** - Speed of the light pulses traveling along fibers.
-  - `Param 3` (z): **Fiber Distortion** - Amount of sine-wave "wiggle" in the connecting strands.
-  - `Param 4` (w): **Glow Intensity** - Brightness of the node cores and active pulses.
+## 3. Features
+*   **Infinite Procedural Architecture:** Uses domain repetition (`opRep`) to create endless rows of pillars/slabs.
+*   **Dynamic Lighting:** Interactive sun position or time-based lighting.
+*   **Floating Artifact:** A central geometric object (Sphere, Cube, or Pyramid) that hovers and rotates.
+*   **Atmospheric Fog:** Distance-based fog to obscure the horizon and add scale.
+*   **Mouse Interaction:** Orbit camera around the artifact or fly through the structures.
 
-## 4. Proposed Code Structure
+## 4. Proposed Code Structure (WGSL)
 
-### Core Functions
-- **`sdOctahedron(p, s)`**: SDF for the quantum nodes.
-- **`sdCappedCylinder(p, h, r)`**: SDF for the connecting strands.
-- **`opRep(p, c)`**: Domain repetition to create the infinite lattice.
-- **`map(p)`**:
-  - Apply domain repetition.
-  - Place an Octahedron at the center of each cell.
-  - Place connected cylinders along X, Y, Z axes.
-  - Apply `sin(p.z + time)` displacement to cylinders based on Param 3 to make them look organic.
-  - Union (`smin`) the shapes for smooth blending.
-- **`main`**:
-  - Setup Camera (ray origin/direction) based on Mouse X.
-  - Standard Raymarching loop.
-  - **Material/Lighting**:
-    - "Tech" shading: Blinn-Phong with high specular.
-    - Emissive term: based on `sin(length(p) - time * speed)` to simulate data packets moving outwards.
-    - Volumetric glow accumulation.
+### Key Functions
+*   `sdBox(p: vec3<f32>, b: vec3<f32>) -> f32`: Signed distance function for concrete slabs.
+*   `sdSphere(p: vec3<f32>, s: f32) -> f32`: SDF for the artifact.
+*   `opRep(p: vec3<f32>, c: vec3<f32>) -> vec3<f32>`: Domain repetition for infinite structures.
+*   `map(p: vec3<f32>) -> f32`: Combines the architecture and the artifact.
+    *   **Ground:** `p.y + offset`.
+    *   **Pillars:** Repeated boxes with height variation based on noise(cell ID).
+    *   **Artifact:** Central object with floating animation (`sin(time)`).
+*   `calcNormal(p: vec3<f32>) -> vec3<f32>`: Standard gradient-based normal calculation.
+*   `raymarch(ro: vec3<f32>, rd: vec3<f32>) -> f32`: Raymarching loop with fixed step count (e.g., 100-200).
+*   `shade(p: vec3<f32>, n: vec3<f32>) -> vec3<f32>`: PBR-lite shading.
+    *   **Diffuse:** Lambertian.
+    *   **Specular:** Blinn-Phong for the artifact (shiny) vs. low spec for concrete (matte).
+    *   **AO:** Ambient Occlusion based on SDF steps or dedicated function.
+    *   **Fog:** Exponential fog based on distance `t`.
 
-### WGSL Skeleton
-```wgsl
-struct Uniforms { ... } // Standard struct
+### Uniforms
+Standard `Uniforms` struct:
+*   `u.config`: Time, Resolution.
+*   `u.zoom_config`: Camera control (Mouse X/Y).
+*   `u.zoom_params`: Custom parameters.
 
-// SDF Primitives
-fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 { ... }
+## 5. JSON Configuration (`shader_definitions/generative/gen-brutalist-monument.json`)
 
-fn map(p: vec3<f32>) -> vec2<f32> {
-    // 1. Domain Repetition
-    // 2. Nodes (Octahedrons)
-    // 3. Strands (Cylinders with sine wave offset)
-    // Return min(dist, material_id)
-}
-
-@compute @workgroup_size(8, 8, 1)
-fn main(...) {
-    // Raymarching logic
-    // Lighting with emission pulses
-}
-```
-
-## 5. JSON Configuration
 ```json
 {
-  "id": "gen-quantum-neural-lace",
-  "name": "Quantum Neural Lace",
-  "url": "shaders/gen-quantum-neural-lace.wgsl",
+  "id": "gen-brutalist-monument",
+  "name": "Brutalist Monument",
+  "url": "shaders/gen-brutalist-monument.wgsl",
   "category": "generative",
-  "tags": ["cyber", "network", "3d", "raymarching", "scifi"],
-  "features": ["raymarched", "mouse-driven"],
+  "description": "Massive concrete architecture in an atmospheric void.",
+  "features": ["mouse-driven"],
+  "tags": ["brutalism", "architecture", "atmospheric", "3d", "raymarching"],
   "params": [
-    { "id": "density", "name": "Lattice Density", "default": 0.5, "min": 0.1, "max": 1.0 },
-    { "id": "speed", "name": "Pulse Speed", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "distortion", "name": "Fiber Chaos", "default": 0.2, "min": 0.0, "max": 0.5 },
-    { "id": "glow", "name": "Energy Level", "default": 0.6, "min": 0.0, "max": 1.0 }
+    {
+      "id": "sun_angle",
+      "name": "Sun Angle",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "fog_density",
+      "name": "Fog Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "artifact_scale",
+      "name": "Artifact Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "complexity",
+      "name": "Structure Complexity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
   ]
 }
 ```
