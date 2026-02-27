@@ -1145,6 +1145,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the fluid turbulence on the bubble's surface.
 
+### Suggestion: Sci-Fi Matte Painting
+- **Date:** 2029-02-15
+- **Prompt:** "A sweeping digital matte painting of a colossal desert canyon city. Bridges connect the canyon walls hundreds of meters above the ground. The architecture is a mix of ancient rock-cut dwellings and futuristic metal spires. Two moons hang in the purple twilight sky."
+- **Negative prompt:** "photograph, blurry, low resolution, simple, flat"
+- **Tags:** matte painting, sci-fi, landscape, concept art, epic
+- **Style / Reference:** Matte Painting, Sci-Fi Concept Art
+- **Composition:** Wide panoramic
+- **Color palette:** Canyon Red, Twilight Purple, Metallic Silver
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20290215_matte_painting.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the sense of scale and depth.
+
+### Suggestion: Baroque Still Life
+- **Date:** 2029-02-15
+- **Prompt:** "A sumptuous Baroque still life oil painting. A silver platter is piled high with grapes, pomegranates, and a peeled lemon. A half-filled goblet of wine catches the light. The background is dark and moody, with dramatic chiaroscuro lighting illuminating the fruit."
+- **Negative prompt:** "bright, modern, flat, vector, cartoon"
+- **Tags:** baroque, painting, still life, chiaroscuro, fruit
+- **Style / Reference:** Baroque, Dutch Golden Age
+- **Composition:** Tabletop arrangement
+- **Color palette:** Deep Red, Gold, Black, dark Green
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20290215_baroque.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The texture of the fruit and the dramatic lighting are key.
+
+### Suggestion: Gothic Cathedral Interior
+- **Date:** 2029-02-15
+- **Prompt:** "A wide-angle interior shot of a soaring French Gothic cathedral. Sunlight streams through the intricate stained glass rose window, casting multicolored patterns on the stone floor. Pointed arches and ribbed vaults disappear into the shadows of the ceiling."
+- **Negative prompt:** "modern, bright, roman, plain glass, low ceiling"
+- **Tags:** gothic, architecture, cathedral, stained glass, interior
+- **Style / Reference:** Gothic Architecture, Photography
+- **Composition:** Low angle, one-point perspective
+- **Color palette:** Stone Grey, Stained Glass Rainbow, Shadow Black
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20290215_gothic.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the height and the play of colored light.
+
+### Suggestion: Glitch Art Portrait
+- **Date:** 2029-02-15
+- **Prompt:** "A distorted digital portrait of a person where the data stream appears corrupted. Horizontal bands of color offset the facial features. The colors are separated into RGB channels (chromatic aberration). The image looks like a frozen frame from a broken video file."
+- **Negative prompt:** "clean, perfect, painting, smooth, analog noise"
+- **Tags:** glitch art, digital, portrait, abstract, datamosh
+- **Style / Reference:** Glitch Art, Datamoshing
+- **Composition:** Portrait, centered
+- **Color palette:** RGB, Black, Static White
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20290215_glitch.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The digital artifacts should look intentional.
+
+### Suggestion: Low Poly Landscape
+- **Date:** 2029-02-15
+- **Prompt:** "A 3D render of a mountain landscape in a 'Low Poly' style. The mountains, trees, and river are made of faceted geometric triangles with flat shading (no smoothing). The lighting is soft and ambient, making the scene look like a papercraft diorama."
+- **Negative prompt:** "realistic, high poly, smooth, detailed textures, photo"
+- **Tags:** low poly, 3d, landscape, geometric, minimalist
+- **Style / Reference:** Low Poly Art, 3D Render
+- **Composition:** Isometric view
+- **Color palette:** Pastel Green, Blue, Grey, White
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20290215_low_poly.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The visible polygon edges are the style definition.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1167,7 +1232,7 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Matte Painting, Baroque, Gothic, Glitch Art, Low Poly, Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Brutalist Architecture, Art Nouveau, Memphis Design, Cyanotype, Suprematism, Fauvism.
+- **Styles:** Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Brutalist Architecture, Art Nouveau, Memphis Design, Cyanotype, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph.
 - **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Liquid Nitrogen, Velvet.
 - **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar, Origami, Steampunk Airship, Circuit Board Macro, Rogue Wave, Skyhook, O'Neill Cylinder.
 
