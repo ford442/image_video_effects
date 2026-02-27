@@ -1,0 +1,39 @@
+{
+  "id": "gen-brutalist-monument",
+  "name": "Brutalist Monument",
+  "url": "shaders/gen-brutalist-monument.wgsl",
+  "category": "generative",
+  "description": "Massive concrete architecture in an atmospheric void.",
+  "features": ["mouse-driven"],
+  "tags": ["brutalism", "architecture", "atmospheric", "3d", "raymarching"],
+  "params": [
+    {
+      "id": "sun_angle",
+      "name": "Sun Angle",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "fog_density",
+      "name": "Fog Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "artifact_scale",
+      "name": "Artifact Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "complexity",
+      "name": "Structure Complexity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ]
+}
