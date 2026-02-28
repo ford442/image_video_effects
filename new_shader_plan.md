@@ -1,102 +1,101 @@
-# New Shader Plan: Gen - Art Deco Skyscraper
+# New Shader Plan: Gen - Holographic Data Core
 
 ## Concept
-An infinite vertical ascent through a procedural Art Deco metropolis. The camera moves upwards along the facade of a monumental skyscraper, surrounded by other towers in the distance. The architecture features stepped setbacks, geometric relief patterns, and gold/black marble materials with neon accents.
+An infinite fly-through of a quantum computer's holographic data core. The camera glides through a 3D lattice of glowing data cubes, interconnected by pulsing fiber-optic neon circuits. The environment feels both structured and chaotic, representing the flow of raw digital information.
 
 ## Metadata
-- **ID:** `gen-art-deco-sky`
-- **Name:** Art Deco Skyscraper
+- **ID:** `gen-holographic-data-core`
+- **Name:** Holographic Data Core
 - **Category:** `generative`
-- **Tags:** `["3d", "raymarching", "architecture", "art-deco", "gold", "scifi", "procedural", "infinite"]`
-- **Description:** Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.
+- **Tags:** `["3d", "raymarching", "cyberpunk", "hologram", "data", "neon", "procedural", "infinite"]`
+- **Description:** An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.
 
 ## Features
-- **Infinite Verticality:** Uses domain repetition on the Y-axis to create an endless tower.
-- **Art Deco Styling:** Procedural SDF modeling of fluted columns, sunburst motifs, and stepped geometry.
-- **Atmosphere:** Volumetric lighting (shafts), distance fog, and city glow.
+- **Infinite Grid Lattice:** Uses domain repetition (`opRep`) on all three axes (X, Y, Z) to create an endless network of data nodes.
+- **Glowing Data Blocks:** Procedural SDF modeling (`sdBox`) for the primary data clusters.
+- **Neon Circuit Pathways:** Thin cylinders (`sdCylinder`) connecting the data blocks, emitting light.
+- **Pulsing Energy:** Time-based sine waves applied to the emissive materials to simulate data flow.
 - **Interactive Controls:**
-  - **Density:** Controls the proximity/number of background towers.
-  - **Speed:** Controls the camera's ascent speed.
-  - **Glow:** Adjusts the intensity of the gold reflections and neon windows.
-  - **Fog:** Controls the atmospheric density.
+  - **Node Density:** Controls the spacing between data clusters.
+  - **Travel Speed:** Controls the camera's forward movement speed through the Z-axis.
+  - **Data Pulse Rate:** Adjusts the speed of the glowing energy pulses.
+  - **Holographic Glitch:** Introduces noise and chromatic aberration to the scene.
 
 ## Proposed Code Structure
 
 ### 1. Header & Uniforms
 Standard header with `u.zoom_params` mapping:
-- `x`: Building Density (0.0 - 1.0)
-- `y`: Ascent Speed (0.0 - 5.0)
-- `z`: Glow Intensity (0.0 - 2.0)
-- `w`: Fog Density (0.0 - 1.0)
+- `x`: Node Density (0.1 - 2.0)
+- `y`: Travel Speed (0.0 - 10.0)
+- `z`: Pulse Rate (0.1 - 5.0)
+- `w`: Glitch Intensity (0.0 - 1.0)
 
 ### 2. SDF Functions
-- `sdBox`, `sdCappedCylinder`, `sdOctahedron` (for geometric decorations).
-- `opRep`: Domain repetition function.
-- `opSymX`, `opSymZ`: Symmetry operations for building facades.
+- `sdBox` (for data nodes).
+- `sdCylinder` (for circuit connections).
+- `opRep`: Domain repetition function (3D).
+- `opSmoothUnion`: Smooth blending function for organic-looking connections.
 
 ### 3. Map Function
-- **Main Tower:**
-  - Central `sdBox` with symmetry.
-  - **Fluting:** Subtractive Sine waves on the surface.
-  - **Windows:** Recessed vertical strips with emission material ID.
-  - **Gold Trim:** Extruded geometric shapes at regular Y intervals.
-- **Background Towers:**
-  - Simpler box repetitions in the distance, modulated by `u.zoom_params.x`.
+- **Data Nodes:**
+  - `sdBox` repeated using `opRep` with spacing based on `u.zoom_params.x`.
+  - Add structural details like inner floating cores using subtractive or additive smaller boxes.
+- **Circuits:**
+  - Orthogonal `sdCylinder` grids connecting the nodes.
+- **Materials:**
+  - Assign distinct material IDs for nodes and circuits to control their glow properties independently.
 
 ### 4. Rendering (Main)
-- **Camera:** Looking slightly up, moving continuously in +Y based on `time * speed`.
-- **Raymarching:** Standard loop with `t` accumulation.
-- **Materials:**
-  - ID 1: Black Marble (Base) - High specular.
-  - ID 2: Gold (Trim) - Yellow/Orange reflection.
-  - ID 3: Glass (Windows) - Emissive.
-- **Lighting:**
-  - Directional light (Moon/City Glow).
-  - Specular highlights for gold.
-  - Fake reflection mapping (env map approximation).
+- **Camera:** Looking forward (+Z), moving continuously based on `time * travel_speed`. Add slight subtle rotation or wobble.
+- **Raymarching:** Standard loop with distance accumulation. Add glitch displacements to the ray origin or direction based on `u.zoom_params.w`.
+- **Lighting & Materials:**
+  - No traditional diffuse lighting. Entirely emissive.
+  - Apply colors based on position and time: Cyan/Blue for base structures, Magenta/Orange for active data pulses.
+  - Accumulate glow along the ray to create a volumetric, holographic bloom effect.
+- **Post-Processing:** Apply a scanline or subtle chromatic aberration effect in the final color output.
 
 ### 5. JSON Configuration
 ```json
 {
-  "id": "gen-art-deco-sky",
-  "name": "Art Deco Skyscraper",
-  "url": "shaders/gen-art-deco-sky.wgsl",
+  "id": "gen-holographic-data-core",
+  "name": "Holographic Data Core",
+  "url": "shaders/gen-holographic-data-core.wgsl",
   "category": "generative",
-  "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.",
-  "tags": ["3d", "raymarching", "architecture", "art-deco", "gold", "scifi", "procedural", "infinite"],
+  "description": "An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.",
+  "tags": ["3d", "raymarching", "cyberpunk", "hologram", "data", "neon", "procedural", "infinite"],
   "features": ["mouse-driven"],
   "params": [
     {
       "id": "param1",
-      "name": "City Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.1
-    },
-    {
-      "id": "param2",
-      "name": "Ascent Speed",
+      "name": "Node Density",
       "default": 1.0,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "id": "param3",
-      "name": "Gold Glow",
-      "default": 1.0,
-      "min": 0.0,
+      "min": 0.1,
       "max": 2.0,
       "step": 0.1
     },
     {
+      "id": "param2",
+      "name": "Travel Speed",
+      "default": 2.0,
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.5
+    },
+    {
+      "id": "param3",
+      "name": "Data Pulse Rate",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
       "id": "param4",
-      "name": "Fog Density",
-      "default": 0.5,
+      "name": "Glitch Intensity",
+      "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.1
+      "step": 0.05
     }
   ]
 }
