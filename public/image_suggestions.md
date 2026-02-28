@@ -1210,6 +1210,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The visible polygon edges are the style definition.
 
+### Suggestion: Kinetic Art DNA Helix
+- **Date:** 2024-05-28
+- **Prompt:** "A mesmerizing macro video still of a Kinetic Art sculpture representing a DNA Helix. The structure is constructed entirely from hovering, perfect spherical drops of liquid mercury. The metallic surface reflects abstract, vibrant neon lights in a dark studio setting. The beads of mercury appear suspended in mid-air, rotating elegantly."
+- **Negative prompt:** "solid metal, plastic, dull, static, messy background"
+- **Tags:** kinetic art, dna, macro, science, abstract
+- **Style / Reference:** Kinetic Art, Macro Photography
+- **Composition:** Centered, shallow depth of field
+- **Color palette:** Metallic Silver, Neon Pink, Electric Blue, Black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240528_kinetic_dna.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the liquid metal texture of the mercury and the dynamic motion.
+
+### Suggestion: Brutalist O'Neill Cylinder
+- **Date:** 2024-05-28
+- **Prompt:** "A breathtaking interior view of a colossal O'Neill Cylinder space habitat, designed heavily with Brutalist Architecture. Massive, unpolished alabaster monoliths and raw concrete forms dominate the landscape. A vast, curved city stretches upward along the inner hull. Harsh, dramatic sunlight streams through massive glass panels, creating stark geometric shadows."
+- **Negative prompt:** "earth, sky, clouds, colorful, organic architecture, messy"
+- **Tags:** brutalism, sci-fi, megastructure, space, architecture
+- **Style / Reference:** Brutalist Architecture, Sci-Fi Concept Art
+- **Composition:** Wide angle, forced perspective curving upwards
+- **Color palette:** Concrete Grey, Alabaster White, Stark Shadow, Sunlit Gold
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20240528_brutalist_cylinder.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The sense of scale and the starkness of the brutalist forms are essential.
+
+### Suggestion: Cyanotype Coral Reef
+- **Date:** 2024-05-28
+- **Prompt:** "A delicate, highly detailed artwork of a thriving Coral Reef, created in the style of a traditional Cyanotype print. The intricate silhouettes of staghorn corals, sea fans, and schools of tiny fish are rendered in stark white against a rich, deep Prussian blue background. The texture of rough watercolor paper is visible."
+- **Negative prompt:** "photograph, 3d render, colorful, modern, messy"
+- **Tags:** cyanotype, coral reef, ocean, botanical, printmaking
+- **Style / Reference:** Cyanotype, Anna Atkins
+- **Composition:** Flat, decorative
+- **Color palette:** Prussian Blue, White
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240528_cyanotype_coral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Must look exactly like a sun print on textured paper.
+
+### Suggestion: Art Deco Steampunk Airship
+- **Date:** 2024-05-28
+- **Prompt:** "An elegant and massive Steampunk Airship soaring through a golden sunset, featuring distinct Art Deco design elements. The hull is plated in gleaming pewter and polished brass, decorated with geometric, sweeping lines and aerodynamic fins. Giant propellers blur with motion. The background is a sky filled with dramatic, illuminated clouds."
+- **Negative prompt:** "rusty, dirty, medieval, modern airplane, low quality"
+- **Tags:** art deco, steampunk, airship, fantasy, majestic
+- **Style / Reference:** Art Deco, Steampunk Concept Art
+- **Composition:** Low angle, majestic sweep
+- **Color palette:** Pewter Silver, Brass Gold, Sunset Orange, Sky Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240528_deco_airship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Combine the industrial feel of steampunk with the sleekness of art deco.
+
+### Suggestion: High-Speed Liquid Nitrogen Splash
+- **Date:** 2024-05-28
+- **Prompt:** "A dramatic High-Speed Photography macro shot capturing liquid nitrogen violently boiling and splashing over a miniature, ancient Bonsai tree. The intense cold creates billowing clouds of dense, low-hanging white vapor. The flash freezes the splash into crystal-clear, chaotic droplets in mid-air against a pitch-black background."
+- **Negative prompt:** "water, warm light, blurry, continuous motion, low resolution"
+- **Tags:** high-speed, macro, science, bonsai, freezing
+- **Style / Reference:** High-Speed Photography, Scientific Photography
+- **Composition:** Centered, frozen action
+- **Color palette:** Frost White, Dark Bark Brown, Black Background
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20240528_nitrogen_bonsai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The freezing of the liquid droplets and vapor is the main focus.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1232,9 +1297,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Brutalism, Geometric Abstraction, High-Speed Photography, Trompe-l'œil, Kinetic Art, Brutalist Web Design, Solarpunk, Art Deco, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Brutalist Architecture, Art Nouveau, Memphis Design, Cyanotype, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph.
-- **Materials:** Cork, Chainmail, Fur, Marble, Sea Glass, Amber, Rust, Slime, Denim, Paper Marbling, Carbon Fiber, Generative Fluid Simulation, Sand, Mercury, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Pewter, Alabaster, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Liquid Nitrogen, Velvet.
-- **Subjects:** Geode, Supernova, DNA Helix, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Coral Reef, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Bonsai Tree, Wind Tunnel, Supervolcano, Magnetar, Origami, Steampunk Airship, Circuit Board Macro, Rogue Wave, Skyhook, O'Neill Cylinder.
+- **Styles:** Geometric Abstraction, Trompe-l'œil, Brutalist Web Design, Solarpunk, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep.
+- **Materials:** Cork, Chainmail, Fur, Marble, Amber, Rust, Slime, Denim, Paper Marbling, Carbon Fiber, Generative Fluid Simulation, Sand, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Dyson Sphere, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi.
 
 ---
 
