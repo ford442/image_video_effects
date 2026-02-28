@@ -1,0 +1,43 @@
+{
+  "id": "gen-art-deco-sky",
+  "name": "Art Deco Skyscraper",
+  "url": "shaders/gen-art-deco-sky.wgsl",
+  "category": "generative",
+  "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.",
+  "tags": ["3d", "raymarching", "architecture", "art-deco", "gold", "scifi", "procedural", "infinite"],
+  "features": ["mouse-driven"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "City Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Ascent Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Gold Glow",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Fog Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    }
+  ]
+}
