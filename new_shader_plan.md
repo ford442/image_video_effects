@@ -1,91 +1,102 @@
-# New Shader Plan: Brutalist Monument
+# New Shader Plan: Gen - Art Deco Skyscraper
 
-## 1. Concept
-**Name:** Brutalist Monument
-**File ID:** `gen-brutalist-monument`
-**Category:** Generative
-**Description:** A massive, atmospheric architectural environment inspired by brutalism. Features infinite repeating concrete megastructures and a mysterious floating artifact.
-**Visual Style:**
-*   **Palette:** Monochrome concrete (light gray to dark gray), contrasted with a single bold color (e.g., gold or black) for the artifact.
-*   **Lighting:** Strong directional light (harsh shadows) combined with volumetric fog for depth.
-*   **Texture:** Noise-based bump mapping to simulate concrete surface imperfections.
-*   **Composition:** Vertical emphasis, towering slabs, monumental scale.
+## Concept
+An infinite vertical ascent through a procedural Art Deco metropolis. The camera moves upwards along the facade of a monumental skyscraper, surrounded by other towers in the distance. The architecture features stepped setbacks, geometric relief patterns, and gold/black marble materials with neon accents.
 
-## 2. Metadata
-*   **Tags:** `["brutalism", "architecture", "atmospheric", "3d", "raymarching", "monumental"]`
-*   **Author:** AI
-*   **License:** MIT
+## Metadata
+- **ID:** `gen-art-deco-sky`
+- **Name:** Art Deco Skyscraper
+- **Category:** `generative`
+- **Tags:** `["3d", "raymarching", "architecture", "art-deco", "gold", "scifi", "procedural", "infinite"]`
+- **Description:** Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.
 
-## 3. Features
-*   **Infinite Procedural Architecture:** Uses domain repetition (`opRep`) to create endless rows of pillars/slabs.
-*   **Dynamic Lighting:** Interactive sun position or time-based lighting.
-*   **Floating Artifact:** A central geometric object (Sphere, Cube, or Pyramid) that hovers and rotates.
-*   **Atmospheric Fog:** Distance-based fog to obscure the horizon and add scale.
-*   **Mouse Interaction:** Orbit camera around the artifact or fly through the structures.
+## Features
+- **Infinite Verticality:** Uses domain repetition on the Y-axis to create an endless tower.
+- **Art Deco Styling:** Procedural SDF modeling of fluted columns, sunburst motifs, and stepped geometry.
+- **Atmosphere:** Volumetric lighting (shafts), distance fog, and city glow.
+- **Interactive Controls:**
+  - **Density:** Controls the proximity/number of background towers.
+  - **Speed:** Controls the camera's ascent speed.
+  - **Glow:** Adjusts the intensity of the gold reflections and neon windows.
+  - **Fog:** Controls the atmospheric density.
 
-## 4. Proposed Code Structure (WGSL)
+## Proposed Code Structure
 
-### Key Functions
-*   `sdBox(p: vec3<f32>, b: vec3<f32>) -> f32`: Signed distance function for concrete slabs.
-*   `sdSphere(p: vec3<f32>, s: f32) -> f32`: SDF for the artifact.
-*   `opRep(p: vec3<f32>, c: vec3<f32>) -> vec3<f32>`: Domain repetition for infinite structures.
-*   `map(p: vec3<f32>) -> f32`: Combines the architecture and the artifact.
-    *   **Ground:** `p.y + offset`.
-    *   **Pillars:** Repeated boxes with height variation based on noise(cell ID).
-    *   **Artifact:** Central object with floating animation (`sin(time)`).
-*   `calcNormal(p: vec3<f32>) -> vec3<f32>`: Standard gradient-based normal calculation.
-*   `raymarch(ro: vec3<f32>, rd: vec3<f32>) -> f32`: Raymarching loop with fixed step count (e.g., 100-200).
-*   `shade(p: vec3<f32>, n: vec3<f32>) -> vec3<f32>`: PBR-lite shading.
-    *   **Diffuse:** Lambertian.
-    *   **Specular:** Blinn-Phong for the artifact (shiny) vs. low spec for concrete (matte).
-    *   **AO:** Ambient Occlusion based on SDF steps or dedicated function.
-    *   **Fog:** Exponential fog based on distance `t`.
+### 1. Header & Uniforms
+Standard header with `u.zoom_params` mapping:
+- `x`: Building Density (0.0 - 1.0)
+- `y`: Ascent Speed (0.0 - 5.0)
+- `z`: Glow Intensity (0.0 - 2.0)
+- `w`: Fog Density (0.0 - 1.0)
 
-### Uniforms
-Standard `Uniforms` struct:
-*   `u.config`: Time, Resolution.
-*   `u.zoom_config`: Camera control (Mouse X/Y).
-*   `u.zoom_params`: Custom parameters.
+### 2. SDF Functions
+- `sdBox`, `sdCappedCylinder`, `sdOctahedron` (for geometric decorations).
+- `opRep`: Domain repetition function.
+- `opSymX`, `opSymZ`: Symmetry operations for building facades.
 
-## 5. JSON Configuration (`shader_definitions/generative/gen-brutalist-monument.json`)
+### 3. Map Function
+- **Main Tower:**
+  - Central `sdBox` with symmetry.
+  - **Fluting:** Subtractive Sine waves on the surface.
+  - **Windows:** Recessed vertical strips with emission material ID.
+  - **Gold Trim:** Extruded geometric shapes at regular Y intervals.
+- **Background Towers:**
+  - Simpler box repetitions in the distance, modulated by `u.zoom_params.x`.
 
+### 4. Rendering (Main)
+- **Camera:** Looking slightly up, moving continuously in +Y based on `time * speed`.
+- **Raymarching:** Standard loop with `t` accumulation.
+- **Materials:**
+  - ID 1: Black Marble (Base) - High specular.
+  - ID 2: Gold (Trim) - Yellow/Orange reflection.
+  - ID 3: Glass (Windows) - Emissive.
+- **Lighting:**
+  - Directional light (Moon/City Glow).
+  - Specular highlights for gold.
+  - Fake reflection mapping (env map approximation).
+
+### 5. JSON Configuration
 ```json
 {
-  "id": "gen-brutalist-monument",
-  "name": "Brutalist Monument",
-  "url": "shaders/gen-brutalist-monument.wgsl",
+  "id": "gen-art-deco-sky",
+  "name": "Art Deco Skyscraper",
+  "url": "shaders/gen-art-deco-sky.wgsl",
   "category": "generative",
-  "description": "Massive concrete architecture in an atmospheric void.",
+  "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.",
+  "tags": ["3d", "raymarching", "architecture", "art-deco", "gold", "scifi", "procedural", "infinite"],
   "features": ["mouse-driven"],
-  "tags": ["brutalism", "architecture", "atmospheric", "3d", "raymarching"],
   "params": [
     {
-      "id": "sun_angle",
-      "name": "Sun Angle",
-      "default": 0.2,
+      "id": "param1",
+      "name": "City Density",
+      "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.1
     },
     {
-      "id": "fog_density",
+      "id": "param2",
+      "name": "Ascent Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Gold Glow",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
       "name": "Fog Density",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "artifact_scale",
-      "name": "Artifact Scale",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "complexity",
-      "name": "Structure Complexity",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.1
     }
   ]
 }
