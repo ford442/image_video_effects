@@ -1275,6 +1275,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** The freezing of the liquid droplets and vapor is the main focus.
 
+### Suggestion: Trompe-l'œil Bookshelf
+- **Date:** 2024-06-03
+- **Prompt:** "A high-resolution photograph of a masterful Trompe-l'œil mural painted on a flat wall, creating the perfect illusion of a deeply recessed, dusty antique bookshelf. The false perspective shows leather-bound tomes, a glowing candle, and a bronze skull. The painted shadows exactly match the lighting of the room."
+- **Negative prompt:** "real shelf, 3d render, cartoon, flat drawing, blurry"
+- **Tags:** trompe-l'œil, optical illusion, mural, bookshelf, painting
+- **Style / Reference:** Trompe-l'œil Painting, Photorealism
+- **Composition:** Head-on, filling the frame
+- **Color palette:** Antique Brown, Warm Gold, Shadow Black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240603_trompe_loeil.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The illusion of depth on a flat surface is the key element.
+
+### Suggestion: Spatialism Slashed Canvas
+- **Date:** 2024-06-03
+- **Prompt:** "A minimalist studio shot of a Spatialism artwork in the style of Lucio Fontana. A pristine, monochromatic bright red canvas is slashed vertically with three clean, precise razor cuts. The edges of the cuts curl inward slightly, revealing a deep black void behind the canvas. Dramatic side lighting emphasizes the texture of the cuts."
+- **Negative prompt:** "paint splatters, messy, realistic, figures, drawing"
+- **Tags:** spatialism, abstract, minimalist, canvas, texture
+- **Style / Reference:** Spatialism, Lucio Fontana
+- **Composition:** Centered, flat
+- **Color palette:** Bright Red, Void Black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20240603_spatialism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the clean cuts and the void behind the canvas.
+
+### Suggestion: Liquid Gallium Melting
+- **Date:** 2024-06-03
+- **Prompt:** "A macro photography video still showing a chunk of solid, crystalline Gallium metal resting on a warm human palm. The metal is actively melting, transitioning from a structured, silvery-blue geometric crystal into a smooth, highly reflective puddle of liquid metal. The studio lighting reflects sharply off the liquid surface."
+- **Negative prompt:** "water, ice, plastic, blurry, low resolution"
+- **Tags:** gallium, metal, melting, macro, science
+- **Style / Reference:** Macro Photography, Science
+- **Composition:** Close-up on the hand
+- **Color palette:** Silvery-Blue, Flesh Tones
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240603_gallium.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Highlight the contrast between the solid crystal and the liquid metal.
+
+### Suggestion: Turkish Paper Marbling
+- **Date:** 2024-06-03
+- **Prompt:** "A top-down view of the traditional Ebru (Turkish Paper Marbling) process. Drops of vibrant red, gold, and turquoise paint float on the surface of a viscous water bath. The colors have been combed into intricate, swirling, feather-like patterns. The surface tension keeps the colors distinct."
+- **Negative prompt:** "digital art, 3d render, messy, dull colors, drawing"
+- **Tags:** paper marbling, ebru, abstract, fluid, pattern
+- **Style / Reference:** Ebru, Traditional Craft
+- **Composition:** Top-down flat lay
+- **Color palette:** Vibrant Red, Gold, Turquoise, White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20240603_paper_marbling.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the distinct, combed fluid patterns.
+
+### Suggestion: Supermassive Black Hole
+- **Date:** 2024-06-03
+- **Prompt:** "A breathtaking, scientifically accurate visualization of a supermassive black hole. The central pitch-black event horizon is surrounded by a glowing, chaotic accretion disk of superheated plasma. The intense gravity warps the light of the disk, creating a luminous ring above and below the shadow. A dense, starry background is distorted by gravitational lensing."
+- **Negative prompt:** "cartoon, drawing, messy, low resolution, simple"
+- **Tags:** black hole, space, astronomy, sci-fi, epic
+- **Style / Reference:** Scientific Visualization, Astrophotography
+- **Composition:** Centered, cosmic scale
+- **Color palette:** Plasma Orange, Glowing White, Pitch Black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20240603_black_hole.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Mimic the realistic gravitational lensing effects seen in Interstellar or M87 imagery.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1297,9 +1362,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Trompe-l'œil, Brutalist Web Design, Solarpunk, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Spatialism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep.
-- **Materials:** Cork, Chainmail, Fur, Marble, Amber, Rust, Slime, Denim, Paper Marbling, Carbon Fiber, Generative Fluid Simulation, Sand, Gallium, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Black Hole, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Dyson Sphere, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi.
+- **Styles:** Geometric Abstraction, Pop Art, Brutalist Web Design, Solarpunk, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep.
+- **Materials:** Cork, Chainmail, Fur, Marble, Amber, Rust, Slime, Denim, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Dyson Sphere, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi.
 
 ---
 
