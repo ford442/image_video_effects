@@ -1,101 +1,133 @@
-# New Shader Plan: Gen - Holographic Data Core
+# Shader Plan: Retro-wave Horizon
 
 ## Concept
-An infinite fly-through of a quantum computer's holographic data core. The camera glides through a 3D lattice of glowing data cubes, interconnected by pulsing fiber-optic neon circuits. The environment feels both structured and chaotic, representing the flow of raw digital information.
+A retro-futuristic landscape featuring an infinite neon wireframe grid terrain that scrolls towards the viewer, with a glowing digital sun on the horizon, towering synthwave mountains in the distance, and an atmospheric outrun sky.
 
 ## Metadata
-- **ID:** `gen-holographic-data-core`
-- **Name:** Holographic Data Core
-- **Category:** `generative`
-- **Tags:** `["3d", "raymarching", "cyberpunk", "hologram", "data", "neon", "procedural", "infinite"]`
-- **Description:** An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.
+- **Category:** generative
+- **Tags:** `["synthwave", "retro", "neon", "grid", "80s", "raymarching"]`
 
 ## Features
-- **Infinite Grid Lattice:** Uses domain repetition (`opRep`) on all three axes (X, Y, Z) to create an endless network of data nodes.
-- **Glowing Data Blocks:** Procedural SDF modeling (`sdBox`) for the primary data clusters.
-- **Neon Circuit Pathways:** Thin cylinders (`sdCylinder`) connecting the data blocks, emitting light.
-- **Pulsing Energy:** Time-based sine waves applied to the emissive materials to simulate data flow.
-- **Interactive Controls:**
-  - **Node Density:** Controls the spacing between data clusters.
-  - **Travel Speed:** Controls the camera's forward movement speed through the Z-axis.
-  - **Data Pulse Rate:** Adjusts the speed of the glowing energy pulses.
-  - **Holographic Glitch:** Introduces noise and chromatic aberration to the scene.
+- Infinite scrolling wireframe terrain using plane SDF and grid patterns based on modulo arithmetic.
+- Large, pulsating synthetic sun with characteristic horizontal 'blinds' or scanline cuts.
+- Background mountain range using simple heightmapping and FBM.
+- Parameters mapped to `u.zoom_params` to control scroll speed, grid glow intensity, sun size/position, and color theme shift.
+- Mouse interaction via `u.zoom_config.yz` to pan the camera horizontally and vertically.
 
-## Proposed Code Structure
+## Proposed Code Structure (WGSL)
 
-### 1. Header & Uniforms
-Standard header with `u.zoom_params` mapping:
-- `x`: Node Density (0.1 - 2.0)
-- `y`: Travel Speed (0.0 - 10.0)
-- `z`: Pulse Rate (0.1 - 5.0)
-- `w`: Glitch Intensity (0.0 - 1.0)
+```wgsl
+struct Uniforms {
+    config: vec4<f32>,       // x: time, y: aspect, z: unused, w: unused
+    zoom_config: vec4<f32>,  // x: zoom, y: mouse_x, z: mouse_y, w: unused
+    zoom_params: vec4<f32>,  // x: speed, y: glow, z: sun_size, w: color_shift
+};
 
-### 2. SDF Functions
-- `sdBox` (for data nodes).
-- `sdCylinder` (for circuit connections).
-- `opRep`: Domain repetition function (3D).
-- `opSmoothUnion`: Smooth blending function for organic-looking connections.
+@group(0) @binding(0) var<uniform> u: Uniforms;
+@group(0) @binding(1) var output_texture: texture_storage_2d<bgra8unorm, write>;
 
-### 3. Map Function
-- **Data Nodes:**
-  - `sdBox` repeated using `opRep` with spacing based on `u.zoom_params.x`.
-  - Add structural details like inner floating cores using subtractive or additive smaller boxes.
-- **Circuits:**
-  - Orthogonal `sdCylinder` grids connecting the nodes.
-- **Materials:**
-  - Assign distinct material IDs for nodes and circuits to control their glow properties independently.
+// SDF functions and noise
+fn sdPlane(p: vec3<f32>, n: vec3<f32>, h: f32) -> f32 {
+    return dot(p, n) + h;
+}
 
-### 4. Rendering (Main)
-- **Camera:** Looking forward (+Z), moving continuously based on `time * travel_speed`. Add slight subtle rotation or wobble.
-- **Raymarching:** Standard loop with distance accumulation. Add glitch displacements to the ray origin or direction based on `u.zoom_params.w`.
-- **Lighting & Materials:**
-  - No traditional diffuse lighting. Entirely emissive.
-  - Apply colors based on position and time: Cyan/Blue for base structures, Magenta/Orange for active data pulses.
-  - Accumulate glow along the ray to create a volumetric, holographic bloom effect.
-- **Post-Processing:** Apply a scanline or subtle chromatic aberration effect in the final color output.
+fn map(p: vec3<f32>) -> f32 {
+    let speed = u.zoom_params.x * 2.0;
+    let time = u.config.x * speed;
 
-### 5. JSON Configuration
+    var pos = p;
+    pos.z -= time; // Scrolling effect
+
+    // Base plane
+    let planeDist = sdPlane(pos, vec3<f32>(0.0, 1.0, 0.0), 1.0);
+
+    // Add simple mountains/hills using sine waves and FBM
+    // ...
+    return planeDist;
+}
+
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let tex_coords = vec2<i32>(id.xy);
+    let dimensions = textureDimensions(output_texture);
+
+    if (tex_coords.x >= dimensions.x || tex_coords.y >= dimensions.y) {
+        return;
+    }
+
+    let resolution = vec2<f32>(f32(dimensions.x), f32(dimensions.y));
+    let uv = (vec2<f32>(tex_coords) - 0.5 * resolution) / resolution.y;
+
+    let time = u.config.x;
+
+    // Camera setup with mouse interaction
+    let mouse = u.zoom_config.yz;
+    let ro = vec3<f32>(mouse.x * 5.0, 1.0 + mouse.y * 2.0, -5.0);
+    let rd = normalize(vec3<f32>(uv, 1.0));
+
+    // Raymarching
+    var t = 0.0;
+    var p = ro;
+    for(var i = 0; i < 100; i++) {
+        p = ro + rd * t;
+        let d = map(p);
+        if(d < 0.001 || t > 100.0) { break; }
+        t += d;
+    }
+
+    // Rendering logic (grid lines, horizon sun, mountains)
+    var col = vec3<f32>(0.0);
+
+    // Sky/Sun logic if ray missed terrain
+    if (t > 100.0) {
+        // Render retro sun and background
+    } else {
+        // Render neon grid terrain
+    }
+
+    textureStore(output_texture, tex_coords, vec4<f32>(col, 1.0));
+}
+```
+
+## JSON Configuration
+
 ```json
 {
-  "id": "gen-holographic-data-core",
-  "name": "Holographic Data Core",
-  "url": "shaders/gen-holographic-data-core.wgsl",
+  "id": "gen-retrowave-horizon",
+  "name": "Retro-wave Horizon",
+  "url": "shaders/gen-retrowave-horizon.wgsl",
   "category": "generative",
-  "description": "An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.",
-  "tags": ["3d", "raymarching", "cyberpunk", "hologram", "data", "neon", "procedural", "infinite"],
+  "description": "An infinite neon wireframe landscape with a glowing sun on the horizon, in classic outrun style.",
   "features": ["mouse-driven"],
+  "tags": ["synthwave", "retro", "neon", "grid", "80s", "raymarching"],
   "params": [
     {
-      "id": "param1",
-      "name": "Node Density",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 2.0,
-      "step": 0.1
-    },
-    {
-      "id": "param2",
-      "name": "Travel Speed",
-      "default": 2.0,
+      "id": "speed",
+      "name": "Scroll Speed",
+      "default": 0.5,
       "min": 0.0,
-      "max": 10.0,
-      "step": 0.5
+      "max": 1.0
     },
     {
-      "id": "param3",
-      "name": "Data Pulse Rate",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "id": "param4",
-      "name": "Glitch Intensity",
-      "default": 0.2,
+      "id": "grid_glow",
+      "name": "Grid Glow",
+      "default": 0.7,
       "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
+      "max": 1.0
+    },
+    {
+      "id": "sun_size",
+      "name": "Sun Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
     }
   ]
 }
