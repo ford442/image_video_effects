@@ -1340,6 +1340,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Mimic the realistic gravitational lensing effects seen in Interstellar or M87 imagery.
 
+### Suggestion: Constructivist Space Station
+- **Date:** 2026-01-12
+- **Prompt:** "A majestic space station designed in the Constructivist architectural style, orbiting a gas giant. The station is made of bold, intersecting geometric shapes of red, black, and white metal. Harsh, directional sunlight casts dramatic shadows, highlighting the stark industrial aesthetic against the vast darkness of space."
+- **Negative prompt:** "organic, curves, soft lighting, modern, sleek, cluttered"
+- **Tags:** sci-fi, constructivism, space, architecture, geometric
+- **Style / Reference:** 1920s Constructivist art, industrial, photorealistic rendering
+- **Composition:** Wide shot, dramatic angle
+- **Color palette:** Red, black, white, deep space blue, harsh stark lighting
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260112_constructivist_station.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing stark lighting and harsh geometric shadows in generative shaders.
+
+### Suggestion: Denim Cyberpunk Fashion
+- **Date:** 2026-01-12
+- **Prompt:** "A portrait of a cyberpunk street samurai wearing a customized, heavily textured denim jacket woven with glowing fiber optics and LED neon threads. The denim is faded and torn in places, revealing shiny chrome cybernetics underneath. The background is a blurry, rain-slicked neon alleyway."
+- **Negative prompt:** "clean, modern clothing, fantasy, daytime, bright"
+- **Tags:** cyberpunk, fashion, portrait, neon, denim
+- **Style / Reference:** Cyberpunk aesthetic, detailed texture photography
+- **Composition:** Close-up portrait, shallow depth of field
+- **Color palette:** Indigo, neon blue, magenta, chrome
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260112_denim_cyberpunk.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests complex fabric textures contrasting with emissive materials and metallic surfaces.
+
+### Suggestion: Pop Art Diner of the Future
+- **Date:** 2026-01-12
+- **Prompt:** "An interior view of a futuristic diner rendered in a vibrant, retro Pop Art style. The scene features bright primary colors, thick black outlines, and Ben-Day dots. Patrons are androids and aliens drinking glowing milkshakes, and the view out the window shows flying cars against a comic-book style cityscape."
+- **Negative prompt:** "photorealistic, muted colors, messy, realistic lighting, 3d render"
+- **Tags:** pop art, retro-futurism, interior, comic, vibrant
+- **Style / Reference:** Pop Art, Roy Lichtenstein style, 2D illustration
+- **Composition:** Eye-level interior shot, rule of thirds
+- **Color palette:** Bright yellow, cyan, magenta, black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260112_pop_art_diner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent reference for NPR (non-photorealistic rendering) and halftone shader effects.
+
+### Suggestion: Living Marble Statue
+- **Date:** 2026-01-12
+- **Prompt:** "A hyper-realistic close-up of a classical Greek statue where the marble is magically coming to life. Half of the face is pristine, cold white marble with sub-surface scattering, while the other half transitions smoothly into warm, living human flesh with a glowing, ethereal aura at the boundary."
+- **Negative prompt:** "plastic, lowres, flat lighting, ugly, cartoon"
+- **Tags:** fantasy, marble, portrait, magical realism, transformation
+- **Style / Reference:** Classical sculpture, hyper-realism, cinematic lighting
+- **Composition:** Extreme close-up, dramatic side lighting
+- **Color palette:** Cold marble white, warm skin tones, golden magical glow
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260112_marble_transformation.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing subsurface scattering, material blending, and bloom effects.
+
+### Suggestion: Rust Core Reactor
+- **Date:** 2026-01-12
+- **Prompt:** "The interior of a massive, ancient, abandoned power reactor deep underground. Everything is covered in thick, heavily textured, flaking rust. In the center, despite the decay, a containment sphere still throbs with a dangerous, unstable neon green nuclear glow that illuminates the decaying scaffolding."
+- **Negative prompt:** "clean, shiny metal, daylight, nature, pristine"
+- **Tags:** post-apocalyptic, industrial, rust, glowing, sci-fi
+- **Style / Reference:** Post-apocalyptic realism, industrial decay, atmospheric
+- **Composition:** Wide interior shot, low angle looking up at the core
+- **Color palette:** Deep rust browns, oxidized orange, toxic neon green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260112_rust_reactor.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating complex weathering textures, bump mapping, and emissive contrasting light sources.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1362,9 +1427,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Pop Art, Brutalist Web Design, Solarpunk, Constructivism, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep.
-- **Materials:** Cork, Chainmail, Fur, Marble, Amber, Rust, Slime, Denim, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Dyson Sphere, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi.
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Solarpunk, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism.
+- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Dyson Sphere, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern.
 
 ---
 
