@@ -1,133 +1,238 @@
-# Shader Plan: Retro-wave Horizon
+# Magnetic Ferrofluid Shader Plan
 
 ## Concept
-A retro-futuristic landscape featuring an infinite neon wireframe grid terrain that scrolls towards the viewer, with a glowing digital sun on the horizon, towering synthwave mountains in the distance, and an atmospheric outrun sky.
+A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field. The fluid exhibits an iridescent sheen, forming and collapsing structures dynamically. It simulates the visually striking behavior of ferrofluids under magnetic influence.
 
 ## Metadata
-- **Category:** generative
-- **Tags:** `["synthwave", "retro", "neon", "grid", "80s", "raymarching"]`
+- **Title:** Magnetic Ferrofluid
+- **Filename:** `gen-magnetic-ferrofluid.wgsl`
+- **JSON Filename:** `gen-magnetic-ferrofluid.json`
+- **Category:** Generative
+- **Tags:** `["abstract", "liquid", "metal", "spiky", "fluid", "generative", "ferrofluid"]`
 
 ## Features
-- Infinite scrolling wireframe terrain using plane SDF and grid patterns based on modulo arithmetic.
-- Large, pulsating synthetic sun with characteristic horizontal 'blinds' or scanline cuts.
-- Background mountain range using simple heightmapping and FBM.
-- Parameters mapped to `u.zoom_params` to control scroll speed, grid glow intensity, sun size/position, and color theme shift.
-- Mouse interaction via `u.zoom_config.yz` to pan the camera horizontally and vertically.
+- **Dynamic Spikes:** Uses modified Signed Distance Functions (SDFs) and noise to simulate spiky formations that grow and shrink over time.
+- **Metallic Lighting:** Employs a specific lighting model (likely a mix of Phong and an environment map approximation) to give a dark, highly reflective metallic appearance.
+- **Iridescent Sheen:** Incorporates view-dependent color shifting to simulate a thin-film interference effect on the metallic surface.
+- **Interactive Parameters:** Parameters mapped to control magnetic field strength (spike height), fluid density (number of spikes), oscillation speed, and color shift.
 
 ## Proposed Code Structure (WGSL)
 
 ```wgsl
+// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+// ---------------------------------------------------
+
 struct Uniforms {
-    config: vec4<f32>,       // x: time, y: aspect, z: unused, w: unused
-    zoom_config: vec4<f32>,  // x: zoom, y: mouse_x, z: mouse_y, w: unused
-    zoom_params: vec4<f32>,  // x: speed, y: glow, z: sun_size, w: color_shift
+    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>,  // x=SpikeHeight, y=Density, z=Speed, w=ColorShift
+    ripples: array<vec4<f32>, 50>,
 };
 
-@group(0) @binding(0) var<uniform> u: Uniforms;
-@group(0) @binding(1) var output_texture: texture_storage_2d<bgra8unorm, write>;
+// --- Helper Functions ---
 
-// SDF functions and noise
-fn sdPlane(p: vec3<f32>, n: vec3<f32>, h: f32) -> f32 {
-    return dot(p, n) + h;
+fn rot(a: f32) -> mat2x2<f32> {
+    let s = sin(a);
+    let c = cos(a);
+    return mat2x2<f32>(c, -s, s, c);
 }
 
-fn map(p: vec3<f32>) -> f32 {
-    let speed = u.zoom_params.x * 2.0;
-    let time = u.config.x * speed;
+// Pseudo-random and Noise functions
+// ... (hash33, snoise, etc.) ...
 
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = max(k - abs(a - b), 0.0) / k;
+    return min(a, b) - h * h * k * (1.0 / 4.0);
+}
+
+// --- SDFs ---
+
+fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
+    return length(p) - r;
+}
+
+// --- Map Function ---
+
+fn map(p: vec3<f32>) -> vec2<f32> {
     var pos = p;
-    pos.z -= time; // Scrolling effect
+    let time = u.config.x * u.zoom_params.z; // Speed control
 
-    // Base plane
-    let planeDist = sdPlane(pos, vec3<f32>(0.0, 1.0, 0.0), 1.0);
+    // Base fluid mass
+    var d = sdSphere(pos, 1.5);
 
-    // Add simple mountains/hills using sine waves and FBM
-    // ...
-    return planeDist;
+    // Magnetic spikes displacement
+    let spikeDensity = u.zoom_params.y * 5.0 + 1.0;
+    let spikeHeight = u.zoom_params.x * 0.5 + 0.1;
+
+    // Use noise to generate spiky perturbations based on direction
+    let dir = normalize(pos);
+    // (A more complex noise function or mathematical formula for spikes will go here)
+    // E.g., combining multiple sine waves or using 3D noise mapped to the sphere surface
+    let spikeDisplacement = sin(spikeDensity * pos.x) * sin(spikeDensity * pos.y) * sin(spikeDensity * pos.z) * spikeHeight;
+
+    // Add time-based oscillation to the spikes
+    let oscillation = sin(time + length(pos) * 4.0) * 0.5 + 0.5;
+
+    d += spikeDisplacement * oscillation;
+
+    // Optional: Add smaller orbiting fluid droplets that merge smoothly
+    let dropletPos = vec3<f32>(sin(time)*2.0, cos(time*1.3)*1.5, sin(time*0.8)*2.0);
+    let d2 = sdSphere(pos - dropletPos, 0.4);
+
+    d = smin(d, d2, 0.5); // Smoothly blend droplets into the main mass
+
+    return vec2<f32>(d, 1.0); // ID 1.0 for ferrofluid material
 }
 
-@compute @workgroup_size(16, 16)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let tex_coords = vec2<i32>(id.xy);
-    let dimensions = textureDimensions(output_texture);
+// --- Lighting & Rendering ---
 
-    if (tex_coords.x >= dimensions.x || tex_coords.y >= dimensions.y) {
+fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    return normalize(vec3<f32>(
+        map(p + e.xyy).x - map(p - e.xyy).x,
+        map(p + e.yxy).x - map(p - e.yxy).x,
+        map(p + e.yyx).x - map(p - e.yyx).x
+    ));
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let dims = vec2<f32>(u.config.z, u.config.w);
+    let fragCoord = vec2<f32>(id.xy);
+
+    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) {
         return;
     }
 
-    let resolution = vec2<f32>(f32(dimensions.x), f32(dimensions.y));
-    let uv = (vec2<f32>(tex_coords) - 0.5 * resolution) / resolution.y;
+    let uv = (fragCoord * 2.0 - dims) / dims.y;
 
-    let time = u.config.x;
+    // Camera setup
+    var ro = vec3<f32>(0.0, 0.0, 5.0);
+    // Mouse interaction for camera orbit
+    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
+    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
 
-    // Camera setup with mouse interaction
-    let mouse = u.zoom_config.yz;
-    let ro = vec3<f32>(mouse.x * 5.0, 1.0 + mouse.y * 2.0, -5.0);
-    let rd = normalize(vec3<f32>(uv, 1.0));
+    ro.yz = rot(mouseY * 1.5) * ro.yz;
+    ro.xz = rot(mouseX * 3.14 + u.config.x * 0.2) * ro.xz;
+
+    let ta = vec3<f32>(0.0, 0.0, 0.0);
+    let ww = normalize(ta - ro);
+    let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
+    let vv = normalize(cross(uu, ww));
+    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
 
     // Raymarching
     var t = 0.0;
-    var p = ro;
-    for(var i = 0; i < 100; i++) {
-        p = ro + rd * t;
-        let d = map(p);
-        if(d < 0.001 || t > 100.0) { break; }
+    var d = 0.0;
+    var m = -1.0;
+    for (var i = 0; i < 100; i++) {
+        let p = ro + rd * t;
+        let res = map(p);
+        d = res.x;
+        m = res.y;
+        if (d < 0.001 || t > 20.0) { break; }
         t += d;
     }
 
-    // Rendering logic (grid lines, horizon sun, mountains)
-    var col = vec3<f32>(0.0);
+    var col = vec3<f32>(0.05, 0.05, 0.08); // Background color
 
-    // Sky/Sun logic if ray missed terrain
-    if (t > 100.0) {
-        // Render retro sun and background
-    } else {
-        // Render neon grid terrain
+    if (t < 20.0) {
+        let p = ro + rd * t;
+        let n = calcNormal(p);
+
+        // Lighting setup
+        let lig = normalize(vec3<f32>(1.0, 1.0, 1.0));
+        let hal = normalize(lig - rd);
+
+        let dif = clamp(dot(n, lig), 0.0, 1.0);
+        let spec = pow(clamp(dot(n, hal), 0.0, 1.0), 64.0);
+        let fre = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 5.0);
+
+        // Base dark metal color
+        var matCol = vec3<f32>(0.1, 0.1, 0.15);
+
+        // Iridescence based on viewing angle and color shift parameter
+        let iriPhase = dot(n, rd) * 3.14 + u.zoom_params.w * 5.0;
+        let iriCol = 0.5 + 0.5 * cos(iriPhase + vec3<f32>(0.0, 2.0, 4.0));
+
+        matCol = mix(matCol, iriCol, fre * 0.5);
+
+        col = matCol * dif * 2.0 + vec3<f32>(1.0) * spec * 2.0 + matCol * fre * 1.0;
+
+        // Add fake environment reflection (simple gradient mapping)
+        let ref = reflect(rd, n);
+        let envCol = mix(vec3<f32>(0.1, 0.2, 0.3), vec3<f32>(0.8, 0.9, 1.0), ref.y * 0.5 + 0.5);
+        col += envCol * matCol * 0.8;
     }
 
-    textureStore(output_texture, tex_coords, vec4<f32>(col, 1.0));
+    // Subtle vignette
+    col *= 1.0 - 0.2 * length(uv);
+
+    // Gamma correction
+    col = pow(col, vec3<f32>(0.4545));
+
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
 }
 ```
 
-## JSON Configuration
+## JSON Configuration (`gen-magnetic-ferrofluid.json`)
 
 ```json
 {
-  "id": "gen-retrowave-horizon",
-  "name": "Retro-wave Horizon",
-  "url": "shaders/gen-retrowave-horizon.wgsl",
-  "category": "generative",
-  "description": "An infinite neon wireframe landscape with a glowing sun on the horizon, in classic outrun style.",
-  "features": ["mouse-driven"],
-  "tags": ["synthwave", "retro", "neon", "grid", "80s", "raymarching"],
+  "name": "Magnetic Ferrofluid",
+  "description": "A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field.",
+  "type": "generative",
+  "shaderFile": "gen-magnetic-ferrofluid.wgsl",
+  "tags": [
+    "abstract",
+    "liquid",
+    "metal",
+    "spiky",
+    "fluid",
+    "generative",
+    "ferrofluid"
+  ],
   "params": [
     {
-      "id": "speed",
-      "name": "Scroll Speed",
-      "default": 0.5,
+      "name": "Magnetic Strength (Spikes)",
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "default": 0.5,
+      "description": "Controls the height and intensity of the fluid spikes."
     },
     {
-      "id": "grid_glow",
-      "name": "Grid Glow",
-      "default": 0.7,
+      "name": "Fluid Density",
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "default": 0.3,
+      "description": "Controls how many small spikes and structures form."
     },
     {
-      "id": "sun_size",
-      "name": "Sun Scale",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "name": "Oscillation Speed",
+      "min": 0.1,
+      "max": 3.0,
+      "default": 1.0,
+      "description": "Speed at which the fluid pulsates and shifts."
     },
     {
-      "id": "color_shift",
-      "name": "Color Shift",
-      "default": 0.5,
+      "name": "Iridescence Shift",
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "default": 0.2,
+      "description": "Shifts the thin-film interference colors on the metallic surface."
     }
   ]
 }
