@@ -1405,6 +1405,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for evaluating complex weathering textures, bump mapping, and emissive contrasting light sources.
 
+
+### Suggestion: Neon Geisha Cyber-City
+- **Date:** 2026-01-12
+- **Prompt:** "A cinematic wide shot of a futuristic cyberpunk city at night. Rain is pouring down, reflecting neon pink and electric blue lights from towering holographic billboards. In the foreground, a geisha wearing a high-tech illuminated kimono holds a glowing transparent umbrella, looking out over the sprawling neon metropolis. Cinematic lighting, photorealistic, 8k resolution, volumetric fog."
+- **Negative prompt:** "daytime, sunny, lowres, text, ugly, messy, flat lighting, cartoon, 3d render"
+- **Tags:** cyberpunk, neon, sci-fi, city, portrait, rain
+- **Style / Reference:** Photorealistic, cinematic cyberpunk
+- **Composition:** Wide shot, rule of thirds, subject in foreground
+- **Color palette:** Neon pink, electric blue, dark shadows, wet asphalt
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260112_neon_geisha.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on wet surface reflections, neon glow (bloom), and volumetric rain/fog effects.
+
+### Suggestion: Steampunk Apothecary
+- **Date:** 2026-01-12
+- **Prompt:** "A highly detailed interior of a Victorian steampunk apothecary shop. Wooden shelves are crammed with glowing glass vials containing mysterious iridescent liquids. Brass pipes and ornate copper gears line the walls. Dust motes dance in shafts of warm, golden sunlight filtering through a stained glass window. A brass mechanical owl sits on the counter."
+- **Negative prompt:** "modern, clean, minimal, fluorescent lights, messy, low quality, pixelated"
+- **Tags:** steampunk, interior, fantasy, magic, glowing, vintage
+- **Style / Reference:** Hyper-detailed digital illustration, Victorian steampunk
+- **Composition:** Eye-level interior, deep depth of field
+- **Color palette:** Warm gold, rich mahogany browns, emerald green and sapphire blue glows
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260112_steampunk_apothecary.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing god-rays, glass refraction, and complex metallic textures.
+
+### Suggestion: Biomechanical Sentinel in the Snow
+- **Date:** 2026-01-12
+- **Prompt:** "A majestic, towering biomechanical sentinel standing guard in a frozen, snow-swept wasteland. The entity is a fusion of organic bone-like armor and dark, polished metal. Soft, pulsing blue energy emits from its core and eyes, cutting through the swirling blizzard. High contrast, dramatic lighting, snow particles in the air."
+- **Negative prompt:** "greenery, summer, sunny, human, simple, toy-like"
+- **Tags:** sci-fi, biomechanical, snow, robot, dramatic, winter
+- **Style / Reference:** Concept art, dark sci-fi, dramatic lighting
+- **Composition:** Low angle shot looking up, central framing
+- **Color palette:** Stark white, deep slate grey, piercing icy blue
+- **Aspect ratio:** 3:4
+- **Reference images:** `public/images/suggestions/20260112_biomechanical_sentinel.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for evaluating particle effects (snow), harsh contrast, and glowing emissive materials against dark backgrounds.
+
+### Suggestion: Sunken Aztec Temple
+- **Date:** 2026-01-12
+- **Prompt:** "A photorealistic underwater shot exploring the ruins of a massive Aztec temple. Shafts of sunlight pierce the clear turquoise water, illuminating intricate stone carvings covered in vibrant corals and sea anemones. Schools of small, colorful fish swim through ancient, moss-draped stone archways."
+- **Negative prompt:** "murky, dark, scary, surface, people, boats"
+- **Tags:** underwater, ruins, ancient, nature, photorealistic
+- **Style / Reference:** Underwater photography, National Geographic style
+- **Composition:** Wide angle, deep perspective through arches
+- **Color palette:** Turquoise blue, bright coral pinks and yellows, aged stone grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260112_sunken_aztec_temple.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use for testing underwater caustics, volumetric light rays (god-rays), and detailed organic textures.
+
+### Suggestion: Miniature Terrarium Galaxy
+- **Date:** 2026-01-12
+- **Prompt:** "A macro photograph of an ornate, vintage glass terrarium sitting on a wooden desk. Inside the glass dome, instead of plants, there is a miniature, swirling spiral galaxy. Tiny, intensely bright stars and vibrant purple and magenta nebulae are contained within. The glass reflects the faint glow of the cosmos inside."
+- **Negative prompt:** "plants, dirt, macroscopic, outdoors, flat, simple"
+- **Tags:** macro, space, surreal, magical, glass
+- **Style / Reference:** Macro photography, surrealism, glowing
+- **Composition:** Close-up, shallow depth of field (bokeh background)
+- **Color palette:** Deep space blacks, vibrant purple, magenta, bright star white, warm wood
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260112_terrarium_galaxy.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing glass reflections, internal emissive volumes (nebulae), and depth-of-field/bokeh effects.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
