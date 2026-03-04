@@ -1,20 +1,20 @@
-# Magnetic Ferrofluid Shader Plan
+# Fractured Monolith Shader Plan
 
 ## Concept
-A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field. The fluid exhibits an iridescent sheen, forming and collapsing structures dynamically. It simulates the visually striking behavior of ferrofluids under magnetic influence.
+A massive, dark monolithic structure floating ominously above an infinite, mirror-like liquid surface. The monolith is fractured into segmented pieces that slowly drift, rotate, and pulse with an inner, ethereal glow. The scene evokes a sense of ancient, dormant alien technology slowly waking up.
 
 ## Metadata
-- **Title:** Magnetic Ferrofluid
-- **Filename:** `gen-magnetic-ferrofluid.wgsl`
-- **JSON Filename:** `gen-magnetic-ferrofluid.json`
+- **Title:** Fractured Monolith
+- **Filename:** `gen-fractured-monolith.wgsl`
+- **JSON Filename:** `gen-fractured-monolith.json`
 - **Category:** Generative
-- **Tags:** `["abstract", "liquid", "metal", "spiky", "fluid", "generative", "ferrofluid"]`
+- **Tags:** `["monolith", "floating", "fractured", "glowing", "ambient", "generative", "scifi"]`
 
 ## Features
-- **Dynamic Spikes:** Uses modified Signed Distance Functions (SDFs) and noise to simulate spiky formations that grow and shrink over time.
-- **Metallic Lighting:** Employs a specific lighting model (likely a mix of Phong and an environment map approximation) to give a dark, highly reflective metallic appearance.
-- **Iridescent Sheen:** Incorporates view-dependent color shifting to simulate a thin-film interference effect on the metallic surface.
-- **Interactive Parameters:** Parameters mapped to control magnetic field strength (spike height), fluid density (number of spikes), oscillation speed, and color shift.
+- **Fractured Geometry:** Utilizes a base SDF (e.g., a tall box) segmented by a simulated 3D grid/cellular displacement to create floating shards.
+- **Inner Ethereal Glow:** Accumulates emissive light during raymarching when the ray passes close to the internal fracture surfaces.
+- **Mirror Liquid Terrain:** A smooth, highly reflective floor with slow, undulating waves to reflect the glowing monolith.
+- **Interactive Parameters:** Maps `u.zoom_params` to control the spread of the fractures, levitation bobbing speed, core glow intensity, and rotation speed.
 
 ## Proposed Code Structure (WGSL)
 
@@ -38,7 +38,7 @@ A pulsating, dark metallic liquid with sharp spikes that respond to an oscillati
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=SpikeHeight, y=Density, z=Speed, w=ColorShift
+    zoom_params: vec4<f32>,  // x=Fracture Spread, y=Levitation Speed, z=Glow Intensity, w=Rotation Speed
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -50,54 +50,103 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// Pseudo-random and Noise functions
-// ... (hash33, snoise, etc.) ...
+fn hash31(p: vec3<f32>) -> f32 {
+    var p3 = fract(p * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
 
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - h * h * k * (1.0 / 4.0);
+// Basic 3D Noise for fracture displacement
+fn noise(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    let res = mix(
+        mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 0.0)), hash31(i + vec3<f32>(1.0, 0.0, 0.0)), u.x),
+            mix(hash31(i + vec3<f32>(0.0, 1.0, 0.0)), hash31(i + vec3<f32>(1.0, 1.0, 0.0)), u.x), u.y),
+        mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 1.0)), hash31(i + vec3<f32>(1.0, 0.0, 1.0)), u.x),
+            mix(hash31(i + vec3<f32>(0.0, 1.0, 1.0)), hash31(i + vec3<f32>(1.0, 1.0, 1.0)), u.x), u.y), u.z
+    );
+    return res;
 }
 
 // --- SDFs ---
 
-fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
-    return length(p) - r;
+fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
+    let q = abs(p) - b;
+    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+fn sdPlane(p: vec3<f32>, n: vec3<f32>, h: f32) -> f32 {
+    return dot(p, n) + h;
 }
 
 // --- Map Function ---
+// Returns vec3: x = distance, y = material ID, z = glow accumulation
+fn map(p: vec3<f32>) -> vec3<f32> {
+    var d = 1000.0;
+    var mat = 0.0;
+    var glow = 0.0;
 
-fn map(p: vec3<f32>) -> vec2<f32> {
-    var pos = p;
-    let time = u.config.x * u.zoom_params.z; // Speed control
+    let time = u.config.x;
+    let spread = u.zoom_params.x * 2.0;
+    let levSpeed = u.zoom_params.y;
+    let rotSpeed = u.zoom_params.w;
 
-    // Base fluid mass
-    var d = sdSphere(pos, 1.5);
+    // --- Liquid Terrain ---
+    // Smooth wavy floor
+    let wave = sin(p.x * 0.5 + time * 0.5) * cos(p.z * 0.5 + time * 0.3) * 0.2;
+    let floorDist = sdPlane(p, vec3<f32>(0.0, 1.0, 0.0), 2.0) + wave;
+    if (floorDist < d) {
+        d = floorDist;
+        mat = 1.0; // Floor material
+    }
 
-    // Magnetic spikes displacement
-    let spikeDensity = u.zoom_params.y * 5.0 + 1.0;
-    let spikeHeight = u.zoom_params.x * 0.5 + 0.1;
+    // --- Monolith ---
+    var bp = p;
+    // Levitation bobbing
+    bp.y -= sin(time * levSpeed) * 0.5 + 2.0;
+    // Slow global rotation
+    bp.xz = rot(time * 0.2 * rotSpeed) * bp.xz;
 
-    // Use noise to generate spiky perturbations based on direction
-    let dir = normalize(pos);
-    // (A more complex noise function or mathematical formula for spikes will go here)
-    // E.g., combining multiple sine waves or using 3D noise mapped to the sphere surface
-    let spikeDisplacement = sin(spikeDensity * pos.x) * sin(spikeDensity * pos.y) * sin(spikeDensity * pos.z) * spikeHeight;
+    // Base shape: Tall box
+    let baseBox = sdBox(bp, vec3<f32>(1.5, 4.0, 1.5));
 
-    // Add time-based oscillation to the spikes
-    let oscillation = sin(time + length(pos) * 4.0) * 0.5 + 0.5;
+    // Fracturing using noise-displaced planes
+    // We simulate fracturing by expanding space based on a cellular-like grid
+    let cellSize = 1.5;
+    let cellId = floor(bp / cellSize);
+    let cellCenter = (cellId + 0.5) * cellSize;
 
-    d += spikeDisplacement * oscillation;
+    // Drift fragments away from center based on cell ID
+    let drift = (hash31(cellId) - 0.5) * spread;
+    var fp = bp;
+    let dir = normalize(cellCenter + vec3<f32>(0.001));
+    fp -= dir * drift * (1.0 + sin(time * 0.5 + hash31(cellId)*10.0) * 0.2);
 
-    // Optional: Add smaller orbiting fluid droplets that merge smoothly
-    let dropletPos = vec3<f32>(sin(time)*2.0, cos(time*1.3)*1.5, sin(time*0.8)*2.0);
-    let d2 = sdSphere(pos - dropletPos, 0.4);
+    // Individual piece rotation
+    let localRot = (hash31(cellId + vec3<f32>(1.0)) - 0.5) * time * rotSpeed;
+    fp.xz = rot(localRot) * fp.xz;
+    fp.xy = rot(localRot * 0.5) * fp.xy;
 
-    d = smin(d, d2, 0.5); // Smoothly blend droplets into the main mass
+    // Carve out cracks
+    let crackNoise = noise(bp * 3.0);
+    let shardDist = max(baseBox, sdBox(fp - cellCenter, vec3<f32>(cellSize * 0.45)) - crackNoise * 0.1);
 
-    return vec2<f32>(d, 1.0); // ID 1.0 for ferrofluid material
+    // The monolith surface
+    if (shardDist < d) {
+        d = shardDist;
+        mat = 2.0; // Monolith material
+    }
+
+    // Inner Glow accumulation in cracks
+    // When inside the bounding box but outside shards
+    if (baseBox < 0.5 && shardDist > 0.05) {
+        glow += 0.01 / (0.01 + abs(shardDist)) * u.zoom_params.z;
+    }
+
+    return vec3<f32>(d, mat, glow);
 }
-
-// --- Lighting & Rendering ---
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
@@ -120,119 +169,127 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (fragCoord * 2.0 - dims) / dims.y;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, 5.0);
+    var ro = vec3<f32>(0.0, 2.0, 12.0);
     // Mouse interaction for camera orbit
     let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
     let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
 
-    ro.yz = rot(mouseY * 1.5) * ro.yz;
-    ro.xz = rot(mouseX * 3.14 + u.config.x * 0.2) * ro.xz;
+    ro.yz = rot(mouseY * 1.0) * ro.yz;
+    ro.xz = rot(mouseX * 3.14) * ro.xz;
 
-    let ta = vec3<f32>(0.0, 0.0, 0.0);
+    let ta = vec3<f32>(0.0, 2.0, 0.0);
     let ww = normalize(ta - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    let rd = normalize(uv.x * uu + uv.y * vv + 1.2 * ww);
 
     // Raymarching
     var t = 0.0;
     var d = 0.0;
     var m = -1.0;
-    for (var i = 0; i < 100; i++) {
+    var accumGlow = 0.0;
+
+    for (var i = 0; i < 120; i++) {
         let p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
-        if (d < 0.001 || t > 20.0) { break; }
-        t += d;
+        accumGlow += res.z;
+
+        if (d < 0.001 || t > 30.0) { break; }
+        t += d * 0.8; // Reduce step size for better glow accumulation and fracture detail
     }
 
-    var col = vec3<f32>(0.05, 0.05, 0.08); // Background color
+    var col = vec3<f32>(0.02, 0.02, 0.03); // Dark background sky
+    // Add subtle gradient to sky
+    col += vec3<f32>(0.05, 0.1, 0.2) * max(0.0, rd.y);
 
-    if (t < 20.0) {
+    if (t < 30.0) {
         let p = ro + rd * t;
         let n = calcNormal(p);
 
-        // Lighting setup
-        let lig = normalize(vec3<f32>(1.0, 1.0, 1.0));
-        let hal = normalize(lig - rd);
+        // Lighting
+        let lig = normalize(vec3<f32>(1.0, 2.0, -1.0));
+        let dif = max(dot(n, lig), 0.0);
+        let fre = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
 
-        let dif = clamp(dot(n, lig), 0.0, 1.0);
-        let spec = pow(clamp(dot(n, hal), 0.0, 1.0), 64.0);
-        let fre = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 5.0);
-
-        // Base dark metal color
-        var matCol = vec3<f32>(0.1, 0.1, 0.15);
-
-        // Iridescence based on viewing angle and color shift parameter
-        let iriPhase = dot(n, rd) * 3.14 + u.zoom_params.w * 5.0;
-        let iriCol = 0.5 + 0.5 * cos(iriPhase + vec3<f32>(0.0, 2.0, 4.0));
-
-        matCol = mix(matCol, iriCol, fre * 0.5);
-
-        col = matCol * dif * 2.0 + vec3<f32>(1.0) * spec * 2.0 + matCol * fre * 1.0;
-
-        // Add fake environment reflection (simple gradient mapping)
-        let ref = reflect(rd, n);
-        let envCol = mix(vec3<f32>(0.1, 0.2, 0.3), vec3<f32>(0.8, 0.9, 1.0), ref.y * 0.5 + 0.5);
-        col += envCol * matCol * 0.8;
+        if (m == 1.0) {
+            // Liquid Floor
+            let ref = reflect(rd, n);
+            // Fake reflections by stepping once into the reflection direction
+            let refRes = map(p + ref * 2.0);
+            var refCol = vec3<f32>(0.02, 0.03, 0.05);
+            if (refRes.y == 2.0) {
+                refCol = vec3<f32>(0.1, 0.1, 0.12);
+            }
+            col = mix(vec3<f32>(0.0, 0.05, 0.1) * dif, refCol, fre * 0.8 + 0.2);
+        } else if (m == 2.0) {
+            // Monolith Material
+            var matCol = vec3<f32>(0.05, 0.05, 0.06);
+            col = matCol * dif + fre * vec3<f32>(0.1, 0.2, 0.3);
+        }
     }
 
-    // Subtle vignette
-    col *= 1.0 - 0.2 * length(uv);
+    // Add Core Glow
+    let glowColor = vec3<f32>(0.1, 0.5, 1.0); // Cyan/Blue glow
+    col += accumGlow * glowColor * 0.02;
 
-    // Gamma correction
+    // Subtle vignette
+    col *= 1.0 - 0.3 * length(uv);
+
+    // Tone mapping and gamma correction
+    col = col / (col + vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
 }
 ```
 
-## JSON Configuration (`gen-magnetic-ferrofluid.json`)
+## JSON Configuration (`gen-fractured-monolith.json`)
 
 ```json
 {
-  "name": "Magnetic Ferrofluid",
-  "description": "A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field.",
+  "name": "Fractured Monolith",
+  "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light.",
   "type": "generative",
-  "shaderFile": "gen-magnetic-ferrofluid.wgsl",
+  "shaderFile": "gen-fractured-monolith.wgsl",
   "tags": [
-    "abstract",
-    "liquid",
-    "metal",
-    "spiky",
-    "fluid",
+    "monolith",
+    "floating",
+    "fractured",
+    "glowing",
+    "ambient",
     "generative",
-    "ferrofluid"
+    "scifi"
   ],
   "params": [
     {
-      "name": "Magnetic Strength (Spikes)",
-      "min": 0.0,
-      "max": 1.0,
-      "default": 0.5,
-      "description": "Controls the height and intensity of the fluid spikes."
-    },
-    {
-      "name": "Fluid Density",
+      "name": "Fracture Spread",
       "min": 0.0,
       "max": 1.0,
       "default": 0.3,
-      "description": "Controls how many small spikes and structures form."
+      "description": "Controls how far apart the monolith's segments drift."
     },
     {
-      "name": "Oscillation Speed",
-      "min": 0.1,
+      "name": "Levitation Speed",
+      "min": 0.0,
       "max": 3.0,
       "default": 1.0,
-      "description": "Speed at which the fluid pulsates and shifts."
+      "description": "The speed at which the monolith bobs up and down."
     },
     {
-      "name": "Iridescence Shift",
+      "name": "Glow Intensity",
       "min": 0.0,
-      "max": 1.0,
-      "default": 0.2,
-      "description": "Shifts the thin-film interference colors on the metallic surface."
+      "max": 2.0,
+      "default": 1.0,
+      "description": "Intensity of the ethereal light radiating from within the cracks."
+    },
+    {
+      "name": "Rotation Speed",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 0.5,
+      "description": "The speed at which the entire structure and individual shards rotate."
     }
   ]
 }
