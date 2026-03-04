@@ -1471,6 +1471,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for testing glass reflections, internal emissive volumes (nebulae), and depth-of-field/bokeh effects.
 
+### Suggestion: Solarpunk Cityscape
+- **Date:** 2026-03-04
+- **Prompt:** "A sprawling solarpunk metropolis at golden hour. Lush vertical gardens intertwine with gleaming white architecture. Solar panels and wind turbines are seamlessly integrated into the organic building designs. Flying cars and pedestrians coexist in a pristine, green environment. Soft, warm sunlight and highly detailed."
+- **Negative prompt:** "dystopian, pollution, smog, grim, dark, ruined, lowres, bad quality"
+- **Tags:** solarpunk, futuristic, city, green architecture, utopia
+- **Style / Reference:** architectural visualization, optimistic sci-fi, Studio Ghibli inspired
+- **Composition:** wide angle, bird's-eye view, establishing shot
+- **Color palette:** vibrant greens, warm gold, clean white, bright azure
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/solarpunk_city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing foliage rendering, warm lighting, and complex organic architecture.
+
+### Suggestion: Obsidian Ritual Dagger
+- **Date:** 2026-03-04
+- **Prompt:** "A macro shot of an ancient, intricately carved obsidian dagger resting on a velvet cloth. The black glass blade reflects a low, flickering firelight, revealing subtle purple and red undertones in the material. A faint, ethereal smoke drifts from the edges of the blade. Hyper-realistic and cinematic."
+- **Negative prompt:** "blurry, flat lighting, plain, untextured, modern, cartoon"
+- **Tags:** macro, fantasy, artifact, obsidian, dark magic
+- **Style / Reference:** dark fantasy concept art, photorealistic macro photography
+- **Composition:** close-up, shallow depth of field, dramatic shadows
+- **Color palette:** deep black, crimson, dark purple, warm amber
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/obsidian_dagger.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing specular highlights on dark, glossy surfaces and subtle emissive effects.
+
+### Suggestion: Microchip Megacity
+- **Date:** 2026-03-04
+- **Prompt:** "A macro perspective of a computer motherboard transformed into a sprawling, neon-lit cyberpunk megacity. Traces act as glowing highways with data flowing like traffic. Resistors and capacitors look like towering skyscrapers. A thick, atmospheric smog hangs over the city, illuminated by electric blue and magenta lights."
+- **Negative prompt:** "people, organic, natural, plain motherboard, unlit, daylight"
+- **Tags:** macro, cyberpunk, microchip, city, sci-fi
+- **Style / Reference:** tilt-shift photography, cyberpunk aesthetic, detailed 3D render
+- **Composition:** tilt-shift, aerial view, dense focal point
+- **Color palette:** electric blue, neon magenta, dark gray, copper
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/microchip_city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing depth of field, dense geometric structures, and neon glow effects.
+
+### Suggestion: Bioluminescent Plankton Wave
+- **Date:** 2026-03-04
+- **Prompt:** "A dark, empty beach at midnight where a gentle wave crashes onto the shore, illuminating the water with a brilliant, glowing blue bioluminescent plankton. The wet sand reflects the starry night sky above. A subtle mist hangs in the air, capturing the ambient glow. Photorealistic and serene."
+- **Negative prompt:** "daytime, people, artificial lights, boats, low detail, noise"
+- **Tags:** nature, ocean, bioluminescence, night, serene
+- **Style / Reference:** long-exposure night photography, National Geographic
+- **Composition:** low angle, leading lines, horizon
+- **Color palette:** deep indigo, glowing cyan, pitch black, silver
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/bioluminescent_plankton.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing emissive water materials, soft ambient glow, and wet reflections.
+
+### Suggestion: Construction of a Dyson Sphere
+- **Date:** 2026-03-04
+- **Prompt:** "An epic, vast space scene showing the construction of a Dyson Sphere around a brilliant, blindingly bright star. Massive robotic arms and sleek spacecraft assemble millions of hexagonal mirror panels. The star's intense light casts dramatic, hard shadows across the megastructure. Majestic and awe-inspiring scale."
+- **Negative prompt:** "Earth, planets, small scale, dull lighting, blurry, abstract"
+- **Tags:** sci-fi, space, megastructure, dyson sphere, stars
+- **Style / Reference:** hard sci-fi concept art, cinematic space render
+- **Composition:** extreme wide shot, high contrast
+- **Color palette:** blinding white, deep space black, metallic silver, gold
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/dyson_sphere.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing harsh directional lighting, massive scale, and lens flares.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1493,9 +1558,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Solarpunk, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism.
-- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Obsidian, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Microchip City, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Bioluminescent Plankton, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Dyson Sphere, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern.
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
+- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal. Graphene.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern. Subterranean Garden, Clockwork Universe, Time Machine.
 
 ---
 
