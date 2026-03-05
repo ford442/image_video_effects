@@ -1535,6 +1535,70 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/dyson_sphere.jpg`
 - **License / Attribution:** CC0
 - **Notes:** Perfect for testing harsh directional lighting, massive scale, and lens flares.
+### Suggestion: Solarpunk Oasis City
+- **Date:** 2025-05-10
+- **Prompt:** "A majestic Solarpunk city oasis set within a deep canyon. Towering, organic architecture made of white bio-concrete and gleaming titanium intertwines with lush vertical gardens and cascading waterfalls. The warm light of a late afternoon sun glints off solar panels and wind turbines. Flying vehicles quietly hum in the clear sky."
+- **Negative prompt:** "smog, pollution, dark, dystopian, cyberpunk, ruins, ugly"
+- **Tags:** solarpunk, architecture, city, landscape, futuristic
+- **Style / Reference:** Concept Art, Solarpunk, Syd Mead
+- **Composition:** Wide angle landscape
+- **Color palette:** Leaf Green, Titanium White, Golden Hour Orange, Sky Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20250510_solarpunk_oasis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the harmony between high-tech architecture and thriving nature.
+
+### Suggestion: Obsidian Geode Cavern
+- **Date:** 2025-05-10
+- **Prompt:** "An explorer standing inside a colossal, fractured geode. The walls are lined with enormous, razor-sharp obsidian crystals that reflect the light of a glowing, bioluminescent underground river. The air is thick with a magical, shimmering mist. Dramatic lighting emphasizes the jagged, glossy black surfaces."
+- **Negative prompt:** "sunlight, daylight, boring, flat, low resolution"
+- **Tags:** geode, obsidian, cave, fantasy, landscape
+- **Style / Reference:** Fantasy Concept Art, Geology
+- **Composition:** Epic scale, wide shot with human figure for scale
+- **Color palette:** Obsidian Black, Bioluminescent Cyan, Deep Indigo
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20250510_obsidian_geode.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing dark, glossy reflections and contrasting bioluminescent light sources.
+
+### Suggestion: Velvet Still Life with Cork
+- **Date:** 2025-05-10
+- **Prompt:** "A moody, low-key photography still life. A rich, deep burgundy velvet cloth is draped across a wooden table. On it rests a collection of natural cork stoppers and an antique, half-empty wine bottle. The directional side lighting creates deep shadows and highlights the soft texture of the velvet and the porous, rough surface of the cork."
+- **Negative prompt:** "bright, modern, flat lighting, digital art, plastic"
+- **Tags:** still life, velvet, cork, texture, low key
+- **Style / Reference:** Low Key Photography, Chiaroscuro
+- **Composition:** Close-up tabletop arrangement
+- **Color palette:** Burgundy Red, Cork Brown, Shadow Black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20250510_velvet_cork.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on contrasting the soft, light-absorbing velvet with the textured cork.
+
+### Suggestion: Retrowave Circuit Board City
+- **Date:** 2025-05-10
+- **Prompt:** "A top-down macro view of a complex computer circuit board that looks like an aerial view of a sprawling metropolis. The microchips resemble skyscrapers, and the golden traces on the green PCB act as highways. The scene is bathed in a Retrowave aesthetic with glowing neon magenta and cyan grid lines."
+- **Negative prompt:** "realistic city, outdoors, sky, messy, blurry"
+- **Tags:** retrowave, circuit board, macro, city, tech
+- **Style / Reference:** Macro Photography, Retrowave, Synthwave
+- **Composition:** Top-down flat lay
+- **Color palette:** PCB Green, Gold Traces, Neon Magenta, Cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20250510_retrowave_circuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the geometric precision and the glowing neon highlights.
+
+### Suggestion: Biopunk Slime Organism
+- **Date:** 2025-05-10
+- **Prompt:** "A highly detailed macro photograph of an engineered Biopunk organism enclosed in a glass petri dish. The creature is an amorphous blob of translucent, luminescent green slime with visible internal veins and pulsing, glowing nodes. High-tech sensors and probes are attached to the glass. Sterile, bright laboratory lighting."
+- **Negative prompt:** "cute, furry, dry, cartoon, 3d render"
+- **Tags:** biopunk, organism, slime, macro, science
+- **Style / Reference:** Scientific Photography, Biopunk
+- **Composition:** Extreme close-up
+- **Color palette:** Toxic Green, Clinical White, Steel Grey
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20250510_biopunk_slime.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Capture the wet, translucent, and slightly unsettling texture of the slime.
 
 ## Attribution & legal
 

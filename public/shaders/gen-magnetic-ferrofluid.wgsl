@@ -145,9 +145,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Iridescence based on viewing angle and color shift parameter
         let iriPhase = dot(n, rd) * 3.14 + u.zoom_params.w * 5.0;
-        let iriCol = 0.5 + 0.5 * cos(iriPhase + vec3<f32>(0.0, 2.0, 4.0));
+        let iriCol = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(iriPhase) + vec3<f32>(0.0, 2.0, 4.0));
 
-        matCol = mix(matCol, iriCol, fre * 0.5);
+        matCol = mix(matCol, iriCol, vec3<f32>(fre * 0.5));
 
         col = matCol * dif * 2.0 + vec3<f32>(1.0) * spec * 2.0 + matCol * fre * 1.0;
 
@@ -158,7 +158,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Subtle vignette
-    col *= 1.0 - 0.2 * length(uv);
+    col = col * (1.0 - 0.2 * length(uv));
 
     // Gamma correction
     col = pow(col, vec3<f32>(0.4545));
