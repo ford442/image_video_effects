@@ -1,48 +1,40 @@
-# Magnetic Ferrofluid Shader Plan
-
+# Bismuth Crystal Citadel
 ## Concept
-A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field. The fluid exhibits an iridescent sheen, forming and collapsing structures dynamically. It simulates the visually striking behavior of ferrofluids under magnetic influence.
+The "Bismuth Crystal Citadel" is an endlessly generating, raymarched structure resembling the stepped, iridescent hopper crystals characteristic of elemental bismuth. A central pillar ascends infinitely, surrounded by an intricate fractal array of geometric terraces.
+The aesthetic leverages sharp orthogonal cuts mapped against thin-film interference coloring (simulated via smooth color ramps indexed by surface normal and stepped gradients) to produce vibrant, shifting metallic hues. The camera rotates and slowly pans through the towering, metallic canyons.
 
 ## Metadata
-- **Title:** Magnetic Ferrofluid
-- **Filename:** `gen-magnetic-ferrofluid.wgsl`
-- **JSON Filename:** `gen-magnetic-ferrofluid.json`
-- **Category:** Generative
-- **Tags:** `["abstract", "liquid", "metal", "spiky", "fluid", "generative", "ferrofluid"]`
+- **Name:** Bismuth Crystal Citadel
+- **ID:** gen-bismuth-crystal-citadel
+- **Category:** generative
+- **Tags:** ["generative", "raymarch", "procedural", "crystal", "bismuth", "metallic", "iridescent", "geometry", "fractal"]
+- **Features:** ["raymarched", "mouse-driven"]
 
 ## Features
-- **Dynamic Spikes:** Uses modified Signed Distance Functions (SDFs) and noise to simulate spiky formations that grow and shrink over time.
-- **Metallic Lighting:** Employs a specific lighting model (likely a mix of Phong and an environment map approximation) to give a dark, highly reflective metallic appearance.
-- **Iridescent Sheen:** Incorporates view-dependent color shifting to simulate a thin-film interference effect on the metallic surface.
-- **Interactive Parameters:** Parameters mapped to control magnetic field strength (spike height), fluid density (number of spikes), oscillation speed, and color shift.
+- **Stepped SDF Geometry:** Uses a specialized Distance Function with a `mod` or `floor`/`fract` operation wrapped inside `sdBox` combining to form the characteristic stair-stepped structural decay of bismuth.
+- **Domain Repetition:** Uses polar domain repetition (`mod(atan2, ...)`) and height-based domain repetition (`mod(p.y, ...)`) to generate an infinite canyon/pillar topology.
+- **Iridescent Shading:** A specialized material function maps lighting incidence angle (Fresnel) and spatial coordinates to an oscillating color palette (via `cos` based color shifts) to mimic thin-film interference.
+- **Interactive Lighting:** Mouse coordinates drive the position of a secondary light source illuminating the intricate steps from varied angles, emphasizing the geometry.
 
 ## Proposed Code Structure (WGSL)
 
 ```wgsl
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=SpikeHeight, y=Density, z=Speed, w=ColorShift
-    ripples: array<vec4<f32>, 50>,
-};
+    resolution: vec2<f32>,
+    time: f32,
+    mouse: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
+    config: vec4<f32>,
+}
 
-// --- Helper Functions ---
+@group(0) @binding(0) var<uniform> u: Uniforms;
+@group(0) @binding(1) var output_texture: texture_storage_2d<rgba8unorm, write>;
+
+// Palettes for iridescent metallic look
+fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+    return a + b * cos(6.28318 * (c * t + d));
+}
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -50,189 +42,207 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// Pseudo-random and Noise functions
-// ... (hash33, snoise, etc.) ...
-
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - h * h * k * (1.0 / 4.0);
+// 3D Box SDF
+fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
+    let q = abs(p) - b;
+    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-// --- SDFs ---
+// Map function: Stepped Bismuth Crystal logic
+fn map(p_in: vec3<f32>) -> f32 {
+    var p = p_in;
 
-fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
-    return length(p) - r;
+    // Global twist/rotation
+    p.x = p.x * cos(p.y * 0.05) - p.z * sin(p.y * 0.05);
+    p.z = p_in.x * sin(p.y * 0.05) + p.z * cos(p.y * 0.05);
+
+    // Infinite vertical repetition
+    let spacingY = 4.0;
+    p.y = (p.y % spacingY + spacingY) % spacingY - spacingY * 0.5;
+
+    // Polar repetition for citadel structure
+    let angle = atan2(p.z, p.x);
+    let radius = length(vec2<f32>(p.x, p.z));
+
+    let segments = 6.0;
+    let a = (angle + 3.14159) / (6.28318 / segments);
+    let a_mod = fract(a) * (6.28318 / segments) - (3.14159 / segments);
+
+    p.x = radius * cos(a_mod);
+    p.z = radius * sin(a_mod);
+
+    // Bismuth stepping logic (using mod on domain before sdBox)
+    // We create terraced cuts into a larger structure
+    let stepSize = u.zoom_params.x * 0.5 + 0.1; // Parameterized step size
+    var pStep = p;
+    pStep.x = floor(pStep.x / stepSize) * stepSize;
+    pStep.z = floor(pStep.z / stepSize) * stepSize;
+    pStep.y = floor(pStep.y / stepSize) * stepSize;
+
+    // Combine base geometry and terraced geometry
+    let d1 = sdBox(p - vec3<f32>(2.0, 0.0, 0.0), vec3<f32>(1.0, 1.5, 1.0));
+
+    // The "hopper" hollow center effect
+    let inner_hollow = sdBox(p - vec3<f32>(2.0, 0.0, 0.0), vec3<f32>(0.8, 1.6, 0.8));
+
+    // Terraced boolean intersection/subtraction
+    let d2 = sdBox(p - pStep, vec3<f32>(stepSize * 0.9));
+
+    // Basic approximation of the bismuth form
+    var d = max(d1, -inner_hollow);
+    d = max(d, d2 - 0.1);
+
+    return d;
 }
 
-// --- Map Function ---
-
-fn map(p: vec3<f32>) -> vec2<f32> {
-    var pos = p;
-    let time = u.config.x * u.zoom_params.z; // Speed control
-
-    // Base fluid mass
-    var d = sdSphere(pos, 1.5);
-
-    // Magnetic spikes displacement
-    let spikeDensity = u.zoom_params.y * 5.0 + 1.0;
-    let spikeHeight = u.zoom_params.x * 0.5 + 0.1;
-
-    // Use noise to generate spiky perturbations based on direction
-    let dir = normalize(pos);
-    // (A more complex noise function or mathematical formula for spikes will go here)
-    // E.g., combining multiple sine waves or using 3D noise mapped to the sphere surface
-    let spikeDisplacement = sin(spikeDensity * pos.x) * sin(spikeDensity * pos.y) * sin(spikeDensity * pos.z) * spikeHeight;
-
-    // Add time-based oscillation to the spikes
-    let oscillation = sin(time + length(pos) * 4.0) * 0.5 + 0.5;
-
-    d += spikeDisplacement * oscillation;
-
-    // Optional: Add smaller orbiting fluid droplets that merge smoothly
-    let dropletPos = vec3<f32>(sin(time)*2.0, cos(time*1.3)*1.5, sin(time*0.8)*2.0);
-    let d2 = sdSphere(pos - dropletPos, 0.4);
-
-    d = smin(d, d2, 0.5); // Smoothly blend droplets into the main mass
-
-    return vec2<f32>(d, 1.0); // ID 1.0 for ferrofluid material
-}
-
-// --- Lighting & Rendering ---
-
+// Normal calculation
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
-    let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy).x - map(p - e.xyy).x,
-        map(p + e.yxy).x - map(p - e.yxy).x,
-        map(p + e.yyx).x - map(p - e.yyx).x
-    ));
+    let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.001;
+    return normalize(e.xyy * map(p + e.xyy) +
+                     e.yyx * map(p + e.yyx) +
+                     e.yxy * map(p + e.yxy) +
+                     e.xxx * map(p + e.xxx));
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let dims = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(id.xy);
+    let tex_coords = vec2<i32>(id.xy);
+    let resolution = vec2<f32>(u.resolution);
 
-    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) {
+    if (f32(tex_coords.x) >= resolution.x || f32(tex_coords.y) >= resolution.y) {
         return;
     }
 
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
+    var uv = (vec2<f32>(tex_coords) - 0.5 * resolution) / resolution.y;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, 5.0);
-    // Mouse interaction for camera orbit
-    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
+    let time = u.time * u.zoom_params.y; // Parameterized speed
+    var ro = vec3<f32>(0.0, time * 2.0, -5.0);
+    var rd = normalize(vec3<f32>(uv, 1.0));
 
-    ro.yz = rot(mouseY * 1.5) * ro.yz;
-    ro.xz = rot(mouseX * 3.14 + u.config.x * 0.2) * ro.xz;
+    // Mouse rotation
+    let mouse = u.zoom_config.yz; // (Mouse X, Mouse Y) usually mapped here
+    let rotX = rot(mouse.y * 3.14 + 0.2);
+    let rotY = rot(mouse.x * 6.28 + time * 0.2);
 
-    let ta = vec3<f32>(0.0, 0.0, 0.0);
-    let ww = normalize(ta - ro);
-    let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
-    let vv = normalize(cross(uu, ww));
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    rd.y = rd.y * rotX[0][0] + rd.z * rotX[0][1];
+    rd.z = rd.y * rotX[1][0] + rd.z * rotX[1][1];
 
-    // Raymarching
+    rd.x = rd.x * rotY[0][0] + rd.z * rotY[0][1];
+    rd.z = rd.x * rotY[1][0] + rd.z * rotY[1][1];
+
+    // Raymarching loop
     var t = 0.0;
     var d = 0.0;
-    var m = -1.0;
-    for (var i = 0; i < 100; i++) {
+    let max_steps = 100;
+    let max_dist = 50.0;
+
+    for (var i = 0; i < max_steps; i++) {
         let p = ro + rd * t;
-        let res = map(p);
-        d = res.x;
-        m = res.y;
-        if (d < 0.001 || t > 20.0) { break; }
-        t += d;
+        d = map(p);
+        if (d < 0.001 || t > max_dist) { break; }
+        t += d * 0.8; // Relax step size for complex terrain
     }
 
-    var col = vec3<f32>(0.05, 0.05, 0.08); // Background color
+    var col = vec3<f32>(0.02, 0.02, 0.03); // Background
 
-    if (t < 20.0) {
+    if (t < max_dist) {
         let p = ro + rd * t;
         let n = calcNormal(p);
 
-        // Lighting setup
-        let lig = normalize(vec3<f32>(1.0, 1.0, 1.0));
-        let hal = normalize(lig - rd);
+        // Lighting
+        let lightPos = vec3<f32>(3.0 * sin(time), ro.y + 4.0, 3.0 * cos(time));
+        let l = normalize(lightPos - p);
+        let v = normalize(ro - p);
 
-        let dif = clamp(dot(n, lig), 0.0, 1.0);
-        let spec = pow(clamp(dot(n, hal), 0.0, 1.0), 64.0);
-        let fre = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 5.0);
+        let diff = max(dot(n, l), 0.0);
+        let spec = pow(max(dot(reflect(-l, n), v), 0.0), 32.0);
 
-        // Base dark metal color
-        var matCol = vec3<f32>(0.1, 0.1, 0.15);
+        // Iridescence (thin-film interference approximation)
+        let fresnel = pow(1.0 - max(dot(n, v), 0.0), 5.0);
+        let interferenceOffset = p.y * 0.1 + p.x * 0.05;
 
-        // Iridescence based on viewing angle and color shift parameter
-        let iriPhase = dot(n, rd) * 3.14 + u.zoom_params.w * 5.0;
-        let iriCol = 0.5 + 0.5 * cos(iriPhase + vec3<f32>(0.0, 2.0, 4.0));
+        // Palette: vibrant bismuth colors (magenta, gold, cyan, blue)
+        let c_a = vec3<f32>(0.5, 0.5, 0.5);
+        let c_b = vec3<f32>(0.5, 0.5, 0.5);
+        let c_c = vec3<f32>(1.0, 1.0, 1.0);
+        let c_d = vec3<f32>(0.00, 0.33, 0.67);
 
-        matCol = mix(matCol, iriCol, fre * 0.5);
+        let iridColor = palette(fresnel * u.zoom_params.w + interferenceOffset, c_a, c_b, c_c, c_d);
 
-        col = matCol * dif * 2.0 + vec3<f32>(1.0) * spec * 2.0 + matCol * fre * 1.0;
+        // Material composition
+        col = iridColor * (diff * 0.8 + 0.2) + spec * u.zoom_params.z;
 
-        // Add fake environment reflection (simple gradient mapping)
-        let ref = reflect(rd, n);
-        let envCol = mix(vec3<f32>(0.1, 0.2, 0.3), vec3<f32>(0.8, 0.9, 1.0), ref.y * 0.5 + 0.5);
-        col += envCol * matCol * 0.8;
+        // Ambient Occlusion approximation (based on steps)
+        let ao = 1.0 - f32(i) / f32(max_steps);
+        col *= ao;
+
+        // Fog
+        col = mix(col, vec3<f32>(0.02, 0.02, 0.03), 1.0 - exp(-0.02 * t * t));
     }
 
-    // Subtle vignette
-    col *= 1.0 - 0.2 * length(uv);
-
-    // Gamma correction
-    col = pow(col, vec3<f32>(0.4545));
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Output
+    textureStore(output_texture, tex_coords, vec4<f32>(col, 1.0));
 }
 ```
 
-## JSON Configuration (`gen-magnetic-ferrofluid.json`)
+## JSON Configuration
 
 ```json
 {
-  "name": "Magnetic Ferrofluid",
-  "description": "A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field.",
-  "type": "generative",
-  "shaderFile": "gen-magnetic-ferrofluid.wgsl",
+  "id": "gen-bismuth-crystal-citadel",
+  "name": "Bismuth Crystal Citadel",
+  "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
+  "category": "generative",
+  "description": "An endless procedural canyon of iridescent, stair-stepped geometric bismuth crystals.",
   "tags": [
-    "abstract",
-    "liquid",
-    "metal",
-    "spiky",
-    "fluid",
     "generative",
-    "ferrofluid"
+    "raymarch",
+    "procedural",
+    "crystal",
+    "bismuth",
+    "metallic",
+    "iridescent",
+    "geometry",
+    "fractal"
   ],
+  "features": [
+    "raymarched",
+    "mouse-driven"
+  ],
+  "author": "Jules",
   "params": [
     {
-      "name": "Magnetic Strength (Spikes)",
-      "min": 0.0,
-      "max": 1.0,
+      "id": "stepSize",
+      "name": "Terrace Step Size",
       "default": 0.5,
-      "description": "Controls the height and intensity of the fluid spikes."
-    },
-    {
-      "name": "Fluid Density",
-      "min": 0.0,
-      "max": 1.0,
-      "default": 0.3,
-      "description": "Controls how many small spikes and structures form."
-    },
-    {
-      "name": "Oscillation Speed",
       "min": 0.1,
-      "max": 3.0,
-      "default": 1.0,
-      "description": "Speed at which the fluid pulsates and shifts."
+      "max": 1.5,
+      "step": 0.05
     },
     {
-      "name": "Iridescence Shift",
+      "id": "speed",
+      "name": "Ascension Speed",
+      "default": 0.5,
       "min": 0.0,
-      "max": 1.0,
-      "default": 0.2,
-      "description": "Shifts the thin-film interference colors on the metallic surface."
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "id": "specular",
+      "name": "Metallic Shine",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence Shift",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
     }
   ]
 }
