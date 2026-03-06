@@ -1,0 +1,50 @@
+{
+  "id": "gen-fractured-monolith",
+  "name": "Fractured Monolith",
+  "url": "shaders/gen-fractured-monolith.wgsl",
+  "category": "generative",
+  "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light.",
+  "tags": [
+    "monolith",
+    "floating",
+    "fractured",
+    "glowing",
+    "ambient",
+    "generative",
+    "scifi"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Fracture Spread",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3,
+      "step": 0.05
+    },
+    {
+      "id": "param2",
+      "name": "Levitation Speed",
+      "min": 0.0,
+      "max": 3.0,
+      "default": 1.0,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Glow Intensity",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 1.0,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Rotation Speed",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 0.5,
+      "step": 0.1
+    }
+  ]
+}
