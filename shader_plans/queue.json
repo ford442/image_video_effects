@@ -1,0 +1,29 @@
+{
+  "current": null,
+  "queue": [],
+  "completed": [
+    {
+      "id": "chronos-labyrinth",
+      "date": "2026-03-06",
+      "file": "2026-03-06_chronos-labyrinth.md",
+      "title": "Chronos Labyrinth",
+      "status": "completed",
+      "created_at": "2026-03-06T08:00:00Z",
+      "implemented_at": "2026-03-06T22:30:00Z",
+      "shader_file": "gen-chronos-labyrinth.wgsl",
+      "json_file": "shader_definitions/generative/gen-chronos-labyrinth.json"
+    }
+  ],
+  "rejected": [],
+  "on_hold": [],
+  "metadata": {
+    "version": "1.0",
+    "description": "Shader plan queue - implement in FIFO order",
+    "rules": [
+      "Only implement 'approved' plans",
+      "Process in date order (oldest first)",
+      "Create one plan per day max",
+      "Each plan gets its own dated file"
+    ]
+  }
+}

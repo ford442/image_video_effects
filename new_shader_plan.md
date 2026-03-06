@@ -1,114 +1,94 @@
-# Plan for Gen Chronos Labyrinth Shader
+# New Shader Plan System
 
-## Concept
-An infinite, constantly shifting, impossible M.C. Escher-like maze of floating geometric staircases and corridors that dynamically rotate and assemble themselves in real-time. Glowing temporal rifts periodically open and close within the structure.
+> **⚠️ DEPRECATED: Single File Format**
+> 
+> The old system used this single `new_shader_plan.md` file, which caused issues when multiple plans stacked up or when one wasn't implemented before the next was created.
+> 
+> **NEW SYSTEM: Dated Plan Files in `shader_plans/`**
+
+---
+
+## New Workflow
+
+### For Automated Tasks (Creating Plans)
+
+Instead of overwriting this file, create a new dated file:
+
+```bash
+# Create dated plan file
+DATE=$(date +%Y-%m-%d)
+SHADER_NAME="celestial-forge"
+FILE="shader_plans/${DATE}_${SHADER_NAME}.md"
+
+# Create the plan file
+cat > "$FILE" << 'EOF'
+# Plan: Celestial Forge Shader
 
 ## Metadata
-* **ID:** `gen-chronos-labyrinth`
-* **Name:** Chronos Labyrinth
-* **Category:** generative
-* **Description:** An infinite, Escher-esque maze of shifting geometric staircases and corridors suspended over a void, with glowing temporal anomalies.
-* **Tags:** 3d, raymarching, geometry, escher, maze, impossible, abstract, infinite
-* **Features:** mouse-driven
-
-## Parameters (Mapped to `u.zoom_params`)
-1. **Labyrinth Complexity** (`zoom_params.x`): Modifies the density and scale of the geometric structures (stairs/blocks).
-2. **Shift Speed** (`zoom_params.y`): Controls how fast the paths and blocks rotate or slide into new configurations.
-3. **Temporal Rifts** (`zoom_params.z`): Controls the frequency and intensity of the glowing energy rifts appearing in the labyrinth.
-4. **Architectural Material** (`zoom_params.w`): Blends between different structural materials (e.g., ancient stone, polished obsidian, neon-lined wireframe).
-
-## Proposed Code Structure (WGSL)
-
-```wgsl
-// Standard header
+- **ID:** gen-celestial-forge
+- **Date:** 2026-03-07
+- **Status:** pending_review
 ...
+EOF
 
-struct Uniforms { ... }
-
-// SDF Primitives
-fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 { ... }
-fn sdStaircase(p: vec3<f32>, steps: f32) -> f32 { ... } // Composed of repeated boxes or exact SDF
-
-// Helper Functions
-fn rot(a: f32) -> mat2x2<f32> { ... }
-fn opRep(p: vec3<f32>, c: vec3<f32>) -> vec3<f32> { ... } // Domain repetition
-
-// Map function
-fn map(p: vec3<f32>) -> vec2<f32> {
-    // 1. Base domain repetition for infinite space (x, y, z)
-    // 2. Parity logic to determine orientation (e.g., stairs going up vs sideways) based on cell index
-    // 3. Time-based rotation of individual cells to create shifting illusion
-    // 4. Glowing anomalies (spheres or tori) injected at random cell centers
-    // Return distance and material ID
-}
-
-// Rendering
-@compute @workgroup_size(8, 8, 1)
-fn main(...) {
-    // 1. Ray setup with mouse orbit control
-    // 2. Raymarching loop with dynamic geometry
-    // 3. Lighting: Directional lights to enhance the structural shapes, ambient occlusion
-    // 4. Materials: Procedural textures based on world position and `Architectural Material` param
-    // 5. Glow accumulation for the temporal rifts
-    // 6. Volumetric fog in the void background
-}
+# Add to queue
+# (Update shader_plans/queue.json via script)
 ```
 
-## JSON Configuration (`shader_definitions/generative/gen-chronos-labyrinth.json`)
-```json
-{
-  "id": "gen-chronos-labyrinth",
-  "name": "Chronos Labyrinth",
-  "url": "shaders/gen-chronos-labyrinth.wgsl",
-  "category": "generative",
-  "description": "An infinite, Escher-esque maze of shifting geometric staircases and corridors suspended over a void.",
-  "tags": [
-    "3d",
-    "raymarching",
-    "geometry",
-    "escher",
-    "maze",
-    "impossible",
-    "abstract",
-    "infinite"
-  ],
-  "features": [
-    "mouse-driven"
-  ],
-  "params": [
-    {
-      "id": "complexity",
-      "name": "Labyrinth Complexity",
-      "default": 1.0,
-      "min": 0.5,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "id": "shift_speed",
-      "name": "Shift Speed",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.05
-    },
-    {
-      "id": "rifts",
-      "name": "Temporal Rifts",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.1
-    },
-    {
-      "id": "material",
-      "name": "Architectural Style",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "description": "0=Ancient Stone, 1=Obsidian & Neon"
-    }
-  ]
-}
+### For Humans (Reviewing Plans)
+
+1. Check `shader_plans/queue.json` for pending plans
+2. Review the `.md` file
+3. Change status to `"approved"` or `"rejected"`
+
+### For Implementation
+
+1. Find oldest `"approved"` plan in `queue.json`
+2. Implement only that shader
+3. Mark as `"completed"` with timestamp
+
+---
+
+## Directory Structure
+
 ```
+shader_plans/
+├── README.md                      # System documentation
+├── queue.json                     # Queue index
+├── 2026-03-06_chronos-labyrinth.md   ✓ Completed
+├── 2026-03-07_celestial-forge.md     ⏳ Approved (next to implement)
+├── 2026-03-08_quantum-foam.md        ⏳ Pending review
+└── archive/                       # Old completed plans (optional)
+```
+
+---
+
+## Queue Status Values
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| `pending_review` | Just created | Review and approve/reject |
+| `approved` | Ready to build | Implement this one first |
+| `in_progress` | Building now | Only one at a time |
+| `completed` | Done | Archived |
+| `rejected` | Won't build | Remove or document why |
+| `on_hold` | Paused | Skip for now |
+
+---
+
+## Key Rules
+
+1. **One plan = One file** - Never overwrite, always create new dated file
+2. **FIFO order** - Implement oldest approved plan first
+3. **No skipping** - Can't jump ahead in the queue
+4. **Status gate** - Only implement `approved` plans, not `pending_review`
+5. **Daily limit** - Max one new plan per day
+
+---
+
+## Migration Notes
+
+- **Chronos Labyrinth** (2026-03-06) was the last plan using the old system
+- It has been moved to `shader_plans/2026-03-06_chronos-labyrinth.md`
+- The shader was implemented as `gen-chronos-labyrinth.wgsl`
+- Future plans use the new dated file system
