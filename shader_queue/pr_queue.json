@@ -1,20 +1,15 @@
 {
   "description": "Shader PR Queue - Process sequentially, one at a time",
-  "current": {
-    "position": 1,
-    "branch": "feat/new-bismuth-shader-plan-17925881371107706036",
-    "name": "Bismuth Crystal Citadel",
-    "status": "in_progress"
-  },
+  "current": null,
   "queue": [
     {
       "position": 1,
       "branch": "feat/new-bismuth-shader-plan-17925881371107706036",
       "name": "Bismuth Crystal Citadel",
       "type": "shader_plan",
-      "status": "in_progress",
-      "action": "Generate WGSL + JSON, then implement",
-      "notes": "ACTIVE: new_shader_plan.md now contains this plan"
+      "status": "completed",
+      "action": "Shader implemented and pushed",
+      "notes": "✅ WGSL + JSON generated, committed, pushed to PR branch"
     },
     {
       "position": 2,
