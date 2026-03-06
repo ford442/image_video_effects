@@ -137,5 +137,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // So:
     finalColor = mix(originalColor, finalColor, u.zoom_params.w);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

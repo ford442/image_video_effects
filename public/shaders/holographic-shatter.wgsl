@@ -143,5 +143,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = color + vec4<f32>(0.1, 0.1, 0.2, 0.0) * active;
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

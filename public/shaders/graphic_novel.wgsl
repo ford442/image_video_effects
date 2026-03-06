@@ -136,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       finalColor *= smoothstep(0.8, 0.2, d * 0.5); // Darken edges away from mouse
   }
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
   // Pass depth
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

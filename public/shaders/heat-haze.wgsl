@@ -85,5 +85,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // But let's keep it subtle: just a reddish tint
   let thermalTint = vec4<f32>(1.0, 0.3, 0.1, 1.0) * finalHeat * 0.5;
 
-  textureStore(writeTexture, global_id.xy, color + thermalTint);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color + thermalTint);
 }

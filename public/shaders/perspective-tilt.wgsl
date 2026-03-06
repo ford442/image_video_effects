@@ -156,6 +156,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_val, 0.0, 0.0, 0.0));
 }

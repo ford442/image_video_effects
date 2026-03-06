@@ -93,5 +93,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Fade out center singularity
     let fade = smoothstep(0.0, 0.1, radius);
 
-    textureStore(writeTexture, global_id.xy, col * fade);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), col * fade);
 }

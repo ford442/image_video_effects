@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalRGB = mix(color.rgb, digitalColor, glow);
     let outputColor = finalRGB + vec3<f32>(0.0, bright * glow, 0.0);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(outputColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outputColor, 1.0));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

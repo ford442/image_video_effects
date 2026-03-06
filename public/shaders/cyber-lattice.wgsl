@@ -76,6 +76,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let totalGlow = glowIntensity * (0.5 + 0.5 * mouseInfluence);
     let finalColor = mix(baseColor.rgb, glowColor, gridMask * totalGlow);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

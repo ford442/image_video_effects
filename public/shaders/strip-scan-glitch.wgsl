@@ -92,5 +92,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = vec4<f32>(sampleR, sampleG, sampleB, 1.0);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

@@ -121,5 +121,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseHover = 1.0 - smoothstep(0.0, 0.2, mouseDist);
     color += mouseHover * vec3<f32>(0.1, 0.1, 0.2);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }

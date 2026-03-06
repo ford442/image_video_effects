@@ -107,7 +107,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Actually, if luma is low (speed 0), offset is 0. So we sample history at current UV.
     // This results in a standard feedback trail.
 
-    textureStore(writeTexture, global_id.xy, mixed);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), mixed);
     textureStore(dataTextureA, global_id.xy, mixed); // Write to history
 
     // Pass depth

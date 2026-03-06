@@ -174,7 +174,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let color = vec4<f32>(redChannel, greenChannel, blueChannel, alpha);
 
   // --- Final Output ---
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Update depth texture for next frame
   let depthDisplacedUV = uv + finalMouseDisplacement;

@@ -87,6 +87,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalColor = color * mask;
     finalColor.a = 1.0;
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
 }

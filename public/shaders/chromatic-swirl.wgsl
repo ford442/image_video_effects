@@ -103,5 +103,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Actually swirl logic creates 0 angle outside radius, so it smoothly transitions to normal UV.
     // However, the chromatic aberration offset might extend slightly outside.
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
 }

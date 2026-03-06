@@ -131,5 +131,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Just use severity
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, original.a));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, original.a));
 }

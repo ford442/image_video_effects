@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blended = mix(newColor, history, persistence);
 
     // Write to display
-    textureStore(writeTexture, global_id.xy, blended);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), blended);
 
     // Write to history (dataTextureA)
     textureStore(dataTextureA, global_id.xy, blended);

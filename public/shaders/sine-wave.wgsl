@@ -96,7 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeFade = 1.0 - smoothstep(0.7, 1.0, max(abs(uv.x - 0.5), abs(uv.y - 0.5)) * 2.0);
     finalColor *= edgeFade;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     // Depth distortion with chromatic offset
     var depthUV = finalUV;

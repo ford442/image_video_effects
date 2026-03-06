@@ -132,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
        }
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

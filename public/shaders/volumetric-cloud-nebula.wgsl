@@ -196,7 +196,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalCol = pow(finalCol, vec3<f32>(0.4545));
     
     // Write output
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalCol, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalCol, 1.0));
     
     // Write depth (simplified for generative shader)
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.5, 0.0, 0.0, 0.0));

@@ -183,5 +183,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow_intensity = u.zoom_params.w;
     col += glow * glowColor * glow_intensity * 0.02;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
 }

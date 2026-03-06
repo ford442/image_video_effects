@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = smoothstep(radius, radius + 0.2, dist);
     final_color = mix(final_color, final_color * 0.6, vignette * 0.5);
 
-    textureStore(writeTexture, global_id.xy, final_color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

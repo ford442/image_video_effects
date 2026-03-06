@@ -102,5 +102,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Apply frost tint
     color = mix(color, vec4<f32>(0.9, 0.95, 1.0, 1.0), 0.3 * frost_amt * lens_mask);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

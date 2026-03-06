@@ -87,5 +87,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow = 1.0 - smoothstep(0.0, 0.1, dist);
     color = color + vec4<f32>(0.2, 0.4, 1.0, 0.0) * glow * tunnelStrength;
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

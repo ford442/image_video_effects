@@ -136,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, colCore, smoothstep(0.8, 1.0, density));
 
     // Output
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
     // Simple depth based on density
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(density, 0.0, 0.0, 0.0));

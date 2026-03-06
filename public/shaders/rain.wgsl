@@ -163,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var final_color = base_color + (rain_color * rain_acc * 0.5) + (rain_color * splash) + (rain_color * flow);
 
   // Output
-  textureStore(writeTexture, global_id.xy, final_color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
 
   // Pass Depth
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

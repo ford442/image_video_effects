@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add rain drops as blue/white overlay
     finalColor += vec4<f32>(0.5, 0.7, 1.0, 0.0) * drop * rainMask;
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

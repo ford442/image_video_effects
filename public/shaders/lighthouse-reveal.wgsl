@@ -78,5 +78,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let finalColor = mix(texColor.rgb * ambient, texColor.rgb, mask);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

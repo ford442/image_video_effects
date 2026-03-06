@@ -65,7 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
   let a = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).a;
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, a));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, a));
 
   // Pass through original depth (we don't modify it, just keep it stable)
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

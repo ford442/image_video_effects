@@ -87,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let result = mix(inputColor, prevColor, persistence);
 
     // Write to display and history
-    textureStore(writeTexture, global_id.xy, result);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), result);
     textureStore(dataTextureA, global_id.xy, result);
 
     // Pass depth

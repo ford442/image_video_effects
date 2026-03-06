@@ -67,7 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = max(source, decayed);
 
     // Write output
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Store for next frame
     textureStore(dataTextureA, global_id.xy, finalColor);

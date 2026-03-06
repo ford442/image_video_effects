@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's assume repeat is fine, or clamp. But for "record" look, maybe black outside?
     // Let's leave it as is for "image rotation".
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));

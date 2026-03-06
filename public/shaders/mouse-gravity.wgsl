@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // if (any(uvR < vec2(0.0)) || any(uvR > vec2(1.0))) { r = 0.0; } etc.
     // But sampler is usually set to repeat or clamp. Renderer sets it to 'repeat'.
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
     // Passthrough depth for now, or warp it too?
     // Warping depth might be more correct for compositing.

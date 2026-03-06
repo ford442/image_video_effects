@@ -158,7 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Fog is applied after lighting.
   final_color = vec4<f32>(calculate_fog(final_depth, final_color.rgb), final_color.a);
 
-  textureStore(writeTexture, global_id.xy, vec4(final_color.rgb, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_color.rgb, 1.0));
 
   // --- Depth Texture Update ---
   // Write the final, combined depth value to the output depth texture.

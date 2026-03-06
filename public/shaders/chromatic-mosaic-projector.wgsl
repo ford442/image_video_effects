@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lightFalloff = 1.0 / (1.0 + dist * 2.0);
     color = color * lightFalloff;
 
-    textureStore(writeTexture, global_id.xy, vec4(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));

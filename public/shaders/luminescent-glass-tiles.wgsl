@@ -104,5 +104,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Highlight based on luma (glass glow)
     color = color + vec4<f32>(luma * 0.2 * mouseFactor, luma * 0.2 * mouseFactor, luma * 0.2 * mouseFactor, 0.0);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

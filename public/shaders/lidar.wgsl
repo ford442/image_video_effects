@@ -170,6 +170,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let artifact = hash12(uv * 100.0 + time) * 0.05 * (1.0 - depth);
     final_rgb += artifact;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_rgb, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_rgb, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

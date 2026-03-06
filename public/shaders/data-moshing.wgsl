@@ -81,7 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = floor(color * q) / q;
     }
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, vec4<f32>(offset, 0.0, 0.0));
 
     // Depth passthrough

@@ -93,5 +93,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Usually halftone is black ink on white paper, or light dots on black.
     // Let's stick to "Light Dots on Black" (emission style) as it fits WebGPU demos better.
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

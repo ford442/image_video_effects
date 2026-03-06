@@ -73,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = vec3<f32>(r, g, b) * scanBoost;
   color += vec3<f32>(0.02, 0.01, 0.03) * (hash(uv * resolution + time) - 0.5) * glitchParam;
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -100,5 +100,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add some glow from displacement intensity
     finalColor = finalColor + neon * length(displacement) * 5.0;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

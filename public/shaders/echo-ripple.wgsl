@@ -83,7 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mixed_color = mix(current_color + ripple_color, history_color, decay);
 
   // Write outputs
-  textureStore(writeTexture, global_id.xy, vec4<f32>(mixed_color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(mixed_color, 1.0));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(mixed_color, 1.0));
 
   // Depth pass

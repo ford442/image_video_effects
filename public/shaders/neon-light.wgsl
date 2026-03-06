@@ -82,7 +82,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mix: mostly edge glow, but reveal original image under the light too
   let finalColor = mix(reveal, edgeGlow + reveal, isEdge);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
   // Pass through depth (required for depth chain)
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

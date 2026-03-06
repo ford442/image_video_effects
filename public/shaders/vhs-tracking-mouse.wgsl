@@ -88,7 +88,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // let scanline = sin(uv.y * 800.0) * 0.05;
     // color -= scanline;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
     // Passthrough depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -247,7 +247,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Output
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
 
     // Pass through depth (mock)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(global_id.xy)/resolution, 0.0).r;

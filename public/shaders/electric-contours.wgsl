@@ -82,5 +82,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add extra glow near mouse
     let glow = mouse_influence * 0.3 * edge_color;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(result + glow, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(result + glow, 1.0));
 }

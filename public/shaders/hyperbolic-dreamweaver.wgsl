@@ -116,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color.rgb = pow(color.rgb, vec3(0.8));
     color.rgb *= 1.0 + 0.5 * depth; // Depth pop
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth with hyperbolic modulation for chaining
     let modulated_depth = depth * (1.0 - disk_dist * 0.5);

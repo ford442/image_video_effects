@@ -102,6 +102,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add some lighting/shading based on the warp gradient?
     // Let's keep it simple: the image just flows.
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

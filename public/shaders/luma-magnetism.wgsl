@@ -78,5 +78,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalUV = clamp(uv + sampleOffset, vec2<f32>(0.0), vec2<f32>(1.0));
     let finalColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

@@ -51,7 +51,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (effectiveRadius < 1.0) {
     // Optimization: Just sample directly if radius is small
     let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
     return;
   }
 
@@ -113,5 +113,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lum = dot(finalColor, vec3<f32>(0.2126, 0.7152, 0.0722));
   let satColor = mix(vec3<f32>(lum), finalColor, 1.0 + satBoost);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(satColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(satColor, 1.0));
 }

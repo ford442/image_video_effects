@@ -175,6 +175,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Accumulated snow (multiplicative blending with lighting)
     final_color = mix(final_color, snow_color * snow_lighting, accumulated_snow);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

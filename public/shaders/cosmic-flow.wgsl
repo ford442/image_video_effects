@@ -187,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spark = smoothstep(0.95, 1.0, hash(uv * 100.0 + time)) * f * intensity;
     final_color += vec3<f32>(1.0, 0.8, 0.5) * spark * 0.5;
     
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
     
     // Pass depth
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

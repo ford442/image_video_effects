@@ -153,7 +153,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
   
   // Write output
-  textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
   
   // Store wave data in persistence texture for potential future use
   textureStore(dataTextureA, global_id.xy, vec4<f32>(wavePattern, depth, 0.0, 1.0));

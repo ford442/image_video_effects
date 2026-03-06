@@ -66,5 +66,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let color = vec3<f32>(r, g, b) + vec3<f32>(static_noise * static_intensity);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }

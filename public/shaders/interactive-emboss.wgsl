@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Wait, I said param y is "mix_amt". Let's name it "Intensity" in JSON.
   // If Intensity = 1.0, we see full emboss.
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
 
   // Pass depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -109,7 +109,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   
   final_color = vec4<f32>(mix(final_color.rgb, fog_color, fog_amount), final_color.a);
 
-  textureStore(writeTexture, global_id.xy, vec4(final_color.rgb, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_color.rgb, 1.0));
 
 
   // --- Depth Texture Update ---

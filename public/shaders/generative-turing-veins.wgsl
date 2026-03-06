@@ -102,7 +102,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow = vein_mask * vein_val * 2.0;
     let final_rgb = final_color + glow * vec3(0.2, 0.4, 0.6);
 
-    textureStore(writeTexture, global_id.xy, vec4(final_rgb, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_rgb, 1.0));
 
     // Depth with vein modulation for downstream effects
     let mod_depth = depth * (1.0 + vein_mask * 0.3);

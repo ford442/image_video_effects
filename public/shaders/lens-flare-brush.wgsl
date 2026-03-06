@@ -44,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let influence = smoothstep(0.5, 0.0, dist); // Only generate flares near mouse (0.5 radius)
 
     if (influence <= 0.01) {
-        textureStore(writeTexture, global_id.xy, baseColor);
+        textureStore(writeTexture, vec2<i32>(global_id.xy), baseColor);
         let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
         textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
         return;
@@ -97,7 +97,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = baseColor.rgb + flareAccum * flareIntensity * influence;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -108,7 +108,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let border = smoothstep(0.0, 0.1, ring_pos) * smoothstep(1.0, 0.9, ring_pos);
     // color = color * (0.8 + 0.2 * border); // Subtle ring lines
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, new_uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

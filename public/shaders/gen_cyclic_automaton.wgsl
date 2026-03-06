@@ -72,6 +72,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sin(hue + 4.188)
     );
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(new_state / num_states, 0.0, 0.0, 1.0));
 }

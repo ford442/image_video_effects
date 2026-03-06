@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let nebula = sin(uv.x * 20.0 + currentTime) * sin(uv.y * 20.0 + currentTime * 1.2) * 0.1;
   color += vec4<f32>(nebula * 0.5, nebula * 0.3, nebula * 0.7, 0.0);
 
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   let depthDisplacedUV = uv + finalMouseDisplacement;
   let displacedDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthDisplacedUV, 0.0).r;

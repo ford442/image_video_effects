@@ -94,5 +94,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(colR, colG, colB, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(colR, colG, colB, 1.0));
 }

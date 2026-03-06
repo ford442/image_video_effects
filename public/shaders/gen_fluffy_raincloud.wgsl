@@ -93,6 +93,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cloud_color = mix(vec3<f32>(0.4, 0.4, 0.45), vec3<f32>(1.0, 1.0, 1.0), cloud_brightness);
     color = mix(color, cloud_color, cloud_density);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(rain_vel, rain_density, cloud_density));
 }

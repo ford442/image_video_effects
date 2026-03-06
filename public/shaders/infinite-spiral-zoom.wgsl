@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Avoid singularity
     let r = length(p);
     if (r < 0.001) {
-        textureStore(writeTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
         return;
     }
 
@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let color = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Preserve depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, final_uv, 0.0).r;

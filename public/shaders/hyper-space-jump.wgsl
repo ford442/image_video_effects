@@ -96,6 +96,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - smoothstep(0.5, 1.5, dist);
     let output = mix(vec3<f32>(0.0), final_color.rgb, vignette);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(output, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(output, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

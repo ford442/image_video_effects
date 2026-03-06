@@ -370,6 +370,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color / (color + vec3<f32>(1.0));
     color = pow(color, vec3<f32>(1.0 / 2.2)); // Gamma correction
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 200.0, 0.0, 0.0, 0.0));
 }

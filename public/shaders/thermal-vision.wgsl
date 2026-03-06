@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     lum = clamp(lum + heat, 0.0, 1.0);
 
     let finalColor = thermal_gradient(lum, shift);
-    textureStore(writeTexture, global_id.xy, vec4(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalColor, 1.0));
 
     // Pass-through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

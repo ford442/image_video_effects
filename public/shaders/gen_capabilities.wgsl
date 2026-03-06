@@ -98,6 +98,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let output = vec4<f32>(finalColor, 1.0);
 
   // Write to Output and History
-  textureStore(writeTexture, global_id.xy, output);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), output);
   textureStore(dataTextureA, global_id.xy, output);
 }

@@ -177,5 +177,5 @@ let exposed_rgb = post_processed_rgb * exposure;
 let tonemapped_rgb = aces_tonemap(exposed_rgb);
 
   color = vec4<f32>(tonemapped_rgb, color.a);
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

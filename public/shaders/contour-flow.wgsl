@@ -84,5 +84,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Optional: Add a slight highlight to the flowing areas
     let highlight = length(offset) * 10.0; // visualize flow intensity
 
-    textureStore(writeTexture, global_id.xy, color + vec4<f32>(highlight * 0.1));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color + vec4<f32>(highlight * 0.1));
 }

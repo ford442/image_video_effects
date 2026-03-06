@@ -161,7 +161,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add specular highlight for shiny paper?
     // Maybe paper is matte.
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));

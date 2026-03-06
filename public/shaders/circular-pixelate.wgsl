@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     final_color = mix(orig, final_color, bg_mix_param);
 
-    textureStore(writeTexture, global_id.xy, final_color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

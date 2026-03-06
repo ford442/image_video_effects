@@ -118,7 +118,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor += vec3<f32>(rippleInfluence * 0.2);
   
   // Write output
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
   
   // Update depth texture
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -45,5 +45,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Color based on distance and closest point
     let color = closest_color * (1.0 - min_dist * 5.0);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }
