@@ -1536,6 +1536,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Capture the wet, translucent, and slightly unsettling texture of the slime.
 
+### Suggestion: Neon Cyberpunk Cafe
+- **Date:** 2026-01-15
+- **Prompt:** "A highly detailed exterior shot of a neon-lit ramen cafe in a rain-soaked cyberpunk city street. The subject is a solitary robotic figure eating noodles at the counter. Cinematic lighting with vibrant magenta and cyan neon signs reflecting in deep puddles. Moody, atmospheric, and melancholic mood. Shot on a 35mm lens with shallow depth of field, sharp focus on the robot."
+- **Negative prompt:** "daylight, sunny, cartoon, anime, lowres, watermark, text, out of focus, blurry, messy"
+- **Tags:** cyberpunk, sci-fi, urban, neon, rain, robot
+- **Style / Reference:** photorealistic, cinematic, inspired by Blade Runner
+- **Composition:** wide shot, rule of thirds, eye-level angle
+- **Color palette:** magenta, cyan, deep blacks, cool blues
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260115_cyberpunk-cafe.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing wet surface reflections, neon bloom, and chromatic aberration effects.
+
+### Suggestion: Bioluminescent Deep Sea Leviathan
+- **Date:** 2026-01-15
+- **Prompt:** "A massive, awe-inspiring alien leviathan swimming through the pitch-black depths of an ocean. The subject is a colossal, translucent manta ray-like creature emitting a pulsing, ethereal blue bioluminescence. Underwater lighting, light scattering through murky water, with glowing patterns illuminating the surrounding dark abyss. Mysterious, tense, and majestic mood. Captured with an extreme wide-angle lens, deep focus to show scale."
+- **Negative prompt:** "bright, colorful, land, sky, people, scuba diver, cartoon, unrealistic, low quality"
+- **Tags:** underwater, sci-fi, creature, bioluminescent, alien, ocean
+- **Style / Reference:** hyper-realistic, documentary photography, inspired by deep sea exploration
+- **Composition:** extreme wide shot, subject centered, immense scale
+- **Color palette:** deep oceanic blues, glowing cyan, pitch black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260115_leviathan.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use for testing volumetric scattering, underwater fog, and glowing particle effects.
+
+### Suggestion: Steampunk Airship Dock
+- **Date:** 2026-01-15
+- **Prompt:** "A bustling Victorian-era steampunk airship dock suspended high in the clouds at sunset. The subject is a massive, intricate brass and wood zeppelin being loaded with cargo. Golden hour lighting casting long dramatic shadows, volumetric rays piercing through the billowing clouds and steam vents. Adventurous, romantic, and awe-inspiring mood. Captured with a 50mm lens, sharp focus on the airship with a slightly blurred background."
+- **Negative prompt:** "modern, sleek, futuristic, digital, clean, low poly, noisy, deformed"
+- **Tags:** steampunk, fantasy, airship, clouds, sunset, brass
+- **Style / Reference:** detailed concept art, matte painting, highly intricate
+- **Composition:** establishing shot, dynamic angle, leading lines from the dock
+- **Color palette:** warm golds, brass, copper, fiery orange sunset, soft purples
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260115_airship-dock.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for rendering metallic reflections, steam particle systems, and God rays.
+
+### Suggestion: Ethereal Elven Forest Sanctuary
+- **Date:** 2026-01-15
+- **Prompt:** "A serene and magical elven sanctuary hidden deep within an ancient, overgrown forest. The subject is an elegant, glowing crystal pavilion surrounded by giant, moss-draped trees. Soft, dappled sunlight filtering through the dense canopy, with gentle glowing spores floating in the air. Peaceful, tranquil, and enchanting mood. Medium shot with a tilt-shift effect, focusing on the crystal pavilion."
+- **Negative prompt:** "dark, scary, dead trees, urban, concrete, modern, chaotic, low details"
+- **Tags:** fantasy, forest, magic, elven, nature, serene
+- **Style / Reference:** high fantasy illustration, ethereal, lush, detailed
+- **Composition:** symmetrical framing, medium shot, framed by trees
+- **Color palette:** emerald greens, soft glowing whites, pale lavenders, earthy browns
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260115_elven-sanctuary.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing foliage shading, soft lighting, and magical particle ambient effects.
+
+### Suggestion: Brutalist Monolith on a Desert Planet
+- **Date:** 2026-01-15
+- **Prompt:** "A colossal, stark concrete brutalist monolith standing isolated on a vast, barren desert planet with twin suns high in the sky. The subject is the imposing geometric structure casting harsh, sharp shadows across the cracked earth. High contrast, blinding daylight lighting with heat distortion visible in the air. Desolate, oppressive, and mysterious mood. Captured with a 24mm wide-angle lens, low angle looking up to emphasize imposing scale."
+- **Negative prompt:** "water, vegetation, cities, people, soft, colorful, cloudy, blurred"
+- **Tags:** sci-fi, brutalist, desert, alien landscape, monolith, minimalist
+- **Style / Reference:** brutalist architecture photography, minimalist sci-fi, photorealistic
+- **Composition:** low angle shot, striking geometry, stark contrast
+- **Color palette:** muted concrete greys, dusty ochre, pale bleached sky
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260115_brutalist-monolith.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating harsh shadow mapping, ambient occlusion, and heat-haze distortion.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
