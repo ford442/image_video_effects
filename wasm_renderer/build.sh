@@ -18,8 +18,6 @@ cd "$(dirname "$0")"
 # Set writable cache location for TOT emscripten
 export EM_CACHE=/tmp/emscripten_cache
 
-# Source Emscripten from workspace (newer version with --use-port support)
-source /workspaces/codepit/emsdk/emsdk_env.sh
 
 # Clean previous build
 rm -rf build
