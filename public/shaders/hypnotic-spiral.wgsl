@@ -15,10 +15,10 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>;
-  zoom_config: vec4<f32>;
-  zoom_params: vec4<f32>;
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Mapping notes: mouse in zoom_config.yz; zoom_params hold spiral_params: x=arms, y=rotationSpeed, z=colorCycle, w=warpIntensity
