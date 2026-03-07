@@ -12,6 +12,18 @@
       "implemented_at": "2026-03-06T22:30:00Z",
       "shader_file": "gen-chronos-labyrinth.wgsl",
       "json_file": "shader_definitions/generative/gen-chronos-labyrinth.json"
+    },
+    {
+      "filename": "2026-03-07_wasm-hls-physarum-swarm.md",
+      "title": "WASM + HLS Live + Physarum Swarm",
+      "added": "2026-03-07T09:02:06.984929",
+      "completed": "2026-03-07T09:06:35.397417"
+    },
+    {
+      "filename": "2026-03-08_live-studio-tab.md",
+      "title": "Live Studio Tab \u2013 HLS + WASM Toggle + Bilibili + Danmaku",
+      "added": "2026-03-07T09:08:09.892871",
+      "completed": "2026-03-07T09:13:43.539459"
     }
   ],
   "rejected": [],
@@ -25,5 +37,13 @@
       "Create one plan per day max",
       "Each plan gets its own dated file"
     ]
-  }
+  },
+  "pending": [
+    {
+      "filename": "2026-03-08_raptor-mini.md",
+      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
+      "added": "2026-03-07T09:06:05.264901"
+    }
+  ],
+  "in_progress": null
 }
