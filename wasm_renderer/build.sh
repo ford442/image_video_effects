@@ -12,6 +12,12 @@ elif [ -f "../../emsdk/emsdk_env.sh" ]; then
   source "../../emsdk/emsdk_env.sh"
 fi
 
+# Check if emcmake is available before proceeding
+if ! command -v emcmake &> /dev/null; then
+    echo "⚠️ Warning: emcmake not found. Skipping WASM build."
+    exit 0
+fi
+
 # Build
 emcmake cmake -B build -S .
 emmake make -C build
