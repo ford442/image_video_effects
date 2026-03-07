@@ -27,10 +27,15 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "wasm:build": "bash wasm_renderer/build.sh",
+    "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
     "bucket:sync": "node scripts/watch-bucket-simple.js",
     "bucket:watch": "node scripts/watch-bucket-simple.js --watch",
     "bucket:sync-full": "node scripts/watch-bucket.js",
-    "bucket:watch-full": "node scripts/watch-bucket.js --watch"
+    "bucket:watch-full": "node scripts/watch-bucket.js --watch",
+    "audit:shaders": "bash scripts/wgsl-audit-swarm.sh 4",
+    "audit:shaders:sample": "bash scripts/wgsl-audit-swarm.sh 4 --sample",
+    "deploy": "python deploy.py"
   },
   "eslintConfig": {
     "extends": [
