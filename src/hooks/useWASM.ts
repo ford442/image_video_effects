@@ -17,7 +17,8 @@ export const useWASM = () => {
     if (moduleRef.current) return true;
     
     try {
-      const wasm = await import('/wasm/pixelocity_wasm.js');
+      // @ts-ignore - WASM module loaded dynamically
+      const wasm = await import('../../public/wasm/pixelocity_wasm.js');
       if (wasm.default) {
         await wasm.default();
       }

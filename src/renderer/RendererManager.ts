@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig } from './Renderer';
+import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
 
@@ -35,9 +35,6 @@ export class RendererManager {
   async switchRenderer(useWasm: boolean): Promise<boolean> {
     if (!this.canvas) return false;
 
-    // Store video reference if exists
-    const video = this.currentRenderer?.['video'] as HTMLVideoElement | undefined;
-
     // Destroy old renderer
     this.currentRenderer?.destroy();
 
@@ -48,13 +45,8 @@ export class RendererManager {
     const success = await renderer.init(this.canvas);
 
     if (success) {
-      this.currentRenderer = renderer;
+      this.currentRenderer = renderer as Renderer;
       this.metrics.isWASM = useWasm;
-      
-      // Restore video if was playing
-      if (video) {
-        renderer.setVideo(video);
-      }
 
       // Start metrics collection
       this.startMetricsCollection();

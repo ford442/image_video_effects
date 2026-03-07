@@ -1,6 +1,9 @@
 #!/bin/bash
 echo "=== Building Pixelocity WASM Renderer (2026 version) ==="
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 # Set writable cache location for TOT emscripten
 export EM_CACHE=/tmp/emscripten_cache
 

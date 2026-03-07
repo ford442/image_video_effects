@@ -9,7 +9,7 @@ import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import { useAudioAnalyzer } from '../hooks/useAudioAnalyzer';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { JSRenderer } from '../renderer/JSRenderer';
-import { Renderer, DEFAULT_CONFIG } from '../renderer/Renderer';
+import { BaseRenderer as Renderer, DEFAULT_CONFIG } from '../renderer/BaseRenderer';
 
 interface LiveStudioTabProps {
   className?: string;

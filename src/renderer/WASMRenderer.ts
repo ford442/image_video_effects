@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig } from './Renderer';
+import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 
 // WASM module type
 interface PixelocityWASM {
@@ -25,7 +25,8 @@ export class WASMRenderer implements Renderer {
     
     try {
       // Load WASM module
-      const wasm = await import('/wasm/pixelocity_wasm.js');
+      // @ts-ignore - WASM module loaded dynamically
+      const wasm = await import('../../public/wasm/pixelocity_wasm.js');
       await wasm.default();
       this.module = wasm as unknown as PixelocityWASM;
 

@@ -127,7 +127,7 @@ export const BilibiliInput: React.FC<BilibiliInputProps> = ({ onStreamLoaded }) 
             value={customUrl}
             onChange={(e) => setCustomUrl(e.target.value)}
             style={styles.input}
-            onKeyPress={(e) => e.key === 'Enter' && useCustomUrl()}
+            onKeyDown={(e) => { if (e.key === 'Enter' && customUrl.trim()) onStreamLoaded(customUrl); }}
           />
           <button
             onClick={useCustomUrl}

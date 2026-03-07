@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig } from './Renderer';
+import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 
 export class JSRenderer implements Renderer {
   private canvas: HTMLCanvasElement | null = null;
@@ -71,7 +71,7 @@ export class JSRenderer implements Renderer {
     }
   }
 
-  private render = (): void => {
+  private renderFrame = (): void => {
     if (!this.ctx || !this.canvas) return;
 
     // Clear
@@ -107,14 +107,15 @@ export class JSRenderer implements Renderer {
 
   private startRenderLoop(): void {
     const loop = () => {
-      this.render();
+      this.renderFrame();
       this.animationId = requestAnimationFrame(loop);
     };
     loop();
   }
 
   render(): void {
-    // Handled by render loop
+    // Trigger a single render frame (called when needed)
+    this.renderFrame();
   }
 
   destroy(): void {
