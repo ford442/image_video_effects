@@ -9,6 +9,7 @@ import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 import './style.css';
 import RendererToggle from './components/RendererToggle';
+import { CurrentShaderProvider } from './contexts/CurrentShaderContext';
 
 // --- Webcam Fun Shaders ---
 const WEBCAM_FUN_SHADERS = [
@@ -901,6 +902,7 @@ function MainApp() {
         autoChangeEnabled, autoChangeDelay, isMuted, selectedVideo, buildFullState, sendMessage]);
 
     return (
+        <CurrentShaderProvider>
         <div className="App">
             <header className="header">
                 <div className="logo-section">
@@ -1109,6 +1111,7 @@ function MainApp() {
             )}
             <RendererToggle />
         </div>
+        </CurrentShaderProvider>
     );
 }
 
