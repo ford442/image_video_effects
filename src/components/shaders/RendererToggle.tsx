@@ -16,7 +16,9 @@ export const RendererToggle: React.FC<RendererToggleProps> = ({ onToggle, classN
     try {
       if (newValue) {
         // Load WASM renderer
-        const wasm = await import('/wasm/wasm_renderer_test.js');
+        const wasmUrl = '/wasm/wasm_renderer_test.js';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm: any = await import(/* webpackIgnore: true */ wasmUrl);
         await wasm.default();
         console.log('✅ C++ WASM Renderer activated');
       }

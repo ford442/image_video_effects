@@ -76,7 +76,9 @@ export const RendererProvider: React.FC<RendererProviderProps> = ({
     try {
       // Dynamic import of WASM module from public/wasm directory
       // This is where the build script copies the compiled module
-      const module = await import('/wasm/wasm_renderer_test.js');
+      const wasmUrl = '/wasm/wasm_renderer_test.js';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const module: any = await import(/* webpackIgnore: true */ wasmUrl);
       
       // Initialize the module
       if (module.default) {
