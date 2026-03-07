@@ -16,7 +16,7 @@ import { getRendererStatus, RendererStatus } from '../../services/shaderApi';
 
 type RendererType = 'js-webgpu' | 'cpp-wasm';
 
-interface RendererContextValue {
+export interface RendererContextValue {
   // Current state
   currentRenderer: RendererType;
   isSwitching: boolean;
