@@ -51,7 +51,7 @@ fn advect(uv: vec2<f32>, velocity: vec2<f32>, texelSize: vec2<f32>) -> vec2<f32>
 
 // Laplacian for diffusion
 fn laplacian2D(uv: vec2<f32>, texelSize: vec2<f32>, channel: i32) -> vec2<f32> {
-  let center = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  var center = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   let left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0);
   let right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0);
   let up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0);
@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
@@ -134,14 +134,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   velB = velB + wind * (1.0 - viscosityB);
   
   // Mouse interaction - inject velocity
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let toMouse = mouse - uv;
   let mouseDist = length(toMouse);
   let mouseRadius = 0.1;
   
   if (mouseDist < mouseRadius && mouseDist > 0.001) {
     let force = (1.0 - mouseDist / mouseRadius) * 0.1;
-    let dir = normalize(toMouse);
+    var dir = normalize(toMouse);
     velR = velR + dir * force / viscosityR;
     velG = velG + dir * force / viscosityG;
     velB = velB + dir * force / viscosityB;
@@ -157,7 +157,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let dist = length(toRipple);
         if (dist < 0.15 && dist > 0.001) {
           let force = (1.0 - rippleAge / 2.0) * (1.0 - dist / 0.15) * 0.05;
-          let dir = normalize(toRipple);
+          var dir = normalize(toRipple);
           // Different channels respond differently
           velR = velR + dir * force * (1.0 + sin(time * 5.0));
           velG = velG + dir * force * (1.0 + sin(time * 5.0 + 2.094));

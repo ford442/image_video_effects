@@ -48,7 +48,7 @@ fn noise(p: vec2<f32>) -> f32 {
     let c = hash(i + vec2<f32>(0.0, 1.0));
     let d = hash(i + vec2<f32>(1.0, 1.0));
     // Smooth interpolation
-    let uv = f * f * (3.0 - 2.0 * f);
+    var uv = f * f * (3.0 - 2.0 * f);
     return mix(mix(a, b, uv.x), mix(c, d, uv.x), uv.y);
 }
 
@@ -74,7 +74,7 @@ fn fbm(p: vec2<f32>, octaves: i32, persistence: f32) -> f32 {
 // ───────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-    let p = abs(fract(vec3<f32>(hsv.x, hsv.x, hsv.x) + K.xyz) * 6.0 - K.www);
+    var p = abs(fract(vec3<f32>(hsv.x, hsv.x, hsv.x) + K.xyz) * 6.0 - K.www);
     return hsv.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
 
@@ -97,7 +97,7 @@ fn computeCurl(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+    var uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
 

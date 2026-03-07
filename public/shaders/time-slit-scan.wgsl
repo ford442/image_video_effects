@@ -22,7 +22,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = vec2<f32>(u.config.zw);
-    let uv = vec2<f32>(global_id.xy) / dimensions;
+    var uv = vec2<f32>(global_id.xy) / dimensions;
 
     // Parameters
     let drift_speed = u.zoom_params.x; // 0.0 to 0.05
@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time_scale = u.zoom_params.z; // 0.0 to 1.0
     let decay = u.zoom_params.w;      // 0.9 to 1.0 (Trail persistence)
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = dimensions.x / dimensions.y;
 
     // Calculate sampling coordinate for history (drifted)

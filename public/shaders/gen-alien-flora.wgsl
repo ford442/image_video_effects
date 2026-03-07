@@ -160,7 +160,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var t = 0.1; // Start a bit away to avoid self-intersection artifacts near 0
     var mat = 0.0;
     for(var i=0; i<128; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         let d = res.x;
         mat = res.y;
@@ -177,11 +177,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Camera Setup
     // Mouse control: X for rotation (yaw), Y for pitch/height
-    let mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz; // 0..1
 
     // Camera Orbit
     let time = u.config.x * 0.1;
@@ -215,7 +215,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fogColor = vec3<f32>(0.02, 0.05, 0.1); // Dark blueish fog
 
     if (t < 100.0) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
 
         // Lighting

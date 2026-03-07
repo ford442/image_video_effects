@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(coords) / vec2<f32>(dimensions);
+    var uv = vec2<f32>(coords) / vec2<f32>(dimensions);
     let aspect = u.config.z / u.config.w;
 
     // Parameters
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cell_center = grid_uv + (0.5 / grid_density);
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dist_vec = (cell_center - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dist_vec);
 

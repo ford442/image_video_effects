@@ -30,7 +30,7 @@ struct Uniforms {
 // --- (RGB/HSV, hash, mod functions - unchanged) ---
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
   let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-  let p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
+  var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
   let q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
   let d = q.x - min(q.w, q.y);
   let e = 1.0e-10;
@@ -81,7 +81,7 @@ fn applyVortex(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> ve
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
-  let uv = vec2<f32>(gid.xy) / dims;
+  var uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
   
   let foldStrength = u.zoom_params.x * 1.5 + 0.5;

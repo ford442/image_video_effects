@@ -100,13 +100,13 @@ fn sample_layer(uv: vec2<f32>, zoom_center: vec2<f32>, layer_depth: f32) -> vec4
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let zoom_time = u.zoom_config.x;
     let zoom_center = u.zoom_config.yz;
 
     // Camera and parallax
     let cameraZ = if (arrayLength(&extraBuffer) > 4u) { extraBuffer[4] } else { 0.0 };
-    let mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
+    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
     let parallax = (mousePos - vec2<f32>(0.5, 0.5)) * u.zoom_params.z * cameraZ * 0.1;
     let parallax_uv = uv + parallax;
 

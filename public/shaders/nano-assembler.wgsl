@@ -32,14 +32,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let coord = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(coord) / vec2<f32>(dims);
+    var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
     let assembly_progress = u.zoom_params.x; // Assembly
     let particle_density = u.zoom_params.y; // Density
     let scatter_force = u.zoom_params.z; // Disruption
     let rebuild_speed = u.zoom_params.w; // Rebuild Speed
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = u.config.z / u.config.w;
     let time = u.config.y;
 

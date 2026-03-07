@@ -43,14 +43,14 @@ fn sobel(uv: vec2<f32>, step: vec2<f32>) -> f32 {
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<f32>(u.config.zw);
-    let uv = vec2<f32>(global_id.xy) / dims;
+    var uv = vec2<f32>(global_id.xy) / dims;
     let aspect = dims.x / dims.y;
 
     // Parameters
@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colorShift = u.zoom_params.w;         // 0.0 to 1.0
 
     // Mouse interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseActive = u.zoom_config.w; // 1.0 if down, but we can use position always for "mouse-driven"
 
     // Coordinate correction for distance
@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Drag/Warp effect based on distance
     // We warp the UV used for edge detection towards/away from mouse
     let warpAmount = smoothstep(dragRadius, 0.0, dist) * 0.2;
-    let dir = normalize(uv_c - mouse_c);
+    var dir = normalize(uv_c - mouse_c);
     // Safety check for NaN
     let safeDir = select(vec2<f32>(0.0), dir, dist > 0.001);
 

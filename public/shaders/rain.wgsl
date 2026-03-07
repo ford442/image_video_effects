@@ -56,7 +56,7 @@ fn rain_layer(uv: vec2<f32>, seed: f32, speed: f32, density: f32, wind: f32, tim
     // Animate
     let t = time * speed;
     let st = skewed_uv * vec2<f32>(50.0 + seed * 20.0, 5.0 + seed * 2.0); // X is density, Y is streak length
-    let pos = st + vec2<f32>(0.0, t);
+    var pos = st + vec2<f32>(0.0, t);
 
     let cell = floor(pos);
     let f = fract(pos);
@@ -80,7 +80,7 @@ fn rain_layer(uv: vec2<f32>, seed: f32, speed: f32, density: f32, wind: f32, tim
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Parameters

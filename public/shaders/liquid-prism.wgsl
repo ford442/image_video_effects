@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
 
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberration = u.zoom_params.w * 0.05; // RGB Split Amount
 
     // Mouse Interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let diff = uv - mousePos;
     let distVec = diff * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Distortion vector
     // We displace along the vector from mouse (or gradient of wave)
-    let dir = normalize(diff + vec2<f32>(0.0001, 0.0001)); // Avoid div by zero
+    var dir = normalize(diff + vec2<f32>(0.0001, 0.0001)); // Avoid div by zero
     let displace = dir * wave * strength * decay;
 
     // Aberration: Sample RGB at different offsets

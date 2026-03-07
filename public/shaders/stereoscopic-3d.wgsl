@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let maxSep = u.zoom_params.x * 0.05; // Max 5% screen width
@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Remap 0.0-1.0 to -0.2 to 0.2 radians
     let lensRot = (u.zoom_params.w - 0.5) * 0.4;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Separation Logic
     // Mouse X creates a horizontal bias (convergence shift)

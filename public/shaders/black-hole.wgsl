@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lensing_scale = u.zoom_params.w;  // Lensing width factor
 
     // Mouse Interaction (Center of Black Hole)
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Calculate vector from mouse to current pixel (aspect corrected)
     let d_vec_raw = uv - mouse;

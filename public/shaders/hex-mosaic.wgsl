@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Parameters
   let gridScale = mix(10.0, 150.0, u.zoom_params.x);   // Param 1: Tile Size (Frequency)
@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let distB = distance(uvScaled, centerB);
 
   // Find closest center
-  let center = select(centerB, centerA, distA < distB);
+  var center = select(centerB, centerA, distA < distB);
 
   // Map back to UV space (0-1)
   let centerUV = center / gridScale / aspectVec;
@@ -71,7 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   hexColor = mix(vec4<f32>(gray, gray, gray, 1.0), hexColor, 1.0 + satBoost);
 
   // Mouse Interaction
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
   let d = distance(uv * aspectVec, mousePos * aspectVec);
 
   // Calculate mask: 0 = Clear (near mouse), 1 = Hex (far)

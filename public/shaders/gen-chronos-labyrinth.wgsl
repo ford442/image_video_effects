@@ -265,7 +265,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
     var mat = 0.0;
     
     for (var i = 0; i < MAX_STEPS; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         let d = res.x;
         
@@ -287,10 +287,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     let time = u.config.x;
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     
     // Camera setup with mouse orbit
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let angleX = (mouse.x - 0.5) * 6.2832 + time * 0.05; // Slow auto-rotation
     let angleY = (mouse.y - 0.5) * 1.5 + 0.3; // Slight elevation
     let cam_dist = mix(8.0, 15.0, complexity * 0.3);
@@ -317,7 +317,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var depth = MAX_DIST;
     
     if (mat > 0.0 && t < MAX_DIST) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
         depth = t;
         

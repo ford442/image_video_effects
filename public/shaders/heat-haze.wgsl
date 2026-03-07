@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let texel = 1.0 / resolution;
 
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let diffusedHeat = mix(c, avg, diffusion);
 
   // 2. Add Mouse Heat
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
   let aspect = resolution.x / resolution.y;
   let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));

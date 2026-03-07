@@ -32,7 +32,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Mouse Interaction
@@ -46,7 +46,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Calculate aspect corrected vector to center
     let aspect = resolution.x / resolution.y;
-    let p = uv - mousePos;
+    var p = uv - mousePos;
     let p_aspect = vec2<f32>(p.x * aspect, p.y);
 
     let radius = length(p_aspect);

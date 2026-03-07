@@ -48,7 +48,7 @@ fn hslToRgb(h: f32, s: f32, l: f32) -> vec3<f32> {
         } else {
             q = l + s - l * s;
         }
-        let p = 2.0 * l - q;
+        var p = 2.0 * l - q;
         r = hue2rgb(p, q, h + 1.0/3.0);
         g = hue2rgb(p, q, h);
         b = hue2rgb(p, q, h - 1.0/3.0);
@@ -63,7 +63,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
+    var uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
 
     // Params
     let decaySpeed = u.zoom_params.x; // 0.90 to 0.99
@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse Interaction
     // Correct for aspect ratio to make brush circular
     let aspect = f32(dims.x) / f32(dims.y);
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 

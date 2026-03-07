@@ -87,7 +87,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
   // Parameters
@@ -102,8 +102,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   z.x = z.x * aspect;
   
   // Mouse as center point
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  let center = (mouse - vec2<f32>(0.5)) * 2.0 * vec2<f32>(aspect, 1.0);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var center = (mouse - vec2<f32>(0.5)) * 2.0 * vec2<f32>(aspect, 1.0);
   z = z - center;
   
   let r = length(z);

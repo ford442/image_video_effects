@@ -21,7 +21,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let strength = u.zoom_params.x;      // Distortion Strength
@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let softness = u.zoom_params.w;      // Edge Softness
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     let aspect = resolution.x / resolution.y;
@@ -55,7 +55,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let falloff = pow(1.0 - normalizedDist, 1.0 + softness * 4.0);
 
             // Vector pointing away from mouse
-            let dir = normalize(distVec);
+            var dir = normalize(distVec);
 
             // Calculate displacement
             displacement = dir * force * falloff * 0.2; // 0.2 scaling factor to keep it controllable

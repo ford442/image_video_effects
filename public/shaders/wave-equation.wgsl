@@ -52,7 +52,7 @@ fn laplacian5x5(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
 
 // 3x3 Laplacian for faster computation
 fn laplacian3x3(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
-  let center = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+  var center = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
   let left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-1.0, 0.0) * texelSize, 0.0).r;
   let right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(1.0, 0.0) * texelSize, 0.0).r;
   let up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -1.0) * texelSize, 0.0).r;
@@ -101,7 +101,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
@@ -132,7 +132,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   height = height + velocity;
   
   // Inject waves from mouse position
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let mouseDistSq = dot(uv - mouse, uv - mouse);
   let mouseRadius = 0.02;
   if (mouseDistSq < mouseRadius * mouseRadius) {

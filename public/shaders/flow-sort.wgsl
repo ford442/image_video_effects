@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
@@ -77,7 +77,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   flow = vec2<f32>(flow.x * c - flow.y * s, flow.x * s + flow.y * c);
   
   // Mouse interaction - create vortex
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let toMouse = uv - mouse;
   let mouseDist = length(toMouse);
   let mouseRadius = 0.2;

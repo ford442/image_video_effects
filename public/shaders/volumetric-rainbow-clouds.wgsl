@@ -74,9 +74,9 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
-    let mousePos = vec2<f32>(u.zoom_config.y / dims.x, u.zoom_config.z / dims.y);
+    var mousePos = vec2<f32>(u.zoom_config.y / dims.x, u.zoom_config.z / dims.y);
 
     let scale = max(0.001, u.zoom_params.x) * 5.0;
     let flowSpeed = u.zoom_params.y;
@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cameraZ = u.zoom_config.w;
 
     // Perspective transform
-    let center = vec2<f32>(0.5, 0.5);
+    var center = vec2<f32>(0.5, 0.5);
     let delta = uv - center;
     let perspective = 1.0 + cameraZ;
     let perspUV = center + delta / perspective;

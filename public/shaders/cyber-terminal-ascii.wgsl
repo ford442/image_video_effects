@@ -42,7 +42,7 @@ fn sdCircle(p: vec2<f32>, r: f32) -> f32 {
 // Procedural Glyph drawing
 // uv is local 0.0-1.0 within cell
 fn get_character(id: i32, uv: vec2<f32>) -> f32 {
-    let p = uv - 0.5; // Center coords: -0.5 to 0.5
+    var p = uv - 0.5; // Center coords: -0.5 to 0.5
     var d = 1.0;
 
     // 0: Empty / Dot
@@ -103,7 +103,7 @@ fn get_character(id: i32, uv: vec2<f32>) -> f32 {
 
 // Binary digits (0 or 1) for decoder effect
 fn get_binary_char(id: i32, uv: vec2<f32>) -> f32 {
-    let p = uv - 0.5;
+    var p = uv - 0.5;
     var d = 1.0;
 
     if (id % 2 == 0) {
@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let time = u.config.x;
     // Normalize UV
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
 
     // --- Grid Setup ---
     // zoomParam1 controls grid density (10.0 - 200.0)
@@ -147,7 +147,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
 
     // --- Mouse Interaction (Decoder) ---
-    let mouse = u.zoom_config.yz; // Mouse UV
+    var mouse = u.zoom_config.yz; // Mouse UV
 
     // Calculate distance to mouse in UV space, correcting for aspect ratio for circular radius
     let to_mouse = (cell_center_uv - mouse) * vec2<f32>(aspect, 1.0);

@@ -38,12 +38,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     let aspect = dims.x / dims.y;
 
     // Mouse Controls
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let angleVal = (mouse.x - 0.5) * 2.0; // -1 to 1
     let speedVal = mouse.y * 2.0 + 0.5;   // 0.5 to 2.5
 

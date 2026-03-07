@@ -24,7 +24,7 @@ fn optical_flow_impl(gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   // Mouse-influenced search offsets
@@ -44,7 +44,7 @@ fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   let motion = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   // Trigger local smear accumulation on ripple events

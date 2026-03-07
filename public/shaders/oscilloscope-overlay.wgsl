@@ -28,7 +28,7 @@ fn getLuma(color: vec3<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
@@ -40,7 +40,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let waveOpacity = u.zoom_params.z;
     let scanLineAlpha = u.zoom_params.w;
 
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let scanY = mousePos.y; // The Y coordinate we are scanning
 
     // Sample original image

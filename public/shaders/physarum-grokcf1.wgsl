@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ✨ grokcf1 UPGRADE: Sense-and-turn logic
   let sensor_angle = 0.5; // radians
   let sensor_dist = 5.0 / tex_size.x;
-  let dir = vec2<f32>(cos(agent.angle), sin(agent.angle));
+  var dir = vec2<f32>(cos(agent.angle), sin(agent.angle));
   
   let f_pos = agent.pos + dir * sensor_dist;
   let l_pos = agent.pos + vec2<f32>(cos(agent.angle - sensor_angle), sin(agent.angle - sensor_angle)) * sensor_dist;

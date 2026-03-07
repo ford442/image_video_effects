@@ -30,11 +30,11 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Mouse position passed via zoom_config.yz
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   // Parameters
   let lensRadius = max(0.01, u.zoom_params.x * 0.5); // Max radius 0.5
@@ -101,7 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = vec4<f32>(0.0);
   if (inLens > 0.0 && aberration > 0.0) {
       // Radial aberration
-      let dir = normalize(uv - mousePos);
+      var dir = normalize(uv - mousePos);
       let rUV = finalUV - dir * aberration * inLens;
       let bUV = finalUV + dir * aberration * inLens;
 

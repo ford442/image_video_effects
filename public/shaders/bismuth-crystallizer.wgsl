@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color_freq = u.zoom_params.z * 10.0 + 2.0;
     let mix_amt = u.zoom_params.w;
 
-    let mouse = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
+    var mouse = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
     var p = uv * vec2<f32>(aspect, 1.0) - mouse;
 
     // Rotate slightly over time for effect

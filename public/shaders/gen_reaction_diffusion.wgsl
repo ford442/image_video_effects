@@ -15,7 +15,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
 
@@ -46,7 +46,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let laplacian = (n + s + e + w + 0.25 * (ne + nw + se + sw)) - 3.0 * state;
 
     // Mouse injects B chemical
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
     // FIX: Use inverted smoothstep to avoid undefined behavior if edge0 > edge1
     // Original intent: smoothstep(0.1, 0.0, distance) -> 1 near center, 0 far

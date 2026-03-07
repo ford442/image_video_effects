@@ -52,7 +52,7 @@ fn fbm(p: vec2<f32>) -> f32 {
 
 // Polar swirl transform
 fn swirl(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec2<f32> {
-    let dir = uv - center;
+    var dir = uv - center;
     let dist = length(dir);
     let angle = atan2(dir.y, dir.x);
     let swirl_angle = strength * exp(-dist * 3.0) * sin(dist * 10.0 - time);
@@ -63,7 +63,7 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     let sector = floor(hsv.x * 6.0);
     let i = fract(hsv.x * 6.0);
     let f = mix(vec3(1.0, 0.666, 0.333), vec3(0.0, 0.333, 0.666), i);
-    let p = f - vec3(0.666, 0.333, 0.0);
+    var p = f - vec3(0.666, 0.333, 0.0);
     let q = f - vec3(0.333, 0.0, 0.666);
     let t = f;
     let rgb = mix(mix(p, q, fract(sector + 0.0)), mix(q, t, fract(sector + 1.0)), step(0.5, fract(sector + 2.0)));
@@ -73,10 +73,10 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let time = u.config.x;
     let params = u.zoom_params; // x=swirlSpeed, y=layers, z=rainbowSpeed, w=twistInt
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let twist = params.w * (1.0 - depth * 0.5); // Depth reduces twist

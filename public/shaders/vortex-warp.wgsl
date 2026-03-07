@@ -27,18 +27,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let strength = (u.zoom_params.x - 0.5) * 10.0; // Range -5.0 to 5.0
     let radius = u.zoom_params.y * 0.5 + 0.05;     // Range 0.05 to 0.55
     let twist = u.zoom_params.z * 10.0;            // Range 0.0 to 10.0
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Center of effect is mouse position
-    let center = mouse;
+    var center = mouse;
 
     // Vector from center to pixel, corrected for aspect
     let diff = uv - center;

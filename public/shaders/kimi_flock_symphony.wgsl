@@ -72,7 +72,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hue = extraBuffer[base + 4u];
     var energy = extraBuffer[base + 5u];
     
-    let pos = vec2<f32>(px, py);
+    var pos = vec2<f32>(px, py);
     let vel = vec2<f32>(vx, vy);
     let time = u.config.x;
     
@@ -156,7 +156,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(textureDimensions(readTexture));
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     
     // Parameters
@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     // Add center glow at mouse
-    let mouse = u.zoom_config.yz * resolution;
+    var mouse = u.zoom_config.yz * resolution;
     let mouse_dist = distance(vec2<f32>(f32(coord.x), f32(coord.y)), mouse);
     let mouse_glow = smoothstep(100.0, 0.0, mouse_dist) * 0.5;
     color += vec3<f32>(1.0, 0.9, 0.7) * mouse_glow;

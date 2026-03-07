@@ -31,9 +31,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.zoom_config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     // Params
@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let animate = u.zoom_params.w; // If > 0, swirl rotates automatically
 
     let aspect = resolution.x / resolution.y;
-    let center = mouse;
+    var center = mouse;
     if (mouse.x < 0.0) {
         // Fallback if no mouse
         center = vec2<f32>(0.5, 0.5);
@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // We'll just offset the rotation angle slightly for each channel implies recomputing rotation?
     // Easier: just offset the final UV slightly along the radius.
 
-    let dir = normalize(finalUV_center - center);
+    var dir = normalize(finalUV_center - center);
 
     let uvR = finalUV_center + dir * aberration * dist;
     let uvG = finalUV_center;

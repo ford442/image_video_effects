@@ -23,10 +23,10 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
-    let mouse = u.zoom_config.yz; // Normalized mouse pos
+    var mouse = u.zoom_config.yz; // Normalized mouse pos
 
     // Params
     // x: Direction Mode (0.0-0.33: Right, 0.33-0.66: Left, 0.66-1.0: Cross)

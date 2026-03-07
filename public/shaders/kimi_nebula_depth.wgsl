@@ -45,11 +45,11 @@ fn fbm3(p: vec3<f32>, octaves: i32) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 0.05;
     
     // Mouse interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     
     // Ray march setup
@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro.x *= resolution.x / resolution.y;
     
     // Mouse affects ray origin
-    let mousePos = mouse * 2.0 - 1.0;
+    var mousePos = mouse * 2.0 - 1.0;
     mousePos.x *= resolution.x / resolution.y;
     ro.xy += mousePos * 0.3;
     
@@ -70,7 +70,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let steps = 32;
     for (var i = 0; i < steps; i++) {
         let t = 0.1 + f32(i) * 0.05;
-        let pos = ro + rd * t;
+        var pos = ro + rd * t;
         
         // Animated nebula density
         var noisePos = pos + vec3<f32>(0.0, 0.0, time);

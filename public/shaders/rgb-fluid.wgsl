@@ -26,10 +26,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Params
   let flow_speed = u.zoom_params.x * 0.01;  // Speed of advection

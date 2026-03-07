@@ -27,9 +27,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Params
     let strength = u.zoom_params.x; // Force Strength
@@ -56,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // If we want "Repel" (pixels pushed away from mouse), then at pixel P (near mouse), we should see content that WAS at P_closer.
     // So we sample closer to the mouse.
 
-    let dir = normalize(uv - mouse); // Pointing away from mouse
+    var dir = normalize(uv - mouse); // Pointing away from mouse
 
     // Repel: Sample closer to mouse. Offset = -dir * force
     // Attract: Sample further from mouse. Offset = dir * force

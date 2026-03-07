@@ -91,7 +91,7 @@ fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
     
     var q = l + s - l * s;
     if (l < 0.5) { q = l * (1.0 + s); }
-    let p = 2.0 * l - q;
+    var p = 2.0 * l - q;
     
     return vec3<f32>(
         hue2rgb(p, q, h + 1.0/3.0),
@@ -107,7 +107,7 @@ fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     
     // -----------------------------------------------------------------
@@ -123,7 +123,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pulsePower  = u.zoom_config.w * 0.5 + 0.5;            // 0.5 to 1.0
     
     // Dynamic Center point (oscillates over time)
-    let center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
+    var center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
     
     // -----------------------------------------------------------------
     //  2️⃣  Depth-Aware Coordinates

@@ -33,10 +33,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     let strength = u.zoom_params.x * 0.5; // Max distortion strength
     let freq = u.zoom_params.y * 50.0;
@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diffAspect = vec2<f32>(diff.x * aspect, diff.y);
         let dist = length(diffAspect);
 
-        let dir = normalize(diff);
+        var dir = normalize(diff);
 
         // 1. Magnetic Pull (Attracts pixels)
         // Stronger near mouse, falls off

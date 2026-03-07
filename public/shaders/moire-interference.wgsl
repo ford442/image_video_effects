@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let aspect = resolution.x / resolution.y;
 
@@ -35,8 +35,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let complexity = u.zoom_params.w;
 
   // Points
-  let center = vec2<f32>(0.5 * aspect, 0.5);
-  let mouse = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
+  var center = vec2<f32>(0.5 * aspect, 0.5);
+  var mouse = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
   let current_uv = vec2<f32>(uv.x * aspect, uv.y);
 
   // Distances
@@ -64,7 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // We displace along the gradient of the interference, or just radially?
   // Let's displace based on the interference value acting as a height map.
   // Simple hack: displace towards center masked by interference.
-  let dir = normalize(uv - vec2<f32>(0.5));
+  var dir = normalize(uv - vec2<f32>(0.5));
 
   // Or better: Displace based on the derivative of the pattern?
   // Simpler: Use the interference value to offset UVs directly.

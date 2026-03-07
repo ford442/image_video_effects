@@ -29,7 +29,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Normalize UV
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let max_rot = u.zoom_params.z * 12.56; // up to 4PI
     let gap = u.zoom_params.w * 0.4;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Grid Calculations
     // Scale X by aspect to make square cells

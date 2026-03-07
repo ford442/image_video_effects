@@ -233,7 +233,7 @@ fn cLine_vf3_vf3_vf3_vf3_(ro_1 : ptr<function, vec3<f32>>, rd_1 : ptr<function, 
     let d2 = dot(ab, ao);
     let t = clamp((d0 * d1 - d2) / (1.0 - d0 * d0) / length(*b - *a_1), 0.0, 1.0);
     
-    let p = *a_1 + (*b - *a_1) * t - *ro_1;
+    var p = *a_1 + (*b - *a_1) * t - *ro_1;
     return vec3<f32>(length(cross(p, *rd_1)), dot(p, *rd_1), t);
 }
 

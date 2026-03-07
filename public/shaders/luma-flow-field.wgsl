@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(id) / resolution;
+    var uv = vec2<f32>(id) / resolution;
 
     // Sample previous frame for feedback
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;

@@ -30,9 +30,9 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   let waveSpeed = u.zoom_params.x * 5.0 + 1.0;
   let frequency = u.zoom_params.y * 50.0 + 10.0;

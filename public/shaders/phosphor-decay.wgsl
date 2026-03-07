@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -44,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Mouse Beam
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
     let beam = smoothstep(mouseRadius, 0.0, dist) * mouseIntensity;
     let beamColor = vec4<f32>(beam, beam, beam, 1.0); // White beam

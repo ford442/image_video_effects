@@ -29,7 +29,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let aspect = resolution.x / resolution.y;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Params
   let brushSize = mix(0.02, 0.2, u.zoom_params.x);
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let decay = mix(0.0, 0.1, u.zoom_params.z);
   let threshold = u.zoom_params.w;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
 
   // Read previous frame (feedback)

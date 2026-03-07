@@ -258,7 +258,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
     
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
+    var uv = (fragCoord * 2.0 - dims) / dims.y;
     
     // Camera setup
     let time = u.config.x;
@@ -287,7 +287,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let maxDist = 30.0;
     
     for (var i = 0; i < maxSteps; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
@@ -307,7 +307,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(stars);
     
     if (t < maxDist) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
         let v = normalize(ro - p);
         

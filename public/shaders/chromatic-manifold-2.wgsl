@@ -33,7 +33,7 @@ struct Uniforms {
 // ───────────────────────────────────────────────────────────────────────────────
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    let p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
+    var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
     let q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
     let d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
@@ -87,7 +87,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
 
@@ -150,7 +150,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let r = u.ripples[i];
         let t = time - r.z;
         if (t > 0.0 && t < 3.0) {
-            let dir = uv - r.xy;
+            var dir = uv - r.xy;
             let d = length(dir);
             if (d > 0.0001) {
                 let rippleDepth = textureSampleLevel(depthTex, depthSampler, r.xy, 0.0).r;

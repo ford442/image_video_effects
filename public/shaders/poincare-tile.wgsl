@@ -88,7 +88,7 @@ fn atanh(x: f32) -> f32 {
 // Regular polygon tiling parameters
 fn getPolyParams(symmetry: f32) -> vec3<f32> {
   // p-gon, q at each vertex
-  let p = floor(symmetry * 4.0 + 3.0); // 3 to 7
+  var p = floor(symmetry * 4.0 + 3.0); // 3 to 7
   let q = floor(symmetry * 2.0 + 3.0); // 3 to 5
   let angle = PI / p;
   return vec3<f32>(p, q, angle);
@@ -148,7 +148,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
   // Parameters
@@ -177,7 +177,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   
   // Mouse interaction - use as center of transformation
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let mouseZ = (mouse - vec2<f32>(0.5)) * 2.0 * curvature * 0.5;
   
   // Animated translation
@@ -202,7 +202,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Get polygon parameters
   let polyParams = getPolyParams(symmetry);
-  let p = polyParams.x;
+  var p = polyParams.x;
   let q = polyParams.y;
   
   // Map to fundamental domain (tiling)

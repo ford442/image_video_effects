@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   var uv = (vec2<f32>(id.xy) / res - 0.5) * vec2<f32>(res.x / res.y, 1.0) * u.zoom_config.z;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let warpStrength = u.zoom_params.x * 3.0;
   let density = u.zoom_params.y * 3.5 + 0.5;
   let speed = u.zoom_params.z * 2.0;

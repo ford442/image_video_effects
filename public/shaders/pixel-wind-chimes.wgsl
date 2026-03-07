@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -63,13 +63,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // --- Calculate Angle for this strip ---
         // Mouse Interaction
-        let mouse = u.zoom_config.yz;
+        var mouse = u.zoom_config.yz;
         let dist_x = center_x - mouse.x;
 
         // Repelling force from mouse
         // Using a Gaussian-like push
         let push = exp(-pow(dist_x * 5.0, 2.0));
-        let dir = sign(dist_x + 0.001); // Avoid 0
+        var dir = sign(dist_x + 0.001); // Avoid 0
         let mouse_angle = dir * push * sway_amp;
 
         // Constant wind/ambient sway

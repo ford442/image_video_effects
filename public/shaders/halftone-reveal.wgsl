@@ -34,13 +34,13 @@ fn luminance(c: vec3<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   let dotSize = mix(5.0, 50.0, u.zoom_params.x);
   let angle = u.zoom_params.y * 1.57; // 0 to PI/2
   let radius = mix(0.1, 0.4, u.zoom_params.z);
   let mag = mix(1.0, 2.0, u.zoom_params.w);
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // 1. Calculate Halftone
   // We work in screen pixels for consistent dots

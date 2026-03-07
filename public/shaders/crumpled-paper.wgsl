@@ -66,9 +66,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz; // 0..1
 
     // Params
     let scale = mix(2.0, 10.0, u.zoom_params.x); // Crumple frequency

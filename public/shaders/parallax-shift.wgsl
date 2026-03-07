@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(coords) / dims;
+    var uv = vec2<f32>(coords) / dims;
 
     // Parameters
     let depth_strength = (u.zoom_params.x - 0.5) * 0.5; // -0.25 to 0.25

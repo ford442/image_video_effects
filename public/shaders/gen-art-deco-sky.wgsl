@@ -74,7 +74,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let y_offset = time * ascentSpeed * 5.0; // Global Y movement
 
     // We will apply the offset to p.y before mapping
-    let pos = vec3<f32>(p.x, p.y + y_offset, p.z);
+    var pos = vec3<f32>(p.x, p.y + y_offset, p.z);
 
     var res_d = 1000.0;
     var res_mat = 0.0; // 1 = Black Marble, 2 = Gold, 3 = Glass Windows
@@ -195,7 +195,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var t = 0.0;
     var mat = 0.0;
     for(var i=0; i<150; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         let d = res.x;
         mat = res.y;
@@ -224,13 +224,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Parameters
     let goldGlow = u.zoom_params.z; // 0..2
     let fogDensity = u.zoom_params.w; // 0..1
     let time = u.config.x;
-    let mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz; // 0..1
 
     // Camera setup
     // Ascending with the tower (but we handle Y movement in the map function)
@@ -268,7 +268,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let y_offset = time * ascentSpeed * 5.0;
 
     if (t < 200.0) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let world_p = vec3<f32>(p.x, p.y + y_offset, p.z);
         let n = calcNormal(p);
         let v = normalize(ro - p);

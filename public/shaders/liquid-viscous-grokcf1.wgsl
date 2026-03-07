@@ -50,7 +50,7 @@ fn flowPattern(p: vec2<f32>, time: f32) -> vec2<f32> {
 }
 
 fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
-  let uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
+  var uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
   let noiseValue = sin(uv.x * 3.14159) * cos(uv.y * 3.14159);
   let flow = vec2<f32>(fract(noiseValue * 43758.5453), fract(noiseValue * 0.1031)) * 2.0 - 1.0;
   return flow * exp(-length(p) * 0.5);
@@ -63,7 +63,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
   let pixelSize = 1.0 / resolution;
   let center_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

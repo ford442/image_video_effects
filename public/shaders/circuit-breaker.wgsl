@@ -32,7 +32,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
 
     // Normalize coordinates
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let gridScale = mix(20.0, 100.0, u.zoom_params.x); // x: Grid Scale
@@ -41,7 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeThreshold = u.zoom_params.w;              // w: Edge Threshold
 
     // Mouse interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspectRatio = resolution.x / resolution.y;
     let uv_corrected = vec2<f32>(uv.x * aspectRatio, uv.y);
     let mouse_corrected = vec2<f32>(mouse.x * aspectRatio, mouse.y);

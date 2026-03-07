@@ -34,7 +34,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x; // Use global time for rain
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Params
     let speed = mix(0.5, 5.0, u.zoom_params.x);

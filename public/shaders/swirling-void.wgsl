@@ -26,10 +26,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
   let aspect = u.config.z / u.config.w;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Params
   let strength = u.zoom_params.x * 5.0; // Scale up for intensity

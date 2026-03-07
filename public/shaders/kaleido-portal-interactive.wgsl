@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
 
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hardness = mix(0.01, 0.2, u.zoom_params.w);
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz; // Mouse UV (0-1)
+    var mouse = u.zoom_config.yz; // Mouse UV (0-1)
 
     // Calculate distance to mouse (corrected for aspect ratio)
     let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);

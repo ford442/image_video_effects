@@ -72,12 +72,12 @@ fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     let zoom_time = u.zoom_config.x;
     let zoom_center = u.zoom_config.yz;
 
-    let mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
+    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
     let clickIntensity = if (arrayLength(&extraBuffer) > 10u) { extraBuffer[10] } else { 0.0 };
 
     var accumulatedColor = vec3<f32>(0.0);

@@ -24,10 +24,10 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let radius = 0.25;
     let mag_strength = 0.5;
 
@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Simple magnification: pull uv towards mouse
         let distort = (1.0 - x * x) * mag_strength;
 
-        let dir = uv - mouse;
+        var dir = uv - mouse;
         final_uv = mouse + dir * (1.0 - distort);
 
         // Add chromatic aberration at edges of lens

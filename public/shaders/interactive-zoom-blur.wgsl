@@ -24,14 +24,14 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
 
   // Mouse Input
-  let mouse = u.zoom_config.yz; // 0..1
+  var mouse = u.zoom_config.yz; // 0..1
   var center = mouse;
   if (center.x < 0.0) { center = vec2<f32>(0.5, 0.5); }
 
@@ -46,7 +46,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let center_aspect = center * vec2<f32>(aspect, 1.0);
 
   // Direction vector from pixel to mouse center
-  let dir = center_aspect - uv_aspect;
+  var dir = center_aspect - uv_aspect;
   // Normalize direction but keep length for falloff if needed?
   // Standard zoom blur samples along the vector towards the center.
 

@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     let segments_param = u.zoom_params.x;
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let num_segments = 3.0 + floor(segments_param * 12.0);
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     let rel_uv = uv - mouse;
     let aspect_uv = vec2<f32>(rel_uv.x * aspect, rel_uv.y);

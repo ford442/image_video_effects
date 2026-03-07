@@ -54,7 +54,7 @@ fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32) -> vec2<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
 
@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var t = 0.0;
   var mat = 0.0;
   for (var i: i32 = 0; i < 100; i++) {
-    let p = ro + rd * t;
+    var p = ro + rd * t;
     let r = map(p, scale, pulse, time);
     if (r.x < 0.001) { mat = r.y; break; }
     t += r.x * 0.9;
@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var col = vec3<f32>(0.01, 0.005, 0.03);
 
   if (t < 79.0) {
-    let p = ro + rd * t;
+    var p = ro + rd * t;
     if (mat > 1.5) {
       let glow = pow(glowIntensity * 1.5 + sin(time * 8.0) * pulse * 0.3, 2.0);
       col = vec3<f32>(0.4, 0.8, 1.0) * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.6;

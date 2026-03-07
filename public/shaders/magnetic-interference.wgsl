@@ -24,11 +24,11 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Mouse interaction
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
   let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
   let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);
@@ -46,7 +46,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pull = strength * 0.05 / (pow(dist, 2.0) + 0.01);
   let influence = smoothstep(radius, 0.0, dist); // Only affect within radius
 
-  let dir = uv - mouse;
+  var dir = uv - mouse;
   let displacement = dir * pull * influence;
 
   // Chromatic Aberration (R, G, B shift differently)

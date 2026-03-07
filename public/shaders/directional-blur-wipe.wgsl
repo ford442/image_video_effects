@@ -27,8 +27,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Angle: Base + Mouse Y
 
     let angle = angle_param * 6.28 + (mouse.y - 0.5) * 3.14;
-    let dir = vec2<f32>(cos(angle), sin(angle));
+    var dir = vec2<f32>(cos(angle), sin(angle));
     let normal = vec2<f32>(-dir.y, dir.x);
 
     // Split position relative to center, shifted by mouse X

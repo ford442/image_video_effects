@@ -13,9 +13,9 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = (vec2<f32>(global_id.xy) / resolution - 0.5) * 2.5;
+    var uv = (vec2<f32>(global_id.xy) / resolution - 0.5) * 2.5;
     let time = u.config.x * 0.02;
-    let mouse = vec2<f32>(u.zoom_config.y * 2.0 - 1.0, (1.0 - u.zoom_config.z) * 2.0 - 1.0);
+    var mouse = vec2<f32>(u.zoom_config.y * 2.0 - 1.0, (1.0 - u.zoom_config.z) * 2.0 - 1.0);
 
     let aspect = resolution.x / resolution.y;
     var c = vec2<f32>(uv.x * aspect - 0.7, uv.y);

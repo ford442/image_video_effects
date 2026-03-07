@@ -35,7 +35,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
   let aspect = u.config.z / u.config.w;
 
   // Params
@@ -44,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let refract_str = mix(0.0, 0.05, u.zoom_params.z);
   let aberration = u.zoom_params.w * 0.1;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // To handle non-square aspect ratio properly during rotation, we should correct UVs
   var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);

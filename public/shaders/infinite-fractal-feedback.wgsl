@@ -29,9 +29,9 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv_raw = vec2<f32>(global_id.xy);
-    let uv = (uv_raw - resolution * 0.5) / min(resolution.x, resolution.y);
+    var uv = (uv_raw - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
-    let mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
+    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
 
     // Polar coordinates from mouse focal point (centered)
     let focalOffset = uv - (mousePos - vec2<f32>(0.5, 0.5)) * 2.0;

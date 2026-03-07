@@ -25,7 +25,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -35,7 +35,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = u.zoom_params.w;
 
     // Mouse Interaction: Pinch/Pull distortion
-    let p = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    var p = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(p);
     let pull = smoothstep(pullRadius, 0.0, dist) * pullStrength;
 

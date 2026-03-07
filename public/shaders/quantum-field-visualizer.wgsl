@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let coord = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(coord) / vec2<f32>(dims);
+    var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
     // Parameters
     let obs_strength = u.zoom_params.x; // Observation Field
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uncertainty = u.zoom_params.w; // Uncertainty
 
     let time = u.config.y * (0.5 + speed * 2.0);
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = u.config.z / u.config.w;
 
     // Distance to mouse (Observation)

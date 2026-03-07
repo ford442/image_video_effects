@@ -28,11 +28,11 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
 
     // Mouse Interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w; // 1.0 if down
 
     // Params
@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let waveFalloff = 1.0 / (1.0 + dist * 5.0); // Decay with distance
 
     // Displacement
-    let dir = normalize(vec2<f32>(dx, dy));
+    var dir = normalize(vec2<f32>(dx, dy));
     // If very close to center, dir might be NaN, but dist is small so displacement small.
     // Safe normalize:
     let safeDir = select(dir, vec2<f32>(0.0, 0.0), dist < 0.001);

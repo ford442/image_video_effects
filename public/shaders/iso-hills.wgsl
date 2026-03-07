@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let texel = vec2<f32>(1.0) / resolution;
 
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shadowStrength = u.zoom_params.w;
 
     // Mouse Light
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let lightPos = vec3<f32>(mouse * vec2<f32>(aspect, 1.0), 0.2); // Light is slightly above
     let pixelPos = vec3<f32>(uv * vec2<f32>(aspect, 1.0), 0.0);
     let lightDir = normalize(lightPos - pixelPos);

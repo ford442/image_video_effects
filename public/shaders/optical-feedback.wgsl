@@ -32,7 +32,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     // x: Zoom (0.0 - 1.0) -> mapped to 0.8 - 1.2
@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let decay = mix(0.8, 0.99, u.zoom_params.z);
     let shift = u.zoom_params.w * 6.28;
 
-    let center = u.zoom_config.yz;
+    var center = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Current Input

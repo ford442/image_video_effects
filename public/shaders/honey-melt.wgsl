@@ -42,10 +42,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Params
     let gridSize = mix(10.0, 80.0, u.zoom_params.x);
@@ -66,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let centerB = idB * r + h;
     let distA = distance(uvScaled, centerA);
     let distB = distance(uvScaled, centerB);
-    let center = select(centerB, centerA, distA < distB);
+    var center = select(centerB, centerA, distA < distB);
     let localVec = uvScaled - center;
 
     // Grid UV (Center of hex)

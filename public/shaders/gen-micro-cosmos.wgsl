@@ -115,7 +115,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var t = 0.1;
     var mat = 0.0;
     for(var i=0; i<80; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         let d = res.x;
         mat = res.y;
@@ -132,13 +132,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Camera Setup
     let time = u.config.x;
 
     // Mouse Interaction for Camera
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let rotX = (mouse.x - 0.5) * 4.0;
     let rotY = (mouse.y - 0.5) * 2.0;
 
@@ -173,7 +173,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = bgColor;
 
     if (t < 50.0) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
 
         // Lighting vectors

@@ -20,11 +20,11 @@ fn hash(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     
     // Mouse position
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     
     // Aspect correction
@@ -32,13 +32,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var p = uv;
     p.x *= aspect;
     
-    let mousePos = mouse;
+    var mousePos = mouse;
     mousePos.x *= aspect;
     
     // Vector from mouse to pixel
     let delta = p - mousePos;
     let dist = length(delta);
-    let dir = normalize(delta + vec2<f32>(0.0001));
+    var dir = normalize(delta + vec2<f32>(0.0001));
     
     // Parameters from zoom_params
     let warpRadius = u.zoom_params.x * 0.8 + 0.05;    // Affected radius

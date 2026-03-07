@@ -49,12 +49,12 @@ fn fbm3(p: vec3<f32>, octaves: i32) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 0.1;
     let px = vec2<i32>(global_id.xy);
     
     // Mouse interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     
     // Create swirling nebula effect
@@ -62,7 +62,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p.x *= resolution.x / resolution.y;
     
     // Mouse creates stellar wind
-    let mousePos = mouse * 2.0 - 1.0;
+    var mousePos = mouse * 2.0 - 1.0;
     mousePos.x *= resolution.x / resolution.y;
     let dist = length(p - mousePos);
     let windStrength = smoothstep(0.8, 0.0, dist) * (0.5 + mouseDown * 0.5);

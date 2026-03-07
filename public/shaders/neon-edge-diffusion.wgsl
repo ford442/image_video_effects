@@ -24,10 +24,10 @@ struct Uniforms {
 fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
-  let center = textureLoad(readTexture, coord, 0).rgb;
+  var center = textureLoad(readTexture, coord, 0).rgb;
   let left = textureLoad(readTexture, coord + vec2<i32>(-1, 0), 0).rgb;
   let right = textureLoad(readTexture, coord + vec2<i32>(1, 0), 0).rgb;
   let top = textureLoad(readTexture, coord + vec2<i32>(0, -1), 0).rgb;
@@ -50,10 +50,10 @@ fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
 fn diffuse_light_impl(gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let dim = textureDimensions(dataTextureA);
-  let uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
-  let center = textureLoad(dataTextureC, coord, 0).r;
+  var center = textureLoad(dataTextureC, coord, 0).r;
   let left = textureLoad(dataTextureC, coord + vec2<i32>(-1,0), 0).r;
   let right = textureLoad(dataTextureC, coord + vec2<i32>(1,0), 0).r;
   let top = textureLoad(dataTextureC, coord + vec2<i32>(0,-1), 0).r;

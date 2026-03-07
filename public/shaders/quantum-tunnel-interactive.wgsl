@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -37,10 +37,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spiral = u.zoom_params.w;         // 0.0 to 1.0 (Twist)
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
-    let center = mouse;
+    var center = mouse;
 
     // Correct for aspect ratio for distance calculation
     let uvAspect = vec2<f32>(uv.x * aspect, uv.y);

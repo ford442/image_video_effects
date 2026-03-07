@@ -23,7 +23,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     let decay = 0.9 + u.zoom_params.x * 0.09; // 0.9 to 0.99
     let echoX = (u.zoom_params.y - 0.5) * 0.05;

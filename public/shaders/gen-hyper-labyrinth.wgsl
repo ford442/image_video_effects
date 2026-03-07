@@ -86,7 +86,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var t = 0.0;
     var m = 0.0; // 0 = miss
     for (var i = 0; i < 100; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         let d = res.x;
         if (d < 0.001 || t > 50.0) {
@@ -105,10 +105,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // === CAMERA (best of both: main's clean spherical + feature's organic drift) ===
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let angleX = (mouse.x - 0.5) * 6.2832;
     let angleY = (mouse.y - 0.5) * 3.1416;
     let camDist = 8.0;
@@ -138,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec3<f32>(0.0);
 
     if (mat > 0.0) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
 
         // Lighting

@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Params
   let num_layers = mix(2.0, 10.0, u.zoom_params.x);
@@ -40,7 +40,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse interaction for light direction
   // u.zoom_config.yz is mouse position (0-1)
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   // If mouse is at 0,0 (init), center it
   let light_target = select(mouse, vec2<f32>(0.5, 0.5), mouse.x == 0.0 && mouse.y == 0.0);
 

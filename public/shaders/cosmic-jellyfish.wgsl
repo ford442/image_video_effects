@@ -89,7 +89,7 @@ fn hash(n: f32) -> f32 {
 }
 
 fn stars(dir: vec3<f32>) -> f32 {
-    let p = dir * 100.0;
+    var p = dir * 100.0;
     let cell = floor(p);
     let local = fract(p);
     let n = cell.x + cell.y * 57.0 + cell.z * 113.0;
@@ -105,11 +105,11 @@ fn stars(dir: vec3<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
     let time = u.config.x;
 
     // Camera
-    let mouse = u.zoom_config.yz * 2.0 - 1.0;
+    var mouse = u.zoom_config.yz * 2.0 - 1.0;
     var ro = vec3<f32>(0.0, 0.0, -4.0);
     // Rotate camera based on mouse
     var cam_rot = rot(mouse.x * 2.0);
@@ -132,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hit = false;
 
     for(var i=0; i<64; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let d = map(p, time);
 
         // Accumulate glow near the surface
@@ -153,7 +153,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += vec3<f32>(stars(rd));
 
     if (hit) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         // Simple normal calculation
         let e = vec2<f32>(0.01, 0.0);
         let n = normalize(vec3<f32>(

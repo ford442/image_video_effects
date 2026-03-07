@@ -13,9 +13,9 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 0.05;
-    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
 
     // Multiple wave layers
     let wave1 = sin(uv.x * 6.28318 * 5.0 + time) * sin(uv.y * 6.28318 * 5.0 + time * 1.2);

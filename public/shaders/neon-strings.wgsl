@@ -41,10 +41,10 @@ fn sobel(uv: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
   let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
   let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);

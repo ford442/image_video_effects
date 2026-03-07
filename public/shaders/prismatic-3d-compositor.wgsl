@@ -42,9 +42,9 @@ struct Uniforms {
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
-    let mousePos = vec2<f32>(u.zoom_config.y / dims.x, u.zoom_config.z / dims.y);
+    var mousePos = vec2<f32>(u.zoom_config.y / dims.x, u.zoom_config.z / dims.y);
     let cameraZ = u.zoom_config.w;
 
     // Sample Pass 1 results (assume readTexture contains Pass1 color and readDepthTexture contains Pass1 depth)

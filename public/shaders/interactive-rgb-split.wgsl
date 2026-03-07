@@ -24,14 +24,14 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
 
   // Mouse Input
-  let mouse = u.zoom_config.yz; // 0..1
+  var mouse = u.zoom_config.yz; // 0..1
   // If mouse is -1,-1 (off canvas), default to center? Or just no effect?
   // Let's default to center if off canvas
   var center = mouse;
@@ -48,7 +48,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let center_aspect = center * vec2<f32>(aspect, 1.0);
 
   let dist = distance(uv_aspect, center_aspect);
-  let dir = normalize(uv_aspect - center_aspect);
+  var dir = normalize(uv_aspect - center_aspect);
 
   // Calculate aberration amount
   // If falloff is high, effect is localized to mouse.

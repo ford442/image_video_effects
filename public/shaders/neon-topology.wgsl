@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(coords) / dims;
+    var uv = vec2<f32>(coords) / dims;
 
     // Parameters
     let line_density = 10.0 + u.zoom_params.x * 90.0; // 10-100

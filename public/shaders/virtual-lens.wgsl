@@ -26,9 +26,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Params
   let magnification = u.zoom_params.x * 0.8; // 0.0 to 0.8
@@ -50,7 +50,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Bulge Function
   // We want to pull pixels closer to center.
   // Sample coord = uv - (dir * amount)
-  let dir = uv - mouse;
+  var dir = uv - mouse;
 
   // Parabolic falloff for bulge
   // At center (dist=0), deformation is max?

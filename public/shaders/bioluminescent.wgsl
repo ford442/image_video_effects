@@ -126,7 +126,7 @@ fn bio_color(t: f32, mode: f32, pulse: f32) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let texel = 1.0 / resolution;
 
@@ -170,7 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
          // Actually u.config.y IS ripple count.
          if (i < u32(u.config.y)) {
             let ripple = u.ripples[i];
-            let center = ripple.xy;
+            var center = ripple.xy;
             let age = time - ripple.z; // ripple.z is start time? or normalized age?
                                        // Usually in this app ripples are [x, y, startTime, maxRadius]
                                        

@@ -134,7 +134,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
     
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
+    var uv = (fragCoord * 2.0 - dims) / dims.y;
     
     // Camera setup - moving upward through the crystal citadel
     let time = u.config.x * u.zoom_params.y;
@@ -169,7 +169,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let maxDist = 50.0;
     
     for (var i = 0; i < maxSteps; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
@@ -182,7 +182,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(0.05, 0.08, 0.12) * max(0.0, rd.y); // Subtle gradient
     
     if (t < maxDist) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
         let v = normalize(ro - p);
         

@@ -50,7 +50,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // Normalized UV [0, 1]
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
 
     // Center UV [-1, 1] for complex plane, correcting for aspect ratio
     let aspect = resolution.x / resolution.y;
@@ -68,7 +68,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Mouse coords are typically [0, 1] in u.zoom_config.yz (if I recall correct usage from other shaders)
     // Actually standard is u.zoom_config.y = mouseX (0..1), u.zoom_config.z = mouseY (0..1)
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Map mouse to a reasonable range for exponents
     // Center (0.5, 0.5) -> Exponent (1.0, 0.0) implies Identity z^1

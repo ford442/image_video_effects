@@ -26,11 +26,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
 
   // Mouse coordinates (0-1)
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Aspect-corrected distance calculation
   let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);

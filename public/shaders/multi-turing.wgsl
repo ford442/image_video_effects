@@ -67,7 +67,7 @@ fn differenceOfGaussians(uv: vec2<f32>, texelSize: vec2<f32>, scale: f32) -> f32
 
 // Laplacian for reaction-diffusion
 fn laplacian(uv: vec2<f32>, texelSize: vec2<f32>, channel: i32) -> vec2<f32> {
-  let center = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  var center = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   let left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0);
   let right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0);
   let up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0);
@@ -133,7 +133,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
@@ -176,7 +176,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   scale2 = scale2 + (scale1 - scale2) * coupling * 0.05;
   
   // Mouse interaction - seed new patterns
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let mouseDist = length(uv - mouse);
   if (mouseDist < 0.05) {
     let strength = 1.0 - mouseDist / 0.05;

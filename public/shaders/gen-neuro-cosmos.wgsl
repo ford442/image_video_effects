@@ -129,10 +129,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Camera Control
-    let mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz; // 0..1
 
     // Orbit camera
     let yaw = (mouse.x - 0.5) * 6.28;
@@ -163,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Volumetric march
     for(var i=0; i<80; i++) {
-        let p = camPos + rd * t;
+        var p = camPos + rd * t;
         let data = map(p);
         let d = data.x;
 
@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bg_col = vec3<f32>(0.02, 0.0, 0.05); // Deep space
 
     if (hit) {
-        let p = camPos + rd * t;
+        var p = camPos + rd * t;
         let n = calcNormal(p);
 
         let f1 = hit_data.z;

@@ -31,7 +31,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     let aspect = resolution.x / resolution.y;
@@ -51,7 +51,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
             let neighbor = vec2<f32>(f32(x), f32(y));
-            let p = gridIndex + neighbor;
+            var p = gridIndex + neighbor;
 
             // Random point in cell, animated
             var point = hash22(p);
@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             point = 0.5 + 0.5 * sin(time * 0.5 + 6.2831 * point);
 
             // Mouse interaction: push points away or pull them
-            let mousePos = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
+            var mousePos = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
             let worldPoint = (p + point) / density;
             let distToMouse = distance(worldPoint, mousePos);
 
@@ -115,7 +115,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color * (0.8 + 0.2 * shade); // Slight vignetting per cell
 
     // Highlight based on mouse
-    let mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    var mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     if (distance(uv, mousePos) < 0.1) {
         color = color + vec4<f32>(0.1, 0.1, 0.1, 0.0);
     }

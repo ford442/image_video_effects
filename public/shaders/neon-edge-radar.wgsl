@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let neonIntensity = u.zoom_params.w; // 0.0 to 5.0
 
     // Mouse position (y, z in zoom_config)
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     // Aspect ratio correction for distance/angle
     let aspect = resolution.x / resolution.y;
     let aspectCorrection = vec2<f32>(aspect, 1.0);

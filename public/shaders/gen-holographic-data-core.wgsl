@@ -157,7 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cam_z = time * travel_speed * 2.0;
 
     // Mouse interaction for look around
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouse_ang_x = (mouse.x - 0.5) * 3.14;
     let mouse_ang_y = (mouse.y - 0.5) * 3.14;
 
@@ -185,7 +185,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var glow = vec3<f32>(0.0);
 
     for (var i = 0; i < max_steps; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
 
         let d = res.d;

@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let gridSize = max(2.0, u.zoom_params.x * 50.0 + 5.0); // 5 to 55 pixels
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gapSize = u.zoom_params.w; // 0-1 relative to grid
 
     // Mouse determines the "light" or "view" angle
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     // Calculate shift vector: direction from center of screen (0.5, 0.5) to mouse?
     // Or just relative to the pixel?
     // Let's make it a global tilt: Mouse deviation from center determines tilt.

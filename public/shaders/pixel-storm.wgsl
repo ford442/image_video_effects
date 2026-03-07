@@ -34,7 +34,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
 
     // Params
@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let trail = u.zoom_params.z; // 0=no history (clear), 1=full history
     let radiusParam = u.zoom_params.w * 0.5 + 0.05; // Effect radius
 
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     // Read previous state (history of displacement) or just prev image?
@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Wind vector (blows away from mouse)
     var wind = vec2<f32>(0.0);
     if (dist < radiusParam) {
-        let dir = normalize(vec2<f32>(dx, dy));
+        var dir = normalize(vec2<f32>(dx, dy));
         let force = (1.0 - dist/radiusParam); // Stronger at center
         wind = dir * force * strength;
 

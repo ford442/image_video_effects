@@ -42,7 +42,7 @@ fn hslToRgb(h: f32, s: f32, l: f32) -> vec3<f32> {
   } else {
     var q: f32;
     if(l < 0.5) { q = l * (1.0 + s); } else { q = l + s - l * s; }
-    let p = 2.0 * l - q;
+    var p = 2.0 * l - q;
     r = hue2rgb(p, q, h + 1.0/3.0);
     g = hue2rgb(p, q, h);
     b = hue2rgb(p, q, h - 1.0/3.0);
@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Params
   let ink_hue = u.zoom_params.x;
@@ -65,7 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fade_speed = u.zoom_params.z;
   let density = u.zoom_params.w;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let mouse_down = u.zoom_config.w; // 1.0 if down
 
   // 1. Read previous ink state from dataTextureC

@@ -50,7 +50,7 @@ fn snoise(v: vec3<f32>) -> f32 {
     let x3 = x0 - D.yyy;
     
     i = mod289_3(i);
-    let p = permute(permute(permute(
+    var p = permute(permute(permute(
         i.z + vec4<f32>(0.0, i1.z, i2.z, 1.0))
         + i.y + vec4<f32>(0.0, i1.y, i2.y, 1.0))
         + i.x + vec4<f32>(0.0, i1.x, i2.x, 1.0));
@@ -170,9 +170,9 @@ fn hexPattern(uv: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     
     // Parameters
     let filmScale = mix(2.0, 8.0, u.zoom_params.x);      // Film thickness scale
@@ -185,7 +185,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
     
     // Mouse interaction - create ripples/disturbances
-    let mousePos = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
+    var mousePos = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
     let mouseDist = length(p - mousePos);
     let mouseInfluence = exp(-mouseDist * 3.0) * 0.5;
     

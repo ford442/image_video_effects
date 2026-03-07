@@ -94,7 +94,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var t = 0.0;
     var m = -1.0;
     for (var i = 0; i < 100; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         if (res.x < 0.001 || t > 100.0) {
             if (res.x < 0.001) { m = res.y; }
@@ -113,7 +113,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     let time = u.config.x;
 
     // Camera Setup (Isometric / Orthographic)
@@ -124,7 +124,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let target = vec3<f32>(0.0, 0.0, 0.0);
 
     // Mouse interaction: Pan the camera
-    let mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz; // 0..1
     let pan = (mouse - 0.5) * 40.0; // Pan range -20 to 20
 
     // Ray Direction is constant for orthographic
@@ -158,7 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = vec3<f32>(0.05, 0.05, 0.1); // Background / Fog color (Dark Blue)
 
     if (mat > 0.0) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
 
         // Lighting

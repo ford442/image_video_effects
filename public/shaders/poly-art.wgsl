@@ -31,8 +31,8 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let mousePos = u.zoom_config.yz;
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  var mousePos = u.zoom_config.yz;
 
   let cellSize = u.zoom_params.x * 50.0 + 10.0; // Cells across
   let edgeWidth = u.zoom_params.y * 0.1;
@@ -66,9 +66,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
        let point = hash22(i_st + neighbor);
 
        // Animate point?
-       // let p = 0.5 + 0.5 * sin(u.config.x + 6.2831 * point);
+       // var p = 0.5 + 0.5 * sin(u.config.x + 6.2831 * point);
 
-       let pos = neighbor + point * randomness;
+       var pos = neighbor + point * randomness;
        let d = length(pos - f_st);
 
        if (d < m_dist) {
@@ -127,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         for (var x = -1; x <= 1; x++) {
            let neighbor = vec2<f32>(f32(x), f32(y));
            let point = hash22(i_st + neighbor);
-           let pos = neighbor + point * randomness;
+           var pos = neighbor + point * randomness;
 
            if (length(i_st + neighbor - m_id) > 0.1) { // distinct from closest
                let distVec = (m_point + pos) * 0.5 - f_st;
@@ -136,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                // dot( (p2-p1), (uv - (p1+p2)/2) )
                let p1 = m_point;
                let p2 = pos;
-               let center = (p1 + p2) * 0.5;
+               var center = (p1 + p2) * 0.5;
                let diff = p2 - p1;
                let dEdge = dot( f_st - center, normalize(diff) );
                // This is signed distance to the perpendicular bisector.

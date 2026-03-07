@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Params
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aberration = u.zoom_params.z * 0.05;     // 0.0 to 0.05
   let frequency = u.zoom_params.w * 50.0 + 10.0; // 10.0 to 60.0
 
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   // Aspect ratio correction for distance
   let aspect = resolution.x / resolution.y;

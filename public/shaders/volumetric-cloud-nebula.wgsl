@@ -119,7 +119,7 @@ fn raymarchClouds(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32, co
             break;
         }
         
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let density = cloudDensity(p, time, densityScale);
         
         if (density > 0.001) {
@@ -148,7 +148,7 @@ fn starField(uv: vec2<f32>, time: f32) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 0.3;
     
     // Parameters from sliders

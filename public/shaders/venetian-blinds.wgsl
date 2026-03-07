@@ -29,7 +29,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let slatCount = mix(10.0, 100.0, u.zoom_params.x); // Slider 1: Slat Density
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let phaseShift = u.zoom_params.w;                 // Slider 4: Phase
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     // Mouse Y influences openness. Center = neutral.
     // Maps mouse Y (0-1) to influence (-0.5 to 0.5)
     let mouseInfluence = (mouse.y - 0.5);

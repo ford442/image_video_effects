@@ -32,7 +32,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
   let py = extraBuffer[base + 1u];
   var vx = extraBuffer[base + 2u];
   var vy = extraBuffer[base + 3u];
-  let pos = vec2<f32>(px, py);
+  var pos = vec2<f32>(px, py);
   let tex_size = vec2<f32>(textureDimensions(readTexture));
   let brightness = textureSampleLevel(readTexture, u_sampler, pos / tex_size, 0.0).r;
   let time = u.config.x;

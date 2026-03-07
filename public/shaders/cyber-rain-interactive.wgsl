@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     let aspect = dims.x / dims.y;
 
@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let glitch = u.zoom_params.z;
     let trailLen = u.zoom_params.w * 5.0 + 1.0;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let click = u.zoom_config.w;
 
     // Grid for rain columns

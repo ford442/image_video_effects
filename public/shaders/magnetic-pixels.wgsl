@@ -36,8 +36,8 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let mousePos = u.zoom_config.yz;
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  var mousePos = u.zoom_config.yz;
 
   // Defaults
   let strength = max(u.zoom_params.x * 0.5, 0.0);
@@ -68,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let force = pow(1.0 - t, hardness);
 
           // Direction away from mouse
-          let dir = normalize(dVec);
+          var dir = normalize(dVec);
 
           // Add chaos/noise to the force direction or magnitude
           var noise = 0.0;

@@ -26,8 +26,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mousePos = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let effect = smoothstep(radius, radius + falloff + 0.001, dist);
 
     // Direction of shift
-    let dir = normalize(dVec + vec2<f32>(0.001, 0.001)); // prevent NaN
+    var dir = normalize(dVec + vec2<f32>(0.001, 0.001)); // prevent NaN
 
     // Rotate direction if needed
     let s = sin(angle_offset);

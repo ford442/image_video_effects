@@ -26,11 +26,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let texel = vec2<f32>(1.0) / resolution;
 
   // Mouse acts as the light source
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Vector from pixel to mouse (Light Direction)
   // We want the light to come FROM the mouse.

@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let aspect = resolution.x / resolution.y;
 
@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let hue = u.zoom_params.z;
   let focus = u.zoom_params.w;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let dist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   let stabilize = mix(1.0, smoothstep(0.0, 0.5, dist), focus);
 

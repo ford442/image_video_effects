@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
 
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let force = u.zoom_params.z;
     let fray = u.zoom_params.w;
 
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
     // Fiber strips calculations
     let stripIndex = floor(uv.y * density);
@@ -65,7 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let repulsionStr = smoothstep(repulsionRadius, 0.0, dist) * force * 0.2;
 
     if (dist > 0.001) {
-        let dir = normalize(distVec);
+        var dir = normalize(distVec);
         offsetX += dir.x * repulsionStr;
     }
 

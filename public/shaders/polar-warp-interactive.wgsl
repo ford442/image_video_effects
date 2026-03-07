@@ -38,9 +38,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = get_mouse();
+    var mouse = get_mouse();
 
     // Center coordinates on mouse
     // Adjust for aspect to keep circular symmetry

@@ -149,7 +149,7 @@ fn magneticField(p: vec2<f32>, time: f32) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
-    let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+    var uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let time = u.config.x;
 
     let scale = u.zoom_params.x * 3.5 + 0.5;

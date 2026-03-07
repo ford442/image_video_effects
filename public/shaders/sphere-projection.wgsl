@@ -35,7 +35,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     
     // Normalized device coordinates (-1 to 1)
     let min_res = min(resolution.x, resolution.y);
@@ -69,11 +69,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         final_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     } else {
         let t = -b - sqrt(h);
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = normalize(p); // Normal is just p for unit sphere at origin
 
         // Mouse position from zoom_config.yz
-        let mouse = u.zoom_config.yz;
+        var mouse = u.zoom_config.yz;
 
         // Interaction: Mouse X rotates Yaw (Longitude), Mouse Y rotates Pitch (Latitude)
         let mouse_rot_x = (mouse.x - 0.5) * 2.0 * PI; // -PI to PI

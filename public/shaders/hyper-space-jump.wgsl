@@ -32,20 +32,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
     let strength = u.zoom_params.x * 0.1; // Streak length (0.0 to 0.1)
     let samples = 30;
-    let center = u.zoom_config.yz; // Mouse position
+    var center = u.zoom_config.yz; // Mouse position
 
     // Aspect ratio correction for vector calculation
     let aspect = resolution.x / resolution.y;
     let center_aspect = vec2<f32>(center.x * aspect, center.y);
     let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
 
-    let dir = uv_aspect - center_aspect;
+    var dir = uv_aspect - center_aspect;
     let dist = length(dir);
     let dir_norm = normalize(dir);
     // Back to UV space direction

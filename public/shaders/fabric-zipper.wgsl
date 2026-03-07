@@ -40,7 +40,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Parameters
   let teeth_size = mix(20.0, 100.0, u.zoom_params.x); // Frequency of teeth
@@ -48,7 +48,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // let fabric_darkness = u.zoom_params.z;
 
   // Mouse
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = u.config.z / u.config.w;
 
   // Zipper Logic

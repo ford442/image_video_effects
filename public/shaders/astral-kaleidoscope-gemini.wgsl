@@ -96,7 +96,7 @@ fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
     let l = c.z;
     if (s == 0.0) { return vec3<f32>(l); }
     let q = select(l * (1.0 + s), l + s - l * s, l < 0.5);
-    let p = 2.0 * l - q;
+    var p = 2.0 * l - q;
     return vec3<f32>(
         hue2rgb(p, q, h + 1.0/3.0),
         hue2rgb(p, q, h),
@@ -110,7 +110,7 @@ fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     
     // -----------------------------------------------------------------
@@ -125,7 +125,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let centerOsc   = u.zoom_config.z * 0.2;
     let warpPower   = u.zoom_config.w * 0.8; // New GEMINI parameter
 
-    let center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
+    var center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
     
     // -----------------------------------------------------------------
     //  2️⃣  Depth-Aware & Warped Coordinates

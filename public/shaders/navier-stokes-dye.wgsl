@@ -25,7 +25,7 @@ const DT: f32 = 0.016;
 fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let vel = textureLoad(dataTextureC, coord, 0).rg;
-  let pos = vec2<f32>(f32(coord.x), f32(coord.y));
+  var pos = vec2<f32>(f32(coord.x), f32(coord.y));
   let sourcePos = pos - vel * DT;
   let dim = textureDimensions(dataTextureC);
   let res = textureSampleLevel(dataTextureC, u_sampler, sourcePos / vec2<f32>(f32(dim.x), f32(dim.y)), 0.0).rg;
@@ -37,7 +37,7 @@ fn inject_dye_impl(gid: vec3<u32>) {
   let src = textureLoad(readTexture, coord, 0);
   let time = u.config.x;
   let dim = textureDimensions(dataTextureA);
-  let uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   
   // Inject dye and energy at ripple locations
   var added_energy = vec2<f32>(0.0);
@@ -48,7 +48,7 @@ fn inject_dye_impl(gid: vec3<u32>) {
       if (ripple_age > 0.0 && ripple_age < 2.0) {
         let dist_to_ripple = distance(uv, ripple.xy);
         if (dist_to_ripple < 0.05) {
-          let dir = normalize(uv - ripple.xy);
+          var dir = normalize(uv - ripple.xy);
           added_energy += dir * 20.0 * (1.0 - ripple_age / 2.0);
         }
       }
@@ -59,7 +59,7 @@ fn inject_dye_impl(gid: vec3<u32>) {
   let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let dist_to_mouse = distance(uv, mouse_pos);
   if (dist_to_mouse < 0.03) {
-    let dir = normalize(uv - mouse_pos);
+    var dir = normalize(uv - mouse_pos);
     added_energy += dir * 10.0;
   }
   

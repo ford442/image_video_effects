@@ -41,9 +41,9 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv_raw = vec2<f32>(global_id.xy);
-    let uv = (uv_raw - resolution * 0.5) / min(resolution.x, resolution.y);
+    var uv = (uv_raw - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
-    let mousePos = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - resolution * 0.5) / min(resolution.x, resolution.y);
+    var mousePos = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - resolution * 0.5) / min(resolution.x, resolution.y);
 
     // Breathing radius
     let breathe = sin(time * u.zoom_config.w) * 0.3 + 1.0;

@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -41,13 +41,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let brightness = u.zoom_params.z * 2.0;
     let samples = i32(u.zoom_params.w * 30.0 + 5.0); // 5 to 35 samples
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Vector from pixel to mouse
     // We want to blur AWAY from the mouse (zoom blur)
     // So we sample along the line from uv to mouse.
 
-    let dir = mouse - uv; // Direction towards mouse
+    var dir = mouse - uv; // Direction towards mouse
     let dist = length(dir);
 
     var colorSum = vec3<f32>(0.0);

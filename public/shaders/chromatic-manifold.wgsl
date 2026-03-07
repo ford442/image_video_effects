@@ -36,7 +36,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 fn findNearestNeighborsApprox(point: vec4<f32>, texDims: vec2<f32>, k: u32) -> array<vec4<f32>, 4> {
     var neighbors: array<vec4<f32>, 4>;
     // We'll sample a 3x3 neighborhood around the point's uv in screen space to approximate close points
-    let uv = vec2<f32>(point.x, point.y);
+    var uv = vec2<f32>(point.x, point.y);
     let stepSize = 1.0 / texDims;
     var nIndex: u32 = 0u;
     for (var yOff: i32 = -1; yOff <= 1; yOff = yOff + 1) {
@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = u.config.zw;
     let gid = global_id.xy;
 
-    let uv = vec2<f32>(f32(gid.x) / dims.x, f32(gid.y) / dims.y);
+    var uv = vec2<f32>(f32(gid.x) / dims.x, f32(gid.y) / dims.y);
 
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

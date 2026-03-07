@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Params
   let intensity = u.zoom_params.x * 0.5; // Max shift 0.5 screen width
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let noise_speed = u.zoom_params.z * 10.0;
   let rgb_split = u.zoom_params.w * 0.05;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let time = u.config.x;
 
   // Strip calculation

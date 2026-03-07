@@ -26,14 +26,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let coord = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(coord) / vec2<f32>(dims);
+    var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
     let radius = u.zoom_params.x; // Field Radius
     let time_lag = u.zoom_params.y; // Time Lag (mix factor)
     let ghosting = u.zoom_params.z; // Ghosting
     let warp_strength = u.zoom_params.w; // Warp
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = u.config.z / u.config.w;
 
     // Field Calculation

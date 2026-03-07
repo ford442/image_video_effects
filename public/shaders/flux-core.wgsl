@@ -57,15 +57,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let coord = vec2<i32>(global_id.xy);
-    let uv = (vec2<f32>(coord) + 0.5) / vec2<f32>(dims);
+    var uv = (vec2<f32>(coord) + 0.5) / vec2<f32>(dims);
 
     // Uniforms
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = f32(dims.x) / f32(dims.y);
 
     // Adjust UV for aspect ratio for distance calcs
-    let p = uv;
+    var p = uv;
     let m = mouse;
     let p_aspect = vec2<f32>(p.x * aspect, p.y);
     let m_aspect = vec2<f32>(m.x * aspect, m.y);

@@ -35,7 +35,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (x >= GRID_WIDTH || y >= GRID_HEIGHT) { return; }
   let idx = cell_index(x, y);
   let time = u.config.x;
-  let uv = vec2<f32>(f32(x) / f32(GRID_WIDTH), f32(y) / f32(GRID_HEIGHT));
+  var uv = vec2<f32>(f32(x) / f32(GRID_WIDTH), f32(y) / f32(GRID_HEIGHT));
   
   var cell = textureLoad(dataTextureC, vec2<i32>(i32(x), i32(y)), 0);
   

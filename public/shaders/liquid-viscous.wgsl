@@ -61,7 +61,7 @@ fn hash2_to_vec2(h: f32) -> vec2<f32> {
 }
 
 fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
-  let uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
+  var uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
   let noiseValue = sin(uv.x * 3.14159) * cos(uv.y * 3.14159);
   let flow = hash2_to_vec2(fract(noiseValue * 43758.5453));
   return flow * exp(-length(p) * 0.5);
@@ -70,7 +70,7 @@ fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
   let pixelSize = 1.0 / resolution;
   let center_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

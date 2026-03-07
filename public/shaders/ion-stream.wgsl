@@ -23,11 +23,11 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
-    let mouse = u.zoom_config.yz;
-    let center = mouse;
+    var mouse = u.zoom_config.yz;
+    var center = mouse;
     let distVec = (uv - center) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 
@@ -39,7 +39,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Displace away from mouse
     var offset = vec2<f32>(0.0);
     if (dist > 0.001) {
-        let dir = normalize(distVec);
+        var dir = normalize(distVec);
         let influence = strength / (1.0 + pow(dist * falloff, 2.0));
 
         // Add turbulence

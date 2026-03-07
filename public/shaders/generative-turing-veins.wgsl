@@ -56,7 +56,7 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
 
 // Approximate Turing pattern: activator-inhibitor via noise modulation
 fn turing_pattern(uv: vec2<f32>, time: f32, scale: f32, feed: f32) -> vec2<f32> {
-    let p = uv * scale;
+    var p = uv * scale;
     let activator = fbm(p + vec2(time * 0.1, 0.0), 6);
     let inhibitor = fbm(p * 0.5 + vec2(0.0, time * 0.05), 4);
     let reaction = activator * inhibitor * (feed + 0.5);
@@ -68,10 +68,10 @@ fn turing_pattern(uv: vec2<f32>, time: f32, scale: f32, feed: f32) -> vec2<f32> 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let time = u.config.x;
     let params = u.zoom_params; // x=scale1, y=scale2, z=feedRate, w=veinGlow
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let complexity = mix(1.0, 3.0, depth); // Depth increases pattern detail

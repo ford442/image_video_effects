@@ -100,7 +100,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     // Drift fragments away from center based on cell ID
     let drift = (hash31(cellId) - 0.5) * spread;
     var fp = bp;
-    let dir = normalize(cellCenter + vec3<f32>(0.001));
+    var dir = normalize(cellCenter + vec3<f32>(0.001));
     fp -= dir * drift * (1.0 + sin(time * 0.5 + hash31(cellId)*10.0) * 0.2);
 
     // Individual piece rotation
@@ -145,7 +145,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
+    var uv = (fragCoord * 2.0 - dims) / dims.y;
 
     // Camera setup
     var ro = vec3<f32>(0.0, 2.0, 12.0);
@@ -169,7 +169,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var accumGlow = 0.0;
 
     for (var i = 0; i < 120; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
@@ -184,7 +184,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(0.05, 0.1, 0.2) * max(0.0, rd.y);
 
     if (t < 30.0) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
 
         // Lighting

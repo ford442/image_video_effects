@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     var mouse = u.zoom_config.yz;
@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
 
         var charVal = 0.0;
-        let center = vec2<f32>(0.5, 0.5);
+        var center = vec2<f32>(0.5, 0.5);
         let distCenter = length(localUV - center);
 
         // Line width proportional to density? Constant is better for pixel crispness.

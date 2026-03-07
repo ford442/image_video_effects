@@ -93,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
   
@@ -105,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let maxIter = u32(max(10.0, iterParam));
 
   // Animate fractal center
-  let center = vec2<f32>(
+  var center = vec2<f32>(
     sin(time * 0.23) * 0.3,
     cos(time * 0.31) * 0.3
   );

@@ -36,7 +36,7 @@ fn getLuminance(color: vec3<f32>) -> f32 {
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let texelSize = 1.0 / dims;
     let time = u.config.x;
 
@@ -55,7 +55,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cycleSpeed = u.zoom_params.z;
     let pulseSpeed = u.zoom_params.w;
 
-    let mouse = u.zoom_config.yz; // 0-1 normalized
+    var mouse = u.zoom_config.yz; // 0-1 normalized
     let mouseDown = u.zoom_config.w;
 
     // Correct aspect ratio for distance

@@ -38,8 +38,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = get_mouse();
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mouse = get_mouse();
 
     let stretch_width = u.zoom_params.x;
     let decay = u.zoom_params.y * 10.0;

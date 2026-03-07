@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let id = vec2<u32>(gid.xy);
   let coord = vec2<i32>(i32(id.x), i32(id.y));
   let dim = textureDimensions(dataTextureA);
-  let uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  var uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   // 3x3 Sobel gradient sample adapted to dataTextureA

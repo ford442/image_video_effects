@@ -29,7 +29,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 
 // Returns vec3(min_dist, cell_id_hash, edge_dist)
 fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
-    let p = uv * scale;
+    var p = uv * scale;
     let i_st = floor(p);
     let f_st = fract(p);
 
@@ -103,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let uv_corr = vec2<f32>(uv.x * aspect, uv.y);
 
@@ -130,7 +130,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Lighting for gold (fake normal)
     // We can use the gradient of edge_dist as normal approx near edge?
     // Or just simple specular based on mouse
-    let mouse = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
+    var mouse = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
     let to_mouse = normalize(mouse - uv_corr);
     // Cheap normal: points away from edge?
     // Hard to calculate without derivatives or multiple samples.

@@ -32,7 +32,7 @@ struct Uniforms {
 // ---------------------------------------------------------------
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    let p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
+    var p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
     let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
     let d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
@@ -68,7 +68,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 }
 
 fn voronoi(uv: vec2<f32>, scale: f32, time: f32) -> f32 {
-    let p = uv * scale;
+    var p = uv * scale;
     let i = floor(p);
     let f = fract(p);
     
@@ -106,7 +106,7 @@ fn tendrilNoise(uv: vec2<f32>, time: f32, scale: f32) -> f32 {
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     let texel = 1.0 / resolution;
 

@@ -95,7 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse Interaction (Gravity Well)
     let mouseRaw = u.zoom_config.yz;
-    let mouse = (mouseRaw - 0.5) * vec2<f32>(resolution.x / resolution.y, 1.0) + 0.5;
+    var mouse = (mouseRaw - 0.5) * vec2<f32>(resolution.x / resolution.y, 1.0) + 0.5;
 
     let toMouse = mouse - uv;
     let distMouse = length(toMouse);

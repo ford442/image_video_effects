@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let density = u.zoom_params.z * 50.0 + 10.0; // Range 10.0 to 60.0
 
     // Mouse
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Create grid for rain columns
@@ -69,7 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Apply mouse distortion (push pixels away from mouse)
     if (mouseForce > 0.0) {
-        let dir = normalize(uv - mouse); // Direction from mouse to pixel
+        var dir = normalize(uv - mouse); // Direction from mouse to pixel
         // Distort sample UV slightly away from mouse
         sampleUV -= dir * mouseForce * 0.1 * glitchIntensity;
     }

@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let currentTime = u.config.x;
 
     // Accumulate displacement from all active ripples
@@ -93,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
 
         // Direction of displacement (outward)
-        let dir = normalize(uvCorrected - posCorrected);
+        var dir = normalize(uvCorrected - posCorrected);
 
         totalDisplacement = totalDisplacement - dir * amplitude; // Drag pixels *into* the wave or push out?
     }

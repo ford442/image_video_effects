@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let segments = floor(mix(2.0, 12.0, u.zoom_params.x));
@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse Interaction: Mouse position offsets the center of symmetry?
     // Or adds to rotation?
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     if (u.zoom_config.y > 0.0) { // If mouse active
         let m = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
         // Let's make mouse offset the center

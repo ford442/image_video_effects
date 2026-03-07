@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -43,9 +43,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glitchInt = u.zoom_params.w;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
-    let center = vec2<f32>(0.5, 0.5);
+    var center = vec2<f32>(0.5, 0.5);
     // If mouse is at 0,0 (uninitialized often), use center.
     // Actually renderer sends -1 if invalid? Renderer sends mousePosition.x >= 0 check.
     var effectiveCenter = center;

@@ -57,7 +57,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let spikeHeight = u.zoom_params.x * 0.5 + 0.1;
 
     // Use noise to generate spiky perturbations based on direction
-    let dir = normalize(pos);
+    var dir = normalize(pos);
     // (A more complex noise function or mathematical formula for spikes will go here)
     // E.g., combining multiple sine waves or using 3D noise mapped to the sphere surface
     let spikeDisplacement = sin(spikeDensity * pos.x) * sin(spikeDensity * pos.y) * sin(spikeDensity * pos.z) * spikeHeight;
@@ -96,7 +96,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
+    var uv = (fragCoord * 2.0 - dims) / dims.y;
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, 5.0);
@@ -118,7 +118,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var d = 0.0;
     var m = -1.0;
     for (var i = 0; i < 100; i++) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
@@ -129,7 +129,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.05, 0.05, 0.08); // Background color
 
     if (t < 20.0) {
-        let p = ro + rd * t;
+        var p = ro + rd * t;
         let n = calcNormal(p);
 
         // Lighting setup

@@ -27,10 +27,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Mouse position
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Parameters
   // Param 1: Blur Strength (0.0 to 1.0) -> scaled for effect
@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = vec4<f32>(0.0);
 
   // Vector from current pixel to mouse
-  let dir = mouse - uv;
+  var dir = mouse - uv;
 
   // Accumulate
   for (var i = 0; i < samples; i++) {

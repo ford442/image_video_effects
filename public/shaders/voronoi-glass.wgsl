@@ -29,7 +29,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Params
@@ -58,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       point = 0.5 + 0.5 * sin(time + 6.2831 * point);
 
       // Mouse attraction
-      let mousePos = u.zoom_config.yz;
+      var mousePos = u.zoom_config.yz;
       let mouse_corrected = vec2<f32>(mousePos.x * aspect, mousePos.y);
       let cell_world_pos = (i_st + neighbor + point) / cell_density;
       let dist_mouse = distance(cell_world_pos, mouse_corrected);
@@ -66,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       if (dist_mouse < 0.3) {
           // Pull point towards mouse
           let pull = (1.0 - dist_mouse / 0.3) * mouse_attraction;
-          let dir = normalize(mouse_corrected - cell_world_pos);
+          var dir = normalize(mouse_corrected - cell_world_pos);
           // We can't easily move the point outside its grid cell without artifacts in standard voronoi
           // but we can bias the animation phase
           point = mix(point, point + dir * pull, 0.5);

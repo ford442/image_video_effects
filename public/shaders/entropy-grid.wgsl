@@ -27,12 +27,12 @@ fn hash(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
-    let uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
+    var uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
 
     // Correct UV aspect ratio for distance calculations
     let aspect = u.config.z / u.config.w;
     let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);
 
     let dist = distance(uv_corrected, mouse_corrected);

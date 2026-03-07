@@ -15,7 +15,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Map pixel to complex plane
@@ -23,7 +23,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var z = (uv - 0.5) * vec2<f32>(2.5 * aspect, 2.5);
 
     // Mouse controls Julia constant
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let julia_c = (mouse - 0.5) * vec2<f32>(2.0, 2.0);
 
     // Gentle animation

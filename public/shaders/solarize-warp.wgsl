@@ -27,9 +27,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Params
   let twistStrength = (u.zoom_params.x - 0.5) * 20.0;
@@ -56,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Let's do simple non-aspect corrected rotation for swirl, it looks fine usually,
   // or use the aspect-corrected vector for rotation.
 
-  let dir = uv - mouse;
+  var dir = uv - mouse;
   // Aspect correct the direction for rotation logic
   var dir_c = vec2<f32>(dir.x * aspect, dir.y);
 

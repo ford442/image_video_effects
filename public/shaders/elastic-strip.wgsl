@@ -28,8 +28,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let mouse = u.zoom_config.yz; // Mouse UV
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  var mouse = u.zoom_config.yz; // Mouse UV
 
   // Params
   let stripCount = mix(10.0, 100.0, u.zoom_params.x); // Density

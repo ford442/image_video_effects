@@ -15,10 +15,10 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
-    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
     let mouse_down = u.zoom_config.w > 0.0;
 
     // Read previous state (R channel for cell state: 0=dead, 1=alive)

@@ -54,7 +54,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   
-  let dir = vec2<f32>(cos(angle), sin(angle));
+  var dir = vec2<f32>(cos(angle), sin(angle));
   let sensor_pos = vec2<f32>(x, y) + dir * 5.0;
   let front_color = textureSampleLevel(readTexture, u_sampler, sensor_pos / tex_size, 0.0);
   // Simple steer: rotate a bit toward brighter color (red channel by default)

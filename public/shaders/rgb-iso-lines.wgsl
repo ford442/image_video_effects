@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Parameters
   let thickness = mix(0.01, 0.45, u.zoom_params.x);
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let parallax_amt = mix(0.0, 0.1, u.zoom_params.z);
 
   // Mouse
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Parallax Offset based on mouse distance from center
   let offset = (mouse - vec2<f32>(0.5)) * parallax_amt;

@@ -27,9 +27,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Params
     let strength = u.zoom_params.x; // Refraction Strength
@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Simple distortion curve
     let distortion = pow(nd, 2.0) * strength * 0.5 * (1.0 - smoothstep(radius*0.9, radius, dist));
 
-    let dir = normalize(uv - mouse);
+    var dir = normalize(uv - mouse);
     // Magnify: pull sample towards center
     // offset = -dir * distortion
 

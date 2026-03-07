@@ -80,7 +80,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, mouse: vec2<f32>) -> f32 {
   let maxDist = 20.0;
 
   for (var i: i32 = 0; i < 100; i++) {
-    let p = ro + rd * t;
+    var p = ro + rd * t;
     let d = sceneSDF(p, time, mouse);
 
     if (d < 0.001) {
@@ -100,9 +100,9 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, mouse: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Parameters
   let colorSpeed = u.zoom_params.x * 2.0;
@@ -137,7 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += 0.02 * vec3<f32>(0.5, 0.3, 0.8) * (1.0 - length(p) * 0.5);
 
   if (t > 0.0) {
-    let pos = camPos + rd * t;
+    var pos = camPos + rd * t;
     let normal = calcNormal(pos, time, adjustedMouse);
 
     // Lighting

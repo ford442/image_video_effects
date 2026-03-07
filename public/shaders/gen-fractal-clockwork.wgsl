@@ -51,7 +51,7 @@ fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
   q.x = (fract((p.x + spacing * 0.5) / spacing) - 0.5) * spacing;
   q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;
 
-  let dir = ((cell.x + cell.y) % 2.0) * 2.0 - 1.0;
+  var dir = ((cell.x + cell.y) % 2.0) * 2.0 - 1.0;
   let t = time * speed * dir * 2.0;
 
   let d = sdGear(q, 1.8, teeth, 0.25, t);
@@ -62,7 +62,7 @@ fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
   var t = 0.0;
   for (var i: i32 = 0; i < 120; i++) {
-    let p = ro + rd * t;
+    var p = ro + rd * t;
     let d = map(p, gearScale, teeth, speed, time);
     if (d < 0.001 || t > 200.0) { break; }
     t += d * 0.8;
@@ -86,12 +86,12 @@ fn shade(p: vec3<f32>, n: vec3<f32>, ro: vec3<f32>, material: f32) -> vec3<f32> 
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
 
   // Standard UV calculation
-  let uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
+  var uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
 
   let gearScale = u.zoom_params.x * 1.5 + 0.5;
   let teeth = mix(6.0, 24.0, u.zoom_params.y);
@@ -114,7 +114,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var col = vec3<f32>(0.02, 0.01, 0.005);
 
   if (t < 199.0) {
-    let p = ro + rd * t;
+    var p = ro + rd * t;
     let eps = 0.001;
     let n = normalize(vec3<f32>(
       map(p + vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time) - map(p - vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time),
