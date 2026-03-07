@@ -40,11 +40,12 @@ fn noise(p: vec2<f32>) -> f32 {
 }
 
 fn fbm(p: vec2<f32>) -> f32 {
+    var pos = p;
     var value = 0.0;
     var amp = 0.5;
     for (var i: i32 = 0; i < 5; i = i + 1) {
-        value += amp * noise(p);
-        p *= 2.0;
+        value += amp * noise(pos);
+        pos *= 2.0;
         amp *= 0.5;
     }
     return value;

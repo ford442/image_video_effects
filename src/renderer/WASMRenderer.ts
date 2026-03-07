@@ -24,10 +24,23 @@ export class WASMRenderer implements Renderer {
     this.canvas = canvas;
     
     try {
-      // Load WASM module
-      // @ts-ignore - WASM module loaded dynamically
-      const wasm = await import('../../public/wasm/pixelocity_wasm.js');
-      await wasm.default();
+      // Load WASM module from public folder using dynamic script injection
+      const wasmUrl = '/wasm/pixelocity_wasm.js';
+      const script = document.createElement('script');
+      script.src = wasmUrl;
+      script.async = true;
+      
+      await new Promise<void>((resolve, reject) => {
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load WASM script'));
+        document.head.appendChild(script);
+      });
+      
+      // The WASM module is available on window.Module (Emscripten default)
+      const wasm = (window as any).Module;
+      if (!wasm) {
+        throw new Error('WASM module not found on window.Module');
+      }
       this.module = wasm as unknown as PixelocityWASM;
 
       // Initialize renderer
