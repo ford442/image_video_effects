@@ -218,9 +218,8 @@ export const ShaderBrowser: React.FC<{
               <div className="shader-header">
                 <h4>{shader.name}</h4>
                 <div className="shader-stars">
-                  {'★'.repeat(Math.round(shader.stars))}
-                  {'☆'.repeat(5 - Math.round(shader.stars))}
-                  <span className="shader-count">({shader.rating_count})</span>
+                  {'★'.repeat(Math.round(shader.rating || 0))}
+                  {'☆'.repeat(5 - Math.round(shader.rating || 0))}
                 </div>
               </div>
               
@@ -261,13 +260,13 @@ export const ShaderBrowser: React.FC<{
               
               <div className="shader-rate" onClick={e => e.stopPropagation()}>
                 <span>Rate:</span>
-                {[1, 2, 3, 4, 5].map(stars => (
+                {[1, 2, 3, 4, 5].map(star => (
                   <button 
-                    key={stars}
+                    key={star}
                     className="shader-star-btn"
-                    onClick={e => handleRate(shader.id, stars, e)}
+                    onClick={e => handleRate(shader.id, star, e)}
                   >
-                    {stars}★
+                    {star}★
                   </button>
                 ))}
               </div>
