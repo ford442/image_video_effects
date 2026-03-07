@@ -1,27 +1,25 @@
 #!/bin/bash
-set -e
+echo "=== Building Pixelocity WASM Renderer (2026 version) ==="
 
-cd "$(dirname "$0")"
+# Set writable cache location for TOT emscripten
+export EM_CACHE=/tmp/emscripten_cache
 
-# Activate Emscripten if available
-if [ -f "/opt/emsdk/emsdk_env.sh" ]; then
-  source /opt/emsdk/emsdk_env.sh
-elif [ -f "$HOME/emsdk/emsdk_env.sh" ]; then
-  source "$HOME/emsdk/emsdk_env.sh"
-elif [ -f "../../emsdk/emsdk_env.sh" ]; then
-  source "../../emsdk/emsdk_env.sh"
-fi
+# Clean previous build
+rm -rf build
 
-# Set writable cache for TOT emscripten
-export EM_CACHE=${EM_CACHE:-/tmp/emscripten_cache}
+# Configure with the modern emdawnwebgpu port
+emcmake cmake -B build -S . \
+  -DDAWN_ENABLE_WGPU=ON \
+  -DEMSCRIPTEN_USE_PORTS=emdawnwebgpu \
+  -DCMAKE_BUILD_TYPE=Release
 
 # Build
-emcmake cmake -B build -S .
-emmake make -C build
+emmake make -C build -j$(nproc)
 
-# Copy to public
-mkdir -p ../public/wasm
-cp build/pixelocity_wasm.js ../public/wasm/
-cp build/pixelocity_wasm.wasm ../public/wasm/
+# Copy output to public folder
+mkdir -p ../../public/wasm
+cp build/pixelocity_wasm.* ../../public/wasm/
 
-echo "✅ WASM build complete! Output in public/wasm/"
+echo "✅ WASM build complete! Files in public/wasm/"
+echo "   → pixelocity_wasm.js"
+echo "   → pixelocity_wasm.wasm"
