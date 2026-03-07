@@ -7,6 +7,17 @@ cd "$(dirname "$0")"
 # Set writable cache location for TOT emscripten
 export EM_CACHE=/tmp/emscripten_cache
 
+# Source Emscripten
+CANDIDATES=(
+    "/content/build_space/emsdk/emsdk_env.sh"
+    "$REPO_ROOT/emsdk/emsdk_env.sh"
+    "$HOME/emsdk/emsdk_env.sh"
+    "/usr/local/emsdk/emsdk_env.sh"
+)
+for f in "${CANDIDATES[@]}"; do
+    if [ -f "$f" ]; then source "$f"; break; fi
+done
+
 # Clean previous build
 rm -rf build
 
