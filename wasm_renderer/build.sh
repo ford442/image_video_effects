@@ -12,6 +12,9 @@ elif [ -f "../../emsdk/emsdk_env.sh" ]; then
   source "../../emsdk/emsdk_env.sh"
 fi
 
+# Set writable cache for TOT emscripten
+export EM_CACHE=${EM_CACHE:-/tmp/emscripten_cache}
+
 # Build
 emcmake cmake -B build -S .
 emmake make -C build

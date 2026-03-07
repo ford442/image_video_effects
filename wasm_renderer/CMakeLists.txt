@@ -5,12 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(pixelocity_wasm main.cpp)
 
-# Compile options - use the old flag for header includes
+# TOT Emscripten: use -sUSE_WEBGPU=1 for compile (headers only)
 target_compile_options(pixelocity_wasm PRIVATE
   -sUSE_WEBGPU=1
   -O3
 )
 
+# TOT Emscripten: use --use-port=emdawnwebgpu for link
 target_link_options(pixelocity_wasm PRIVATE
   --use-port=emdawnwebgpu
   -sEXPORTED_FUNCTIONS=_main,_initWasmRenderer,_toggleRenderer,_updateVideoFrame,_updateAudioData,_updateMousePos
