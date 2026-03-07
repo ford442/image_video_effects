@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { shaderApi, ShaderMeta, CategoryGroup } from '../services/shaderApi';
+import { 
+  listShaders, 
+  getShader, 
+  uploadShader, 
+  updateShaderMetadata,
+  ShaderMetadata 
+} from '../services/shaderApi';
 import './ShaderBrowser.css';
+
+// Local type definitions
+interface ShaderMeta extends ShaderMetadata {}
+
+interface CategoryGroup {
+  label: string;
+  description: string;
+  subcategories: string[];
+}
 
 // Category hierarchy for UI organization
 const CATEGORY_GROUPS: Record<string, CategoryGroup> = {
@@ -76,11 +91,7 @@ export const ShaderBrowser: React.FC<{
   const loadShaders = async () => {
     setLoading(true);
     try {
-      const data = await shaderApi.list({ 
-        category, 
-        sortBy: 'rating',
-        minStars: 0 
-      });
+      const data = await listShaders();
       setShaders(data);
     } catch (err) {
       console.error('Failed to load shaders:', err);
@@ -91,8 +102,14 @@ export const ShaderBrowser: React.FC<{
   const handleRate = async (shaderId: string, stars: number, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const updated = await shaderApi.rate(shaderId, stars);
-      setShaders(prev => prev.map(s => s.id === shaderId ? updated : s));
+      // Note: Rating functionality needs backend support
+      await updateShaderMetadata(shaderId, { rating: stars });
+      // Fetch updated list to get the new rating
+      const newData = await listShaders();
+      const updatedShader = newData.find(s => s.id === shaderId);
+      if (updatedShader) {
+        setShaders(prev => prev.map(s => s.id === shaderId ? updatedShader : s));
+      }
     } catch (err) {
       console.error('Rating failed:', err);
     }
@@ -106,11 +123,16 @@ export const ShaderBrowser: React.FC<{
 
   const saveEdit = async (shaderId: string) => {
     try {
-      const updated = await shaderApi.update(shaderId, { 
+      await updateShaderMetadata(shaderId, { 
         description: editDesc, 
         tags: editTags.split(',').map(t => t.trim()).filter(Boolean)
       });
-      setShaders(prev => prev.map(s => s.id === shaderId ? updated : s));
+      // Fetch updated list to get the new metadata
+      const newData = await listShaders();
+      const updatedShader = newData.find(s => s.id === shaderId);
+      if (updatedShader) {
+        setShaders(prev => prev.map(s => s.id === shaderId ? updatedShader : s));
+      }
       setEditingId(null);
     } catch (err) {
       console.error('Update failed:', err);
@@ -119,7 +141,7 @@ export const ShaderBrowser: React.FC<{
 
   const handleSelect = async (shader: ShaderMeta) => {
     try {
-      const { code } = await shaderApi.getCode(shader.id);
+      const { content: code } = await getShader(shader.id);
       onSelect(shader, code);
     } catch (err) {
       console.error('Failed to load shader code:', err);
@@ -133,11 +155,13 @@ export const ShaderBrowser: React.FC<{
     const desc = prompt('Description:') || '';
     const tags = prompt('Tags (comma-separated):') || '';
     try {
-      await shaderApi.upload(file, { 
-        name, 
-        description: desc, 
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean)
-      });
+      await uploadShader(
+        file,
+        name,
+        'user', // author
+        desc,
+        tags
+      );
       loadShaders();
     } catch (err) {
       alert('Upload failed: ' + err);
