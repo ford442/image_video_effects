@@ -7,24 +7,14 @@ cd "$(dirname "$0")"
 # Set writable cache location for TOT emscripten
 export EM_CACHE=/tmp/emscripten_cache
 
-# Source Emscripten
-CANDIDATES=(
-    "/content/build_space/emsdk/emsdk_env.sh"
-    "$REPO_ROOT/emsdk/emsdk_env.sh"
-    "$HOME/emsdk/emsdk_env.sh"
-    "/usr/local/emsdk/emsdk_env.sh"
-)
-for f in "${CANDIDATES[@]}"; do
-    if [ -f "$f" ]; then source "$f"; break; fi
-done
+# Source Emscripten from workspace (newer version with --use-port support)
+source /workspaces/codepit/emsdk/emsdk_env.sh
 
 # Clean previous build
 rm -rf build
 
 # Configure with the modern emdawnwebgpu port
 emcmake cmake -B build -S . \
-  -DDAWN_ENABLE_WGPU=ON \
-  -DEMSCRIPTEN_USE_PORTS=emdawnwebgpu \
   -DCMAKE_BUILD_TYPE=Release
 
 # Build

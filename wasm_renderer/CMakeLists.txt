@@ -5,10 +5,10 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(pixelocity_wasm main.cpp)
 
-# Use Emscripten's built-in WebGPU support (works with Emscripten 3.1.50+)
-target_compile_options(pixelocity_wasm PRIVATE -sUSE_WEBGPU=1)
+# Use emdawnwebgpu port with modern Emscripten (5.0+)
+target_compile_options(pixelocity_wasm PRIVATE --use-port=emdawnwebgpu)
 
-target_link_options(pixelocity_wasm PRIVATE -sUSE_WEBGPU=1)
+target_link_options(pixelocity_wasm PRIVATE --use-port=emdawnwebgpu)
 
 set_target_properties(pixelocity_wasm PROPERTIES 
   SUFFIX ".js"
