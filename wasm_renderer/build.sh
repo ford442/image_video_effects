@@ -1,6 +1,17 @@
 #!/bin/bash
 echo "=== Building Pixelocity WASM Renderer (2026 version) ==="
 
+# Source Emscripten
+CANDIDATES=(
+    "/content/build_space/emsdk/emsdk_env.sh"
+    "$REPO_ROOT/emsdk/emsdk_env.sh"
+    "$HOME/emsdk/emsdk_env.sh"
+    "/usr/local/emsdk/emsdk_env.sh"
+)
+for f in "${CANDIDATES[@]}"; do
+    if [ -f "$f" ]; then source "$f"; break; fi
+done
+
 # Change to script directory
 cd "$(dirname "$0")"
 
