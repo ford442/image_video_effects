@@ -51,6 +51,7 @@ export interface RendererStatus {
  * Convert GLSL shader code to WGSL using official TintWASM
  */
 export async function glslToWgsl(glsl: string, stage: 'fragment' | 'vertex' = 'fragment'): Promise<string> {
+  // @ts-ignore CDN module has no type declarations
   const { init } = await import('https://cdn.jsdelivr.net/npm/@webgpu/tint-wasm@latest/dist/tint.js');
   const tint = await init();
   const result = await tint.convertGLSLToWGSL(glsl, stage);
@@ -65,7 +66,8 @@ export const convertGlslToWgsl = glslToWgsl;
  * Check if TintWASM is available
  */
 export function isTintAvailable(): boolean {
-  return tint !== null;
+  // Tint availability is determined by whether WebAssembly is supported
+  return typeof WebAssembly !== 'undefined';
 }
 
 // --- Shadertoy Helpers ---
@@ -228,7 +230,7 @@ export async function updateShaderMetadata(
   if (updates.name) form.append('name', updates.name);
   if (updates.description) form.append('description', updates.description);
   if (updates.tags) form.append('tags', Array.isArray(updates.tags) ? updates.tags.join(',') : updates.tags);
-  if (updates.rating !== undefined) form.append('rating', updates.rating.toString());
+  if (updates.rating !== undefined && updates.rating !== null) form.append('rating', updates.rating.toString());
   
   const res = await fetch(`${API_BASE}/api/shaders/${shaderId}`, {
     method: 'PUT',
