@@ -5,23 +5,24 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(pixelocity_wasm main.cpp)
 
-# TOT Emscripten: use -sUSE_WEBGPU=1 for compile (headers only)
-target_compile_options(pixelocity_wasm PRIVATE
-  -sUSE_WEBGPU=1
-  -O3
-)
+# Modern emdawnwebgpu port — NO -sUSE_WEBGPU=1
+# compile flags are minimal; the link portion handles the port
+# (O3 automatically applied by CMake generator if desired)
+#
+# NOTE: the build cache must be cleared if you ever switched from the
+# old template since CMake preserves -sUSE_WEBGPU=1 in the cache.
 
-# TOT Emscripten: use --use-port=emdawnwebgpu for link
-target_link_options(pixelocity_wasm PRIVATE
-  --use-port=emdawnwebgpu
-  -sEXPORTED_FUNCTIONS=_main,_initWasmRenderer,_toggleRenderer,_updateVideoFrame,_updateAudioData,_updateMousePos
-  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap
-  -sALLOW_MEMORY_GROWTH=1
-  -sMAX_WEBGL_VERSION=2
-  -sMODULARIZE=1
-  -sEXPORT_NAME="PixelocityWASM"
-  -sERROR_ON_UNDEFINED_SYMBOLS=0
-  -O3
+# compile options left blank as we only need the port at link time
+#target_compile_options(pixelocity_wasm PRIVATE
+#  -O3
+#)
+
+# link against the emdawnwebgpu port and expose necessary exports
+target_link_libraries(pixelocity_wasm PRIVATE emdawnwebgpu)
+
+set_target_properties(pixelocity_wasm PROPERTIES 
+  SUFFIX ".js"
+  LINK_FLAGS "-sEXPORTED_FUNCTIONS=_main,_initWasmRenderer -sEXPORTED_RUNTIME_METHODS=ccall,cwrap -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1"
 )
 
 set_target_properties(pixelocity_wasm PROPERTIES SUFFIX ".js")
