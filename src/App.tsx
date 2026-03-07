@@ -8,6 +8,7 @@ import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 import './style.css';
+import RendererToggle from './components/RendererToggle';
 
 // --- Webcam Fun Shaders ---
 const WEBCAM_FUN_SHADERS = [
@@ -1106,6 +1107,7 @@ function MainApp() {
                     </div>
                 </div>
             )}
+            <RendererToggle />
         </div>
     );
 }

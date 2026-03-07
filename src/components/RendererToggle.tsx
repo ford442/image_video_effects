@@ -1,133 +1,73 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 
-interface RendererToggleProps {
-  isWASM: boolean;
-  onToggle: (useWasm: boolean) => Promise<void>;
-  isLoading: boolean;
-  jsFps?: number;
-  wasmFps?: number;
-}
+export default function RendererToggle() {
+  const [useWasm, setUseWasm] = useState(false);
+  const [wasmModule, setWasmModule] = useState<any>(null);
+  const [currentWgsl, setCurrentWgsl] = useState(''); // ← We'll wire this in next step
 
-export const RendererToggle: React.FC<RendererToggleProps> = ({
-  isWASM,
-  onToggle,
-  isLoading,
-  jsFps = 0,
-  wasmFps = 0,
-}) => {
-  const [isSwitching, setIsSwitching] = useState(false);
-
-  const handleToggle = useCallback(async () => {
-    if (isLoading || isSwitching) return;
-    
-    setIsSwitching(true);
-    try {
-      await onToggle(!isWASM);
-    } finally {
-      setIsSwitching(false);
+  // Load WASM module when toggle is turned ON
+  useEffect(() => {
+    if (useWasm && !wasmModule) {
+      // Dynamic import from public folder
+      const script = document.createElement('script');
+      script.src = '/wasm/pixelocity_wasm.js';
+      script.async = true;
+      script.onload = () => {
+        // The WASM module should be available on window.Module or similar
+        // For emscripten-generated JS, it creates a global Module
+        if ((window as any).Module) {
+          setWasmModule((window as any).Module);
+          console.log('🚀 C++ WASM Renderer loaded');
+        }
+      };
+      script.onerror = (err) => {
+        console.error('Failed to load WASM module:', err);
+      };
+      document.body.appendChild(script);
+      
+      return () => {
+        document.body.removeChild(script);
+      };
     }
-  }, [isWASM, onToggle, isLoading, isSwitching]);
+  }, [useWasm]);
 
-  const disabled = isLoading || isSwitching;
+  const toggle = async () => {
+    const newState = !useWasm;
+    setUseWasm(newState);
+
+    if (newState && wasmModule && currentWgsl) {
+      // Call the exported C function via ccall
+      if (wasmModule.ccall) {
+        wasmModule.ccall('initWasmRenderer', null, ['string'], [currentWgsl]);
+        console.log('⚡ Switched to C++ WASM Renderer');
+      }
+    } else if (!newState) {
+      console.log('🔄 Switched back to JS WebGPU');
+    }
+  };
 
   return (
-    <div style={styles.container}>
-      {/* JS Side */}
-      <div style={styles.side}>
-        <span style={styles.label}>JS WebGPU</span>
-        <span style={styles.fps}>{jsFps > 0 ? `${jsFps} FPS` : '--'}</span>
-      </div>
+    <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 bg-[#0f172a] border border-[#334155] rounded-2xl px-5 py-3 shadow-2xl">
+      <span className="text-xs text-white/70 font-mono">RENDERER</span>
+      
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          checked={useWasm}
+          onChange={toggle}
+          className="sr-only peer"
+        />
+        <div className="w-11 h-6 bg-[#1e2937] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#e94560] rounded-full peer peer-checked:bg-[#e94560]"></div>
+        <div className="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-5"></div>
+      </label>
 
-      {/* Toggle Switch */}
-      <button
-        onClick={handleToggle}
-        disabled={disabled}
-        style={{
-          ...styles.toggle,
-          background: isWASM 
-            ? 'linear-gradient(135deg, #00c853, #64dd17)' 
-            : 'linear-gradient(135deg, #2979ff, #448aff)',
-          opacity: disabled ? 0.6 : 1,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-        }}
-      >
-        <div style={{
-          ...styles.knob,
-          transform: isWASM ? 'translateX(28px)' : 'translateX(0)',
-        }} />
-      </button>
-
-      {/* WASM Side */}
-      <div style={styles.side}>
-        <span style={styles.label}>C++ WASM</span>
-        <span style={styles.fps}>{wasmFps > 0 ? `${wasmFps} FPS` : '--'}</span>
-      </div>
-
-      {/* Status Badge */}
-      <div style={{
-        ...styles.badge,
-        background: isWASM ? 'rgba(0, 200, 83, 0.2)' : 'rgba(41, 121, 255, 0.2)',
-        color: isWASM ? '#00c853' : '#448aff',
-      }}>
-        {disabled ? '⏳ Switching...' : isWASM ? '⚡ WASM Active' : '🔄 JS Active'}
-      </div>
+      <span className="text-sm font-medium min-w-[110px]">
+        {useWasm ? (
+          <span className="text-[#e94560]">C++ WASM ⚡</span>
+        ) : (
+          <span className="text-white/80">JS WebGPU</span>
+        )}
+      </span>
     </div>
   );
-};
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '8px 16px',
-    background: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-  },
-  side: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    minWidth: '80px',
-  },
-  label: {
-    fontSize: '11px',
-    fontWeight: 600,
-    color: '#8b8ba7',
-    textTransform: 'uppercase',
-  },
-  fps: {
-    fontSize: '13px',
-    fontWeight: 700,
-    color: '#fff',
-    fontFamily: 'monospace',
-  },
-  toggle: {
-    width: '56px',
-    height: '28px',
-    borderRadius: '14px',
-    border: 'none',
-    padding: '2px',
-    position: 'relative',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-  },
-  knob: {
-    width: '24px',
-    height: '24px',
-    borderRadius: '50%',
-    background: '#fff',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-    transition: 'transform 0.2s ease',
-  },
-  badge: {
-    padding: '4px 10px',
-    borderRadius: '12px',
-    fontSize: '11px',
-    fontWeight: 600,
-    marginLeft: '8px',
-  },
-};
-
-export default RendererToggle;
+}
