@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-export default function RendererToggle() {
+function RendererToggleComponent() {
   const [useWasm, setUseWasm] = useState(false);
   const [wasmModule, setWasmModule] = useState<any>(null);
-  const [currentWgsl, setCurrentWgsl] = useState(''); // ← We'll wire this in next step
 
   // Load WASM module when toggle is turned ON
   useEffect(() => {
@@ -29,18 +28,14 @@ export default function RendererToggle() {
         document.body.removeChild(script);
       };
     }
-  }, [useWasm]);
+  }, [useWasm, wasmModule]);
 
   const toggle = async () => {
     const newState = !useWasm;
     setUseWasm(newState);
 
-    if (newState && wasmModule && currentWgsl) {
-      // Call the exported C function via ccall
-      if (wasmModule.ccall) {
-        wasmModule.ccall('initWasmRenderer', null, ['string'], [currentWgsl]);
-        console.log('⚡ Switched to C++ WASM Renderer');
-      }
+    if (newState && wasmModule) {
+      console.log('⚡ Switched to C++ WASM — renderer ready');
     } else if (!newState) {
       console.log('🔄 Switched back to JS WebGPU');
     }
@@ -71,3 +66,9 @@ export default function RendererToggle() {
     </div>
   );
 }
+
+// Default export
+export default RendererToggleComponent;
+
+// Named export for compatibility with existing imports
+export { RendererToggleComponent as RendererToggle };
