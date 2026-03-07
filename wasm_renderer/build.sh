@@ -8,6 +8,8 @@ if [ -f "/opt/emsdk/emsdk_env.sh" ]; then
   source /opt/emsdk/emsdk_env.sh
 elif [ -f "$HOME/emsdk/emsdk_env.sh" ]; then
   source "$HOME/emsdk/emsdk_env.sh"
+elif [ -f "../../emsdk/emsdk_env.sh" ]; then
+  source "$HOME/emsdk/emsdk_env.sh"
 fi
 
 # Build
