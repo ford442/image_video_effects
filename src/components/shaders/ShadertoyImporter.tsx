@@ -1,23 +1,42 @@
 import React, { useState } from 'react';
-import { importFromShadertoy } from '../../services/shaderApi';
+import { importFromShadertoy, ShaderImportResult } from '../../services/shaderApi';
 
 interface ShadertoyImporterProps {
+  /** Called with full import result when import succeeds */
+  onImport?: (result: ShaderImportResult) => void;
+  /** Deprecated: Use onImport instead. Called with just the shader ID. */
   onImported?: (id: string) => void;
+  /** Called when import fails */
+  onError?: (error: Error) => void;
   className?: string;
 }
 
-export const ShadertoyImporter: React.FC<ShadertoyImporterProps> = ({ onImported, className = '' }) => {
+export const ShadertoyImporter: React.FC<ShadertoyImporterProps> = ({ 
+  onImport, 
+  onImported,
+  onError,
+  className = '' 
+}) => {
   const [shaderId, setShaderId] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [status, setStatus] = useState('');
 
   const handleImport = async () => {
     setStatus('Importing from Shadertoy...');
-    const result = await importFromShadertoy(shaderId, apiKey);
-    if (result.success) {
-      setStatus(`✅ Imported ${result.name}`);
-      onImported?.(result.id);
-    } else setStatus('❌ Failed – check ID/key');
+    try {
+      const result = await importFromShadertoy(shaderId, apiKey);
+      if (result.success) {
+        setStatus(`✅ Imported ${result.name}`);
+        onImport?.(result);
+        onImported?.(result.id); // Backward compatibility
+      } else {
+        setStatus('❌ Failed – check ID/key');
+      }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setStatus(`❌ Error: ${error.message}`);
+      onError?.(error);
+    }
   };
 
   return (
