@@ -84,9 +84,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (color_shift > 0.0) {
       let shift_amt = color_shift * 0.01;
       // Simple RGB rotation
-      let r = new_color.r;
-      let g = new_color.g;
-      let b = new_color.b;
+      var r = new_color.r;
+      var g = new_color.g;
+      var b = new_color.b;
       new_color.r = r * cos(shift_amt) - g * sin(shift_amt) + 0.001; // prevent 0
       new_color.g = g * cos(shift_amt) - b * sin(shift_amt) + 0.001;
       new_color.b = b * cos(shift_amt) - r * sin(shift_amt) + 0.001;

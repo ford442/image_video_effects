@@ -29,7 +29,7 @@ fn noise(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
   let a = hash(i + vec2<f32>(0.0, 0.0));
-  let b = hash(i + vec2<f32>(1.0, 0.0));
+  var b = hash(i + vec2<f32>(1.0, 0.0));
   let c = hash(i + vec2<f32>(0.0, 1.0));
   let d = hash(i + vec2<f32>(1.0, 1.0));
   let u = f * f * (3.0 - 2.0 * f);
@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dispersion = warp * (0.6 + chroma) * 0.5;
   let r = textureSampleLevel(readTexture, u_sampler, uv + warp + dispersion, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, uv + warp, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, uv + warp - dispersion, 0.0).b;
+  var b = textureSampleLevel(readTexture, u_sampler, uv + warp - dispersion, 0.0).b;
 
   var color = vec3<f32>(r, g, b);
   color += vec3<f32>(0.05, 0.02, 0.01) * shimmer;

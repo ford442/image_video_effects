@@ -52,9 +52,9 @@ fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
   q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;
 
   var dir = ((cell.x + cell.y) % 2.0) * 2.0 - 1.0;
-  let t = time * speed * dir * 2.0;
+  var t = time * speed * dir * 2.0;
 
-  let d = sdGear(q, 1.8, teeth, 0.25, t);
+  var d = sdGear(q, 1.8, teeth, 0.25, t);
   let floorD = p.y + 1.2;
   return min(d, floorD);
 }
@@ -63,7 +63,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, gearScale: f32, teeth: f32, speed: f32
   var t = 0.0;
   for (var i: i32 = 0; i < 120; i++) {
     var p = ro + rd * t;
-    let d = map(p, gearScale, teeth, speed, time);
+    var d = map(p, gearScale, teeth, speed, time);
     if (d < 0.001 || t > 200.0) { break; }
     t += d * 0.8;
   }
@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let up = cross(fwd, right);
   let rd = normalize(fwd + uv.x * right + uv.y * up);
 
-  let t = raymarch(ro, rd, gearScale, teeth, speed, time);
+  var t = raymarch(ro, rd, gearScale, teeth, speed, time);
   var col = vec3<f32>(0.02, 0.01, 0.005);
 
   if (t < 199.0) {

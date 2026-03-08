@@ -21,11 +21,11 @@ struct Uniforms {
 };
 
 fn optical_flow_impl(gid: vec3<u32>) {
-  let coord = vec2<u32>(gid.xy);
-  let cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
-  let dim = textureDimensions(readTexture);
+  var coord = vec2<u32>(gid.xy);
+  var cur = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
+  var dim = textureDimensions(readTexture);
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
-  let time = u.config.x;
+  var time = u.config.x;
   
   // Mouse-influenced search offsets
   let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -41,11 +41,11 @@ fn optical_flow_impl(gid: vec3<u32>) {
 
 @compute @workgroup_size(8, 8, 1)
 fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let coord = vec2<u32>(gid.xy);
-  let motion = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
-  let dim = textureDimensions(readTexture);
+  var coord = vec2<u32>(gid.xy);
+  var motion = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rg;
+  var dim = textureDimensions(readTexture);
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
-  let time = u.config.x;
+  var time = u.config.x;
   
   // Trigger local smear accumulation on ripple events
   var smear_strength = 0.1;
@@ -66,7 +66,7 @@ fn apply_smear(@builtin(global_invocation_id) gid: vec3<u32>) {
   let x = (smeared_coord.x + i32(dim.x)) % i32(dim.x);
   let y = (smeared_coord.y + i32(dim.y)) % i32(dim.y);
   let smeared = textureLoad(readTexture, vec2<i32>(x, y), 0);
-  let cur = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
+  var cur = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
   let mixed = mix(cur, smeared, smear_strength);
   textureStore(dataTextureB, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), mixed);

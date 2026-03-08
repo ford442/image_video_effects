@@ -48,7 +48,7 @@ fn gaussianBlur(uv: vec2<f32>, texelSize: vec2<f32>, radius: f32) -> vec4<f32> {
   for (var y = -samples; y <= samples; y = y + 1) {
     for (var x = -samples; x <= samples; x = x + 1) {
       let offset = vec2<f32>(f32(x), f32(y)) * texelSize * radius;
-      let dist = length(vec2<f32>(f32(x), f32(y)));
+      var dist = length(vec2<f32>(f32(x), f32(y)));
       let weight = exp(-dist * dist / (2.0 * radius * radius));
       sum = sum + textureSampleLevel(dataTextureC, non_filtering_sampler, uv + offset, 0.0) * weight;
       totalWeight = totalWeight + weight;
@@ -114,8 +114,8 @@ fn grayScottStep(ab: vec2<f32>, lap: vec2<f32>, feed: f32, kill: f32) -> vec2<f3
 
 // HSV to RGB helper
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-  let c = v * s;
-  let x = c * (1.0 - abs((h % 2.0) - 1.0));
+  var c = v * s;
+  var x = c * (1.0 - abs((h % 2.0) - 1.0));
   let m = v - c;
   var rgb: vec3<f32>;
   if (h < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
@@ -179,7 +179,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let mouseDist = length(uv - mouse);
   if (mouseDist < 0.05) {
-    let strength = 1.0 - mouseDist / 0.05;
+    var strength = 1.0 - mouseDist / 0.05;
     scale1.y = scale1.y + strength * 0.3;
     scale2.y = scale2.y + strength * 0.2;
   }
@@ -190,9 +190,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (ripple.z > 0.0) {
       let rippleAge = time - ripple.z;
       if (rippleAge > 0.0 && rippleAge < 1.0) {
-        let dist = length(uv - ripple.xy);
+        var dist = length(uv - ripple.xy);
         if (dist < 0.04) {
-          let strength = (1.0 - rippleAge) * (1.0 - dist / 0.04);
+          var strength = (1.0 - rippleAge) * (1.0 - dist / 0.04);
           scale1.y = scale1.y + strength * 0.5;
           scale2.y = scale2.y + strength * 0.3;
         }

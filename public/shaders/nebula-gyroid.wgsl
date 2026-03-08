@@ -81,7 +81,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, mouse: vec2<f32>) -> f32 {
 
   for (var i: i32 = 0; i < 100; i++) {
     var p = ro + rd * t;
-    let d = sceneSDF(p, time, mouse);
+    var d = sceneSDF(p, time, mouse);
 
     if (d < 0.001) {
       return t;
@@ -130,7 +130,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let adjustedMouse = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
 
   // Raymarch
-  let t = raymarch(camPos, rd, time, adjustedMouse);
+  var t = raymarch(camPos, rd, time, adjustedMouse);
 
   // Background - deep void with subtle gradient
   var color = vec3<f32>(0.02, 0.02, 0.05);

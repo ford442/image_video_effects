@@ -43,7 +43,7 @@ fn poincare_distance(p: vec2<f32>) -> f32 {
 }
 
 fn mobius_transform(p: vec2<f32>, center: vec2<f32>, scale: f32, angle: f32) -> vec2<f32> {
-    let q = p - center;
+    var q = p - center;
     q = rotate(q, angle);
     let d = length(q);
     let hyperbolic_scale = scale / (1.0 + d * d * 0.5);

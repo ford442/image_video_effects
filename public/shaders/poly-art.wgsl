@@ -62,14 +62,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // First pass: find closest point
   for (var y = -1; y <= 1; y++) {
     for (var x = -1; x <= 1; x++) {
-       let neighbor = vec2<f32>(f32(x), f32(y));
-       let point = hash22(i_st + neighbor);
+       var neighbor = vec2<f32>(f32(x), f32(y));
+       var point = hash22(i_st + neighbor);
 
        // Animate point?
        // var p = 0.5 + 0.5 * sin(u.config.x + 6.2831 * point);
 
        var pos = neighbor + point * randomness;
-       let d = length(pos - f_st);
+       var d = length(pos - f_st);
 
        if (d < m_dist) {
            m_dist = d;
@@ -125,8 +125,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       var m_dist2 = 1.0;
       for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
-           let neighbor = vec2<f32>(f32(x), f32(y));
-           let point = hash22(i_st + neighbor);
+           var neighbor = vec2<f32>(f32(x), f32(y));
+           var point = hash22(i_st + neighbor);
            var pos = neighbor + point * randomness;
 
            if (length(i_st + neighbor - m_id) > 0.1) { // distinct from closest
@@ -152,6 +152,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Pass depth
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

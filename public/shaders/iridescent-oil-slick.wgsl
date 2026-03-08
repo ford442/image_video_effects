@@ -40,7 +40,7 @@ fn snoise(v: vec3<f32>) -> f32 {
     var i = floor(v + dot(v, C.yyy));
     let x0 = v - i + dot(i, C.xxx);
     
-    let g = step(x0.yzx, x0.xyz);
+    var g = step(x0.yzx, x0.xyz);
     let l = 1.0 - g;
     let i1 = min(g.xyz, l.zxy);
     let i2 = max(g.xyz, l.zxy);
@@ -65,7 +65,7 @@ fn snoise(v: vec3<f32>) -> f32 {
     
     let x = x_ *ns.x + ns.yyyy;
     let y = y_ *ns.x + ns.yyyy;
-    let h = 1.0 - abs(x) - abs(y);
+    var h = 1.0 - abs(x) - abs(y);
     
     let b0 = vec4<f32>(x.xy, y.xy);
     let b1 = vec4<f32>(x.zw, y.zw);
@@ -122,9 +122,9 @@ fn thinFilmInterference(thickness: f32, viewAngle: f32) -> vec3<f32> {
     let gPhase = phase / 530.0; // Green  
     let bPhase = phase / 460.0; // Blue
     
-    let r = 0.5 + 0.5 * cos(rPhase);
-    let g = 0.5 + 0.5 * cos(gPhase);
-    let b = 0.5 + 0.5 * cos(bPhase);
+    var r = 0.5 + 0.5 * cos(rPhase);
+    var g = 0.5 + 0.5 * cos(gPhase);
+    var b = 0.5 + 0.5 * cos(bPhase);
     
     // Enhance saturation
     return vec3<f32>(r, g, b);
@@ -139,13 +139,13 @@ fn rotateUV(uv: vec2<f32>, angle: f32) -> vec2<f32> {
 
 // Hexagonal pattern for oil bubble cells
 fn hexPattern(uv: vec2<f32>) -> f32 {
-    let r = vec2<f32>(1.0, 1.732);
-    let h = r * 0.5;
+    var r = vec2<f32>(1.0, 1.732);
+    var h = r * 0.5;
     
     var p = uv;
     
     let a = vec2<f32>(dot(p, r), p.y);
-    let b = vec2<f32>(dot(p, r - h * 2.0), p.y);
+    var b = vec2<f32>(dot(p, r - h * 2.0), p.y);
     
     let ai = floor(a);
     let bi = floor(b);

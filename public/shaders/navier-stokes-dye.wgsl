@@ -23,20 +23,20 @@ struct Uniforms {
 const DT: f32 = 0.016;
 @compute @workgroup_size(8, 8, 1)
 fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-  let vel = textureLoad(dataTextureC, coord, 0).rg;
+  var coord = vec2<i32>(i32(gid.x), i32(gid.y));
+  var vel = textureLoad(dataTextureC, coord, 0).rg;
   var pos = vec2<f32>(f32(coord.x), f32(coord.y));
   let sourcePos = pos - vel * DT;
-  let dim = textureDimensions(dataTextureC);
+  var dim = textureDimensions(dataTextureC);
   let res = textureSampleLevel(dataTextureC, u_sampler, sourcePos / vec2<f32>(f32(dim.x), f32(dim.y)), 0.0).rg;
   textureStore(dataTextureA, coord, vec4<f32>(res, 0.0, 0.0));
 }
 
 fn inject_dye_impl(gid: vec3<u32>) {
-  let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+  var coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let src = textureLoad(readTexture, coord, 0);
   let time = u.config.x;
-  let dim = textureDimensions(dataTextureA);
+  var dim = textureDimensions(dataTextureA);
   var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   
   // Inject dye and energy at ripple locations

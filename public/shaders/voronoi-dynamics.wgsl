@@ -85,11 +85,11 @@ fn findNearestCentroid(uv: vec2<f32>, time: f32, centroidCount: i32, mouse: vec2
   
   // Check ripple positions as temporary centroids
   for (var r = 0; r < 50; r = r + 1) {
-    let ripple = u.ripples[r];
+    var ripple = u.ripples[r];
     if (ripple.z > 0.0) {
-      let rippleAge = time - ripple.z;
+      var rippleAge = time - ripple.z;
       if (rippleAge > 0.0 && rippleAge < 2.0) {
-        let dist = length(uv - ripple.xy);
+        var dist = length(uv - ripple.xy);
         if (dist < nearestDist) {
           secondDist = nearestDist;
           nearestDist = dist;
@@ -142,9 +142,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Find nearest centroid
   let nearest = findNearestCentroid(uv, time, centroidCount, mouse);
-  let nearestDist = nearest.x;
-  let secondDist = nearest.y;
-  let nearestIdx = i32(nearest.z);
+  var nearestDist = nearest.x;
+  var secondDist = nearest.y;
+  var nearestIdx = i32(nearest.z);
   
   // Get source color at this position
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -191,11 +191,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Ripple influence - waves through cells
   var rippleWave = 0.0;
   for (var i = 0; i < 50; i = i + 1) {
-    let ripple = u.ripples[i];
+    var ripple = u.ripples[i];
     if (ripple.z > 0.0) {
-      let rippleAge = time - ripple.z;
+      var rippleAge = time - ripple.z;
       if (rippleAge > 0.0 && rippleAge < 2.0) {
-        let dist = length(uv - ripple.xy);
+        var dist = length(uv - ripple.xy);
         let wave = sin(dist * 30.0 - rippleAge * 10.0);
         let fade = 1.0 - rippleAge / 2.0;
         rippleWave = rippleWave + wave * fade * 0.02 / (dist + 0.1);

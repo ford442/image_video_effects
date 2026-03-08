@@ -35,7 +35,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
     let q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
-    let d = q.x - min(q.w, q.y);
+    var d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
     return vec3<f32>(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
@@ -43,7 +43,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     let c = v * s;
     let h6 = h * 6.0;
-    let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
     if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
@@ -151,7 +151,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let t = time - r.z;
         if (t > 0.0 && t < 3.0) {
             var dir = uv - r.xy;
-            let d = length(dir);
+            var d = length(dir);
             if (d > 0.0001) {
                 let rippleDepth = textureSampleLevel(depthTex, depthSampler, r.xy, 0.0).r;
                 let depthFactor = 1.0 - rippleDepth;

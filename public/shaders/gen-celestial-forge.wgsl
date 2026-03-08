@@ -42,8 +42,8 @@ fn rotX(a: f32) -> mat3x3<f32> {
 
 // Rotation around Y axis
 fn rotY(a: f32) -> mat3x3<f32> {
-    let s = sin(a);
-    let c = cos(a);
+    var s = sin(a);
+    var c = cos(a);
     return mat3x3<f32>(
         c, 0.0, s,
         0.0, 1.0, 0.0,
@@ -53,8 +53,8 @@ fn rotY(a: f32) -> mat3x3<f32> {
 
 // Rotation around Z axis
 fn rotZ(a: f32) -> mat3x3<f32> {
-    let s = sin(a);
-    let c = cos(a);
+    var s = sin(a);
+    var c = cos(a);
     return mat3x3<f32>(
         c, -s, 0.0,
         s, c, 0.0,
@@ -75,17 +75,17 @@ fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
 }
 
 fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
-    let q = vec2<f32>(length(p.xz) - t.x, p.y);
+    var q = vec2<f32>(length(p.xz) - t.x, p.y);
     return length(q) - t.y;
 }
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    let q = abs(p) - b;
+    var q = abs(p) - b;
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
 fn sdCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
-    let d = vec2<f32>(length(p.xz), p.y) - vec2<f32>(r, h);
+    var d = vec2<f32>(length(p.xz), p.y) - vec2<f32>(r, h);
     return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
@@ -97,11 +97,11 @@ fn hash31(p: vec3<f32>) -> f32 {
 }
 
 fn noise3D(p: vec3<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     
-    let n = i.x + i.y * 157.0 + 113.0 * i.z;
+    var n = i.x + i.y * 157.0 + 113.0 * i.z;
     return mix(
         mix(
             mix(hash31(i + vec3<f32>(0.0, 0.0, 0.0)), hash31(i + vec3<f32>(1.0, 0.0, 0.0)), f.x),
@@ -134,7 +134,7 @@ fn fbm(p: vec3<f32>) -> f32 {
 // Returns vec3: x = distance, y = material ID, z = emission
 fn map(p_in: vec3<f32>) -> vec3<f32> {
     var p = p_in;
-    let time = u.config.x;
+    var time = u.config.x;
     let speed = u.zoom_params.x;
     let complexity = u.zoom_params.y;
     let scale = u.zoom_params.z;
@@ -261,7 +261,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (fragCoord * 2.0 - dims) / dims.y;
     
     // Camera setup
-    let time = u.config.x;
+    var time = u.config.x;
     var ro = vec3<f32>(0.0, 0.0, 6.0);
     
     // Mouse interaction for camera orbit
@@ -308,7 +308,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     
     if (t < maxDist) {
         var p = ro + rd * t;
-        let n = calcNormal(p);
+        var n = calcNormal(p);
         let v = normalize(ro - p);
         
         // Core is the primary light source

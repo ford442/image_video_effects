@@ -37,21 +37,21 @@ fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
 }
 
 fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
-    let q = abs(p);
+    var q = abs(p);
     return (q.x + q.y + q.z - s) * 0.57735027;
 }
 
 // --- Transformations ---
 
 fn rotateY(p: vec3<f32>, a: f32) -> vec3<f32> {
-    let c = cos(a);
-    let s = sin(a);
+    var c = cos(a);
+    var s = sin(a);
     return vec3<f32>(c * p.x - s * p.z, p.y, s * p.x + c * p.z);
 }
 
 fn rotateX(p: vec3<f32>, a: f32) -> vec3<f32> {
-    let c = cos(a);
-    let s = sin(a);
+    var c = cos(a);
+    var s = sin(a);
     return vec3<f32>(p.x, c * p.y - s * p.z, s * p.y + c * p.z);
 }
 
@@ -62,7 +62,7 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -75,7 +75,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Parameters
     let complexity = u.zoom_params.w; // 0..1
     let artifactScale = u.zoom_params.z; // 0..1
-    let time = u.config.x;
+    var time = u.config.x;
 
     // 1. Infinite Architecture (Pillars/Slabs)
     // Repetition
@@ -84,7 +84,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Domain repetition for pillars
     // We only repeat in XZ plane
-    let q = p;
+    var q = p;
     var local_xz = (fract((p.xz + cellSize * 0.5) / cellSize) - 0.5) * cellSize;
 
     // Height variation based on noise
@@ -141,7 +141,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -154,8 +154,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var mat = 0.0;
     for(var i=0; i<150; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         mat = res.y;
         if(d < 0.002 || t > 150.0) { break; }
         t += d;
@@ -187,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Parameters
     let sunAngle = u.zoom_params.x * 3.14159; // 0 to PI
     let fogDensity = u.zoom_params.y; // 0..1
-    let time = u.config.x;
+    var time = u.config.x;
 
     // Camera Control
     var mouse = u.zoom_config.yz; // 0..1
@@ -208,9 +208,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
 
     // Raymarch
-    let res = raymarch(ro, rd);
-    let t = res.x;
-    let mat = res.y;
+    var res = raymarch(ro, rd);
+    var t = res.x;
+    var mat = res.y;
 
     // Background / Fog Color
     let bg_color = vec3<f32>(0.05, 0.05, 0.06); // Dark Grey/Blue

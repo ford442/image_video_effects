@@ -35,7 +35,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u2 = f * f * (3.0 - 2.0 * f);
     return mix(
@@ -61,7 +61,7 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 
 // Reconstruct a simple normal from depth samples
 fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
-    let resolution = vec2<f32>(u.config.z, u.config.w);
+    var resolution = vec2<f32>(u.config.z, u.config.w);
     let offset = vec2<f32>(1.0 / resolution.x, 1.0 / resolution.y);
     let dx = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(offset.x, 0.0), 0.0).r - textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(offset.x, 0.0), 0.0).r;
     let dy = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, offset.y), 0.0).r - textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, offset.y), 0.0).r;
@@ -71,7 +71,7 @@ fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let resolution = vec2<f32>(u.config.z, u.config.w);
+    var resolution = vec2<f32>(u.config.z, u.config.w);
     var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     let zoom_time = u.zoom_config.x;

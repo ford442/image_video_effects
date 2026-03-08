@@ -83,8 +83,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseRadius = 0.2;
   
   if (mouseDist < mouseRadius && mouseDist > 0.001) {
-    let vortex = vec2<f32>(-toMouse.y, toMouse.x) / mouseDist;
-    let influence = 1.0 - mouseDist / mouseRadius;
+    var vortex = vec2<f32>(-toMouse.y, toMouse.x) / mouseDist;
+    var influence = 1.0 - mouseDist / mouseRadius;
     flow = mix(flow, vortex, influence * flowStrength);
   }
   
@@ -97,8 +97,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let toRipple = uv - ripple.xy;
         let dist = length(toRipple);
         if (dist < 0.15 && dist > 0.001) {
-          let vortex = vec2<f32>(-toRipple.y, toRipple.x) / dist;
-          let influence = (1.0 - rippleAge / 2.0) * (1.0 - dist / 0.15);
+          var vortex = vec2<f32>(-toRipple.y, toRipple.x) / dist;
+          var influence = (1.0 - rippleAge / 2.0) * (1.0 - dist / 0.15);
           flow = mix(flow, vortex, influence * 0.5);
         }
       }
@@ -143,14 +143,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Sort by luminance - darker flows "down", brighter flows "up"
     if (upstreamLum > sortedLum) {
       // Swap - this pixel should be darker
-      let blend = 0.5 / f32(passIndex + 1);
+      var blend = 0.5 / f32(passIndex + 1);
       sortedColor = mix(sortedColor, upstreamColor.rgb, blend);
       sortedLum = luminance(sortedColor);
     }
     
     if (downstreamLum < sortedLum) {
       // Swap - this pixel should be brighter
-      let blend = 0.5 / f32(passIndex + 1);
+      var blend = 0.5 / f32(passIndex + 1);
       sortedColor = mix(sortedColor, downstreamColor.rgb, blend);
       sortedLum = luminance(sortedColor);
     }

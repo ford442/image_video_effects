@@ -67,7 +67,7 @@ fn fbm(p: vec3<f32>) -> f32 {
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-  let res = u.config.zw;
+  var res = u.config.zw;
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
 
   var uv = (vec2<f32>(id.xy) / res - 0.5) * vec2<f32>(res.x / res.y, 1.0) * u.zoom_config.z;
@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var p = vec3<f32>(uv * 3.0, u.config.x * speed * 0.3);
   p += fbm(p * 0.4) * warpStrength;
 
-  let v = voronoi3D(p * density);
+  var v = voronoi3D(p * density);
   let filament = 1.0 / (v.y - v.x + 0.001);
 
   let filDensity = smoothstep(0.0, 2.0, filament * 0.6);

@@ -36,7 +36,7 @@ fn hash(p: vec2<f32>) -> f32 {
 // 2D Value Noise
 fn noise(p: vec2<f32>) -> f32 {
     let i = floor(p);
-    let f = fract(p);
+    var f = fract(p);
     let u_f = f * f * (3.0 - 2.0 * f);
     return mix(
         mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u_f.x),
@@ -116,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     // Final Noise Value
-    let f = fbm(q_pos + 4.0 * r);
+    var f = fbm(q_pos + 4.0 * r);
 
     // Color Palette Mixing
     var base_col1 = vec3<f32>(0.1, 0.6, 0.7); // Cyan

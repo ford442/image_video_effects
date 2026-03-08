@@ -21,7 +21,7 @@ struct Uniforms {
 
 // Function to rotate a 2D vector
 fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
-    let s = sin(angle);
+    var s = sin(angle);
     let c = cos(angle);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Find Hex Center and Local Coords (Staggered Grid approach)
     // Normalized to r=1
-    let s = vec2<f32>(1.7320508, 1.0);
+    var s = vec2<f32>(1.7320508, 1.0);
     let u_scaled = uv_aspect * scale;
 
     let ga = (fract(u_scaled / s) - 0.5) * s;

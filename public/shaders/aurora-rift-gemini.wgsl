@@ -40,8 +40,8 @@ fn hash4(p: vec4<f32>) -> f32 {
 }
 
 fn noise4d(p: vec4<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     
     var sum = 0.0;
@@ -84,8 +84,8 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
 }
 
 fn voronoiCell(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     var best = 1e5;
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
@@ -101,16 +101,16 @@ fn voronoiCell(p: vec2<f32>) -> f32 {
 
 fn quaternionRotate(col: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> {
     let s = sin(angle * 0.5);
-    let c = cos(angle * 0.5);
+    var c = cos(angle * 0.5);
     let q = vec4<f32>(normalize(axis) * s, c);
     let t = 2.0 * cross(q.xyz, col);
     return col + q.w * t + cross(q.xyz, t);
 }
 
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
+    var c = v * s;
     let h6 = h * 6.0;
-    let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
     if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }

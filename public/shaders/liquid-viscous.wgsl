@@ -21,12 +21,12 @@ fn hash2(p: vec2<f32>) -> f32 {
 
 // Multi-octave noise-like function for ambient flow
 fn noise2D(p: vec2<f32>) -> vec2<f32> {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f); // smoothstep
 
-  let a = hash2(i);
-  let b = hash2(i + vec2<f32>(1.0, 0.0));
+  var a = hash2(i);
+  var b = hash2(i + vec2<f32>(1.0, 0.0));
   let c = hash2(i + vec2<f32>(0.0, 1.0));
   let d = hash2(i + vec2<f32>(1.0, 1.0));
 
@@ -55,15 +55,15 @@ fn flowPattern(p: vec2<f32>, time: f32) -> vec2<f32> {
 }
 
 fn hash2_to_vec2(h: f32) -> vec2<f32> {
-  let a = fract(h * 0.1031);
-  let b = fract(h * 0.11369);
+  var a = fract(h * 0.1031);
+  var b = fract(h * 0.11369);
   return vec2<f32>(a, b) * 2.0 - 1.0;
 }
 
 fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
   var uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
   let noiseValue = sin(uv.x * 3.14159) * cos(uv.y * 3.14159);
-  let flow = hash2_to_vec2(fract(noiseValue * 43758.5453));
+  var flow = hash2_to_vec2(fract(noiseValue * 43758.5453));
   return flow * exp(-length(p) * 0.5);
 }
 
@@ -82,7 +82,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (background_factor > 0.0) {
     let time = currentTime * 0.2 + depthFactor * 2.0;
     let noiseuv = uv * vec2<f32>(9.0, 7.0) + vec2<f32>(currentTime * 0.05, currentTime * 0.04);
-    let flow = flowPattern(noiseuv, time);
+    var flow = flowPattern(noiseuv, time);
     let gravity = vec2<f32>(0.0, 0.0006);
     ambientDisplacement = (flow * 0.003 + gravity) * background_factor * (0.2 + depthFactor);
   }

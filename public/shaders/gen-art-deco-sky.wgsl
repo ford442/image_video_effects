@@ -69,9 +69,9 @@ fn hash(p: vec2<f32>) -> f32 {
 fn map(p: vec3<f32>) -> vec2<f32> {
     // Parameters
     let density = u.zoom_params.x; // 0..1
-    let time = u.config.x;
-    let ascentSpeed = u.zoom_params.y; // 0..5
-    let y_offset = time * ascentSpeed * 5.0; // Global Y movement
+    var time = u.config.x;
+    var ascentSpeed = u.zoom_params.y; // 0..5
+    var y_offset = time * ascentSpeed * 5.0; // Global Y movement
 
     // We will apply the offset to p.y before mapping
     var pos = vec3<f32>(p.x, p.y + y_offset, p.z);
@@ -196,8 +196,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var mat = 0.0;
     for(var i=0; i<150; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         mat = res.y;
         if(d < 0.002 || t > 200.0) { break; }
         t += d * 0.8; // Step size slightly reduced for safety
@@ -210,8 +210,8 @@ fn calcAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
     var occ = 0.0;
     var sca = 1.0;
     for(var i=0; i<5; i++) {
-        let h = 0.01 + 0.12 * f32(i) / 4.0;
-        let d = map(p + h * n).x;
+        var h = 0.01 + 0.12 * f32(i) / 4.0;
+        var d = map(p + h * n).x;
         occ += (h - d) * sca;
         sca *= 0.95;
     }
@@ -229,7 +229,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Parameters
     let goldGlow = u.zoom_params.z; // 0..2
     let fogDensity = u.zoom_params.w; // 0..1
-    let time = u.config.x;
+    var time = u.config.x;
     var mouse = u.zoom_config.yz; // 0..1
 
     // Camera setup
@@ -252,9 +252,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
 
     // Raymarch
-    let res = raymarch(ro, rd);
-    let t = res.x;
-    let mat = res.y;
+    var res = raymarch(ro, rd);
+    var t = res.x;
+    var mat = res.y;
 
     // Atmospheric Colors (Art Deco Night / Cyberpunk vibe)
     let fogColor = vec3<f32>(0.02, 0.05, 0.1); // Dark blueish night
@@ -264,8 +264,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = fogColor;
 
     // Global Y offset for materials that depend on world pos
-    let ascentSpeed = u.zoom_params.y;
-    let y_offset = time * ascentSpeed * 5.0;
+    var ascentSpeed = u.zoom_params.y;
+    var y_offset = time * ascentSpeed * 5.0;
 
     if (t < 200.0) {
         var p = ro + rd * t;
@@ -298,7 +298,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Window lights (randomly lit)
             // Determine grid cell for window
             let win_cell = floor(world_p.y / 1.0) * 10.0 + floor(world_p.x / 1.0) + floor(world_p.z / 1.0);
-            let h = hash(vec2<f32>(win_cell, floor(world_p.y / 10.0))); // change per floor block too
+            var h = hash(vec2<f32>(win_cell, floor(world_p.y / 10.0))); // change per floor block too
 
             if (h > 0.6) {
                 // Lit window

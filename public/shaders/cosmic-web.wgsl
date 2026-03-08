@@ -79,7 +79,7 @@ fn fbm(p: vec3<f32>) -> f32 {
 
 // Hue rotation using Rodrigues' rotation formula
 fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
-    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
+    var k = vec3<f32>(0.57735, 0.57735, 0.57735);
     let cosAngle = cos(shift);
     return vec3<f32>(color * cosAngle + cross(k, color) * sin(shift) + k * dot(k, color) * (1.0 - cosAngle));
 }
@@ -113,9 +113,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p += vec3<f32>(warp * u.zoom_params.x); // Warp strength
 
     // Voronoi Cell Calculation
-    let v = voronoi3(p);
-    let f1 = v.x;
-    let f2 = v.y;
+    var v = voronoi3(p);
+    var f1 = v.x;
+    var f2 = v.y;
 
     // Filament metric: borders are where F2 - F1 is small
     let border = f2 - f1;

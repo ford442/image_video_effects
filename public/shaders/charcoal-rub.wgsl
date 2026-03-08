@@ -27,9 +27,9 @@ fn hash12(p: vec2<f32>) -> f32 {
 }
 
 fn noise(x: vec2<f32>) -> f32 {
-    let i = floor(x);
+    var i = floor(x);
     let f = fract(x);
-    let a = hash12(i);
+    var a = hash12(i);
     let b = hash12(i + vec2<f32>(1.0, 0.0));
     let c = hash12(i + vec2<f32>(0.0, 1.0));
     let d = hash12(i + vec2<f32>(1.0, 1.0));

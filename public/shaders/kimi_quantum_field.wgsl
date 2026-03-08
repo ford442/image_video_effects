@@ -17,7 +17,7 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -26,8 +26,8 @@ fn noise(p: vec2<f32>) -> f32 {
 
 // Wave function
 fn psi(x: f32, y: f32, t: f32, k: f32, w: f32, sx: f32, sy: f32) -> f32 {
-    let envelope = exp(-(x * x / (2.0 * sx * sx) + y * y / (2.0 * sy * sy)));
-    let wave = cos(k * x - w * t);
+    var envelope = exp(-(x * x / (2.0 * sx * sx) + y * y / (2.0 * sy * sy)));
+    var wave = cos(k * x - w * t);
     return envelope * wave;
 }
 
@@ -89,10 +89,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let angular = cos(angle * 3.0 + fi);
         
         // Wave packet envelope
-        let envelope = exp(-dist * dist / (2.0 * spread * spread));
+        var envelope = exp(-dist * dist / (2.0 * spread * spread));
         
         // Add to total amplitude
-        let wave = radial * angular * envelope;
+        var wave = radial * angular * envelope;
         amplitude += wave;
         
         // Probability density (|ψ|²)

@@ -54,7 +54,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Only burn if mouse is down? Or always? Let's say always if close, but stronger if down.
     if (mousePos.x >= 0.0) {
         let aspect = resolution.x / resolution.y;
-        let d = vec2<f32>((uv.x - mousePos.x) * aspect, uv.y - mousePos.y);
+        var d = vec2<f32>((uv.x - mousePos.x) * aspect, uv.y - mousePos.y);
         let dist = length(d);
         let brushSize = 0.05;
 
@@ -136,6 +136,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
     // Passthrough depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

@@ -29,7 +29,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn valueNoise2D(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
 
     // Four corners

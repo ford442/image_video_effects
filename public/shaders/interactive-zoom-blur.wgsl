@@ -63,7 +63,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let t = (f32(i) + random) / f32(samples);
 
       // Non-linear sampling weight
-      let weight = 1.0;
+      var weight = 1.0;
       if (centerBias > 0.0) {
           weight = mix(1.0, 1.0 - t, centerBias);
       }

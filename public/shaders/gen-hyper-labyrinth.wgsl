@@ -45,22 +45,22 @@ fn map(pos3: vec3<f32>) -> vec2<f32> {
     var p4 = vec4<f32>(pos3, 1.0);
 
     // 4D rotation driven by time/params
-    let speed = mix(0.1, 2.0, u.zoom_params.y); // morph speed
-    let time = u.config.x * speed;
+    var speed = mix(0.1, 2.0, u.zoom_params.y); // morph speed
+    var time = u.config.x * speed;
     p4 = rotate4D(p4, time);
 
     // Extra YZ rotation for nice 3D orbiting feel (from main)
-    let rotYZ = u.config.x * 0.1;
-    let cy = cos(rotYZ);
-    let sy = sin(rotYZ);
-    let tempY = p4.y * cy - p4.z * sy;
-    let tempZ = p4.y * sy + p4.z * cy;
+    var rotYZ = u.config.x * 0.1;
+    var cy = cos(rotYZ);
+    var sy = sin(rotYZ);
+    var tempY = p4.y * cy - p4.z * sy;
+    var tempZ = p4.y * sy + p4.z * cy;
     p4.y = tempY;
     p4.z = tempZ;
 
     // Gyroid-based 4D maze
-    let scale = mix(1.0, 5.0, u.zoom_params.x);
-    let q = p4 * scale;
+    var scale = mix(1.0, 5.0, u.zoom_params.x);
+    var q = p4 * scale;
     let val = sin(q.x) * cos(q.y) + sin(q.y) * cos(q.z) + sin(q.z) * cos(q.w) + sin(q.w) * cos(q.x);
 
     // Wall thickness
@@ -73,7 +73,7 @@ fn map(pos3: vec3<f32>) -> vec2<f32> {
 // Normal calculation
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -87,8 +87,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var m = 0.0; // 0 = miss
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         if (d < 0.001 || t > 50.0) {
             if (d < 0.001) { m = res.y; }
             break;
@@ -120,7 +120,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     // Gentle camera drift for more life
-    let time = u.config.x;
+    var time = u.config.x;
     let drift = vec3<f32>(sin(time * 0.1), cos(time * 0.15), sin(time * 0.07)) * 0.6;
     ro += drift;
 
@@ -131,8 +131,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rd = normalize(fwd + right * uv.x + up * uv.y);
 
     // Raymarch
-    let res = raymarch(ro, rd);
-    let t = res.x;
+    var res = raymarch(ro, rd);
+    var t = res.x;
     let mat = res.y;
 
     var color = vec3<f32>(0.0);
@@ -152,23 +152,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // === NEON GLOW / VEINS (feature's beautiful pattern + main's consistency) ===
         let glowIntensity = mix(0.6, 3.5, u.zoom_params.z);
 
-        let speed = mix(0.1, 2.0, u.zoom_params.y);
+        var speed = mix(0.1, 2.0, u.zoom_params.y);
         let time4d = u.config.x * speed;
 
         var p4 = vec4<f32>(p, 1.0);
         p4 = rotate4D(p4, time4d);
 
         // Match the map's extra rotation
-        let rotYZ = u.config.x * 0.1;
-        let cy = cos(rotYZ);
-        let sy = sin(rotYZ);
-        let tempY = p4.y * cy - p4.z * sy;
-        let tempZ = p4.y * sy + p4.z * cy;
+        var rotYZ = u.config.x * 0.1;
+        var cy = cos(rotYZ);
+        var sy = sin(rotYZ);
+        var tempY = p4.y * cy - p4.z * sy;
+        var tempZ = p4.y * sy + p4.z * cy;
         p4.y = tempY;
         p4.z = tempZ;
 
-        let scale = mix(1.0, 5.0, u.zoom_params.x);
-        let q = p4 * scale * 2.0;
+        var scale = mix(1.0, 5.0, u.zoom_params.x);
+        var q = p4 * scale * 2.0;
         let pattern = sin(q.x) * sin(q.y) * sin(q.z) * sin(q.w);
 
         let pulse = 0.5 + 0.5 * sin(time * 2.2 + p.x * 1.3 + p.z * 0.7);

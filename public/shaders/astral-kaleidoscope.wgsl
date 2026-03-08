@@ -41,7 +41,7 @@ fn fmod(x: f32, y: f32) -> f32 {
 
 // Rotate a vector by an angle
 fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
-    let s = sin(a);
+    var s = sin(a);
     let c = cos(a);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
@@ -54,7 +54,7 @@ fn rgb2hsl(c: vec3<f32>) -> vec3<f32> {
     
     var h = 0.0;
     var s = 0.0;
-    let l = (maxVal + minVal) / 2.0;
+    var l = (maxVal + minVal) / 2.0;
     
     if (delta > 0.0) {
         s = delta / (1.0 - abs(2.0 * l - 1.0));
@@ -83,9 +83,9 @@ fn hue2rgb(p: f32, q: f32, t: f32) -> f32 {
 }
 
 fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
-    let h = c.x;
-    let s = c.y;
-    let l = c.z;
+    var h = c.x;
+    var s = c.y;
+    var l = c.z;
     
     if (s == 0.0) { return vec3<f32>(l); }
     

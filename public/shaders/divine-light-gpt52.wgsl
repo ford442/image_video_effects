@@ -26,7 +26,7 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let a = hash(i + vec2<f32>(0.0, 0.0));
   let b = hash(i + vec2<f32>(1.0, 0.0));

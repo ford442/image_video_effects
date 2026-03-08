@@ -105,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Composite
     // Add grid on top
-    let finalColor = mix(bg, gridColor, gridIntensity);
+    var finalColor = mix(bg, gridColor, gridIntensity);
 
     // Add glowing dots at vertices
     let vertex = valX * valY; // Intersection

@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Random flicker
   let flicker = step(0.1, hash22(vec2<f32>(cellID.x, charID)).x);
 
-  let rainColor = vec3<f32>(0.0, 1.0, 0.2) * charBright * flicker;
+  var rainColor = vec3<f32>(0.0, 1.0, 0.2) * charBright * flicker;
 
   // Some random "glitch" blocks
   if (hash22(vec2<f32>(cellID.x, charID)).y > 0.98 - density * 0.1) {

@@ -65,7 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Fish-eye
     let theta = atan2(uv.y - mousePos.y, uv.x - mousePos.x);
-    let r = dist; // Real distance
+    var r = dist; // Real distance
     // Distorted radius: r' = r / zoom at center, r at edge.
     // Function that maps 0->0 and R->R, but slope at 0 is 1/zoom.
     // r' = r * (1 + (zoom-1) * (r/R)^k) ? No
@@ -105,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let rUV = finalUV - dir * aberration * inLens;
       let bUV = finalUV + dir * aberration * inLens;
 
-      let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+      var r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
       let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
       let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 

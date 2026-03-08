@@ -40,7 +40,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
   let c = v * s;
   let h6 = h * 6.0;
-  let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+  var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
   var rgb = vec3<f32>(0.0);
   if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
   else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
@@ -69,7 +69,7 @@ fn wrapMod(x: f32, y: f32) -> f32 {
 // ✨ GEMINI UPGRADE: Vortex function
 fn applyVortex(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec2<f32> {
     let diff = uv - center;
-    let r = length(diff);
+    var r = length(diff);
     let angle = atan2(diff.y, diff.x);
     let new_angle = angle + strength / (r + 0.1) * sin(r * 10.0 - time);
     return center + vec2<f32>(cos(new_angle), sin(new_angle)) * r;
@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Enhanced ripple effect
   let rippleCount = u32(u.config.y);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let r = u.ripples[i];
+    var r = u.ripples[i];
     let dist = distance(work_uv, r.xy);
     let t = time - r.z;
     if (t > 0.0 && t < 5.0) { // Longer decay

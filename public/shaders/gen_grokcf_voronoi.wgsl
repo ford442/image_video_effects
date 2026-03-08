@@ -11,12 +11,12 @@ struct Uniforms {
 @group(0) @binding(3) var<uniform> u: Uniforms;
 
 fn hash2(p: vec2<f32>) -> vec2<f32> {
-    let h = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
+    var h = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
     return fract(sin(h) * 43758.5453);
 }
 
 fn hash3(p: vec2<f32>) -> vec3<f32> {
-    let h = vec3<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)), dot(p, vec2<f32>(419.2, 371.9)));
+    var h = vec3<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)), dot(p, vec2<f32>(419.2, 371.9)));
     return fract(sin(h) * 43758.5453);
 }
 

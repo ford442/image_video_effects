@@ -34,7 +34,7 @@ struct Uniforms {
 // ---------------------------------------------------------------
 fn mobiusFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f32) -> vec3<f32> {
    let localUV = uv - center;
-   let angle = atan2(localUV.y, localUV.x);
+   var angle = atan2(localUV.y, localUV.x);
    
    // Möbius twist: inverts and swaps channels based on angular position
    let twist = sin(angle * 0.5 + 3.14159) * strength * 0.5;
@@ -52,8 +52,8 @@ fn mobiusFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f32) -
 // Klein bottle fold - creates non-orientable surface where channels intersect
 // ---------------------------------------------------------------
 fn kleinFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f32) -> vec3<f32> {
-   let localUV = (uv - center) * 2.0;
-   let radius = length(localUV);
+   var localUV = (uv - center) * 2.0;
+   var radius = length(localUV);
    
    // Klein bottle parametric distortion
    let fold = smoothstep(0.0, 1.0, radius) * strength;
@@ -78,8 +78,8 @@ fn kleinFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f32) ->
 // Hyperbolic fold - creates recursive color tunnels
 // ---------------------------------------------------------------
 fn hyperbolicFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {
-   let localUV = uv - center;
-   let radius = length(localUV);
+   var localUV = uv - center;
+   var radius = length(localUV);
    
    // Hyperbolic distance creates infinite recursion effect
    let hyperDist = log(radius * 10.0 + 1.0);
@@ -101,7 +101,7 @@ fn hyperbolicFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f3
 // ---------------------------------------------------------------
 fn quaternionRotate(pos: vec3<f32>, time: f32, speed: f32) -> vec3<f32> {
    // Simplified 4D rotation: rotate in XW and YW planes
-   let angle = time * speed;
+   var angle = time * speed;
    let cosA = cos(angle);
    let sinA = sin(angle);
    

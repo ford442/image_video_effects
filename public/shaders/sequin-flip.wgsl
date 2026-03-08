@@ -100,7 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
        textureStore(writeTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
 
        // Pass through depth
-       let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+       var depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
        textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
        return;
   }
@@ -118,7 +118,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       col = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
 
       // Plastic sphere normal
-      let sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
+      var sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
       normal = vec3<f32>(local_uv.x, tex_y, sphere_z);
   } else {
       // Back: Metal
@@ -127,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       // Faceted normal
       let noise_n = sin(local_uv.x * 20.0) * sin(tex_y * 20.0);
-      let sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
+      var sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
       normal = normalize(vec3<f32>(local_uv.x + noise_n*0.2, tex_y + noise_n*0.2, sphere_z));
   }
 
@@ -155,6 +155,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
 
   // Pass through depth
-  let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  var depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

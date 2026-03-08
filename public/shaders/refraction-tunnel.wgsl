@@ -46,7 +46,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Avoid division by zero or weird artifacts at center
     if (dist < 0.001) {
-        let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
         textureStore(writeTexture, vec2<i32>(global_id.xy), color);
         return;
     }

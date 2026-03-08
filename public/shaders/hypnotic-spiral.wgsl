@@ -64,7 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let saturation = 1.0 - radius * 0.5;
     let value = spiralMask * (1.0 - radius * 0.3);
 
-    let rgb = hsv2rgb(fract(hue), saturation, value);
+    var rgb = hsv2rgb(fract(hue), saturation, value);
 
     // Add center glow
     let centerDist = length(uv);

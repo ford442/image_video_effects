@@ -32,8 +32,8 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash21(i + vec2(0.0, 0.0)), hash21(i + vec2(1.0, 0.0)), u.x),
                mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
@@ -62,8 +62,8 @@ fn swirl(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec2<f32
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     let sector = floor(hsv.x * 6.0);
-    let i = fract(hsv.x * 6.0);
-    let f = mix(vec3(1.0, 0.666, 0.333), vec3(0.0, 0.333, 0.666), i);
+    var i = fract(hsv.x * 6.0);
+    var f = mix(vec3(1.0, 0.666, 0.333), vec3(0.0, 0.333, 0.666), i);
     var p = f - vec3(0.666, 0.333, 0.0);
     let q = f - vec3(0.333, 0.0, 0.666);
     let t = f;
@@ -103,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Subtle image tinting
     let src = textureSampleLevel(readTexture, u_sampler, swirl_uv + flow * 0.02 * depth, 0.0);
-    let color = mix(src.rgb * 0.3, rainbow, 0.7 + 0.3 * depth);
+    var color = mix(src.rgb * 0.3, rainbow, 0.7 + 0.3 * depth);
 
     // Glow trails from ripples
     let rippleCount = u32(u.config.y);

@@ -42,7 +42,7 @@ fn laplacian5x5(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
   for (var dy = -2; dy <= 2; dy = dy + 1) {
     for (var dx = -2; dx <= 2; dx = dx + 1) {
       let sampleUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      let h = textureSampleLevel(dataTextureC, non_filtering_sampler, sampleUV, 0.0).r;
+      var h = textureSampleLevel(dataTextureC, non_filtering_sampler, sampleUV, 0.0).r;
       sum = sum + h * kernel[idx];
       idx = idx + 1;
     }
@@ -53,30 +53,30 @@ fn laplacian5x5(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
 // 3x3 Laplacian for faster computation
 fn laplacian3x3(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
   var center = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
-  let left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-1.0, 0.0) * texelSize, 0.0).r;
-  let right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(1.0, 0.0) * texelSize, 0.0).r;
-  let up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -1.0) * texelSize, 0.0).r;
-  let down = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, 1.0) * texelSize, 0.0).r;
+  var left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-1.0, 0.0) * texelSize, 0.0).r;
+  var right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(1.0, 0.0) * texelSize, 0.0).r;
+  var up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -1.0) * texelSize, 0.0).r;
+  var down = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, 1.0) * texelSize, 0.0).r;
   
   return (left + right + up + down - 4.0 * center);
 }
 
 // Compute normals from height field for lighting
 fn computeNormal(uv: vec2<f32>, texelSize: vec2<f32>) -> vec3<f32> {
-  let left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-1.0, 0.0) * texelSize, 0.0).r;
-  let right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(1.0, 0.0) * texelSize, 0.0).r;
-  let up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -1.0) * texelSize, 0.0).r;
-  let down = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, 1.0) * texelSize, 0.0).r;
+  var left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-1.0, 0.0) * texelSize, 0.0).r;
+  var right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(1.0, 0.0) * texelSize, 0.0).r;
+  var up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -1.0) * texelSize, 0.0).r;
+  var down = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, 1.0) * texelSize, 0.0).r;
   
-  let dx = (right - left) * 2.0;
-  let dy = (down - up) * 2.0;
+  var dx = (right - left) * 2.0;
+  var dy = (down - up) * 2.0;
   
   return normalize(vec3<f32>(-dx, -dy, 0.1));
 }
 
 // HSV to RGB for rainbow coloring
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
-  let h = hsv.x * 6.0;
+  var h = hsv.x * 6.0;
   let s = hsv.y;
   let v = hsv.z;
   
