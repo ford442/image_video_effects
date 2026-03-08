@@ -1665,6 +1665,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for evaluating harsh shadow mapping, ambient occlusion, and heat-haze distortion.
 
+### Suggestion: Brutalist Web Design
+- **Date:** 2029-03-01
+- **Prompt:** "A digital rendering of a stark, brutalist web design interface projected onto a monolithic raw concrete structure. The interface features large, unstyled black typography on a white background, harsh geometric divisions, and visible grid lines. A single bright red hyper-link adds stark contrast. The lighting is cold and clinical, emphasizing the rough texture of the concrete beneath."
+- **Negative prompt:** "smooth, glossy, modern, colorful, rounded corners, soft shadows"
+- **Tags:** brutalist web design, abstract, architecture, concrete, UI
+- **Style / Reference:** Brutalist Architecture, Brutalist Web Design
+- **Composition:** Flat, frontal projection
+- **Color palette:** Concrete Grey, Black, White, Bright Red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20290301_brutalist_web.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Contrast the digital starkness with the physical texture of raw concrete.
+
+### Suggestion: Suprematism Composition
+- **Date:** 2029-03-01
+- **Prompt:** "A pure abstract painting in the style of Suprematism (Kazimir Malevich). A stark black square and a vibrant red cross float asymmetrically against a stark, untextured white background. The edges of the geometric shapes are sharp and precise. There is no sense of depth, gravity, or representational subject matter."
+- **Negative prompt:** "texture, 3D, shading, realistic, gradient, messy brushstrokes"
+- **Tags:** suprematism, abstract, painting, geometric, minimalist
+- **Style / Reference:** Kazimir Malevich
+- **Composition:** Asymmetrical, floating
+- **Color palette:** Pitch Black, Primary Red, Pure White
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20290301_suprematism.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Strict adherence to absolute flatness and pure geometry.
+
+### Suggestion: Kevlar Macro Texture
+- **Date:** 2029-03-01
+- **Prompt:** "An extreme macro photography shot of raw, yellow Kevlar aramid synthetic fiber. The tightly woven herringbone pattern of the thick threads is in sharp focus. Dramatic, low-angle studio lighting rakes across the surface, highlighting the tough, unyielding texture and individual strands of the ballistic material."
+- **Negative prompt:** "smooth, cotton, silk, flat lighting, distant, blurry"
+- **Tags:** kevlar, macro, texture, fabric, material
+- **Style / Reference:** Macro Photography, Material Science
+- **Composition:** Flat lay texture
+- **Color palette:** Industrial Yellow, Shadow Black, Gold Highlights
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20290301_kevlar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** The lighting must reveal the tight, rigid structure of the weave.
+
+### Suggestion: Quasar Astrophotography
+- **Date:** 2029-03-01
+- **Prompt:** "A spectacular scientific space visualization of a distant Quasar. A supermassive black hole is surrounded by a blazing, turbulent accretion disk of superheated white and blue plasma. Two massive, blindingly bright relativistic jets of energy shoot out from the poles across light-years of space, piercing a dark, dusty galaxy."
+- **Negative prompt:** "cartoon, drawing, low resolution, simple, planet, moon"
+- **Tags:** quasar, space, astronomy, sci-fi, epic
+- **Style / Reference:** Scientific Visualization, Space Art
+- **Composition:** Cosmic scale, dynamic angle
+- **Color palette:** Plasma Blue, Blinding White, Deep Space Black, Dust Brown
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20290301_quasar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Emphasize the blinding luminosity of the accretion disk and polar jets.
+
+### Suggestion: Beaver Dam
+- **Date:** 2029-03-01
+- **Prompt:** "A photorealistic landscape shot of an intricate beaver dam blocking a serene forest stream. The dam is constructed from a chaotic but sturdy matrix of gnawed branches, mud, and rocks. Water trickles through the gaps. The surrounding forest is lush and green, with morning mist lingering over the calm pond created by the dam."
+- **Negative prompt:** "concrete dam, urban, dry, winter, low resolution"
+- **Tags:** beaver dam, nature, wildlife, forest, landscape
+- **Style / Reference:** Nature Photography, National Geographic
+- **Composition:** Wide shot, environmental context
+- **Color palette:** Mud Brown, Wood Texture, Forest Green, Stream Blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20290301_beaver_dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Focus on the textured, organic construction of the mud and sticks.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1687,9 +1752,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
-- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal. Graphene.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Geometric Abstraction, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
+- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal. Graphene.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern. Subterranean Garden, Clockwork Universe, Time Machine.
 
 ---
 
