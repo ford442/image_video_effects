@@ -14,6 +14,7 @@
     "@types/react-dom": "^19.1.8",
     "@webgpu/types": "^0.1.64",
     "@xenova/transformers": "latest",
+    "hls.js": "^1.6.15",
     "playwright": "^1.57.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -23,14 +24,19 @@
   "scripts": {
     "prestart": "node scripts/generate_shader_lists.js",
     "start": "react-scripts start",
-    "prebuild": "node scripts/generate_shader_lists.js",
-    "build": "react-scripts build",
+    "prebuild": "(npm run wasm:build 2>/dev/null || echo '⚠️ WASM build skipped (emscripten not available)') && node scripts/generate_shader_lists.js",
+    "build": "npm run wasm:build && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "wasm:build": "bash wasm_renderer/build.sh",
+    "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
     "bucket:sync": "node scripts/watch-bucket-simple.js",
     "bucket:watch": "node scripts/watch-bucket-simple.js --watch",
     "bucket:sync-full": "node scripts/watch-bucket.js",
-    "bucket:watch-full": "node scripts/watch-bucket.js --watch"
+    "bucket:watch-full": "node scripts/watch-bucket.js --watch",
+    "audit:shaders": "bash scripts/wgsl-audit-swarm.sh 4",
+    "audit:shaders:sample": "bash scripts/wgsl-audit-swarm.sh 4 --sample",
+    "deploy": "python deploy.py"
   },
   "eslintConfig": {
     "extends": [

@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { Renderer } from '../renderer/Renderer';
+import { type Renderer } from '../renderer/Renderer';
+import { RendererManager } from '../renderer/RendererManager';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 
 interface WebGPUCanvasProps {
@@ -60,7 +61,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         canvas.width = INTERNAL_RES;
         canvas.height = INTERNAL_RES;
 
-        const renderer = new Renderer(canvas, apiBaseUrl);
+        const renderer = new RendererManager({ width: 1920, height: 1080, agentCount: 50000 });
 
         // Hook up dimensions listener - kept for potential future use or informational purposes,
         // but we are locking buffer size now.

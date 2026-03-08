@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
+import LiveStudioTab from './components/LiveStudioTab';
 import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
@@ -72,6 +73,9 @@ const defaultSlotParams: SlotParams = {
 };
 
 function MainApp() {
+    // --- State: Tabs ---
+    const [activeTab, setActiveTab] = useState<'main' | 'live-studio'>('main');
+
     // --- State: General & Stacking ---
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
     const [modes, setModes] = useState<RenderMode[]>(['liquid', 'none', 'none']);
@@ -903,6 +907,20 @@ function MainApp() {
                     <div className="subtitle-text">AI VJ Image Playground</div>
                 </div>
                 <div className="header-controls">
+                    <button
+                        className={`toggle-sidebar-btn ${activeTab === 'main' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('main')}
+                    >
+                        Main
+                    </button>
+                    <button
+                        className={`toggle-sidebar-btn ${activeTab === 'live-studio' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('live-studio')}
+                        style={{ background: activeTab === 'live-studio' ? 'linear-gradient(135deg, #00d4ff, #7b2cbf)' : undefined }}
+                    >
+                        🎥 Live Studio
+                    </button>
+                    <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 8px' }} />
                     <button 
                         className="toggle-sidebar-btn" 
                         onClick={() => window.open('?mode=remote', '_blank', 'width=420,height=900')}
@@ -910,11 +928,16 @@ function MainApp() {
                     >
                         Open Remote
                     </button>
-                    <button className="toggle-sidebar-btn" onClick={() => setShowSidebar(!showSidebar)}>
-                        {showSidebar ? 'Hide Controls' : 'Show Controls'}
-                    </button>
+                    {activeTab === 'main' && (
+                        <button className="toggle-sidebar-btn" onClick={() => setShowSidebar(!showSidebar)}>
+                            {showSidebar ? 'Hide Controls' : 'Show Controls'}
+                        </button>
+                    )}
                 </div>
             </header>
+            {activeTab === 'live-studio' ? (
+                <LiveStudioTab />
+            ) : (
             <div className="main-container">
                 <aside className={`sidebar ${!showSidebar ? 'hidden' : ''}`}>
                     <Controls
@@ -970,6 +993,7 @@ function MainApp() {
                     </div>
                 </main>
             </div>
+            )}
             <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={() => {}} />
             <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={() => {}} />
             
