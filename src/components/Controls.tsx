@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus } from '../AutoDJ';
-import { BilibiliInput } from './BilibiliInput';
 
 interface ControlsProps {
     modes: RenderMode[];
@@ -128,7 +127,6 @@ const Controls: React.FC<ControlsProps> = ({
     onLiveStreamLoaded,
     onExitLiveStream
 }) => {
-    const [showLiveStream, setShowLiveStream] = useState(false);
     // Filter modes based on category
     const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
     const imageEntries = availableModes.filter(entry => entry.category === 'image');
@@ -204,7 +202,6 @@ const Controls: React.FC<ControlsProps> = ({
                             checked={inputSource === 'live'}
                             onChange={() => {
                                 setInputSource('live');
-                                setShowLiveStream(true);
                             }}
                         /> 🔴 Live
                     </label>
