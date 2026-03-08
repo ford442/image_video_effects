@@ -48,7 +48,7 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
     for(var y: i32 = -1; y <= 1; y = y + 1) {
         for(var x: i32 = -1; x <= 1; x = x + 1) {
             let lattice = vec2<f32>(f32(x), f32(y));
-            let offset = hash22(g + lattice);
+            var offset = hash22(g + lattice);
             var p = lattice + offset - f;
             let d = dot(p, p);
 

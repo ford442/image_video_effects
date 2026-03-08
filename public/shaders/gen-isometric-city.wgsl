@@ -46,10 +46,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Grid Repetition
     let gridSize = 2.0;
     let cell = floor(p.xz / gridSize);
-    let local = (fract(p.xz / gridSize) - 0.5) * gridSize;
+    var local = (fract(p.xz / gridSize) - 0.5) * gridSize;
 
     // Building properties based on cell hash
-    let h_rnd = hash12(cell);
+    var h_rnd = hash12(cell);
 
     // Param 1: Density/Height
     // Default 0.5 if not set (avoid 0)
@@ -81,7 +81,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -95,7 +95,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var m = -1.0;
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
-        let res = map(p);
+        var res = map(p);
         if (res.x < 0.001 || t > 100.0) {
             if (res.x < 0.001) { m = res.y; }
             break;
@@ -121,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Or rather, rotate 45 deg Y, then 35.264 deg X.
 
     let camDist = 50.0;
-    let target = vec3<f32>(0.0, 0.0, 0.0);
+    let target_pos = vec3<f32>(0.0, 0.0, 0.0);
 
     // Mouse interaction: Pan the camera
     var mouse = u.zoom_config.yz; // 0..1
@@ -138,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ray Origin varies with UV
     // 'zoom' factor
     let zoom = 15.0;
-    var ro = target + (right * uv.x + up * uv.y) * zoom - forward * camDist;
+    var ro = target_pos + (right * uv.x + up * uv.y) * zoom - forward * camDist;
 
     // Apply panning
     ro.x += pan.x + pan.y; // Diagonal movement for isometric feel
@@ -151,9 +151,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro.x += time * speed * 0.5;
 
     // Raymarch
-    let res = raymarch(ro, rd);
-    let t = res.x;
-    let mat = res.y;
+    var res = raymarch(ro, rd);
+    var t = res.x;
+    var mat = res.y;
 
     var col = vec3<f32>(0.05, 0.05, 0.1); // Background / Fog color (Dark Blue)
 
@@ -167,15 +167,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Material Coloring
         if (mat >= 1.0) { // Building
-            let h_rnd = mat - 1.0; // recovered hash
+            var h_rnd = mat - 1.0; // recovered hash
 
             // Base building color (dark grey/blue)
             var baseCol = vec3<f32>(0.1, 0.1, 0.15);
 
             // Window / Neon Logic
             // Map position to local building UV
-            let gridSize = 2.0;
-            let local = (fract(p.xz / gridSize) - 0.5) * gridSize;
+            var gridSize = 2.0;
+            var local = (fract(p.xz / gridSize) - 0.5) * gridSize;
             // Height fraction
             // approximate building height from p.y (since box is centered at h/2, top is h, bottom is 0)
             // Wait, map function: boxPos y is p.y - h*0.5.
@@ -246,7 +246,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p_hit = ro + rd * t;
     if (p_hit.y < 0.1) {
        // Street Coordinates
-       let gridSize = 2.0;
+       var gridSize = 2.0;
        let gridUV = abs(fract(p_hit.xz / gridSize) - 0.5) * gridSize; // 0 at center, 1 at edge? No.
        // Grid lines are at integer multiples of gridSize.
        // fract() goes 0..1. -0.5 -> -0.5..0.5. abs -> 0..0.5. *2.0 -> 0..1 (1 is edge)
@@ -276,11 +276,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
            // So we are on a line where x is constant integer. That is a Z-aligned street.
 
            if (gridUV.x > 0.45) { // Z-street
-               let flow = fract(p_hit.z * 0.5 + time * trafficSpeed); // movement along Z
+               var flow = fract(p_hit.z * 0.5 + time * trafficSpeed); // movement along Z
                if (flow > 0.9) { isTraffic = 1.0; }
            }
            if (gridUV.y > 0.45) { // X-street
-               let flow = fract(p_hit.x * 0.5 - time * trafficSpeed); // movement along X
+               var flow = fract(p_hit.x * 0.5 - time * trafficSpeed); // movement along X
                if (flow > 0.9) { isTraffic = 1.0; }
            }
 

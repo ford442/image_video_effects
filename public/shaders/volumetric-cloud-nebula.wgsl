@@ -38,7 +38,7 @@ fn hash3(p: vec3<f32>) -> vec3<f32> {
 
 // 3D Value noise
 fn noise3d(p: vec3<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let f_smooth = f * f * (3.0 - 2.0 * f);
     
@@ -49,7 +49,7 @@ fn noise3d(p: vec3<f32>) -> f32 {
         for (var y: i32 = 0; y < 2; y = y + 1) {
             for (var x: i32 = 0; x < 2; x = x + 1) {
                 let offset = vec3<f32>(f32(x), f32(y), f32(z));
-                let h = hash3(i + offset);
+                var h = hash3(i + offset);
                 let w = abs(vec3<f32>(1.0) - offset - f);
                 result = result + h.x * w.x * w.y * w.z;
             }
@@ -120,7 +120,7 @@ fn raymarchClouds(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32, co
         }
         
         var p = ro + rd * t;
-        let density = cloudDensity(p, time, densityScale);
+        var density = cloudDensity(p, time, densityScale);
         
         if (density > 0.001) {
             let colorT = length(p) * 0.1 + density * 2.0;
@@ -139,7 +139,7 @@ fn raymarchClouds(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32, co
 
 // Background stars
 fn starField(uv: vec2<f32>, time: f32) -> vec3<f32> {
-    let h = hash3(vec3<f32>(uv * 200.0, 0.0));
+    var h = hash3(vec3<f32>(uv * 200.0, 0.0));
     let star = step(0.997, h.x);
     let twinkle = 0.7 + 0.3 * sin(time * 3.0 + h.y * 10.0);
     return vec3<f32>(star * twinkle);

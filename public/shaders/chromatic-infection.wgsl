@@ -80,7 +80,7 @@ fn voronoi(uv: vec2<f32>, scale: f32, time: f32) -> f32 {
             // Animate cell centers for organic movement
             let animated = cellCenter + 0.3 * sin(time * 0.5 + cellCenter * 6.28);
             let diff = neighbor + animated - f;
-            let dist = length(diff);
+            var dist = length(diff);
             minDist = min(minDist, dist);
         }
     }
@@ -164,7 +164,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let isSaturated = (sampleSat > satThresh) && (sampleVal > 0.2);
         
         if (isSaturated) {
-            let dist = length(offset);
+            var dist = length(offset);
             let falloff = 1.0 - smoothstep(0.0, radius, dist);
             infectionStrength += falloff * sampleSat;
             infectionColor += sampleCol * falloff * sampleSat;

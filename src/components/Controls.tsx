@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus } from '../AutoDJ';
 
@@ -59,6 +59,31 @@ interface ControlsProps {
     recordingCountdown?: number;
     onStartRecording?: () => void;
     onStopRecording?: () => void;
+    // Live Stream Props
+    liveStreamUrl?: string;
+    onLiveStreamLoaded?: (url: string) => void;
+    onExitLiveStream?: () => void;
+}
+
+// Helper function to fetch Bilibili live stream URL
+async function getBilibiliLiveM3U8(roomId: string): Promise<string> {
+    try {
+        const res = await fetch(`https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id=${roomId}&protocol=0,1&format=0,1,2&codec=0,1&qn=10000&platform=web`);
+        const data = await res.json();
+        if (data.code !== 0 || !data.data?.play_url_list?.[0]) {
+            throw new Error('Failed to get stream URL');
+        }
+        const playUrl = data.data.play_url_list[0];
+        const host = playUrl.url_info?.[0]?.host;
+        const extra = playUrl.url_info?.[0]?.extra;
+        if (!host || !extra) {
+            throw new Error('Invalid stream data');
+        }
+        return host + extra;
+    } catch (err) {
+        console.error('Bilibili API error:', err);
+        throw err;
+    }
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -97,7 +122,10 @@ const Controls: React.FC<ControlsProps> = ({
     isRecording = false,
     recordingCountdown = 8,
     onStartRecording,
-    onStopRecording
+    onStopRecording,
+    liveStreamUrl,
+    onLiveStreamLoaded,
+    onExitLiveStream
 }) => {
     // Filter modes based on category
     const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
@@ -166,6 +194,16 @@ const Controls: React.FC<ControlsProps> = ({
                                 setInputSource('generative');
                             }}
                         /> Generative
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            value="live"
+                            checked={inputSource === 'live'}
+                            onChange={() => {
+                                setInputSource('live');
+                            }}
+                        /> 🔴 Live
                     </label>
                 </div>
             </div>
@@ -395,6 +433,16 @@ const Controls: React.FC<ControlsProps> = ({
                 </div>
             )}
 
+            {/* --- Live Stream Section --- */}
+            {/* Live Stream Tab */}
+            {inputSource === 'live' && (
+                <LiveStreamPanel 
+                    liveStreamUrl={liveStreamUrl}
+                    onLiveStreamLoaded={onLiveStreamLoaded}
+                    onExitLiveStream={onExitLiveStream}
+                />
+            )}
+
 
             <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
 
@@ -474,6 +522,184 @@ const Controls: React.FC<ControlsProps> = ({
                     Select an effect for this slot to see parameters.
                 </div>
             )}
+        </div>
+    );
+};
+
+// Live Stream Panel Component
+interface LiveStreamPanelProps {
+    liveStreamUrl?: string;
+    onLiveStreamLoaded?: (url: string) => void;
+    onExitLiveStream?: () => void;
+}
+
+const LiveStreamPanel: React.FC<LiveStreamPanelProps> = ({
+    liveStreamUrl,
+    onLiveStreamLoaded,
+    onExitLiveStream
+}) => {
+    const [liveInput, setLiveInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleStartStream = async () => {
+        if (!liveInput.trim()) return;
+        
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            let url = liveInput.trim();
+            
+            // If it's just numbers, treat as Bilibili room ID
+            if (/^\d+$/.test(url)) {
+                url = await getBilibiliLiveM3U8(url);
+            }
+            
+            onLiveStreamLoaded?.(url);
+        } catch (err: any) {
+            setError(err.message || 'Failed to load stream');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (liveStreamUrl) {
+        return (
+            <div className="control-group live-stream-panel" style={{
+                marginTop: '10px',
+                padding: '16px',
+                background: 'rgba(233, 69, 96, 0.1)',
+                borderRadius: '12px',
+                border: '1px solid rgba(233, 69, 96, 0.3)'
+            }}>
+                <h3 style={{ 
+                    color: '#e94560', 
+                    fontWeight: 'bold', 
+                    marginBottom: '12px',
+                    fontSize: '14px'
+                }}>
+                    🎥 Live Stream Active
+                </h3>
+                
+                <div style={{ 
+                    padding: '10px 12px', 
+                    background: 'rgba(0,0,0,0.3)', 
+                    borderRadius: '8px',
+                    marginBottom: '12px',
+                    fontSize: '12px'
+                }}>
+                    <span style={{ color: '#2ed573' }}>● Connected</span>
+                    <span style={{ color: '#888', marginLeft: '8px', wordBreak: 'break-all' }}>
+                        {liveStreamUrl.length > 35 ? liveStreamUrl.substring(0, 35) + '...' : liveStreamUrl}
+                    </span>
+                </div>
+                
+                <button 
+                    onClick={() => {
+                        onExitLiveStream?.();
+                        setLiveInput('');
+                    }}
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'linear-gradient(135deg, #e94560, #7b2cbf)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: 600
+                    }}
+                >
+                    ⏹ Disconnect
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="control-group live-stream-panel" style={{
+            marginTop: '10px',
+            padding: '16px',
+            background: '#16213e',
+            borderRadius: '12px',
+            border: '1px solid #334155'
+        }}>
+            <h3 style={{ 
+                color: '#e94560', 
+                fontWeight: 'bold', 
+                marginBottom: '12px',
+                fontSize: '14px'
+            }}>
+                🎥 Live Bilibili Stream
+            </h3>
+            
+            <input
+                type="text"
+                placeholder="Bilibili Room ID or direct .m3u8 URL"
+                value={liveInput}
+                onChange={(e) => setLiveInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleStartStream()}
+                style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    fontSize: '13px',
+                    marginBottom: '12px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                }}
+            />
+
+            {error && (
+                <div style={{
+                    padding: '8px 12px',
+                    background: 'rgba(255, 71, 87, 0.2)',
+                    borderRadius: '6px',
+                    color: '#ff4757',
+                    fontSize: '12px',
+                    marginBottom: '12px'
+                }}>
+                    ⚠️ {error}
+                </div>
+            )}
+
+            <button
+                onClick={handleStartStream}
+                disabled={isLoading || !liveInput.trim()}
+                style={{
+                    width: '100%',
+                    padding: '14px',
+                    background: isLoading 
+                        ? '#334155' 
+                        : 'linear-gradient(135deg, #e94560, #7b2cbf)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    opacity: isLoading || !liveInput.trim() ? 0.7 : 1,
+                    transition: 'all 0.2s'
+                }}
+            >
+                {isLoading ? '⏳ Loading...' : '▶️ Start Live Stream'}
+            </button>
+            
+            <div style={{
+                marginTop: '12px',
+                padding: '10px',
+                background: 'rgba(0,0,0,0.2)',
+                borderRadius: '8px',
+                fontSize: '11px',
+                color: '#8b8ba7'
+            }}>
+                <strong style={{ color: '#61dafb' }}>Tip:</strong> Try room IDs like <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>21495945</code> or paste a direct HLS URL
+            </div>
         </div>
     );
 };

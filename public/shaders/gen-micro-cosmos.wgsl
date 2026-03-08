@@ -49,7 +49,7 @@ fn hash(p: vec3<f32>) -> f32 {
 // Scene Map function
 fn map(pos: vec3<f32>) -> vec2<f32> {
     var p = pos;
-    let time = u.config.x;
+    var time = u.config.x;
 
     // Zoom params mapping
     let densityParams = u.zoom_params.x; // 0.0 - 1.0
@@ -103,7 +103,7 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
 // Calculate normal
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -116,8 +116,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var mat = 0.0;
     for(var i=0; i<80; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         mat = res.y;
         if(d < 0.001 || t > 50.0) { break; }
         t += d * 0.8; // Understep for better organic shapes
@@ -135,7 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Camera Setup
-    let time = u.config.x;
+    var time = u.config.x;
 
     // Mouse Interaction for Camera
     var mouse = u.zoom_config.yz;
@@ -160,9 +160,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rd = normalize(rd_pre + rt * (mouse.x - 0.5) * 0.5 + up * (mouse.y - 0.5) * 0.5);
 
     // Raymarch
-    let res = raymarch(ro, rd);
-    let t = res.x;
-    let mat = res.y;
+    var res = raymarch(ro, rd);
+    var t = res.x;
+    var mat = res.y;
 
     // Environment/Fluid Color (Deep Blue/Purple)
     let colorShift = u.zoom_params.w;

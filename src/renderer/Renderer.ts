@@ -49,6 +49,9 @@ export class Renderer {
     // Lifecycle flag to prevent race conditions
     private isDestroyed = false;
 
+    // Performance: Frame timing for video texture updates
+    private lastVideoFrameTime = 0;
+
     public onImageDimensions?: (width: number, height: number) => void;
 
     // Store layout to create pipelines lazily
@@ -426,8 +429,16 @@ export class Renderer {
     private async createResources(): Promise<void> {
         if (this.isDestroyed) return;
         const { width, height } = this.canvas;
+        
+        // Guard against zero or invalid canvas dimensions
+        if (width === 0 || height === 0) {
+            console.error(`Cannot create WebGPU resources with zero canvas dimensions: ${width}x${height}`);
+            throw new Error(`Invalid canvas dimensions: ${width}x${height}. Canvas must have non-zero size before WebGPU initialization.`);
+        }
+        
         const safeWidth = Math.max(1, width);
         const safeHeight = Math.max(1, height);
+        console.log(`Creating WebGPU resources with texture size: ${safeWidth}x${safeHeight}`);
 
         // --- Create Empty Texture for Fallback ---
         this.emptyTexture = this.device.createTexture({
@@ -707,7 +718,20 @@ export class Renderer {
         const currentTime = performance.now() / 1000.0;
 
         // --- Video Texture Update ---
-        if (videoElement.readyState >= 2 && videoElement.videoWidth > 0) {
+        // OPTIMIZATION: Frame skipping for live streams to maintain 60fps shader performance
+        const isLiveStream = this.inputSource === 'live';
+        const now = performance.now();
+        const timeSinceLastFrame = now - this.lastVideoFrameTime;
+        
+        // For live streams: update at most 30fps to save GPU for shaders
+        // For recorded videos/webcam: update every frame (60fps)
+        const shouldUpdateVideo = isLiveStream 
+            ? timeSinceLastFrame >= 33 // ~30fps for live streams
+            : timeSinceLastFrame >= 16; // ~60fps for normal video
+        
+        if (videoElement.readyState >= 2 && videoElement.videoWidth > 0 && shouldUpdateVideo) {
+            this.lastVideoFrameTime = now;
+            
             if (!this.videoTexture || this.videoTexture.width !== videoElement.videoWidth || this.videoTexture.height !== videoElement.videoHeight) {
                 if (this.videoTexture) this.videoTexture.destroy();
                 this.videoTexture = this.device.createTexture({
@@ -763,7 +787,8 @@ export class Renderer {
                     currentInputTexture = this.pingPongTexture2;
                 }
             }
-        } else if ((this.inputSource === 'video' || this.inputSource === 'webcam') && this.videoTexture) {
+        } else if ((this.inputSource === 'video' || this.inputSource === 'webcam' || this.inputSource === 'live') && this.videoTexture) {
+            // Live streams (HLS) use the same video texture path as recorded videos
             currentInputTexture = this.videoTexture;
         }
 

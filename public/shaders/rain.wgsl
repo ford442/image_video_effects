@@ -41,7 +41,7 @@ fn hash13(p: vec3<f32>) -> f32 {
 
 fn noise(p: vec2<f32>) -> f32 {
     let i = floor(p);
-    let f = fract(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash12(i + vec2<f32>(0.0, 0.0)),
                    hash12(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -59,7 +59,7 @@ fn rain_layer(uv: vec2<f32>, seed: f32, speed: f32, density: f32, wind: f32, tim
     var pos = st + vec2<f32>(0.0, t);
 
     let cell = floor(pos);
-    let f = fract(pos);
+    var f = fract(pos);
 
     let rand = hash12(cell + seed);
 

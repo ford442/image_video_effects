@@ -103,9 +103,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (color_shift > 0.1) {
         // Rotate hue slightly for psychedelic trails
         // Simple RGB rotation matrix approximation
-        let r = shifted_history.r;
-        let g = shifted_history.g;
-        let b = shifted_history.b;
+        var r = shifted_history.r;
+        var g = shifted_history.g;
+        var b = shifted_history.b;
 
         let shift_speed = color_shift * 0.05;
 

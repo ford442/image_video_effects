@@ -134,7 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // In bright areas of the video, make clouds more saturated and brighter
     let saturation = mix(0.7, satBoost, luminance);
-    let value = mix(0.5, 1.0, luminance);
+    var value = mix(0.5, 1.0, luminance);
     
     let cloudColor = hsv2rgb(baseHue, saturation, value);
 

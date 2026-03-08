@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let headY = fract(time * fallSpeed + colRand * 10.0); // 0 to 1
 
     // Distance from head
-    let dist = (headY - uv.y);
+    var dist = (headY - uv.y);
     if (dist < 0.0) { dist += 1.0; } // Wrap around
 
     // Underlying image interaction

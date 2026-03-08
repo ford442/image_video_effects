@@ -29,7 +29,7 @@ fn hash11(p: f32) -> f32 {
 }
 
 fn noise1(p: f32) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(hash11(i), hash11(i + 1.0), u);

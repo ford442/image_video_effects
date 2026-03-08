@@ -40,7 +40,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn noise2D(p: vec2<f32>) -> f32 {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   return mix(
@@ -146,7 +146,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dir2D = toPixel / max(dist2D, 0.001);
     
     // 3D direction considering light height
-    let lightDir = normalize(vec3<f32>(dir2D, -lightHeight));
+    var lightDir = normalize(vec3<f32>(dir2D, -lightHeight));
     
     // Sample surface at photon hit point
     let hitNormal = getSurfaceNormal(uv, texelSize, time);
@@ -238,7 +238,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Specular highlights
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let reflectDir = reflect(-viewDir, surfaceNormal);
-  let lightDir = normalize(vec3<f32>(lightPos - uv, lightHeight));
+  var lightDir = normalize(vec3<f32>(lightPos - uv, lightHeight));
   let specular = pow(max(dot(reflectDir, lightDir), 0.0), 64.0);
   finalColor = finalColor + vec3<f32>(specular * 0.5);
   

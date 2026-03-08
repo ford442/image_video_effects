@@ -30,7 +30,7 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 
@@ -64,7 +64,7 @@ fn sdCappedCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
 
 // Capped Cone - exact
 fn sdCappedCone(p: vec3<f32>, h: f32, r1: f32, r2: f32) -> f32 {
-    let q = vec2<f32>(length(p.xz), p.y);
+    var q = vec2<f32>(length(p.xz), p.y);
     let k1 = vec2<f32>(r2, h);
     let k2 = vec2<f32>(r2 - r1, 2.0 * h);
     let ca = vec2<f32>(q.x - min(q.x, select(r2, r1, q.y < 0.0)), abs(q.y) - h);
@@ -74,7 +74,7 @@ fn sdCappedCone(p: vec3<f32>, h: f32, r1: f32, r2: f32) -> f32 {
 }
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    var h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
@@ -93,7 +93,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let q_xz = (fract(p.xz / cell_size) - 0.5) * cell_size;
 
     // Hash based on ID for variation
-    let h = hash(id);
+    var h = hash(id);
 
     // Get local height of terrain at cell center for placement
     let cell_center = (id + 0.5) * cell_size;
@@ -103,7 +103,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var q = vec3<f32>(q_xz.x, p.y - ground_y, q_xz.y);
 
     // Swaying Logic
-    let time = u.config.x;
+    var time = u.config.x;
     let current_strength = u.zoom_params.y; // Zoom Y controls current
     let sway_amount = (q.y * 0.15) * current_strength;
     let sway = vec3<f32>(
@@ -197,7 +197,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -210,8 +210,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var mat = 0.0;
     for(var i=0; i<128; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         mat = res.y;
         if(d < 0.001 || t > 100.0) { break; }
         t += d;
@@ -230,7 +230,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Camera
     var mouse = u.zoom_config.yz;
-    let time = u.config.x * 0.1;
+    var time = u.config.x * 0.1;
 
     // Orbit camera logic
     let yaw = (mouse.x - 0.5) * 10.0 + time * 0.5;
@@ -238,22 +238,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = 10.0;
 
     // Target moves slowly through the landscape
-    let target = vec3<f32>(0.0, -2.0, time * 5.0);
+    let target_pos = vec3<f32>(0.0, -2.0, time * 5.0);
 
     let ro = vec3<f32>(
-        target.x + sin(yaw) * dist,
-        target.y + pitch * 5.0 + 5.0, // Height offset
-        target.z + cos(yaw) * dist
+        target_pos.x + sin(yaw) * dist,
+        target_pos.y + pitch * 5.0 + 5.0, // Height offset
+        target_pos.z + cos(yaw) * dist
     );
 
-    let forward = normalize(target - ro);
+    let forward = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
     let rd = normalize(forward + right * uv.x + up * uv.y);
 
-    let res = raymarch(ro, rd);
-    let t = res.x;
-    let mat = res.y;
+    var res = raymarch(ro, rd);
+    var t = res.x;
+    var mat = res.y;
 
     var color = vec3<f32>(0.0);
     let fogColor = vec3<f32>(0.0, 0.02, 0.05); // Deep dark blue

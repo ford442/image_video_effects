@@ -51,7 +51,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse interaction
     let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+    var dist = length(distVec);
     let brush = smoothstep(brushRadius, brushRadius * 0.5, dist); // 1.0 at center, 0 at edge
 
     // New freeze value: max of decayed old value and new brush input
@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             for (var x: i32 = -1; x <= 1; x++) {
                 let lattice = vec2<f32>(f32(x), f32(y));
                 let offset = hash22(g + lattice);
-                let dist = distance(lattice + offset, f);
+                var dist = distance(lattice + offset, f);
 
                 if (dist < minLoading) {
                     minLoading = dist;

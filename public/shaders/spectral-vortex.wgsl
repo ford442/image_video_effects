@@ -23,8 +23,8 @@ struct Uniforms {
 };
 
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
-    let x = c * (1.0 - abs(((h * 6.0) % 2.0) - 1.0));
+    var c = v * s;
+    var x = c * (1.0 - abs(((h * 6.0) % 2.0) - 1.0));
     let m = v - c;
     
     var rgb = vec3<f32>(0.0, 0.0, 0.0);
@@ -52,7 +52,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
         if (h < 0.0) { h = h + 1.0; }
     }
     
-    let s = select(0.0, delta / cmax, cmax > 0.0);
+    var s = select(0.0, delta / cmax, cmax > 0.0);
     return vec3<f32>(h, s, cmax);
 }
 
@@ -96,8 +96,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 3. Distort UVs based on Phase and Velocity
     // We use the accumulated phase to rotate the sampling vector
     let angle = newPhase * twistScale;
-    let s = sin(angle);
-    let c = cos(angle);
+    var s = sin(angle);
+    var c = cos(angle);
     let rotMat = mat2x2<f32>(c, -s, s, c);
     
     // Distort UV

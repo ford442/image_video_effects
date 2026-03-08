@@ -47,8 +47,8 @@ fn computeStructureTensor(uv: vec2<f32>, texelSize: vec2<f32>) -> mat2x2<f32> {
   var idx = 0;
   for (var dy = -1; dy <= 1; dy = dy + 1) {
     for (var dx = -1; dx <= 1; dx = dx + 1) {
-      let sampleUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      let sample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+      var sampleUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
+      var sample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
       let lum = luminance(sample.rgb);
       gx = gx + lum * sobelX[idx];
       gy = gy + lum * sobelY[idx];
@@ -86,7 +86,7 @@ fn getFlowDirection(tensor: mat2x2<f32>) -> vec2<f32> {
   }
   
   // Return anisotropy as length hint
-  let anisotropy = (lambda1 - lambda2) / (lambda1 + lambda2 + 0.001);
+  var anisotropy = (lambda1 - lambda2) / (lambda1 + lambda2 + 0.001);
   
   return flow * (0.5 + anisotropy * 0.5);
 }
@@ -126,8 +126,8 @@ fn anisotropicKuwahara(uv: vec2<f32>, texelSize: vec2<f32>, flow: vec2<f32>, win
         sin(angle) * r * (1.0 / stretch)
       );
       
-      let sampleUV = uv + sampleOffset * texelSize * 3.0;
-      let sample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+      var sampleUV = uv + sampleOffset * texelSize * 3.0;
+      var sample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
       
       let weight = gaussian(t, 0.4);
       colorSum = colorSum + sample.rgb * weight;
@@ -162,7 +162,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Parameters
   let windowSize = mix(2.0, 8.0, u.zoom_params.x);
-  let anisotropy = mix(0.0, 2.0, u.zoom_params.y);
+  var anisotropy = mix(0.0, 2.0, u.zoom_params.y);
   let sharpness = mix(0.0, 2.0, u.zoom_params.z);
   let flowStrength = mix(0.0, 1.0, u.zoom_params.w);
   

@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Sample color at cell center (pixelated look)
         // Add half pixel offset to sample center of block
         let sampleUV = cellUV + (vec2<f32>(0.5) / grid);
-        let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+        var col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
         let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
 
         var charVal = 0.0;
@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     } else {
         // Outside Lens: Normal
-        let col = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        var col = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
         textureStore(writeTexture, vec2<i32>(global_id.xy), col);
     }
 }

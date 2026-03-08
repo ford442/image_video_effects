@@ -25,7 +25,7 @@ fn ping_pong_v2(v: vec2<f32>) -> vec2<f32> {
 // --- IMPROVEMENT 3: Normal Reconstruction ---
 // Reconstructs a surface normal from the depth texture by sampling neighbor pixels.
 fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
-    let resolution = u.config.zw;
+    var resolution = u.config.zw;
     let normal_strength = u.lighting_params.z;
 
     let offset_x = vec2<f32>(1.0 / resolution.x, 0.0);
@@ -76,14 +76,14 @@ fn sample_layer(uv: vec2<f32>, zoom_time: f32, zoom_center: vec2<f32>) -> vec4<f
 
 // Calculate the depth of the foreground layer for a given screen UV.
 fn get_fg_depth_at(uv: vec2<f32>, zoom_center: vec2<f32>, scale: f32) -> f32 {
-    let transformed_uv = (uv - zoom_center) / scale + zoom_center;
-    let wrapped_uv = ping_pong_v2(transformed_uv);
+    var transformed_uv = (uv - zoom_center) / scale + zoom_center;
+    var wrapped_uv = ping_pong_v2(transformed_uv);
     return textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
+  var resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
   let zoom_time = u.zoom_config.x;
   let zoom_center = u.zoom_config.yz;
@@ -93,8 +93,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let zoom_progress = fract(zoom_time * fg_speed);
   let scale = 1.0 + zoom_progress * 4.0; // zoom_intensity = 4.0
 
-  let transformed_uv = (uv - zoom_center) / scale + zoom_center;
-  let wrapped_uv = ping_pong_v2(transformed_uv);
+  var transformed_uv = (uv - zoom_center) / scale + zoom_center;
+  var wrapped_uv = ping_pong_v2(transformed_uv);
 
   var fg_color = textureSampleLevel(readTexture, non_filtering_sampler, wrapped_uv, 0.0);
   let fg_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;

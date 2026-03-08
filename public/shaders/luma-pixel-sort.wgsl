@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse interaction: Modify threshold based on Y position of mouse
   // and maybe local influence
-  let mouseInfluence = 0.0;
+  var mouseInfluence = 0.0;
   if (abs(uv.y - mousePos.y) < 0.2) {
       mouseInfluence = 1.0 - abs(uv.y - mousePos.y) / 0.2;
   }

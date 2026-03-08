@@ -40,14 +40,14 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     // First pass: find closest point
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash22(i_st + neighbor);
+            var neighbor = vec2<f32>(f32(x), f32(y));
+            var point = hash22(i_st + neighbor);
 
             // Animate points slowly
-            let anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
+            var anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
 
-            let diff = neighbor + point + anim - f_st;
-            let dist = length(diff);
+            var diff = neighbor + point + anim - f_st;
+            var dist = length(diff);
 
             if (dist < min_dist) {
                 min_dist = dist;
@@ -61,11 +61,11 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     var min_edge_dist = 8.0;
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash22(i_st + neighbor);
-            let anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
+            var neighbor = vec2<f32>(f32(x), f32(y));
+            var point = hash22(i_st + neighbor);
+            var anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
 
-            let diff = neighbor + point + anim - f_st;
+            var diff = neighbor + point + anim - f_st;
 
             // Skip the closest center itself
             if (dot(diff - cell_center, diff - cell_center) > 0.0001) {
@@ -85,7 +85,7 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
                 // Voronoi edge distance is dot( (diff + cell_center)*0.5, normalize(diff-cell_center) )
                 // But vectors are relative to f_st.
 
-                let dist = dot( 0.5 * (cell_center + diff), normalize(diff - cell_center) );
+                var dist = dot( 0.5 * (cell_center + diff), normalize(diff - cell_center) );
                 min_edge_dist = min(min_edge_dist, dist);
             }
         }

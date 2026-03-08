@@ -96,7 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 
                 // HSL to RGB
                 let c1 = (1.0 - abs(2.0 * light - 1.0)) * sat;
-                let x = c1 * (1.0 - abs(fract(hue * 6.0) * 2.0 - 1.0));
+                var x = c1 * (1.0 - abs(fract(hue * 6.0) * 2.0 - 1.0));
                 let m = light - c1 * 0.5;
                 
                 var layerCol: vec3<f32>;

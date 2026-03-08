@@ -57,7 +57,7 @@ fn hash31(p: vec3<f32>) -> f32 {
 // Returns vec2: x = distance, y = material ID
 fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
-    let time = u.config.x;
+    var time = u.config.x;
     
     // Global twist/rotation around Y axis based on height
     let twist = p.y * 0.05;
@@ -137,7 +137,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (fragCoord * 2.0 - dims) / dims.y;
     
     // Camera setup - moving upward through the crystal citadel
-    let time = u.config.x * u.zoom_params.y;
+    var time = u.config.x * u.zoom_params.y;
     var ro = vec3<f32>(0.0, time * 2.0, -5.0);
     
     // Mouse interaction for camera orbit
@@ -224,7 +224,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let baseColor = vec3<f32>(0.08, 0.08, 0.1);
         
         // Combine lighting
-        let litColor = baseColor * (dif * 0.7 + dif_mouse * 0.5 + 0.2);
+        var litColor = baseColor * (dif * 0.7 + dif_mouse * 0.5 + 0.2);
         litColor += iridColor * fresnel * 0.8;
         litColor += vec3<f32>(1.0) * spec * u.zoom_params.z;
         

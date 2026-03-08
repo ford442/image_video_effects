@@ -503,6 +503,60 @@ hr {
     border-radius: 4px;
 }
 
+/* =====================================================
+   🖱️ CUSTOM CURSOR STYLES
+   ===================================================== */
+
+/* NOTE: custom cursor definitions were originally placed here, but webpack's
+   CSS loader would try to resolve the `url()` paths (even with comments) and
+   fail when the file wasn't present in `src/`. To avoid build-time errors the
+   rules have been removed from the bundled stylesheet.
+
+   If you want to enable a custom cursor, create a separate CSS file under
+   `public/` (for example `public/custom-cursor.css`) with the following
+   snippet and reference it from `public/index.html` or your HTML template:
+
+     .webgpu-canvas {
+         cursor: url(/cursors/cursor.cur) 16 16,
+                 url(/cursors/crosshair.svg) 16 16,
+                 crosshair;
+     }
+     .webgpu-canvas:active,
+     .webgpu-canvas.webcam-canvas {
+         cursor: url(/cursors/cursor.cur) 16 16,
+                 url(/cursors/crosshair.svg) 16 16,
+                 crosshair;
+     }
+
+   With the file in `public/` the paths are treated as static assets and are
+   ignored by webpack entirely; the `public/cursors` directory may remain empty
+   if you don't supply a `.cur` file.
+*/
+
+/* fallback to default crosshair inside application bundle */
+.webgpu-canvas {
+    /* Try .cur file first (place your cursor.cur in public/cursors/) */
+    cursor: url('../public/cursors/cursor.cur') 16 16,
+            /* SVG fallback for modern browsers */
+            url('../public/cursors/crosshair.svg') 16 16,
+            /* CSS-only fallback */
+            crosshair;
+}
+
+/* Active state (when dragging/clicking on canvas) */
+.webgpu-canvas:active {
+    cursor: url('../public/cursors/cursor.cur') 16 16,
+            url('../public/cursors/crosshair.svg') 16 16,
+            crosshair;
+}
+
+/* Webcam mode cursor override - keep the custom cursor */
+.webgpu-canvas.webcam-canvas {
+    cursor: url('../public/cursors/cursor.cur') 16 16,
+            url('../public/cursors/crosshair.svg') 16 16,
+            crosshair;
+}
+
 /* Live Recording Indicator */
 .webcam-indicator {
     position: absolute;

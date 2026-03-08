@@ -49,12 +49,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let rPos = rData.xy;
       let rStart = rData.z;
 
-      let t = currentTime - rStart;
+      var t = currentTime - rStart;
       if (t > 0.0 && t < 4.0) { // Limit lifetime
-          let dVec = uv - rPos;
+          var dVec = uv - rPos;
           // Correct aspect ratio for distance
-          let aspect = resolution.x / resolution.y;
-          let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+          var aspect = resolution.x / resolution.y;
+          var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
           if (dist > 0.001) {
              let phase = dist * frequency - t * waveSpeed;
@@ -63,7 +63,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
              let amp = 1.0 / (1.0 + t * decayFactor + dist * 20.0);
 
              let h = sin(phase) * amp;
-             let s = cos(phase) * frequency * amp; // Approx derivative magnitude
+             var s = cos(phase) * frequency * amp; // Approx derivative magnitude
 
              totalHeight += h;
              totalSlope += normalize(dVec) * s;
@@ -73,19 +73,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // 2. Handle Mouse Hover (Continuous disturbance)
   if (mousePos.x >= 0.0) {
-      let dVec = uv - mousePos;
-      let aspect = resolution.x / resolution.y;
-      let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+      var dVec = uv - mousePos;
+      var aspect = resolution.x / resolution.y;
+      var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
       // Wake / Bow wave effect? Or just a depression?
       // Let's make a local depression that moves with mouse.
       let radius = 0.05;
       if (dist < radius * 2.0) {
-          let t = dist / radius;
+          var t = dist / radius;
           // Smooth bump
-          let h = -1.0 * exp(-t * t * 4.0);
+          var h = -1.0 * exp(-t * t * 4.0);
           // Slope
-          let s = h * (-2.0 * t * 4.0 / radius); // Chain rule approx
+          var s = h * (-2.0 * t * 4.0 / radius); // Chain rule approx
 
           totalHeight += h * 0.2; // Weaker than clicks
           totalSlope += normalize(dVec) * s * 0.2;
@@ -104,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let n = normalize(vec3<f32>(-totalSlope.x * 20.0, -totalSlope.y * 20.0, 1.0));
       let lightDir = normalize(vec3<f32>(-0.5, -0.5, 0.8));
       let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-      let h = normalize(lightDir + viewDir);
+      var h = normalize(lightDir + viewDir);
       let spec = pow(max(dot(n, h), 0.0), 64.0);
 
       color = color + vec4<f32>(spec * specularStr);

@@ -37,7 +37,7 @@ fn hash(p: vec3<f32>) -> f32 {
 }
 
 fn noise(p: vec3<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 
@@ -151,8 +151,8 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let ribs = sin(local_p.z * rib_freq) * rib_amp;
 
     // 3. Organic Displacement
-    let time = u.config.x * pulseSpeed;
-    let pulse = sin(time * 2.0) * 0.5 + 0.5; // 0..1
+    var time = u.config.x * pulseSpeed;
+    var pulse = sin(time * 2.0) * 0.5 + 0.5; // 0..1
     let noise_val = fbm(p * 2.0 + vec3<f32>(0.0, 0.0, time * 0.2));
     let displacement = noise_val * biomass * 0.5;
 
@@ -213,7 +213,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -226,8 +226,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var mat = 0.0;
     for(var i=0; i<128; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         mat = res.y;
         if(d < 0.001 || t > 100.0) { break; }
         t += d;
@@ -246,7 +246,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Camera
     var mouse = u.zoom_config.yz; // 0..1
-    let time = u.config.x;
+    var time = u.config.x;
 
     let yaw = (mouse.x - 0.5) * 6.28;
     let pitch = (mouse.y - 0.5) * 3.14;
@@ -266,9 +266,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rd = normalize(forward + right * uv.x + up * uv.y);
 
     // Raymarch
-    let res = raymarch(ro, rd);
-    let t = res.x;
-    let mat = res.y;
+    var res = raymarch(ro, rd);
+    var t = res.x;
+    var mat = res.y;
 
     var color = vec3<f32>(0.0);
     let fogColor = vec3<f32>(0.01, 0.01, 0.02); // Very dark
@@ -281,7 +281,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
         // Pulsating light from the core
-        let pulse = sin(u.config.x * u.zoom_params.y * 5.0) * 0.5 + 0.5;
+        var pulse = sin(u.config.x * u.zoom_params.y * 5.0) * 0.5 + 0.5;
 
         // Base Material Color
         // Metallic/Organic Dark

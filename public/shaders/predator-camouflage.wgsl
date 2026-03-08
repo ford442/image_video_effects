@@ -63,10 +63,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (mask <= 0.001) {
         // Optimization: No effect outside radius
-        let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
         textureStore(writeTexture, vec2<i32>(global_id.xy), color);
         // Write depth
-        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        var depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
         textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
     }
@@ -108,6 +108,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Write depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    var depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

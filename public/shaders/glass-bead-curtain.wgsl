@@ -72,9 +72,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (r < 0.5) {
         // Inside bead: Refract
         // Sphere height z
-        let z = sqrt(0.25 - r*r);
+        var z = sqrt(0.25 - r*r);
         // Normal of sphere
-        let normal = normalize(vec3<f32>(cell_uv, z));
+        var normal = normalize(vec3<f32>(cell_uv, z));
 
         // Refraction vector (simplified)
         // Offset UV based on xy normal
@@ -94,8 +94,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add simple specular highlight on beads
     if (r < 0.5) {
         let light_dir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
-        let z = sqrt(0.25 - r*r);
-        let normal = normalize(vec3<f32>(cell_uv, z));
+        var z = sqrt(0.25 - r*r);
+        var normal = normalize(vec3<f32>(cell_uv, z));
         let spec = pow(max(dot(normal, light_dir), 0.0), 20.0);
         color = color + vec4<f32>(spec * 0.5);
     }

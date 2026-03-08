@@ -26,7 +26,7 @@ fn getLuma(color: vec3<f32>) -> f32 {
 fn hslToRgb(h: f32, s: f32, l: f32) -> vec3<f32> {
   // Simplified HSL to RGB
   let c = (1.0 - abs(2.0 * l - 1.0)) * s;
-  let x = c * (1.0 - abs((h * 6.0) % 2.0 - 1.0));
+  var x = c * (1.0 - abs((h * 6.0) % 2.0 - 1.0));
   let m = l - c / 2.0;
 
   var r = 0.0;

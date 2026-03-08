@@ -37,10 +37,10 @@ fn hash31(p: vec3<f32>) -> f32 {
 
 // Basic 3D Noise for fracture displacement
 fn noise(p: vec3<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
-    let res = mix(
+    var res = mix(
         mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 0.0)), hash31(i + vec3<f32>(1.0, 0.0, 0.0)), u.x),
             mix(hash31(i + vec3<f32>(0.0, 1.0, 0.0)), hash31(i + vec3<f32>(1.0, 1.0, 0.0)), u.x), u.y),
         mix(mix(hash31(i + vec3<f32>(0.0, 0.0, 1.0)), hash31(i + vec3<f32>(1.0, 0.0, 1.0)), u.x),
@@ -170,7 +170,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     for (var i = 0; i < 120; i++) {
         var p = ro + rd * t;
-        let res = map(p);
+        var res = map(p);
         d = res.x;
         m = res.y;
         accumGlow += res.z;

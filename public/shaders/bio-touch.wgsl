@@ -41,7 +41,7 @@ fn voronoi(p: vec2<f32>) -> f32 {
             let neighbor = vec2<f32>(f32(x), f32(y));
             let cellId = i + neighbor;
             let point = neighbor + hash22(cellId) - f;
-            let dist = length(point);
+            var dist = length(point);
             minDist = min(minDist, dist);
         }
     }
@@ -62,7 +62,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Correct aspect ratio for distance calculation
     let aspect = resolution.x / resolution.y;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+    var dist = length(distVec);
 
     // Params
     let glowRadius = u.zoom_params.x * 0.5; // 0.0 to 0.5

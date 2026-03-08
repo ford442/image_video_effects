@@ -85,7 +85,7 @@ fn digitalNoise(uv: vec2<f32>, time: f32) -> f32 {
 fn rgbShift(uv: vec2<f32>, mouse: vec2<f32>, amount: f32) -> vec3<f32> {
     let toMouse = uv - mouse;
     let dist = length(toMouse);
-    let angle = atan2(toMouse.y, toMouse.x);
+    var angle = atan2(toMouse.y, toMouse.x);
     
     let shiftDir = vec2<f32>(cos(angle + 1.0), sin(angle + 1.0));
     let shiftAmount = amount * smoothstep(0.5, 0.0, dist);
@@ -94,19 +94,19 @@ fn rgbShift(uv: vec2<f32>, mouse: vec2<f32>, amount: f32) -> vec3<f32> {
     let gUV = uv;
     let bUV = uv - shiftDir * shiftAmount;
     
-    let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    var r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    var b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     
     return vec3<f32>(r, g, b);
 }
 
 // Wave displacement
 fn waveDisplace(uv: vec2<f32>, mouse: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
-    let dist = length(uv - mouse);
+    var dist = length(uv - mouse);
     let wave = sin(dist * 30.0 - time * 8.0) * intensity * 0.05;
     
-    let angle = atan2(uv.y - mouse.y, uv.x - mouse.x);
+    var angle = atan2(uv.y - mouse.y, uv.x - mouse.x);
     let displacement = vec2<f32>(cos(angle), sin(angle)) * wave * smoothstep(0.4, 0.0, dist);
     
     return uv + displacement;
@@ -115,7 +115,7 @@ fn waveDisplace(uv: vec2<f32>, mouse: vec2<f32>, time: f32, intensity: f32) -> v
 // Pixel sorting effect
 fn pixelSort(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
     let sortThreshold = 0.7 + intensity * 0.25;
-    let h = hash2(vec2<f32>(uv.x, floor(time * 5.0)));
+    var h = hash2(vec2<f32>(uv.x, floor(time * 5.0)));
     
     if (h > sortThreshold) {
         let sortAmount = (hash1(h) - 0.5) * intensity * 0.2;
@@ -126,11 +126,11 @@ fn pixelSort(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
 
 // Datamoshing-like effect
 fn datamosh(uv: vec2<f32>, mouse: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
-    let dist = length(uv - mouse);
+    var dist = length(uv - mouse);
     let moshStrength = intensity * smoothstep(0.3, 0.0, dist);
     
     let blockY = floor(uv.y * 30.0) / 30.0;
-    let h = hash2(vec2<f32>(blockY, floor(time * 8.0)));
+    var h = hash2(vec2<f32>(blockY, floor(time * 8.0)));
     
     if (h > 0.9) {
         let offsetX = (hash1(h) - 0.5) * moshStrength * 0.4;
@@ -194,8 +194,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeDist = abs(uv.x - 0.5) * 2.0;
     let edgeAberration = edgeDist * glitchIntensity * 0.02;
     
-    let r = textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(edgeAberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let b = textureSampleLevel(readTexture, u_sampler, clamp(p - vec2<f32>(edgeAberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    var r = textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(edgeAberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    var b = textureSampleLevel(readTexture, u_sampler, clamp(p - vec2<f32>(edgeAberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     color.r = mix(color.r, r, edgeDist * 0.5);
     color.b = mix(color.b, b, edgeDist * 0.5);
     

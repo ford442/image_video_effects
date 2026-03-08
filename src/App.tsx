@@ -116,6 +116,8 @@ function MainApp() {
     const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined);
     const [isMuted, setIsMuted] = useState(true);
     const [selectedVideo, setSelectedVideo] = useState<string>("");
+    // --- State: Live Stream ---
+    const [liveStreamUrl, setLiveStreamUrl] = useState<string>('');
 
     // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
@@ -975,6 +977,17 @@ function MainApp() {
                         recordingCountdown={recordingCountdown}
                         onStartRecording={startRecording}
                         onStopRecording={stopRecording}
+                        // Live Stream props
+                        liveStreamUrl={liveStreamUrl}
+                        onLiveStreamLoaded={(url) => {
+                            setLiveStreamUrl(url);
+                            setStatus('🔴 Live stream connected');
+                        }}
+                        onExitLiveStream={() => {
+                            setLiveStreamUrl('');
+                            setInputSource('image');
+                            setStatus('Live stream disconnected');
+                        }}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -990,6 +1003,7 @@ function MainApp() {
                         apiBaseUrl={API_BASE_URL}
                         isWebcamActive={isWebcamActive}
                         webcamVideoElement={videoElementRef.current}
+                        liveStreamUrl={liveStreamUrl}
                     />
                     <div className="status-bar">
                         {isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}

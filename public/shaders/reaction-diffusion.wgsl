@@ -32,7 +32,7 @@ fn laplacian(coord: vec2<u32>, channel: u32) -> f32 {
     for (var j: i32 = -1; j <= 1; j = j + 1) {
       let sx = min(GRID_SIZE - 1u, max(0u, u32(i) + coord.x));
       let sy = min(GRID_SIZE - 1u, max(0u, u32(j) + coord.y));
-      let idx = vec2<u32>(sx, sy);
+      var idx = vec2<u32>(sx, sy);
       let sample = textureLoad(dataTextureC, vec2<i32>(i32(idx.x), i32(idx.y)), 0);
       sum = sum + sample[channel] * kernel[k];
       k = k + 1u;
@@ -45,7 +45,7 @@ fn laplacian(coord: vec2<u32>, channel: u32) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<u32>(gid.xy);
   if (coord.x >= GRID_SIZE || coord.y >= GRID_SIZE) { return; }
-  let idx = coord.y * GRID_SIZE + coord.x;
+  var idx = coord.y * GRID_SIZE + coord.x;
   let time = u.config.x;
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / f32(GRID_SIZE);
   

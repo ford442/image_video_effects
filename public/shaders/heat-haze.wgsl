@@ -54,7 +54,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));
 
-  let mouseHeat = 0.0;
+  var mouseHeat = 0.0;
   // If mouse is down, inject heat
   if (mouseDown > 0.5 && dist < 0.05) {
       mouseHeat = heatGain * (1.0 - dist / 0.05);

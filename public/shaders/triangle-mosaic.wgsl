@@ -22,7 +22,7 @@ struct Uniforms {
 };
 
 fn rotate2d(angle: f32) -> mat2x2<f32> {
-    let s = sin(angle);
+    var s = sin(angle);
     let c = cos(angle);
     return mat2x2<f32>(c, -s, s, c);
 }
@@ -56,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let angle = rotation_param * 6.28 + (1.0 - smoothstep(0.0, 0.5, d)) * twist_param * 3.14;
 
     // Skew for triangular grid
-    let s = vec2<f32>(1.0, 1.732); // sqrt(3)
+    var s = vec2<f32>(1.0, 1.732); // sqrt(3)
 
     // Apply rotation to UVs before grid mapping? No, rotate the grid sampling.
     // Let's rotate the point P around the mouse? Or just global rotation?

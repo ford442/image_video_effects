@@ -40,7 +40,7 @@ fn hash(p: vec2<f32>) -> f32 {
 //  2-D value noise (smoothstep interpolation)
 // ───────────────────────────────────────────────────────────────────────────────
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     // Four corners
     let a = hash(i + vec2<f32>(0.0, 0.0));
@@ -144,7 +144,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     var extra = vec3<f32>(0.0);
     if (lum > 1.0) {
-        let curl = computeCurl(uv, texel);
+        var curl = computeCurl(uv, texel);
         let burstHue = fract(atan2(curl.y, curl.x) / (2.0 * 3.14159265));
         extra = hsv2rgb(vec3<f32>(burstHue, 1.0, (lum - 1.0) * 2.0)) * 0.4;
     }
@@ -160,7 +160,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Feedback warp – drag previous colour along a curl-field
     // ──────────────────────────────────────────────────────────────────────────
-    let curl = computeCurl(uv, texel);
+    var curl = computeCurl(uv, texel);
     let warpedUV = clamp(uv + curl * feedbackStep, vec2<f32>(0.0), vec2<f32>(1.0));
     let prevCol = textureSampleLevel(feedbackTex, videoSampler, warpedUV, 0.0).rgb;
 

@@ -61,7 +61,7 @@ fn map(p: vec3<f32>, time: f32) -> f32 {
     var d_tentacles = 100.0;
     let num_tentacles = 8.0;
     for (var i = 0.0; i < num_tentacles; i = i + 1.0) {
-        let angle = (i / num_tentacles) * 6.28318;
+        var angle = (i / num_tentacles) * 6.28318;
         let radius = 0.3;
         let tentacle_pos = vec3<f32>(cos(angle) * radius, 0.0, sin(angle) * radius);
         var p_t = p - tentacle_pos;
@@ -72,7 +72,7 @@ fn map(p: vec3<f32>, time: f32) -> f32 {
 
         // Capsule shape for tentacle
         p_t.y += 1.0; // Shift down
-        let h = 2.0; // Length
+        var h = 2.0; // Length
         p_t.y = clamp(p_t.y, 0.0, h);
         let d_t = length(p_t) - 0.05 * (1.0 - p_t.y / h); // Taper
 
@@ -92,11 +92,11 @@ fn stars(dir: vec3<f32>) -> f32 {
     var p = dir * 100.0;
     let cell = floor(p);
     let local = fract(p);
-    let n = cell.x + cell.y * 57.0 + cell.z * 113.0;
-    let h = hash(n);
+    var n = cell.x + cell.y * 57.0 + cell.z * 113.0;
+    var h = hash(n);
     if (h > 0.95) {
         let star_pos = vec3<f32>(hash(n + 1.0), hash(n + 2.0), hash(n + 3.0));
-        let d = length(local - star_pos);
+        var d = length(local - star_pos);
         return smoothstep(0.1, 0.0, d);
     }
     return 0.0;
@@ -120,8 +120,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro.y = cam_rot[0][0] * ro.y + cam_rot[0][1] * ro.z;
     ro.z = cam_rot[1][0] * ro.y + cam_rot[1][1] * ro.z;
 
-    let target = vec3<f32>(0.0, 0.0, 0.0);
-    let f = normalize(target - ro);
+    let target_pos = vec3<f32>(0.0, 0.0, 0.0);
+    let f = normalize(target_pos - ro);
     let r = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), f));
     let up = cross(f, r);
     let rd = normalize(f + r * uv.x + up * uv.y);
@@ -133,7 +133,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     for(var i=0; i<64; i++) {
         var p = ro + rd * t;
-        let d = map(p, time);
+        var d = map(p, time);
 
         // Accumulate glow near the surface
         glow += 1.0 / (1.0 + d * d * 20.0);
@@ -156,7 +156,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var p = ro + rd * t;
         // Simple normal calculation
         let e = vec2<f32>(0.01, 0.0);
-        let n = normalize(vec3<f32>(
+        var n = normalize(vec3<f32>(
             map(p + e.xyy, time) - map(p - e.xyy, time),
             map(p + e.yxy, time) - map(p - e.yxy, time),
             map(p + e.yyx, time) - map(p - e.yyx, time)
@@ -175,7 +175,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var glowColor = vec3<f32>(0.1, 0.4, 0.9); // Base Blue
 
     // Simple hue shift logic (rotate RGB)
-    let angle = hue_shift * 6.28;
+    var angle = hue_shift * 6.28;
     let k = vec3<f32>(0.57735, 0.57735, 0.57735);
     let cos_angle = cos(angle);
     glowColor = glowColor * cos_angle + cross(k, glowColor) * sin(angle) + k * dot(k, glowColor) * (1.0 - cos_angle);

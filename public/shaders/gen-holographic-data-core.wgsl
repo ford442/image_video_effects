@@ -31,12 +31,12 @@ struct Uniforms {
 // ---------------------------------------------------------
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    let q = abs(p) - b;
+    var q = abs(p) - b;
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
 fn sdCylinder(p: vec3<f32>, c: vec2<f32>) -> f32 {
-    let d = abs(vec2<f32>(length(p.xz), p.y)) - c;
+    var d = abs(vec2<f32>(length(p.xz), p.y)) - c;
     return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
@@ -62,7 +62,7 @@ fn map(p: vec3<f32>) -> MapResult {
 
     // Domain repetition
     let c = vec3<f32>(spacing);
-    let q = (p + 0.5 * c) % c - 0.5 * c;
+    var q = (p + 0.5 * c) % c - 0.5 * c;
 
     // Cell ID for variation
     let cell_id = floor((p + 0.5 * c) / c);
@@ -74,7 +74,7 @@ fn map(p: vec3<f32>) -> MapResult {
     let inner_d = sdBox(q, vec3<f32>(0.3));
 
     // Active Data Pulse logic
-    let time = u.config.x;
+    var time = u.config.x;
     let pulse_rate = u.zoom_params.z;
     // create a moving pattern based on cell position and time
     let pulse_val = sin(cell_id.x * 12.3 + cell_id.y * 45.6 + cell_id.z * 78.9 + time * pulse_rate * 5.0);
@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let time = u.config.x;
+    var time = u.config.x;
 
     let glitch_intensity = u.zoom_params.w;
     let travel_speed = u.zoom_params.y;
@@ -186,9 +186,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     for (var i = 0; i < max_steps; i++) {
         var p = ro + rd * t;
-        let res = map(p);
+        var res = map(p);
 
-        let d = res.d;
+        var d = res.d;
 
         // Volumetric Glow Accumulation
         if (d > 0.0) {

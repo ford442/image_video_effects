@@ -29,7 +29,7 @@ fn hash(p: f32) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i.x + i.y * 57.0), hash(i.x + 1.0 + i.y * 57.0), u.x),
@@ -64,7 +64,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     let idx = gid.x;
     if (idx >= BOID_COUNT) { return; }
     
-    let base = idx * 6u;
+    var base = idx * 6u;
     var px = extraBuffer[base + 0u];
     var py = extraBuffer[base + 1u];
     var vx = extraBuffer[base + 2u];
@@ -74,7 +74,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     var pos = vec2<f32>(px, py);
     let vel = vec2<f32>(vx, vy);
-    let time = u.config.x;
+    var time = u.config.x;
     
     // Separation, Alignment, Cohesion (simplified)
     var sep = vec2<f32>(0.0);
@@ -92,7 +92,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
         let j_vel = vec2<f32>(extraBuffer[j_base + 2u], extraBuffer[j_base + 3u]);
         
         let diff = pos - j_pos;
-        let d = length(diff);
+        var d = length(diff);
         
         if (d < PERCEPTION_RADIUS && d > 0.0) {
             sep += normalize(diff) / d;
@@ -157,7 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(textureDimensions(readTexture));
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+    var time = u.config.x;
     
     // Parameters
     let trail_length = u.zoom_params.x * 0.1;
@@ -171,7 +171,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sample boids with trail accumulation
     let sample_count = 2048u;
     for (var i: u32 = 0u; i < sample_count; i = i + 1u) {
-        let base = i * 6u;
+        var base = i * 6u;
         let bx = extraBuffer[base + 0u] * resolution.x;
         let by = extraBuffer[base + 1u] * resolution.y;
         let b_hue = extraBuffer[base + 4u];
@@ -179,11 +179,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         let boid_pos = vec2<f32>(bx, by);
         let pixel_pos = vec2<f32>(f32(coord.x), f32(coord.y));
-        let d = distance(pixel_pos, boid_pos);
+        var d = distance(pixel_pos, boid_pos);
         
         if (d < glow_radius) {
             let intensity = (1.0 - d / glow_radius) * b_energy;
-            let rgb = hsl_to_rgb(fract(b_hue + color_shift), 0.8, 0.5);
+            var rgb = hsl_to_rgb(fract(b_hue + color_shift), 0.8, 0.5);
             color += rgb * intensity * density;
             total_energy += intensity;
         }

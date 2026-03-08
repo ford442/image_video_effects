@@ -47,8 +47,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // 1. Edge Detection (Sobel)
   let pixelSize = 1.0 / resolution;
-  let gx = vec3<f32>(0.0);
-  let gy = vec3<f32>(0.0);
+  var gx = vec3<f32>(0.0);
+  var gy = vec3<f32>(0.0);
 
   // 3x3 kernel manual unroll for performance? Or loop. Loop is fine in WGSL.
   for (var i = -1; i <= 1; i++) {
@@ -131,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Interactive Vignette based on Mouse
   if (mousePos.x >= 0.0) {
       let dVec = uv - mousePos;
-      let d = length(dVec);
+      var d = length(dVec);
       // Slight focus around mouse
       finalColor *= smoothstep(0.8, 0.2, d * 0.5); // Darken edges away from mouse
   }
@@ -139,6 +139,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
   // Pass depth
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

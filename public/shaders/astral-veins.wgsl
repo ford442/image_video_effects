@@ -42,8 +42,8 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract((h.x + h.y) * h.z);
 }
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(
         mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
@@ -146,7 +146,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     );
 
     // Final noise – the raw “vein density”
-    let f = fbm(p + 4.0 * r + time * speed * 0.3);
+    var f = fbm(p + 4.0 * r + time * speed * 0.3);
 
     // ---------------------------------------------------------------
     //  5️⃣  Convert the scalar field into thin veins

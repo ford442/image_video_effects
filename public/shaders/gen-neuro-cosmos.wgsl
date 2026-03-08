@@ -37,7 +37,7 @@ fn hash33(p: vec3<f32>) -> vec3<f32> {
 // F1 is distance to closest center (Neuron)
 // F2 is distance to second closest center (defines Voronoi edges)
 fn voronoiMap(p: vec3<f32>) -> vec3<f32> {
-    let n = floor(p);
+    var n = floor(p);
     let f = fract(p);
 
     var f1 = 1.0;
@@ -50,7 +50,7 @@ fn voronoiMap(p: vec3<f32>) -> vec3<f32> {
                 let g = vec3<f32>(f32(i), f32(j), f32(k));
                 let o = hash33(n + g);
                 // Animate the points a bit
-                let time = u.config.x * 0.1;
+                var time = u.config.x * 0.1;
                 let anim = 0.5 + 0.5 * sin(time + 6.2831 * o);
 
                 let r = g + o - f;
@@ -81,8 +81,8 @@ fn map(p: vec3<f32>) -> vec4<f32> {
     let p_scaled = p * scale;
 
     let v = voronoiMap(p_scaled);
-    let f1 = v.x;
-    let f2 = v.y;
+    var f1 = v.x;
+    var f2 = v.y;
     let cell_hash = v.z;
 
     // Neurons are at f1 approx 0 (center of cell)
@@ -103,7 +103,7 @@ fn map(p: vec3<f32>) -> vec4<f32> {
     let d_neuron = f1 - neuron_radius;
 
     // Combine web and neuron (smooth union)
-    let k = 0.1;
+    var k = 0.1;
     let h = clamp(0.5 + 0.5 * (d_web - d_neuron) / k, 0.0, 1.0);
     let d = mix(d_web, d_neuron, h) - k * h * (1.0 - h);
 
@@ -114,7 +114,7 @@ fn map(p: vec3<f32>) -> vec4<f32> {
 // Calculate normal
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -140,15 +140,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = 5.0; // Orbit distance
 
     // Drifting camera motion
-    let time = u.config.x * 0.1;
+    var time = u.config.x * 0.1;
     let camPos = vec3<f32>(
         dist * sin(yaw + time) * cos(pitch),
         dist * sin(pitch) + sin(time * 0.5),
         dist * cos(yaw + time) * cos(pitch)
     );
 
-    let target = vec3<f32>(0.0, 0.0, 0.0);
-    let forward = normalize(target - camPos);
+    let target_pos = vec3<f32>(0.0, 0.0, 0.0);
+    let forward = normalize(target_pos - camPos);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
 
@@ -165,7 +165,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for(var i=0; i<80; i++) {
         var p = camPos + rd * t;
         let data = map(p);
-        let d = data.x;
+        var d = data.x;
 
         // Accumulate glow based on proximity to structure
         // The closer we are (smaller d), the more glow
@@ -191,10 +191,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (hit) {
         var p = camPos + rd * t;
-        let n = calcNormal(p);
+        var n = calcNormal(p);
 
-        let f1 = hit_data.z;
-        let f2 = hit_data.w;
+        var f1 = hit_data.z;
+        var f2 = hit_data.w;
         let hash = hit_data.y;
 
         // Lighting

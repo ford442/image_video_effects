@@ -32,7 +32,7 @@ struct Uniforms {
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 { return length(p) - r; }
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-  let q = abs(p) - b; return length(max(q, vec3<f32>(0.0))) + min(max(q.x,max(q.y,q.z)), 0.0);
+  var q = abs(p) - b; return length(max(q, vec3<f32>(0.0))) + min(max(q.x,max(q.y,q.z)), 0.0);
 }
 
 fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32) -> vec2<f32> {

@@ -33,7 +33,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn noise2D(p: vec2<f32>) -> f32 {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   return mix(
@@ -115,7 +115,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (length(velR) < 0.0001 && length(velG) < 0.0001) {
     // Initialize based on color gradients
     let colorL = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0);
-    let colorR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0);
+    var colorR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0);
     let colorU = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0);
     let colorD = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0);
     
@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseRadius = 0.1;
   
   if (mouseDist < mouseRadius && mouseDist > 0.001) {
-    let force = (1.0 - mouseDist / mouseRadius) * 0.1;
+    var force = (1.0 - mouseDist / mouseRadius) * 0.1;
     var dir = normalize(toMouse);
     velR = velR + dir * force / viscosityR;
     velG = velG + dir * force / viscosityG;
@@ -156,7 +156,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let toRipple = uv - ripple.xy;
         let dist = length(toRipple);
         if (dist < 0.15 && dist > 0.001) {
-          let force = (1.0 - rippleAge / 2.0) * (1.0 - dist / 0.15) * 0.05;
+          var force = (1.0 - rippleAge / 2.0) * (1.0 - dist / 0.15) * 0.05;
           var dir = normalize(toRipple);
           // Different channels respond differently
           velR = velR + dir * force * (1.0 + sin(time * 5.0));
@@ -218,7 +218,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let advectedB_uv = advect(uv, velB, texelSize);
   
   // Sample source at advected positions
-  let colorR = textureSampleLevel(readTexture, u_sampler, advectedR_uv, 0.0).r;
+  var colorR = textureSampleLevel(readTexture, u_sampler, advectedR_uv, 0.0).r;
   let colorG = textureSampleLevel(readTexture, u_sampler, advectedG_uv, 0.0).g;
   let colorB = textureSampleLevel(readTexture, u_sampler, advectedB_uv, 0.0).b;
   

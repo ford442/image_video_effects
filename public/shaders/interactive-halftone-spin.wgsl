@@ -28,11 +28,11 @@ struct Uniforms {
 // Param4: Contrast
 
 fn rgb2cmyk(c: vec3<f32>) -> vec4<f32> {
-    let k = 1.0 - max(max(c.r, c.g), c.b);
+    var k = 1.0 - max(max(c.r, c.g), c.b);
     if (k >= 1.0) {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
-    let invK = 1.0 / (1.0 - k);
+    var invK = 1.0 / (1.0 - k);
     let C = (1.0 - c.r - k) * invK;
     let M = (1.0 - c.g - k) * invK;
     let Y = (1.0 - c.b - k) * invK;
@@ -40,16 +40,16 @@ fn rgb2cmyk(c: vec3<f32>) -> vec4<f32> {
 }
 
 fn cmyk2rgb(cmyk: vec4<f32>) -> vec3<f32> {
-    let k = cmyk.w;
-    let invK = 1.0 - k;
-    let r = 1.0 - (cmyk.x * invK + k);
-    let g = 1.0 - (cmyk.y * invK + k);
-    let b = 1.0 - (cmyk.z * invK + k);
+    var k = cmyk.w;
+    var invK = 1.0 - k;
+    var r = 1.0 - (cmyk.x * invK + k);
+    var g = 1.0 - (cmyk.y * invK + k);
+    var b = 1.0 - (cmyk.z * invK + k);
     return clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn rotatedGrid(uv: vec2<f32>, angle: f32, scale: f32) -> f32 {
-    let s = sin(angle);
+    var s = sin(angle);
     let c = cos(angle);
     let mat = mat2x2<f32>(c, -s, s, c);
     let st = mat * uv * scale;
@@ -95,7 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // K: 45 deg = 0.785
 
     // Apply spread: Shift angles apart based on parameter + mouse
-    let s = spreadParam + influence;
+    var s = spreadParam + influence;
 
     let angC = 0.261 + extraRot * 1.0;
     let angM = 1.309 + extraRot * 1.5 * s;

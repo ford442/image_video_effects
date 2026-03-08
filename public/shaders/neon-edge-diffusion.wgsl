@@ -22,16 +22,16 @@ struct Uniforms {
 
 @compute @workgroup_size(8, 8, 1)
 fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-  let dim = textureDimensions(readTexture);
+  var coord = vec2<i32>(i32(gid.x), i32(gid.y));
+  var dim = textureDimensions(readTexture);
   var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
-  let time = u.config.x;
+  var time = u.config.x;
   
   var center = textureLoad(readTexture, coord, 0).rgb;
-  let left = textureLoad(readTexture, coord + vec2<i32>(-1, 0), 0).rgb;
-  let right = textureLoad(readTexture, coord + vec2<i32>(1, 0), 0).rgb;
-  let top = textureLoad(readTexture, coord + vec2<i32>(0, -1), 0).rgb;
-  let bottom = textureLoad(readTexture, coord + vec2<i32>(0, 1), 0).rgb;
+  var left = textureLoad(readTexture, coord + vec2<i32>(-1, 0), 0).rgb;
+  var right = textureLoad(readTexture, coord + vec2<i32>(1, 0), 0).rgb;
+  var top = textureLoad(readTexture, coord + vec2<i32>(0, -1), 0).rgb;
+  var bottom = textureLoad(readTexture, coord + vec2<i32>(0, 1), 0).rgb;
   let gx = length(right - left);
   let gy = length(bottom - top);
   var edge = sqrt(gx*gx + gy*gy);
@@ -48,16 +48,16 @@ fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 
 fn diffuse_light_impl(gid: vec3<u32>) {
-  let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-  let dim = textureDimensions(dataTextureA);
+  var coord = vec2<i32>(i32(gid.x), i32(gid.y));
+  var dim = textureDimensions(dataTextureA);
   var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
-  let time = u.config.x;
+  var time = u.config.x;
   
   var center = textureLoad(dataTextureC, coord, 0).r;
-  let left = textureLoad(dataTextureC, coord + vec2<i32>(-1,0), 0).r;
-  let right = textureLoad(dataTextureC, coord + vec2<i32>(1,0), 0).r;
-  let top = textureLoad(dataTextureC, coord + vec2<i32>(0,-1), 0).r;
-  let bottom = textureLoad(dataTextureC, coord + vec2<i32>(0,1), 0).r;
+  var left = textureLoad(dataTextureC, coord + vec2<i32>(-1,0), 0).r;
+  var right = textureLoad(dataTextureC, coord + vec2<i32>(1,0), 0).r;
+  var top = textureLoad(dataTextureC, coord + vec2<i32>(0,-1), 0).r;
+  var bottom = textureLoad(dataTextureC, coord + vec2<i32>(0,1), 0).r;
   var diffused = (center + left + right + top + bottom) * 0.2;
   
   // Ripples create neon pulses at click positions

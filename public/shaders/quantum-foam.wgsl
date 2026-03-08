@@ -47,8 +47,8 @@ fn hash2(p: vec2<f32>) -> f32 {
 //  4D gradient noise for hyper-dimensional structure
 // ─────────────────────────────────────────────────────────────────────────────
 fn noise4d(p: vec4<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     
     let n000 = hash3(i.xyz);
@@ -102,8 +102,8 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
 //  Voronoi with feature detection
 // ─────────────────────────────────────────────────────────────────────────────
 fn voronoi(p: vec2<f32>, time: f32) -> vec3<f32> {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     var minDist1 = 1000.0;
     var minDist2 = 1000.0;
     var minPoint = vec2<f32>(0.0);
@@ -130,7 +130,7 @@ fn voronoi(p: vec2<f32>, time: f32) -> vec3<f32> {
 //  Quaternion rotation for 4D color space
 // ─────────────────────────────────────────────────────────────────────────────
 fn quaternionRotate(color: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> {
-    let c = cos(angle);
+    var c = cos(angle);
     let s = sin(angle);
     let oneMinusC = 1.0 - c;
     let ax = normalize(axis);
@@ -163,9 +163,9 @@ fn quaternionRotate(color: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> 
 //  HSV to RGB
 // ─────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
+    var c = v * s;
     let h6 = h * 6.0;
-    let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
     if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }

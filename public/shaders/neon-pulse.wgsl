@@ -80,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mix original color with neon edge
   let glow = neonColor * edge * glowIntensity * 5.0 * falloff;
-  let finalColor = c + glow;
+  var finalColor = c + glow;
 
   // Add the pulse ring
   let ring = smoothstep(0.02, 0.0, abs(dist - effectRadius * pulse));

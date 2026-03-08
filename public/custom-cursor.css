@@ -1,0 +1,27 @@
+/* Custom cursor stylesheet (optional)
+   Place this file in public/ and include it from index.html if you want a
+   special pointer on the WebGPU canvas.  Example HTML:
+
+     <link rel="stylesheet" href="/custom-cursor.css">
+
+   The rules refer to assets under /cursors/ which are served verbatim and
+   therefore are not processed by webpack.
+*/
+
+.webgpu-canvas {
+    cursor: url(/cursors/cursor.cur) 16 16,
+            url(/cursors/crosshair.svg) 16 16,
+            crosshair;
+}
+
+.webgpu-canvas:active,
+.webgpu-canvas.webcam-canvas {
+    cursor: url(/cursors/cursor.cur) 16 16,
+            url(/cursors/crosshair.svg) 16 16,
+            crosshair;
+}
+
+/* Hide cursor for better view quality during interactive/mouse-driven effects */
+.webgpu-canvas.interactive-effects {
+    cursor: none;
+}

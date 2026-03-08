@@ -15,7 +15,7 @@ fn permute(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn noise(p: vec3<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 

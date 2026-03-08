@@ -20,7 +20,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 }
 
 fn noise2D(p: vec2<f32>) -> vec2<f32> {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   let a = hash2(i);
@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Continuous slow movement
   let time = currentTime * 0.05;
   let noiseuv = uv * 3.0;
-  let flow = flowPattern(noiseuv, time);
+  var flow = flowPattern(noiseuv, time);
   let ambientDisplacement = flow * 0.01;
 
   // --- Mouse Ripples ---

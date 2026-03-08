@@ -55,15 +55,15 @@ fn rotX(p: vec3<f32>, a: f32) -> vec3<f32> {
 
 // 3D Rotation around Y axis
 fn rotY(p: vec3<f32>, a: f32) -> vec3<f32> {
-    let c = cos(a);
-    let s = sin(a);
+    var c = cos(a);
+    var s = sin(a);
     return vec3<f32>(p.x * c + p.z * s, p.y, -p.x * s + p.z * c);
 }
 
 // 3D Rotation around Z axis
 fn rotZ(p: vec3<f32>, a: f32) -> vec3<f32> {
-    let c = cos(a);
-    let s = sin(a);
+    var c = cos(a);
+    var s = sin(a);
     return vec3<f32>(p.x * c - p.y * s, p.x * s + p.y * c, p.z);
 }
 
@@ -106,7 +106,7 @@ fn sdStaircase(p: vec3<f32>, steps: i32, width: f32, height: f32, depth: f32) ->
 
 // Hash function for random values
 fn hash3(p: vec3<f32>) -> f32 {
-    let q = vec3<f32>(dot(p, vec3<f32>(127.1, 311.7, 74.7)),
+    var q = vec3<f32>(dot(p, vec3<f32>(127.1, 311.7, 74.7)),
                       dot(p, vec3<f32>(269.5, 183.3, 246.1)),
                       dot(p, vec3<f32>(113.5, 271.9, 124.6)));
     return fract(sin(q.x) * 43758.5453);
@@ -124,14 +124,14 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 
 // The Map function - defines the labyrinth geometry
 fn map(p: vec3<f32>) -> vec2<f32> {
-    let time = u.config.x;
+    var time = u.config.x;
     
     // Base repetition size based on complexity
     let cell_size = mix(4.0, 1.5, complexity);
     
     // Get cell repetition
     let rep = opRepId(p, vec3<f32>(cell_size));
-    let q = rep.xyz;
+    var q = rep.xyz;
     let cell_id = rep.w;
     let cell_hash = hash1(cell_id);
     
@@ -183,11 +183,11 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Add connecting bridges between nearby cells (creates the maze effect)
     let bridge_hash = hash1(cell_id * 1.618);
     if (bridge_hash > 0.4) {
-        let bridge = sdBox(q - vec3<f32>(cell_size * 0.5, 0.0, 0.0), vec3<f32>(0.8, 0.15, 0.4));
+        var bridge = sdBox(q - vec3<f32>(cell_size * 0.5, 0.0, 0.0), vec3<f32>(0.8, 0.15, 0.4));
         d = min(d, bridge);
     }
     if (bridge_hash > 0.7) {
-        let bridge = sdBox(q - vec3<f32>(0.0, cell_size * 0.3, 0.0), vec3<f32>(0.4, 0.6, 0.4));
+        var bridge = sdBox(q - vec3<f32>(0.0, cell_size * 0.3, 0.0), vec3<f32>(0.4, 0.6, 0.4));
         d = min(d, bridge);
     }
     
@@ -233,7 +233,7 @@ fn calcSoftShadow(ro: vec3<f32>, rd: vec3<f32>, mint: f32, maxt: f32, k: f32) ->
     var res = 1.0;
     var t = mint;
     for (var i = 0; i < 32; i++) {
-        let h = map(ro + rd * t).x;
+        var h = map(ro + rd * t).x;
         if (h < 0.001) {
             return 0.0;
         }
@@ -251,8 +251,8 @@ fn calcAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
     var occ = 0.0;
     var sca = 1.0;
     for (var i = 0; i < 5; i++) {
-        let h = 0.001 + 0.15 * f32(i) / 4.0;
-        let d = map(p + h * n).x;
+        var h = 0.001 + 0.15 * f32(i) / 4.0;
+        var d = map(p + h * n).x;
         occ += (h - d) * sca;
         sca *= 0.95;
     }
@@ -266,8 +266,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
     
     for (var i = 0; i < MAX_STEPS; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         
         if (d < SURF_DIST || t > MAX_DIST) {
             mat = res.y;
@@ -286,7 +286,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     
-    let time = u.config.x;
+    var time = u.config.x;
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     
     // Camera setup with mouse orbit
@@ -302,16 +302,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     
     // Look-at target
-    let target = vec3<f32>(0.0, sin(time * 0.1) * 2.0, 0.0);
-    let fwd = normalize(target - ro);
+    let target_pos = vec3<f32>(0.0, sin(time * 0.1) * 2.0, 0.0);
+    let fwd = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
     let up = cross(fwd, right);
     let rd = normalize(fwd + right * uv.x + up * uv.y);
     
     // Raymarch
-    let res = raymarch(ro, rd);
-    let t = res.x;
-    let mat = res.y;
+    var res = raymarch(ro, rd);
+    var t = res.x;
+    var mat = res.y;
     
     var color = vec3<f32>(0.0);
     var depth = MAX_DIST;

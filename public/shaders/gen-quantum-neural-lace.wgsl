@@ -109,7 +109,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    let d = map(p).x;
+    var d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -122,8 +122,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var mat = 0.0;
     for(var i=0; i<128; i++) {
         var p = ro + rd * t;
-        let res = map(p);
-        let d = res.x;
+        var res = map(p);
+        var d = res.x;
         mat = res.y;
         if(d < 0.001 || t > 100.0) { break; }
         t += d;
@@ -163,17 +163,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cam_offset = vec3<f32>(0.0, 0.0, time * forward_speed);
 
     let ro = cam_pos + cam_offset;
-    let target = cam_offset; // Look at point ahead
+    let target_pos = cam_offset; // Look at point ahead
 
-    let forward = normalize(target - ro);
+    let forward = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
 
     let rd = normalize(forward + right * uv.x + up * uv.y);
 
     // Raymarching
-    let res = raymarch(ro, rd);
-    let t = res.x;
+    var res = raymarch(ro, rd);
+    var t = res.x;
 
     var color = vec3<f32>(0.0);
     let bg_color = vec3<f32>(0.0, 0.02, 0.05); // Deep cyber blue

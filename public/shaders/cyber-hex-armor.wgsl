@@ -39,7 +39,7 @@ fn hexCoords(uv: vec2<f32>) -> vec4<f32> {
     let b = uv - (floor((uv - h) / r + 0.5) * r + h);
 
     let gv = select(b, a, dot(a, a) < dot(b, b));
-    let id = uv - gv;
+    var id = uv - gv;
 
     return vec4<f32>(gv.x, gv.y, id.x, id.y);
 }
@@ -73,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scaledUV = gridUV * hexSize;
     let hc = hexCoords(scaledUV);
     let localUV = hc.xy;
-    let id = hc.zw;
+    var id = hc.zw;
 
     // Calculate hex center in world space (approx)
     let hexCenter = id / hexSize;

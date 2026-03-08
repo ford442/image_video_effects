@@ -46,9 +46,9 @@ fn clog(z: vec2<f32>) -> vec2<f32> {
 }
 
 fn cpow(z: vec2<f32>, n: f32) -> vec2<f32> {
-  let r = length(z);
-  let theta = atan2(z.y, z.x);
-  let newR = pow(r, n);
+  var r = length(z);
+  var theta = atan2(z.y, z.x);
+  var newR = pow(r, n);
   let newTheta = theta * n;
   return vec2<f32>(newR * cos(newTheta), newR * sin(newTheta));
 }
@@ -106,8 +106,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var center = (mouse - vec2<f32>(0.5)) * 2.0 * vec2<f32>(aspect, 1.0);
   z = z - center;
   
-  let r = length(z);
-  let theta = atan2(z.y, z.x);
+  var r = length(z);
+  var theta = atan2(z.y, z.x);
   
   // Define recursion radii
   let r1 = 0.2;
@@ -135,7 +135,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   
   // Convert back to Cartesian for texture sampling
-  let newR = exp(logR);
+  var newR = exp(logR);
   let newZ = vec2<f32>(newR * cos(angle), newR * sin(angle));
   
   // Ripple effects

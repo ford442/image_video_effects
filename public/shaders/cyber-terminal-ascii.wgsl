@@ -24,7 +24,7 @@ struct Uniforms {
 // --- SDF Primitives ---
 
 fn sdBox(p: vec2<f32>, b: vec2<f32>) -> f32 {
-    let d = abs(p) - b;
+    var d = abs(p) - b;
     return length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
 }
 
@@ -55,8 +55,8 @@ fn get_character(id: i32, uv: vec2<f32>) -> f32 {
     }
     // 2: Colon (:)
     else if (id == 2) {
-        let p_top = p - vec2<f32>(0.0, -0.15);
-        let p_bot = p - vec2<f32>(0.0, 0.15);
+        var p_top = p - vec2<f32>(0.0, -0.15);
+        var p_bot = p - vec2<f32>(0.0, 0.15);
         d = min(sdCircle(p_top, 0.05), sdCircle(p_bot, 0.05));
     }
     // 3: Minus (-)
@@ -75,8 +75,8 @@ fn get_character(id: i32, uv: vec2<f32>) -> f32 {
     }
     // 6: Double Line (=)
     else if (id == 6) {
-        let p_top = p - vec2<f32>(0.0, -0.1);
-        let p_bot = p - vec2<f32>(0.0, 0.1);
+        var p_top = p - vec2<f32>(0.0, -0.1);
+        var p_bot = p - vec2<f32>(0.0, 0.1);
         d = min(sdBox(p_top, vec2<f32>(0.25, 0.04)), sdBox(p_bot, vec2<f32>(0.25, 0.04)));
     }
     // 7: Hash (#)

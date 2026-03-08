@@ -28,7 +28,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 
@@ -132,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Burning Edge
         let t = d / glow_width; // 0 to 1
         // Gradient: White -> Yellow -> Red -> Dark
-        let fire = mix(vec3<f32>(1.0, 1.0, 0.8), vec3<f32>(1.0, 0.3, 0.0), t);
+        var fire = mix(vec3<f32>(1.0, 1.0, 0.8), vec3<f32>(1.0, 0.3, 0.0), t);
         fire = mix(fire, vec3<f32>(0.1, 0.0, 0.0), t * t);
 
         // Add noise/sparkle to fire

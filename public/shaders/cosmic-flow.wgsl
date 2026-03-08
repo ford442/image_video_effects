@@ -30,8 +30,8 @@ fn hash(p: vec2<f32>) -> f32 {
 
 // 2D Simplex-style noise for better gradients
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     
     return mix(mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -131,13 +131,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     
     // Second warp layer (more turbulent)
-    let r = vec2<f32>(
+    var r = vec2<f32>(
         fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2) + time * speed * 0.7, 3u),
         fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8) + time * speed * 0.7, 3u)
     );
     
     // Final noise value
-    let f = fbm(p + 4.0 * r + time * speed * 0.3, 5u);
+    var f = fbm(p + 4.0 * r + time * speed * 0.3, 5u);
     
     // --- Depth Interaction ---
     var depth_mask = 1.0;

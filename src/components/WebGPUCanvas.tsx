@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { Renderer } from '../renderer/Renderer';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
+import { LiveStreamBridge } from './LiveStreamBridge';
 
 interface WebGPUCanvasProps {
     modes: RenderMode[];
@@ -25,6 +26,8 @@ interface WebGPUCanvasProps {
     // Webcam Props
     isWebcamActive?: boolean;
     webcamVideoElement?: HTMLVideoElement | null;
+    // Live Stream Props
+    liveStreamUrl?: string; // NEW: HLS live stream URL
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
@@ -34,7 +37,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     inputSource, selectedVideo, videoSourceUrl, isMuted,
     setInputSource, activeGenerativeShader, apiBaseUrl,
     isWebcamActive = false,
-    webcamVideoElement
+    webcamVideoElement,
+    liveStreamUrl
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,6 +48,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const dragStartPos = useRef<{ x: number, y: number } | null>(null);
     const dragStartTime = useRef<number>(0);
     const streamRef = useRef<MediaStream | null>(null);
+    const hlsVideoRef = useRef<HTMLVideoElement | null>(null); // NEW: Live stream video element
 
     // Track the physical display size of the canvas element
     const [displaySize, setDisplaySize] = useState({ width: 1, height: 1 });
@@ -51,14 +56,43 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Constants for the internal high-res buffer
     const INTERNAL_RES = 2048;
 
+    // Track if canvas has valid dimensions before initializing WebGPU
+    const [canvasReady, setCanvasReady] = useState(false);
+
+    // Track if there are active interactive/mouse-driven effects
+    const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
+
+    // Ensure canvas has valid dimensions before WebGPU initialization
+    const ensureCanvasSize = (canvas: HTMLCanvasElement) => {
+        // Get actual rendered size
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width * window.devicePixelRatio));
+        const height = Math.max(1, Math.floor(rect.height * window.devicePixelRatio));
+        
+        // Log for debugging - should NOT be 0x0
+        if (width <= 1 || height <= 1) {
+            console.warn(`Canvas has near-zero dimensions: ${width}x${height}, delaying WebGPU init`);
+            return false;
+        }
+        
+        return true;
+    };
+
     // Initialize Renderer
     useEffect(() => {
-        if (!canvasRef.current) return;
+        if (!canvasRef.current || !canvasReady) return;
         const canvas = canvasRef.current;
+
+        // Guard: Ensure canvas has actual dimensions before creating textures
+        if (!ensureCanvasSize(canvas)) {
+            console.warn('Canvas not ready for WebGPU initialization, skipping...');
+            return;
+        }
 
         // Enforce the high-res buffer size
         canvas.width = INTERNAL_RES;
         canvas.height = INTERNAL_RES;
+        console.log(`Initializing WebGPU with canvas: ${canvas.width}x${canvas.height}`);
 
         const renderer = new Renderer(canvas, apiBaseUrl);
 
@@ -88,7 +122,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rendererRef, onInit, apiBaseUrl]);
+    }, [rendererRef, onInit, apiBaseUrl, canvasReady]);
 
     // Handle Canvas Resizing (Track Display Size Only)
     useLayoutEffect(() => {
@@ -103,13 +137,18 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                 if (width > 0 && height > 0) {
                     setDisplaySize({ width, height });
+                    // Mark canvas as ready for WebGPU initialization
+                    if (!canvasReady) {
+                        console.log(`Canvas ready: ${width}x${height}`);
+                        setCanvasReady(true);
+                    }
                 }
             }
         });
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, []); // Empty dependency array as we only want to set up the observer once
+    }, [canvasReady]); // Add canvasReady to prevent duplicate triggers
 
     // Sync inputSource to renderer
     useEffect(() => {
@@ -117,6 +156,19 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             rendererRef.current.setInputSource(inputSource);
         }
     }, [inputSource, rendererRef]);
+
+    // Check for interactive effects
+    useEffect(() => {
+        const hasInteractive = (() => {
+            const rendererModes = rendererRef.current?.getAvailableModes?.() || [];
+            for (const mm of modes) {
+                const entry = rendererModes.find(s => s.id === mm);
+                if (entry?.features?.includes('mouse-driven') || entry?.features?.includes('splat') || mm === 'ripple' || mm === 'vortex' || mm.startsWith('liquid')) return true;
+            }
+            return false;
+        })();
+        setHasInteractiveEffects(hasInteractive);
+    }, [modes, rendererRef]);
 
     // Handle webcam video element
     useEffect(() => {
@@ -126,6 +178,18 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             videoRef.current.play().catch(console.error);
         }
     }, [isWebcamActive, webcamVideoElement]);
+
+    // Handle Live Stream Video Ready
+    const handleLiveVideoReady = (video: HTMLVideoElement) => {
+        console.log('🔴 WebGPUCanvas: Live video ready');
+        hlsVideoRef.current = video;
+        // If we're in live mode, sync the video element
+        if (inputSource === 'live' && videoRef.current) {
+            videoRef.current.src = video.src;
+            videoRef.current.srcObject = video.srcObject;
+            videoRef.current.play().catch(console.error);
+        }
+    };
 
     // Handle Input Source & Video Source Changes
     useEffect(() => {
@@ -152,8 +216,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         setInputSource('image');
                     }
                 }
+            } else if (inputSource === 'live') {
+                // Live stream mode - use the HLS video element
+                if (hlsVideoRef.current) {
+                    videoRef.current!.src = hlsVideoRef.current.src;
+                    videoRef.current!.srcObject = hlsVideoRef.current.srcObject;
+                    videoRef.current!.play().catch(console.error);
+                }
             } else if (inputSource === 'video') {
-                // Clean up srcObject if coming from webcam
+                // Clean up srcObject if coming from webcam or live
                 if (videoRef.current!.srcObject) {
                     videoRef.current!.srcObject = null;
                 }
@@ -348,6 +419,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     LIVE
                 </div>
             )}
+            
+            {/* Live Stream Bridge - hidden HLS video */}
+            {liveStreamUrl && (
+                <LiveStreamBridge
+                    streamUrl={liveStreamUrl}
+                    onVideoReady={handleLiveVideoReady}
+                    onError={(err) => console.error('Live stream error:', err)}
+                />
+            )}
             <canvas
                 ref={canvasRef}
                 data-testid="webgpu-canvas"
@@ -360,7 +440,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
-                className={isWebcamActive ? 'webcam-canvas' : ''}
+                className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''} ${hasInteractiveEffects ? 'interactive-effects' : ''}`}
             />
             <video
                 ref={videoRef}

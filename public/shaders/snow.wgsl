@@ -133,7 +133,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accumulated_snow = 0.0;
     if (accumulation_amt > 0.01) {
         // Calculate surface normal
-        let normal = calculate_normal(uv, depth, texel);
+        var normal = calculate_normal(uv, depth, texel);
         
         // Snow accumulates on upward-facing surfaces (normal.y > 0.5)
         // and on flat surfaces (normal.y > 0.7)
@@ -162,7 +162,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let snow_color = vec3<f32>(0.92, 0.95, 1.0);
     
     // Add subtle lighting to accumulated snow based on normal
-    let normal = calculate_normal(uv, depth, texel);
+    var normal = calculate_normal(uv, depth, texel);
     let light_dir = normalize(vec3<f32>(0.3, 0.8, 0.5));
     let snow_lighting = max(0.2, dot(normal, light_dir));
     
