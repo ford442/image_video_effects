@@ -59,6 +59,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Track if canvas has valid dimensions before initializing WebGPU
     const [canvasReady, setCanvasReady] = useState(false);
 
+    // Track if there are active interactive/mouse-driven effects
+    const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
+
     // Ensure canvas has valid dimensions before WebGPU initialization
     const ensureCanvasSize = (canvas: HTMLCanvasElement) => {
         // Get actual rendered size
@@ -153,6 +156,19 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             rendererRef.current.setInputSource(inputSource);
         }
     }, [inputSource, rendererRef]);
+
+    // Check for interactive effects
+    useEffect(() => {
+        const hasInteractive = (() => {
+            const rendererModes = rendererRef.current?.getAvailableModes?.() || [];
+            for (const mm of modes) {
+                const entry = rendererModes.find(s => s.id === mm);
+                if (entry?.features?.includes('mouse-driven') || entry?.features?.includes('splat') || mm === 'ripple' || mm === 'vortex' || mm.startsWith('liquid')) return true;
+            }
+            return false;
+        })();
+        setHasInteractiveEffects(hasInteractive);
+    }, [modes, rendererRef]);
 
     // Handle webcam video element
     useEffect(() => {
@@ -424,7 +440,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
-                className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''}`}
+                className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''} ${hasInteractiveEffects ? 'interactive-effects' : ''}`}
             />
             <video
                 ref={videoRef}

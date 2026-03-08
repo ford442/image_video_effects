@@ -507,31 +507,39 @@ hr {
    🖱️ CUSTOM CURSOR STYLES
    ===================================================== */
 
-/* Custom cursor on canvas hover - reduced crosshair */
+/* NOTE: custom cursor definitions were originally placed here, but webpack's
+   CSS loader would try to resolve the `url()` paths (even with comments) and
+   fail when the file wasn't present in `src/`. To avoid build-time errors the
+   rules have been removed from the bundled stylesheet.
+
+   If you want to enable a custom cursor, create a separate CSS file under
+   `public/` (for example `public/custom-cursor.css`) with the following
+   snippet and reference it from `public/index.html` or your HTML template:
+
+     .webgpu-canvas {
+         cursor: url(/cursors/cursor.cur) 16 16,
+                 url(/cursors/crosshair.svg) 16 16,
+                 crosshair;
+     }
+     .webgpu-canvas:active,
+     .webgpu-canvas.webcam-canvas {
+         cursor: url(/cursors/cursor.cur) 16 16,
+                 url(/cursors/crosshair.svg) 16 16,
+                 crosshair;
+     }
+
+   With the file in `public/` the paths are treated as static assets and are
+   ignored by webpack entirely; the `public/cursors` directory may remain empty
+   if you don't supply a `.cur` file.
+*/
+
+/* fallback to default crosshair inside application bundle */
 .webgpu-canvas {
-    /* Try .cur file first (place your cursor.cur in public/cursors/) */
-    /* webpackIgnore prevents webpack from trying to resolve paths during build */
-    cursor: url(/* webpackIgnore: true */ /cursors/cursor.cur) 16 16, 
-            /* SVG fallback for modern browsers */
-            url(/* webpackIgnore: true */ /cursors/crosshair.svg) 16 16, 
-            /* CSS-only fallback */
-            crosshair;
+    cursor: crosshair;
 }
-
-/* Active state (when dragging/clicking on canvas) */
-.webgpu-canvas:active {
-    /* webpackIgnore prevents webpack from trying to resolve paths during build */
-    cursor: url(/* webpackIgnore: true */ /cursors/cursor.cur) 16 16, 
-            url(/* webpackIgnore: true */ /cursors/crosshair.svg) 16 16, 
-            crosshair;
-}
-
-/* Webcam mode cursor override - keep the custom cursor */
+.webgpu-canvas:active,
 .webgpu-canvas.webcam-canvas {
-    /* webpackIgnore prevents webpack from trying to resolve paths during build */
-    cursor: url(/* webpackIgnore: true */ /cursors/cursor.cur) 16 16, 
-            url(/* webpackIgnore: true */ /cursors/crosshair.svg) 16 16, 
-            crosshair;
+    cursor: crosshair;
 }
 
 /* Live Recording Indicator */
