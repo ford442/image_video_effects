@@ -121,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Or rather, rotate 45 deg Y, then 35.264 deg X.
 
     let camDist = 50.0;
-    let target = vec3<f32>(0.0, 0.0, 0.0);
+    let target_pos = vec3<f32>(0.0, 0.0, 0.0);
 
     // Mouse interaction: Pan the camera
     var mouse = u.zoom_config.yz; // 0..1
@@ -138,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ray Origin varies with UV
     // 'zoom' factor
     let zoom = 15.0;
-    var ro = target + (right * uv.x + up * uv.y) * zoom - forward * camDist;
+    var ro = target_pos + (right * uv.x + up * uv.y) * zoom - forward * camDist;
 
     // Apply panning
     ro.x += pan.x + pan.y; // Diagonal movement for isometric feel

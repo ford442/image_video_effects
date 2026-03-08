@@ -190,17 +190,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = 10.0;
 
     // Target position (look at)
-    let target = vec3<f32>(0.0, 2.0, time * 10.0); // Move forward slowly
+    let target_pos = vec3<f32>(0.0, 2.0, time * 10.0); // Move forward slowly
 
     // Camera position relative to target
     // We want to move continuously forward
     let ro = vec3<f32>(
-        target.x + sin(yaw) * dist,
-        target.y + pitch * 5.0 + 2.0, // Height based on mouse Y
-        target.z + cos(yaw) * dist
+        target_pos.x + sin(yaw) * dist,
+        target_pos.y + pitch * 5.0 + 2.0, // Height based on mouse Y
+        target_pos.z + cos(yaw) * dist
     );
 
-    let forward = normalize(target - ro);
+    let forward = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
 

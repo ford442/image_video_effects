@@ -124,8 +124,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let drift = vec3<f32>(sin(time * 0.1), cos(time * 0.15), sin(time * 0.07)) * 0.6;
     ro += drift;
 
-    let target = vec3<f32>(0.0);
-    let fwd = normalize(target - ro);
+    let target_pos = vec3<f32>(0.0);
+    let fwd = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
     let up = cross(fwd, right);
     let rd = normalize(fwd + right * uv.x + up * uv.y);

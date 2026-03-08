@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Minimal crosshair cursor -->
+  <defs>
+    <!-- Drop shadow for visibility -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.5"/>
+      <feOffset dx="0.5" dy="0.5" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.5"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Outer circle (subtle) -->
+  <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+  
+  <!-- Crosshair lines -->
+  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round" filter="url(#shadow)">
+    <!-- Horizontal line -->
+    <line x1="4" y1="16" x2="12" y2="16"/>
+    <line x1="20" y1="16" x2="28" y2="16"/>
+    <!-- Vertical line -->
+    <line x1="16" y1="4" x2="16" y2="12"/>
+    <line x1="16" y1="20" x2="16" y2="28"/>
+  </g>
+  
+  <!-- Center dot -->
+  <circle cx="16" cy="16" r="1.5" fill="#ffffff" filter="url(#shadow)"/>
+  
+  <!-- Invisible hit area for cursor hotspot -->
+  <circle cx="16" cy="16" r="16" fill="transparent"/>
+</svg>

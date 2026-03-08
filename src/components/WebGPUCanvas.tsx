@@ -424,7 +424,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
-                className={isWebcamActive ? 'webcam-canvas' : ''}
+                className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''}`}
             />
             <video
                 ref={videoRef}

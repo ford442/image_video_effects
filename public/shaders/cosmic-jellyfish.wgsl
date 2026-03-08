@@ -120,8 +120,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro.y = cam_rot[0][0] * ro.y + cam_rot[0][1] * ro.z;
     ro.z = cam_rot[1][0] * ro.y + cam_rot[1][1] * ro.z;
 
-    let target = vec3<f32>(0.0, 0.0, 0.0);
-    let f = normalize(target - ro);
+    let target_pos = vec3<f32>(0.0, 0.0, 0.0);
+    let f = normalize(target_pos - ro);
     let r = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), f));
     let up = cross(f, r);
     let rd = normalize(f + r * uv.x + up * uv.y);

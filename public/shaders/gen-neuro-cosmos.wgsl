@@ -147,8 +147,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         dist * cos(yaw + time) * cos(pitch)
     );
 
-    let target = vec3<f32>(0.0, 0.0, 0.0);
-    let forward = normalize(target - camPos);
+    let target_pos = vec3<f32>(0.0, 0.0, 0.0);
+    let forward = normalize(target_pos - camPos);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
 

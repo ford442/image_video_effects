@@ -163,9 +163,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cam_offset = vec3<f32>(0.0, 0.0, time * forward_speed);
 
     let ro = cam_pos + cam_offset;
-    let target = cam_offset; // Look at point ahead
+    let target_pos = cam_offset; // Look at point ahead
 
-    let forward = normalize(target - ro);
+    let forward = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
 
