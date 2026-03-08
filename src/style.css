@@ -512,7 +512,7 @@ hr {
     /* Try .cur file first (place your cursor.cur in public/cursors/) */
     cursor: url('./cursor.cur') 16 16, 
             /* SVG fallback for modern browsers */
-            url('/cursors/crosshair.svg') 16 16, 
+            url('./crosshair.svg') 16 16, 
             /* CSS-only fallback */
             crosshair;
 }
