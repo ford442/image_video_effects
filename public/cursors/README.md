@@ -5,6 +5,8 @@
 1. Place your `cursor.cur` file in this directory: `public/cursors/cursor.cur`
 2. The app will automatically use it on the canvas hover
 
+> **Tip:** the CSS now includes `/* webpackIgnore: true */` comments so webpack won't fail the build if the file is missing. You can safely keep this directory empty.
+
 **Note:** The CSS expects a 32x32 pixel cursor with the hotspot at the center (16, 16).
 
 ## Option 2: Using the SVG crosshair (included)

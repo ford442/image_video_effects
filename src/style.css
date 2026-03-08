@@ -510,7 +510,8 @@ hr {
 /* Custom cursor on canvas hover - reduced crosshair */
 .webgpu-canvas {
     /* Try .cur file first (place your cursor.cur in public/cursors/) */
-    cursor: url('/cursors/cursor.cur') 16 16, 
+    /* webpackIgnore prevents webpack from trying to resolve the path during build */
+    cursor: url(/* webpackIgnore: true */ '/cursors/cursor.cur') 16 16, 
             /* SVG fallback for modern browsers */
             url('/cursors/crosshair.svg') 16 16, 
             /* CSS-only fallback */
@@ -519,14 +520,16 @@ hr {
 
 /* Active state (when dragging/clicking on canvas) */
 .webgpu-canvas:active {
-    cursor: url('/cursors/cursor.cur') 16 16, 
+    /* webpackIgnore prevents webpack from trying to resolve the path */
+    cursor: url(/* webpackIgnore: true */ '/cursors/cursor.cur') 16 16, 
             url('/cursors/crosshair.svg') 16 16, 
             crosshair;
 }
 
 /* Webcam mode cursor override - keep the custom cursor */
 .webgpu-canvas.webcam-canvas {
-    cursor: url('/cursors/cursor.cur') 16 16, 
+    /* webpackIgnore prevents webpack from trying to resolve the path */
+    cursor: url(/* webpackIgnore: true */ '/cursors/cursor.cur') 16 16, 
             url('/cursors/crosshair.svg') 16 16, 
             crosshair;
 }
