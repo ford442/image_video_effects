@@ -10,69 +10,11 @@ import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 import './style.css';
 import RendererToggle from './components/RendererToggle';
 import { CurrentShaderProvider } from './contexts/CurrentShaderContext';
-
-// --- Webcam Fun Shaders ---
-const WEBCAM_FUN_SHADERS = [
-    'liquid', 'liquid-chrome-ripple', 'liquid-rainbow', 'liquid-swirl',
-    'neon-pulse', 'neon-edge-pulse', 'neon-fluid-warp', 'neon-warp',
-    'vortex', 'vortex-distortion', 'vortex-warp', 'chroma-vortex',
-    'distortion', 'chromatic-folds', 'holographic-projection', 'cyber-glitch-hologram',
-    'kaleidoscope', 'kaleido-scope', 'fractal-kaleidoscope', 'astral-kaleidoscope',
-    'rgb-fluid', 'rgb-ripple-distortion', 'rgb-shift-brush',
-    'pixel-sorter', 'pixel-sort-glitch', 'ascii-shockwave',
-    'magnetic-field', 'magnetic-pixels', 'magnetic-rgb'
-];
-
-// --- Configuration ---
+import { API_BASE_URL, DEFAULT_SLOT_PARAMS, DEPTH_MODEL_ID, IMAGE_SUGGESTIONS_URL, WEBCAM_FUN_SHADERS } from './config/appConfig';
+import { fetchContentManifest } from './services/contentLoader';
+import { withUpdatedMode, withUpdatedSlotParams } from './utils/slotState';
 env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
-const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
-const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
-const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
-const LOCAL_MANIFEST_URL = `./image_manifest.json`;
-
-// UPDATED: Pointing directly to your bucket
-const BUCKET_BASE_URL = `https://storage.googleapis.com/my-sd35-space-images-2025`;
-const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
-
-const FALLBACK_IMAGES = [
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop", // Liquid Metal
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2568&auto=format&fit=crop", // Cyberpunk City
-    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670&auto=format&fit=crop", // Fluid Gradient
-    "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2694&auto=format&fit=crop", // Grid Landscape
-    "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=2670&auto=format&fit=crop", // Nature
-    "https://images.unsplash.com/photo-1614850523060-8da1d56ae167?q=80&w=2670&auto=format&fit=crop", // Neon
-    "https://images.unsplash.com/photo-1605218427306-633ba8546381?q=80&w=2669&auto=format&fit=crop"  // Geometry
-];
-
-// Sample videos for when bucket has no videos
-const FALLBACK_VIDEOS = [
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4"
-];
-
-const defaultSlotParams: SlotParams = {
-    zoomParam1: 0.99,
-    zoomParam2: 1.01,
-    zoomParam3: 0.5,
-    zoomParam4: 0.5,
-    lightStrength: 1.0,
-    ambient: 0.2,
-    normalStrength: 0.1,
-    fogFalloff: 4.0,
-    depthThreshold: 0.5,
-};
 
 function MainApp() {
     // --- State: Tabs ---
@@ -83,9 +25,9 @@ function MainApp() {
     const [modes, setModes] = useState<RenderMode[]>(['liquid', 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
     const [slotParams, setSlotParams] = useState<SlotParams[]>([
-        defaultSlotParams,
-        defaultSlotParams,
-        defaultSlotParams
+        DEFAULT_SLOT_PARAMS,
+        DEFAULT_SLOT_PARAMS,
+        DEFAULT_SLOT_PARAMS
     ]);
 
     // --- State: Global View ---
@@ -159,19 +101,11 @@ function MainApp() {
 
     // --- Helpers ---
     const setMode = useCallback((index: number, mode: RenderMode) => {
-        setModes(prev => {
-            const next = [...prev];
-            next[index] = mode;
-            return next;
-        });
+        setModes((prev) => withUpdatedMode(prev, index, mode));
     }, []);
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
-        setSlotParams(prev => {
-            const next = [...prev];
-            next[slotIndex] = { ...next[slotIndex], ...updates };
-            return next;
-        });
+        setSlotParams((prev) => withUpdatedSlotParams(prev, slotIndex, updates));
     }, []);
 
     // --- EFFECT: Auto-Switch Generative Mode ---
@@ -187,88 +121,16 @@ function MainApp() {
 
     // --- Effects & Initializers ---
     useEffect(() => {
-        // Fetch the dynamic image manifest from the backend on startup
-        const fetchImageManifest = async () => {
-            let manifest: ImageRecord[] = [];
-            let videos: string[] = [];
-
-            // 1. Try API
-            try {
-                const response = await fetch(IMAGE_MANIFEST_URL);
-                if (response.ok) {
-                    const data = await response.json();
-                    manifest = data.map((item: any) => ({
-                        url: item.url,
-                        tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],
-                        description: item.description || ''
-                    }));
-                }
-            } catch (error) {
-                console.warn("Backend API failed, trying local manifest...", error);
-            }
-
-            // 2. Try Local Manifest (Bucket Images & Videos) if API Empty OR Videos Missing
-            if (manifest.length === 0 || videos.length === 0) {
-                try {
-                    const response = await fetch(LOCAL_MANIFEST_URL);
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        // Process Images (only if API failed to provide them)
-                        if (manifest.length === 0) {
-                            manifest = (data.images || []).map((item: any) => {
-                                // Fix double bucket names if they exist in the manifest already
-                                const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
-                                return {
-                                    url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`,
-                                    tags: item.tags || [],
-                                    description: item.tags ? item.tags.join(', ') : ''
-                                };
-                            });
-                        }
-
-                        // Process Videos (if missing)
-                        if (videos.length === 0) {
-                            videos = (data.videos || []).map((item: any) => {
-                                const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
-                                return item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`;
-                            });
-                        }
-
-                        console.log("Loaded local manifest. Total:", manifest.length, "images,", videos.length, "videos");
-                    }
-                } catch (e) {
-                    console.warn("Failed to load local manifest:", e);
-                }
-            }
-
-            // 3. Last Resort: Fallbacks for images and videos
-            if (manifest.length === 0) {
-                console.warn("Image manifest empty. Using robust Unsplash fallback.");
-                manifest = FALLBACK_IMAGES.map(url => ({
-                    url,
-                    tags: ['fallback', 'unsplash', 'demo'],
-                    description: 'Demo Image'
-                }));
-            }
-            
-            // Video fallback
-            if (videos.length === 0) {
-                console.warn("No videos found. Using sample videos.");
-                videos = FALLBACK_VIDEOS;
-            }
-
+        const loadContentManifest = async () => {
+            const { manifest, videos } = await fetchContentManifest();
             setImageManifest(manifest);
-            setVideoList(videos); // Update Video List State
+            setVideoList(videos);
 
-            // Push to Renderer
             if (rendererRef.current) {
                 rendererRef.current.setImageList(manifest.map(m => m.url));
-                // If the renderer has a setVideoList method, call it here.
-                // Currently assuming Controls handles the selection via `selectedVideo` prop.
             }
         };
-        fetchImageManifest();
+        loadContentManifest();
     }, []);
 
     // --- Image Loading ---
