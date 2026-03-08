@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 
-interface PerformanceMetrics {
+export interface PerformanceMetrics {
   fps: number;
   frameTime: number;
   frameCount: number;
