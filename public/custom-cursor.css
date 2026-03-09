@@ -9,15 +9,15 @@
 */
 
 .webgpu-canvas {
-    cursor: url(/cursors/cursor.cur) 16 16,
-            url(/cursors/crosshair.svg) 16 16,
+    cursor: url(./cursors/cursor.cur) 16 16,
+            url(./cursors/crosshair.svg) 16 16,
             crosshair;
 }
 
 .webgpu-canvas:active,
 .webgpu-canvas.webcam-canvas {
-    cursor: url(/cursors/cursor.cur) 16 16,
-            url(/cursors/crosshair.svg) 16 16,
+    cursor: url(./cursors/cursor.cur) 16 16,
+            url(./cursors/crosshair.svg) 16 16,
             crosshair;
 }
 
