@@ -27,10 +27,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 struct Uniforms {
-  config: vec4<f32>;       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>;  // x=mouseX, y=mouseX, z=mouseY, w=clickIntensity (mapped)
-  zoom_params: vec4<f32>;  // x=frequency, y=saturation, z=brightness, w=displacementScale
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=mouseX, y=mouseX, z=mouseY, w=clickIntensity (mapped)
+  zoom_params: vec4<f32>,  // x=frequency, y=saturation, z=brightness, w=displacementScale
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Mapping notes: mouse coords in zoom_config.yz; clickIntensity in zoom_config.x

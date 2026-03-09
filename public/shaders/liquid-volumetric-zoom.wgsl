@@ -15,10 +15,10 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>;       // x=time, y=unused, z=resX, w=resY
-  zoom_config: vec4<f32>;  // x=zoomTime, y=centerX, z=centerY, w=depth_threshold
-  zoom_params: vec4<f32>;  // x=fg_speed, y=bg_speed, z=parallax_str, w=fog_density
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x=time, y=unused, z=resX, w=resY
+  zoom_config: vec4<f32>,  // x=zoomTime, y=centerX, z=centerY, w=depth_threshold
+  zoom_params: vec4<f32>,  // x=fg_speed, y=bg_speed, z=parallax_str, w=fog_density
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Mapping notes:

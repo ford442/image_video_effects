@@ -27,10 +27,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 struct Uniforms {
-  config: vec4<f32>;       // x=Time, y=PassNumber, z=ResX, w=ResY
-  zoom_config: vec4<f32>;  // x=clickIntensity, y=mouseX, z=mouseY, w=aberration
-  zoom_params: vec4<f32>;  // x=feedbackAmount, y=blurRadius, z=glowIntensity, w=chromaticSpread
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x=Time, y=PassNumber, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=clickIntensity, y=mouseX, z=mouseY, w=aberration
+  zoom_params: vec4<f32>,  // x=feedbackAmount, y=blurRadius, z=glowIntensity, w=chromaticSpread
+  ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(8, 8, 1)

@@ -4,9 +4,9 @@
 @group(0) @binding(3) var<uniform> u: Uniforms;
 
 struct Uniforms {
-  config: vec4<f32>;      // time, unused, resolutionX, resolutionY
-  zoom_config: vec4<f32>; // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>; // x=audioIntensity (rage), other slots free
+  config: vec4<f32>,      // time, unused, resolutionX, resolutionY
+  zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>, // x=audioIntensity (rage), other slots free
 };
 
 // core compute for generative raptors

@@ -27,17 +27,12 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-// Parameters
-let complexity: f32 = u.zoom_params.x;      // Labyrinth density/scale
-let shift_speed: f32 = u.zoom_params.y;     // Rotation/slide speed
-let rift_intensity: f32 = u.zoom_params.z;  // Temporal rift frequency
-let material: f32 = u.zoom_params.w;        // 0=Stone, 1=Obsidian/Neon
-
+// Parameters (accessed via u.zoom_params.x etc. inside functions)
 // Constants
-let PI: f32 = 3.14159265359;
-let MAX_STEPS: i32 = 128;
-let MAX_DIST: f32 = 40.0;
-let SURF_DIST: f32 = 0.001;
+const PI: f32 = 3.14159265359;
+const MAX_STEPS: i32 = 128;
+const MAX_DIST: f32 = 40.0;
+const SURF_DIST: f32 = 0.001;
 
 // 2D Rotation matrix
 fn rot2D(a: f32) -> mat2x2<f32> {
@@ -127,7 +122,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var time = u.config.x;
     
     // Base repetition size based on complexity
-    let cell_size = mix(4.0, 1.5, complexity);
+    let cell_size = mix(4.0, 1.5, u.zoom_params.x);
     
     // Get cell repetition
     let rep = opRepId(p, vec3<f32>(cell_size));
@@ -136,7 +131,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let cell_hash = hash1(cell_id);
     
     // Time-based shifting rotation for each cell
-    let shift_time = time * shift_speed * (0.5 + cell_hash);
+    let shift_time = time * u.zoom_params.y * (0.5 + cell_hash);
     var rq = rotY(q, shift_time + cell_hash * 6.28);
     rq = rotX(rq, shift_time * 0.7);
     
@@ -192,13 +187,13 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     }
     
     // Temporal Rifts - glowing anomalies
-    if (rift_intensity > 0.01) {
+    if (u.zoom_params.z > 0.01) {
         let rift_hash = hash1(cell_id * 3.14159);
         let rift_time = time * (0.3 + rift_hash * 0.5);
         let rift_pulse = sin(rift_time) * 0.5 + 0.5;
         
         // Only show rift based on intensity and timing
-        if (rift_pulse < rift_intensity * 0.5) {
+        if (rift_pulse < u.zoom_params.z * 0.5) {
             let rift_pos = vec3<f32>(
                 sin(rift_hash * 6.28) * 0.8,
                 cos(rift_hash * 4.13) * 0.5,
@@ -293,7 +288,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
     let angleX = (mouse.x - 0.5) * 6.2832 + time * 0.05; // Slow auto-rotation
     let angleY = (mouse.y - 0.5) * 1.5 + 0.3; // Slight elevation
-    let cam_dist = mix(8.0, 15.0, complexity * 0.3);
+    let cam_dist = mix(8.0, 15.0, u.zoom_params.x * 0.3);
     
     var ro = vec3<f32>(
         cam_dist * cos(angleY) * sin(angleX),
@@ -329,13 +324,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Wall material - blend between stone and obsidian
             let stone_col = vec3<f32>(0.45, 0.42, 0.38); // Ancient stone
             let obsidian_col = vec3<f32>(0.08, 0.08, 0.12); // Polished obsidian
-            base_color = mix(stone_col, obsidian_col, material);
+            base_color = mix(stone_col, obsidian_col, u.zoom_params.w);
             
             // Add procedural texture variation
             let tex_noise = fract(sin(dot(p.xz, vec2<f32>(12.9898, 78.233))) * 43758.5453);
             base_color *= 0.9 + tex_noise * 0.2;
             
-            roughness = mix(0.9, 0.1, material); // Stone rough, obsidian smooth
+            roughness = mix(0.9, 0.1, u.zoom_params.w); // Stone rough, obsidian smooth
         } else {
             // Temporal Rift - glowing energy
             base_color = vec3<f32>(0.0);
@@ -354,30 +349,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Specular for obsidian mode
         var spec = 0.0;
-        if (material > 0.1 && mat < 1.5) {
+        if (u.zoom_params.w > 0.1 && mat < 1.5) {
             let ref = reflect(-light_dir, n);
-            spec = pow(max(dot(ref, -rd), 0.0), 32.0) * material;
+            spec = pow(max(dot(ref, -rd), 0.0), 32.0) * u.zoom_params.w;
         }
         
         // Fresnel rim lighting for neon effect
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-        let rim_col = mix(vec3<f32>(0.3, 0.25, 0.2), vec3<f32>(0.0, 0.8, 1.0), material);
+        let rim_col = mix(vec3<f32>(0.3, 0.25, 0.2), vec3<f32>(0.0, 0.8, 1.0), u.zoom_params.w);
         
         if (mat > 1.5) {
             // Temporal Rift glow
             let rift_colors = vec3<f32>(0.4, 0.9, 1.0);
             let pulse = 0.7 + 0.3 * sin(time * 3.0);
-            color = rift_colors * (2.0 + pulse) * rift_intensity;
+            color = rift_colors * (2.0 + pulse) * u.zoom_params.z;
         } else {
             // Standard material
             let amb = 0.15 * ao;
-            color = base_color * (amb + diff * shadow * 0.7) + rim_col * fresnel * (0.3 + material);
+            color = base_color * (amb + diff * shadow * 0.7) + rim_col * fresnel * (0.3 + u.zoom_params.w);
             color += vec3<f32>(spec);
         }
         
         // Fog
         let fog_amount = 1.0 - exp(-t * 0.04);
-        let fog_color = mix(vec3<f32>(0.02, 0.02, 0.04), vec3<f32>(0.0, 0.0, 0.08), material);
+        let fog_color = mix(vec3<f32>(0.02, 0.02, 0.04), vec3<f32>(0.0, 0.0, 0.08), u.zoom_params.w);
         color = mix(color, fog_color, fog_amount);
         
     } else {
@@ -386,7 +381,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (star_hash > 0.997) {
             color = vec3<f32>(0.6, 0.7, 1.0) * (0.5 + 0.5 * sin(time + star_hash * 10.0));
         } else {
-            color = mix(vec3<f32>(0.01, 0.01, 0.02), vec3<f32>(0.0, 0.0, 0.05), material);
+            color = mix(vec3<f32>(0.01, 0.01, 0.02), vec3<f32>(0.0, 0.0, 0.05), u.zoom_params.w);
         }
     }
     

@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-let PI: f32 = 3.14159265359;
+const PI: f32 = 3.14159265359;
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {

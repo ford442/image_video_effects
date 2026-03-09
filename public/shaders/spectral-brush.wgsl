@@ -22,7 +22,7 @@ struct Uniforms {
 };
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
-    const k = vec3<f32>(0.57735, 0.57735, 0.57735);
+    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
     let cosAngle = cos(hue);
     return vec3<f32>(color * cosAngle + cross(k, color) * sin(hue) + k * dot(k, color) * (1.0 - cosAngle));
 }
