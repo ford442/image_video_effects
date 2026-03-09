@@ -31,8 +31,10 @@ emmake make -C build -j$(nproc)
 
 # Copy output to public folder
 mkdir -p ../../public/wasm
-cp build/pixelocity_wasm.* ../../public/wasm/
+cp build/pixelocity_wasm.js build/pixelocity_wasm.wasm ../../public/wasm/
+cp wasm_bridge.js ../../public/wasm/
 
 echo "✅ WASM build complete! Files in public/wasm/"
 echo "   → pixelocity_wasm.js"
 echo "   → pixelocity_wasm.wasm"
+echo "   → wasm_bridge.js"

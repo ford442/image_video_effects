@@ -1,30 +1,101 @@
-# WASM WebGPU Renderer
+# WASM WebGPU Renderer (C++)
 
 A high-performance C++ WebGPU rendering backend using Emscripten and Dawn/emdawnwebgpu.
 Provides an alternative to the JavaScript WebGPU renderer with potential performance benefits.
 
-## Features
+## Current Status
 
-- **Compute Shader Rendering**: Full support for WGSL compute shaders
-- **Ping-Pong Textures**: Automatic read/write texture swapping for feedback effects
-- **Uniform Buffer Management**: Efficient uniform updates
-- **JS Bridge**: Easy integration with existing React/TypeScript code
-- **Toggle Support**: Switch between JS and WASM renderers at runtime
+✅ **Core Implementation Complete**
+- WebGPU device initialization
+- Universal bind group layout (matches all 587+ shaders)
+- Texture management (ping-pong, depth, data A/B/C)
+- Uniform buffer management
+- Shader loading and pipeline caching
+- Ping-pong texture copying for feedback effects
 
-## Project Structure
+🚧 **In Progress**
+- Surface/render pass integration
+- Image loading from JS
+- TypeScript integration
+
+## Architecture
 
 ```
-wasm_renderer/
-├── CMakeLists.txt          # Build configuration
-├── README.md               # This file
-└── src/
-    ├── renderer.h          # Main renderer header
-    ├── renderer.cpp        # Renderer implementation
-    ├── main_test.cpp       # Entry point & JS bindings
-    └── wasm_bridge.js      # JavaScript bridge
+┌─────────────────────────────────────────────────────────────┐
+│                    JavaScript/TypeScript                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  wasm_bridge.js                                     │   │
+│  │  - initWasmRenderer()                               │   │
+│  │  - loadShader(id, wgslCode)                         │   │
+│  │  - updateUniforms({time, mouse, ...})               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Emscripten JS Glue (pixelocity_wasm.js)            │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      C++ WASM Module                        │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  main.cpp                                           │   │
+│  │  - EMSCRIPTEN_KEEPALIVE exports                     │   │
+│  │  - render loop                                      │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  renderer.h/cpp                                     │   │
+│  │  - WebGPURenderer class                             │   │
+│  │  - Device/Resource management                       │   │
+│  │  - Compute pipeline execution                       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  WebGPU (emdawnwebgpu)                              │   │
+│  │  - WGPUDevice, WGPUQueue                            │   │
+│  │  - Textures, Buffers, Pipelines                     │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
+## Shader Bindings Reference
+
+All 587+ shaders use this universal bind group layout:
+
+| Binding | Type | Usage |
+|---------|------|-------|
+| 0 | sampler | Filtering sampler (linear) |
+| 1 | texture_2d<f32> | readTexture (input image) |
+| 2 | storage_texture | writeTexture (output) |
+| 3 | uniform | Uniforms struct |
+| 4 | texture_2d<f32> | readDepthTexture |
+| 5 | sampler | Non-filtering sampler (nearest) |
+| 6 | storage_texture | writeDepthTexture |
+| 7 | storage_texture | dataTextureA |
+| 8 | storage_texture | dataTextureB |
+| 9 | texture_2d<f32> | dataTextureC |
+| 10 | storage | extraBuffer (256 floats) |
+| 11 | sampler_comparison | comparisonSampler |
+| 12 | storage (read-only) | plasmaBuffer |
+
+## Uniforms Structure
+
+```wgsl
+struct Uniforms {
+  config: vec4<f32>,       // time, rippleCount, resolutionX, resolutionY
+  zoom_config: vec4<f32>,  // time, mouseX, mouseY, mouseDown
+  zoom_params: vec4<f32>,  // param1, param2, param3, param4
+  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
+};
+```
+
+## Build Instructions
+
+### Prerequisites
 
 1. **Emscripten SDK** (emsdk)
    ```bash
@@ -38,109 +109,92 @@ wasm_renderer/
 
 2. **CMake** (3.20+)
 
-## Building
+### Build
 
-### Quick Build
+```bash
+cd wasm_renderer
+./build.sh
+```
+
+Or manually:
 
 ```bash
 cd wasm_renderer
 mkdir -p build && cd build
 emcmake cmake .. -DCMAKE_BUILD_TYPE=Release
 emmake make -j$(nproc)
+
+# Copy outputs
+mkdir -p ../../public/wasm
+cp pixelocity_wasm.js pixelocity_wasm.wasm ../../public/wasm/
+cp ../wasm_bridge.js ../../public/wasm/
 ```
 
-### Output
+### Output Files
 
-Build artifacts in `build/pkg/`:
-- `wasm_renderer_test.js` - Emscripten-generated JS glue
-- `wasm_renderer_test.wasm` - Compiled WASM binary
-- `wasm_bridge.js` - JavaScript bridge (copied from src/)
+- `public/wasm/pixelocity_wasm.js` - Emscripten-generated JS glue
+- `public/wasm/pixelocity_wasm.wasm` - Compiled WASM binary
+- `public/wasm/wasm_bridge.js` - JavaScript bridge for TS integration
 
-## Usage
-
-### 1. Load the WASM Module
+## JavaScript API
 
 ```javascript
-import { initWasmRenderer } from './wasm_renderer/pkg/wasm_bridge.js';
+import wasmRenderer from './wasm/wasm_bridge.js';
 
-const renderer = await initWasmRenderer('canvas');
-```
+// Initialize
+const canvas = document.getElementById('canvas');
+await wasmRenderer.initWasmRenderer(canvas);
 
-### 2. Load a Shader
+// Load a shader
+const response = await fetch('shaders/liquid.wgsl');
+const wgslCode = await response.text();
+await wasmRenderer.loadShader('liquid', wgslCode);
 
-```javascript
-const wgslCode = `
-  @group(0) @binding(3) var<uniform> u: Uniforms;
-  
-  @compute @workgroup_size(8, 8)
-  fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    // Your shader code here
-  }
-`;
+// Set as active
+wasmRenderer.setActiveShader('liquid');
 
-renderer.loadShader(wgslCode);
-```
-
-### 3. Start Rendering
-
-```javascript
-renderer.start();
-
-// Update uniforms dynamically
-renderer.updateUniforms({
+// Update uniforms (called each frame)
+wasmRenderer.updateUniforms({
   time: performance.now() / 1000,
-  mouse: [x, y, clickX, clickY]
+  mouseX: 0.5,
+  mouseY: 0.5,
+  mouseDown: false,
+  zoomParams: [0.5, 0.5, 0.5, 0.5]
 });
+
+// Add ripple effect
+wasmRenderer.addRipple(0.5, 0.5);
+
+// Get FPS
+console.log('FPS:', wasmRenderer.getFPS());
 ```
 
-### 4. React Integration
+## TypeScript Integration
 
-```tsx
-import { useRenderer } from '../components/shaders/RendererContext';
+```typescript
+import wasmRenderer, { WasmRenderer } from './wasm/wasm_bridge';
 
-function MyComponent() {
-  const { currentRenderer, switchRenderer } = useRenderer();
-  
-  return (
-    <button onClick={() => switchRenderer('cpp-wasm')}>
-      Switch to WASM Renderer
-    </button>
-  );
-}
+// Type-safe usage
+const renderer: WasmRenderer = wasmRenderer;
+await renderer.initWasmRenderer(canvas);
 ```
 
-## API Reference
+## Differences from JS Renderer
 
-### WasmRendererBridge
-
-| Method | Description |
-|--------|-------------|
-| `initialize(canvasId)` | Initialize WebGPU and create renderer |
-| `loadShader(wgslCode)` | Compile and load a WGSL shader |
-| `updateUniforms(uniforms)` | Update uniform values |
-| `start()` | Begin render loop |
-| `stop()` | Stop render loop |
-| `render()` | Render single frame |
-| `shutdown()` | Cleanup and release resources |
-| `getFPS()` | Get current FPS |
-
-### Uniforms Structure
-
-```cpp
-struct Uniforms {
-  vec2 resolution;    // Canvas size
-  float time;         // Time in seconds
-  vec4 mouse;         // Mouse position (x, y, clickX, clickY)
-  int frame;          // Frame counter
-};
-```
+| Feature | JS Renderer | WASM Renderer |
+|---------|-------------|---------------|
+| Shader compilation | Chrome's WebGPU | Dawn/emdawnwebgpu |
+| Uniform updates | JS → GPUBuffer | C++ memory → GPUBuffer |
+| Ping-pong textures | JS-managed | C++-managed |
+| Texture copies | JS API | C++ API |
+| Render loop | requestAnimationFrame | emscripten_set_main_loop |
 
 ## Performance Considerations
 
-- **Initialization**: WASM renderer has higher startup cost
-- **Shader Compilation**: WGSL compilation happens in C++ (potentially faster)
-- **Uniform Updates**: Direct memory access (no JS overhead)
-- **Texture Operations**: Native WebGPU from C++
+- **Initialization**: WASM has higher startup cost (module download + compilation)
+- **Shader compilation**: May be faster in C++ (Dawn compiler)
+- **Uniform updates**: Direct memory writes (no JS→WASM boundary crossing)
+- **Texture operations**: Native C++ WebGPU calls
 
 ## Troubleshooting
 
@@ -158,11 +212,19 @@ struct Uniforms {
 
 ## Roadmap
 
+- [x] WebGPU device initialization
+- [x] Universal bind group layout
+- [x] Texture resource management
+- [x] Uniform buffer management
+- [x] Shader loading and caching
+- [x] Compute pipeline execution
+- [x] Ping-pong texture copying
+- [ ] Surface/render pass to canvas
+- [ ] Image upload from JS
+- [ ] Video texture support
 - [ ] Multiple compute passes
 - [ ] Render pass support (vertex/fragment shaders)
-- [ ] Texture upload/download
 - [ ] Audio input support
-- [ ] Parallel shader compilation
 
 ## License
 
