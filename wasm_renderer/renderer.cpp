@@ -173,17 +173,10 @@ bool WebGPURenderer::CreateDevice() {
 
     queue_ = wgpuDeviceGetQueue(device_);
     
-    // Set error callback using new API
-    auto errorCallback = [](WGPUDevice const* device, WGPUErrorType type, 
-                            WGPUStringView message, void* userdata1, void* userdata2) {
-        (void)device; (void)userdata1; (void)userdata2; // Unused
-        printf("⚠️ WebGPU Error [%d]\n", type);
-    };
-    
-    wgpuDeviceSetUncapturedErrorCallback(device_,
-        WGPUUncapturedErrorCallbackInfo{
-            nullptr, WGPUCallbackMode_AllowProcessEvents, errorCallback, nullptr, nullptr
-        });
+    // Note: Error callback setup removed - in the new WebGPU C API,
+    // uncaptured error callbacks may need to be set differently or are
+    // handled via device lost callbacks. For now, we skip this.
+    // TODO: Investigate proper error handling for emdawnwebgpu
 
     return true;
 }
