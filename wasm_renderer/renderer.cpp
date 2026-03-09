@@ -134,7 +134,7 @@ bool WebGPURenderer::CreateDevice() {
     
     wgpuInstanceRequestAdapter(instance_, &adapterOpts, 
         WGPURequestAdapterCallbackInfo{
-            nullptr, adapterCallback, &adapter_, nullptr
+            nullptr, WGPUCallbackMode_AllowProcessEvents, adapterCallback, &adapter_, nullptr
         });
 
     if (!adapter_) {
@@ -163,7 +163,7 @@ bool WebGPURenderer::CreateDevice() {
     
     wgpuAdapterRequestDevice(adapter_, &deviceDesc,
         WGPURequestDeviceCallbackInfo{
-            nullptr, deviceCallback, &device_, nullptr
+            nullptr, WGPUCallbackMode_AllowProcessEvents, deviceCallback, &device_, nullptr
         });
 
     if (!device_) {
@@ -182,7 +182,7 @@ bool WebGPURenderer::CreateDevice() {
     
     wgpuDeviceSetUncapturedErrorCallback(device_,
         WGPUUncapturedErrorCallbackInfo{
-            nullptr, errorCallback, nullptr, nullptr
+            nullptr, WGPUCallbackMode_AllowProcessEvents, errorCallback, nullptr, nullptr
         });
 
     return true;
@@ -274,14 +274,12 @@ bool WebGPURenderer::CreateResources() {
     float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     
     WGPUTexelCopyTextureInfo emptyDest = {};
-    emptyDest.nextInChain = nullptr;
     emptyDest.texture = emptyTexture_;
     emptyDest.mipLevel = 0;
     emptyDest.origin = {0, 0, 0};
     emptyDest.aspect = WGPUTextureAspect_All;
     
     WGPUTexelCopyBufferLayout emptyDataLayout = {};
-    emptyDataLayout.nextInChain = nullptr;
     emptyDataLayout.offset = 0;
     emptyDataLayout.bytesPerRow = 16;
     emptyDataLayout.rowsPerImage = 1;
@@ -292,14 +290,12 @@ bool WebGPURenderer::CreateResources() {
     std::vector<float> zeros(canvasWidth_ * canvasHeight_ * 4, 0.0f);
     
     WGPUTexelCopyTextureInfo dataDest = {};
-    dataDest.nextInChain = nullptr;
     dataDest.texture = dataTextureC_;
     dataDest.mipLevel = 0;
     dataDest.origin = {0, 0, 0};
     dataDest.aspect = WGPUTextureAspect_All;
     
     WGPUTexelCopyBufferLayout dataLayout = {};
-    dataLayout.nextInChain = nullptr;
     dataLayout.offset = 0;
     dataLayout.bytesPerRow = static_cast<uint32_t>(canvasWidth_ * 16);
     dataLayout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
@@ -754,15 +750,13 @@ void WebGPURenderer::Render() {
     wgpuComputePassEncoderEnd(computePass);
 
     // Copy writeTexture to readTexture for next frame (ping-pong)
-    WGPUImageCopyTexture srcCopy1 = {};
-    srcCopy1.nextInChain = nullptr;
+    WGPUTexelCopyTextureInfo srcCopy1 = {};
     srcCopy1.texture = writeTexture_;
     srcCopy1.mipLevel = 0;
     srcCopy1.origin = {0, 0, 0};
     srcCopy1.aspect = WGPUTextureAspect_All;
     
-    WGPUImageCopyTexture dstCopy1 = {};
-    dstCopy1.nextInChain = nullptr;
+    WGPUTexelCopyTextureInfo dstCopy1 = {};
     dstCopy1.texture = readTexture_;
     dstCopy1.mipLevel = 0;
     dstCopy1.origin = {0, 0, 0};
@@ -776,15 +770,13 @@ void WebGPURenderer::Render() {
     wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy1, &dstCopy1, &extent1);
 
     // Also copy depth texture
-    WGPUImageCopyTexture srcCopy2 = {};
-    srcCopy2.nextInChain = nullptr;
+    WGPUTexelCopyTextureInfo srcCopy2 = {};
     srcCopy2.texture = depthTextureWrite_;
     srcCopy2.mipLevel = 0;
     srcCopy2.origin = {0, 0, 0};
     srcCopy2.aspect = WGPUTextureAspect_All;
     
-    WGPUImageCopyTexture dstCopy2 = {};
-    dstCopy2.nextInChain = nullptr;
+    WGPUTexelCopyTextureInfo dstCopy2 = {};
     dstCopy2.texture = depthTextureRead_;
     dstCopy2.mipLevel = 0;
     dstCopy2.origin = {0, 0, 0};
@@ -793,15 +785,13 @@ void WebGPURenderer::Render() {
     wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy2, &dstCopy2, &extent1);
 
     // Also copy dataTextureA to dataTextureC for feedback effects
-    WGPUImageCopyTexture srcCopy3 = {};
-    srcCopy3.nextInChain = nullptr;
+    WGPUTexelCopyTextureInfo srcCopy3 = {};
     srcCopy3.texture = dataTextureA_;
     srcCopy3.mipLevel = 0;
     srcCopy3.origin = {0, 0, 0};
     srcCopy3.aspect = WGPUTextureAspect_All;
     
-    WGPUImageCopyTexture dstCopy3 = {};
-    dstCopy3.nextInChain = nullptr;
+    WGPUTexelCopyTextureInfo dstCopy3 = {};
     dstCopy3.texture = dataTextureC_;
     dstCopy3.mipLevel = 0;
     dstCopy3.origin = {0, 0, 0};
