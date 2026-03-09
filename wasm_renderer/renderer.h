@@ -76,7 +76,7 @@ private:
     WGPUAdapter adapter_ = nullptr;
     WGPUDevice device_ = nullptr;
     WGPUQueue queue_ = nullptr;
-    WGPUSwapChain swapChain_ = nullptr;
+    // Note: SwapChain deprecated in new WebGPU API, using Surface directly
     WGPUTextureFormat surfaceFormat_ = WGPUTextureFormat_Undefined;
 
     // Bind group layout (universal for all compute shaders)

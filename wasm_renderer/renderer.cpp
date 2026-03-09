@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string>
+#include <cstring>
 
 namespace pixelocity {
 
@@ -11,6 +12,14 @@ namespace pixelocity {
 extern "C" {
     extern void jsRequestAnimationFrame(void (*callback)(double time, void* userData), void* userData);
     extern void jsConsoleLog(const char* msg);
+}
+
+// Helper for WGPUStringView (new API uses this instead of const char*)
+static WGPUStringView MakeStringView(const char* str) {
+    WGPUStringView view;
+    view.data = str;
+    view.length = str ? strlen(str) : 0;
+    return view;
 }
 
 WebGPURenderer::WebGPURenderer() = default;
@@ -106,43 +115,58 @@ bool WebGPURenderer::CreateDevice() {
         return false;
     }
 
-    // Request adapter
+    // Request adapter using new callback-based API
     WGPURequestAdapterOptions adapterOpts = {};
     adapterOpts.nextInChain = nullptr;
-    adapterOpts.compatibleSurface = nullptr; // We'll create surface separately
+    adapterOpts.compatibleSurface = nullptr;
     
-    // For Emscripten, we use the simplified path
     adapter_ = nullptr;
-    wgpuInstanceRequestAdapter(instance_, &adapterOpts, 
-        [](WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata) {
-            if (status == WGPURequestAdapterStatus_Success) {
-                *static_cast<WGPUAdapter*>(userdata) = adapter;
-            } else {
-                printf("❌ Adapter request failed: %s\n", message ? message : "unknown");
-            }
-        }, &adapter_);
+    
+    auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, 
+                               WGPUStringView message, void* userdata) {
+        if (status == WGPURequestAdapterStatus_Success) {
+            *static_cast<WGPUAdapter*>(userdata) = adapter;
+        } else {
+            printf("❌ Adapter request failed\n");
+        }
+    };
+    
+    WGPURequestAdapterCallbackInfo adapterCallbackInfo = {};
+    adapterCallbackInfo.nextInChain = nullptr;
+    adapterCallbackInfo.callback = adapterCallback;
+    adapterCallbackInfo.userdata = &adapter_;
+    
+    wgpuInstanceRequestAdapter(instance_, &adapterOpts, adapterCallbackInfo);
 
     if (!adapter_) {
         printf("❌ Failed to get WebGPU adapter\n");
         return false;
     }
 
-    // Request device
+    // Request device using new callback-based API
     WGPUDeviceDescriptor deviceDesc = {};
     deviceDesc.nextInChain = nullptr;
-    deviceDesc.label = "Pixelocity Device";
+    deviceDesc.label = MakeStringView("Pixelocity Device");
     deviceDesc.requiredFeatureCount = 0;
     deviceDesc.requiredLimits = nullptr;
     
     device_ = nullptr;
-    wgpuAdapterRequestDevice(adapter_, &deviceDesc,
-        [](WGPURequestDeviceStatus status, WGPUDevice device, const char* message, void* userdata) {
-            if (status == WGPURequestDeviceStatus_Success) {
-                *static_cast<WGPUDevice*>(userdata) = device;
-            } else {
-                printf("❌ Device request failed: %s\n", message ? message : "unknown");
-            }
-        }, &device_);
+    
+    auto deviceCallback = [](WGPURequestDeviceStatus status, WGPUDevice device,
+                              WGPUStringView message, void* userdata) {
+        if (status == WGPURequestDeviceStatus_Success) {
+            *static_cast<WGPUDevice*>(userdata) = device;
+        } else {
+            printf("❌ Device request failed\n");
+        }
+    };
+    
+    WGPURequestDeviceCallbackInfo deviceCallbackInfo = {};
+    deviceCallbackInfo.nextInChain = nullptr;
+    deviceCallbackInfo.callback = deviceCallback;
+    deviceCallbackInfo.userdata = &device_;
+    
+    wgpuAdapterRequestDevice(adapter_, &deviceDesc, deviceCallbackInfo);
 
     if (!device_) {
         printf("❌ Failed to get WebGPU device\n");
@@ -151,11 +175,17 @@ bool WebGPURenderer::CreateDevice() {
 
     queue_ = wgpuDeviceGetQueue(device_);
     
-    // Set error callback
-    wgpuDeviceSetUncapturedErrorCallback(device_,
-        [](WGPUErrorType type, const char* message, void* userdata) {
-            printf("⚠️ WebGPU Error [%d]: %s\n", type, message ? message : "unknown");
-        }, nullptr);
+    // Set error callback using new API
+    auto errorCallback = [](WGPUErrorType type, WGPUStringView message, void* userdata) {
+        printf("⚠️ WebGPU Error [%d]\n", type);
+    };
+    
+    WGPUUncapturedErrorCallbackInfo errorCallbackInfo = {};
+    errorCallbackInfo.nextInChain = nullptr;
+    errorCallbackInfo.callback = errorCallback;
+    errorCallbackInfo.userdata = nullptr;
+    
+    wgpuDeviceSetUncapturedErrorCallback(device_, errorCallbackInfo);
 
     return true;
 }
@@ -164,7 +194,7 @@ bool WebGPURenderer::CreateResources() {
     // Create samplers
     WGPUSamplerDescriptor samplerDesc = {};
     samplerDesc.nextInChain = nullptr;
-    samplerDesc.label = "Filtering Sampler";
+    samplerDesc.label = MakeStringView("Filtering Sampler");
     samplerDesc.magFilter = WGPUFilterMode_Linear;
     samplerDesc.minFilter = WGPUFilterMode_Linear;
     samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Linear;
@@ -173,13 +203,13 @@ bool WebGPURenderer::CreateResources() {
     samplerDesc.addressModeW = WGPUAddressMode_Repeat;
     filteringSampler_ = wgpuDeviceCreateSampler(device_, &samplerDesc);
 
-    samplerDesc.label = "Non-filtering Sampler";
+    samplerDesc.label = MakeStringView("Non-filtering Sampler");
     samplerDesc.magFilter = WGPUFilterMode_Nearest;
     samplerDesc.minFilter = WGPUFilterMode_Nearest;
     samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Nearest;
     nonFilteringSampler_ = wgpuDeviceCreateSampler(device_, &samplerDesc);
 
-    samplerDesc.label = "Comparison Sampler";
+    samplerDesc.label = MakeStringView("Comparison Sampler");
     samplerDesc.compare = WGPUCompareFunction_Less;
     comparisonSampler_ = wgpuDeviceCreateSampler(device_, &samplerDesc);
 
@@ -187,20 +217,20 @@ bool WebGPURenderer::CreateResources() {
     constexpr size_t uniformSize = sizeof(float) * (12 + MAX_RIPPLES * 4);
     WGPUBufferDescriptor bufferDesc = {};
     bufferDesc.nextInChain = nullptr;
-    bufferDesc.label = "Uniform Buffer";
+    bufferDesc.label = MakeStringView("Uniform Buffer");
     bufferDesc.size = uniformSize;
     bufferDesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
     bufferDesc.mappedAtCreation = false;
     uniformBuffer_ = wgpuDeviceCreateBuffer(device_, &bufferDesc);
 
     // Create extra buffer (256 floats)
-    bufferDesc.label = "Extra Buffer";
+    bufferDesc.label = MakeStringView("Extra Buffer");
     bufferDesc.size = 256 * sizeof(float);
     bufferDesc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
     extraBuffer_ = wgpuDeviceCreateBuffer(device_, &bufferDesc);
 
     // Create plasma buffer
-    bufferDesc.label = "Plasma Buffer";
+    bufferDesc.label = MakeStringView("Plasma Buffer");
     bufferDesc.size = MAX_PLASMA_BALLS * 48;
     bufferDesc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
     plasmaBuffer_ = wgpuDeviceCreateBuffer(device_, &bufferDesc);
@@ -216,74 +246,68 @@ bool WebGPURenderer::CreateResources() {
     // Ping-pong textures (rgba32float)
     texDesc.format = WGPUTextureFormat_RGBA32Float;
     texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
-    texDesc.label = "Read Texture";
+    texDesc.label = MakeStringView("Read Texture");
     readTexture_ = wgpuDeviceCreateTexture(device_, &texDesc);
-    texDesc.label = "Write Texture";
+    texDesc.label = MakeStringView("Write Texture");
     writeTexture_ = wgpuDeviceCreateTexture(device_, &texDesc);
-    texDesc.label = "Data Texture A";
+    texDesc.label = MakeStringView("Data Texture A");
     dataTextureA_ = wgpuDeviceCreateTexture(device_, &texDesc);
-    texDesc.label = "Data Texture B";
+    texDesc.label = MakeStringView("Data Texture B");
     dataTextureB_ = wgpuDeviceCreateTexture(device_, &texDesc);
     
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
-    texDesc.label = "Data Texture C";
+    texDesc.label = MakeStringView("Data Texture C");
     dataTextureC_ = wgpuDeviceCreateTexture(device_, &texDesc);
 
     // Depth textures (r32float)
     texDesc.format = WGPUTextureFormat_R32Float;
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
-    texDesc.label = "Depth Texture Read";
+    texDesc.label = MakeStringView("Depth Texture Read");
     depthTextureRead_ = wgpuDeviceCreateTexture(device_, &texDesc);
-    texDesc.label = "Depth Texture Write";
+    texDesc.label = MakeStringView("Depth Texture Write");
     depthTextureWrite_ = wgpuDeviceCreateTexture(device_, &texDesc);
 
     // Empty texture (1x1)
     texDesc.size = {1, 1, 1};
-    texDesc.label = "Empty Texture";
+    texDesc.label = MakeStringView("Empty Texture");
     emptyTexture_ = wgpuDeviceCreateTexture(device_, &texDesc);
 
     // Initialize empty texture to black
     float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-    wgpuQueueWriteTexture(queue_, 
-        &(WGPUTextureViewDescriptor){
-            .nextInChain = nullptr,
-            .label = nullptr,
-            .format = WGPUTextureFormat_RGBA32Float,
-            .dimension = WGPUTextureViewDimension_2D,
-            .baseMipLevel = 0,
-            .mipLevelCount = 1,
-            .baseArrayLayer = 0,
-            .arrayLayerCount = 1,
-            .aspect = WGPUTextureAspect_All
-        },
-        emptyTexture_,
-        black,
-        sizeof(black),
-        &(WGPUTextureDataLayout){
-            .nextInChain = nullptr,
-            .offset = 0,
-            .bytesPerRow = 16,
-            .rowsPerImage = 1
-        },
-        &texDesc.size);
+    
+    WGPUTextureViewDescriptor emptyViewDesc = {};
+    emptyViewDesc.nextInChain = nullptr;
+    emptyViewDesc.label = MakeStringView(nullptr);
+    emptyViewDesc.format = WGPUTextureFormat_RGBA32Float;
+    emptyViewDesc.dimension = WGPUTextureViewDimension_2D;
+    emptyViewDesc.baseMipLevel = 0;
+    emptyViewDesc.mipLevelCount = 1;
+    emptyViewDesc.baseArrayLayer = 0;
+    emptyViewDesc.arrayLayerCount = 1;
+    emptyViewDesc.aspect = WGPUTextureAspect_All;
+    
+    WGPUTextureDataLayout emptyDataLayout = {};
+    emptyDataLayout.nextInChain = nullptr;
+    emptyDataLayout.offset = 0;
+    emptyDataLayout.bytesPerRow = 16;
+    emptyDataLayout.rowsPerImage = 1;
+    
+    wgpuQueueWriteTexture(queue_, &emptyViewDesc, emptyTexture_, black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
     // Initialize data texture C to zeros
     std::vector<float> zeros(canvasWidth_ * canvasHeight_ * 4, 0.0f);
-    wgpuQueueWriteTexture(queue_,
-        &(WGPUTextureViewDescriptor){
-            .nextInChain = nullptr,
-            .format = WGPUTextureFormat_RGBA32Float,
-            .dimension = WGPUTextureViewDimension_2D
-        },
-        dataTextureC_,
-        zeros.data(),
-        zeros.size() * sizeof(float),
-        &(WGPUTextureDataLayout){
-            .offset = 0,
-            .bytesPerRow = static_cast<uint32_t>(canvasWidth_ * 16),
-            .rowsPerImage = static_cast<uint32_t>(canvasHeight_)
-        },
-        &texDesc.size);
+    
+    WGPUTextureViewDescriptor dataViewDesc = {};
+    dataViewDesc.nextInChain = nullptr;
+    dataViewDesc.format = WGPUTextureFormat_RGBA32Float;
+    dataViewDesc.dimension = WGPUTextureViewDimension_2D;
+    
+    WGPUTextureDataLayout dataLayout = {};
+    dataLayout.offset = 0;
+    dataLayout.bytesPerRow = static_cast<uint32_t>(canvasWidth_ * 16);
+    dataLayout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
+    
+    wgpuQueueWriteTexture(queue_, &dataViewDesc, dataTextureC_, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &texDesc.size);
 
     return true;
 }
@@ -370,7 +394,7 @@ void WebGPURenderer::CreateBindGroupLayout() {
 
     WGPUBindGroupLayoutDescriptor layoutDesc = {};
     layoutDesc.nextInChain = nullptr;
-    layoutDesc.label = "Compute Bind Group Layout";
+    layoutDesc.label = MakeStringView("Compute Bind Group Layout");
     layoutDesc.entryCount = 13;
     layoutDesc.entries = entries;
     
@@ -379,7 +403,7 @@ void WebGPURenderer::CreateBindGroupLayout() {
     // Create pipeline layout
     WGPUPipelineLayoutDescriptor pipelineLayoutDesc = {};
     pipelineLayoutDesc.nextInChain = nullptr;
-    pipelineLayoutDesc.label = "Compute Pipeline Layout";
+    pipelineLayoutDesc.label = MakeStringView("Compute Pipeline Layout");
     pipelineLayoutDesc.bindGroupLayoutCount = 1;
     pipelineLayoutDesc.bindGroupLayouts = &computeBindGroupLayout_;
     
@@ -420,12 +444,12 @@ void WebGPURenderer::CreateRenderPipeline() {
     WGPUShaderModuleDescriptor shaderDesc = {};
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslDesc);
     
-    wgslDesc.code = vertexShaderCode;
-    shaderDesc.label = "Vertex Shader";
+    wgslDesc.code = MakeStringView(vertexShaderCode);
+    shaderDesc.label = MakeStringView("Vertex Shader");
     WGPUShaderModule vertexModule = wgpuDeviceCreateShaderModule(device_, &shaderDesc);
     
-    wgslDesc.code = fragmentShaderCode;
-    shaderDesc.label = "Fragment Shader";
+    wgslDesc.code = MakeStringView(fragmentShaderCode);
+    shaderDesc.label = MakeStringView("Fragment Shader");
     WGPUShaderModule fragmentModule = wgpuDeviceCreateShaderModule(device_, &shaderDesc);
 
     // Create render pipeline
@@ -446,7 +470,7 @@ void WebGPURenderer::CreateRenderPipeline() {
     WGPUFragmentState fragmentState = {};
     fragmentState.nextInChain = nullptr;
     fragmentState.module = fragmentModule;
-    fragmentState.entryPoint = "fs_main";
+    fragmentState.entryPoint = MakeStringView("fs_main");
     fragmentState.targetCount = 1;
     fragmentState.targets = &colorTarget;
 
@@ -465,13 +489,13 @@ void WebGPURenderer::CreateRenderPipeline() {
     WGPUVertexState vertexState = {};
     vertexState.nextInChain = nullptr;
     vertexState.module = vertexModule;
-    vertexState.entryPoint = "vs_main";
+    vertexState.entryPoint = MakeStringView("vs_main");
     vertexState.bufferCount = 0;
     vertexState.buffers = nullptr;
 
     WGPURenderPipelineDescriptor pipelineDesc = {};
     pipelineDesc.nextInChain = nullptr;
-    pipelineDesc.label = "Render Pipeline";
+    pipelineDesc.label = MakeStringView("Render Pipeline");
     pipelineDesc.layout = nullptr; // Auto layout
     pipelineDesc.vertex = vertexState;
     pipelineDesc.primitive = primitiveState;
@@ -491,7 +515,7 @@ void WebGPURenderer::CreateBindGroups() {
 
     WGPUTextureViewDescriptor viewDesc = {};
     viewDesc.nextInChain = nullptr;
-    viewDesc.label = nullptr;
+    viewDesc.label = MakeStringView(nullptr);
     viewDesc.format = WGPUTextureFormat_RGBA32Float;
     viewDesc.dimension = WGPUTextureViewDimension_2D;
     viewDesc.baseMipLevel = 0;
@@ -551,7 +575,7 @@ void WebGPURenderer::CreateBindGroups() {
 
     WGPUBindGroupDescriptor bindGroupDesc = {};
     bindGroupDesc.nextInChain = nullptr;
-    bindGroupDesc.label = "Compute Bind Group";
+    bindGroupDesc.label = MakeStringView("Compute Bind Group");
     bindGroupDesc.layout = computeBindGroupLayout_;
     bindGroupDesc.entryCount = 13;
     bindGroupDesc.entries = entries;
@@ -577,11 +601,11 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     // Create shader module
     WGPUShaderModuleWGSLDescriptor wgslDesc = {};
     wgslDesc.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
-    wgslDesc.code = wgslCode;
+    wgslDesc.code = MakeStringView(wgslCode);
 
     WGPUShaderModuleDescriptor shaderDesc = {};
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslDesc);
-    shaderDesc.label = id;
+    shaderDesc.label = MakeStringView(id);
 
     WGPUShaderModule module = wgpuDeviceCreateShaderModule(device_, &shaderDesc);
     if (!module) {
@@ -592,10 +616,10 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     // Create compute pipeline
     WGPUComputePipelineDescriptor pipelineDesc = {};
     pipelineDesc.nextInChain = nullptr;
-    pipelineDesc.label = id;
+    pipelineDesc.label = MakeStringView(id);
     pipelineDesc.layout = computePipelineLayout_;
     pipelineDesc.compute.module = module;
-    pipelineDesc.compute.entryPoint = "main";
+    pipelineDesc.compute.entryPoint = MakeStringView("main");
 
     WGPUComputePipeline pipeline = wgpuDeviceCreateComputePipeline(device_, &pipelineDesc);
     if (!pipeline) {
@@ -706,13 +730,13 @@ void WebGPURenderer::Render() {
     // Create command encoder
     WGPUCommandEncoderDescriptor encoderDesc = {};
     encoderDesc.nextInChain = nullptr;
-    encoderDesc.label = "Render Encoder";
+    encoderDesc.label = MakeStringView("Render Encoder");
     WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device_, &encoderDesc);
 
     // Begin compute pass
     WGPUComputePassDescriptor computeDesc = {};
     computeDesc.nextInChain = nullptr;
-    computeDesc.label = "Compute Pass";
+    computeDesc.label = MakeStringView("Compute Pass");
     WGPUComputePassEncoder computePass = wgpuCommandEncoderBeginComputePass(encoder, &computeDesc);
 
     wgpuComputePassEncoderSetPipeline(computePass, it->second.pipeline);
@@ -726,80 +750,64 @@ void WebGPURenderer::Render() {
     wgpuComputePassEncoderEnd(computePass);
 
     // Copy writeTexture to readTexture for next frame (ping-pong)
-    wgpuCommandEncoderCopyTextureToTexture(
-        encoder,
-        &(WGPUImageCopyTexture){
-            .nextInChain = nullptr,
-            .texture = writeTexture_,
-            .mipLevel = 0,
-            .origin = {0, 0, 0},
-            .aspect = WGPUTextureAspect_All
-        },
-        &(WGPUImageCopyTexture){
-            .nextInChain = nullptr,
-            .texture = readTexture_,
-            .mipLevel = 0,
-            .origin = {0, 0, 0},
-            .aspect = WGPUTextureAspect_All
-        },
-        &(WGPUExtent3D){
-            .width = static_cast<uint32_t>(canvasWidth_),
-            .height = static_cast<uint32_t>(canvasHeight_),
-            .depthOrArrayLayers = 1
-        }
-    );
+    WGPUImageCopyTexture srcCopy1 = {};
+    srcCopy1.nextInChain = nullptr;
+    srcCopy1.texture = writeTexture_;
+    srcCopy1.mipLevel = 0;
+    srcCopy1.origin = {0, 0, 0};
+    srcCopy1.aspect = WGPUTextureAspect_All;
+    
+    WGPUImageCopyTexture dstCopy1 = {};
+    dstCopy1.nextInChain = nullptr;
+    dstCopy1.texture = readTexture_;
+    dstCopy1.mipLevel = 0;
+    dstCopy1.origin = {0, 0, 0};
+    dstCopy1.aspect = WGPUTextureAspect_All;
+    
+    WGPUExtent3D extent1 = {};
+    extent1.width = static_cast<uint32_t>(canvasWidth_);
+    extent1.height = static_cast<uint32_t>(canvasHeight_);
+    extent1.depthOrArrayLayers = 1;
+    
+    wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy1, &dstCopy1, &extent1);
 
     // Also copy depth texture
-    wgpuCommandEncoderCopyTextureToTexture(
-        encoder,
-        &(WGPUImageCopyTexture){
-            .nextInChain = nullptr,
-            .texture = depthTextureWrite_,
-            .mipLevel = 0,
-            .origin = {0, 0, 0},
-            .aspect = WGPUTextureAspect_All
-        },
-        &(WGPUImageCopyTexture){
-            .nextInChain = nullptr,
-            .texture = depthTextureRead_,
-            .mipLevel = 0,
-            .origin = {0, 0, 0},
-            .aspect = WGPUTextureAspect_All
-        },
-        &(WGPUExtent3D){
-            .width = static_cast<uint32_t>(canvasWidth_),
-            .height = static_cast<uint32_t>(canvasHeight_),
-            .depthOrArrayLayers = 1
-        }
-    );
+    WGPUImageCopyTexture srcCopy2 = {};
+    srcCopy2.nextInChain = nullptr;
+    srcCopy2.texture = depthTextureWrite_;
+    srcCopy2.mipLevel = 0;
+    srcCopy2.origin = {0, 0, 0};
+    srcCopy2.aspect = WGPUTextureAspect_All;
+    
+    WGPUImageCopyTexture dstCopy2 = {};
+    dstCopy2.nextInChain = nullptr;
+    dstCopy2.texture = depthTextureRead_;
+    dstCopy2.mipLevel = 0;
+    dstCopy2.origin = {0, 0, 0};
+    dstCopy2.aspect = WGPUTextureAspect_All;
+    
+    wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy2, &dstCopy2, &extent1);
 
     // Also copy dataTextureA to dataTextureC for feedback effects
-    wgpuCommandEncoderCopyTextureToTexture(
-        encoder,
-        &(WGPUImageCopyTexture){
-            .nextInChain = nullptr,
-            .texture = dataTextureA_,
-            .mipLevel = 0,
-            .origin = {0, 0, 0},
-            .aspect = WGPUTextureAspect_All
-        },
-        &(WGPUImageCopyTexture){
-            .nextInChain = nullptr,
-            .texture = dataTextureC_,
-            .mipLevel = 0,
-            .origin = {0, 0, 0},
-            .aspect = WGPUTextureAspect_All
-        },
-        &(WGPUExtent3D){
-            .width = static_cast<uint32_t>(canvasWidth_),
-            .height = static_cast<uint32_t>(canvasHeight_),
-            .depthOrArrayLayers = 1
-        }
-    );
+    WGPUImageCopyTexture srcCopy3 = {};
+    srcCopy3.nextInChain = nullptr;
+    srcCopy3.texture = dataTextureA_;
+    srcCopy3.mipLevel = 0;
+    srcCopy3.origin = {0, 0, 0};
+    srcCopy3.aspect = WGPUTextureAspect_All;
+    
+    WGPUImageCopyTexture dstCopy3 = {};
+    dstCopy3.nextInChain = nullptr;
+    dstCopy3.texture = dataTextureC_;
+    dstCopy3.mipLevel = 0;
+    dstCopy3.origin = {0, 0, 0};
+    dstCopy3.aspect = WGPUTextureAspect_All;
+    
+    wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy3, &dstCopy3, &extent1);
     
     WGPUCommandBufferDescriptor cmdBufferDesc = {};
     cmdBufferDesc.nextInChain = nullptr;
-    cmdBufferDesc.label = "Command Buffer";
+    cmdBufferDesc.label = MakeStringView("Command Buffer");
     WGPUCommandBuffer cmdBuffer = wgpuCommandEncoderFinish(encoder, &cmdBufferDesc);
     
     wgpuQueueSubmit(queue_, 1, &cmdBuffer);
