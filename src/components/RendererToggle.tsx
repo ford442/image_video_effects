@@ -34,7 +34,7 @@ function RendererToggleComponent({
       
       // Dynamic import from public folder
       const script = document.createElement('script');
-      script.src = '/wasm/pixelocity_wasm.js';
+      script.src = './wasm/pixelocity_wasm.js';
       script.async = true;
       script.onload = () => {
         // The WASM module should be available on window.Module or similar

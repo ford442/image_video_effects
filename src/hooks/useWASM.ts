@@ -18,7 +18,7 @@ export const useWASM = () => {
     
     try {
       // Load WASM module from public folder using dynamic script injection
-      const wasmUrl = '/wasm/pixelocity_wasm.js';
+      const wasmUrl = './wasm/pixelocity_wasm.js';
       const script = document.createElement('script');
       script.src = wasmUrl;
       script.async = true;
