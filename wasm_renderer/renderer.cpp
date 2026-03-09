@@ -115,7 +115,7 @@ bool WebGPURenderer::CreateDevice() {
         return false;
     }
 
-    // Request adapter using new callback-based API
+    // Request adapter using callback-based API
     WGPURequestAdapterOptions adapterOpts = {};
     adapterOpts.nextInChain = nullptr;
     adapterOpts.compatibleSurface = nullptr;
@@ -123,27 +123,26 @@ bool WebGPURenderer::CreateDevice() {
     adapter_ = nullptr;
     
     auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, 
-                               WGPUStringView message, void* userdata) {
+                               WGPUStringView message, void* userdata1, void* userdata2) {
+        (void)userdata2; // Unused
         if (status == WGPURequestAdapterStatus_Success) {
-            *static_cast<WGPUAdapter*>(userdata) = adapter;
+            *static_cast<WGPUAdapter*>(userdata1) = adapter;
         } else {
             printf("❌ Adapter request failed\n");
         }
     };
     
-    WGPURequestAdapterCallbackInfo adapterCallbackInfo = {};
-    adapterCallbackInfo.nextInChain = nullptr;
-    adapterCallbackInfo.callback = adapterCallback;
-    adapterCallbackInfo.userdata = &adapter_;
-    
-    wgpuInstanceRequestAdapter(instance_, &adapterOpts, adapterCallbackInfo);
+    wgpuInstanceRequestAdapter(instance_, &adapterOpts, 
+        WGPURequestAdapterCallbackInfo{
+            nullptr, adapterCallback, &adapter_, nullptr
+        });
 
     if (!adapter_) {
         printf("❌ Failed to get WebGPU adapter\n");
         return false;
     }
 
-    // Request device using new callback-based API
+    // Request device using callback-based API
     WGPUDeviceDescriptor deviceDesc = {};
     deviceDesc.nextInChain = nullptr;
     deviceDesc.label = MakeStringView("Pixelocity Device");
@@ -153,20 +152,19 @@ bool WebGPURenderer::CreateDevice() {
     device_ = nullptr;
     
     auto deviceCallback = [](WGPURequestDeviceStatus status, WGPUDevice device,
-                              WGPUStringView message, void* userdata) {
+                              WGPUStringView message, void* userdata1, void* userdata2) {
+        (void)userdata2; // Unused
         if (status == WGPURequestDeviceStatus_Success) {
-            *static_cast<WGPUDevice*>(userdata) = device;
+            *static_cast<WGPUDevice*>(userdata1) = device;
         } else {
             printf("❌ Device request failed\n");
         }
     };
     
-    WGPURequestDeviceCallbackInfo deviceCallbackInfo = {};
-    deviceCallbackInfo.nextInChain = nullptr;
-    deviceCallbackInfo.callback = deviceCallback;
-    deviceCallbackInfo.userdata = &device_;
-    
-    wgpuAdapterRequestDevice(adapter_, &deviceDesc, deviceCallbackInfo);
+    wgpuAdapterRequestDevice(adapter_, &deviceDesc,
+        WGPURequestDeviceCallbackInfo{
+            nullptr, deviceCallback, &device_, nullptr
+        });
 
     if (!device_) {
         printf("❌ Failed to get WebGPU device\n");
@@ -176,16 +174,16 @@ bool WebGPURenderer::CreateDevice() {
     queue_ = wgpuDeviceGetQueue(device_);
     
     // Set error callback using new API
-    auto errorCallback = [](WGPUErrorType type, WGPUStringView message, void* userdata) {
+    auto errorCallback = [](WGPUDevice const* device, WGPUErrorType type, 
+                            WGPUStringView message, void* userdata1, void* userdata2) {
+        (void)device; (void)userdata1; (void)userdata2; // Unused
         printf("⚠️ WebGPU Error [%d]\n", type);
     };
     
-    WGPUUncapturedErrorCallbackInfo errorCallbackInfo = {};
-    errorCallbackInfo.nextInChain = nullptr;
-    errorCallbackInfo.callback = errorCallback;
-    errorCallbackInfo.userdata = nullptr;
-    
-    wgpuDeviceSetUncapturedErrorCallback(device_, errorCallbackInfo);
+    wgpuDeviceSetUncapturedErrorCallback(device_,
+        WGPUUncapturedErrorCallbackInfo{
+            nullptr, errorCallback, nullptr, nullptr
+        });
 
     return true;
 }
@@ -275,39 +273,43 @@ bool WebGPURenderer::CreateResources() {
     // Initialize empty texture to black
     float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     
-    WGPUTextureViewDescriptor emptyViewDesc = {};
-    emptyViewDesc.nextInChain = nullptr;
-    emptyViewDesc.label = MakeStringView(nullptr);
-    emptyViewDesc.format = WGPUTextureFormat_RGBA32Float;
-    emptyViewDesc.dimension = WGPUTextureViewDimension_2D;
-    emptyViewDesc.baseMipLevel = 0;
-    emptyViewDesc.mipLevelCount = 1;
-    emptyViewDesc.baseArrayLayer = 0;
-    emptyViewDesc.arrayLayerCount = 1;
-    emptyViewDesc.aspect = WGPUTextureAspect_All;
+    WGPUTexelCopyTextureInfo emptyDest = {};
+    emptyDest.nextInChain = nullptr;
+    emptyDest.texture = emptyTexture_;
+    emptyDest.mipLevel = 0;
+    emptyDest.origin = {0, 0, 0};
+    emptyDest.aspect = WGPUTextureAspect_All;
     
-    WGPUTextureDataLayout emptyDataLayout = {};
+    WGPUTexelCopyBufferLayout emptyDataLayout = {};
     emptyDataLayout.nextInChain = nullptr;
     emptyDataLayout.offset = 0;
     emptyDataLayout.bytesPerRow = 16;
     emptyDataLayout.rowsPerImage = 1;
     
-    wgpuQueueWriteTexture(queue_, &emptyViewDesc, emptyTexture_, black, sizeof(black), &emptyDataLayout, &texDesc.size);
+    wgpuQueueWriteTexture(queue_, &emptyDest, black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
     // Initialize data texture C to zeros
     std::vector<float> zeros(canvasWidth_ * canvasHeight_ * 4, 0.0f);
     
-    WGPUTextureViewDescriptor dataViewDesc = {};
-    dataViewDesc.nextInChain = nullptr;
-    dataViewDesc.format = WGPUTextureFormat_RGBA32Float;
-    dataViewDesc.dimension = WGPUTextureViewDimension_2D;
+    WGPUTexelCopyTextureInfo dataDest = {};
+    dataDest.nextInChain = nullptr;
+    dataDest.texture = dataTextureC_;
+    dataDest.mipLevel = 0;
+    dataDest.origin = {0, 0, 0};
+    dataDest.aspect = WGPUTextureAspect_All;
     
-    WGPUTextureDataLayout dataLayout = {};
+    WGPUTexelCopyBufferLayout dataLayout = {};
+    dataLayout.nextInChain = nullptr;
     dataLayout.offset = 0;
     dataLayout.bytesPerRow = static_cast<uint32_t>(canvasWidth_ * 16);
     dataLayout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
     
-    wgpuQueueWriteTexture(queue_, &dataViewDesc, dataTextureC_, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &texDesc.size);
+    WGPUExtent3D dataExtent = {};
+    dataExtent.width = static_cast<uint32_t>(canvasWidth_);
+    dataExtent.height = static_cast<uint32_t>(canvasHeight_);
+    dataExtent.depthOrArrayLayers = 1;
+    
+    wgpuQueueWriteTexture(queue_, &dataDest, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &dataExtent);
 
     return true;
 }
@@ -437,18 +439,19 @@ void WebGPURenderer::CreateRenderPipeline() {
         }
     )";
 
-    // Create shader modules
-    WGPUShaderModuleWGSLDescriptor wgslDesc = {};
-    wgslDesc.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
+    // Create shader modules using WGPUShaderSourceWGSL chained struct
+    WGPUShaderSourceWGSL wgslSource = {};
+    wgslSource.chain.next = nullptr;
+    wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
     
     WGPUShaderModuleDescriptor shaderDesc = {};
-    shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslDesc);
+    shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
     
-    wgslDesc.code = MakeStringView(vertexShaderCode);
+    wgslSource.code = MakeStringView(vertexShaderCode);
     shaderDesc.label = MakeStringView("Vertex Shader");
     WGPUShaderModule vertexModule = wgpuDeviceCreateShaderModule(device_, &shaderDesc);
     
-    wgslDesc.code = MakeStringView(fragmentShaderCode);
+    wgslSource.code = MakeStringView(fragmentShaderCode);
     shaderDesc.label = MakeStringView("Fragment Shader");
     WGPUShaderModule fragmentModule = wgpuDeviceCreateShaderModule(device_, &shaderDesc);
 
@@ -599,12 +602,13 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     }
 
     // Create shader module
-    WGPUShaderModuleWGSLDescriptor wgslDesc = {};
-    wgslDesc.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
-    wgslDesc.code = MakeStringView(wgslCode);
+    WGPUShaderSourceWGSL wgslSource = {};
+    wgslSource.chain.next = nullptr;
+    wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
+    wgslSource.code = MakeStringView(wgslCode);
 
     WGPUShaderModuleDescriptor shaderDesc = {};
-    shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslDesc);
+    shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
     shaderDesc.label = MakeStringView(id);
 
     WGPUShaderModule module = wgpuDeviceCreateShaderModule(device_, &shaderDesc);
