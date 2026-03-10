@@ -91,8 +91,13 @@ export function loadShader(id, wgslCode) {
   }
 
   // Allocate memory for the strings
-  const idPtr = wasmModule.stringToUTF8(id);
-  const codePtr = wasmModule.stringToUTF8(wgslCode);
+  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
+  const idPtr = wasmModule._malloc(idLen);
+  wasmModule.stringToUTF8(id, idPtr, idLen);
+
+  const codeLen = wasmModule.lengthBytesUTF8(wgslCode) + 1;
+  const codePtr = wasmModule._malloc(codeLen);
+  wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
 
   const result = wasmModule.ccall(
     'loadShader',
@@ -115,7 +120,9 @@ export function loadShader(id, wgslCode) {
 export function setActiveShader(id) {
   if (!state.initialized || !wasmModule) return;
 
-  const idPtr = wasmModule.stringToUTF8(id);
+  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
+  const idPtr = wasmModule._malloc(idLen);
+  wasmModule.stringToUTF8(id, idPtr, idLen);
   wasmModule.ccall('setActiveShader', null, ['number'], [idPtr]);
   wasmModule._free(idPtr);
 
@@ -216,6 +223,38 @@ export async function loadShaderFromURL(id, url) {
   }
 }
 
+/**
+ * Upload RGBA pixel data as an image (one-time load).
+ * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
+ * @param {number} width
+ * @param {number} height
+ */
+export function uploadImageData(rgbaPixels, width, height) {
+  if (!state.initialized || !wasmModule) return;
+
+  const byteLen = rgbaPixels.length;
+  const ptr = wasmModule._malloc(byteLen);
+  wasmModule.HEAPU8.set(rgbaPixels, ptr);
+  wasmModule.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, width, height]);
+  wasmModule._free(ptr);
+}
+
+/**
+ * Upload RGBA pixel data as a video frame (called every frame).
+ * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
+ * @param {number} width
+ * @param {number} height
+ */
+export function uploadVideoFrame(rgbaPixels, width, height) {
+  if (!state.initialized || !wasmModule) return;
+
+  const byteLen = rgbaPixels.length;
+  const ptr = wasmModule._malloc(byteLen);
+  wasmModule.HEAPU8.set(rgbaPixels, ptr);
+  wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
+  wasmModule._free(ptr);
+}
+
 // Default export
 export default {
   initWasmRenderer,
@@ -227,5 +266,7 @@ export default {
   addRipple,
   clearRipples,
   getFPS,
-  isInitialized
+  isInitialized,
+  uploadImageData,
+  uploadVideoFrame
 };

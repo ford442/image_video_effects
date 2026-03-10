@@ -636,6 +636,58 @@ void WebGPURenderer::SetActiveShader(const char* id) {
     activeShaderId_ = id;
 }
 
+void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, int height) {
+    if (!queue_ || !readTexture_) return;
+
+    // Convert uint8 RGBA to float RGBA, fitting within canvas bounds.
+    // Pixels outside the source image remain black.
+    const int dstW = canvasWidth_;
+    const int dstH = canvasHeight_;
+    const int copyW = (width  < dstW) ? width  : dstW;
+    const int copyH = (height < dstH) ? height : dstH;
+
+    std::vector<float> floatData(static_cast<size_t>(dstW) * dstH * 4, 0.0f);
+
+    for (int y = 0; y < copyH; y++) {
+        for (int x = 0; x < copyW; x++) {
+            const int srcIdx = (y * width + x) * 4;
+            const int dstIdx = (y * dstW  + x) * 4;
+            floatData[dstIdx + 0] = data[srcIdx + 0] / 255.0f;
+            floatData[dstIdx + 1] = data[srcIdx + 1] / 255.0f;
+            floatData[dstIdx + 2] = data[srcIdx + 2] / 255.0f;
+            floatData[dstIdx + 3] = data[srcIdx + 3] / 255.0f;
+        }
+    }
+
+    WGPUTexelCopyTextureInfo dest = {};
+    dest.texture = readTexture_;
+    dest.mipLevel = 0;
+    dest.origin = {0, 0, 0};
+    dest.aspect = WGPUTextureAspect_All;
+
+    WGPUTexelCopyBufferLayout layout = {};
+    layout.offset = 0;
+    layout.bytesPerRow = static_cast<uint32_t>(dstW) * 16; // 4 floats * 4 bytes
+    layout.rowsPerImage = static_cast<uint32_t>(dstH);
+
+    WGPUExtent3D extent = {};
+    extent.width  = static_cast<uint32_t>(dstW);
+    extent.height = static_cast<uint32_t>(dstH);
+    extent.depthOrArrayLayers = 1;
+
+    wgpuQueueWriteTexture(queue_, &dest, floatData.data(),
+                          floatData.size() * sizeof(float), &layout, &extent);
+}
+
+void WebGPURenderer::LoadImage(const uint8_t* data, int width, int height) {
+    printf("📷 Loading image: %dx%d\n", width, height);
+    UploadRGBA8ToReadTexture(data, width, height);
+}
+
+void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height) {
+    UploadRGBA8ToReadTexture(data, width, height);
+}
+
 void WebGPURenderer::SetTime(float time) {
     currentTime_ = time;
 }

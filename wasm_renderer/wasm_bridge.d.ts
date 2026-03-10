@@ -2,35 +2,31 @@
  * Pixelocity WASM Renderer TypeScript Definitions
  */
 
+export function initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
+export function shutdownWasmRenderer(): void;
+export function loadShader(id: string, wgslCode: string): boolean;
+export function loadShaderFromURL(id: string, url: string): Promise<boolean>;
+export function setActiveShader(id: string): void;
+export function updateUniforms(uniforms: {
+  time?: number;
+  mouseX?: number;
+  mouseY?: number;
+  mouseDown?: boolean;
+  zoomParams?: [number, number, number, number];
+}): void;
+export function addRipple(x: number, y: number): void;
+export function clearRipples(): void;
+export function getFPS(): number;
+export function isInitialized(): boolean;
+export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
+export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
+
 export interface WasmRenderer {
-  /**
-   * Initialize the WASM renderer
-   */
   initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
-
-  /**
-   * Shutdown the WASM renderer
-   */
   shutdownWasmRenderer(): void;
-
-  /**
-   * Load a WGSL shader
-   */
   loadShader(id: string, wgslCode: string): boolean;
-
-  /**
-   * Load a shader from a URL
-   */
   loadShaderFromURL(id: string, url: string): Promise<boolean>;
-
-  /**
-   * Set the active shader for rendering
-   */
   setActiveShader(id: string): void;
-
-  /**
-   * Update uniform values
-   */
   updateUniforms(uniforms: {
     time?: number;
     mouseX?: number;
@@ -38,28 +34,13 @@ export interface WasmRenderer {
     mouseDown?: boolean;
     zoomParams?: [number, number, number, number];
   }): void;
-
-  /**
-   * Add a ripple effect at the given position
-   */
   addRipple(x: number, y: number): void;
-
-  /**
-   * Clear all ripples
-   */
   clearRipples(): void;
-
-  /**
-   * Get current FPS
-   */
   getFPS(): number;
-
-  /**
-   * Check if renderer is initialized
-   */
   isInitialized(): boolean;
+  uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
+  uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 }
 
-// Default export
 declare const wasmRenderer: WasmRenderer;
 export default wasmRenderer;
