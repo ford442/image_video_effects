@@ -21,9 +21,15 @@
     },
     {
       "filename": "2026-03-08_live-studio-tab.md",
-      "title": "Live Studio Tab \u2013 HLS + WASM Toggle + Bilibili + Danmaku",
+      "title": "Live Studio Tab – HLS + WASM Toggle + Bilibili + Danmaku",
       "added": "2026-03-07T09:08:09.892871",
       "completed": "2026-03-07T09:13:43.539459"
+    },
+    {
+      "filename": "2026-03-08_silica-tsunami.md",
+      "title": "Silica Tsunami",
+      "added": "2026-03-09T09:15:40.174132",
+      "completed": "2026-03-09T09:17:37.021489"
     }
   ],
   "rejected": [],
@@ -38,12 +44,6 @@
       "Each plan gets its own dated file"
     ]
   },
-  "pending": [
-    {
-      "filename": "2026-03-08_raptor-mini.md",
-      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
-      "added": "2026-03-07T09:06:05.264901"
-    }
-  ],
+  "pending": [],
   "in_progress": null
 }
