@@ -14,20 +14,20 @@ export const BilibiliInput: React.FC<BilibiliInputProps> = ({ onStreamLoaded }) 
   // Fetch Bilibili stream
   const fetchBilibiliStream = useCallback(async () => {
     if (!roomId.trim()) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Try multiple CORS proxies
       const proxies = [
         `https://api.allorigins.win/get?url=${encodeURIComponent(`https://api.live.bilibili.com/room/v1/Room/playUrl?cid=${roomId}&platform=hls&quality=4`)}`,
         `https://corsproxy.io/?${encodeURIComponent(`https://api.live.bilibili.com/room/v1/Room/playUrl?cid=${roomId}&platform=hls&quality=4`)}`,
       ];
-      
+
       let response = null;
       let lastErr = null;
-      
+
       for (const proxy of proxies) {
         try {
           response = await fetch(proxy, { timeout: 10000 } as any);
@@ -36,26 +36,26 @@ export const BilibiliInput: React.FC<BilibiliInputProps> = ({ onStreamLoaded }) 
           lastErr = e;
         }
       }
-      
+
       if (!response || !response.ok) {
         throw lastErr || new Error('Failed to fetch');
       }
-      
+
       const data = await response.json();
       const jsonData = data.contents ? JSON.parse(data.contents) : data;
-      
+
       if (jsonData.code !== 0) {
         throw new Error(jsonData.message || 'Room not found or offline');
       }
-      
+
       const urls = jsonData.data?.durl;
       if (!urls || urls.length === 0) {
         throw new Error('No HLS stream available');
       }
-      
+
       const streamUrl = urls[0].url;
       onStreamLoaded(streamUrl);
-      
+
     } catch (err: any) {
       setError(err.message || 'Failed to load stream');
       console.error('Bilibili fetch error:', err);
@@ -65,7 +65,7 @@ export const BilibiliInput: React.FC<BilibiliInputProps> = ({ onStreamLoaded }) 
   }, [roomId, onStreamLoaded]);
 
   // Use custom URL
-  const useCustomUrl = useCallback(() => {
+  const handleUseCustomUrl = useCallback(() => {
     if (!customUrl.trim()) return;
     onStreamLoaded(customUrl);
   }, [customUrl, onStreamLoaded]);
@@ -127,10 +127,10 @@ export const BilibiliInput: React.FC<BilibiliInputProps> = ({ onStreamLoaded }) 
             value={customUrl}
             onChange={(e) => setCustomUrl(e.target.value)}
             style={styles.input}
-            onKeyDown={(e) => { if (e.key === 'Enter' && customUrl.trim()) onStreamLoaded(customUrl); }}
+            onKeyPress={(e) => e.key === 'Enter' && handleUseCustomUrl()}
           />
           <button
-            onClick={useCustomUrl}
+            onClick={handleUseCustomUrl}
             disabled={!customUrl.trim()}
             style={{
               ...styles.button,
