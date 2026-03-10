@@ -44,6 +44,7 @@ public:
     
     // Resource management
     void LoadImage(const uint8_t* data, int width, int height);
+    void UpdateVideoFrame(const uint8_t* data, int width, int height);
     void UpdateDepthMap(const float* data, int width, int height);
     
     // Uniform updates
@@ -113,6 +114,9 @@ private:
     // Shader storage
     std::unordered_map<std::string, ShaderPipeline> shaders_;
     std::string activeShaderId_;
+
+    // Helpers
+    void UploadRGBA8ToReadTexture(const uint8_t* data, int width, int height);
 
     // State
     bool initialized_ = false;
