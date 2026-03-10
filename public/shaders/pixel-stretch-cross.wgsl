@@ -38,8 +38,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = get_mouse();
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mouse = get_mouse();
 
     let stretch_width = u.zoom_params.x;
     let decay = u.zoom_params.y * 10.0;
@@ -53,12 +53,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (abs(uv.y - mouse.y) < stretch_width) {
         // We are in the horizontal bar
         // We want to smear the pixel at mouse.x outwards
-        let smear_uv = vec2<f32>(mouse.x, uv.y);
-        let smear_col = textureSampleLevel(readTexture, u_sampler, smear_uv, 0.0);
+        var smear_uv = vec2<f32>(mouse.x, uv.y);
+        var smear_col = textureSampleLevel(readTexture, u_sampler, smear_uv, 0.0);
 
         // Distance from center of cross
-        let d = abs(uv.x - mouse.x);
-        let factor = exp(-d * decay);
+        var d = abs(uv.x - mouse.x);
+        var factor = exp(-d * decay);
 
         finalColor = mix(finalColor, smear_col, factor * mix_strength);
     }
@@ -67,11 +67,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist_y = abs(uv.y - mouse.y);
     if (abs(uv.x - mouse.x) < stretch_width) {
         // We are in the vertical bar
-        let smear_uv = vec2<f32>(uv.x, mouse.y);
-        let smear_col = textureSampleLevel(readTexture, u_sampler, smear_uv, 0.0);
+        var smear_uv = vec2<f32>(uv.x, mouse.y);
+        var smear_col = textureSampleLevel(readTexture, u_sampler, smear_uv, 0.0);
 
-        let d = abs(uv.y - mouse.y);
-        let factor = exp(-d * decay);
+        var d = abs(uv.y - mouse.y);
+        var factor = exp(-d * decay);
 
         // Additive or Max? Let's use mix.
         // If we are near center, we might have already mixed horizontal.
@@ -82,5 +82,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Global Opacity
     finalColor = mix(textureSampleLevel(readTexture, u_sampler, uv, 0.0), finalColor, opacity);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

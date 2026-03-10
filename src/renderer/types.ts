@@ -2,8 +2,8 @@ export type RenderMode = string;
 
 export type ShaderCategory = 'shader' | 'image' | 'video' | 'simulation' | 'feedback' | 'sorting' | 'warp' | 'tessellation' | 'audio' | 'glyph' | 'edge' | 'geometry' | 'artistic' | 'glitch' | 'temporal' | 'generative';
 
-// Added 'webcam' and 'generative'
-export type InputSource = 'image' | 'video' | 'webcam' | 'generative';
+// Added 'webcam', 'generative', and 'live' (HLS streaming)
+export type InputSource = 'image' | 'video' | 'webcam' | 'generative' | 'live';
 
 export interface ShaderParam {
     id: string;

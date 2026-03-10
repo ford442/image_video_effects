@@ -3,7 +3,9 @@
   "name": "Molten Glass",
   "url": "shaders/molten-glass.wgsl",
   "category": "image",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "description": "Melts the image under the mouse cursor like hot glass.",
   "params": [
     {
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

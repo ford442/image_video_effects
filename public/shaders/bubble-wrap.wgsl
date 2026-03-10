@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Read previous state (Channel R = Popped state 0.0 to 1.0)
@@ -39,7 +39,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let refraction = u.zoom_params.z * 0.2; // Refraction strength
     let highlight = u.zoom_params.w * 0.8; // Specular highlight intensity
 
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
 
     // Grid Logic
@@ -104,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalColor = imgColor + spec;
     finalColor = mix(finalColor, vec3<f32>(0.05, 0.05, 0.05), edge); // Dark borders
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

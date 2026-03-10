@@ -31,7 +31,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let meltSpeed = u.zoom_params.x;    // e.g. 0.005
@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var velocity = vec2<f32>(0.0, meltSpeed * (0.5 + meltFactor));
 
     // Mouse Interaction (Heat)
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let aspect_uv = vec2<f32>(uv.x * aspect, uv.y);
     let aspect_mouse = vec2<f32>(mousePos.x * aspect, mousePos.y);
@@ -87,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let result = mix(inputColor, prevColor, persistence);
 
     // Write to display and history
-    textureStore(writeTexture, global_id.xy, result);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), result);
     textureStore(dataTextureA, global_id.xy, result);
 
     // Pass depth

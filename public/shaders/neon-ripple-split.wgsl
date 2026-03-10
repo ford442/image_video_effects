@@ -32,9 +32,9 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Parameters
     let speed = u.zoom_params.x * 4.0 + 1.0;
@@ -47,15 +47,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // 1. Mouse interaction (continuous ripple source)
     if (mousePos.x >= 0.0) {
-        let aspect = resolution.x / resolution.y;
-        let dVec = uv - mousePos;
-        let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+        var aspect = resolution.x / resolution.y;
+        var dVec = uv - mousePos;
+        var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
         // Circular sine wave from mouse
         let phase = dist * freq - time * speed;
         let attenuation = 1.0 / (1.0 + dist * 10.0);
 
-        let wave = sin(phase) * attenuation;
+        var wave = sin(phase) * attenuation;
         totalWave += wave;
         totalSlope += cos(phase) * freq * attenuation;
     }
@@ -69,9 +69,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let t = time - rStart;
 
         if (t > 0.0 && t < 3.0) {
-            let aspect = resolution.x / resolution.y;
-            let dVec = uv - rPos;
-            let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+            var aspect = resolution.x / resolution.y;
+            var dVec = uv - rPos;
+            var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
             // Expanding ring
             let currentRadius = t * (speed * 0.2);
@@ -81,7 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (abs(ringDist) < ringWidth) {
                 let x = ringDist / ringWidth; // -1 to 1
                 // Windowed sine
-                let wave = sin(x * 3.14159 * 2.0) * (1.0 - abs(x));
+                var wave = sin(x * 3.14159 * 2.0) * (1.0 - abs(x));
                 let amp = 1.0 - (t / 3.0); // Fade out
 
                 totalWave += wave * amp * 2.0;
@@ -119,7 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += glowColor * glow;
 
     // Store
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

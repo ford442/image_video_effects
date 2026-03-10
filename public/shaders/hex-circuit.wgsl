@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / dims;
+    var uv = vec2<f32>(global_id.xy) / dims;
     let aspect = dims.x / dims.y;
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
 
@@ -48,7 +48,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pulseSpeed = u.zoom_params.z * 5.0;
     let edgeSens = u.zoom_params.w;
 
-    let p = uvCorrected * gridSize;
+    var p = uvCorrected * gridSize;
 
     // Hex Grid Calculation
     // https://www.youtube.com/watch?v=VmrIDyYiJBA
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let imgEdge = sqrt(pow(luma - lumaR, 2.0) + pow(luma - lumaU, 2.0));
 
     // Mouse Pulse
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDist = distance(uvCorrected, vec2<f32>(mouse.x * aspect, mouse.y));
     let pulseTime = u.config.x * pulseSpeed;
     let wave = sin(mouseDist * 10.0 - pulseTime);
@@ -121,5 +121,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseHover = 1.0 - smoothstep(0.0, 0.2, mouseDist);
     color += mouseHover * vec3<f32>(0.1, 0.1, 0.2);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }

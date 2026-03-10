@@ -34,7 +34,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Params
@@ -44,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let noiseAmt = u.zoom_params.w;
 
   // Mouse wind direction
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   // If mouse is at center (default 0,0 or similar), default wind is to right
   var windDir = vec2<f32>(1.0, 0.0);
   if (mouse.x > 0.0 && mouse.y > 0.0) {
@@ -87,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureA, global_id.xy, finalColor);
 
   // Output to screen
-  textureStore(writeTexture, global_id.xy, finalColor);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

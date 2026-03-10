@@ -6,5 +6,9 @@
   "description": "Sobel gradient-driven oil-paint flow with viscosity and hue shifts.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
   ]
 }

@@ -43,10 +43,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let texel = 1.0 / resolution;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let scan_x = mouse.x;
     let scan_width = 0.15; // Width of the bar
 

@@ -22,7 +22,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
   let pixelSize = 1.0 / resolution;
 
@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let color = vec4<f32>(redChannel, greenChannel, blueChannel, alpha);
 
   // --- Final Output ---
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Update depth texture (propagate existing depth with displacement)
   let depthDisplacedUV = uv + finalMouseDisplacement;

@@ -26,7 +26,7 @@ fn getLuminance(color: vec3<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<f32>(u.config.zw);
-    let uv = vec2<f32>(global_id.xy) / dims;
+    var uv = vec2<f32>(global_id.xy) / dims;
     let aspect = dims.x / dims.y;
     let time = u.config.x;
 
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maxAmplitude = u.zoom_params.z * 0.1;     // 0 to 0.1 (strong displacement)
     let aberration = u.zoom_params.w * 0.05;      // 0 to 0.05
 
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Correct aspect for distance calculation
     let uv_c = vec2<f32>(uv.x * aspect, uv.y);
@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displacement = wave * maxAmplitude * luma;
 
     // Direction away from mouse
-    let dir = normalize(uv_c - mouse_c);
+    var dir = normalize(uv_c - mouse_c);
     let safeDir = select(vec2<f32>(0.0), dir, dist > 0.001);
 
     // Calculate new UVs with chromatic aberration

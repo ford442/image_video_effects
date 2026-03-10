@@ -32,7 +32,7 @@ struct Uniforms {
 // ---------------------------------------------------------------
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    let p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
+    var p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
     let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
     let d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
@@ -68,7 +68,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 }
 
 fn voronoi(uv: vec2<f32>, scale: f32, time: f32) -> f32 {
-    let p = uv * scale;
+    var p = uv * scale;
     let i = floor(p);
     let f = fract(p);
     
@@ -80,7 +80,7 @@ fn voronoi(uv: vec2<f32>, scale: f32, time: f32) -> f32 {
             // Animate cell centers for organic movement
             let animated = cellCenter + 0.3 * sin(time * 0.5 + cellCenter * 6.28);
             let diff = neighbor + animated - f;
-            let dist = length(diff);
+            var dist = length(diff);
             minDist = min(minDist, dist);
         }
     }
@@ -106,7 +106,7 @@ fn tendrilNoise(uv: vec2<f32>, time: f32, scale: f32) -> f32 {
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     let texel = 1.0 / resolution;
 
@@ -164,7 +164,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let isSaturated = (sampleSat > satThresh) && (sampleVal > 0.2);
         
         if (isSaturated) {
-            let dist = length(offset);
+            var dist = length(offset);
             let falloff = 1.0 - smoothstep(0.0, radius, dist);
             infectionStrength += falloff * sampleSat;
             infectionColor += sampleCol * falloff * sampleSat;
@@ -236,7 +236,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     let prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).rgb;
     let persist = max(prev * 0.95, outCol * finalSpread);
-    textureStore(infectionBuf, gid.xy, vec4<f32>(persist, 1.0));
+    textureStore(infectionBuf, vec2<i32>(gid.xy), vec4<f32>(persist, 1.0));
     
     // Blend persistence trail
     outCol = max(outCol, persist * 0.2);
@@ -244,6 +244,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  🔟  Output
     // -----------------------------------------------------------------
-    textureStore(outTex, gid.xy, vec4<f32>(outCol, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

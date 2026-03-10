@@ -24,10 +24,10 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Mouse interaction
-    let mousePos = u.zoom_config.yz; // y=MouseX, z=MouseY
+    var mousePos = u.zoom_config.yz; // y=MouseX, z=MouseY
 
     // Correct for aspect ratio to ensure circular distortion
     let aspect = resolution.x / resolution.y;
@@ -39,15 +39,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignetteStr = u.zoom_params.w;
 
     // Calculate vector from mouse to current pixel
-    let dir = uv - mousePos;
+    var dir = uv - mousePos;
     let dirCorrected = vec2<f32>(dir.x * aspect, dir.y);
     let dist = length(dirCorrected);
     let angle = atan2(dirCorrected.y, dirCorrected.x);
 
     // Avoid division by zero or weird artifacts at center
     if (dist < 0.001) {
-        let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-        textureStore(writeTexture, global_id.xy, color);
+        var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        textureStore(writeTexture, vec2<i32>(global_id.xy), color);
         return;
     }
 
@@ -83,7 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vig = 1.0 - smoothstep(0.2, 1.5, dist * vignetteStr * 2.0);
     color = color * vig;
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass through depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

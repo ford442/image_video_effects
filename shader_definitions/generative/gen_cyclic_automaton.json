@@ -4,5 +4,11 @@
   "url": "shaders/gen_cyclic_automaton.wgsl",
   "category": "generative",
   "description": "Mesmerizing traveling rainbow waves (Cyclic Cellular Automaton).",
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

@@ -25,7 +25,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let radiusParam = u.zoom_params.x;
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Aspect Correction
     let aspect = resolution.x / resolution.y;
     let aspectScale = vec2<f32>(aspect, 1.0);
-    let center = u.zoom_config.yz; // Mouse Pos
+    var center = u.zoom_config.yz; // Mouse Pos
 
     let uvCorrected = uv * aspectScale;
     let centerCorrected = center * aspectScale;
@@ -61,7 +61,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let c = cos(angle);
 
     // Rotate around center
-    let dir = uvCorrected - centerCorrected;
+    var dir = uvCorrected - centerCorrected;
     // Standard 2D rotation matrix:
     // x' = x cos - y sin
     // y' = x sin + y cos
@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Optional: Add a slight tint or brightness boost in the center
     // color = color * (1.0 + softFactor * 0.2);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

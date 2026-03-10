@@ -39,7 +39,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let is_pad = 1.0 - smoothstep(0.0, 0.2, m_dist);
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouse_uv_scaled = vec2<f32>(mouse.x * aspect, mouse.y) * grid_scale;
 
     // Distance from mouse to this CELL's center (in grid space)
@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse_hover = smoothstep(5.0, 0.0, dist_to_mouse);
     final_color += vec3<f32>(0.2, 0.5, 0.2) * mouse_hover;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
 
     // Passthrough depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -31,7 +31,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -41,7 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let detailMix = u.zoom_params.w; // Blend original color
 
     // Mouse
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
     let mouseFactor = smoothstep(mouseRadius, 0.0, dist);
 
@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's mix in a bit of original color near mouse to "reveal" detail
     let finalColor = mix(vec4<f32>(outColor, 1.0), color, mouseFactor * detailMix);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

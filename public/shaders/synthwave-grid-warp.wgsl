@@ -23,7 +23,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -33,14 +33,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let timeSpeed = u.zoom_params.w;
 
     let time = u.config.x * timeSpeed;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Warp UVs for Grid
     let dist = distance(uv * vec2(aspect, 1.0), mouse * vec2(aspect, 1.0));
     let warp = (1.0 - smoothstep(0.0, 0.5, dist)) * warpAmt;
 
     // Displace UVs away from mouse
-    let dir = normalize(uv - mouse);
+    var dir = normalize(uv - mouse);
     let warpedUV = uv - dir * warp;
 
     // Moving Grid
@@ -67,7 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add glow around mouse
     finalColor += vec3(0.0, 1.0, 1.0) * warp * 2.0;
 
-    textureStore(writeTexture, global_id.xy, vec4(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalColor, 1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));

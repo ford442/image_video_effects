@@ -24,10 +24,10 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   let speed = u.zoom_params.x * 5.0;
   let glowStr = u.zoom_params.y * 2.0;
@@ -73,5 +73,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       color = vec4<f32>(mix(color.rgb, neon, glowStr + interaction), color.a);
   }
 
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

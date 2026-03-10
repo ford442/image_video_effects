@@ -30,5 +30,9 @@
   "features": [
     "mouse-driven",
     "glitch"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -28,10 +28,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Mouse interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     // Params: Decay, Radius, EchoStrength, ColorShift
     let decayBase = u.zoom_params.x; // 0.0 - 1.0 (default e.g. 0.8)
     let mouseRadius = u.zoom_params.y; // 0.0 - 1.0
@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Always keep alpha 1.0
     let finalColor = vec4<f32>(result.rgb, 1.0);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
 
     // Pass-through depth

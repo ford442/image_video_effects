@@ -2,7 +2,7 @@ struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 30>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,14 +28,14 @@ fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
   );
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
   let aspect = u.config.z / u.config.w;
 
   // Params
@@ -44,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let refract_str = mix(0.0, 0.05, u.zoom_params.z);
   let aberration = u.zoom_params.w * 0.1;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // To handle non-square aspect ratio properly during rotation, we should correct UVs
   var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);

@@ -4,6 +4,12 @@
   "category": "image",
   "url": "shaders/flux-core.wgsl",
   "description": "Energy arcs emit from the cursor, connecting to bright areas in the image.",
-  "features": ["mouse-driven"],
-  "params": []
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

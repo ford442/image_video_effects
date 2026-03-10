@@ -72,7 +72,7 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
 
     // ────────────────────────────────────────────────────────────────────────
@@ -157,11 +157,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalColor = mix(blendedColor, prevFrame, persistence);
 
     // Store the current frame for the next pass
-    textureStore(historyBuf, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 
     // ────────────────────────────────────────────────────────────────────────
     //  9️⃣  Output
     // ────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

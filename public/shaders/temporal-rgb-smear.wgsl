@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Params
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let feedback = u.zoom_params.z;
 
   // Mouse influence - reduce lag near mouse
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let dist = distance(uv, mouse);
   let mouseFactor = smoothstep(0.0, 0.3, dist); // 0 near mouse, 1 far
 
@@ -66,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureA, global_id.xy, vec4<f32>(newGreenHistory, newBlueHistory, 0.0, 1.0));
 
   // Write to screen
-  textureStore(writeTexture, global_id.xy, outputColor);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), outputColor);
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

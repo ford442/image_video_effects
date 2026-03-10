@@ -24,9 +24,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let aspect = dims.x / dims.y;
-    let mouse = u.zoom_config.yz; // Mouse coordinates (0..1)
+    var mouse = u.zoom_config.yz; // Mouse coordinates (0..1)
     let time = u.config.x;
 
     // Grid configuration
@@ -110,4 +110,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // color += vec3(cellUV, 0.0) * 0.1;
 
     textureStore(outTex, gid.xy, vec4<f32>(color, 1.0));
+
+    // Pass through depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

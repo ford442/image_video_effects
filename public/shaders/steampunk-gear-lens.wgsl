@@ -27,10 +27,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let time = u.config.x;
 
     let size = mix(0.1, 0.6, u.zoom_params.x);
@@ -38,8 +38,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let speed = (u.zoom_params.z - 0.5) * 4.0;
     let sepia_str = u.zoom_params.w;
 
-    let center = mouse;
-    let p = (uv - center) * aspectVec;
+    var center = mouse;
+    var p = (uv - center) * aspectVec;
     let r = length(p);
     let a = atan2(p.y, p.x);
 
@@ -90,5 +90,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

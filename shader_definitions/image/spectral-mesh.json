@@ -3,13 +3,39 @@
   "label": "Spectral Mesh",
   "category": "image",
   "url": "shaders/spectral-mesh.wgsl",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": {
     "zoom_params": {
-      "x": { "name": "Grid Density", "default": 0.5, "min": 0.0, "max": 1.0 },
-      "y": { "name": "Displacement", "default": 0.5, "min": 0.0, "max": 1.0 },
-      "z": { "name": "Mouse Radius", "default": 0.5, "min": 0.0, "max": 1.0 },
-      "w": { "name": "Color Shift", "default": 0.0, "min": 0.0, "max": 1.0 }
+      "x": {
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "y": {
+        "name": "Displacement",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "z": {
+        "name": "Mouse Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "w": {
+        "name": "Color Shift",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      }
     }
-  }
+  },
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

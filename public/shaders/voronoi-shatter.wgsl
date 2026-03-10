@@ -34,7 +34,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotationStr = u.zoom_params.z; // 0 to 1
     let gapSize = u.zoom_params.w * 0.2; // 0 to 0.2
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Scale UV
     let uvScaled = vec2<f32>(uv.x * aspect, uv.y) * density;
@@ -58,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var y: i32 = -1; y <= 1; y++) {
         for (var x: i32 = -1; x <= 1; x++) {
             let neighbor = vec2<f32>(f32(x), f32(y));
-            let p = hash22(i_st + neighbor); // Random point in cell
+            var p = hash22(i_st + neighbor); // Random point in cell
             let pointPos = neighbor + p;
             let diff = pointPos - f_st;
             let dist = length(diff);
@@ -119,5 +119,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Highlight center
     color = color * (1.0 + (1.0 - edge) * 0.2);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

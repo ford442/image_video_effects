@@ -3,5 +3,9 @@
   "name": "Liquid Jelly",
   "url": "shaders/liquid-jelly.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let decayRate = mix(0.5, 0.99, u.zoom_params.x); // High = long trails
@@ -64,7 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let combinedColor = max(freshColor, historyDecayed);
 
     // Mouse Interaction: Touch "activates" phosphors (static/white noise)
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
 

@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let stretchAmt = u.zoom_params.x; // How much to stretch pixels
@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let direction = u.zoom_params.w; // 0.0 = Out, 1.0 = In (Spiral?)
 
     let aspect = resolution.x / resolution.y;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
 
     // Pixel Sort / Stretch Effect
@@ -61,7 +61,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Actually, to push pixels OUT, we need to sample CLOSER to the center.
         // So uv -= dirToMouse * amount
 
-        let dir = mix(dirToMouse, -dirToMouse, step(0.5, direction));
+        var dir = mix(dirToMouse, -dirToMouse, step(0.5, direction));
 
         // Add some spiral twist
         let tangent = vec2<f32>(-dir.y, dir.x);
@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -50,9 +50,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz; // 0..1
 
     // Parameters
     // Pixel Size: 1.0 (coarse) to 0.0 (native resolution)
@@ -119,7 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var finalColor = paletteColor * grid;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, quantizedUV, 0.0).r;

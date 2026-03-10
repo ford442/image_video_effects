@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 1️⃣  Gather basic data
     // ---------------------------------------------------
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let texel = 1.0 / resolution;
 
@@ -160,6 +160,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ---------------------------------------------------
     // 10️⃣  Write results
     // ---------------------------------------------------
-    textureStore(writeTexture, global_id.xy, vec4<f32>(outColour, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColour, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

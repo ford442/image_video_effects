@@ -8,12 +8,12 @@ This document provides comprehensive guidance for AI coding agents working on th
 
 **YOU ARE A SHADER AUTHOR. YOU ARE NOT AN ENGINE DEVELOPER.**
 
-The TypeScript rendering engine (`Renderer.ts`) is **IMMUTABLE INFRASTRUCTURE**.
+The TypeScript rendering engine (`Renderer.ts`, `types.ts`) is **IMMUTABLE INFRASTRUCTURE**.
 * **DO NOT** suggest changes to `Renderer.ts`, `types.ts`, or the BindGroups.
 * **DO NOT** attempt to add new bindings or uniforms.
 * **DO NOT** ask to install new npm packages.
 
-Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Shaders** that fit the *existing* interface.
+Your SOLE task is to create visual effects by writing **WGSL Compute Shaders** that fit the *existing* interface.
 
 ---
 
@@ -21,17 +21,21 @@ Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Sh
 
 **Pixelocity** is a React-based web application that runs GPU shader effects using WebGPU. It features:
 
-- **530+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
+- **587+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
 - **Real-time interactive effects** with mouse-driven ripples and distortions
-- **AI-powered depth estimation** using DPT-Hybrid-MIDAS model
-- **AI VJ Mode** (Alucinate) that auto-generates visual stacks using LLM
-- **Multi-slot shader stacking** - up to 3 effects can be chained
-- **Multiple input sources** - images, videos, webcam, and procedural generation
+- **AI-powered depth estimation** using DPT-Hybrid-MIDAS model via Xenova Transformers
+- **AI VJ Mode** (Alucinate) that auto-generates visual stacks using WebLLM (Gemma-2-2b-it)
+- **Multi-slot shader stacking** - up to 3 effects can be chained together
+- **Multiple input sources** - images, videos, webcam, live streams (HLS), and procedural generation
 - **WebGPU compute shaders** for high-performance real-time rendering
+- **Remote control mode** via BroadcastChannel API
+- **Recording and sharing** - capture 8-second video clips with shareable links
+- **Dual renderer architecture** - JavaScript and optional WASM (C++/Emscripten) renderers
 
 ### Browser Requirements
 - Chrome 113+, Edge 113+, or Firefox Nightly (with `dom.webgpu.enabled` flag)
 - WebGPU support is mandatory
+- HTTPS or localhost required for WebGPU and camera access
 
 ---
 
@@ -41,27 +45,32 @@ Your SOLE task is to create visual effects by writing **WGSL Fragment/Compute Sh
 image_video_effects/
 ├── package.json                 # Dependencies and npm scripts
 ├── tsconfig.json               # TypeScript configuration
-├── webpack.config.js           # Build configuration
+├── webpack.config.js           # Build configuration (minimal, for main.ts bundle)
 ├── public/
 │   ├── index.html              # HTML entry point
-│   ├── shaders/                # WGSL shader files (530+ files)
-│   │   ├── liquid.wgsl
-│   │   ├── liquid-*.wgsl
+│   ├── shaders/                # WGSL shader files (587+ files)
+│   │   ├── liquid.wgsl         # Base liquid effect
+│   │   ├── liquid-*.wgsl       # Various liquid effects
 │   │   ├── texture.wgsl        # Final render pass shader
 │   │   ├── imageVideo.wgsl     # Image/video display shader
-│   │   └── galaxy.wgsl         # Procedural galaxy shader
-│   └── shader-lists/           # GENERATED - DO NOT EDIT DIRECTLY
-│       ├── liquid-effects.json
-│       ├── interactive-mouse.json
-│       ├── visual-effects.json
-│       ├── lighting-effects.json
-│       ├── distortion.json
-│       ├── artistic.json
-│       ├── retro-glitch.json
-│       ├── simulation.json
-│       ├── geometric.json
-│       ├── image.json
-│       └── generative.json
+│   │   ├── galaxy.wgsl         # Procedural galaxy shader
+│   │   └── ...                 # 580+ more shader files
+│   ├── shader-lists/           # GENERATED - DO NOT EDIT DIRECTLY
+│   │   ├── liquid-effects.json
+│   │   ├── interactive-mouse.json
+│   │   ├── visual-effects.json
+│   │   ├── lighting-effects.json
+│   │   ├── distortion.json
+│   │   ├── artistic.json
+│   │   ├── retro-glitch.json
+│   │   ├── simulation.json
+│   │   ├── geometric.json
+│   │   ├── image.json
+│   │   └── generative.json
+│   └── wasm/                   # Compiled WASM renderer (optional)
+│       ├── pixelocity_wasm.js
+│       ├── pixelocity_wasm.wasm
+│       └── wasm_bridge.js
 ├── shader_definitions/         # SOURCE OF TRUTH for shaders
 │   ├── liquid-effects/         # 20+ liquid shader definitions
 │   ├── interactive-mouse/      # 170+ mouse-driven effects
@@ -75,21 +84,61 @@ image_video_effects/
 │   ├── image/                  # Image processing effects
 │   └── generative/             # Procedural generation shaders
 ├── scripts/
-│   └── generate_shader_lists.js  # Generates shader-lists from definitions
+│   ├── generate_shader_lists.js  # Generates shader-lists from definitions
+│   ├── check_duplicates.js       # Utility to check for duplicate shader IDs
+│   ├── watch-bucket.js           # Google Cloud Storage bucket watcher
+│   ├── watch-bucket-simple.js    # Simplified bucket watcher
+│   ├── wgsl-audit-swarm.sh       # Shader audit tool
+│   ├── apply-wgsl-fixes.py       # Automated WGSL fixer
+│   └── manage_queue.py           # Shader queue management
+├── wasm_renderer/              # C++ WASM renderer source
+│   ├── CMakeLists.txt
+│   ├── build.sh
+│   ├── main.cpp
+│   ├── renderer.cpp
+│   ├── renderer.h
+│   └── wasm_bridge.js
 └── src/
     ├── index.tsx               # React entry point (switches MainApp/RemoteApp)
-    ├── App.tsx                 # Main application component
+    ├── App.tsx                 # Main application component (~1000 lines)
     ├── RemoteApp.tsx           # Remote control mode (BroadcastChannel sync)
     ├── AutoDJ.ts               # AI VJ (Alucinate) implementation
     ├── syncTypes.ts            # Types for remote sync
     ├── style.css               # Global styles
+    ├── config/
+    │   └── appConfig.ts        # App constants (URLs, defaults)
     ├── components/
     │   ├── Controls.tsx        # UI controls panel
     │   ├── Controls.test.tsx   # Test file
-    │   └── WebGPUCanvas.tsx    # Canvas wrapper with mouse handling
-    └── renderer/
-        ├── Renderer.ts         # WebGPU rendering engine (IMMUTABLE)
-        └── types.ts            # TypeScript type definitions
+    │   ├── WebGPUCanvas.tsx    # Canvas wrapper with mouse handling
+    │   ├── ShaderBrowser.tsx   # Shader browser component
+    │   ├── ShaderBrowser.css   # Shader browser styles
+    │   ├── LiveStudioTab.tsx   # Live streaming interface
+    │   ├── LiveStreamBridge.tsx# HLS stream handling
+    │   ├── RendererToggle.tsx  # JS/WASM renderer switcher
+    │   ├── WASMToggle.tsx      # WASM toggle component
+    │   ├── HLSVideoSource.tsx  # HLS video source
+    │   ├── PerformanceDashboard.tsx # Performance metrics
+    │   ├── BilibiliInput.tsx   # Bilibili live stream input
+    │   └── DanmakuOverlay.tsx  # Danmaku/chat overlay
+    ├── renderer/
+    │   ├── Renderer.ts         # WebGPU rendering engine (IMMUTABLE)
+    │   ├── RendererManager.ts  # Renderer manager (JS/WASM switching)
+    │   ├── BaseRenderer.ts     # Base renderer interface
+    │   ├── JSRenderer.ts       # JavaScript renderer implementation
+    │   ├── WASMRenderer.ts     # WASM renderer wrapper
+    │   └── types.ts            # TypeScript type definitions
+    ├── services/
+    │   ├── shaderApi.ts        # Shader API service
+    │   └── contentLoader.ts    # Content manifest loader
+    ├── hooks/
+    │   ├── useWASM.ts          # WASM loading hook
+    │   ├── useAudioAnalyzer.ts # Audio analysis hook
+    │   └── usePerformanceMonitor.ts # Performance monitoring
+    ├── contexts/
+    │   └── CurrentShaderContext.tsx # Shader context provider
+    └── utils/
+        └── slotState.ts        # Slot state utilities
 ```
 
 ---
@@ -103,13 +152,17 @@ image_video_effects/
 | GPU API | WebGPU |
 | Shading Language | WGSL (WebGPU Shading Language) |
 | AI/ML | @xenova/transformers (depth estimation), @mlc-ai/web-llm (Gemma-2-2b) |
+| Video Streaming | HLS.js for HLS stream support |
+| WASM | C++ / Emscripten (optional renderer) |
 | Testing | Jest + React Testing Library |
 
 ### Key Dependencies
-- `@xenova/transformers` - AI depth estimation (DPT-Hybrid-MIDAS)
-- `@mlc-ai/web-llm` - In-browser LLM for AI VJ
+- `@xenova/transformers` - AI depth estimation (DPT-Hybrid-MIDAS) and image captioning
+- `@mlc-ai/web-llm` - In-browser LLM for AI VJ (Gemma-2-2b-it)
 - `@webgpu/types` - WebGPU type definitions
+- `hls.js` - HLS video streaming support
 - `playwright` - Browser automation
+- `react` / `react-dom` - React framework v19
 
 ---
 
@@ -132,6 +185,23 @@ npm test
 
 # Eject from Create React App (DANGEROUS - one way)
 npm run eject
+
+# WASM renderer commands
+npm run wasm:build      # Build WASM renderer (requires Emscripten)
+npm run wasm:clean      # Clean WASM build artifacts
+
+# Bucket sync commands (for Google Cloud Storage)
+npm run bucket:sync        # Sync bucket contents
+npm run bucket:watch       # Watch bucket for changes
+npm run bucket:sync-full   # Full sync with processing
+npm run bucket:watch-full  # Full watch with processing
+
+# Shader audit commands
+npm run audit:shaders         # Run WGSL audit swarm
+npm run audit:shaders:sample  # Run audit on sample shaders
+
+# Deployment
+npm run deploy          # Deploy using deploy.py
 ```
 
 ### Pre-build Script
@@ -139,7 +209,8 @@ The `prestart` and `prebuild` scripts automatically run `scripts/generate_shader
 1. Reads all JSON files from `shader_definitions/` subdirectories
 2. Validates shader IDs (no duplicates)
 3. Verifies WGSL files exist
-4. Generates combined JSON files in `public/shader-lists/`
+4. Validates WGSL content for common errors
+5. Generates combined JSON files in `public/shader-lists/`
 
 ---
 
@@ -148,11 +219,21 @@ The `prestart` and `prebuild` scripts automatically run `scripts/generate_shader
 ### Ping-Pong Texture System
 The renderer uses a **multi-pass compute shader chain**:
 
-1. **Input Source** → readTexture (image, video, or generative)
+1. **Input Source** → readTexture (image, video, webcam, or generative)
 2. **Compute Pass 1** (Slot 0 shader) → pingPongTexture1
 3. **Compute Pass 2** (Slot 1 shader) → pingPongTexture2
 4. **Compute Pass 3** (Slot 2 shader) → writeTexture
 5. **Render Pass** → Screen (using `texture.wgsl`)
+
+### Fixed Internal Resolution
+The canvas uses a fixed internal resolution of **2048x2048** for all rendering operations. The display size is tracked separately for aspect ratio calculations.
+
+### Input Sources
+- `image` - Static images from URL, upload, or manifest
+- `video` - Video files from URL or upload
+- `webcam` - Live webcam feed via getUserMedia
+- `live` - HLS live streams (via hls.js)
+- `generative` - Procedural shaders that generate output without input
 
 ### Shader Bindings (IMMUTABLE)
 Every compute shader MUST declare exactly these bindings:
@@ -207,7 +288,7 @@ This matches the dispatch: `dispatchWorkgroups(Math.ceil(width/8), Math.ceil(hei
 | `simulation` | Physics, cellular automata | 16+ |
 | `geometric` | Geometric patterns, tessellations | 10+ |
 | `image` | Image processing effects | 50+ |
-| `generative` | Procedural generation (no input needed) | 14+ |
+| `generative` | Procedural generation (no input needed) | 30+ |
 
 ---
 
@@ -314,6 +395,7 @@ interface ShaderEntry {
   tags?: string[];      // For AI VJ matching (e.g., ["neon", "glitch", "liquid"])
   features?: string[];  // Feature flags (e.g., ["mouse-driven", "multi-pass"])
   params?: ShaderParam[]; // Up to 4 slider parameters
+  advanced_params?: ShaderParam[]; // Advanced parameters
 }
 
 interface ShaderParam {
@@ -332,6 +414,7 @@ interface ShaderParam {
 - `multi-pass-1`, `multi-pass-2` - For multi-pass shader pairs
 - `raymarched` - Single-pass but uses raymarching
 - `depth-aware` - Uses depth texture for effects
+- `splat` - Splat-based interaction
 
 ---
 
@@ -471,6 +554,47 @@ The app supports remote control via `BroadcastChannel`:
 
 Remote mode mirrors the controls UI and syncs state to the main app.
 
+### Sync Protocol
+The sync system uses a `BroadcastChannel` named `webgpu_remote_control_channel` with message types:
+- `HELLO` - Remote connects, requests full state
+- `HEARTBEAT` - Keepalive from main app
+- `STATE_FULL` - Full state dump from main app
+- `CMD_*` - Command messages from remote to main
+
+---
+
+## Recording and Sharing
+
+The app supports recording 8-second video clips:
+- Uses `canvas.captureStream(60)` for 60fps capture
+- Encodes to WebM format (VP9/VP8)
+- Auto-downloads the recording
+- Generates shareable URL with current state encoded in hash
+
+### Shareable URL Format
+```
+http://localhost:3000#shader=liquid&slot=0&p1=0.50&p2=0.50&source=image&img=...
+```
+
+---
+
+## WASM Renderer (Optional)
+
+The project includes an optional C++/Emscripten WASM renderer for better performance:
+
+### Building WASM Renderer
+```bash
+# Requires Emscripten SDK installed
+npm run wasm:build
+```
+
+### Files
+- `wasm_renderer/` - C++ source code
+- `wasm_renderer/build.sh` - Build script
+- `public/wasm/` - Compiled output
+
+The renderer can be switched at runtime between JS and WASM implementations.
+
 ---
 
 ## Troubleshooting
@@ -502,6 +626,8 @@ All textures must match the canvas size (2048x2048 internal resolution). The ren
 - Video sources must support CORS
 - No sensitive data is stored locally
 - AI models are loaded from HuggingFace/CDN
+- File uploads are handled via File API and Blob URLs
+- Remote control uses BroadcastChannel (same-origin only)
 
 ---
 
@@ -517,7 +643,7 @@ This creates a `build/` directory with static files ready for hosting.
 ### Deployment Requirements
 - HTTPS (for WebGPU and camera access)
 - CORS-enabled hosting for images/videos
-- Modern browser support
+- Modern browser support (Chrome 113+, Edge 113+)
 
 ---
 

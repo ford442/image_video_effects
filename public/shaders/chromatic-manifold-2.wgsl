@@ -33,9 +33,9 @@ struct Uniforms {
 // ───────────────────────────────────────────────────────────────────────────────
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    let p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
+    var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
     let q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
-    let d = q.x - min(q.w, q.y);
+    var d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
     return vec3<f32>(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
@@ -43,7 +43,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     let c = v * s;
     let h6 = h * 6.0;
-    let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
     if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
@@ -87,7 +87,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
 
@@ -150,8 +150,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let r = u.ripples[i];
         let t = time - r.z;
         if (t > 0.0 && t < 3.0) {
-            let dir = uv - r.xy;
-            let d = length(dir);
+            var dir = uv - r.xy;
+            var d = length(dir);
             if (d > 0.0001) {
                 let rippleDepth = textureSampleLevel(depthTex, depthSampler, r.xy, 0.0).r;
                 let depthFactor = 1.0 - rippleDepth;
@@ -188,7 +188,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  9. Write outputs
     // ──────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-    textureStore(feedbackOut, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 }

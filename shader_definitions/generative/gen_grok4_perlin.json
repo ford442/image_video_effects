@@ -1,10 +1,14 @@
 {
-    "id": "gen-grok4-perlin",
-    "name": "Grok4 Perlin Terrain",
-    "url": "shaders/gen_grok4_perlin.wgsl",
-    "category": "generative",
-    "description": "Multi-octave Perlin noise generating animated terrain with mouse offset.",
-    "features": [
-        "mouse-driven"
-    ]
+  "id": "gen-grok4-perlin",
+  "name": "Grok4 Perlin Terrain",
+  "url": "shaders/gen_grok4_perlin.wgsl",
+  "category": "generative",
+  "description": "Multi-octave Perlin noise generating animated terrain with mouse offset.",
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

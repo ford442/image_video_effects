@@ -1,42 +1,48 @@
 {
-    "id": "crystal-illuminator",
-    "name": "Crystal Illuminator",
-    "url": "shaders/crystal-illuminator.wgsl",
-    "category": "interactive-mouse",
-    "description": "Faceted glass surface with interactive mouse lighting.",
-    "features": ["mouse-driven"],
-    "params": [
-        {
-            "id": "crystal_size",
-            "name": "Crystal Size",
-            "type": "float",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "refraction",
-            "name": "Refraction",
-            "type": "float",
-            "default": 0.3,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "light_intensity",
-            "name": "Light Intensity",
-            "type": "float",
-            "default": 0.6,
-            "min": 0.0,
-            "max": 1.0
-        },
-        {
-            "id": "facet_curvature",
-            "name": "Facet Curvature",
-            "type": "float",
-            "default": 0.2,
-            "min": 0.0,
-            "max": 1.0
-        }
-    ]
+  "id": "crystal-illuminator",
+  "name": "Crystal Illuminator",
+  "url": "shaders/crystal-illuminator.wgsl",
+  "category": "interactive",
+  "description": "Faceted glass surface with interactive mouse lighting.",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "crystal_size",
+      "name": "Crystal Size",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "light_intensity",
+      "name": "Light Intensity",
+      "type": "float",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "facet_curvature",
+      "name": "Facet Curvature",
+      "type": "float",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
+  ]
 }

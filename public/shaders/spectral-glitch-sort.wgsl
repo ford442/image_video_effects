@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / dims;
+    var uv = vec2<f32>(global_id.xy) / dims;
 
     // Parameters
     let strength = mix(0.0, 0.5, u.zoom_params.x);
@@ -52,13 +52,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noiseAmt = u.zoom_params.w;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDist = distance(uv, mouse);
 
     // Calculate direction vector from angle or mouse position relative to center
     // Let's make angle relative to mouse position?
     // If angle param is used, it overrides. But let's mix.
-    let dir = vec2<f32>(cos(angleParam), sin(angleParam));
+    var dir = vec2<f32>(cos(angleParam), sin(angleParam));
 
     // 1. Sample original color to get luma
     let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse proximity increases strength
     let influence = 1.0 - smoothstep(0.0, 0.5, mouseDist);
-    let finalStrength = strength * (1.0 + influence * 2.0);
+    var finalStrength = strength * (1.0 + influence * 2.0);
 
     if (noiseAmt > 0.0) {
         finalStrength *= mix(1.0, noiseVal * 2.0, noiseAmt);
@@ -94,11 +94,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Chromatic Aberration on edges of the sort
     if (length(offset) > 0.01) {
-        let r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(0.002, 0.0), 0.0).r;
-        let b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(0.002, 0.0), 0.0).b;
+        var r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(0.002, 0.0), 0.0).r;
+        var b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(0.002, 0.0), 0.0).b;
         finalColor.r = r;
         finalColor.b = b;
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

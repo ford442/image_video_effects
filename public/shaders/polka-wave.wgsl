@@ -25,10 +25,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
     // Normalize coordinates
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let uv_aspect = vec2(uv.x * aspect, uv.y);
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouse_aspect = vec2(mouse.x * aspect, mouse.y);
     let time = u.config.x;
 
@@ -93,5 +93,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Usually halftone is black ink on white paper, or light dots on black.
     // Let's stick to "Light Dots on Black" (emission style) as it fits WebGPU demos better.
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

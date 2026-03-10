@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let twistStrength = (u.zoom_params.x - 0.5) * 20.0; // -10 to +10
@@ -34,7 +34,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pinchStrength = (u.zoom_params.z - 0.5) * 2.0; // -1 to +1
     let hardness = mix(0.0, 0.95, u.zoom_params.w);
 
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Vector from mouse to current pixel
@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
 
-    textureStore(writeTexture, global_id.xy, vec4(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let heatIntensity = u.zoom_params.x * 2.0 - 1.0; // -1.0 to 1.0
@@ -67,7 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     lum = pow(lum, contrast);
 
     // Mouse Heat
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     // Aspect correct distance
     let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     lum = clamp(lum + heat, 0.0, 1.0);
 
     let finalColor = thermal_gradient(lum, shift);
-    textureStore(writeTexture, global_id.xy, vec4(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalColor, 1.0));
 
     // Pass-through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

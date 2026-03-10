@@ -33,8 +33,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mousePos = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     let meltSpeed = u.zoom_params.x * 0.05; // Vertical flow per frame
@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blended = mix(newColor, history, persistence);
 
     // Write to display
-    textureStore(writeTexture, global_id.xy, blended);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), blended);
 
     // Write to history (dataTextureA)
     textureStore(dataTextureA, global_id.xy, blended);

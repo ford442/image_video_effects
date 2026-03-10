@@ -21,18 +21,18 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-let PI: f32 = 3.14159265359;
+const PI: f32 = 3.14159265359;
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Mouse controls center of rotation shift
     // Default center is screen center (0.5, 0.5)
     // Mouse drags the "phase point"
-    let center = u.zoom_config.yz;
+    var center = u.zoom_config.yz;
     let t = u.zoom_config.x;
 
     let offset_uv = uv - center;
@@ -65,5 +65,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
 }

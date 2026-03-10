@@ -2,7 +2,7 @@
   "id": "stereoscopic-3d",
   "name": "Stereoscopic 3D",
   "url": "shaders/stereoscopic-3d.wgsl",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "description": "Interactive Anaglyph 3D effect. Mouse movement controls separation depth and focal plane distortion.",
   "params": [
     {
@@ -36,5 +36,9 @@
   ],
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

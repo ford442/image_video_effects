@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -41,13 +41,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let brightness = u.zoom_params.z * 2.0;
     let samples = i32(u.zoom_params.w * 30.0 + 5.0); // 5 to 35 samples
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Vector from pixel to mouse
     // We want to blur AWAY from the mouse (zoom blur)
     // So we sample along the line from uv to mouse.
 
-    let dir = mouse - uv; // Direction towards mouse
+    var dir = mouse - uv; // Direction towards mouse
     let dist = length(dir);
 
     var colorSum = vec3<f32>(0.0);
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     finalColor += vec3<f32>(glow * 0.8, glow * 0.9, glow * 1.0); // Blueish white tint
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

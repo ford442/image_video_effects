@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(coord) / resolution;
+    var uv = vec2<f32>(coord) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -40,7 +40,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coolingRate = 0.01 + u.zoom_params.w * 0.1; // 0.01 to 0.11
 
     // Mouse interaction
-    let mousePos = u.zoom_config.yz; // Mouse is 0-1
+    var mousePos = u.zoom_config.yz; // Mouse is 0-1
     // Correct aspect ratio for distance calculation
     let aspect = resolution.x / resolution.y;
     // Mouse UV is already 0-1

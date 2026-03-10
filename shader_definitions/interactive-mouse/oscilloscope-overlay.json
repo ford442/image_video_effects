@@ -37,5 +37,9 @@
   "features": [
     "mouse-driven",
     "overlay"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -4,7 +4,10 @@
   "url": "shaders/split-dimension.wgsl",
   "category": "image",
   "description": "Splits the screen into two dimensions. One side is normal, the other is a glitched negative. The split follows the mouse.",
-  "features": ["mouse-driven", "glitch"],
+  "features": [
+    "mouse-driven",
+    "glitch"
+  ],
   "params": [
     {
       "id": "glitch",
@@ -34,5 +37,9 @@
       "min": -1.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -30,5 +30,9 @@
   "features": [
     "mouse-driven",
     "geometry"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

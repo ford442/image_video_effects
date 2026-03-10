@@ -24,11 +24,11 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Mouse position (will be injected into zoom_config.yz)
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   // Params
   let strength = u.zoom_params.x; // Charge Strength
@@ -55,7 +55,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let effect = falloff * strength * 0.2;
 
       // Direction
-      let dir = normalize(diff);
+      var dir = normalize(diff);
 
       // Wiggle based on field lines
       let wiggle = dir * field * 0.02 * strength;
@@ -71,7 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Bounds check (optional, but sampler usually clamps/repeats)
   let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Passthrough depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

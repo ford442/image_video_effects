@@ -30,7 +30,7 @@ struct Uniforms {
 // --- (RGB/HSV, hash, mod functions - unchanged) ---
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
   let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-  let p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
+  var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
   let q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
   let d = q.x - min(q.w, q.y);
   let e = 1.0e-10;
@@ -40,7 +40,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
   let c = v * s;
   let h6 = h * 6.0;
-  let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+  var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
   var rgb = vec3<f32>(0.0);
   if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
   else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
@@ -69,7 +69,7 @@ fn wrapMod(x: f32, y: f32) -> f32 {
 // ✨ GEMINI UPGRADE: Vortex function
 fn applyVortex(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec2<f32> {
     let diff = uv - center;
-    let r = length(diff);
+    var r = length(diff);
     let angle = atan2(diff.y, diff.x);
     let new_angle = angle + strength / (r + 0.1) * sin(r * 10.0 - time);
     return center + vec2<f32>(cos(new_angle), sin(new_angle)) * r;
@@ -81,7 +81,7 @@ fn applyVortex(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> ve
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
-  let uv = vec2<f32>(gid.xy) / dims;
+  var uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
   
   let foldStrength = u.zoom_params.x * 1.5 + 0.5;
@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Enhanced ripple effect
   let rippleCount = u32(u.config.y);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let r = u.ripples[i];
+    var r = u.ripples[i];
     let dist = distance(work_uv, r.xy);
     let t = time - r.z;
     if (t > 0.0 && t < 5.0) { // Longer decay
@@ -151,7 +151,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
   let finalColor = mix(foldedColor, prev, feedbackStrength);
   
-  textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
-  textureStore(outDepth, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(feedbackOut, gid.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 }

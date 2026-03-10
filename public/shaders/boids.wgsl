@@ -27,12 +27,12 @@ const BOID_SPEED: f32 = 2.0;
 fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
   let idx = gid.x;
   if (idx >= BOID_COUNT) { return; }
-  let base = idx * 4u;
+  var base = idx * 4u;
   let px = extraBuffer[base + 0u];
   let py = extraBuffer[base + 1u];
   var vx = extraBuffer[base + 2u];
   var vy = extraBuffer[base + 3u];
-  let pos = vec2<f32>(px, py);
+  var pos = vec2<f32>(px, py);
   let tex_size = vec2<f32>(textureDimensions(readTexture));
   let brightness = textureSampleLevel(readTexture, u_sampler, pos / tex_size, 0.0).r;
   let time = u.config.x;
@@ -81,7 +81,7 @@ fn reveal_texture_impl(gid: vec3<u32>) {
   var revealed = vec4<f32>(0.0);
   // sample a portion of boids for demo reveal
   for (var i: u32 = 0u; i < 1024u; i = i + 1u) {
-    let base = i * 4u;
+    var base = i * 4u;
     let bx = extraBuffer[base + 0u] * f32(dim.x);
     let by = extraBuffer[base + 1u] * f32(dim.y);
     if (distance(vec2<f32>(f32(coord.x), f32(coord.y)), vec2<f32>(bx, by)) < 3.0) {

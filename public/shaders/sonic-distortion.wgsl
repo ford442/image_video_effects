@@ -27,9 +27,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let time = u.config.x;
 
     // Params
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
 
     let dist = distance(uvCorrected, mouseCorrected);
-    let dir = normalize(uv - mouse);
+    var dir = normalize(uv - mouse);
 
     var offset = vec2<f32>(0.0);
 
@@ -64,5 +64,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, uv + offset * 1.05, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uv + offset * 1.1, 0.0).b;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
 }

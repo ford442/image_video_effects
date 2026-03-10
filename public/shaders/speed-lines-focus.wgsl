@@ -29,7 +29,7 @@ fn hash11(p: f32) -> f32 {
 }
 
 fn noise1(p: f32) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(hash11(i), hash11(i + 1.0), u);
@@ -41,9 +41,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let time = u.config.x;
 
     // Params
@@ -98,7 +98,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Optional: Darken edges (Vignette)
     finalColor *= (1.0 - dist * 0.5);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

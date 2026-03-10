@@ -40,7 +40,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(f32(gid.x) / resolution.x, f32(gid.y) / resolution.y);
+    var uv = vec2<f32>(f32(gid.x) / resolution.x, f32(gid.y) / resolution.y);
     let time = u.config.x;
 
     // Read source and depth

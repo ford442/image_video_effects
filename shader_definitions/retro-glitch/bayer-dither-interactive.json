@@ -25,5 +25,10 @@
       "max": 1.0,
       "default": 0.5
     }
+  ],
+  "tags": [
+    "glitch",
+    "retro",
+    "vintage"
   ]
 }

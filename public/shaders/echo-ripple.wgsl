@@ -26,11 +26,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Params
   let frequency = u.zoom_params.x * 20.0 + 5.0; // Ripple density
@@ -83,7 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mixed_color = mix(current_color + ripple_color, history_color, decay);
 
   // Write outputs
-  textureStore(writeTexture, global_id.xy, vec4<f32>(mixed_color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(mixed_color, 1.0));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(mixed_color, 1.0));
 
   // Depth pass

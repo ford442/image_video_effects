@@ -3,5 +3,9 @@
   "name": "Quantum Fractal",
   "url": "shaders/quantum-fractal.wgsl",
   "category": "image",
-  "description": "Fractal quantum interference patterns."
+  "description": "Fractal quantum interference patterns.",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

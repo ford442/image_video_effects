@@ -28,7 +28,7 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -53,7 +53,7 @@ fn fbm(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Sample original image
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -68,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let ball = plasmaBalls[i];
       // Check if active (age < maxAge and radius > 0)
       if (ball.info.x < ball.info.y && ball.color.w > 0.0) {
-          let pos = ball.pos.xy;
+          var pos = ball.pos.xy;
           // Correct aspect ratio for distance
           let aspect = resolution.x / resolution.y;
           let dvec = (uv - pos) * vec2<f32>(aspect, 1.0);
@@ -155,7 +155,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       finalColor = mix(finalColor, plasmaFinal, alpha);
   }
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
   // Preserve depth (or update if we wanted the balls to have depth)
   // For now, just pass through or 0.0

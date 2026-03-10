@@ -30,9 +30,9 @@ fn hash(p: vec2<f32>) -> f32 {
 
 // 3D noise for organic variation
 fn noise(p: vec3<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
+    var i = floor(p);
+    var f = fract(p);
+    var u = f * f * (3.0 - 2.0 * f);
     
     return mix(mix(mix(hash(i.xy + vec2<f32>(0.0, 0.0)), hash(i.xy + vec2<f32>(1.0, 0.0)), u.x),
                    mix(hash(i.xy + vec2<f32>(0.0, 1.0)), hash(i.xy + vec2<f32>(1.0, 1.0)), u.x), u.y),
@@ -42,11 +42,11 @@ fn noise(p: vec3<f32>) -> f32 {
 
 // Better 3D noise approximation since the above hash hack is a bit weird for 3d
 fn noise3d(p: vec3<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     
     // Smoothstep interpolation
-    let u = f * f * (3.0 - 2.0 * f);
+    var u = f * f * (3.0 - 2.0 * f);
     
     // Hash function that handles 3D input better
     // Simple way: offset the 2D hash
@@ -75,7 +75,7 @@ fn calculate_normal(uv: vec2<f32>, depth: f32, texel: vec2<f32>) -> vec3<f32> {
 // Reaction-diffusion growth step
 fn growth_step(uv: vec2<f32>, current: f32, normal: vec3<f32>, time: f32, 
                spread_speed: f32, density: f32, depth_influence: f32, depth: f32, res: vec2<f32>) -> f32 {
-    let texel = 1.0 / res;
+    var texel = 1.0 / res;
     
     // Sample neighbors with organic noise offset
     let noise_val = noise3d(vec3<f32>(uv * 5.0, time * 0.1)); 
@@ -100,7 +100,7 @@ fn growth_step(uv: vec2<f32>, current: f32, normal: vec3<f32>, time: f32,
     let depth_mask = smoothstep(0.1, 0.9, depth);
     
     // Growth factor
-    let growth = neighbor_avg * spread_speed * flatness * edge_avoidance * depth_mask;
+    var growth = neighbor_avg * spread_speed * flatness * edge_avoidance * depth_mask;
     
     // Decay over time
     let decay = 0.998;
@@ -126,9 +126,9 @@ fn bio_color(t: f32, mode: f32, pulse: f32) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let texel = 1.0 / resolution;
+    var texel = 1.0 / resolution;
 
     // Parameters
     let spread_speed = u.zoom_params.x * 0.02 + 1.0; // Needs to be > 1 to spread? Or additive. Original code used * 0.02 which makes it tiny.
@@ -170,7 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
          // Actually u.config.y IS ripple count.
          if (i < u32(u.config.y)) {
             let ripple = u.ripples[i];
-            let center = ripple.xy;
+            var center = ripple.xy;
             let age = time - ripple.z; // ripple.z is start time? or normalized age?
                                        // Usually in this app ripples are [x, y, startTime, maxRadius]
                                        
@@ -214,6 +214,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Multiply blend for organic integration
     let final_color = base_color * (1.0 - veins * 0.3) + bio_light + ss_scatter;
     
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

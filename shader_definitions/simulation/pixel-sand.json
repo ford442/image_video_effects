@@ -6,5 +6,9 @@
   "description": "Falling granular automata with RGB gravity and diagonal movement.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

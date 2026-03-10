@@ -38,13 +38,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     var st = uv;
     st.x = st.x * aspect;
 
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     var mouseSt = mousePos;
     mouseSt.x = mouseSt.x * aspect;
 
@@ -63,13 +63,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 1st pass: Find closest point
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash2(i_st + neighbor);
+            var neighbor = vec2<f32>(f32(x), f32(y));
+            var point = hash2(i_st + neighbor);
 
             // Animate points
-            let p_anim = 0.5 + 0.5 * sin(time * pulseSpeed + 6.2831 * point);
-            let diff = neighbor + p_anim - f_st;
-            let dist = length(diff);
+            var p_anim = 0.5 + 0.5 * sin(time * pulseSpeed + 6.2831 * point);
+            var diff = neighbor + p_anim - f_st;
+            var dist = length(diff);
 
             if (dist < m_dist) {
                 m_dist = dist;
@@ -82,12 +82,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var m_dist2 = 1.0;
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash2(i_st + neighbor);
-            let p_anim = 0.5 + 0.5 * sin(time * pulseSpeed + 6.2831 * point);
+            var neighbor = vec2<f32>(f32(x), f32(y));
+            var point = hash2(i_st + neighbor);
+            var p_anim = 0.5 + 0.5 * sin(time * pulseSpeed + 6.2831 * point);
 
-            let diff = neighbor + p_anim - f_st;
-            let dist = length(diff);
+            var diff = neighbor + p_anim - f_st;
+            var dist = length(diff);
 
             if (dist > m_dist + 0.0001) { // Skip the closest point itself
                 // Intersection of two perpendicular bisectors logic simplified for "border distance"
@@ -124,7 +124,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, vec4<f32>(webColor, 1.0), finalGlow * 0.5);
     color = color + vec4<f32>(webColor * finalGlow, 0.0);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

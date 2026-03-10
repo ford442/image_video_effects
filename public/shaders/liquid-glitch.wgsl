@@ -21,7 +21,7 @@ fn hash(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
 
   // --- Pixelation / Glitch Grid ---
@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let scanline = sin(uv.y * resolution.y * 0.5) * 0.1;
   let color = vec3(r, g, b) - scanline;
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

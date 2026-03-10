@@ -32,7 +32,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
+    var uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
     let time = u.config.x;
 
     // Params
@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse Stabilization
     let aspect = f32(dims.x) / f32(dims.y);
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 

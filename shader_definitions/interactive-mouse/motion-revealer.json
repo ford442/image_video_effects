@@ -2,7 +2,7 @@
   "id": "motion-revealer",
   "name": "Motion Revealer",
   "url": "shaders/motion-revealer.wgsl",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades.",
   "params": [
     {
@@ -37,5 +37,9 @@
   "features": [
     "mouse-driven",
     "temporal-persistence"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

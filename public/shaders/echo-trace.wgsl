@@ -25,7 +25,7 @@ fn hue_shift(color: vec3<f32>, shift: f32) -> vec3<f32> {
     return vec3<f32>(color * cos_angle + cross(k, color) * sin(shift) + k * dot(k, color) * (1.0 - cos_angle));
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
     let coords = vec2<i32>(global_id.xy);
@@ -34,7 +34,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(coords) / vec2<f32>(dimensions);
+    var uv = vec2<f32>(coords) / vec2<f32>(dimensions);
 
     // Parameters
     let decay_rate = u.zoom_params.x; // 0.8 to 0.99
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shift_amount = u.zoom_params.z; // 0.0 to 0.5
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = u.config.z / u.config.w;
     let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dist_vec);

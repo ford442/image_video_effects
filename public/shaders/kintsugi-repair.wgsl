@@ -29,7 +29,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 
 // Returns vec3(min_dist, cell_id_hash, edge_dist)
 fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
-    let p = uv * scale;
+    var p = uv * scale;
     let i_st = floor(p);
     let f_st = fract(p);
 
@@ -40,14 +40,14 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     // First pass: find closest point
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash22(i_st + neighbor);
+            var neighbor = vec2<f32>(f32(x), f32(y));
+            var point = hash22(i_st + neighbor);
 
             // Animate points slowly
-            let anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
+            var anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
 
-            let diff = neighbor + point + anim - f_st;
-            let dist = length(diff);
+            var diff = neighbor + point + anim - f_st;
+            var dist = length(diff);
 
             if (dist < min_dist) {
                 min_dist = dist;
@@ -61,11 +61,11 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     var min_edge_dist = 8.0;
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash22(i_st + neighbor);
-            let anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
+            var neighbor = vec2<f32>(f32(x), f32(y));
+            var point = hash22(i_st + neighbor);
+            var anim = sin(u.config.x * 0.1 + 6.28 * point) * 0.1;
 
-            let diff = neighbor + point + anim - f_st;
+            var diff = neighbor + point + anim - f_st;
 
             // Skip the closest center itself
             if (dot(diff - cell_center, diff - cell_center) > 0.0001) {
@@ -85,7 +85,7 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
                 // Voronoi edge distance is dot( (diff + cell_center)*0.5, normalize(diff-cell_center) )
                 // But vectors are relative to f_st.
 
-                let dist = dot( 0.5 * (cell_center + diff), normalize(diff - cell_center) );
+                var dist = dot( 0.5 * (cell_center + diff), normalize(diff - cell_center) );
                 min_edge_dist = min(min_edge_dist, dist);
             }
         }
@@ -103,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let uv_corr = vec2<f32>(uv.x * aspect, uv.y);
 
@@ -130,7 +130,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Lighting for gold (fake normal)
     // We can use the gradient of edge_dist as normal approx near edge?
     // Or just simple specular based on mouse
-    let mouse = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
+    var mouse = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
     let to_mouse = normalize(mouse - uv_corr);
     // Cheap normal: points away from edge?
     // Hard to calculate without derivatives or multiple samples.
@@ -145,5 +145,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // If crack > 0.5, show gold. But smoothstep gives gradient.
     let final_color = mix(img_color, gold, crack);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
 }

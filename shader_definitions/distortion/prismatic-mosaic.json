@@ -32,5 +32,9 @@
     "temporal-persistence",
     "colour-masking",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

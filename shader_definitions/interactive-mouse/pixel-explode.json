@@ -1,8 +1,14 @@
 {
   "id": "pixel-explode",
   "label": "Pixel Explode",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "url": "shaders/pixel-explode.wgsl",
-  "features": ["mouse-driven"],
-  "params": []
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [],
+  "tags": [
+    "mouse-driven",
+    "interactive"
+  ]
 }

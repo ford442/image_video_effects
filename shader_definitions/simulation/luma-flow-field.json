@@ -1,37 +1,43 @@
 {
-    "id": "luma-flow-field",
-    "label": "Luma Flow Field",
-    "category": "simulation",
-    "url": "shaders/luma-flow-field.wgsl",
-    "features": ["mouse-driven"],
-    "params": [
-        {
-            "id": "param1",
-            "name": "Flow Speed",
-            "default": 1.0,
-            "min": 0.0,
-            "max": 5.0
-        },
-        {
-            "id": "param2",
-            "name": "Decay",
-            "default": 0.96,
-            "min": 0.9,
-            "max": 0.999
-        },
-        {
-            "id": "param3",
-            "name": "Mouse Force",
-            "default": 0.5,
-            "min": 0.0,
-            "max": 2.0
-        },
-        {
-            "id": "param4",
-            "name": "Color Shift",
-            "default": 0.01,
-            "min": 0.0,
-            "max": 0.1
-        }
-    ]
+  "id": "luma-flow-field",
+  "label": "Luma Flow Field",
+  "category": "simulation",
+  "url": "shaders/luma-flow-field.wgsl",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Flow Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0
+    },
+    {
+      "id": "param2",
+      "name": "Decay",
+      "default": 0.96,
+      "min": 0.9,
+      "max": 0.999
+    },
+    {
+      "id": "param3",
+      "name": "Mouse Force",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0
+    },
+    {
+      "id": "param4",
+      "name": "Color Shift",
+      "default": 0.01,
+      "min": 0.0,
+      "max": 0.1
+    }
+  ],
+  "tags": [
+    "simulation",
+    "physics"
+  ]
 }

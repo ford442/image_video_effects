@@ -1,14 +1,45 @@
 {
-    "id": "crt-phosphor-decay",
-    "name": "CRT Phosphor Decay",
-    "url": "shaders/crt-phosphor-decay.wgsl",
-    "category": "retro-glitch",
-    "description": "Simulates the ghosting trails and scanlines of an old monitor. Touch adds static.",
-    "features": ["mouse-driven"],
-    "params": [
-        { "id": "decay-rate", "name": "Trail Length", "min": 0.0, "max": 1.0, "default": 0.8 },
-        { "id": "brightness-boost", "name": "Glow Boost", "min": 0.0, "max": 1.0, "default": 0.2 },
-        { "id": "scanline-opacity", "name": "Scanlines", "min": 0.0, "max": 1.0, "default": 0.5 },
-        { "id": "noise-level", "name": "Touch Static", "min": 0.0, "max": 1.0, "default": 0.5 }
-    ]
+  "id": "crt-phosphor-decay",
+  "name": "CRT Phosphor Decay",
+  "url": "shaders/crt-phosphor-decay.wgsl",
+  "category": "retro-glitch",
+  "description": "Simulates the ghosting trails and scanlines of an old monitor. Touch adds static.",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "decay-rate",
+      "name": "Trail Length",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "id": "brightness-boost",
+      "name": "Glow Boost",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    },
+    {
+      "id": "scanline-opacity",
+      "name": "Scanlines",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "id": "noise-level",
+      "name": "Touch Static",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    }
+  ],
+  "tags": [
+    "glitch",
+    "retro",
+    "vintage"
+  ]
 }

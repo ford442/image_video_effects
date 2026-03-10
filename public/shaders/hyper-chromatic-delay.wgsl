@@ -22,10 +22,10 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  let mousePos = u.zoom_config.yz; // Mouse coordinate 0-1
+  var mousePos = u.zoom_config.yz; // Mouse coordinate 0-1
   // Correct aspect ratio for distance calculation
   let aspect = resolution.x / resolution.y;
   let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, prev_color, trail_decay);
 
   // Write to output
-  textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
   // Write to persistence buffer (dataTextureA -> binding 7)
   textureStore(dataTextureA, global_id.xy, vec4<f32>(color, 1.0));

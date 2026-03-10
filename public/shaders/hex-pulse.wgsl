@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Params
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let speed = u.zoom_params.w;                            // Param 4: Pulse Speed
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
 
@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distA = distance(uvScaled, centerA);
     let distB = distance(uvScaled, centerB);
 
-    let center = select(centerB, centerA, distA < distB);
+    var center = select(centerB, centerA, distA < distB);
     let centerUV = center / currentScale / aspectVec;
 
     // Sample

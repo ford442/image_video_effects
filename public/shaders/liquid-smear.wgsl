@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let smearStrength = 0.1 + (u.zoom_params.x * 0.9);
@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mixStrength = 0.1 + (u.zoom_params.w * 0.9);
 
     let aspect = resolution.x / resolution.y;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5; // Only smear when mouse is down? Or always? Let's say always for "liquid" feel but maybe stronger when down.
 
     // For this shader, we want the "history" to be the smeared image.
@@ -56,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Simple directional smear: pull towards mouse center?
         // Or actually, it's better if we just sample "from" the direction of the mouse.
         // If we are at P, and mouse is at M, looking at M means we pull M's color to P.
-        let dir = normalize(mousePos - uv);
+        var dir = normalize(mousePos - uv);
         offset = dir * smearStrength * (1.0 - smoothstep(0.0, brushSize, dist)) * 0.05;
     }
 
@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, global_id.xy, blend);
 
     // Output
-    textureStore(writeTexture, global_id.xy, blend);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), blend);
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

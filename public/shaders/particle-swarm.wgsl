@@ -30,7 +30,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -50,7 +50,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let currentPos = uv + offset;
 
     // Mouse interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     // Check if mouse is active/valid (simple check)
     var interaction = vec2<f32>(0.0);
 
@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (dist < radius && dist > 0.001) {
         let t = 1.0 - (dist / radius);
-        let dir = normalize(dVec);
+        var dir = normalize(dVec);
         interaction = dir * t * forceMult;
     }
 
@@ -82,5 +82,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
     // Output
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

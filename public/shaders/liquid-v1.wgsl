@@ -35,7 +35,7 @@ fn antialias_depth_sample(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>, te
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let pixelSize = 1.0 / resolution;
   let time = u.config.x;
     
@@ -177,5 +177,5 @@ let exposed_rgb = post_processed_rgb * exposure;
 let tonemapped_rgb = aces_tonemap(exposed_rgb);
 
   color = vec4<f32>(tonemapped_rgb, color.a);
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

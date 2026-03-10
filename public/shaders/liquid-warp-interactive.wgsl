@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     let aspect = dims.x / dims.y;
 
@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let scale = u.zoom_params.z * 10.0 + 2.0;
     // let viscosity = u.zoom_params.w; // Unused for now, maybe for color mixing?
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let click = u.zoom_config.w;
 
     // Base flow noise
@@ -86,5 +86,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let finalColor = vec3<f32>(r, color.g, b);
 
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+
+    // Write depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

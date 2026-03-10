@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Params
   let zoom_level = mix(1.0, 10.0, u.zoom_params.x); // 1x to 10x
@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lens_size = mix(0.1, 0.8, u.zoom_params.w);
 
   // Mouse setup
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
 
   // Correct for aspect ratio for distance calculation
@@ -112,7 +112,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let final_color = mix(normal_color, phosphor_color, lens_mask);
 
   // Store
-  textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
 
   // Depth pass
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -26,9 +26,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.zoom_config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     // Params
@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Shift direction could be based on mouse movement, but here we'll just use fixed or noise
     let angle = time * 2.0;
-    let dir = vec2(cos(angle), sin(angle));
+    var dir = vec2(cos(angle), sin(angle));
 
     let r_uv = uv + dir * shift;
     let b_uv = uv - dir * shift;
@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, global_id.xy, vec4(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(r, g, b, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

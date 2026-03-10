@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let freq = u.zoom_params.x * 50.0 + 10.0;
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let separation = u.zoom_params.w * 0.5;
 
     // Mouse
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     let to_mouse = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wave_g = sin(phase + separation) * amp * decay;
     let wave_b = sin(phase + separation * 2.0) * amp * decay;
 
-    let dir = normalize(to_mouse);
+    var dir = normalize(to_mouse);
     // Handle center case
     let safe_dir = select(dir, vec2<f32>(1.0, 0.0), dist < 0.001);
 
@@ -64,5 +64,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let col_g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
     let col_b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col_r, col_g, col_b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col_r, col_g, col_b, 1.0));
 }

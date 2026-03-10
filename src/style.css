@@ -1,3 +1,5 @@
+@import url('./styles/recording-share.css');
+
 body {
     font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
     margin: 0;
@@ -343,4 +345,447 @@ hr {
 .toggle-sidebar-btn:hover {
     color: #fff;
     border-color: #666;
+}
+
+/* =====================================================
+   WEBCAM / SELFIE MODE STYLES
+   ===================================================== */
+
+/* Webcam Button - Premium Style */
+.webcam-btn {
+    background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
+    border: none;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(238, 90, 90, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.webcam-btn:hover {
+    background: linear-gradient(145deg, #ff7b7b, #ff6b6b);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(238, 90, 90, 0.4);
+}
+
+.webcam-btn:active {
+    transform: translateY(0);
+}
+
+.webcam-btn.active {
+    background: linear-gradient(145deg, #4ade80, #22c55e);
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+}
+
+.webcam-btn.active:hover {
+    background: linear-gradient(145deg, #5ee88f, #4ade80);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+/* Webcam Error Message */
+.webcam-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #fca5a5;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* Webcam Shader Suggestions Section */
+.webcam-shaders-section {
+    background: linear-gradient(145deg, rgba(97, 218, 251, 0.08), rgba(97, 218, 251, 0.03));
+    border: 1px solid rgba(97, 218, 251, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.webcam-shaders-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #61dafb;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.webcam-shaders-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.webcam-shader-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: none;
+    font-weight: 500;
+}
+
+.webcam-shader-chip:hover {
+    background: rgba(97, 218, 251, 0.15);
+    border-color: rgba(97, 218, 251, 0.4);
+    color: #61dafb;
+    transform: scale(1.02);
+}
+
+.webcam-shader-chip.active {
+    background: linear-gradient(145deg, #61dafb, #4a9fbf);
+    color: #121212;
+    border-color: #61dafb;
+    font-weight: 600;
+}
+
+/* Canvas Webcam Mode */
+.canvas-wrapper {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.canvas-wrapper.webcam-active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 3px solid #22c55e;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 10;
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.2);
+    }
+}
+
+.webcam-canvas {
+    border-radius: 4px;
+}
+
+/* =====================================================
+   🖱️ CUSTOM CURSOR STYLES
+   ===================================================== */
+
+/* The actual cursor rules live in public/custom-cursor.css so webpack never
+   tries to rewrite the cursor asset URLs. Keep bundled styles free of
+   .webgpu-canvas cursor declarations so the public stylesheet can win. */
+
+/* Live Recording Indicator */
+.webcam-indicator {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    z-index: 20;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.recording-dot {
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(0.85);
+    }
+}
+
+/* =====================================================
+   🎰 ROULETTE / SURPRISE ME STYLES
+   ===================================================== */
+
+.roulette-section {
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05));
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 15px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.roulette-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 215, 0, 0.1) 50%,
+        transparent 70%
+    );
+    animation: shimmer 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.roulette-btn {
+    width: 100%;
+    background: linear-gradient(145deg, #ffd700, #ff8c00);
+    border: none;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 
+        0 4px 15px rgba(255, 215, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.roulette-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 
+        0 6px 25px rgba(255, 215, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.roulette-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.roulette-btn.spinning {
+    animation: slot-machine-shake 0.3s ease-in-out;
+}
+
+@keyframes slot-machine-shake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-5px) rotate(-2deg); }
+    20% { transform: translateX(5px) rotate(2deg); }
+    30% { transform: translateX(-5px) rotate(-2deg); }
+    40% { transform: translateX(5px) rotate(2deg); }
+    50% { transform: translateX(-3px) rotate(-1deg); }
+    60% { transform: translateX(3px) rotate(1deg); }
+    70% { transform: translateX(-2px) rotate(-1deg); }
+    80% { transform: translateX(2px) rotate(1deg); }
+    90% { transform: translateX(-1px) rotate(0deg); }
+}
+
+.roulette-icon {
+    font-size: 24px;
+    animation: bounce 0.5s ease infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-3px); }
+}
+
+.roulette-text {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.chaos-mode-toggle {
+    margin-top: 12px;
+    z-index: 1;
+    position: relative;
+}
+
+.chaos-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.chaos-label:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.chaos-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #ff8c00;
+}
+
+.chaos-text {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ff8c00;
+}
+
+.chaos-text small {
+    font-size: 11px;
+    color: #888;
+    font-weight: normal;
+}
+
+.roulette-shortcut-hint {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #666;
+}
+
+.roulette-shortcut-hint kbd {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: monospace;
+    color: #aaa;
+}
+
+/* Roulette Flash Overlay */
+.roulette-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.15s ease-out;
+}
+
+.roulette-flash.flash-active {
+    opacity: 0.3;
+    transition: opacity 0.05s ease-out;
+}
+
+/* Confetti Styles */
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10000;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confetti-fall 3s ease-out forwards;
+    border-radius: 2px;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg) scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* Chaos Mode Active Indicator */
+.chaos-active-indicator {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    background: linear-gradient(145deg, #ff4757, #ff6348);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 100;
+    animation: chaos-pulse 1s ease-in-out infinite;
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+}
+
+@keyframes chaos-pulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+    }
+    50% { 
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(255, 71, 87, 0.6);
+    }
 }

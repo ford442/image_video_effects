@@ -53,14 +53,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     
     var uv_corrected = uv;
     uv_corrected.x = uv_corrected.x * aspect; // Fix aspect for math
 
     // Mouse position from zoom_config.yz
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouse_corrected = vec2<f32>(
         mouse.x * aspect,
         mouse.y
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hex_size = mix(0.01, 0.1, scale_param);
 
     // Determine hex center in aspect-corrected space
-    let center = get_hex_center(distorted_pos, hex_size);
+    var center = get_hex_center(distorted_pos, hex_size);
 
     // Convert back to UV space
     var sample_uv = center;
@@ -104,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var final_color = color.rgb * hex_mask;
 
     // Output
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
     
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

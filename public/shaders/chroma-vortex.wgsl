@@ -39,8 +39,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mousePos = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     let twist = u.zoom_params.x * 3.14159 * 2.0; // +/- 2 PI
@@ -94,5 +94,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(colR, colG, colB, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(colR, colG, colB, 1.0));
 }

@@ -60,7 +60,7 @@ const PIXEL_SIZE_SCALE: f32 = 100.0;  // Scaling factor for pixel size parameter
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     
     // Get depth for depth-aware pixelation

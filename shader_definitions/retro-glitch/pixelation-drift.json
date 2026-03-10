@@ -38,5 +38,9 @@
     "depth-aware",
     "temporal-persistence",
     "organic-motion"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

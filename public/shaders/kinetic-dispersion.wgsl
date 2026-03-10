@@ -30,7 +30,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let currMouse = u.zoom_config.yz;
     let time = u.config.x;
 
@@ -77,5 +77,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noise = hash12(uv * time);
     color = mix(color, vec3<f32>(noise), intensity * 0.2);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }

@@ -3,11 +3,42 @@
   "name": "Sonic Boom",
   "url": "shaders/sonic-boom.wgsl",
   "category": "distortion",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
-    { "id": "radius", "name": "Ring Radius", "default": 0.2, "min": 0.0, "max": 1.0 },
-    { "id": "width", "name": "Ring Width", "default": 0.05, "min": 0.01, "max": 0.2 },
-    { "id": "strength", "name": "Distortion", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "split", "name": "Chrom. Split", "default": 0.02, "min": 0.0, "max": 0.1 }
+    {
+      "id": "radius",
+      "name": "Ring Radius",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "width",
+      "name": "Ring Width",
+      "default": 0.05,
+      "min": 0.01,
+      "max": 0.2
+    },
+    {
+      "id": "strength",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "split",
+      "name": "Chrom. Split",
+      "default": 0.02,
+      "min": 0.0,
+      "max": 0.1
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform"
   ]
 }

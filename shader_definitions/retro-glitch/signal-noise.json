@@ -1,9 +1,15 @@
 {
-    "id": "signal-noise",
-    "name": "Signal Noise",
-    "url": "shaders/signal-noise.wgsl",
-    "category": "image",
-    "features": ["mouse-driven"],
-    "description": "Interactive signal noise and scanline displacement controlled by mouse position.",
-    "params": []
+  "id": "signal-noise",
+  "name": "Signal Noise",
+  "url": "shaders/signal-noise.wgsl",
+  "category": "image",
+  "features": [
+    "mouse-driven"
+  ],
+  "description": "Interactive signal noise and scanline displacement controlled by mouse position.",
+  "params": [],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

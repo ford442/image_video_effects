@@ -32,8 +32,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = u.zoom_config.yz; // 0..1
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mouse = u.zoom_config.yz; // 0..1
 
     // Parameters
     let tiltStrength = u.zoom_params.x * 2.0; // Max tilt angle multiplier
@@ -55,7 +55,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Looking at (0, 0, 0)
     // Ray Direction per pixel:
     let rayOrigin = vec3<f32>(0.0, 0.0, -dist);
-    let rayDir = normalize(vec3<f32>(screenUV.x * aspect, -screenUV.y, dist));
+    var rayDir = normalize(vec3<f32>(screenUV.x * aspect, -screenUV.y, dist));
 
     // Plane Setup (Rotated)
     // Original Plane: Center (0,0,0), Normal (0,0,1)
@@ -156,6 +156,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_val, 0.0, 0.0, 0.0));
 }

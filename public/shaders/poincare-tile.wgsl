@@ -44,7 +44,7 @@ fn cabs(z: vec2<f32>) -> f32 {
 }
 
 fn cexp(z: vec2<f32>) -> vec2<f32> {
-  let r = exp(z.x);
+  var r = exp(z.x);
   return vec2<f32>(r * cos(z.y), r * sin(z.y));
 }
 
@@ -54,16 +54,16 @@ fn clog(z: vec2<f32>) -> vec2<f32> {
 
 // Möbius transformation: (az + b) / (cz + d)
 fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
-  let num = cmul(a, z) + b;
-  let den = cmul(c, z) + d;
+  var num = cmul(a, z) + b;
+  var den = cmul(c, z) + d;
   return cdiv(num, den);
 }
 
 // Hyperbolic translation in Poincaré disk
 fn hyperbolicTranslate(z: vec2<f32>, t: vec2<f32>) -> vec2<f32> {
   // Möbius transformation for translation
-  let num = z + t;
-  let den = cmul(cconj(t), z) + vec2<f32>(1.0, 0.0);
+  var num = z + t;
+  var den = cmul(cconj(t), z) + vec2<f32>(1.0, 0.0);
   return cdiv(num, den);
 }
 
@@ -88,8 +88,8 @@ fn atanh(x: f32) -> f32 {
 // Regular polygon tiling parameters
 fn getPolyParams(symmetry: f32) -> vec3<f32> {
   // p-gon, q at each vertex
-  let p = floor(symmetry * 4.0 + 3.0); // 3 to 7
-  let q = floor(symmetry * 2.0 + 3.0); // 3 to 5
+  var p = floor(symmetry * 4.0 + 3.0); // 3 to 7
+  var q = floor(symmetry * 2.0 + 3.0); // 3 to 5
   let angle = PI / p;
   return vec3<f32>(p, q, angle);
 }
@@ -101,13 +101,13 @@ fn toFundamentalDomain(z: vec2<f32>, p: f32, q: f32) -> vec2<f32> {
   
   for (var i = 0; i < maxIter; i = i + 1) {
     // Reflect across edges of hyperbolic polygon
-    let angle = atan2(w.y, w.x);
-    let sector = floor(angle / (TAU / p) + 0.5);
-    let sectorAngle = sector * TAU / p;
+    var angle = atan2(w.y, w.x);
+    var sector = floor(angle / (TAU / p) + 0.5);
+    var sectorAngle = sector * TAU / p;
     
     // Rotate to first sector
     let c = cos(-sectorAngle);
-    let s = sin(-sectorAngle);
+    var s = sin(-sectorAngle);
     w = vec2<f32>(w.x * c - w.y * s, w.x * s + w.y * c);
     
     // Check if in fundamental domain
@@ -126,8 +126,8 @@ fn toFundamentalDomain(z: vec2<f32>, p: f32, q: f32) -> vec2<f32> {
 
 // HSV to RGB
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-  let c = v * s;
-  let x = c * (1.0 - abs((h * 6.0) % 2.0 - 1.0));
+  var c = v * s;
+  var x = c * (1.0 - abs((h * 6.0) % 2.0 - 1.0));
   let m = v - c;
   
   var rgb: vec3<f32>;
@@ -148,7 +148,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
   // Parameters
@@ -166,7 +166,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   z = z * curvature;
   
   // Check if inside disk
-  let r = length(z);
+  var r = length(z);
   
   if (r >= 1.0) {
     // Outside disk - show gradient background
@@ -177,7 +177,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   
   // Mouse interaction - use as center of transformation
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let mouseZ = (mouse - vec2<f32>(0.5)) * 2.0 * curvature * 0.5;
   
   // Animated translation
@@ -202,22 +202,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Get polygon parameters
   let polyParams = getPolyParams(symmetry);
-  let p = polyParams.x;
-  let q = polyParams.y;
+  var p = polyParams.x;
+  var q = polyParams.y;
   
   // Map to fundamental domain (tiling)
   var tiledZ = w;
   var tileIndex = 0.0;
   
   // Simple angular tiling
-  let angle = atan2(tiledZ.y, tiledZ.x);
-  let sector = floor(angle / (TAU / p) + 0.5);
+  var angle = atan2(tiledZ.y, tiledZ.x);
+  var sector = floor(angle / (TAU / p) + 0.5);
   tileIndex = sector;
   
   // Reflect to canonical sector
-  let sectorAngle = sector * TAU / p;
-  let c = cos(-sectorAngle);
-  let s = sin(-sectorAngle);
+  var sectorAngle = sector * TAU / p;
+  var c = cos(-sectorAngle);
+  var s = sin(-sectorAngle);
   tiledZ = vec2<f32>(tiledZ.x * c - tiledZ.y * s, tiledZ.x * s + tiledZ.y * c);
   
   // Radial scaling for tile pattern

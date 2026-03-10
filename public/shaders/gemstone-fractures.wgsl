@@ -30,7 +30,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     let scale = u.zoom_params.x * 20.0 + 2.0;
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // We want to sample from a rotated version of the texture.
 
     // Let's rotate the offset vector (uv - 0.5) by the angle.
-    let center = vec2<f32>(0.5 * aspect, 0.5);
+    var center = vec2<f32>(0.5 * aspect, 0.5);
     let fromCenter = uv * vec2<f32>(aspect, 1.0) - center;
     let rotFromCenter = vec2<f32>(
         fromCenter.x * c - fromCenter.y * s,

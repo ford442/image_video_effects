@@ -38,5 +38,9 @@
     "animated",
     "grid",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

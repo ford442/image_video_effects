@@ -34,7 +34,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 //  Useful for 2D displacement or flow fields
 // ───────────────────────────────────────────────────────────────────────────────
 fn hash22(p: vec2<f32>) -> vec2<f32> {
-    let k = vec2<f32>(
+    var k = vec2<f32>(
         dot(p, vec2<f32>(127.1, 311.7)),
         dot(p, vec2<f32>(269.5, 183.3))
     );
@@ -54,7 +54,7 @@ fn hash22_signed(p: vec2<f32>) -> vec2<f32> {
 //  For 3D noise or time-varying 2D effects
 // ───────────────────────────────────────────────────────────────────────────────
 fn hash31(p: vec3<f32>) -> f32 {
-    let h = dot(p, vec3<f32>(127.1, 311.7, 74.7));
+    var h = dot(p, vec3<f32>(127.1, 311.7, 74.7));
     return fract(sin(h) * 43758.5453123);
 }
 
@@ -63,7 +63,7 @@ fn hash31(p: vec3<f32>) -> f32 {
 //  For Voronoi and 3D displacement
 // ───────────────────────────────────────────────────────────────────────────────
 fn hash33(p: vec3<f32>) -> vec3<f32> {
-    let k = vec3<f32>(
+    var k = vec3<f32>(
         dot(p, vec3<f32>(127.1, 311.7, 74.7)),
         dot(p, vec3<f32>(269.5, 183.3, 246.1)),
         dot(p, vec3<f32>(113.5, 271.9, 124.6))
@@ -76,7 +76,7 @@ fn hash33(p: vec3<f32>) -> vec3<f32> {
 //  For hypercube noise (4D space or 3D + time)
 // ───────────────────────────────────────────────────────────────────────────────
 fn hash41(p: vec4<f32>) -> f32 {
-    let h = dot(p, vec4<f32>(127.1, 311.7, 74.7, 157.3));
+    var h = dot(p, vec4<f32>(127.1, 311.7, 74.7, 157.3));
     return fract(sin(h) * 43758.5453123);
 }
 
@@ -148,17 +148,17 @@ fn fbm5(p: vec2<f32>) -> f32 {
 //  Voronoi distance: Returns distance to nearest cell point
 // ───────────────────────────────────────────────────────────────────────────────
 fn voronoi(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     
     var minDist = 1.0;
     
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let cellId = i + neighbor;
-            let point = neighbor + hash22(cellId) - f;
-            let dist = length(point);
+            var neighbor = vec2<f32>(f32(x), f32(y));
+            var cellId = i + neighbor;
+            var point = neighbor + hash22(cellId) - f;
+            var dist = length(point);
             minDist = min(minDist, dist);
         }
     }
@@ -170,18 +170,18 @@ fn voronoi(p: vec2<f32>) -> f32 {
 //  Voronoi with cell ID: Returns (distance, cellIdX, cellIdY)
 // ───────────────────────────────────────────────────────────────────────────────
 fn voronoiWithId(p: vec2<f32>) -> vec3<f32> {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     
     var minDist = 1.0;
     var cellId = vec2<f32>(0.0);
     
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
+            var neighbor = vec2<f32>(f32(x), f32(y));
             let nc = i + neighbor;
-            let point = neighbor + hash22(nc) - f;
-            let dist = length(point);
+            var point = neighbor + hash22(nc) - f;
+            var dist = length(point);
             if (dist < minDist) {
                 minDist = dist;
                 cellId = nc;

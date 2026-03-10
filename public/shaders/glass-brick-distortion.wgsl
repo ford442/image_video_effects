@@ -24,8 +24,8 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mouse = u.zoom_config.yz;
 
     let brick_count = u.zoom_params.x * 40.0 + 5.0; // 5 to 45
     let refraction = u.zoom_params.y * 0.1;
@@ -80,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = color * 0.5;
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
      // Depth pass-through
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sample_uv, 0.0).r;

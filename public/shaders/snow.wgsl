@@ -44,7 +44,7 @@ fn hexagon_dist(p: vec2<f32>, r: f32) -> f32 {
 }
 
 fn snowflake(uv: vec2<f32>, seed: f32, size: f32) -> f32 {
-    let center = vec2<f32>(0.5);
+    var center = vec2<f32>(0.5);
     let d = hexagon_dist((uv - center) * 2.0, size);
     
     // Add crystal branches
@@ -76,7 +76,7 @@ fn snow_layer(uv: vec2<f32>, layer: u32, speed: f32, density: f32, wind: f32, ti
     // Grid for snowflake distribution
     let cell_size = vec2<f32>(40.0, 40.0) / (1.0 + f32(layer) * 0.3);
     let cell = floor(skewed_uv * cell_size);
-    let pos = fract(skewed_uv * cell_size);
+    var pos = fract(skewed_uv * cell_size);
     
     let rand = hash13(vec3<f32>(cell, seed));
     if (rand > density) { return 0.0; }
@@ -109,7 +109,7 @@ fn calculate_normal(uv: vec2<f32>, depth: f32, texel: vec2<f32>) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let texel = 1.0 / resolution;
 
@@ -133,7 +133,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accumulated_snow = 0.0;
     if (accumulation_amt > 0.01) {
         // Calculate surface normal
-        let normal = calculate_normal(uv, depth, texel);
+        var normal = calculate_normal(uv, depth, texel);
         
         // Snow accumulates on upward-facing surfaces (normal.y > 0.5)
         // and on flat surfaces (normal.y > 0.7)
@@ -162,7 +162,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let snow_color = vec3<f32>(0.92, 0.95, 1.0);
     
     // Add subtle lighting to accumulated snow based on normal
-    let normal = calculate_normal(uv, depth, texel);
+    var normal = calculate_normal(uv, depth, texel);
     let light_dir = normalize(vec3<f32>(0.3, 0.8, 0.5));
     let snow_lighting = max(0.2, dot(normal, light_dir));
     
@@ -175,6 +175,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Accumulated snow (multiplicative blending with lighting)
     final_color = mix(final_color, snow_color * snow_lighting, accumulated_snow);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

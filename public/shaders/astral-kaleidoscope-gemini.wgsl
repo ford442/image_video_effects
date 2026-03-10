@@ -37,7 +37,7 @@ fn fmod(x: f32, y: f32) -> f32 {
 }
 
 fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
-    let s = sin(a);
+    var s = sin(a);
     let c = cos(a);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
@@ -64,7 +64,7 @@ fn rgb2hsl(c: vec3<f32>) -> vec3<f32> {
     
     var h = 0.0;
     var s = 0.0;
-    let l = (maxVal + minVal) / 2.0;
+    var l = (maxVal + minVal) / 2.0;
     
     if (delta > 0.0) {
         s = delta / (1.0 - abs(2.0 * l - 1.0));
@@ -91,12 +91,12 @@ fn hue2rgb(p: f32, q: f32, t: f32) -> f32 {
 }
 
 fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
-    let h = c.x;
-    let s = c.y;
-    let l = c.z;
+    var h = c.x;
+    var s = c.y;
+    var l = c.z;
     if (s == 0.0) { return vec3<f32>(l); }
     let q = select(l * (1.0 + s), l + s - l * s, l < 0.5);
-    let p = 2.0 * l - q;
+    var p = 2.0 * l - q;
     return vec3<f32>(
         hue2rgb(p, q, h + 1.0/3.0),
         hue2rgb(p, q, h),
@@ -110,7 +110,7 @@ fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     
     // -----------------------------------------------------------------
@@ -125,7 +125,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let centerOsc   = u.zoom_config.z * 0.2;
     let warpPower   = u.zoom_config.w * 0.8; // New GEMINI parameter
 
-    let center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
+    var center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
     
     // -----------------------------------------------------------------
     //  2️⃣  Depth-Aware & Warped Coordinates
@@ -197,13 +197,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let shimmer = noise(uv * 10.0 + time) * 0.05;
     let feedback = max(color, prev * decay + shimmer);
     
-    textureStore(historyBuf, gid.xy, vec4<f32>(feedback, 1.0));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(feedback, 1.0));
     
     // -----------------------------------------------------------------
     //  7️⃣  Final Output
     // ---------------------------------------------------------------
     let finalCol = mix(color, feedback, 0.6); // Slightly more feedback visibility
     
-    textureStore(outTex, gid.xy, vec4<f32>(finalCol, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

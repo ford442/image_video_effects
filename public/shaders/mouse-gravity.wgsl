@@ -24,11 +24,11 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Mouse coords are in u.zoom_config.yz
     // The renderer maps them 0-1.
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Params
     let strength = u.zoom_params.x * 2.0;    // 0.0 to 2.0
@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // if (any(uvR < vec2(0.0)) || any(uvR > vec2(1.0))) { r = 0.0; } etc.
     // But sampler is usually set to repeat or clamp. Renderer sets it to 'repeat'.
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
     // Passthrough depth for now, or warp it too?
     // Warping depth might be more correct for compositing.

@@ -45,8 +45,8 @@ fn hasNeighborFrozen(uv: vec2<f32>, texelSize: vec2<f32>) -> f32 {
   for (var dy = -NEIGHBOR_CHECK_RADIUS; dy <= NEIGHBOR_CHECK_RADIUS; dy = dy + 1) {
     for (var dx = -NEIGHBOR_CHECK_RADIUS; dx <= NEIGHBOR_CHECK_RADIUS; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
-      let neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      let neighborState = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
+      var neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
+      var neighborState = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
       maxFrozen = max(maxFrozen, neighborState.r);
     }
   }
@@ -61,8 +61,8 @@ fn getFrozenNeighborColor(uv: vec2<f32>, texelSize: vec2<f32>) -> vec3<f32> {
   
   for (var dy = -NEIGHBOR_CHECK_RADIUS; dy <= NEIGHBOR_CHECK_RADIUS; dy = dy + 1) {
     for (var dx = -NEIGHBOR_CHECK_RADIUS; dx <= NEIGHBOR_CHECK_RADIUS; dx = dx + 1) {
-      let neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      let neighborState = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
+      var neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
+      var neighborState = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
       if (neighborState.r > 0.5) {
         let neighborSource = textureSampleLevel(readTexture, u_sampler, neighborUV, 0.0);
         colorSum = colorSum + neighborSource.rgb;
@@ -83,7 +83,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   let frame = u.config.y;
@@ -112,7 +112,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (ripple.z > 0.0) {
       let rippleAge = time - ripple.z;
       if (rippleAge > 0.0 && rippleAge < 0.5) {
-        let dist = length(uv - ripple.xy);
+        var dist = length(uv - ripple.xy);
         if (dist < 0.02 && frozen < 0.5) {
           frozen = 1.0;
           age = time;
@@ -124,7 +124,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   
   // Initialize seed at mouse position
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let mouseDist = length(uv - mouse);
   if (mouseDist < 0.01 && frozen < 0.5) {
     frozen = 1.0;
@@ -144,13 +144,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var minFrozenDist = 100.0;
     
     // Search for nearby frozen pixels
-    let searchRadius = 5;
+    var searchRadius = 5;
     for (var dy = -searchRadius; dy <= searchRadius; dy = dy + 1) {
       for (var dx = -searchRadius; dx <= searchRadius; dx = dx + 1) {
-        let searchUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-        let searchState = textureSampleLevel(dataTextureC, non_filtering_sampler, searchUV, 0.0);
+        var searchUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
+        var searchState = textureSampleLevel(dataTextureC, non_filtering_sampler, searchUV, 0.0);
         if (searchState.r > 0.5) {
-          let dist = length(vec2<f32>(f32(dx), f32(dy)));
+          var dist = length(vec2<f32>(f32(dx), f32(dy)));
           if (dist < minFrozenDist && dist > 0.0) {
             minFrozenDist = dist;
             attractDir = normalize(vec2<f32>(f32(dx), f32(dy)));
@@ -230,12 +230,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalColor = sourceColor.rgb * 0.7;
     
     // Show attraction field as subtle glow
-    let searchRadius = 10;
+    var searchRadius = 10;
     var closestFrozen = 100.0;
     for (var dy = -searchRadius; dy <= searchRadius; dy = dy + 1) {
       for (var dx = -searchRadius; dx <= searchRadius; dx = dx + 1) {
-        let searchUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-        let searchState = textureSampleLevel(dataTextureC, non_filtering_sampler, searchUV, 0.0);
+        var searchUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
+        var searchState = textureSampleLevel(dataTextureC, non_filtering_sampler, searchUV, 0.0);
         if (searchState.r > 0.5) {
           closestFrozen = min(closestFrozen, length(vec2<f32>(f32(dx), f32(dy))));
         }

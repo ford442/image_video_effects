@@ -28,7 +28,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 
@@ -58,10 +58,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Parameters
     let radius_param = u.zoom_params.x; // 0 to 1
@@ -132,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Burning Edge
         let t = d / glow_width; // 0 to 1
         // Gradient: White -> Yellow -> Red -> Dark
-        let fire = mix(vec3<f32>(1.0, 1.0, 0.8), vec3<f32>(1.0, 0.3, 0.0), t);
+        var fire = mix(vec3<f32>(1.0, 1.0, 0.8), vec3<f32>(1.0, 0.3, 0.0), t);
         fire = mix(fire, vec3<f32>(0.1, 0.0, 0.0), t * t);
 
         // Add noise/sparkle to fire
@@ -147,5 +147,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         final_color *= (0.5 + 0.5 * smoke);
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
 }

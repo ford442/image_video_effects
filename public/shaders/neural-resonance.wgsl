@@ -87,7 +87,7 @@ fn gaussianBlur3x3(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
 
@@ -179,7 +179,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Output (HDR allowed for glow effects)
     // ──────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, gid.xy, vec4<f32>(result, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(feedbackOut, gid.xy, vec4<f32>(result, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
 }

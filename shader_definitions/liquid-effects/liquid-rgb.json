@@ -3,5 +3,9 @@
   "name": "Liquid RGB",
   "url": "shaders/liquid-rgb.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

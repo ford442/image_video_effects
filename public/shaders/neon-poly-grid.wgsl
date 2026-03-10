@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Correct aspect ratio for grid
     let aspect = resolution.x / resolution.y;
@@ -77,7 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distToEdge = hex.y;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouse_grid = vec2<f32>(mouse.x * aspect, mouse.y);
     let distToMouse = distance(uv_grid, mouse_grid);
 

@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
   let id = vec2<u32>(gid.xy);
   let dim = textureDimensions(readTexture);
-  let uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
+  var uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   let time = u.config.x;
   
   let current = textureLoad(readTexture, coord, 0);

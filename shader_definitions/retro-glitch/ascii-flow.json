@@ -3,6 +3,13 @@
   "label": "ASCII Flow",
   "category": "retro-glitch",
   "url": "shaders/ascii-flow.wgsl",
-  "features": ["mouse-driven"],
-  "params": []
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [],
+  "tags": [
+    "glitch",
+    "retro",
+    "vintage"
+  ]
 }

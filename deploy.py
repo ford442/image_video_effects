@@ -1,80 +1,242 @@
+#!/usr/bin/env python3
+"""
+Smart deployment script - only uploads changed files.
+Uses a local manifest to track uploaded file hashes.
+"""
+
 import os
 import paramiko
 import getpass
+import json
+import hashlib
+from pathlib import Path
 
 # --- Server Configuration ---
-# Replace these with your server's details.
-# It's better to use environment variables or a config file for sensitive data.
 HOSTNAME = "1ink.us"
-PORT = 22  # Default SFTP/SSH port
+PORT = 22
 USERNAME = "ford442"
 
 # --- Project Configuration ---
-# The local directory to upload from.
 LOCAL_DIRECTORY = "build"
-# The directory on the server where the files should go (e.g., 'public_html/wasm-game').
 REMOTE_DIRECTORY = "test.1ink.us/image_video_effects"
+MANIFEST_FILE = ".deploy_manifest.json"
 
-def upload_directory(sftp_client, local_path, remote_path):
+# File patterns to skip (e.g., source maps if not needed)
+SKIP_PATTERNS = [
+    # '*.map',  # Uncomment to skip source maps
+]
+
+
+def get_file_hash(filepath: str) -> str:
+    """Calculate MD5 hash of a file."""
+    hash_md5 = hashlib.md5()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def load_manifest() -> dict:
+    """Load the deployment manifest tracking uploaded files."""
+    if os.path.exists(MANIFEST_FILE):
+        with open(MANIFEST_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+
+def save_manifest(manifest: dict):
+    """Save the deployment manifest."""
+    with open(MANIFEST_FILE, 'w') as f:
+        json.dump(manifest, f, indent=2)
+
+
+def should_upload(local_path: str, remote_path: str, sftp_client, manifest: dict) -> bool:
     """
-    Recursively uploads a directory and its contents to the remote server.
+    Determine if a file should be uploaded by checking:
+    1. If it's in the skip list
+    2. If it exists remotely
+    3. If local hash differs from manifest
     """
-    print(f"Creating remote directory: {remote_path}")
+    # Check skip patterns
+    for pattern in SKIP_PATTERNS:
+        if local_path.endswith(pattern.replace('*', '')):
+            return False
+
+    rel_path = os.path.relpath(local_path, LOCAL_DIRECTORY)
+    local_hash = get_file_hash(local_path)
+    local_size = os.path.getsize(local_path)
+
+    # Check manifest first (fast local check)
+    if rel_path in manifest:
+        if manifest[rel_path].get('hash') == local_hash:
+            return False  # File unchanged
+
+    # Check remote file
     try:
-        # Create the target directory on the server if it doesn't exist.
-        sftp_client.mkdir(remote_path)
+        remote_stat = sftp_client.stat(remote_path)
+        # If sizes match, assume file is same (fast but not 100% accurate)
+        if remote_stat.st_size == local_size:
+            # Optionally: verify with hash (slower but accurate)
+            # For now, size match is good enough for most cases
+            return False
     except IOError:
-        # Directory already exists, which is fine.
-        print(f"Directory {remote_path} already exists.")
+        # File doesn't exist remotely - must upload
+        pass
+
+    return True
+
+
+def upload_file(sftp_client, local_path: str, remote_path: str, manifest: dict):
+    """Upload a single file and update manifest."""
+    print(f"  📤 Uploading: {os.path.basename(local_path)}")
+    sftp_client.put(local_path, remote_path)
+
+    # Update manifest
+    rel_path = os.path.relpath(local_path, LOCAL_DIRECTORY)
+    manifest[rel_path] = {
+        'hash': get_file_hash(local_path),
+        'size': os.path.getsize(local_path)
+    }
+
+
+def upload_directory(sftp_client, local_path: str, remote_path: str, manifest: dict, force: bool = False):
+    """
+    Recursively uploads only changed files.
+    """
+    # Create remote directory if it doesn't exist
+    try:
+        sftp_client.mkdir(remote_path)
+        print(f"📁 Created directory: {remote_path}")
+    except IOError:
+        pass  # Directory already exists
+
+    uploaded_count = 0
+    skipped_count = 0
 
     for item in os.listdir(local_path):
         local_item_path = os.path.join(local_path, item)
         remote_item_path = f"{remote_path}/{item}"
+        rel_path = os.path.relpath(local_item_path, LOCAL_DIRECTORY)
 
         if os.path.isfile(local_item_path):
-            print(f"Uploading file: {local_item_path} -> {remote_item_path}")
-            sftp_client.put(local_item_path, remote_item_path)
+            if force or should_upload(local_item_path, remote_item_path, sftp_client, manifest):
+                upload_file(sftp_client, local_item_path, remote_item_path, manifest)
+                uploaded_count += 1
+            else:
+                skipped_count += 1
+                print(f"  ⏭️  Skipped: {item}")
+
         elif os.path.isdir(local_item_path):
-            # If it's a directory, recurse into it.
-            upload_directory(sftp_client, local_item_path, remote_item_path)
+            # Recurse into subdirectory
+            sub_uploaded, sub_skipped = upload_directory(
+                sftp_client, local_item_path, remote_item_path, manifest, force
+            )
+            uploaded_count += sub_uploaded
+            skipped_count += sub_skipped
+
+    return uploaded_count, skipped_count
+
+
+def clean_remote(sftp_client, remote_path: str, manifest: dict):
+    """
+    Remove files from remote that no longer exist locally.
+    """
+    removed = []
+    local_files = set()
+
+    # Build set of local files
+    for root, _, files in os.walk(LOCAL_DIRECTORY):
+        for f in files:
+            local_files.add(os.path.relpath(os.path.join(root, f), LOCAL_DIRECTORY))
+
+    # Check manifest for files that no longer exist locally
+    to_remove = []
+    for rel_path in manifest.keys():
+        if rel_path not in local_files:
+            to_remove.append(rel_path)
+
+    for rel_path in to_remove:
+        remote_file = f"{REMOTE_DIRECTORY}/{rel_path}"
+        try:
+            sftp_client.remove(remote_file)
+            removed.append(rel_path)
+            del manifest[rel_path]
+            print(f"  🗑️  Removed: {rel_path}")
+        except IOError:
+            pass  # File didn't exist anyway
+
+    return removed
+
 
 def main():
-    """
-    Main function to connect to the server and start the upload process.
-    """
-    password = 'GoogleBez12!' # getpass.getpass(f"Enter password for {USERNAME}@{HOSTNAME}: ")
+    password = 'GoogleBez12!'  # Consider using environment variable
+
+    # Load manifest
+    manifest = load_manifest()
+    print(f"📋 Loaded manifest with {len(manifest)} tracked files")
 
     transport = None
     sftp = None
     try:
-        # Establish the SSH connection
+        # Establish SSH connection
         transport = paramiko.Transport((HOSTNAME, PORT))
-        print("Connecting to server...")
+        print(f"🔌 Connecting to {HOSTNAME}...")
         transport.connect(username=USERNAME, password=password)
-        print("Connection successful!")
+        print("✅ Connected!")
 
-        # Create an SFTP client from the transport
         sftp = paramiko.SFTPClient.from_transport(transport)
-        print(f"Starting upload of '{LOCAL_DIRECTORY}' to '{REMOTE_DIRECTORY}'...")
+        print(f"🚀 Deploying '{LOCAL_DIRECTORY}' to '{REMOTE_DIRECTORY}'...")
+        print("")
 
-        # Start the recursive upload
-        upload_directory(sftp, LOCAL_DIRECTORY, REMOTE_DIRECTORY)
+        # Upload changed files
+        uploaded, skipped = upload_directory(sftp, LOCAL_DIRECTORY, REMOTE_DIRECTORY, manifest)
 
-        print("\n✅ Deployment complete!")
+        # Clean up removed files
+        print("")
+        print("🧹 Cleaning up removed files...")
+        removed = clean_remote(sftp, REMOTE_DIRECTORY, manifest)
+
+        # Save updated manifest
+        save_manifest(manifest)
+
+        print("")
+        print("=" * 50)
+        print(f"✅ Deployment complete!")
+        print(f"   📤 Uploaded: {uploaded} files")
+        print(f"   ⏭️  Skipped: {skipped} files (unchanged)")
+        if removed:
+            print(f"   🗑️  Removed: {len(removed)} files")
+        print("=" * 50)
 
     except Exception as e:
-        print(f"❌ An error occurred: {e}")
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
-        # Ensure the connection is closed
         if sftp:
             sftp.close()
         if transport:
             transport.close()
-        print("Connection closed.")
+        print("🔒 Connection closed.")
+
 
 if __name__ == "__main__":
     if not os.path.exists(LOCAL_DIRECTORY):
-        print(f"Error: Local directory '{LOCAL_DIRECTORY}' not found. Did you run 'npm run build' first?")
-    else:
-        main()
+        print(f"❌ Error: Directory '{LOCAL_DIRECTORY}' not found. Run 'npm run build' first.")
+        exit(1)
 
+    # Optional: Force full redeploy
+    import sys
+    force_redeploy = '--force' in sys.argv
+
+    if force_redeploy:
+        print("⚠️  Force redeploy: Will upload ALL files")
+        if input("Continue? (yes/no): ").lower() != 'yes':
+            exit(0)
+        # Clear manifest to force re-upload
+        manifest = {}
+    else:
+        print("💡 Tip: Use --force to redeploy all files")
+        print("")
+
+    main()

@@ -6,5 +6,9 @@
   "description": "Workgroup bitonic sort skeleton for pixel sorting and glitch effects.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

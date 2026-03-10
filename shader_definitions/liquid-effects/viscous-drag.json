@@ -1,14 +1,45 @@
 {
-    "id": "viscous-drag",
-    "name": "Viscous Drag",
-    "url": "shaders/viscous-drag.wgsl",
-    "category": "liquid-effects",
-    "description": "The screen becomes a thick, viscous fluid that ripples and deforms under your touch.",
-    "features": ["mouse-driven"],
-    "params": [
-        { "id": "viscosity", "name": "Viscosity", "min": 0.0, "max": 1.0, "default": 0.6 },
-        { "id": "drag-strength", "name": "Push Strength", "min": 0.0, "max": 1.0, "default": 0.5 },
-        { "id": "recovery-speed", "name": "Flow Memory", "min": 0.0, "max": 1.0, "default": 0.95 },
-        { "id": "distortion-scale", "name": "Warp Amount", "min": 0.0, "max": 1.0, "default": 0.5 }
-    ]
+  "id": "viscous-drag",
+  "name": "Viscous Drag",
+  "url": "shaders/viscous-drag.wgsl",
+  "category": "liquid",
+  "description": "The screen becomes a thick, viscous fluid that ripples and deforms under your touch.",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6
+    },
+    {
+      "id": "drag-strength",
+      "name": "Push Strength",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "id": "recovery-speed",
+      "name": "Flow Memory",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.95
+    },
+    {
+      "id": "distortion-scale",
+      "name": "Warp Amount",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    }
+  ],
+  "tags": [
+    "fluid",
+    "liquid",
+    "water"
+  ]
 }

@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
 
@@ -43,10 +43,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var corruption = oldState.r;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     var dist = 10.0; // Default far away
     if (mouse.x >= 0.0) {
-        let p = (uv - mouse);
+        var p = (uv - mouse);
         dist = length(vec2<f32>(p.x * aspect, p.y));
     }
 
@@ -120,7 +120,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

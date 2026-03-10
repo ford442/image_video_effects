@@ -3,5 +3,9 @@
   "name": "Liquid Oil",
   "url": "shaders/liquid-oil.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

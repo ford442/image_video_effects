@@ -1,0 +1,262 @@
+.shader-browser {
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.shader-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.shader-search {
+  flex: 1;
+  min-width: 200px;
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #eaeaea;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.shader-search:focus {
+  outline: none;
+  border-color: #e94560;
+}
+
+.shader-category {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #eaeaea;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.shader-upload-btn {
+  background: #0f3460;
+  color: #e94560;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-block;
+}
+
+.shader-upload-btn:hover {
+  background: #e94560;
+  color: #fff;
+}
+
+.shader-list {
+  display: grid;
+  gap: 16px;
+}
+
+.shader-card {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shader-card:hover {
+  border-color: #e94560;
+  transform: translateY(-2px);
+}
+
+.shader-card.selected {
+  border-color: #e94560;
+  background: #0f3460;
+}
+
+.shader-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.shader-header h4 {
+  margin: 0;
+  color: #eaeaea;
+  font-size: 16px;
+}
+
+.shader-stars {
+  color: #ffd700;
+  font-size: 14px;
+}
+
+.shader-count {
+  color: #888;
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+.shader-description {
+  color: #b8b8b8;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.shader-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.shader-tag {
+  background: #0f3460;
+  color: #e94560;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.shader-edit-btn {
+  background: transparent;
+  border: 1px solid #0f3460;
+  color: #e94560;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.shader-edit-btn:hover {
+  background: #0f3460;
+}
+
+.shader-edit-form {
+  margin-bottom: 12px;
+}
+
+.shader-edit-form textarea,
+.shader-edit-form input {
+  width: 100%;
+  background: #1a1a2e;
+  border: 1px solid #0f3460;
+  color: #eaeaea;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.shader-edit-form textarea:focus,
+.shader-edit-form input:focus {
+  outline: none;
+  border-color: #e94560;
+}
+
+.shader-edit-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.shader-edit-buttons button {
+  background: #0f3460;
+  color: #eaeaea;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.shader-edit-buttons button:hover {
+  background: #e94560;
+}
+
+.shader-rate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #0f3460;
+}
+
+.shader-rate span {
+  color: #888;
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.shader-star-btn {
+  background: transparent;
+  border: 1px solid #0f3460;
+  color: #ffd700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.shader-star-btn:hover {
+  background: #0f3460;
+  border-color: #ffd700;
+}
+
+.shader-loading,
+.shader-empty {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+}
+
+/* Scrollbar styling */
+.shader-browser::-webkit-scrollbar {
+  width: 8px;
+}
+
+.shader-browser::-webkit-scrollbar-track {
+  background: #16213e;
+  border-radius: 4px;
+}
+
+.shader-browser::-webkit-scrollbar-thumb {
+  background: #0f3460;
+  border-radius: 4px;
+}
+
+.shader-browser::-webkit-scrollbar-thumb:hover {
+  background: #e94560;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .shader-filters {
+    flex-direction: column;
+  }
+  
+  .shader-search,
+  .shader-category,
+  .shader-upload-btn {
+    width: 100%;
+  }
+  
+  .shader-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .shader-rate {
+    flex-wrap: wrap;
+  }
+}

@@ -39,7 +39,7 @@ fn hexCoords(uv: vec2<f32>) -> vec4<f32> {
     let b = uv - (floor((uv - h) / r + 0.5) * r + h);
 
     let gv = select(b, a, dot(a, a) < dot(b, b));
-    let id = uv - gv;
+    var id = uv - gv;
 
     return vec4<f32>(gv.x, gv.y, id.x, id.y);
 }
@@ -56,12 +56,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Correct aspect ratio for grid
     let aspect = resolution.x / resolution.y;
     let gridUV = vec2<f32>(uv.x * aspect, uv.y);
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseGridPos = vec2<f32>(mousePos.x * aspect, mousePos.y);
 
     // Params
@@ -73,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scaledUV = gridUV * hexSize;
     let hc = hexCoords(scaledUV);
     let localUV = hc.xy;
-    let id = hc.zw;
+    var id = hc.zw;
 
     // Calculate hex center in world space (approx)
     let hexCenter = id / hexSize;
@@ -139,5 +139,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

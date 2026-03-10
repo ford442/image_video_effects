@@ -4,7 +4,9 @@
   "url": "shaders/neon-pulse-edge.wgsl",
   "category": "image",
   "description": "Edge detection with neon glow that reveals near the mouse.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "threshold",
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

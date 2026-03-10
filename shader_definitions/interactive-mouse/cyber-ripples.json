@@ -38,5 +38,9 @@
     "mouse-driven",
     "wave",
     "neon"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

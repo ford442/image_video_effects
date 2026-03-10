@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters mapped to sliders
@@ -61,7 +61,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Update depth (Pass-through or sample at new UV)
     // Sampling at new UV keeps the depth aligned with the visual distortion

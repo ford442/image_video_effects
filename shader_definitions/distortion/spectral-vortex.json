@@ -3,5 +3,9 @@
   "name": "Spectral Vortex",
   "url": "shaders/spectral-vortex.wgsl",
   "category": "image",
-  "description": "Spectral color vortex with twisted distortions."
+  "description": "Spectral color vortex with twisted distortions.",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

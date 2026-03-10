@@ -23,14 +23,14 @@ fn rand(n: f32) -> f32 {
   return fract(sin(n) * 43758.5453123);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Params
   let intensity = u.zoom_params.x * 0.5; // Max shift 0.5 screen width
@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let noise_speed = u.zoom_params.z * 10.0;
   let rgb_split = u.zoom_params.w * 0.05;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let time = u.config.x;
 
   // Strip calculation
@@ -73,4 +73,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
 
   textureStore(writeTexture, coord, vec4<f32>(r, g, b, 1.0));
+
+  // Pass through depth
+  let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,0 +1,44 @@
+{
+  "id": "stellar-plasma",
+  "name": "Stellar Plasma",
+  "url": "shaders/stellar-plasma.wgsl",
+  "category": "generative",
+  "description": "An endlessly morphing procedural cosmos powered by domain-warped fractional brownian motion. Creates swirling, liquid-like cosmic nebulae with interactive mouse gravity.",
+  "tags": ["generative", "procedural", "nebula", "cosmic", "plasma", "fbm", "fluid", "loops", "domain-warping"],
+  "features": ["mouse-driven"],
+  "author": "Gemini 3.1 Pro Vertex",
+  "params": [
+    {
+      "id": "hueShift",
+      "name": "Hue Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "flowSpeed",
+      "name": "Flow Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "zoomScale",
+      "name": "Zoom / Scale",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "mouseGravity",
+      "name": "Mouse Gravity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

@@ -24,11 +24,11 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Mouse interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -38,8 +38,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noiseIntensity = u.zoom_params.w;
 
     // Center of the record
-    let center = vec2<f32>(0.5, 0.5);
-    let dir = uv - center;
+    var center = vec2<f32>(0.5, 0.5);
+    var dir = uv - center;
     let dirCorrected = vec2<f32>(dir.x * aspect, dir.y);
     let dist = length(dirCorrected);
     let angle = atan2(dirCorrected.y, dirCorrected.x);
@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's assume repeat is fine, or clamp. But for "record" look, maybe black outside?
     // Let's leave it as is for "image rotation".
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));

@@ -38,5 +38,9 @@
     "mouse-driven",
     "optical",
     "cinematic"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

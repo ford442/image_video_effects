@@ -31,11 +31,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     let aspect = dims.x / dims.y;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dVec);
 
@@ -75,4 +75,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let splitColor = vec3<f32>(r, finalColor.g, b) * (0.8 + 0.2 * scanLine);
 
     textureStore(outTex, gid.xy, vec4<f32>(splitColor, 1.0));
+    
+    // Pass through depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

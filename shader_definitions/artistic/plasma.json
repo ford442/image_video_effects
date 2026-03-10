@@ -2,6 +2,10 @@
   "id": "plasma",
   "name": "Plasma Ball",
   "url": "shaders/plasma.wgsl",
-  "category": "shader",
-  "description": ""
+  "category": "generative",
+  "description": "",
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

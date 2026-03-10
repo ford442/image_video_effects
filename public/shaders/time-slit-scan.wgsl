@@ -19,10 +19,10 @@ struct Uniforms {
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasma_buffer: array<vec4<f32>>;
 
-@compute @workgroup_size(8, 8)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = vec2<f32>(u.config.zw);
-    let uv = vec2<f32>(global_id.xy) / dimensions;
+    var uv = vec2<f32>(global_id.xy) / dimensions;
 
     // Parameters
     let drift_speed = u.zoom_params.x; // 0.0 to 0.05
@@ -30,7 +30,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time_scale = u.zoom_params.z; // 0.0 to 1.0
     let decay = u.zoom_params.w;      // 0.9 to 1.0 (Trail persistence)
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = dimensions.x / dimensions.y;
 
     // Calculate sampling coordinate for history (drifted)
@@ -62,4 +62,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Write to output and history
     textureStore(output_texture, vec2<i32>(global_id.xy), final_color);
     textureStore(data_texture_a, vec2<i32>(global_id.xy), final_color);
+    
+    // Pass through depth
+    let depth = textureSampleLevel(depth_texture_read, u_sampler_nonfilter, uv, 0.0).r;
+    textureStore(depth_texture_write, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

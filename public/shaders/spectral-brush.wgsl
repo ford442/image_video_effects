@@ -22,7 +22,7 @@ struct Uniforms {
 };
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
-    const k = vec3<f32>(0.57735, 0.57735, 0.57735);
+    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
     let cosAngle = cos(hue);
     return vec3<f32>(color * cosAngle + cross(k, color) * sin(hue) + k * dot(k, color) * (1.0 - cosAngle));
 }
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(coord) / resolution;
+    var uv = vec2<f32>(coord) / resolution;
     let time = u.config.x;
 
     // Params
@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeHardness = u.zoom_params.w;
 
     // Mouse interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);

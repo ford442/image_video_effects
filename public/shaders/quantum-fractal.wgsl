@@ -79,7 +79,7 @@ fn quantumFractal(z_in: vec2<f32>, c: vec2<f32>, maxIter: u32, time: f32) -> Wav
 
 fn colormap(t: f32) -> vec3<f32> {
   let a = vec3<f32>(0.5, 0.5, 0.5);
-  let b = vec3<f32>(0.5, 0.5, 0.5);
+  var b = vec3<f32>(0.5, 0.5, 0.5);
   let c = vec3<f32>(1.0, 1.0, 1.0);
   let d = vec3<f32>(0.26, 0.42, 0.65);
   
@@ -93,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
   
@@ -105,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let maxIter = u32(max(10.0, iterParam));
 
   // Animate fractal center
-  let center = vec2<f32>(
+  var center = vec2<f32>(
     sin(time * 0.23) * 0.3,
     cos(time * 0.31) * 0.3
   );
@@ -148,7 +148,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Chromatic aberration through probability space
   let r = sin(probability * 3.0 + time) * 0.5 + 0.5;
   let g = sin(probability * 3.0 + time + 2.094) * 0.5 + 0.5;  // 2π/3
-  let b = sin(probability * 3.0 + time + 4.188) * 0.5 + 0.5;  // 4π/3
+  var b = sin(probability * 3.0 + time + 4.188) * 0.5 + 0.5;  // 4π/3
   
   // Add temporal evolution
   let evolution = sin(time * 2.0 + probability * 10.0) * 0.1;
@@ -187,5 +187,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Update depth for next frame (required)
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(probability, 0.0, 0.0, 0.0));
   
-  textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }

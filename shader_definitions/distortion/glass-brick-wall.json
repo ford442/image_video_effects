@@ -5,10 +5,41 @@
   "category": "distortion",
   "description": "Simulates a wall of refractive glass bricks with mouse-controlled lighting.",
   "params": [
-    { "name": "Brick Size", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.5 },
-    { "name": "Distortion", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.5 },
-    { "name": "Mortar Size", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.2 },
-    { "name": "Glossiness", "type": "f32", "min": 0.0, "max": 1.0, "default": 0.6 }
+    {
+      "name": "Brick Size",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Distortion",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "name": "Mortar Size",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    },
+    {
+      "name": "Glossiness",
+      "type": "f32",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6
+    }
   ],
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform"
+  ]
 }

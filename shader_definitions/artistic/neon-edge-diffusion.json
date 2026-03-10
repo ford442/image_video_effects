@@ -6,5 +6,9 @@
   "description": "Sobel edge detection with neon-diffusion and color bleeding.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

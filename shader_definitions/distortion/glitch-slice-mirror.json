@@ -6,5 +6,9 @@
   "description": "Mirrors the image at the mouse position with digital glitch artifacts along the seam.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

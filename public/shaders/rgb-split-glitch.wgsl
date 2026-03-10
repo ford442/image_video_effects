@@ -30,7 +30,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let splitDist = u.zoom_params.x * 0.1; // Max split distance
@@ -39,7 +39,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radius = 0.1 + (u.zoom_params.w * 0.5);
 
     let aspect = resolution.x / resolution.y;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
 
     // Influence factor based on mouse distance
@@ -58,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let noise = (hash12(uv * 100.0 + t) - 0.5) * noiseAmt * influence * 0.1;
 
         // Directional Split
-        let dir = vec2<f32>(cos(angleOffset), sin(angleOffset));
+        var dir = vec2<f32>(cos(angleOffset), sin(angleOffset));
         let shift = dir * splitDist * influence;
 
         offsetR = shift + vec2<f32>(noise);
@@ -70,7 +70,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, uv + offsetG, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uv + offsetB, 0.0).b;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

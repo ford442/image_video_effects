@@ -36,5 +36,9 @@
   ],
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
   ]
 }

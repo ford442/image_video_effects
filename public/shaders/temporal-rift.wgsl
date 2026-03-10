@@ -31,11 +31,11 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Mouse Interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     // Params
@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let outColor = currColor + nextHist * timeFlow;
 
     // Write to display
-    textureStore(writeTexture, global_id.xy, outColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
 
     // Write to history (dataTextureA)
     // Ensure alpha is 1.0 or used?

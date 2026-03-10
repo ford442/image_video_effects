@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lensing_scale = u.zoom_params.w;  // Lensing width factor
 
     // Mouse Interaction (Center of Black Hole)
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Calculate vector from mouse to current pixel (aspect corrected)
     let d_vec_raw = uv - mouse;
@@ -93,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         final_color = bg_color + glow_color;
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

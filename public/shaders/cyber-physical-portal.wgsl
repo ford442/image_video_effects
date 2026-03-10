@@ -62,10 +62,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Params
     let radiusBase = u.zoom_params.x * 0.4 + 0.1; // Portal Size
@@ -135,7 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeColor = vec3<f32>(0.2, 1.0, 0.8); // Cyan Glow
     color += edgeColor * glow * 2.0;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

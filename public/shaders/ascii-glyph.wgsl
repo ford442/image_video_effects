@@ -26,7 +26,7 @@ const GLYPH_SIZE: u32 = 16u;
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = vec2<f32>(u.config.z, u.config.w);
-  let uv = vec2<f32>(gid.xy) / resolution;
+  var uv = vec2<f32>(gid.xy) / resolution;
   let time = u.config.x;
   
   // Mouse-based displacement

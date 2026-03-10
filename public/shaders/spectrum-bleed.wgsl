@@ -32,7 +32,7 @@ struct Uniforms {
 // ---------------------------------------------------------------
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    let p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
+    var p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
     let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
     let d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
@@ -72,7 +72,7 @@ fn sampleBlur(uv: vec2<f32>, tex: texture_2d<f32>, sampler_: sampler) -> vec3<f3
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
 
     // 1️⃣ Read source colour and depth
@@ -107,10 +107,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // 7️⃣ Temporal persistence (memory of previous frame)
     let prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).rgb;
     let persist = max(prev * 0.93, outCol);
-    textureStore(bleedBuf, gid.xy, vec4<f32>(persist, 1.0));
     outCol = max(outCol, persist * 0.2);
 
     // 8️⃣ Output colour and depth
     textureStore(outTex, gid.xy, vec4<f32>(outCol, 1.0));
     textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    
+    // Also update bleedBuf (dataTextureA)
+    textureStore(bleedBuf, gid.xy, vec4<f32>(persist, 1.0));
 }

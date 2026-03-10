@@ -73,9 +73,9 @@ fn countNeighbors(uv: vec2<f32>, texelSize: vec2<f32>) -> vec4<i32> {
     for (var dx = -1; dx <= 1; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
       
-      let neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      let neighbor = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
-      let species = getSpeciesType(neighbor.r);
+      var neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
+      var neighbor = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
+      var species = getSpeciesType(neighbor.r);
       
       counts[species] = counts[species] + 1;
     }
@@ -93,13 +93,13 @@ fn findBestNeighbor(uv: vec2<f32>, texelSize: vec2<f32>, mySpecies: i32, forEati
     for (var dx = -1; dx <= 1; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
       
-      let neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
-      let neighbor = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
+      var neighborUV = uv + vec2<f32>(f32(dx), f32(dy)) * texelSize;
+      var neighbor = textureSampleLevel(dataTextureC, non_filtering_sampler, neighborUV, 0.0);
       let neighborSpecies = getSpeciesType(neighbor.r);
       
       if (forEating) {
         if (canEat(mySpecies, neighborSpecies)) {
-          let score = neighbor.g; // Prefer high energy prey
+          var score = neighbor.g; // Prefer high energy prey
           if (score > bestScore) {
             bestScore = score;
             bestNeighbor = neighbor;
@@ -108,7 +108,7 @@ fn findBestNeighbor(uv: vec2<f32>, texelSize: vec2<f32>, mySpecies: i32, forEati
       } else {
         // For breeding - find empty space
         if (neighborSpecies == 0) {
-          let score = hash21(neighborUV * 1000.0);
+          var score = hash21(neighborUV * 1000.0);
           if (score > bestScore) {
             bestScore = score;
             bestNeighbor = vec4<f32>(f32(dx), f32(dy), 0.0, 0.0);
@@ -127,7 +127,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   let frame = u.config.y;
@@ -174,7 +174,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   
   // Mouse spawns predators
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let mouseDist = length(uv - mouse);
   if (mouseDist < 0.03 && myType == 0) {
     species = CARNIVORE;
@@ -244,7 +244,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Breeding
     if (energy > breedThreshold && rand2 < 0.05) {
       // Check for empty neighbor
-      let neighbors = countNeighbors(uv, texelSize);
+      var neighbors = countNeighbors(uv, texelSize);
       if (neighbors[0] > 0) {
         energy = energy * 0.5; // Split energy with offspring
       }
@@ -258,7 +258,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Empty cells can be colonized
   if (myType == 0) {
-    let neighbors = countNeighbors(uv, texelSize);
+    var neighbors = countNeighbors(uv, texelSize);
     
     // Plants spread if neighbors exist
     if (neighbors[1] >= 2 && rand < 0.02) {

@@ -38,7 +38,7 @@ fn sobel(uv: vec2<f32>, step: vec2<f32>) -> f32 {
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
@@ -48,7 +48,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let step = 1.0 / resolution;
 
     // Params
@@ -58,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colorSpeed = u.zoom_params.w;     // Color cycle
 
     // Mouse
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
 

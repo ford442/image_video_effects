@@ -21,7 +21,7 @@ struct Uniforms {
 
 // Function to rotate a 2D vector
 fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
-    let s = sin(angle);
+    var s = sin(angle);
     let c = cos(angle);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
@@ -31,9 +31,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let aspect = dims.x / dims.y;
-    let mouse = u.zoom_config.yz; // Mouse coordinates
+    var mouse = u.zoom_config.yz; // Mouse coordinates
     let time = u.config.x;
 
     // Hex Grid Config
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Find Hex Center and Local Coords (Staggered Grid approach)
     // Normalized to r=1
-    let s = vec2<f32>(1.7320508, 1.0);
+    var s = vec2<f32>(1.7320508, 1.0);
     let u_scaled = uv_aspect * scale;
 
     let ga = (fract(u_scaled / s) - 0.5) * s;
@@ -111,4 +111,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color += vec3<f32>(0.2, 0.5, 1.0) * influence * 0.2;
 
     textureStore(outTex, gid.xy, vec4<f32>(color, 1.0));
+
+    // Pass through depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

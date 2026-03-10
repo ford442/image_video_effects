@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let direction = u.zoom_params.x; // < 0.5 Horizontal, > 0.5 Vertical
@@ -61,5 +61,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

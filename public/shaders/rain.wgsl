@@ -41,7 +41,7 @@ fn hash13(p: vec3<f32>) -> f32 {
 
 fn noise(p: vec2<f32>) -> f32 {
     let i = floor(p);
-    let f = fract(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash12(i + vec2<f32>(0.0, 0.0)),
                    hash12(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -56,10 +56,10 @@ fn rain_layer(uv: vec2<f32>, seed: f32, speed: f32, density: f32, wind: f32, tim
     // Animate
     let t = time * speed;
     let st = skewed_uv * vec2<f32>(50.0 + seed * 20.0, 5.0 + seed * 2.0); // X is density, Y is streak length
-    let pos = st + vec2<f32>(0.0, t);
+    var pos = st + vec2<f32>(0.0, t);
 
     let cell = floor(pos);
-    let f = fract(pos);
+    var f = fract(pos);
 
     let rand = hash12(cell + seed);
 
@@ -80,7 +80,7 @@ fn rain_layer(uv: vec2<f32>, seed: f32, speed: f32, density: f32, wind: f32, tim
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Parameters
@@ -163,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var final_color = base_color + (rain_color * rain_acc * 0.5) + (rain_color * splash) + (rain_color * flow);
 
   // Output
-  textureStore(writeTexture, global_id.xy, final_color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
 
   // Pass Depth
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

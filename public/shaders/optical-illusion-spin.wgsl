@@ -28,8 +28,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let center = vec2<f32>(0.5, 0.5);
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var center = vec2<f32>(0.5, 0.5);
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -68,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time_rot = u.config.x * speed * direction * 0.5;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouse_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let mouse_dist = length(mouse_vec);
 
@@ -108,7 +108,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let border = smoothstep(0.0, 0.1, ring_pos) * smoothstep(1.0, 0.9, ring_pos);
     // color = color * (0.8 + 0.2 * border); // Subtle ring lines
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, new_uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

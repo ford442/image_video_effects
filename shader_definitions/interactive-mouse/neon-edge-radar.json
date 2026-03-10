@@ -2,7 +2,7 @@
   "id": "neon-edge-radar",
   "name": "Neon Edge Radar",
   "url": "shaders/neon-edge-radar.wgsl",
-  "category": "interactive-mouse",
+  "category": "interactive",
   "description": "A rotating radar scanner that highlights edges in neon colors as it passes, centered on the mouse.",
   "params": [
     {
@@ -36,5 +36,9 @@
   ],
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
   ]
 }

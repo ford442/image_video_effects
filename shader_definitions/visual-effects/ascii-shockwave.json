@@ -6,5 +6,9 @@
   "description": "A matrix-style digital shockwave that quantizes the image into procedural characters.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

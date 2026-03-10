@@ -39,5 +39,9 @@
     "temporal-persistence",
     "multi-mode",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

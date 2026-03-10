@@ -45,8 +45,8 @@ fn value_noise(st: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let mousePos = u.zoom_config.yz;
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  var mousePos = u.zoom_config.yz;
   let time = u.config.x;
 
   let separation = u.zoom_params.x * 0.1; // Max 0.1 UV units
@@ -81,5 +81,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + offG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + offB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
 }

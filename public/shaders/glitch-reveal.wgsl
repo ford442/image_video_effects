@@ -45,9 +45,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Parameters
     let blockSize = u.zoom_params.x * 0.2 + 0.01; // 0.01 to 0.21 UV size
@@ -111,5 +111,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(color, vec4<f32>(0.0, 1.0, 0.5, 1.0), border * 0.5);
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

@@ -50,7 +50,7 @@ fn create_zooming_layer(
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let zoom_time = u.zoom_config.x;
     let zoom_center = u.zoom_config.yz;
 
@@ -65,7 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let foreground2 = create_zooming_layer(displaced_uv, zoom_time, zoom_center, 0.5);
     let blended_foreground = mix(foreground1, foreground2, foreground2.a);
     let final_color = mix(background_color, blended_foreground, blended_foreground.a);
-    textureStore(writeTexture, global_id.xy, vec4(final_color.rgb, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_color.rgb, 1.0));
 
     // Update the depth texture for the next frame
     let main_zoom_progress = fract(zoom_time * 0.15);

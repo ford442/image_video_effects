@@ -33,9 +33,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Parameters
     // Mouse determines n and m modes
@@ -50,7 +50,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let contrast = u.zoom_params.w + 1.0;
 
     // Adjust UV to -1..1 for symmetry
-    let p = uv * 2.0 - 1.0;
+    var p = uv * 2.0 - 1.0;
     p.x *= aspect;
 
     // Chladni Formula
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Optional: Visualise vibration (heat map) for debugging or effect
     // color += vec3<f32>(vibration * 0.1, 0.0, 0.0);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

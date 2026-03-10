@@ -31,7 +31,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -41,7 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let liquidity = u.zoom_params.w;
 
     // Mouse
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     // Vector to mouse
@@ -92,7 +92,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = get_luma(color.rgb);
     color = vec4<f32>(mix(color.rgb, neonColor, glowFactor * glowIntensity * luma), color.a);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;

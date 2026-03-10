@@ -3,7 +3,9 @@
   "name": "Rotoscope Ink",
   "url": "shaders/rotoscope-ink.wgsl",
   "category": "artistic",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "description": "Transforms the image into a stylized rotoscope animation with interactive ink lines.",
   "params": [
     {
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "stylized",
+    "artistic"
   ]
 }

@@ -15,10 +15,10 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>;
-  zoom_config: vec4<f32>;
-  zoom_params: vec4<f32>;
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Mapping notes: mouse in zoom_config.yz; zoom_params hold spiral_params: x=arms, y=rotationSpeed, z=colorCycle, w=warpIntensity
@@ -41,9 +41,9 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv_raw = vec2<f32>(global_id.xy);
-    let uv = (uv_raw - resolution * 0.5) / min(resolution.x, resolution.y);
+    var uv = (uv_raw - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
-    let mousePos = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - resolution * 0.5) / min(resolution.x, resolution.y);
+    var mousePos = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - resolution * 0.5) / min(resolution.x, resolution.y);
 
     // Breathing radius
     let breathe = sin(time * u.zoom_config.w) * 0.3 + 1.0;
@@ -64,7 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let saturation = 1.0 - radius * 0.5;
     let value = spiralMask * (1.0 - radius * 0.3);
 
-    let rgb = hsv2rgb(fract(hue), saturation, value);
+    var rgb = hsv2rgb(fract(hue), saturation, value);
 
     // Add center glow
     let centerDist = length(uv);

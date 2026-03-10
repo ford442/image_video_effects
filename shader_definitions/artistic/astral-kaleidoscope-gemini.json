@@ -7,5 +7,9 @@
   "features": [
     "mouse-driven",
     "time-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

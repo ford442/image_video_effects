@@ -38,5 +38,9 @@
     "mouse-driven",
     "temporal-persistence",
     "physics"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

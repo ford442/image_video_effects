@@ -27,13 +27,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Mouse Config
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let hasMouse = u.zoom_config.y >= 0.0;
-    let center = select(vec2<f32>(0.5, 0.5), mouse, hasMouse);
+    var center = select(vec2<f32>(0.5, 0.5), mouse, hasMouse);
 
     // Params
     let strength = u.zoom_params.x; // Field Strength
@@ -101,7 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

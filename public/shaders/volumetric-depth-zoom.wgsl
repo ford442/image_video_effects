@@ -27,10 +27,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 struct Uniforms {
-  config: vec4<f32>;
-  zoom_config: vec4<f32>;
-  zoom_params: vec4<f32>;
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Mapping (engine conventions):
@@ -82,7 +82,7 @@ fn calculate_fog(depth: f32, color: vec3<f32>) -> vec3<f32> {
 
 // Sample a layer with perspective projection
 fn sample_layer(uv: vec2<f32>, zoom_center: vec2<f32>, layer_depth: f32) -> vec4<f32> {
-    let cameraZ = if (arrayLength(&extraBuffer) > 4u) { extraBuffer[4] } else { 0.0 };
+    var cameraZ = if (arrayLength(&extraBuffer) > 4u) { extraBuffer[4] } else { 0.0 };
     // Perspective scaling and zoom
     let perspective = 1.0 + cameraZ * (1.0 - layer_depth * 0.5);
     let zoom = 1.0 + layer_depth * 4.0;
@@ -91,8 +91,8 @@ fn sample_layer(uv: vec2<f32>, zoom_center: vec2<f32>, layer_depth: f32) -> vec4
     let transformed_uv = (uv - zoom_center) / scale + zoom_center;
     let wrapped_uv = ping_pong_v2(transformed_uv);
 
-    let color = textureSampleLevel(readTexture, u_sampler, wrapped_uv, 0.0);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;
+    var color = textureSampleLevel(readTexture, u_sampler, wrapped_uv, 0.0);
+    var depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;
 
     return vec4<f32>(color.rgb, depth);
 }
@@ -100,13 +100,13 @@ fn sample_layer(uv: vec2<f32>, zoom_center: vec2<f32>, layer_depth: f32) -> vec4
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let zoom_time = u.zoom_config.x;
     let zoom_center = u.zoom_config.yz;
 
     // Camera and parallax
-    let cameraZ = if (arrayLength(&extraBuffer) > 4u) { extraBuffer[4] } else { 0.0 };
-    let mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
+    var cameraZ = if (arrayLength(&extraBuffer) > 4u) { extraBuffer[4] } else { 0.0 };
+    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
     let parallax = (mousePos - vec2<f32>(0.5, 0.5)) * u.zoom_params.z * cameraZ * 0.1;
     let parallax_uv = uv + parallax;
 
@@ -119,8 +119,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var i: i32 = 0; i < num_slices; i = i + 1) {
         let slice_depth = f32(i) / f32(num_slices - 1);
         let layer = sample_layer(parallax_uv, zoom_center, slice_depth);
-        let color = layer.rgb;
-        let depth = layer.a;
+        var color = layer.rgb;
+        var depth = layer.a;
 
         // Depth-of-field: weight based on focal plane
         let focal_depth = fract(zoom_time * u.zoom_params.x);

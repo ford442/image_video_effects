@@ -32,19 +32,20 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash21(i + vec2(0.0, 0.0)), hash21(i + vec2(1.0, 0.0)), u.x),
                mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
 fn fbm(p: vec2<f32>) -> f32 {
+    var pos = p;
     var value = 0.0;
     var amp = 0.5;
     for (var i: i32 = 0; i < 5; i = i + 1) {
-        value += amp * noise(p);
-        p *= 2.0;
+        value += amp * noise(pos);
+        pos *= 2.0;
         amp *= 0.5;
     }
     return value;
@@ -52,7 +53,7 @@ fn fbm(p: vec2<f32>) -> f32 {
 
 // Polar swirl transform
 fn swirl(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec2<f32> {
-    let dir = uv - center;
+    var dir = uv - center;
     let dist = length(dir);
     let angle = atan2(dir.y, dir.x);
     let swirl_angle = strength * exp(-dist * 3.0) * sin(dist * 10.0 - time);
@@ -61,9 +62,9 @@ fn swirl(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec2<f32
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     let sector = floor(hsv.x * 6.0);
-    let i = fract(hsv.x * 6.0);
-    let f = mix(vec3(1.0, 0.666, 0.333), vec3(0.0, 0.333, 0.666), i);
-    let p = f - vec3(0.666, 0.333, 0.0);
+    var i = fract(hsv.x * 6.0);
+    var f = mix(vec3(1.0, 0.666, 0.333), vec3(0.0, 0.333, 0.666), i);
+    var p = f - vec3(0.666, 0.333, 0.0);
     let q = f - vec3(0.333, 0.0, 0.666);
     let t = f;
     let rgb = mix(mix(p, q, fract(sector + 0.0)), mix(q, t, fract(sector + 1.0)), step(0.5, fract(sector + 2.0)));
@@ -73,10 +74,10 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let time = u.config.x;
     let params = u.zoom_params; // x=swirlSpeed, y=layers, z=rainbowSpeed, w=twistInt
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let twist = params.w * (1.0 - depth * 0.5); // Depth reduces twist
@@ -102,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Subtle image tinting
     let src = textureSampleLevel(readTexture, u_sampler, swirl_uv + flow * 0.02 * depth, 0.0);
-    let color = mix(src.rgb * 0.3, rainbow, 0.7 + 0.3 * depth);
+    var color = mix(src.rgb * 0.3, rainbow, 0.7 + 0.3 * depth);
 
     // Glow trails from ripples
     let rippleCount = u32(u.config.y);
@@ -115,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, global_id.xy, vec4(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
 
     // Depth with swirl modulation
     let swirl_depth = depth + abs(flow.x + flow.y) * 0.2;

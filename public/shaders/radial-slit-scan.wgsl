@@ -27,9 +27,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     let scan_speed = u.zoom_params.x;
     let scan_width = u.zoom_params.y;
@@ -87,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         final_color = mix(final_color, current_color, decay * 0.05);
     }
 
-    textureStore(writeTexture, global_id.xy, final_color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
 
     // Write to history for next frame
     // We use dataTextureA for the "next" history buffer

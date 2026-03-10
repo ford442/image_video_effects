@@ -42,7 +42,7 @@ struct VoronoiResult {
 };
 
 fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
-    let g = floor(uv * scale);
+    var g = floor(uv * scale);
     let f = fract(uv * scale);
 
     var res = VoronoiResult(8.0, vec2<f32>(0.0), vec2<f32>(0.0));
@@ -50,8 +50,8 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
     for(var y: i32 = -1; y <= 1; y = y + 1) {
         for(var x: i32 = -1; x <= 1; x = x + 1) {
             let lattice = vec2<f32>(f32(x), f32(y));
-            let offset = hash22(g + lattice);
-            let p = lattice + offset - f;
+            var offset = hash22(g + lattice);
+            var p = lattice + offset - f;
             let d = dot(p, p);
 
             if(d < res.dist) {
@@ -72,10 +72,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Parameters
     let shardScale = u.zoom_params.x * 20.0 + 3.0;
@@ -97,7 +97,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Distance from mouse to the CENTER of the shard (so whole shard moves together)
     let mouseVec = cellCenter - vec2<f32>(mousePos.x * aspect, mousePos.y);
-    let dist = length(mouseVec);
+    var dist = length(mouseVec);
 
     // Repulsion force
     var offset = vec2<f32>(0.0);
@@ -127,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color: vec4<f32>;
     if (aberration > 0.001) {
         let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-        let g = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+        var g = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
         let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV - vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
         color = vec4<f32>(r, g, b, 1.0);
     } else {
@@ -145,5 +145,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // We don't have true distance-to-edge here.
     // But we can visualize the ID change? No.
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

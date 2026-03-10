@@ -1,14 +1,45 @@
 {
-    "id": "chromatic-focus-interactive",
-    "name": "Chromatic Focus",
-    "category": "visual-effects",
-    "url": "shaders/chromatic-focus-interactive.wgsl",
-    "description": "Strong chromatic aberration that increases with distance from mouse focus.",
-    "features": ["mouse-driven"],
-    "params": [
-        { "id": "strength", "name": "Abberation", "default": 0.5, "min": 0.0, "max": 1.0 },
-        { "id": "blur", "name": "Blur", "default": 0.0, "min": 0.0, "max": 1.0 },
-        { "id": "radius", "name": "Focus Rad", "default": 0.2, "min": 0.0, "max": 0.8 },
-        { "id": "hard", "name": "Falloff", "default": 0.5, "min": 0.0, "max": 1.0 }
-    ]
+  "id": "chromatic-focus-interactive",
+  "name": "Chromatic Focus",
+  "category": "visual-effects",
+  "url": "shaders/chromatic-focus-interactive.wgsl",
+  "description": "Strong chromatic aberration that increases with distance from mouse focus.",
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "strength",
+      "name": "Abberation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "blur",
+      "name": "Blur",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Focus Rad",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 0.8
+    },
+    {
+      "id": "hard",
+      "name": "Falloff",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "vfx",
+    "particles",
+    "glow"
+  ]
 }

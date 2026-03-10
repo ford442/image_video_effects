@@ -3,5 +3,13 @@
   "name": "Alucinate",
   "url": "shaders/alucinate.wgsl",
   "category": "image",
-  "tags": ["psychedelic", "warp", "interactive", "organic", "fluid"]
+  "tags": [
+    "psychedelic",
+    "warp",
+    "interactive",
+    "organic",
+    "fluid",
+    "filter",
+    "image-processing"
+  ]
 }

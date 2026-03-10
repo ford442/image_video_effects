@@ -1,21 +1,21 @@
 struct Uniforms {
-  config: vec4&lt;f32&gt;,
-  zoom_config: vec4&lt;f32&gt;,
-  zoom_params: vec4&lt;f32&gt;,
-  ripples: array&lt;vec4&lt;f32&gt;, 50&gt;,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d&lt;f32&gt;;
-@group(0) @binding(2) var writeTexture: texture_storage_2d&lt;rgba32float, write&gt;;
-@group(0) @binding(3) var&lt;uniform&gt; u: Uniforms;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 
 @compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3&lt;u32&gt;) {
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2&lt;f32&gt;(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 0.1;
-    let mouse = vec2&lt;f32&gt;(u.zoom_config.y, 1.0 - u.zoom_config.z); // Flip Y for typical coord
+    var mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z); // Flip Y for typical coord
 
     // Multiple sine waves for plasma
     var plasma = 0.0;
@@ -34,10 +34,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3&lt;u32&gt;) {
     let g = sin(warped_uv.y * 12.0 + time * 1.37) * 0.5 + 0.5;
     let b = sin((warped_uv.x + warped_uv.y) * 8.0 + time * 1.5) * 0.5 + 0.5;
 
-    var color = vec3&lt;f32&gt;(r, g, b) * (0.8 + plasma * 0.4);
+    var color = vec3<f32>(r, g, b) * (0.8 + plasma * 0.4);
 
     // Glow towards center/mouse
     color += 0.3 / (1.0 + dist * 10.0);
 
-    textureStore(writeTexture, global_id.xy, vec4&lt;f32&gt;(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }

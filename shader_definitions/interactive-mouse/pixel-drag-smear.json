@@ -5,10 +5,40 @@
   "category": "image",
   "description": "Smudge and drag pixels like wet paint, creating persistent trails.",
   "params": [
-    { "id": "radius", "name": "Brush Radius", "default": 0.3, "min": 0.0, "max": 1.0 },
-    { "id": "strength", "name": "Drag Strength", "default": 0.8, "min": 0.0, "max": 1.0 },
-    { "id": "decay", "name": "Decay Rate", "default": 0.95, "min": 0.0, "max": 1.0 },
-    { "id": "mode", "name": "Mode", "default": 0.0, "min": 0.0, "max": 1.0 }
+    {
+      "id": "radius",
+      "name": "Brush Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "strength",
+      "name": "Drag Strength",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "decay",
+      "name": "Decay Rate",
+      "default": 0.95,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mode",
+      "name": "Mode",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    }
   ],
-  "features": ["mouse-driven"]
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

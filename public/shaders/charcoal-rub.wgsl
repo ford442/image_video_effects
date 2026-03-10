@@ -27,9 +27,9 @@ fn hash12(p: vec2<f32>) -> f32 {
 }
 
 fn noise(x: vec2<f32>) -> f32 {
-    let i = floor(x);
+    var i = floor(x);
     let f = fract(x);
-    let a = hash12(i);
+    var a = hash12(i);
     let b = hash12(i + vec2<f32>(1.0, 0.0));
     let c = hash12(i + vec2<f32>(0.0, 1.0));
     let d = hash12(i + vec2<f32>(1.0, 1.0));
@@ -54,7 +54,7 @@ fn fbm(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Params
   let hardness = mix(0.1, 0.9, u.zoom_params.x); // How sharp the reveal edge is
@@ -62,7 +62,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let revealRate = mix(0.01, 0.2, u.zoom_params.z); // How fast you rub
   let fadeSpeed = mix(0.0, 0.05, u.zoom_params.w); // How fast it fades back
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w; // 1.0 if down
 
   // Aspect ratio correction for mouse distance

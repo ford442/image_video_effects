@@ -9,19 +9,28 @@ struct Uniforms {
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var filteringSampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparisonSampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 fn mod(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
   return x - y * floor(x / y);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   let aspect = f32(dims.x) / f32(dims.y);
   var uv_corrected = uv;
@@ -33,7 +42,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shine = u.zoom_params.z;
   let gold_mix = u.zoom_params.w;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);
 
   // Staggered Grid (Circle Packing)
@@ -70,6 +79,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (radius > 0.9) {
       // Gaps
       textureStore(writeTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+
+      // Pass through depth
+      let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+      textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
       return;
   }
 
@@ -85,6 +98,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (abs(tex_y) > 0.9) {
        // Clipped by disk tilt
        textureStore(writeTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+
+       // Pass through depth
+       var depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+       textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
        return;
   }
 
@@ -101,7 +118,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       col = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
 
       // Plastic sphere normal
-      let sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
+      var sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
       normal = vec3<f32>(local_uv.x, tex_y, sphere_z);
   } else {
       // Back: Metal
@@ -110,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       // Faceted normal
       let noise_n = sin(local_uv.x * 20.0) * sin(tex_y * 20.0);
-      let sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
+      var sphere_z = sqrt(max(0.0, 1.0 - local_uv.x*local_uv.x - tex_y*tex_y));
       normal = normalize(vec3<f32>(local_uv.x + noise_n*0.2, tex_y + noise_n*0.2, sphere_z));
   }
 
@@ -136,4 +153,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = col * (0.3 + 0.7 * NdotL) + vec3<f32>(spec);
 
   textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+
+  // Pass through depth
+  var depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

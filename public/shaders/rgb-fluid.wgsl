@@ -26,10 +26,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Params
   let flow_speed = u.zoom_params.x * 0.01;  // Speed of advection
@@ -84,16 +84,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (color_shift > 0.0) {
       let shift_amt = color_shift * 0.01;
       // Simple RGB rotation
-      let r = new_color.r;
-      let g = new_color.g;
-      let b = new_color.b;
+      var r = new_color.r;
+      var g = new_color.g;
+      var b = new_color.b;
       new_color.r = r * cos(shift_amt) - g * sin(shift_amt) + 0.001; // prevent 0
       new_color.g = g * cos(shift_amt) - b * sin(shift_amt) + 0.001;
       new_color.b = b * cos(shift_amt) - r * sin(shift_amt) + 0.001;
       new_color = abs(new_color); // Keep positive
   }
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(new_color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(new_color, 1.0));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(new_color, 1.0));
 
   // Depth pass

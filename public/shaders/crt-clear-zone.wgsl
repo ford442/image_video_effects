@@ -31,7 +31,7 @@ fn crt_curve(uv: vec2<f32>, bend: f32) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   let bendAmount = mix(0.1, 2.0, u.zoom_params.x);
@@ -39,7 +39,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let clearRadius = mix(0.1, 0.4, u.zoom_params.z);
   let scanlineInt = mix(0.1, 0.8, u.zoom_params.w);
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // 1. Calculate CRT Distortion
   let crtUV = crt_curve(uv, bendAmount);
@@ -77,7 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalColor = mix(crtColor, cleanColor, mask);
   finalColor = finalColor + glowColor;
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

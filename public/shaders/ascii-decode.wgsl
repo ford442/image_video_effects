@@ -26,8 +26,8 @@ fn get_luminance(color: vec3<f32>) -> f32 {
 }
 
 fn character(uv: vec2<f32>, char_index: i32) -> f32 {
-    let center = abs(uv - 0.5);
-    let dist = length(uv - 0.5);
+    var center = abs(uv - 0.5);
+    var dist = length(uv - 0.5);
     var val = 0.0;
 
     // 0: Empty
@@ -68,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let gridSizeParam = 5.0 + u.zoom_params.x * 30.0; // 5 to 35
@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Sample texture at center of cell for color/luminance
     let sampleUV = (cellID + 0.5) / vec2<f32>(resolution.x / gridSizeParam, resolution.y / gridSizeParam);
-    let texColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    var texColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
     let lum = get_luminance(texColor);
 
     // Quantize luminance to char index (0-6)
@@ -105,9 +105,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let matrixColor = vec3<f32>(0.0, 1.0, 0.2) * shape * lum;
 
     // Mouse Interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+    var dist = length(distVec);
 
     // Decode Mask (smoothstep for soft edge)
     let decodeMask = smoothstep(decodeRadius, decodeRadius + 0.1, dist);
@@ -137,5 +137,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // So:
     finalColor = mix(originalColor, finalColor, u.zoom_params.w);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

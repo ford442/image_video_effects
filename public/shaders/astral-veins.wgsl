@@ -42,8 +42,8 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract((h.x + h.y) * h.z);
 }
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(
         mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
@@ -146,7 +146,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     );
 
     // Final noise – the raw “vein density”
-    let f = fbm(p + 4.0 * r + time * speed * 0.3);
+    var f = fbm(p + 4.0 * r + time * speed * 0.3);
 
     // ---------------------------------------------------------------
     //  5️⃣  Convert the scalar field into thin veins
@@ -192,7 +192,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Fade out old glow and add the new one
     prev = prev * 0.94 + glow * 0.06;
     // Store for next frame
-    textureStore(growthBuf, gid.xy, vec4<f32>(prev,0.0,0.0,1.0));
+    textureStore(growthBuf, vec2<i32>(gid.xy), vec4<f32>(prev,0.0,0.0,1.0));
 
     // Use the persisted glow to give a soft halo around the veins
     let halo = prev * 0.4;
@@ -208,6 +208,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ---------------------------------------------------------------
     //  🔟  Write final colour & depth
     // ---------------------------------------------------------------
-    textureStore(outTex, gid.xy, vec4<f32>(outCol,1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth,0.0,0.0,0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol,1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
 }

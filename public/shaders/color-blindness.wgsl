@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let cb_type_param = u.zoom_params.x; // 0-0.33 Protan, 0.33-0.66 Deutan, 0.66-1 Tritan
@@ -131,5 +131,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Just use severity
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, original.a));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, original.a));
 }

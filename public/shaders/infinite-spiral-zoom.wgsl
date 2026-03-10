@@ -27,10 +27,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
 
     // Normalize coordinates
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Mouse position
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Parameters
     let zoom_speed = (u.zoom_params.x - 0.5) * 4.0; // -2.0 to 2.0
@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Avoid singularity
     let r = length(p);
     if (r < 0.001) {
-        textureStore(writeTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
         return;
     }
 
@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let color = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Preserve depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, final_uv, 0.0).r;

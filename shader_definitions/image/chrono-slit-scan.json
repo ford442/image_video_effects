@@ -36,5 +36,9 @@
   ],
   "features": [
     "temporal-persistence"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

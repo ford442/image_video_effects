@@ -4,7 +4,9 @@
   "url": "shaders/interactive-fresnel.wgsl",
   "category": "image",
   "description": "Simulates a Fresnel lens with stepped concentric rings.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "ringDensity",
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

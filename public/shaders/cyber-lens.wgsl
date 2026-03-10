@@ -30,11 +30,11 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Mouse position passed via zoom_config.yz
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   // Parameters
   let lensRadius = max(0.01, u.zoom_params.x * 0.5); // Max radius 0.5
@@ -65,7 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Fish-eye
     let theta = atan2(uv.y - mousePos.y, uv.x - mousePos.x);
-    let r = dist; // Real distance
+    var r = dist; // Real distance
     // Distorted radius: r' = r / zoom at center, r at edge.
     // Function that maps 0->0 and R->R, but slope at 0 is 1/zoom.
     // r' = r * (1 + (zoom-1) * (r/R)^k) ? No
@@ -101,11 +101,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = vec4<f32>(0.0);
   if (inLens > 0.0 && aberration > 0.0) {
       // Radial aberration
-      let dir = normalize(uv - mousePos);
+      var dir = normalize(uv - mousePos);
       let rUV = finalUV - dir * aberration * inLens;
       let bUV = finalUV + dir * aberration * inLens;
 
-      let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+      var r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
       let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
       let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
@@ -122,7 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, vec4<f32>(0.0, 1.0, 1.0, 1.0), border * inLens * 2.0);
 
   // Write output
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Pass depth
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -47,7 +47,7 @@ fn valueNoise2D(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let time = u.config.x;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Parameters
     let radiusBase = u.zoom_params.x * 0.5; // x: Tear Radius
@@ -56,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let staticAmt = u.zoom_params.w;       // w: Static/Void Amount
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspectRatio = resolution.x / resolution.y;
 
     // Correct for aspect ratio for distance calculation
@@ -104,5 +104,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

@@ -20,7 +20,7 @@ struct Uniforms {
 
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    let p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
+    var p = mix(vec4<f32>(c.bg, K.wz), vec4<f32>(c.gb, K.xy), step(c.b, c.g));
     let q = mix(vec4<f32>(p.xyw, c.r), vec4<f32>(c.r, p.yzx), step(p.x, c.r));
     let d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
@@ -43,7 +43,7 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 
 @compute @workgroup_size(8,8,1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let uv = vec2<f32>(gid.xy) / u.config.zw;
+    var uv = vec2<f32>(gid.xy) / u.config.zw;
     let src = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     var tileSize = u.mosaic_params.x; // fraction of screen (0.01-0.2)
     let speed = u.mosaic_params.y;
@@ -78,8 +78,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Determine if tile contains strong colour (saturation > threshold)
     let hsv = rgb2hsv(tileCol);
+    
+    // Get depth for passthrough
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    
     if (hsv.y < 0.3) { // low saturation -> keep original
-        textureStore(outTex, gid.xy, vec4<f32>(src, 1.0));
+        textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(src, 1.0));
+        textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
     }
 
@@ -87,5 +92,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let newHue = fract(hsv.x + speed * time * 0.05);
     let boostedSat = min(hsv.y + satBoost, 1.0);
     let outCol = hsv2rgb(newHue, boostedSat, hsv.z);
-    textureStore(outTex, gid.xy, vec4<f32>(outCol, 1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

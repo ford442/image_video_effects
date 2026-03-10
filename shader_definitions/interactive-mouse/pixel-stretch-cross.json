@@ -4,7 +4,9 @@
   "url": "shaders/pixel-stretch-cross.wgsl",
   "category": "image",
   "description": "Stretches pixels from the mouse position to the screen edges in a cross pattern.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "width",
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

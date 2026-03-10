@@ -19,5 +19,9 @@
       "min": 0.0,
       "max": 2.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

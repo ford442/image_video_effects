@@ -35,9 +35,9 @@ fn noise(st: vec2<f32>) -> f32 {
     let i = floor(st);
     let f = fract(st);
     let a = random(i);
-    let b = random(i + vec2<f32>(1.0, 0.0));
+    var b = random(i + vec2<f32>(1.0, 0.0));
     let c = random(i + vec2<f32>(0.0, 1.0));
-    let d = random(i + vec2<f32>(1.0, 1.0));
+    var d = random(i + vec2<f32>(1.0, 1.0));
     let u = f * f * (3.0 - 2.0 * f);
     return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
 }
@@ -48,9 +48,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     let strength = u.zoom_params.x * 0.1; // Max wind speed
     let turbulence = u.zoom_params.y;
@@ -80,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let redOffset = offset * (1.0 + shift * 5.0);
     let blueOffset = offset * (1.0 - shift * 5.0);
     let r = textureSampleLevel(readTexture, u_sampler, uv - redOffset, 0.0).r;
-    let b = textureSampleLevel(readTexture, u_sampler, uv - blueOffset, 0.0).b;
+    var b = textureSampleLevel(readTexture, u_sampler, uv - blueOffset, 0.0).b;
     color = vec4<f32>(r, color.g, b, color.a);
 
     // Feedback trail (Wind carries the trails too)
@@ -90,12 +90,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Blend
     let finalColor = mix(color, history, trails);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Store history
     textureStore(dataTextureA, global_id.xy, finalColor);
 
     // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

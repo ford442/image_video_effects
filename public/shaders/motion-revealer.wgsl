@@ -28,7 +28,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let softness = u.zoom_params.z;      // 0.0 to 1.0
     let opacity = u.zoom_params.w;       // 0.0 to 1.0
 
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w; // 1.0 if mouse is down
 
     let aspect = resolution.x / resolution.y;
@@ -83,7 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Store in display texture
     // We display the history buffer contents
-    textureStore(writeTexture, global_id.xy, newHistoryColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), newHistoryColor);
 
     // Clear depth
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));

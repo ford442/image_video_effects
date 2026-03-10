@@ -28,7 +28,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 
@@ -56,7 +56,7 @@ fn fbm(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Parameters
@@ -66,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distortion_amt = u.zoom_params.w * 0.05;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     // Aspect ratio correction for distance
     let aspect = resolution.x / resolution.y;
     let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -112,7 +112,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let final_color = mix(clear_color, frosted_look, visibility);
 
-    textureStore(writeTexture, global_id.xy, final_color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

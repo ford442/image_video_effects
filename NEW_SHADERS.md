@@ -164,3 +164,52 @@ Both run at 60 FPS on modern GPUs (2020+).
 ---
 
 *These shaders expand the collection from 39 to 41 effects, providing new creative options for users.*
+
+---
+
+## Adding Generative Shaders
+
+Generative shaders differ from image/video effects because they don't sample an input texture; they produce visuals procedurally. When you create a generative effect the steps are mostly the same, but keep the following in mind:
+
+1. **Shader implementation**
+   - You can ignore `readTexture` samples and simply compute color based on `uv`, `u.config.x`, etc.
+   - Category should be set to `generative` in the JSON and the WGSL file may be placed anywhere under `public/shaders`.
+   - Example minimal generative shader header:
+     ```wgsl
+     // ═══ Generative Example ═══
+     // Category: generative
+     // Description: simple moving stripes
+     @group(0) @binding(0) var u_sampler: sampler;
+     @group(0) @binding(1) var readTexture: texture_2d<f32>;
+     @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+     @group(0) @binding(3) var<uniform> u: Uniforms;
+     // ... (other bindings unchanged)
+     @compute @workgroup_size(8, 8, 1)
+     fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+         let res = u.config.zw;
+         let uv = vec2<f32>(global_id.xy) / res;
+         let t = u.config.x;
+         let color = vec4<f32>(0.5 + 0.5*sin(uv.x*10.0 + t), 0.0, 0.0, 1.0);
+         textureStore(writeTexture, global_id.xy, color);
+         // depth pass can be empty or constant
+         textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+     }
+     ```
+
+2. **JSON definition**
+   - Use `"category": "generative"` and add any relevant tags (
+     `"generative", "loops", "procedural"`, etc.).
+   - Parameters still work the same; the panel will display sliders for `params`.
+
+3. **Testing**
+   - Run `npm start` to regenerate lists and verify the new effect appears under "Generative".
+   - Since there is no input, try with both images/videos and watch the background color fill.
+   - Depth awareness is optional; you can write a constant or omit the depth store.
+
+4. **AI VJ Considerations**
+   - Tags like `"generative"`, `"loop"`, `"bg"` help the AI VJ choose these when no source image is available.
+
+5. **Migration**
+   - Same rollout as regular shaders: add file, update JSON, run generate script, refresh.
+
+The existing development checklist applies (shaders compile, sliders work, etc.), but generative effects also open up new possibilities for standalone visuals and background loops.

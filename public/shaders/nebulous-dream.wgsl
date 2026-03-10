@@ -72,7 +72,7 @@ fn fbm(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     
     // -----------------------------------------------------------------
@@ -134,7 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // In bright areas of the video, make clouds more saturated and brighter
     let saturation = mix(0.7, satBoost, luminance);
-    let value = mix(0.5, 1.0, luminance);
+    var value = mix(0.5, 1.0, luminance);
     
     let cloudColor = hsv2rgb(baseHue, saturation, value);
 
@@ -155,11 +155,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalColor = mix(blendedColor, prevFrame, persistence);
     
     // Store this frame's result for the next frame to read
-    textureStore(historyBuf, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 
     // -----------------------------------------------------------------
     //  7️⃣  Output
     // -----------------------------------------------------------------
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

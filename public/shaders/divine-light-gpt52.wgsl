@@ -26,7 +26,7 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let a = hash(i + vec2<f32>(0.0, 0.0));
   let b = hash(i + vec2<f32>(1.0, 0.0));
@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let aspect = resolution.x / resolution.y;
 
@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  let dir = (center - uv) * vec2<f32>(aspect, 1.0);
+  var dir = (center - uv) * vec2<f32>(aspect, 1.0);
   let steps = 48;
   let delta = dir / f32(steps) * density;
 
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let finalColor = original.rgb + accum + vec3<f32>(halo * 1.1, halo, halo * 0.8);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

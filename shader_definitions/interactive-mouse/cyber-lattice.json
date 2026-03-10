@@ -3,7 +3,9 @@
   "name": "Cyber Lattice",
   "category": "image",
   "url": "shaders/cyber-lattice.wgsl",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
   "params": [
     {
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

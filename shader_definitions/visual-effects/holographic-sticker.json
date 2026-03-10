@@ -3,6 +3,13 @@
   "label": "Holographic Sticker",
   "category": "visual-effects",
   "url": "shaders/holographic-sticker.wgsl",
-  "features": ["mouse-driven"],
-  "params": []
+  "features": [
+    "mouse-driven"
+  ],
+  "params": [],
+  "tags": [
+    "vfx",
+    "particles",
+    "glow"
+  ]
 }

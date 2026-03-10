@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
 
@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let viscosity = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
     // Vector to mouse
     let toMouse = (mouse - uv);
@@ -102,7 +102,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = mix(finalColor, vec3<f32>(finalColor.b, finalColor.r, finalColor.g), colorShift);
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

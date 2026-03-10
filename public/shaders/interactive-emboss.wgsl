@@ -26,11 +26,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let texel = vec2<f32>(1.0) / resolution;
 
   // Mouse acts as the light source
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Vector from pixel to mouse (Light Direction)
   // We want the light to come FROM the mouse.
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Wait, I said param y is "mix_amt". Let's name it "Intensity" in JSON.
   // If Intensity = 1.0, we see full emboss.
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
 
   // Pass depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

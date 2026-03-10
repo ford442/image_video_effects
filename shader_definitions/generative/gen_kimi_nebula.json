@@ -4,5 +4,14 @@
   "url": "shaders/gen_kimi_nebula.wgsl",
   "category": "generative",
   "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds.",
-  "features": ["mouse-driven", "generative", "procedural", "cosmic"]
+  "features": [
+    "mouse-driven",
+    "generative",
+    "procedural",
+    "cosmic"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

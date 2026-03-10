@@ -4,5 +4,14 @@
   "url": "shaders/generative-turing-veins.wgsl",
   "category": "generative",
   "description": "Generative multiscale reaction-diffusion Turing patterns forming organic vein networks.",
-  "features": ["mouse-driven", "generative", "reaction-diffusion", "biological"]
+  "features": [
+    "mouse-driven",
+    "generative",
+    "reaction-diffusion",
+    "biological"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

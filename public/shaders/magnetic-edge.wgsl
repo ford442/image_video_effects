@@ -31,8 +31,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     // Params
@@ -57,9 +57,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // If pixel is an edge, and near mouse, displace it
     if (edge > edgeThreshold && mouse.x >= 0.0) {
-        let aspect = resolution.x / resolution.y;
-        let dVec = mouse - uv; // Vector pointing TO mouse
-        let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+        var aspect = resolution.x / resolution.y;
+        var dVec = mouse - uv; // Vector pointing TO mouse
+        var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
         if (dist < radius) {
             let influence = smoothstep(radius, 0.0, dist); // 1 at center, 0 at radius
@@ -76,13 +76,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Highlight edges that are being pulled
     if (glow > 0.0 && edge > edgeThreshold) {
-         let aspect = resolution.x / resolution.y;
-         let dVec = mouse - uv;
-         let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+         var aspect = resolution.x / resolution.y;
+         var dVec = mouse - uv;
+         var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
          if (dist < radius) {
              finalColor += vec4<f32>(glow * (1.0 - dist/radius), glow * 0.5, 0.0, 0.0);
          }
     }
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

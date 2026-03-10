@@ -38,5 +38,9 @@
     "mouse-driven",
     "glitch",
     "stateful"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

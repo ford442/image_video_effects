@@ -24,8 +24,8 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let mousePos = u.zoom_config.yz;
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  var mousePos = u.zoom_config.yz;
   let time = u.config.x;
 
   let brushSize = u.zoom_params.x * 0.1 + 0.01;
@@ -87,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Ensure alpha is 1
   finalColor.a = 1.0;
 
-  textureStore(writeTexture, global_id.xy, finalColor);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
   textureStore(dataTextureA, global_id.xy, finalColor); // Save to history
 
   // Pass depth

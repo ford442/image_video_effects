@@ -15,10 +15,10 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>;       // x=time, y=cycleSpeed, z=segments, w=rotationSpeed
-  zoom_config: vec4<f32>;  // x=unused, y=centerX, z=centerY, w=unused
-  zoom_params: vec4<f32>;  // x=blendSmoothness, y=maxRotationPercent, z=unused, w=unused
-  ripples: array<vec4<f32>, 50>;
+  config: vec4<f32>,       // x=time, y=cycleSpeed, z=segments, w=rotationSpeed
+  zoom_config: vec4<f32>,  // x=unused, y=centerX, z=centerY, w=unused
+  zoom_params: vec4<f32>,  // x=blendSmoothness, y=maxRotationPercent, z=unused, w=unused
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Notes:
@@ -33,7 +33,7 @@ fn ping_pong(t: f32) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let cycleSpeed = u.zoom_params.x;      // From JSON param[0]
     let segments = max(1.0, u.zoom_params.y); // From JSON param[1]
@@ -42,8 +42,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blendSmoothness = 2.0; // Fixed value
 
     // Mouse-driven center and ripple distortion
-    let mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
-    let center = mousePos; // Make center follow mouse
+    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
+    var center = mousePos; // Make center follow mouse
 
     // Add ripple distortion
     let rippleCount = u32(u.config.y);

@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -54,7 +54,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var velocity = prev_state.g;
 
     // Physics / Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dist_to_mouse = distance(cell_center_uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
 
     // Mouse Interaction: Push

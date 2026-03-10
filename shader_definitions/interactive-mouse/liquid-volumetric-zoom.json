@@ -41,5 +41,9 @@
     "fluid",
     "single-pass-multilayer",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

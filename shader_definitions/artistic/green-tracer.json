@@ -61,5 +61,9 @@
     "film‑grain",
     "depth‑aware",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

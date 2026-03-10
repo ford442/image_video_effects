@@ -2,13 +2,47 @@
   "id": "luma-magnetism",
   "label": "Luma Magnetism",
   "url": "shaders/luma-magnetism.wgsl",
-  "category": "interactive-mouse",
-  "features": ["mouse-driven"],
-  "params": [
-    { "id": "strength", "name": "Magnet Strength", "type": "float", "default": 0.5, "min": -1.0, "max": 1.0 },
-    { "id": "radius", "name": "Effect Radius", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0 },
-    { "id": "hardness", "name": "Edge Hardness", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "threshold", "name": "Luma Threshold", "type": "float", "default": 0.2, "min": 0.0, "max": 1.0 }
+  "category": "interactive",
+  "features": [
+    "mouse-driven"
   ],
-  "description": "Bright pixels are magnetically attracted to the mouse cursor."
+  "params": [
+    {
+      "id": "strength",
+      "name": "Magnet Strength",
+      "type": "float",
+      "default": 0.5,
+      "min": -1.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Effect Radius",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "hardness",
+      "name": "Edge Hardness",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "threshold",
+      "name": "Luma Threshold",
+      "type": "float",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "description": "Bright pixels are magnetically attracted to the mouse cursor.",
+  "tags": [
+    "mouse-driven",
+    "interactive"
+  ]
 }

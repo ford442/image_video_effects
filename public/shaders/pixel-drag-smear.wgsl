@@ -23,7 +23,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -32,13 +32,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // z used for decay? Or mode?
     let decay = mix(0.8, 0.99, u.zoom_params.z);
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dist = distance(uv * vec2(aspect, 1.0), mouse * vec2(aspect, 1.0));
 
     // "Repel/Smear" logic:
     // We want to sample from a position that pushes pixels away or drags them.
     // Simple repel:
-    let dir = normalize(uv - mouse);
+    var dir = normalize(uv - mouse);
     // Push amount drops with distance
     let influence = (1.0 - smoothstep(0.0, brushRadius, dist)) * strength;
 
@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = mix(finalColor, historyColor, 0.9);
     }
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

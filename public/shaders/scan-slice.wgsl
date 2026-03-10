@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let sliceWidth = u.zoom_params.x * 0.2 + 0.01;
@@ -35,7 +35,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberration = u.zoom_params.z * 0.03;
     let dimming = u.zoom_params.w;
 
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
     // Define slice bounds centered on mouse X
     let sliceMin = mouse.x - sliceWidth;
@@ -73,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = finalColor * (1.0 - dimming * 0.6);
     }
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

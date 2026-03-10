@@ -23,7 +23,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -36,13 +36,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridUV = floor(uv * cellSize) / cellSize;
     let cellCenter = gridUV + (0.5 / cellSize);
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Vector from mouse to cell (Projector light direction)
     // Correct for aspect
     let vecToCell = (cellCenter - mouse) * vec2(aspect, 1.0);
     let dist = length(vecToCell);
-    let dir = normalize(vecToCell);
+    var dir = normalize(vecToCell);
 
     // Calculate sample offset based on light direction (Shadow casting logic)
     // Actually, let's just use the direction to shift RGB channels
@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lightFalloff = 1.0 / (1.0 + dist * 2.0);
     color = color * lightFalloff;
 
-    textureStore(writeTexture, global_id.xy, vec4(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));

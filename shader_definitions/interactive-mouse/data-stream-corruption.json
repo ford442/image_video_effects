@@ -38,5 +38,9 @@
     "mouse-driven",
     "temporal-persistence",
     "glitch"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

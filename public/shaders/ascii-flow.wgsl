@@ -77,7 +77,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(gid.xy) / resolution;
+    var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
 
     // Grid Setup
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var flow = (noise - 0.5) * 2.0; // Direction
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let cell_center_uv = (cell_id + 0.5) / grid_dims;
     let to_mouse = cell_center_uv - mouse;
     let dist_mouse = length(to_mouse);

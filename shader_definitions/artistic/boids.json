@@ -6,5 +6,9 @@
   "description": "Flocking boids with reveal masking and simple attraction mechanics.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
   ]
 }

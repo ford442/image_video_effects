@@ -31,7 +31,7 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-@compute @workgroup_size(256, 1, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let idx = gid.x;
   if (idx * 4u + 3u >= arrayLength(&extraBuffer)) { return; }
@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ✨ grokcf1 UPGRADE: Sense-and-turn logic
   let sensor_angle = 0.5; // radians
   let sensor_dist = 5.0 / tex_size.x;
-  let dir = vec2<f32>(cos(agent.angle), sin(agent.angle));
+  var dir = vec2<f32>(cos(agent.angle), sin(agent.angle));
   
   let f_pos = agent.pos + dir * sensor_dist;
   let l_pos = agent.pos + vec2<f32>(cos(agent.angle - sensor_angle), sin(agent.angle - sensor_angle)) * sensor_dist;

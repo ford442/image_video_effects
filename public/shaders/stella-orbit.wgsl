@@ -3,8 +3,19 @@
 // ---------------------------------------------------------------
 
 // 1. UNIFORMS & BINDINGS
+@group(0) @binding(0) var u_sampler : sampler;
+@group(0) @binding(1) var readTexture : texture_2d<f32>;
 @group(0) @binding(2) var outTex : texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u : Uniforms;
+@group(0) @binding(4) var readDepthTexture : texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler : sampler;
+@group(0) @binding(6) var writeDepthTexture : texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA : texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB : texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC : texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer : array<f32>;
+@group(0) @binding(11) var comparison_sampler : sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
@@ -27,14 +38,14 @@ const x_379 = vec3<f32>(0.57735025882720947266, 0.57735025882720947266, -0.57735
 
 fn rot_vf3_vf3_f1_(p_1 : ptr<function, vec3<f32>>, a : ptr<function, vec3<f32>>, t : ptr<function, f32>) {
     let u_2 = cross(*(a), *(p_1));
-    let v = cross(*(a), u_2);
+    var v = cross(*(a), u_2);
     *(p_1) = u_2 * sin(*(t)) + v * cos(*(t)) + *(a) * dot(*(a), *(p_1));
 }
 
 fn lookAt_vf3_vf3_vf3_vf3_(rd : ptr<function, vec3<f32>>, ro : ptr<function, vec3<f32>>, ta : ptr<function, vec3<f32>>, up : ptr<function, vec3<f32>>) {
     let w = normalize(*(ta) - *(ro));
     let u = normalize(cross(w, *(up)));
-    let v = cross(u, w);
+    var v = cross(u, w);
     *(rd) = normalize(u * (*rd).x + v * (*rd).y + w * (*rd).z);
 }
 
@@ -76,7 +87,7 @@ fn stellas_vf3_(p_5 : ptr<function, vec3<f32>>) -> f32 {
 
 fn pointAt_vf3_vf3_vf3_(p : ptr<function, vec3<f32>>, dir : ptr<function, vec3<f32>>, up_1 : ptr<function, vec3<f32>>) {
     let u_1 = normalize(cross(*(dir), *(up_1)));
-    let v_1 = cross(u_1, *(dir));
+    var v_1 = cross(u_1, *(dir));
     *(p) = vec3<f32>(dot(*(p), u_1), dot(*(p), v_1), dot(*(p), *(dir)));
 }
 
@@ -84,7 +95,7 @@ fn pSFold_vf2_f1_(p_2 : ptr<function, vec2<f32>>, n : ptr<function, f32>) {
     let h_1 = floor(log2(*(n)));
     var a_2 = (6.283185 / *(n)) * exp2(h_1);
     for(var i = 0.0; i < h_1 + 2.0; i = i + 1.0) {
-        let v_1 = vec2<f32>(-cos(a_2), sin(a_2));
+        var v_1 = vec2<f32>(-cos(a_2), sin(a_2));
         let g = dot(*(p_2), v_1);
         *(p_2) = *(p_2) - v_1 * (g - sqrt(g * g + 0.002));
         a_2 = a_2 * 0.5;
@@ -111,7 +122,7 @@ fn structure_vf3_(p_6 : ptr<function, vec3<f32>>) -> f32 {
         pointAt_vf3_vf3_vf3_(&param_11, &param_12, &param_13);
         q = param_11;
         
-        let d0 = length(q - vec3<f32>(0.0, 0.0, clamp(q.z, 2.0, 8.0))) - 0.4 + q.z * 0.05;
+        var d0 = length(q - vec3<f32>(0.0, 0.0, clamp(q.z, 2.0, 8.0))) - 0.4 + q.z * 0.05;
         d = min(d, d0);
         g2 += 0.1 / (0.1 + d0 * d0);
         
@@ -177,9 +188,9 @@ fn rabbit_vf3_(p_7 : ptr<function, vec3<f32>>) -> f32 {
 
 fn map_vf3_(p_8 : ptr<function, vec3<f32>>) -> f32 {
     var param_23 = *p_8;
-    let d1 = stellas_vf3_(&param_23);
+    var d1 = stellas_vf3_(&param_23);
     var param_24 = *p_8;
-    let d2 = structure_vf3_(&param_24);
+    var d2 = structure_vf3_(&param_24);
     var param_25 = *p_8;
     let d3 = rabbit_vf3_(&param_25);
     return min(min(d1, d2), d3);
@@ -217,12 +228,12 @@ fn orbit_f1_f1_(t_2 : ptr<function, f32>, n_2 : ptr<function, f32>) -> vec3<f32>
 fn cLine_vf3_vf3_vf3_vf3_(ro_1 : ptr<function, vec3<f32>>, rd_1 : ptr<function, vec3<f32>>, a_1 : ptr<function, vec3<f32>>, b : ptr<function, vec3<f32>>) -> vec3<f32> {
     let ab = normalize(*b - *a_1);
     let ao = *a_1 - *ro_1;
-    let d0 = dot(*rd_1, ab);
-    let d1 = dot(*rd_1, ao);
-    let d2 = dot(ab, ao);
+    var d0 = dot(*rd_1, ab);
+    var d1 = dot(*rd_1, ao);
+    var d2 = dot(ab, ao);
     let t = clamp((d0 * d1 - d2) / (1.0 - d0 * d0) / length(*b - *a_1), 0.0, 1.0);
     
-    let p = *a_1 + (*b - *a_1) * t - *ro_1;
+    var p = *a_1 + (*b - *a_1) * t - *ro_1;
     return vec3<f32>(length(cross(p, *rd_1)), dot(p, *rd_1), t);
 }
 
@@ -354,6 +365,6 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     // 5. Write to Storage Texture
     // Check output bounds to be safe
     if (gid.x < u32(u.config.z) && gid.y < u32(u.config.w)) {
-        textureStore(outTex, gid.xy, outColor);
+        textureStore(outTex, vec2<i32>(gid.xy), outColor);
     }
 }

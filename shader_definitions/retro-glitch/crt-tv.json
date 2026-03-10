@@ -3,5 +3,9 @@
   "name": "CRT Monitor",
   "url": "shaders/crt-tv.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

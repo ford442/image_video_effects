@@ -29,10 +29,10 @@ fn rand(co: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   let threshold = u.zoom_params.x;
   let strength = u.zoom_params.y * 0.5; // Max displacement length
@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse interaction: Modify threshold based on Y position of mouse
   // and maybe local influence
-  let mouseInfluence = 0.0;
+  var mouseInfluence = 0.0;
   if (abs(uv.y - mousePos.y) < 0.2) {
       mouseInfluence = 1.0 - abs(uv.y - mousePos.y) / 0.2;
   }
@@ -79,5 +79,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let srcUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
   let finalColor = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0);
 
-  textureStore(writeTexture, global_id.xy, finalColor);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

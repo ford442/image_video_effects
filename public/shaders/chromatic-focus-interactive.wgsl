@@ -31,7 +31,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let aspect = dims.x / dims.y;
 
     // Params
@@ -40,11 +40,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let focusRad = u.zoom_params.z;
     let hardness = u.zoom_params.w * 5.0 + 1.0;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let click = u.zoom_config.w;
 
     // Focus point is mouse
-    let center = mouse;
+    var center = mouse;
     let distVec = (uv - center) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 
@@ -54,7 +54,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     amount = pow(amount, 1.0 / hardness); // Hardness controls falloff curve
 
     // Direction for displacement
-    let dir = normalize(distVec);
+    var dir = normalize(distVec);
 
     // Chromatic Abberation
     let rOffset = dir * amount * strength;
@@ -83,4 +83,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     textureStore(outTex, gid.xy, vec4<f32>(color, 1.0));
+    
+    // Pass through depth
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

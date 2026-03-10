@@ -15,7 +15,7 @@ fn permute(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn noise(p: vec3<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 
@@ -35,9 +35,9 @@ fn noise(p: vec3<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution * 10.0;
+    var uv = vec2<f32>(global_id.xy) / resolution * 10.0;
     let time = u.config.x * 0.1;
-    let mouse = vec2<f32>(u.zoom_config.y * 10.0, (1.0 - u.zoom_config.z) * 10.0);
+    var mouse = vec2<f32>(u.zoom_config.y * 10.0, (1.0 - u.zoom_config.z) * 10.0);
 
     // Multi-octave Perlin noise
     var n = 0.0;
@@ -60,5 +60,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = vec3<f32>(1.0, 1.0, 1.0) * ((n - 0.7) / 0.3 + 0.8);
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }

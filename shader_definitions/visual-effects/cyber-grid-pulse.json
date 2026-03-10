@@ -3,11 +3,39 @@
   "label": "Cyber Grid Pulse",
   "url": "shaders/cyber-grid-pulse.wgsl",
   "icon": "grid_on",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": {
-    "zoomParam1": { "label": "Grid Density", "min": 0, "max": 1, "default": 0.5 },
-    "zoomParam2": { "label": "Pulse Speed", "min": 0, "max": 1, "default": 0.5 },
-    "zoomParam3": { "label": "Distortion", "min": 0, "max": 1, "default": 0.5 },
-    "zoomParam4": { "label": "Glow Intensity", "min": 0, "max": 1, "default": 0.5 }
-  }
+    "zoomParam1": {
+      "label": "Grid Density",
+      "min": 0,
+      "max": 1,
+      "default": 0.5
+    },
+    "zoomParam2": {
+      "label": "Pulse Speed",
+      "min": 0,
+      "max": 1,
+      "default": 0.5
+    },
+    "zoomParam3": {
+      "label": "Distortion",
+      "min": 0,
+      "max": 1,
+      "default": 0.5
+    },
+    "zoomParam4": {
+      "label": "Glow Intensity",
+      "min": 0,
+      "max": 1,
+      "default": 0.5
+    }
+  },
+  "category": "visual-effects",
+  "tags": [
+    "vfx",
+    "particles",
+    "glow"
+  ]
 }

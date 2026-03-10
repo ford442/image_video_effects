@@ -26,7 +26,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 }
 
 fn noise2D(p: vec2<f32>) -> vec2<f32> {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   let a = hash2(i);
@@ -50,9 +50,9 @@ fn flowPattern(p: vec2<f32>, time: f32) -> vec2<f32> {
 }
 
 fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
-  let uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
+  var uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
   let noiseValue = sin(uv.x * 3.14159) * cos(uv.y * 3.14159);
-  let flow = vec2<f32>(fract(noiseValue * 43758.5453), fract(noiseValue * 0.1031)) * 2.0 - 1.0;
+  var flow = vec2<f32>(fract(noiseValue * 43758.5453), fract(noiseValue * 0.1031)) * 2.0 - 1.0;
   return flow * exp(-length(p) * 0.5);
 }
 
@@ -63,7 +63,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
   let pixelSize = 1.0 / resolution;
   let center_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (background_factor > 0.0) {
     let time = currentTime * 0.2 + depthFactor * 2.0;
     let noiseuv = uv * vec2<f32>(9.0, 7.0) + vec2<f32>(currentTime * 0.05, currentTime * 0.04);
-    let flow = flowPattern(noiseuv, time);
+    var flow = flowPattern(noiseuv, time);
     let gravity = vec2<f32>(0.0, 0.0006);
     ambientDisplacement = (flow * 0.003 + gravity) * background_factor * (0.2 + depthFactor);
   }
@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let nebula = sin(uv.x * 20.0 + currentTime) * sin(uv.y * 20.0 + currentTime * 1.2) * 0.1;
   color += vec4<f32>(nebula * 0.5, nebula * 0.3, nebula * 0.7, 0.0);
 
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   let depthDisplacedUV = uv + finalMouseDisplacement;
   let displacedDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthDisplacedUV, 0.0).r;

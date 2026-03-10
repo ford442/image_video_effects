@@ -25,5 +25,10 @@
       "max": 1.0,
       "default": 0.0
     }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform"
   ]
 }

@@ -3,7 +3,9 @@
   "name": "Vortex Warp",
   "url": "shaders/vortex-warp.wgsl",
   "category": "image",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "description": "Swirls the image around the mouse cursor.",
   "params": [
     {
@@ -27,5 +29,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

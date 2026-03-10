@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
 
@@ -35,8 +35,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let magStrength = u.zoom_params.y * 2.0;
     let aberration = u.zoom_params.z * 0.05;
 
-    let mouse = u.zoom_config.yz;
-    let center = mouse;
+    var mouse = u.zoom_config.yz;
+    var center = mouse;
     let dist = distance((uv - center) * aspectVec, vec2<f32>(0.0));
 
     // Create stepped rings
@@ -72,6 +72,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = vec4<f32>(r, g, b, 1.0);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

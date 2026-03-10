@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
 
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseRadius = u.zoom_params.z * 0.5 + 0.01; // Radius of mouse influence
     let edgeDetect = u.zoom_params.w * 5.0;     // Sensitivity to edges (gradient mag)
 
-    let mouse = u.zoom_config.yz; // Mouse coordinates (0-1)
+    var mouse = u.zoom_config.yz; // Mouse coordinates (0-1)
 
     // 1. Calculate Luminance Gradient (Sobel-ish) to find contours
     let texel = vec2<f32>(1.0) / resolution;
@@ -84,5 +84,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Optional: Add a slight highlight to the flowing areas
     let highlight = length(offset) * 10.0; // visualize flow intensity
 
-    textureStore(writeTexture, global_id.xy, color + vec4<f32>(highlight * 0.1));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color + vec4<f32>(highlight * 0.1));
 }

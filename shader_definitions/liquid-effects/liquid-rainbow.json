@@ -3,5 +3,9 @@
   "name": "Liquid Rainbow",
   "url": "shaders/liquid-rainbow.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

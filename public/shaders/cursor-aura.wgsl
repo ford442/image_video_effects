@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Params
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mixVal = u.zoom_params.z;
   let pulseSpeed = u.zoom_params.w * 5.0;
 
-  let mousePos = u.zoom_config.yz;
+  var mousePos = u.zoom_config.yz;
 
   // Aspect ratio correction
   let aspect = resolution.x / resolution.y;
@@ -77,6 +77,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  textureStore(writeTexture, global_id.xy, finalColor);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

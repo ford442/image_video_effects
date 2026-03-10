@@ -39,5 +39,9 @@
     "organic",
     "network",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -40,5 +40,9 @@
     "interactive",
     "physics",
     "mouse-driven"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
   ]
 }

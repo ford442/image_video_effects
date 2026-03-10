@@ -2,7 +2,7 @@
   "id": "predator-prey",
   "name": "Pixel Ecology",
   "url": "shaders/predator-prey.wgsl",
-  "category": "shader",
+  "category": "generative",
   "description": "Cellular automata ecosystem with plants, herbivores, and carnivores - watch the food chain unfold.",
   "params": [
     {
@@ -39,5 +39,9 @@
     "interactive",
     "ecology",
     "mouse-driven"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
   ]
 }

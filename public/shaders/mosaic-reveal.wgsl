@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
 
@@ -35,7 +35,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radius = u.zoom_params.y * 0.5;
     let softness = u.zoom_params.z;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dist = distance((uv - mouse) * aspectVec, vec2<f32>(0.0));
 
     // Calculate Mosaic UV
@@ -57,6 +57,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = mix(colMosaic, colFull, mask);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

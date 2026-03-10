@@ -36,5 +36,10 @@
   ],
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "vfx",
+    "particles",
+    "glow"
   ]
 }

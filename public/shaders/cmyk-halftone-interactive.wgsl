@@ -29,7 +29,7 @@ fn rgb2cmyk(rgb: vec3<f32>) -> vec4<f32> {
     if (k >= 1.0) {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
-    let c = (1.0 - rgb.r - k) / (1.0 - k);
+    var c = (1.0 - rgb.r - k) / (1.0 - k);
     let m = (1.0 - rgb.g - k) / (1.0 - k);
     let y = (1.0 - rgb.b - k) / (1.0 - k);
     return vec4<f32>(c, m, y, k);
@@ -37,7 +37,7 @@ fn rgb2cmyk(rgb: vec3<f32>) -> vec4<f32> {
 
 fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
     let s = sin(a);
-    let c = cos(a);
+    var c = cos(a);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
 
@@ -47,9 +47,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mouse = u.zoom_config.yz; // 0-1
+    var mouse = u.zoom_config.yz; // 0-1
 
     // Params
     let density = 50.0 + u.zoom_params.x * 150.0;
@@ -115,19 +115,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Yellow
     {
-        let localUV = rotate((uv + offY) * vec2<f32>(aspect, 1.0), angY) * density;
-        let grid = fract(localUV) - 0.5;
-        let dist = length(grid);
-        let radius = sqrt(cmyk.z) * 0.6;
+        var localUV = rotate((uv + offY) * vec2<f32>(aspect, 1.0), angY) * density;
+        var grid = fract(localUV) - 0.5;
+        var dist = length(grid);
+        var radius = sqrt(cmyk.z) * 0.6;
         finalY = 1.0 - smoothstep(radius - 0.05, radius + 0.05, dist);
     }
 
     // Black
     {
-        let localUV = rotate((uv + offK) * vec2<f32>(aspect, 1.0), angK) * density;
-        let grid = fract(localUV) - 0.5;
-        let dist = length(grid);
-        let radius = sqrt(cmyk.w) * 0.6;
+        var localUV = rotate((uv + offK) * vec2<f32>(aspect, 1.0), angK) * density;
+        var grid = fract(localUV) - 0.5;
+        var dist = length(grid);
+        var radius = sqrt(cmyk.w) * 0.6;
         finalK = 1.0 - smoothstep(radius - 0.05, radius + 0.05, dist);
     }
 

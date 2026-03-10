@@ -37,5 +37,9 @@
   "features": [
     "mouse-driven",
     "halftone"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

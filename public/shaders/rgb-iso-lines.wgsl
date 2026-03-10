@@ -21,14 +21,14 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ------------------------------
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Parameters
   let thickness = mix(0.01, 0.45, u.zoom_params.x);
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let parallax_amt = mix(0.0, 0.1, u.zoom_params.z);
 
   // Mouse
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Parallax Offset based on mouse distance from center
   let offset = (mouse - vec2<f32>(0.5)) * parallax_amt;
@@ -71,4 +71,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * 0.1;
 
   textureStore(writeTexture, coord, vec4<f32>(final_col + base, 1.0));
+
+  // Pass through depth
+  let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

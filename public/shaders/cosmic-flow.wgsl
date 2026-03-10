@@ -30,8 +30,8 @@ fn hash(p: vec2<f32>) -> f32 {
 
 // 2D Simplex-style noise for better gradients
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     
     return mix(mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -104,7 +104,7 @@ fn calculate_normal(uv: vec2<f32>, depth: f32, texel: vec2<f32>) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let texel = 1.0 / resolution;
 
@@ -131,13 +131,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     
     // Second warp layer (more turbulent)
-    let r = vec2<f32>(
+    var r = vec2<f32>(
         fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2) + time * speed * 0.7, 3u),
         fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8) + time * speed * 0.7, 3u)
     );
     
     // Final noise value
-    let f = fbm(p + 4.0 * r + time * speed * 0.3, 5u);
+    var f = fbm(p + 4.0 * r + time * speed * 0.3, 5u);
     
     // --- Depth Interaction ---
     var depth_mask = 1.0;
@@ -187,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spark = smoothstep(0.95, 1.0, hash(uv * 100.0 + time)) * f * intensity;
     final_color += vec3<f32>(1.0, 0.8, 0.5) * spark * 0.5;
     
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
     
     // Pass depth
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

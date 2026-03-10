@@ -6,5 +6,9 @@
   "description": "Runaway neural feedback loop with hallucinogenic pareidolic effects and breathing fractals.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

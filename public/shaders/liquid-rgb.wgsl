@@ -17,7 +17,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
   let center_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).a;
 
   let color = vec4<f32>(redChannel, greenChannel, blueChannel, alpha);
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Update depth texture for next frame
   let depthDisplacedUV = uv + mouseDisplacement;

@@ -33,7 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let radius = u.zoom_params.x * 0.5 + 0.05;
@@ -41,7 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let randomness = u.zoom_params.w;
 
     // Mouse
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     let to_mouse = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -79,5 +79,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Standard sampling
     let color = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

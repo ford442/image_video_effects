@@ -24,7 +24,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Params
@@ -35,7 +35,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse interaction
   // u.zoom_config: x=Time, y=MouseX, z=MouseY, w=MouseDown (if mouse-driven)
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
 
   // Adjusted coordinates for aspect ratio correct distance
@@ -80,11 +80,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mix original color with neon edge
   let glow = neonColor * edge * glowIntensity * 5.0 * falloff;
-  let finalColor = c + glow;
+  var finalColor = c + glow;
 
   // Add the pulse ring
   let ring = smoothstep(0.02, 0.0, abs(dist - effectRadius * pulse));
   finalColor += neonColor * ring * glowIntensity;
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

@@ -40,5 +40,9 @@
     "interactive",
     "fluid-dynamics",
     "mouse-driven"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
   ]
 }

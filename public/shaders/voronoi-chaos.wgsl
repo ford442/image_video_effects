@@ -38,9 +38,9 @@ fn hash2(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Params
     let cellsScale = u.zoom_params.x * 20.0 + 4.0;
@@ -126,15 +126,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Highlight cells near mouse
     if (mousePos.x >= 0.0) {
-       let d = distance(sampleUV, mousePos);
+       var d = distance(sampleUV, mousePos);
        if (d < 0.1) {
            color = color + vec4<f32>(0.2, 0.2, 0.2, 0.0) * (1.0 - d * 10.0);
        }
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

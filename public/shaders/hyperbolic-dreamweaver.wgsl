@@ -43,7 +43,7 @@ fn poincare_distance(p: vec2<f32>) -> f32 {
 }
 
 fn mobius_transform(p: vec2<f32>, center: vec2<f32>, scale: f32, angle: f32) -> vec2<f32> {
-    let q = p - center;
+    var q = p - center;
     q = rotate(q, angle);
     let d = length(q);
     let hyperbolic_scale = scale / (1.0 + d * d * 0.5);
@@ -53,9 +53,9 @@ fn mobius_transform(p: vec2<f32>, center: vec2<f32>, scale: f32, angle: f32) -> 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let params = u.zoom_params; // x=tileCount, y=curvature, z=aberrationStr, w=glowInt
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -116,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color.rgb = pow(color.rgb, vec3(0.8));
     color.rgb *= 1.0 + 0.5 * depth; // Depth pop
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth with hyperbolic modulation for chaining
     let modulated_depth = depth * (1.0 - disk_dist * 0.5);

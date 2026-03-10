@@ -50,8 +50,8 @@ fn hash4(p: vec4<f32>) -> f32 {
 //  4-D gradient noise
 // ─────────────────────────────────────────────────────────────────────────────
 fn noise4d(p: vec4<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     
     // Sample 16 corners of hypercube
@@ -104,8 +104,8 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
 //  Voronoi cell distance
 // ─────────────────────────────────────────────────────────────────────────────
 fn voronoiCell(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
+    var i = floor(p);
+    var f = fract(p);
     var best = 1e5;
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
@@ -124,7 +124,7 @@ fn voronoiCell(p: vec2<f32>) -> f32 {
 // ─────────────────────────────────────────────────────────────────────────────
 fn quaternionRotate(col: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> {
     let s = sin(angle * 0.5);
-    let c = cos(angle * 0.5);
+    var c = cos(angle * 0.5);
     let q = vec4<f32>(normalize(axis) * s, c);
     let t = 2.0 * cross(q.xyz, col);
     return col + q.w * t + cross(q.xyz, t);
@@ -134,9 +134,9 @@ fn quaternionRotate(col: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> {
 //  HSV → RGB
 // ─────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
+    var c = v * s;
     let h6 = h * 6.0;
-    let x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
     if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
@@ -165,7 +165,7 @@ fn spectralPower(col: vec3<f32>, pattern: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
+    var uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
     let globalIntensity = 1.0;
@@ -284,7 +284,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ────────────────────────────────────────────────────────────────────────
     //  Output
     // ────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, gid.xy, vec4<f32>(finalCol, 1.0));
-    textureStore(historyBuf, gid.xy, vec4<f32>(diffused, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(diffused, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

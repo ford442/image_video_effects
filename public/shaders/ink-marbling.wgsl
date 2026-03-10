@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv_orig = vec2<f32>(global_id.xy) / resolution;
     var uv = uv_orig;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Parameters
     let warp_strength = u.zoom_params.x * 2.0; // 0.0 to 2.0
@@ -102,6 +102,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add some lighting/shading based on the warp gradient?
     // Let's keep it simple: the image just flows.
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

@@ -6,5 +6,9 @@
   "description": "Enhanced 4D topological color manifold.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

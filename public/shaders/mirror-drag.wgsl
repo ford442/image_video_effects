@@ -26,8 +26,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mousePos = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mousePos = u.zoom_config.yz;
 
     // Params
     // x: axis angle (0 = vertical, 1 = horizontal/spin) -- simplifying to just vertical first
@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
        // color = vec3(1.0) - color; // Invert color at axis
     }
 
-    textureStore(writeTexture, global_id.xy, vec4(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

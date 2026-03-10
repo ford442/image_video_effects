@@ -28,9 +28,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz; // 0..1
 
     // Parameters
     // x: Base Frequency (0..1 -> 10..500)
@@ -95,7 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // let scanline = sin(uv.y * resolution.y * 1.0) * 0.1;
     // let final_color = vec3<f32>(r, g, b) - scanline;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

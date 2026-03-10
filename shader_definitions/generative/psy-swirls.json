@@ -48,5 +48,9 @@
     "depth-aware",
     "interactive",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

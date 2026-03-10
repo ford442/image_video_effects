@@ -43,7 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Parameters
@@ -51,7 +51,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distortion_strength = 0.01 + u.zoom_params.y * 0.05;
     let shimmer_speed = 2.0 + u.zoom_params.z * 5.0;
 
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Calculate distance from mouse (cloaked entity)
     let d_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -63,10 +63,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (mask <= 0.001) {
         // Optimization: No effect outside radius
-        let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
         textureStore(writeTexture, vec2<i32>(global_id.xy), color);
         // Write depth
-        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        var depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
         textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
     }
@@ -108,6 +108,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Write depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    var depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

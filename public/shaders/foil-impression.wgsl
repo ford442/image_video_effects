@@ -9,6 +9,15 @@ struct Uniforms {
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var filteringSampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparisonSampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // Hash function
 fn hash(p: vec2<f32>) -> f32 {
@@ -18,7 +27,7 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
+    var i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -43,14 +52,14 @@ fn getLuma(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
   let aspect = f32(dims.x) / f32(dims.y);
 
   // Params
@@ -59,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let relief = u.zoom_params.z; // Strength of image emboss
   let color_mix_amt = u.zoom_params.w;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
   let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
 
@@ -119,4 +128,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
   textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+
+  // Pass through depth
+  let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

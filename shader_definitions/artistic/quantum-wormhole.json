@@ -6,5 +6,9 @@
   "description": "Wormhole-like spacetime distortion effects.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

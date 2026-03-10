@@ -23,7 +23,7 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let aspect = resolution.x / resolution.y;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Params
   let windForce = mix(0.01, 0.1, u.zoom_params.x);
@@ -31,7 +31,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let damping = mix(0.8, 0.99, u.zoom_params.z);
   let radius = mix(0.1, 0.5, u.zoom_params.w);
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Read state: RG = Offset (displacement from original UV), BA = Velocity
   let state = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var force = vec2<f32>(0.0);
   if (dist < radius) {
-      let dir = normalize(pos_aspect - mouse_aspect);
+      var dir = normalize(pos_aspect - mouse_aspect);
       // Correct direction back to UV space (undo aspect for X)
       let dirUV = vec2<f32>(dir.x * aspect, dir.y); // Wait, no. Aspect ratio is applied to coordinates for distance. Direction vector components need care.
       // Easiest: calculate direction in aspect space, then un-aspect.

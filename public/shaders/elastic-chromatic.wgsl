@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseInfluence = u.zoom_params.z;
 
     // Mouse influence
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let dist = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
 
     // Increase lag near mouse? Or decrease?
@@ -69,7 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = vec4<f32>(newR, newG, newB, 1.0);
 
     // Output for display
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Output for history
     textureStore(dataTextureA, global_id.xy, finalColor);

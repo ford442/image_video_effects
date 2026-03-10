@@ -40,5 +40,9 @@
     "interactive",
     "chromatic-aberration",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

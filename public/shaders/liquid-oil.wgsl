@@ -20,7 +20,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 }
 
 fn noise2D(p: vec2<f32>) -> vec2<f32> {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   let a = hash2(i);
@@ -46,14 +46,14 @@ fn flowPattern(p: vec2<f32>, time: f32) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
 
   // --- Oil Swirl Logic ---
   // Continuous slow movement
   let time = currentTime * 0.05;
   let noiseuv = uv * 3.0;
-  let flow = flowPattern(noiseuv, time);
+  var flow = flowPattern(noiseuv, time);
   let ambientDisplacement = flow * 0.01;
 
   // --- Mouse Ripples ---
@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mix
   let finalColor = mix(color.rgb, interference, 0.1);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

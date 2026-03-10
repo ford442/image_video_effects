@@ -45,12 +45,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Pixel coordinates
     let pixel_pos = vec2<f32>(gid.xy);
-    let uv = pixel_pos / resolution;
+    var uv = pixel_pos / resolution;
 
     // Params
     // Mouse X: Dither Strength / Mix (1.0 = full dither)
     // Mouse Y: Scale of the dither pattern (pixelation)
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Scale the coordinate system for pixelation effect
     // Scale factor: 1.0 to 16.0

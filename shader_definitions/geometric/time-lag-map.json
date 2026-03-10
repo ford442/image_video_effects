@@ -39,5 +39,9 @@
     "interactive",
     "motion-detection",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

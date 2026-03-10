@@ -27,11 +27,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   var uv = vec2<f32>(global_id.xy) / resolution;
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
 
   // Fisheye Logic
-  let center = mouse;
+  var center = mouse;
   let uv_centered = uv - center;
 
   // Aspect corrected vector
@@ -69,7 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  textureStore(writeTexture, global_id.xy, color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

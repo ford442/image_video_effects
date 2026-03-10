@@ -38,5 +38,9 @@
     "animated",
     "3d",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

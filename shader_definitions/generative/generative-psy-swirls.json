@@ -4,5 +4,14 @@
   "url": "shaders/generative-psy-swirls.wgsl",
   "category": "generative",
   "description": "Generative swirling vortex fields with multi-layer procedural noise flow and spectral rainbow HSV cycles.",
-  "features": ["mouse-driven", "generative", "procedural", "psychedelic"]
+  "features": [
+    "mouse-driven",
+    "generative",
+    "procedural",
+    "psychedelic"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ]
 }

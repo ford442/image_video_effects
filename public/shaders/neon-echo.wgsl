@@ -32,7 +32,7 @@ fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let decay = u.zoom_params.x; // Trail Decay
@@ -99,7 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let displayColor = 1.0 - (1.0 - currentColor.rgb) * (1.0 - resultRGB);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(displayColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayColor, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

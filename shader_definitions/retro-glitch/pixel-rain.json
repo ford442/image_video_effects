@@ -3,7 +3,9 @@
   "name": "Pixel Rain",
   "url": "shaders/pixel-rain.wgsl",
   "category": "image",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "description": "Matrix-style digital rain. Mouse repels and highlights drops.",
   "params": [
     {
@@ -27,5 +29,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

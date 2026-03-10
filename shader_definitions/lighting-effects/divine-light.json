@@ -38,5 +38,9 @@
     "mouse-driven",
     "volumetric",
     "atmospheric"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

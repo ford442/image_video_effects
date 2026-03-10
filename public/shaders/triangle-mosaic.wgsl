@@ -22,7 +22,7 @@ struct Uniforms {
 };
 
 fn rotate2d(angle: f32) -> mat2x2<f32> {
-    let s = sin(angle);
+    var s = sin(angle);
     let c = cos(angle);
     return mat2x2<f32>(c, -s, s, c);
 }
@@ -33,8 +33,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     let scale_param = u.zoom_params.x; // Scale
@@ -49,14 +49,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p.x *= aspect;
 
     // Center for rotation
-    let center = vec2<f32>(0.5 * aspect, 0.5);
+    var center = vec2<f32>(0.5 * aspect, 0.5);
 
     // Interactive twist
     let d = distance(p, vec2<f32>(mouse.x * aspect, mouse.y));
     let angle = rotation_param * 6.28 + (1.0 - smoothstep(0.0, 0.5, d)) * twist_param * 3.14;
 
     // Skew for triangular grid
-    let s = vec2<f32>(1.0, 1.732); // sqrt(3)
+    var s = vec2<f32>(1.0, 1.732); // sqrt(3)
 
     // Apply rotation to UVs before grid mapping? No, rotate the grid sampling.
     // Let's rotate the point P around the mouse? Or just global rotation?
@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     color = mix(orig, color, mix_param);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

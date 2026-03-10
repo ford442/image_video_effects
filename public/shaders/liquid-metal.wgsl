@@ -2,7 +2,7 @@ struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 30>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,7 +26,7 @@ fn getLuma(color: vec3<f32>) -> f32 {
 fn hslToRgb(h: f32, s: f32, l: f32) -> vec3<f32> {
   // Simplified HSL to RGB
   let c = (1.0 - abs(2.0 * l - 1.0)) * s;
-  let x = c * (1.0 - abs((h * 6.0) % 2.0 - 1.0));
+  var x = c * (1.0 - abs((h * 6.0) % 2.0 - 1.0));
   let m = l - c / 2.0;
 
   var r = 0.0;
@@ -43,14 +43,14 @@ fn hslToRgb(h: f32, s: f32, l: f32) -> vec3<f32> {
   return vec3<f32>(r+m, g+m, b+m);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Params
   let distortion_amt = u.zoom_params.x * 0.5;
@@ -58,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let specular_pow = mix(10.0, 100.0, u.zoom_params.z);
   let tint_hue = u.zoom_params.w;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Calculate Normal from image brightness (emboss style)
   let pixel_size = 1.0 / vec2<f32>(dims);

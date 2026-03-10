@@ -4,11 +4,41 @@
   "category": "image",
   "url": "shaders/stipple-engraving.wgsl",
   "description": "Converts the image into a vintage stipple engraving. Mouse proximity acts as a spotlight, revealing details by increasing luminance.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
-    { "name": "Density", "id": "density", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "name": "Contrast", "id": "contrast", "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "name": "Spot Radius", "id": "radius", "default": 0.3, "min": 0.0, "max": 1.0 },
-    { "name": "Spot Brightness", "id": "intensity", "default": 0.5, "min": 0.0, "max": 1.0 }
+    {
+      "name": "Density",
+      "id": "density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Contrast",
+      "id": "contrast",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Spot Radius",
+      "id": "radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "Spot Brightness",
+      "id": "intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

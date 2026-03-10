@@ -39,5 +39,9 @@
     "animated",
     "visual-effects",
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

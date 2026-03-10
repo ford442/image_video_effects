@@ -4,7 +4,9 @@
   "url": "shaders/interactive-zoom-blur.wgsl",
   "category": "image",
   "description": "Radial zoom blur centered on the mouse cursor.",
-  "features": ["mouse-driven"],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "strength",
@@ -34,5 +36,9 @@
       "min": 0.0,
       "max": 1.0
     }
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

@@ -27,7 +27,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
     var q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
-    let d = q.x - min(q.w, q.y);
+    var d = q.x - min(q.w, q.y);
     let h = abs((q.w - q.y) / (6.0 * d + 1e-10) + K.x);
     return vec3<f32>(h, d, q.x);
 }
@@ -36,7 +36,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 fn findNearestNeighborsApprox(point: vec4<f32>, texDims: vec2<f32>, k: u32) -> array<vec4<f32>, 4> {
     var neighbors: array<vec4<f32>, 4>;
     // We'll sample a 3x3 neighborhood around the point's uv in screen space to approximate close points
-    let uv = vec2<f32>(point.x, point.y);
+    var uv = vec2<f32>(point.x, point.y);
     let stepSize = 1.0 / texDims;
     var nIndex: u32 = 0u;
     for (var yOff: i32 = -1; yOff <= 1; yOff = yOff + 1) {
@@ -44,11 +44,11 @@ fn findNearestNeighborsApprox(point: vec4<f32>, texDims: vec2<f32>, k: u32) -> a
             if (nIndex >= k) { break; }
             let sampleUV = uv + vec2<f32>(f32(xOff), f32(yOff)) * stepSize;
             if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) { continue; }
-            let dims = vec2<i32>(i32(texDims.x), i32(texDims.y));
+            var dims = vec2<i32>(i32(texDims.x), i32(texDims.y));
             let px = vec2<i32>(i32(sampleUV.x * texDims.x), i32(sampleUV.y * texDims.y));
             let color = textureLoad(readTexture, px, 0).rgb;
             let depth = textureLoad(readDepthTexture, px, 0).r;
-            let hsv = rgb2hsv(color);
+            var hsv = rgb2hsv(color);
             // make 4d point: u,v,depth,hue
             neighbors[nIndex] = vec4<f32>(sampleUV.x, sampleUV.y, depth, hsv.x);
             nIndex = nIndex + 1u;
@@ -64,29 +64,29 @@ fn findNearestNeighborsApprox(point: vec4<f32>, texDims: vec2<f32>, k: u32) -> a
 
 fn computeTangentFrame(neighbors: array<vec4<f32>, 4>) -> array<vec4<f32>, 4> {
     let base = neighbors[0];
-    let dx = neighbors[1] - base;
-    let dy = neighbors[2] - base;
+    var dx = neighbors[1] - base;
+    var dy = neighbors[2] - base;
     let dh = neighbors[3] - base;
     return array<vec4<f32>, 4>(base, dx, dy, dh);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = u.config.zw;
+    var dims = u.config.zw;
     let gid = global_id.xy;
 
-    let uv = vec2<f32>(f32(gid.x) / dims.x, f32(gid.y) / dims.y);
+    var uv = vec2<f32>(f32(gid.x) / dims.x, f32(gid.y) / dims.y);
 
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    let hsv = rgb2hsv(src.rgb);
+    var hsv = rgb2hsv(src.rgb);
     let hue = hsv.x;
     let sat = hsv.y;
     let val = hsv.z;
 
     // curvature influence from depth
-    let curvature = 1.0 + u.zoom_params.y * depthVal * 5.0;
+    var curvature = 1.0 + u.zoom_params.y * depthVal * 5.0;
 
     // 4D point
     let point4 = vec4<f32>(uv.x, uv.y, depthVal, hue * sat * curvature);
@@ -118,12 +118,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let nSat = nHsv.y;
             let nHueW = nHue * (1.0 + nSat * u.zoom_params.x);
 
-            let nUV = vec2<f32>(vec2<f32>(f32(cand.x) / dims.x, f32(cand.y) / dims.y));
+            var nUV = vec2<f32>(vec2<f32>(f32(cand.x) / dims.x, f32(cand.y) / dims.y));
             let duv = nUV - uv;
             let ddepth = nDepth - depthVal;
             let dhue  = nHueW - hue * (1.0 + sat * u.zoom_params.x);
             // curvature weighting
-            let curvature = depthVal * depthVal * 5.0 * u.zoom_params.w; // param4 as curvature strength
+            var curvature = depthVal * depthVal * 5.0 * u.zoom_params.w; // param4 as curvature strength
             let weightedHue = dhue * curvature;
             let dist4 = dot(duv, duv) + ddepth * ddepth + weightedHue * weightedHue;
 
@@ -165,9 +165,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var sumXH : f32 = 0.0;
     var sumYH : f32 = 0.0;
     for (var i : i32 = 0; i < 4; i = i + 1) {
-        let nUV = vec2<f32>(neighbors[i].x, neighbors[i].y);
+        var nUV = vec2<f32>(neighbors[i].x, neighbors[i].y);
         let nh = neighbors[i].w;
-        let d = nUV - uv;
+        var d = nUV - uv;
         sumXX = sumXX + d.x * d.x;
         sumYY = sumYY + d.y * d.y;
         sumXY = sumXY + d.x * d.y;
@@ -179,7 +179,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (abs(det) > 1e-6) {
         let invDet = 1.0 / det;
         let a = (sumYY * sumXH - sumXY * sumYH) * invDet;
-        let b = (-sumXY * sumXH + sumXX * sumYH) * invDet;
+        var b = (-sumXY * sumXH + sumXX * sumYH) * invDet;
         grad = vec2<f32>(a, b);
     }
 

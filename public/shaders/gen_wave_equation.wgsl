@@ -15,7 +15,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
 
@@ -44,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let laplacian = (n + s + e + w - 4.0 * height) * 0.25;
 
     // Mouse creates wave pulses
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
     // FIX: Inverted smoothstep for safety
     // Original: smoothstep(0.15, 0.0, distance)
@@ -65,6 +65,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let final_color = color + vec3<f32>(0.3, 0.6, 1.0) * smoothstep(0.05, 0.15, abs(velocity)) * 0.5;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(height, velocity, 0.0, 1.0));
 }

@@ -31,9 +31,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Params
     let dotSizeScale = 0.5 + u.zoom_params.x; // 0.5 to 1.5
@@ -87,6 +87,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalColor = color * mask;
     finalColor.a = 1.0;
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
 }

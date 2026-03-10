@@ -32,8 +32,8 @@ struct Uniforms {
 //  RGB ↔ HSV conversions
 // ---------------------------------------------------------------
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
-    let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    let p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
+    var K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+    var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
     let q = mix(vec4<f32>(p.x, p.y, p.w, c.r), vec4<f32>(c.r, p.y, p.z, p.x), step(p.x, c.r));
     let d = q.x - min(q.w, q.y);
     let e = 1.0e-10;
@@ -41,8 +41,8 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 }
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
-    let K = vec4<f32>(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-    let p = abs(fract(vec3<f32>(c.x, c.x, c.x) + K.xyz) * 6.0 - K.www);
+    var K = vec4<f32>(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+    var p = abs(fract(vec3<f32>(c.x, c.x, c.x) + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
@@ -51,7 +51,7 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
 // ---------------------------------------------------------------
 fn to4D(uv: vec2<f32>, time: f32) -> vec4<f32> {
     // Map uv from [0,1] → [-1,1]
-    let p = uv * 2.0 - 1.0;
+    var p = uv * 2.0 - 1.0;
     // Radial distance from centre
     var r = length(p);
     // Clamp to unit disc to keep mapping stable
@@ -88,7 +88,7 @@ fn curlField(uv: vec2<f32>, texelSize: vec2<f32>) -> vec2<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 
-    let uv = vec2<f32>(gid.xy) / dims;
+    var uv = vec2<f32>(gid.xy) / dims;
     let time = u.config.x;
     let texelSize = 1.0 / dims;
 
@@ -169,11 +169,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalRGB = warpedPrev * persistence + newRGB * (1.0 - persistence);
 
     // Store for next frame
-    textureStore(persistBuf, gid.xy, vec4<f32>(finalRGB, 1.0));
+    textureStore(persistBuf, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
 
     // -----------------------------------------------------------------
     //  Output (HDR allowed for glow effects)
     // -----------------------------------------------------------------
-    textureStore(outTex, gid.xy, vec4<f32>(finalRGB, 1.0));
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

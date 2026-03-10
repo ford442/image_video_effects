@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     newHeat = newHeat + (motion * sensitivity * 0.1);
 
     // Add Mouse Heat
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDistVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(mouseDistVec);
     let radius = 0.05;

@@ -48,8 +48,8 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
     for(var y: i32 = -1; y <= 1; y = y + 1) {
         for(var x: i32 = -1; x <= 1; x = x + 1) {
             let lattice = vec2<f32>(f32(x), f32(y));
-            let offset = hash22(g + lattice);
-            let p = lattice + offset - f;
+            var offset = hash22(g + lattice);
+            var p = lattice + offset - f;
             let d = dot(p, p);
 
             if(d < res.dist) {
@@ -70,9 +70,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
 
     // Parameters
     let scale = u.zoom_params.x * 30.0 + 5.0;
@@ -99,7 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         active = falloff;
 
         // Push shards away and rotate slightly
-        let dir = normalize(mouseVec);
+        var dir = normalize(mouseVec);
         offset = dir * falloff * displaceStr * 0.2;
 
         // Add some jitter based on ID
@@ -143,5 +143,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = color + vec4<f32>(0.1, 0.1, 0.2, 0.0) * active;
     }
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

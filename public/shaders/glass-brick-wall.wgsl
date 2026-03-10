@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
     // Params
@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let specStr = mix(0.0, 2.0, u.zoom_params.w); // w: Specular strength
 
     // Mouse as light source
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let lightPos = vec3<f32>(mouse * vec2<f32>(aspect, 1.0), 0.5);
     let pixelPos = vec3<f32>(uv * vec2<f32>(aspect, 1.0), 0.0);
     let lightDir = normalize(lightPos - pixelPos);
@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Darken Mortar
     color = mix(color, vec4<f32>(0.1, 0.1, 0.1, 1.0), mortarMask);
 
-    textureStore(writeTexture, global_id.xy, color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

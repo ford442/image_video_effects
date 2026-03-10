@@ -6,5 +6,9 @@
   "description": "Separates RGB channels into distinct ripple waves emanating from the mouse cursor.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

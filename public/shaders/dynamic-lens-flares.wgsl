@@ -29,7 +29,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let aspect = resolution.x / resolution.y;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Params
   let intensity = mix(0.1, 1.5, u.zoom_params.x);
@@ -37,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spread = mix(0.1, 2.0, u.zoom_params.z);
   let ghostCount = mix(2.0, 8.0, u.zoom_params.w);
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
 
   // Base Image
   var finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // So if Mouse is Light Source, and we are looking at Pixel UV.
   // We want to draw ghosts at positions along the axis defined by (0.5, 0.5) and Mouse.
 
-  let center = vec2<f32>(0.5, 0.5);
+  var center = vec2<f32>(0.5, 0.5);
   let axis = center - mouse; // Vector from light to center
 
   // We need to determine if the current pixel UV is part of a "ghost".

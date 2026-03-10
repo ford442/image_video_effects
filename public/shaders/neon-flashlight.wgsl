@@ -46,7 +46,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let radius = mix(0.1, 0.6, u.zoom_params.x);
@@ -55,7 +55,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ambient = u.zoom_params.w;
 
     // Mouse Info
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let distVec = (uv - mousePos) * vec2(aspect, 1.0);
     let dist = length(distVec);
@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mix
     let finalColor = mix(ambientColor, neonColor + ambientColor * 0.2, spotlight);
 
-    textureStore(writeTexture, global_id.xy, vec4(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalColor, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -6,5 +6,9 @@
   "description": "Audio-driven per-pixel displacements from an FFT texture.",
   "features": [
     "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
   ]
 }

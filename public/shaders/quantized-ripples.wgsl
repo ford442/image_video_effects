@@ -22,10 +22,10 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
-    let mouse = u.zoom_config.yz; // Mouse position 0-1
+    var mouse = u.zoom_config.yz; // Mouse position 0-1
 
     // Params
     let freq = u.zoom_params.x * 50.0 + 5.0;
@@ -54,5 +54,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = mix(original, quantized, effectStrength);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

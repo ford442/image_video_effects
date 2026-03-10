@@ -31,7 +31,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Params
@@ -50,7 +50,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevVal = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
 
   // Mouse interaction
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
   let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
   let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Random flicker
   let flicker = step(0.1, hash22(vec2<f32>(cellID.x, charID)).x);
 
-  let rainColor = vec3<f32>(0.0, 1.0, 0.2) * charBright * flicker;
+  var rainColor = vec3<f32>(0.0, 1.0, 0.2) * charBright * flicker;
 
   // Some random "glitch" blocks
   if (hash22(vec2<f32>(cellID.x, charID)).y > 0.98 - density * 0.1) {
@@ -108,5 +108,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let finalColor = mix(rainColor, imageColor, clamp(newVal, 0.0, 1.0));
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

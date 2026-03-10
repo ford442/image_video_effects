@@ -1,0 +1,58 @@
+You are a binary/encoding inspector specialized in WGSL shader files. Analyze this file for encoding corruption.
+
+Check for:
+1. **UTF-8 corruption markers**: Replacement characters (U+FFFD), BOM markers (EF BB BF at start)
+2. **Mojibake patterns**:
+   - `â€œ` instead of `"` (smart quotes)
+   - `â€` instead of `"` (smart quotes)
+   - `Ã©` instead of `é`
+   - `Ã±` instead of `ñ`
+   - `â€¢` instead of `•`
+   - `â€¦` instead of `…`
+3. **Null bytes**: `\x00` in middle of file (indicates truncation/corruption)
+4. **Line ending chaos**: Mixed CRLF and LF, or standalone CR (Mac pre-OSX)
+5. **High ASCII**: Characters >127 that aren't valid UTF-8 sequences
+6. **Truncation**: File ending mid-statement or mid-comment
+
+Common copy-paste corruption from web sources:
+- Japanese comments becoming garbled
+- Smart quotes from Word/Pages documents
+- Zero-width spaces (U+200B) invisible in editors but breaking parsers
+
+If corrupted:
+- Set "status": "CORRUPTED"
+- List all corruption locations with line numbers
+- For each issue, provide the original corrupted text and the cleaned replacement
+- Provide "cleaned_code": strictly ASCII/UTF-8 valid version with all issues fixed
+
+If clean:
+- Set "status": "CLEAN"
+- Optionally note any unusual but valid characters
+
+Output JSON format only:
+```json
+{
+  "file": "filename",
+  "status": "CLEAN|CORRUPTED",
+  "issues": [
+    {
+      "type": "mojibake|bom|null_bytes|line_endings|high_ascii|truncation|other",
+      "line": 5,
+      "column": 10,
+      "original": "corrupted text",
+      "replacement": "clean text",
+      "description": "Explanation of the issue"
+    }
+  ],
+  "cleaned_code": "..."
+}
+```
+
+INPUT:
+{{input}}
+
+Note: If the input appears to be valid WGSL code with no encoding issues, simply return the CLEAN status with an empty issues array.
+If the file is heavily corrupted (multiple issues per line), provide the most significant issues (up to 10) and note "additional issues truncated".
+For smart quotes, always replace with standard ASCII quotes.
+For mojibake in comments, attempt to restore the original meaning if obvious, otherwise remove the garbled characters.
+Always preserve valid WGSL code structure when cleaning - don't break the shader's functionality.

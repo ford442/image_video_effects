@@ -3,5 +3,9 @@
   "name": "Liquid (Interactive)",
   "url": "shaders/liquid.wgsl",
   "category": "image",
-  "description": ""
+  "description": "",
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

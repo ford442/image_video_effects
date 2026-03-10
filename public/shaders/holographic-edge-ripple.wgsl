@@ -31,7 +31,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let texel = 1.0 / resolution;
 
     // Parameters
@@ -41,7 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeThreshold = u.zoom_params.w; // e.g. 0.2
 
     // Mouse Interaction
-    let mousePos = u.zoom_config.yz; // Mouse coordinates (0-1)
+    var mousePos = u.zoom_config.yz; // Mouse coordinates (0-1)
 
     // Calculate aspect-corrected distance to mouse
     let aspect = resolution.x / resolution.y;
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = mix(finalColor, glowColor, isEdge * 0.8 * abs(wave));
 
     // Output
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

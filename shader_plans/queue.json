@@ -1,0 +1,66 @@
+{
+  "current": null,
+  "queue": [],
+  "completed": [
+    {
+      "id": "chronos-labyrinth",
+      "date": "2026-03-06",
+      "file": "2026-03-06_chronos-labyrinth.md",
+      "title": "Chronos Labyrinth",
+      "status": "completed",
+      "created_at": "2026-03-06T08:00:00Z",
+      "implemented_at": "2026-03-06T22:30:00Z",
+      "shader_file": "gen-chronos-labyrinth.wgsl",
+      "json_file": "shader_definitions/generative/gen-chronos-labyrinth.json"
+    },
+    {
+      "filename": "2026-03-07_wasm-hls-physarum-swarm.md",
+      "title": "WASM + HLS Live + Physarum Swarm",
+      "added": "2026-03-07T09:02:06.984929",
+      "completed": "2026-03-07T09:06:35.397417"
+    },
+    {
+      "filename": "2026-03-08_live-studio-tab.md",
+      "title": "Live Studio Tab – HLS + WASM Toggle + Bilibili + Danmaku",
+      "added": "2026-03-07T09:08:09.892871",
+      "completed": "2026-03-07T09:13:43.539459"
+    },
+    {
+      "filename": "2026-03-08_silica-tsunami.md",
+      "title": "Silica Tsunami",
+      "added": "2026-03-09T09:15:40.174132",
+      "completed": "2026-03-09T09:17:37.021489"
+    },
+    {
+      "filename": "2026-03-09_prismatic-bismuth-lattice.md",
+      "title": "Prismatic Bismuth Lattice",
+      "added": "2026-03-10T06:33:35.731684",
+      "completed": "2026-03-10T08:27:17.542488"
+    }
+  ],
+  "rejected": [],
+  "on_hold": [],
+  "metadata": {
+    "version": "1.0",
+    "description": "Shader plan queue - implement in FIFO order",
+    "rules": [
+      "Only implement 'approved' plans",
+      "Process in date order (oldest first)",
+      "Create one plan per day max",
+      "Each plan gets its own dated file"
+    ]
+  },
+  "pending": [
+    {
+      "filename": "2026-03-08_raptor-mini.md",
+      "title": "Raptor Mini – Fast Predatory Agent Swarm",
+      "added": "2026-03-07T09:06:05.264901"
+    },
+    {
+      "filename": "2026-03-09_cyber-terminal.md",
+      "title": "Procedural Cyber Terminal (ASCII)",
+      "added": "2026-03-10T10:00:00.000000"
+    }
+  ],
+  "in_progress": null
+}

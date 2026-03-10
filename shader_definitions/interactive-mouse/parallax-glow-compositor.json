@@ -5,10 +5,43 @@
   "category": "image",
   "description": "Compositor that applies chromatic aberration, volumetric glow, and depth-aware compositing for volumetric zooms.",
   "params": [
-    { "id": "glowRadius", "name": "Glow Radius", "default": 1.0, "min": 0.0, "max": 10.0 },
-    { "id": "glowIntensity", "name": "Glow Intensity", "default": 1.0, "min": 0.0, "max": 4.0 },
-    { "id": "aberration", "name": "Aberration", "default": 0.02, "min": 0.0, "max": 0.2 },
-    { "id": "bloomThreshold", "name": "Bloom Threshold", "default": 0.3, "min": 0.0, "max": 1.0 }
+    {
+      "id": "glowRadius",
+      "name": "Glow Radius",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 4.0
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.02,
+      "min": 0.0,
+      "max": 0.2
+    },
+    {
+      "id": "bloomThreshold",
+      "name": "Bloom Threshold",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    }
   ],
-  "features": ["multi-pass", "volumetric", "depth", "composite"]
+  "features": [
+    "multi-pass",
+    "volumetric",
+    "depth",
+    "composite"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
 }

@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Sobel Edge Detection
     let step = 1.0 / resolution;
@@ -57,7 +57,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let originalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Mouse Reveal
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let aspectRatio = resolution.x / resolution.y;
     let distVec = (uv - mousePos) * vec2<f32>(aspectRatio, 1.0);
     let dist = length(distVec);
@@ -70,7 +70,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mix
     let finalColor = mix(sketchColor, originalColor, revealMask);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Pass-through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

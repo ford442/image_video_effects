@@ -24,8 +24,8 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let mousePos = u.zoom_config.yz;
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  var mousePos = u.zoom_config.yz;
 
   let flareWidth = u.zoom_params.x * 20.0 + 1.0;
   let flareInt = u.zoom_params.y * 2.0;
@@ -68,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Additive blending
   let finalColor = baseColor + vec4<f32>(flare, 0.0);
 
-  textureStore(writeTexture, global_id.xy, finalColor);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
   // Pass depth
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

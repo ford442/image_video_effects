@@ -41,7 +41,7 @@ fn voronoi(p: vec2<f32>) -> f32 {
             let neighbor = vec2<f32>(f32(x), f32(y));
             let cellId = i + neighbor;
             let point = neighbor + hash22(cellId) - f;
-            let dist = length(point);
+            var dist = length(point);
             minDist = min(minDist, dist);
         }
     }
@@ -52,17 +52,17 @@ fn voronoi(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
     // Mouse Interaction
-    let mousePos = u.zoom_config.yz;
+    var mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w; // 1.0 if down
 
     // Correct aspect ratio for distance calculation
     let aspect = resolution.x / resolution.y;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+    var dist = length(distVec);
 
     // Params
     let glowRadius = u.zoom_params.x * 0.5; // 0.0 to 0.5
@@ -99,5 +99,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add glow to original color
     let outColor = color + tint * finalGlow;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(outColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, 1.0));
 }

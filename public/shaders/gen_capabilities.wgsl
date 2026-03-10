@@ -22,14 +22,14 @@ fn hash12(p: vec2<f32>) -> f32 {
 fn segment(uv: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
     let pa = uv - a;
     let ba = b - a;
-    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    var h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
     return smoothstep(0.005, 0.0, length(pa - ba * h));
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let px = vec2<i32>(global_id.xy);
 
@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // 3. Data Readout Visualization (Fake FFT/Data bars at bottom)
   if (uv.y < 0.1) {
       let barId = floor(uv.x * 20.0);
-      let h = hash12(vec2<f32>(barId, floor(time * 5.0)));
+      var h = hash12(vec2<f32>(barId, floor(time * 5.0)));
       if (uv.y < h * 0.08) {
           color += vec3<f32>(0.0, 0.8, 0.2);
       }
@@ -98,6 +98,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let output = vec4<f32>(finalColor, 1.0);
 
   // Write to Output and History
-  textureStore(writeTexture, global_id.xy, output);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), output);
   textureStore(dataTextureA, global_id.xy, output);
 }

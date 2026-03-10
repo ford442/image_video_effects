@@ -33,8 +33,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mousePos = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mousePos = u.zoom_config.yz;
 
     // Parameters
     let strength = u.zoom_params.x; // -1.0 to 1.0 (Attract vs Repel)
@@ -58,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let falloff = pow(1.0 - t, hardness);
 
         // Direction from mouse to UV (push away vector)
-        let dir = normalize(diff);
+        var dir = normalize(diff);
 
         // To pull pixels IN towards mouse, we must sample OUT away from mouse.
         // So we ADD (UV - Mouse) direction.
@@ -78,5 +78,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalUV = clamp(uv + sampleOffset, vec2<f32>(0.0), vec2<f32>(1.0));
     let finalColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    textureStore(writeTexture, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 }

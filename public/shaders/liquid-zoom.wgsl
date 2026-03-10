@@ -29,19 +29,19 @@ fn sample_zooming_layer(
   zoom_center: vec2<f32>,
   cycle_offset: f32
 ) -> vec4<f32> {
-  let fg_speed = u.zoom_params.x;
-  let bg_speed = u.zoom_params.y;
-  let parallax_strength = u.zoom_params.z;
+  var fg_speed = u.zoom_params.x;
+  var bg_speed = u.zoom_params.y;
+  var parallax_strength = u.zoom_params.z;
 
   // Depth 0.0 = Near, 1.0 = Far
   // parallax_factor: 1.0 (Near) -> 0.0 (Far)
-  let parallax_factor = pow(1.0 - depth, parallax_strength);
+  var parallax_factor = pow(1.0 - depth, parallax_strength);
 
   // Calculate speed. If bg_speed is 0 and depth is 1.0, speed is 0.
-  let per_pixel_speed = mix(bg_speed, fg_speed, parallax_factor);
+  var per_pixel_speed = mix(bg_speed, fg_speed, parallax_factor);
   
   // High intensity allows objects to get very large ("move past")
-  let zoom_intensity = 4.0;
+  var zoom_intensity = 4.0;
 
   // cycle_offset shifts the phase for multi-layering
   // fract ensure it loops 0..1
@@ -51,13 +51,13 @@ fn sample_zooming_layer(
   // We want Outward movement (Zoom In).
   // Scale should go from 1.0 (distance) -> Large (near).
   // We multiply by parallax_factor so that if factor is 0 (Far), scale stays 1.0.
-  let scale = 1.0 + zoom_progress * zoom_intensity * parallax_factor;
+  var scale = 1.0 + zoom_progress * zoom_intensity * parallax_factor;
 
   // Transform UVs
   let repeating_uv = (uv - zoom_center) / scale + zoom_center;
 
   // Use seamless wrapping
-  let wrapped_uv = ping_pong_v2(repeating_uv);
+  var wrapped_uv = ping_pong_v2(repeating_uv);
 
   let color = textureSampleLevel(readTexture, non_filtering_sampler, wrapped_uv, 0.0);
 
@@ -84,7 +84,7 @@ fn sample_zooming_layer(
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / resolution;
   let zoom_time = u.zoom_config.x;
   let zoom_center = u.zoom_config.yz;
 
@@ -109,7 +109,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   
   final_color = vec4<f32>(mix(final_color.rgb, fog_color, fog_amount), final_color.a);
 
-  textureStore(writeTexture, global_id.xy, vec4(final_color.rgb, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_color.rgb, 1.0));
 
 
   // --- Depth Texture Update ---
@@ -120,12 +120,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // We should probably just sample layer2 if layer2.a > 0.5?
 
   // Re-calculate parameters for the update logic
-  let fg_speed = u.zoom_params.x;
-  let bg_speed = u.zoom_params.y;
-  let parallax_strength = u.zoom_params.z;
-  let parallax_factor = pow(1.0 - static_depth, parallax_strength);
-  let per_pixel_speed = mix(bg_speed, fg_speed, parallax_factor);
-  let zoom_intensity = 4.0;
+  var fg_speed = u.zoom_params.x;
+  var bg_speed = u.zoom_params.y;
+  var parallax_strength = u.zoom_params.z;
+  var parallax_factor = pow(1.0 - static_depth, parallax_strength);
+  var per_pixel_speed = mix(bg_speed, fg_speed, parallax_factor);
+  var zoom_intensity = 4.0;
 
   // We follow the MAIN layer (whichever is dominant).
   // Let's assume a simple single-pass transform for the depth map to avoid artifacts,
@@ -166,9 +166,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
      active_progress = zoom_progress_2;
   }
 
-  let scale = 1.0 + active_progress * zoom_intensity * parallax_factor;
+  var scale = 1.0 + active_progress * zoom_intensity * parallax_factor;
   let transformed_uv = (uv - zoom_center) / scale + zoom_center;
-  let wrapped_uv = ping_pong_v2(transformed_uv);
+  var wrapped_uv = ping_pong_v2(transformed_uv);
 
   let new_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;
 

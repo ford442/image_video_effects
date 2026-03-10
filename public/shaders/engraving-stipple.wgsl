@@ -29,21 +29,21 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
     return;
   }
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
+  var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
   // Params
   let density = mix(1.0, 4.0, u.zoom_params.x); // Dot density scaling
   let threshold_bias = u.zoom_params.y; // Overall darkness
   let mouse_light_strength = u.zoom_params.z;
 
-  let mouse = u.zoom_config.yz;
+  var mouse = u.zoom_config.yz;
   let aspect = u.config.z / u.config.w;
 
   // Sample Image

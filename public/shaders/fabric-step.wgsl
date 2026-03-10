@@ -33,7 +33,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 fn noise2D(p: vec2<f32>) -> f32 {
-  let i = floor(p);
+  var i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   return mix(
@@ -62,7 +62,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
   
-  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   let dt = 0.016; // Fixed timestep
   
@@ -92,13 +92,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   vel.y = vel.y + gravity * dt;
   
   // Apply mouse interaction as repulsive force
-  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let toMouse = pos - mouse;
   let mouseDist = length(toMouse);
   let mouseInfluenceRadius = 0.15;
   
   if (mouseDist < mouseInfluenceRadius && mouseDist > 0.001) {
-    let force = (1.0 - mouseDist / mouseInfluenceRadius) * 0.02;
+    var force = (1.0 - mouseDist / mouseInfluenceRadius) * 0.02;
     vel = vel + normalize(toMouse) * force;
   }
   
@@ -111,7 +111,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let toRipple = pos - ripple.xy;
         let dist = length(toRipple);
         if (dist < 0.2 && dist > 0.001) {
-          let force = (1.0 - dist / 0.2) * (1.0 - rippleAge / 2.0) * 0.03;
+          var force = (1.0 - dist / 0.2) * (1.0 - rippleAge / 2.0) * 0.03;
           vel = vel + normalize(toRipple) * force;
         }
       }
@@ -177,20 +177,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Up spring
     if (coord.y > 0u) {
-      let delta = pos - upPos;
-      let dist = length(delta);
+      var delta = pos - upPos;
+      var dist = length(delta);
       if (dist > restLen && dist < tearThreshold * restLen) {
-        let correction = (dist - restLen) / dist * 0.5 * stiffness;
+        var correction = (dist - restLen) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
       }
     }
     
     // Down spring
     if (coord.y < size.y - 1u) {
-      let delta = pos - downPos;
-      let dist = length(delta);
+      var delta = pos - downPos;
+      var dist = length(delta);
       if (dist > restLen && dist < tearThreshold * restLen) {
-        let correction = (dist - restLen) / dist * 0.5 * stiffness;
+        var correction = (dist - restLen) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
       }
     }
@@ -210,11 +210,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Calculate strain for visualization
   var totalStrain = 0.0;
   if (coord.x > 0u) {
-    let d = length(pos - leftPos);
+    var d = length(pos - leftPos);
     totalStrain = totalStrain + abs(d - restLen) / restLen;
   }
   if (coord.y > 0u) {
-    let d = length(pos - upPos);
+    var d = length(pos - upPos);
     totalStrain = totalStrain + abs(d - restLen) / restLen;
   }
   totalStrain = clamp(totalStrain * 2.0, 0.0, 1.0);

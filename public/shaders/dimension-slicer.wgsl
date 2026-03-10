@@ -39,8 +39,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let uv = vec2<f32>(global_id.xy) / dims;
-    let center = vec2<f32>(0.5);
+    var uv = vec2<f32>(global_id.xy) / dims;
+    var center = vec2<f32>(0.5);
     let aspect = dims.x / dims.y;
 
     // Parameters
@@ -50,10 +50,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberration = u.zoom_params.w * 0.05;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
 
     // Coordinate relative to mouse
-    let p = uv - mouse;
+    var p = uv - mouse;
     p.x *= aspect;
 
     // Rotate space to align with slice angle
@@ -99,5 +99,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor *= (0.5 + 0.5 * shadow);
     }
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

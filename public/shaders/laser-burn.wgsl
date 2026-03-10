@@ -26,7 +26,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
     let beamSize = mix(0.01, 0.15, u.zoom_params.x);
@@ -42,7 +42,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var heatLevel = prev.g;
 
     // Mouse Interaction
-    let mouse = u.zoom_config.yz;
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
 
     let aspect = resolution.x / resolution.y;
@@ -84,7 +84,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, global_id.xy, vec4<f32>(charLevel, cooledHeat, 0.0, 1.0));
 
     // Output to Screen
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
     // Pass Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
