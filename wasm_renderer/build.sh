@@ -18,6 +18,11 @@ cd "$(dirname "$0")"
 # Set writable cache location for TOT emscripten
 export EM_CACHE=/tmp/emscripten_cache
 
+# Pre-install the emdawnwebgpu port so CMake can find its headers.
+# --use-port at link time won't populate the include dir until after cmake
+# configure, so we prime it here using embuilder.
+echo "=== Pre-building emdawnwebgpu port ==="
+embuilder build emdawnwebgpu 2>&1 | tail -3
 
 # Clean previous build
 rm -rf build
