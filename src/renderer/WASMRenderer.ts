@@ -11,6 +11,10 @@ export class WASMRenderer implements Renderer {
   private mouseDown = false;
   private initialized = false;
 
+  // Offscreen canvas for extracting video/image pixel data
+  private offscreenCanvas: HTMLCanvasElement | null = null;
+  private offscreenCtx: CanvasRenderingContext2D | null = null;
+
   constructor(config: RendererConfig) {
     this.config = config;
   }
@@ -65,8 +69,51 @@ export class WASMRenderer implements Renderer {
   }
 
   updateVideoFrame(): void {
-    // C++ LoadImage / video texture upload not yet implemented in renderer.cpp.
-    // When it is, upload this.video pixel data here via a new WASM export.
+    if (!this.video || this.video.readyState < 2) return;
+
+    const w = this.video.videoWidth;
+    const h = this.video.videoHeight;
+    if (w === 0 || h === 0) return;
+
+    // Lazily create / resize the offscreen canvas
+    if (!this.offscreenCanvas || this.offscreenCanvas.width !== w || this.offscreenCanvas.height !== h) {
+      this.offscreenCanvas = document.createElement('canvas');
+      this.offscreenCanvas.width = w;
+      this.offscreenCanvas.height = h;
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    if (!this.offscreenCtx) return;
+
+    this.offscreenCtx.drawImage(this.video, 0, 0, w, h);
+    const imageData = this.offscreenCtx.getImageData(0, 0, w, h);
+    WasmBridge.uploadVideoFrame(imageData.data, w, h);
+  }
+
+  /**
+   * Load an image from a URL into the C++ renderer's read texture.
+   */
+  async loadImageFromURL(url: string): Promise<void> {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+    await img.decode();
+
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+
+    if (!this.offscreenCanvas || this.offscreenCanvas.width !== w || this.offscreenCanvas.height !== h) {
+      this.offscreenCanvas = document.createElement('canvas');
+      this.offscreenCanvas.width = w;
+      this.offscreenCanvas.height = h;
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    if (!this.offscreenCtx) return;
+
+    this.offscreenCtx.drawImage(img, 0, 0, w, h);
+    const imageData = this.offscreenCtx.getImageData(0, 0, w, h);
+    WasmBridge.uploadImageData(imageData.data, w, h);
   }
 
   updateAudioData(_bass: number, _mid: number, _treble: number): void {
@@ -97,6 +144,8 @@ export class WASMRenderer implements Renderer {
     }
     WasmBridge.shutdownWasmRenderer();
     this.initialized = false;
+    this.offscreenCanvas = null;
+    this.offscreenCtx = null;
   }
 
   // ── Internal ──────────────────────────────────────────────────────────────

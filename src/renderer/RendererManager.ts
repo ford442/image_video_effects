@@ -129,6 +129,13 @@ export class RendererManager {
     }
   }
 
+  /** Load an image from URL into the WASM renderer's read texture. */
+  async loadImageFromURL(url: string): Promise<void> {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      return this.currentRenderer.loadImageFromURL(url);
+    }
+  }
+
   getMetrics(): RendererMetrics {
     return this.metrics;
   }

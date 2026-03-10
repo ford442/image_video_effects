@@ -223,6 +223,38 @@ export async function loadShaderFromURL(id, url) {
   }
 }
 
+/**
+ * Upload RGBA pixel data as an image (one-time load).
+ * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
+ * @param {number} width
+ * @param {number} height
+ */
+export function uploadImageData(rgbaPixels, width, height) {
+  if (!state.initialized || !wasmModule) return;
+
+  const byteLen = rgbaPixels.length;
+  const ptr = wasmModule._malloc(byteLen);
+  wasmModule.HEAPU8.set(rgbaPixels, ptr);
+  wasmModule.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, width, height]);
+  wasmModule._free(ptr);
+}
+
+/**
+ * Upload RGBA pixel data as a video frame (called every frame).
+ * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
+ * @param {number} width
+ * @param {number} height
+ */
+export function uploadVideoFrame(rgbaPixels, width, height) {
+  if (!state.initialized || !wasmModule) return;
+
+  const byteLen = rgbaPixels.length;
+  const ptr = wasmModule._malloc(byteLen);
+  wasmModule.HEAPU8.set(rgbaPixels, ptr);
+  wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
+  wasmModule._free(ptr);
+}
+
 // Default export
 export default {
   initWasmRenderer,
@@ -234,5 +266,7 @@ export default {
   addRipple,
   clearRipples,
   getFPS,
-  isInitialized
+  isInitialized,
+  uploadImageData,
+  uploadVideoFrame
 };
