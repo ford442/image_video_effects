@@ -146,6 +146,72 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Highly recommended for testing advanced refraction, iridescence, and sub-surface scattering materials.
 
 
+
+### Suggestion: Aerogel Geometric Abstraction Quasar
+- **Date:** 2026-03-09
+- **Prompt:** "A mesmerizing visualization of a quasar represented through geometric abstraction, constructed entirely of translucent, weightless aerogel blocks and spheres. The central subject, a stylized quasar, emits a blindingly bright, pure white and cyan light that diffuses beautifully through the porous aerogel material. The lighting is extremely high-contrast, with deep, crushing blacks in the void surrounding the luminous core, creating a stark, metaphysical mood. Captured with a sharp, medium format lens, perfectly balanced symmetrical composition."
+- **Negative prompt:** "organic shapes, realistic stars, messy, blurry, low contrast, complex textures"
+- **Tags:** sci-fi, abstract, space, quasar, geometric
+- **Style / Reference:** minimalist 3D render, metaphysical art
+- **Composition:** perfectly symmetrical, centered, high contrast
+- **Color palette:** deep black void, pure white core, cyan and deep blue refractions
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260309_aerogel-quasar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the interaction of extreme light sources with highly scattering, low-density translucent materials like aerogel.
+
+### Suggestion: Biopunk Bioluminescent Fungi Swamp
+- **Date:** 2026-03-09
+- **Prompt:** "A macro, photorealistic shot deep within a murky, overgrown swamp teeming with gigantic, pulsating bioluminescent fungi. The fungi subjects are engineered with complex biopunk aesthetics, featuring semi-translucent, vein-covered caps that drip viscous, glowing green slime. The lighting is exclusively from the fungi's eerie bioluminescence, casting sickly green and vibrant magenta hues onto the wet, dark surroundings. The mood is toxic, alien, and darkly beautiful. Captured with a macro lens, incredibly shallow depth of field, focusing on a single dripping slime droplet."
+- **Negative prompt:** "sunlight, daylight, dry, pleasant, clean, low-res"
+- **Tags:** biopunk, nature, macro, glowing, alien
+- **Style / Reference:** biopunk concept art, photorealistic macro photography
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** toxic greens, vibrant magentas, deep dark browns
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260309_biopunk-fungi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing sub-surface scattering on organic materials, glowing viscous fluids (slime), and extreme macro depth of field.
+
+### Suggestion: Graphene Dyson Swarm Construction
+- **Date:** 2026-03-09
+- **Prompt:** "An epic, wide-angle view of a colossal Dyson swarm under construction around a turbulent, young yellow dwarf star. The swarm consists of millions of hexagonal, mirror-like solar collectors made of incredibly thin, shimmering graphene. The central star casts blinding, harsh, unattenuated light, creating deep, sharp shadows on the immense structures. The mood is awe-inspiring, showcasing the sheer scale of a Type II civilization. Captured with an ultra-wide cinematic lens to emphasize vastness and scale."
+- **Negative prompt:** "planets, atmosphere, clouds, soft light, small scale, simple"
+- **Tags:** sci-fi, space, megastructure, epic
+- **Style / Reference:** hard sci-fi concept art, cinematic space visualization
+- **Composition:** vast perspective, dynamic angles, dwarfing scale
+- **Color palette:** intense solar yellow, pure stark white, deep void black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260309_graphene-dyson-swarm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing massive arrays of reflective, ultra-thin materials and harsh directional lighting without atmospheric scattering.
+
+### Suggestion: Bismuth Subterranean Garden
+- **Date:** 2026-03-09
+- **Prompt:** "A breathtaking, wide shot of a hidden subterranean garden where all the flora, instead of organic plants, are massive, naturally forming hopper crystals of iridescent bismuth. The stair-stepped, maze-like bismuth 'trees' and 'bushes' reflect a stunning array of rainbow colors—pinks, greens, golds, and blues. The lighting is provided by a gentle, diffuse, unknown underground source, causing the metallic surfaces to shimmer magically. The mood is serene, hidden, and otherworldly. Captured with a standard wide lens, deep focus to capture the intricate geometric details."
+- **Negative prompt:** "green plants, dirt, organic, ugly, rough, dark"
+- **Tags:** fantasy, landscape, underground, crystal, geometric
+- **Style / Reference:** fantastical landscape, surrealism, hyper-detailed 3D environment
+- **Composition:** wide landscape, deep depth of field, meandering path
+- **Color palette:** highly iridescent rainbow (metallic pinks, blues, greens, golds)
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260309_bismuth-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** An ultimate test for iridescence, complex metallic reflections, and natural geometric (hopper crystal) generation.
+
+### Suggestion: Damascus Steel Time Machine
+- **Date:** 2026-03-09
+- **Prompt:** "A detailed, dramatic portrait of an elaborate, intricate time machine mechanism resting in a dark, dusty Victorian laboratory. The central rings and gears of the subject are forged entirely from exquisite, patterned Damascus steel, featuring deep, contrasting waves of dark and light grey metal. The lighting is dramatic tenebrism, with a single, intense beam of warm amber light illuminating the complex patterns of the steel while the rest of the room falls into deep shadow. The mood is mysterious, antique, and powerful. Captured with a 50mm lens, sharp focus on the central temporal core."
+- **Negative prompt:** "modern, clean, bright, plastic, futuristic, blurry"
+- **Tags:** steampunk, mechanism, still-life, complex
+- **Style / Reference:** high-contrast still-life photography, intricate mechanical design
+- **Composition:** dramatic lighting, subject centered, dark background
+- **Color palette:** dark greys, silver, warm amber light, deep blacks
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260309_damascus-time-machine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of complex, flowing material patterns (Damascus steel) under highly dramatic, high-contrast lighting (Tenebrism).
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -168,9 +234,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
-- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal. Graphene.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
+- **Materials:** Cork, Chainmail, Fur, Amber, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Nacre, Onyx, Liquid Metal.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Coral Reef Megastructure, Bioluminescent Cavern. Clockwork Universe.
 
 ---
 
