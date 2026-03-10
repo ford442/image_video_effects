@@ -146,6 +146,70 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Highly recommended for testing advanced refraction, iridescence, and sub-surface scattering materials.
 
 
+### Suggestion: Luminescent Amethyst Geode
+- **Date:** 2026-02-24
+- **Prompt:** "A macro, photorealistic cross-section of a massive, cracked geode. Inside, thousands of jagged amethyst crystals emit a pulsating, bioluminescent purple and pink glow. The lighting is low-key, strictly internal from the glowing crystals, creating stark contrasts and deep shadows within the rocky exterior crust. The mood is mysterious and magical. Captured with a 100mm macro lens, ultra-detailed focus on the sharp edges and light refraction."
+- **Negative prompt:** "flat, cartoon, brightly lit, blurry, low resolution"
+- **Tags:** macro, nature, crystals, glowing, magical
+- **Style / Reference:** photorealistic, macro photography, geological marvel
+- **Composition:** close-up, rule of thirds, sharp center focus
+- **Color palette:** deep purples, neon pinks, dark rocky greys
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260224_luminescent-geode.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing sub-surface scattering, refraction, and emissive materials on sharp geometric shapes.
+
+### Suggestion: Cataclysmic Supernova Remnant
+- **Date:** 2026-02-24
+- **Prompt:** "A breathtaking, wide-angle shot of a cataclysmic supernova remnant expanding through deep space. The subject is a chaotic, swirling cloud of superheated plasma, glowing stellar dust, and intricate magnetic filaments. The lighting is extremely bright and dynamic, emanating from a blindingly white dwarf star at the center, casting dramatic light through the gaseous nebula. The mood is awe-inspiring and destructive. Captured as if by the James Webb Space Telescope, high dynamic range, cosmic scale."
+- **Negative prompt:** "earth, planets, spaceships, cartoon, simple colors"
+- **Tags:** sci-fi, space, nebula, cosmic, epic
+- **Style / Reference:** astrophotography, hyper-detailed, Hubble/JWST style
+- **Composition:** wide angle, expansive, centered explosion
+- **Color palette:** fiery oranges, blinding whites, deep cosmic blues, vibrant magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260224_cataclysmic-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex volumetric lighting, particle dispersion, and vibrant cosmic color palettes.
+
+### Suggestion: Futuristic Neon Fireworks Festival
+- **Date:** 2026-02-24
+- **Prompt:** "A vibrant, long-exposure photograph of a massive fireworks display over a futuristic cyberpunk metropolis. The exploding fireworks are not traditional, but form intricate geometric patterns, glowing mandalas, and cascading digital glitches in the night sky. The city below is lit by millions of neon signs and flying vehicles. The mood is celebratory, energetic, and technologically advanced. Captured from a high vantage point overlooking the skyline, showcasing the scale of the explosions."
+- **Negative prompt:** "daylight, ancient, traditional, quiet, blurry"
+- **Tags:** cyberpunk, city, fireworks, night, energetic
+- **Style / Reference:** long-exposure photography, cyberpunk aesthetic, digital art
+- **Composition:** high angle, wide skyline view
+- **Color palette:** electric cyan, neon magenta, bright yellow, dark night sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260224_neon-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing bloom effects, light trails, and complex, glowing particle simulations over urban environments.
+
+### Suggestion: Apocalyptic Volcanic Eruption
+- **Date:** 2026-02-24
+- **Prompt:** "An apocalyptic, highly detailed scene of a massive volcanic eruption tearing through a mountainous landscape at night. Rivers of glowing, viscous orange magma carve through the dark, jagged rocks, while a towering plume of thick black ash and blinding volcanic lightning dominates the sky. The lighting is harsh, chaotic, and completely dominated by the intense heat of the lava and sudden flashes of lightning. The mood is terrifying, raw, and powerful. Captured with a wide 24mm lens to show the sheer scale of the destruction."
+- **Negative prompt:** "peaceful, daylight, green grass, calm, low detail"
+- **Tags:** landscape, disaster, volcano, epic, dark
+- **Style / Reference:** cinematic disaster concept art, highly dramatic, photorealistic
+- **Composition:** wide angle, low angle looking up at the ash plume
+- **Color palette:** intense magma orange, pitch black ash, blinding white lightning
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260224_volcanic-eruption.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing emissive fluid dynamics (lava), thick volumetric smoke, and dramatic contrast lighting.
+
+### Suggestion: Enchanted Bioluminescent Forest
+- **Date:** 2026-02-24
+- **Prompt:** "A serene, mystical shot deep within an ancient, enchanted forest at night. The dense canopy blocks out all moonlight, but the forest floor is entirely illuminated by thousands of glowing, bioluminescent mushrooms, ferns, and floating ethereal spores. The lighting is soft, magical, and varied in color, with gentle cyan, green, and purple hues emanating from the flora. The mood is peaceful, magical, and untouched by humans. Captured with a 35mm lens, soft focus background, emphasizing the glowing details in the foreground."
+- **Negative prompt:** "sunlight, harsh shadows, scary, modern, people, animals"
+- **Tags:** fantasy, nature, forest, glowing, magical
+- **Style / Reference:** fantasy concept art, ethereal, highly detailed nature
+- **Composition:** ground-level perspective, shallow depth of field
+- **Color palette:** glowing cyans, soft greens, bioluminescent purples, dark forest greens
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260224_bioluminescent-forest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing soft, multi-colored ambient occlusion, particle systems (spores), and lush, glowing vegetation.
 
 ### Suggestion: Aerogel Geometric Abstraction Quasar
 - **Date:** 2026-03-09
@@ -234,6 +298,9 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
+- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal. Graphene.
+- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern. Subterranean Garden, Clockwork Universe, Time Machine.
 - **Styles:** Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
 - **Materials:** Cork, Chainmail, Fur, Amber, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Nacre, Onyx, Liquid Metal.
 - **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Coral Reef Megastructure, Bioluminescent Cavern. Clockwork Universe.
