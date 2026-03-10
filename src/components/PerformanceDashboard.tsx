@@ -69,8 +69,8 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         {/* Agent Count */}
         <div style={styles.metric}>
           <div style={styles.metricValue}>
-            {agentCount >= 1000 
-              ? `${(agentCount / 1000).toFixed(1)}K` 
+            {agentCount >= 1000
+              ? `${(agentCount / 1000).toFixed(1)}K`
               : agentCount}
           </div>
           <div style={styles.metricLabel}>Agents</div>
@@ -98,7 +98,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 const FPSGraph: React.FC<{ fps: number }> = ({ fps }) => {
   // In a real implementation, this would track FPS history
   const bars = [60, 58, 62, 59, 61, 57, 60, 60, 58, 59];
-  
+
   return (
     <div style={styles.graph}>
       {bars.map((h, i) => (

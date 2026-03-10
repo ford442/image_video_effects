@@ -1,4 +1,4 @@
-import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
+import { Renderer, RendererConfig } from './Renderer';
 
 // WASM module type
 interface PixelocityWASM {
@@ -22,25 +22,11 @@ export class WASMRenderer implements Renderer {
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.canvas = canvas;
-    
+
     try {
-      // Load WASM module from public folder using dynamic script injection
-      const wasmUrl = '/wasm/pixelocity_wasm.js';
-      const script = document.createElement('script');
-      script.src = wasmUrl;
-      script.async = true;
-      
-      await new Promise<void>((resolve, reject) => {
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load WASM script'));
-        document.head.appendChild(script);
-      });
-      
-      // The WASM module is available on window.Module (Emscripten default)
-      const wasm = (window as any).Module;
-      if (!wasm) {
-        throw new Error('WASM module not found on window.Module');
-      }
+      // Load WASM module
+      const wasm = await import('/wasm/pixelocity_wasm.js');
+      await wasm.default();
       this.module = wasm as unknown as PixelocityWASM;
 
       // Initialize renderer
@@ -70,17 +56,17 @@ export class WASMRenderer implements Renderer {
 
   updateVideoFrame(): void {
     if (!this.module || !this.video || !this.glContext) return;
-    
+
     // Import video frame to WebGL texture
     // This is a simplified version - actual implementation would use
     // emscripten_webgpu_import_external_texture
     const gl = this.glContext;
-    
+
     // Create/update texture from video
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.video);
-    
+
     // Pass to WASM
     // Note: Actual implementation needs WebGPU external texture
   }

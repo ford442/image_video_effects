@@ -1,4 +1,4 @@
-import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
+import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
 
@@ -35,6 +35,9 @@ export class RendererManager {
   async switchRenderer(useWasm: boolean): Promise<boolean> {
     if (!this.canvas) return false;
 
+    // Store video reference if exists
+    const video = this.currentRenderer?.['video'] as HTMLVideoElement | undefined;
+
     // Destroy old renderer
     this.currentRenderer?.destroy();
 
@@ -45,8 +48,13 @@ export class RendererManager {
     const success = await renderer.init(this.canvas);
 
     if (success) {
-      this.currentRenderer = renderer as Renderer;
+      this.currentRenderer = renderer;
       this.metrics.isWASM = useWasm;
+
+      // Restore video if was playing
+      if (video) {
+        renderer.setVideo(video);
+      }
 
       // Start metrics collection
       this.startMetricsCollection();
@@ -84,7 +92,7 @@ export class RendererManager {
 
   setParam(name: string, value: number): void {
     this.currentRenderer?.setParam(name, value);
-    
+
     if (name === 'agentCount') {
       this.metrics.agentCount = Math.floor(value);
     }

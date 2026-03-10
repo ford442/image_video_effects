@@ -63,7 +63,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: manage_queue.py [add|complete|status] [args...]")
         sys.exit(1)
-    
+
     cmd = sys.argv[1]
     if cmd == "add" and len(sys.argv) >= 4:
         add(sys.argv[2], sys.argv[3])
