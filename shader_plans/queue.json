@@ -24,6 +24,12 @@
       "title": "Live Studio Tab \u2013 HLS + WASM Toggle + Bilibili + Danmaku",
       "added": "2026-03-07T09:08:09.892871",
       "completed": "2026-03-07T09:13:43.539459"
+    },
+    {
+      "filename": "2026-03-09_prismatic-bismuth-lattice.md",
+      "title": "Prismatic Bismuth Lattice",
+      "added": "2026-03-10T06:33:35.731684",
+      "completed": "2026-03-10T08:27:17.542488"
     }
   ],
   "rejected": [],
@@ -48,11 +54,6 @@
       "filename": "2026-03-08_silica-tsunami.md",
       "title": "Silica Tsunami",
       "added": "2026-03-08T15:23:19.072421"
-    },
-    {
-      "filename": "2026-03-09_prismatic-bismuth-lattice.md",
-      "title": "Prismatic Bismuth Lattice",
-      "added": "2026-03-10T06:33:35.731684"
     }
   ],
   "in_progress": null
