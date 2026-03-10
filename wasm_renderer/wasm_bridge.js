@@ -91,8 +91,13 @@ export function loadShader(id, wgslCode) {
   }
 
   // Allocate memory for the strings
-  const idPtr = wasmModule.stringToUTF8(id);
-  const codePtr = wasmModule.stringToUTF8(wgslCode);
+  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
+  const idPtr = wasmModule._malloc(idLen);
+  wasmModule.stringToUTF8(id, idPtr, idLen);
+
+  const codeLen = wasmModule.lengthBytesUTF8(wgslCode) + 1;
+  const codePtr = wasmModule._malloc(codeLen);
+  wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
 
   const result = wasmModule.ccall(
     'loadShader',
@@ -115,7 +120,9 @@ export function loadShader(id, wgslCode) {
 export function setActiveShader(id) {
   if (!state.initialized || !wasmModule) return;
 
-  const idPtr = wasmModule.stringToUTF8(id);
+  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
+  const idPtr = wasmModule._malloc(idLen);
+  wasmModule.stringToUTF8(id, idPtr, idLen);
   wasmModule.ccall('setActiveShader', null, ['number'], [idPtr]);
   wasmModule._free(idPtr);
 

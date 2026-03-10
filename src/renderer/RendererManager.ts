@@ -1,6 +1,7 @@
 import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
+import { ShaderEntry } from './types';
 
 export interface RendererMetrics {
   fps: number;
@@ -87,6 +88,44 @@ export class RendererManager {
     
     if (name === 'agentCount') {
       this.metrics.agentCount = Math.floor(value);
+    }
+  }
+
+  /**
+   * Load a shader into the WASM renderer by fetching its WGSL from the given URL.
+   * No-op when the JS renderer is active.
+   */
+  async loadShader(id: string, url: string): Promise<boolean> {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      return this.currentRenderer.loadShader(id, url);
+    }
+    return false;
+  }
+
+  /**
+   * Load all shaders from a shader list into the WASM renderer.
+   * Shaders are loaded concurrently.
+   */
+  async loadShaders(shaders: ShaderEntry[]): Promise<void> {
+    await Promise.all(shaders.map(s => this.loadShader(s.id, s.url)));
+  }
+
+  /** Switch to a previously loaded shader. No-op when the JS renderer is active. */
+  setActiveShader(id: string): void {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.setActiveShader(id);
+    }
+  }
+
+  addRipple(x: number, y: number): void {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.addRipple(x, y);
+    }
+  }
+
+  clearRipples(): void {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.clearRipples();
     }
   }
 

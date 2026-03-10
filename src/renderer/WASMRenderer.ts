@@ -1,118 +1,118 @@
 import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
-
-// WASM module type
-interface PixelocityWASM {
-  _initWasmRenderer: (width: number, height: number, agentCount: number) => void;
-  _updateVideoFrame: (ctx: number) => void;
-  _updateAudioData: (bass: number, mid: number, treble: number) => void;
-  _updateMousePos: (x: number, y: number) => void;
-  _toggleRenderer: (useWasm: number) => void;
-}
+import * as WasmBridge from '../../wasm_renderer/wasm_bridge.js';
 
 export class WASMRenderer implements Renderer {
-  private module: PixelocityWASM | null = null;
-  private canvas: HTMLCanvasElement | null = null;
   private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
-  private glContext: WebGLRenderingContext | null = null;
+  private animationId: number | null = null;
+  private startTime = 0;
+  private mouseX = 0.5;
+  private mouseY = 0.5;
+  private mouseDown = false;
+  private initialized = false;
 
   constructor(config: RendererConfig) {
     this.config = config;
   }
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
-    this.canvas = canvas;
-    
     try {
-      // Load WASM module from public folder using dynamic script injection
-      const wasmUrl = '/wasm/pixelocity_wasm.js';
-      const script = document.createElement('script');
-      script.src = wasmUrl;
-      script.async = true;
-      
-      await new Promise<void>((resolve, reject) => {
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load WASM script'));
-        document.head.appendChild(script);
-      });
-      
-      // The WASM module is available on window.Module (Emscripten default)
-      const wasm = (window as any).Module;
-      if (!wasm) {
-        throw new Error('WASM module not found on window.Module');
+      const ok = await WasmBridge.initWasmRenderer(canvas);
+      if (!ok) {
+        console.error('❌ WASM Renderer init failed');
+        return false;
       }
-      this.module = wasm as unknown as PixelocityWASM;
-
-      // Initialize renderer
-      this.module._initWasmRenderer(
-        this.config.width,
-        this.config.height,
-        this.config.agentCount
-      );
-
-      // Create GL context for video texture
-      this.glContext = canvas.getContext('webgl2', {
-        alpha: false,
-        premultipliedAlpha: false,
-      });
-
+      this.initialized = true;
+      this.startTime = performance.now() / 1000;
+      this.startRenderLoop();
       console.log('✅ WASM Renderer initialized');
       return true;
     } catch (err) {
-      console.error('❌ WASM init failed:', err);
+      console.error('❌ WASM Renderer init error:', err);
       return false;
     }
   }
+
+  /**
+   * Fetch a WGSL shader from url and compile it under the given id.
+   * Must be called before setActiveShader().
+   */
+  async loadShader(id: string, url: string): Promise<boolean> {
+    return WasmBridge.loadShaderFromURL(id, url);
+  }
+
+  /** Switch to a previously loaded shader. */
+  setActiveShader(id: string): void {
+    WasmBridge.setActiveShader(id);
+  }
+
+  addRipple(x: number, y: number): void {
+    WasmBridge.addRipple(x, y);
+  }
+
+  clearRipples(): void {
+    WasmBridge.clearRipples();
+  }
+
+  getFPS(): number {
+    return WasmBridge.getFPS();
+  }
+
+  // ── BaseRenderer interface ────────────────────────────────────────────────
 
   setVideo(video: HTMLVideoElement): void {
     this.video = video;
   }
 
   updateVideoFrame(): void {
-    if (!this.module || !this.video || !this.glContext) return;
-    
-    // Import video frame to WebGL texture
-    // This is a simplified version - actual implementation would use
-    // emscripten_webgpu_import_external_texture
-    const gl = this.glContext;
-    
-    // Create/update texture from video
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.video);
-    
-    // Pass to WASM
-    // Note: Actual implementation needs WebGPU external texture
+    // C++ LoadImage / video texture upload not yet implemented in renderer.cpp.
+    // When it is, upload this.video pixel data here via a new WASM export.
   }
 
-  updateAudioData(bass: number, mid: number, treble: number): void {
-    if (!this.module) return;
-    this.module._updateAudioData(bass, mid, treble);
+  updateAudioData(_bass: number, _mid: number, _treble: number): void {
+    // No C++ audio export yet.
   }
 
   updateMouse(x: number, y: number): void {
-    if (!this.module) return;
-    this.module._updateMousePos(x, y);
+    this.mouseX = x;
+    this.mouseY = y;
+    WasmBridge.updateUniforms({ mouseX: x, mouseY: y, mouseDown: this.mouseDown });
   }
 
   setParam(name: string, value: number): void {
-    // Parameters are set via uniforms in the WASM renderer
-    // This would need additional WASM exports for each parameter
+    if (name === 'mouseDown') {
+      this.mouseDown = value > 0;
+      WasmBridge.updateUniforms({ mouseDown: this.mouseDown });
+    }
   }
 
   render(): void {
-    // Rendering is handled by the WASM main loop
-    // We just update inputs here
-    if (this.video && this.video.readyState >= 2) {
-      this.updateVideoFrame();
-    }
+    // Rendering is driven by the internal animation loop.
   }
 
   destroy(): void {
-    if (this.module) {
-      this.module._toggleRenderer(0);
-      this.module = null;
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
-    this.glContext = null;
+    WasmBridge.shutdownWasmRenderer();
+    this.initialized = false;
+  }
+
+  // ── Internal ──────────────────────────────────────────────────────────────
+
+  private startRenderLoop(): void {
+    const loop = () => {
+      if (!this.initialized) return;
+      const time = performance.now() / 1000 - this.startTime;
+      WasmBridge.updateUniforms({
+        time,
+        mouseX: this.mouseX,
+        mouseY: this.mouseY,
+        mouseDown: this.mouseDown,
+      });
+      this.animationId = requestAnimationFrame(loop);
+    };
+    loop();
   }
 }
