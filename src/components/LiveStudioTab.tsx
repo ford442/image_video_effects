@@ -116,7 +116,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   // Initialize JS renderer by default
   useEffect(() => {
     initRenderer(false);
-  }, []);
+  }, [initRenderer]);
 
   return (
     <div className={`live-studio-tab ${className || ''}`} style={styles.container}>
