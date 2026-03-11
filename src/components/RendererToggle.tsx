@@ -1,111 +1,133 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 
 interface RendererToggleProps {
-  /** Controlled WASM state (optional - if not provided, component manages its own state) */
-  isWASM?: boolean;
-  /** Callback when toggle changes (optional) */
-  onToggle?: (useWasm: boolean) => void | Promise<void>;
-  /** Loading state (optional) */
-  isLoading?: boolean;
-  /** Additional CSS class */
-  className?: string;
+  isWASM: boolean;
+  onToggle: (useWasm: boolean) => Promise<void>;
+  isLoading: boolean;
+  jsFps?: number;
+  wasmFps?: number;
 }
 
-function RendererToggleComponent({ 
-  isWASM: controlledWasm,
+export const RendererToggle: React.FC<RendererToggleProps> = ({
+  isWASM,
   onToggle,
-  isLoading: controlledLoading,
-  className = ''
-}: RendererToggleProps = {}) {
-  const [internalWasm, setInternalWasm] = useState(false);
-  const [internalLoading, setInternalLoading] = useState(false);
-  const [wasmModule, setWasmModule] = useState<any>(null);
+  isLoading,
+  jsFps = 0,
+  wasmFps = 0,
+}) => {
+  const [isSwitching, setIsSwitching] = useState(false);
 
-  // Use controlled or internal state
-  const useWasm = controlledWasm !== undefined ? controlledWasm : internalWasm;
-  const isLoading = controlledLoading !== undefined ? controlledLoading : internalLoading;
+  const handleToggle = useCallback(async () => {
+    if (isLoading || isSwitching) return;
 
-  // Load WASM module when toggle is turned ON (only for internal mode)
-  useEffect(() => {
-    if (controlledWasm !== undefined) return; // Skip if controlled
-    
-    if (useWasm && !wasmModule) {
-      setInternalLoading(true);
-      
-      // Dynamic import from public folder
-      const script = document.createElement('script');
-      script.src = './wasm/pixelocity_wasm.js';
-      script.async = true;
-      script.onload = () => {
-        // The WASM module should be available on window.Module or similar
-        // For emscripten-generated JS, it creates a global Module
-        if ((window as any).Module) {
-          setWasmModule((window as any).Module);
-          console.log('🚀 C++ WASM Renderer loaded');
-        }
-        setInternalLoading(false);
-      };
-      script.onerror = (err) => {
-        console.error('Failed to load WASM module:', err);
-        setInternalLoading(false);
-      };
-      document.body.appendChild(script);
-      
-      return () => {
-        document.body.removeChild(script);
-      };
+    setIsSwitching(true);
+    try {
+      await onToggle(!isWASM);
+    } finally {
+      setIsSwitching(false);
     }
-  }, [useWasm, wasmModule, controlledWasm]);
+  }, [isWASM, onToggle, isLoading, isSwitching]);
 
-  const toggle = async () => {
-    const newState = !useWasm;
-    
-    // If controlled, call onToggle
-    if (onToggle) {
-      await onToggle(newState);
-    } else {
-      // Internal state mode
-      setInternalWasm(newState);
-
-      if (newState && wasmModule) {
-        console.log('⚡ Switched to C++ WASM — renderer ready');
-      } else if (!newState) {
-        console.log('🔄 Switched back to JS WebGPU');
-      }
-    }
-  };
+  const disabled = isLoading || isSwitching;
 
   return (
-    <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 bg-[#0f172a] border border-[#334155] rounded-2xl px-5 py-3 shadow-2xl ${className}`}>
-      <span className="text-xs text-white/70 font-mono">RENDERER</span>
-      
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          checked={useWasm}
-          onChange={toggle}
-          disabled={isLoading}
-          className="sr-only peer"
-        />
-        <div className={`w-11 h-6 bg-[#1e2937] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#e94560] rounded-full peer peer-checked:bg-[#e94560] ${isLoading ? 'opacity-50' : ''}`}></div>
-        <div className="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-5"></div>
-      </label>
+    <div style={styles.container}>
+      {/* JS Side */}
+      <div style={styles.side}>
+        <span style={styles.label}>JS WebGPU</span>
+        <span style={styles.fps}>{jsFps > 0 ? `${jsFps} FPS` : '--'}</span>
+      </div>
 
-      <span className="text-sm font-medium min-w-[110px]">
-        {isLoading ? (
-          <span className="text-white/50">Loading...</span>
-        ) : useWasm ? (
-          <span className="text-[#e94560]">C++ WASM ⚡</span>
-        ) : (
-          <span className="text-white/80">JS WebGPU</span>
-        )}
-      </span>
+      {/* Toggle Switch */}
+      <button
+        onClick={handleToggle}
+        disabled={disabled}
+        style={{
+          ...styles.toggle,
+          background: isWASM
+            ? 'linear-gradient(135deg, #00c853, #64dd17)'
+            : 'linear-gradient(135deg, #2979ff, #448aff)',
+          opacity: disabled ? 0.6 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+        }}
+      >
+        <div style={{
+          ...styles.knob,
+          transform: isWASM ? 'translateX(28px)' : 'translateX(0)',
+        }} />
+      </button>
+
+      {/* WASM Side */}
+      <div style={styles.side}>
+        <span style={styles.label}>C++ WASM</span>
+        <span style={styles.fps}>{wasmFps > 0 ? `${wasmFps} FPS` : '--'}</span>
+      </div>
+
+      {/* Status Badge */}
+      <div style={{
+        ...styles.badge,
+        background: isWASM ? 'rgba(0, 200, 83, 0.2)' : 'rgba(41, 121, 255, 0.2)',
+        color: isWASM ? '#00c853' : '#448aff',
+      }}>
+        {disabled ? '⏳ Switching...' : isWASM ? '⚡ WASM Active' : '🔄 JS Active'}
+      </div>
     </div>
   );
-}
+};
 
-// Default export
-export default RendererToggleComponent;
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '8px 16px',
+    background: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+  },
+  side: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minWidth: '80px',
+  },
+  label: {
+    fontSize: '11px',
+    fontWeight: 600,
+    color: '#8b8ba7',
+    textTransform: 'uppercase',
+  },
+  fps: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: '#fff',
+    fontFamily: 'monospace',
+  },
+  toggle: {
+    width: '56px',
+    height: '28px',
+    borderRadius: '14px',
+    border: 'none',
+    padding: '2px',
+    position: 'relative',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+  },
+  knob: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    background: '#fff',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+    transition: 'transform 0.2s ease',
+  },
+  badge: {
+    padding: '4px 10px',
+    borderRadius: '12px',
+    fontSize: '11px',
+    fontWeight: 600,
+    marginLeft: '8px',
+  },
+};
 
-// Named export for compatibility with existing imports
-export { RendererToggleComponent as RendererToggle };
+export default RendererToggle;

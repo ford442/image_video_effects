@@ -9,7 +9,7 @@ import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import { useAudioAnalyzer } from '../hooks/useAudioAnalyzer';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { JSRenderer } from '../renderer/JSRenderer';
-import { BaseRenderer as Renderer, DEFAULT_CONFIG } from '../renderer/BaseRenderer';
+import { type Renderer, DEFAULT_CONFIG } from '../renderer/Renderer';
 
 interface LiveStudioTabProps {
   className?: string;
@@ -23,40 +23,40 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   const [streamUrl, setStreamUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [agentCount, setAgentCount] = useState(DEFAULT_CONFIG.agentCount);
-  
+
   const { fps, frameTime, startMonitoring, stopMonitoring } = usePerformanceMonitor();
   const { startAudio, stopAudio, getAudioData } = useAudioAnalyzer();
 
   // Initialize renderer
   const initRenderer = useCallback(async (wasmMode: boolean) => {
     if (!canvasRef.current) return;
-    
+
     setIsLoading(true);
-    
+
     // Destroy old renderer
     rendererRef.current?.destroy();
-    
+
     // Create new renderer
     const RendererClass = wasmMode ? WASMRenderer : JSRenderer;
     const renderer = new RendererClass({
       ...DEFAULT_CONFIG,
       agentCount,
     });
-    
+
     const success = await renderer.init(canvasRef.current);
-    
+
     if (success) {
       rendererRef.current = renderer;
       setUseWasm(wasmMode);
       startMonitoring();
       startAudio();
-      
+
       // Connect video if available
       if (videoRef.current) {
         renderer.setVideo(videoRef.current);
       }
     }
-    
+
     setIsLoading(false);
   }, [agentCount, startMonitoring, startAudio]);
 
@@ -70,30 +70,30 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   // Handle audio updates
   useEffect(() => {
     if (!rendererRef.current) return;
-    
+
     const interval = setInterval(() => {
       const audio = getAudioData();
       rendererRef.current?.updateAudioData(audio.bass, audio.mid, audio.treble);
     }, 50);
-    
+
     return () => clearInterval(interval);
   }, [getAudioData]);
 
   // Handle mouse movement
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !rendererRef.current) return;
-    
+
     const rect = canvasRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    
+
     rendererRef.current.updateMouse(x, y);
   }, []);
 
   // Handle parameter changes
   const handleParamChange = useCallback((name: string, value: number) => {
     rendererRef.current?.setParam(name, value);
-    
+
     if (name === 'agentCount') {
       setAgentCount(Math.floor(value));
     }
@@ -116,15 +116,15 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   // Initialize JS renderer by default
   useEffect(() => {
     initRenderer(false);
-  }, [initRenderer]);
+  }, []);
 
   return (
     <div className={`live-studio-tab ${className || ''}`} style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
         <h2 style={styles.title}>🎥 LIVE STUDIO</h2>
-        <RendererToggle 
-          isWASM={useWasm} 
+        <RendererToggle
+          isWASM={useWasm}
           onToggle={initRenderer}
           isLoading={isLoading}
         />
@@ -141,7 +141,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
             style={styles.canvas}
             onMouseMove={handleMouseMove}
           />
-          
+
           {/* Hidden HLS Video */}
           {streamUrl && (
             <HLSVideoSource
@@ -150,9 +150,9 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
               hidden={true}
             />
           )}
-          
+
           {/* Danmaku Overlay */}
-          <DanmakuOverlay 
+          <DanmakuOverlay
             enabled={true}
             opacity={0.7}
           />

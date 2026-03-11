@@ -15,26 +15,12 @@ export const useWASM = () => {
 
   const loadWASM = useCallback(async () => {
     if (moduleRef.current) return true;
-    
+
     try {
-      // Load WASM module from public folder using dynamic script injection
-      const wasmUrl = './wasm/pixelocity_wasm.js';
-      const script = document.createElement('script');
-      script.src = wasmUrl;
-      script.async = true;
-      
-      await new Promise<void>((resolve, reject) => {
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load WASM script'));
-        document.head.appendChild(script);
-      });
-      
-      // The WASM module is available on window.Module (Emscripten default)
-      const wasm = (window as any).Module;
-      if (!wasm) {
-        throw new Error('WASM module not found on window.Module');
+      const wasm = await import('/wasm/pixelocity_wasm.js');
+      if (wasm.default) {
+        await wasm.default();
       }
-      
       moduleRef.current = wasm as unknown as WASMModule;
       setIsLoaded(true);
       console.log('✅ WASM module loaded');

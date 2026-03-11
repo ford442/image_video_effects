@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  listShaders, 
-  getShader, 
-  uploadShader, 
+import {
+  listShaders,
+  getShader,
+  uploadShader,
   updateShaderMetadata,
-  ShaderMetadata 
+  ShaderMetadata
 } from '../services/shaderApi';
 import './ShaderBrowser.css';
 
@@ -123,7 +123,7 @@ export const ShaderBrowser: React.FC<{
 
   const saveEdit = async (shaderId: string) => {
     try {
-      await updateShaderMetadata(shaderId, { 
+      await updateShaderMetadata(shaderId, {
         description: editDesc, 
         tags: editTags.split(',').map(t => t.trim()).filter(Boolean)
       });

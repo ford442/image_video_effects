@@ -17,17 +17,17 @@ export const useAudioAnalyzer = () => {
   const startAudio = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
-      
+
       sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
       sourceRef.current.connect(analyserRef.current);
-      
+
       const bufferLength = analyserRef.current.frequencyBinCount;
       dataArrayRef.current = new Uint8Array(bufferLength);
-      
+
       setIsActive(true);
       console.log('✅ Audio analyzer started');
     } catch (err) {
@@ -44,23 +44,23 @@ export const useAudioAnalyzer = () => {
   const getAudioData = useCallback((): AudioData => {
     const analyser = analyserRef.current;
     const dataArray = dataArrayRef.current;
-    
+
     if (!analyser || !dataArray) {
       return { bass: 0, mid: 0, treble: 0, overall: 0 };
     }
 
     analyser.getByteFrequencyData(dataArray);
-    
+
     const bufferLength = dataArray.length;
     const bassEnd = Math.floor(bufferLength * 0.1);
     const midEnd = Math.floor(bufferLength * 0.5);
-    
+
     let bass = 0, mid = 0, treble = 0, overall = 0;
-    
+
     for (let i = 0; i < bufferLength; i++) {
       const value = dataArray[i] / 255;
       overall += value;
-      
+
       if (i < bassEnd) {
         bass += value;
       } else if (i < midEnd) {
@@ -69,12 +69,12 @@ export const useAudioAnalyzer = () => {
         treble += value;
       }
     }
-    
+
     bass /= bassEnd || 1;
     mid /= (midEnd - bassEnd) || 1;
     treble /= (bufferLength - midEnd) || 1;
     overall /= bufferLength;
-    
+
     return { bass, mid, treble, overall };
   }, []);
 

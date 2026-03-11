@@ -26,9 +26,11 @@ export class WASMRenderer implements Renderer {
         console.error('❌ WASM Renderer init failed');
         return false;
       }
+
       this.initialized = true;
       this.startTime = performance.now() / 1000;
       this.startRenderLoop();
+
       console.log('✅ WASM Renderer initialized');
       return true;
     } catch (err) {
@@ -73,6 +75,7 @@ export class WASMRenderer implements Renderer {
 
     const w = this.video.videoWidth;
     const h = this.video.videoHeight;
+
     if (w === 0 || h === 0) return;
 
     // Lazily create / resize the offscreen canvas
@@ -153,6 +156,7 @@ export class WASMRenderer implements Renderer {
   private startRenderLoop(): void {
     const loop = () => {
       if (!this.initialized) return;
+
       const time = performance.now() / 1000 - this.startTime;
       WasmBridge.updateUniforms({
         time,
@@ -160,8 +164,10 @@ export class WASMRenderer implements Renderer {
         mouseY: this.mouseY,
         mouseDown: this.mouseDown,
       });
+
       this.animationId = requestAnimationFrame(loop);
     };
+
     loop();
   }
 }

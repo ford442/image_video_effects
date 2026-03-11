@@ -258,19 +258,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Run WGSL Audit
         run: |
           chmod +x scripts/wgsl-audit-swarm.sh
           bash scripts/wgsl-audit-swarm.sh 4 --sample
-      
+
       - name: Check for Critical Issues
         run: |
           if grep -q "🚨 Critical" reports/*/SUMMARY.md; then
             echo "Critical portability issues found!"
             exit 1
           fi
-      
+
       - name: Upload Reports
         uses: actions/upload-artifact@v3
         with:
