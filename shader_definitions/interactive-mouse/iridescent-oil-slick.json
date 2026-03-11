@@ -1,5 +1,5 @@
 {
-  "id": "iridescent-oil-slick",
+  "id": "iridescent-oil-slick-mouse",
   "name": "Iridescent Oil Slick",
   "url": "shaders/iridescent-oil-slick.wgsl",
   "category": "interactive-mouse",
