@@ -32,7 +32,7 @@ fn hash(p: vec2<f32>) -> f32 {
 fn noise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
+    let u = f * f * (vec2<f32>(3.0) - 2.0 * f);
     return mix(mix(hash(i + vec2<f32>(0.0, 0.0)),
                    hash(i + vec2<f32>(1.0, 0.0)), u.x),
                mix(hash(i + vec2<f32>(0.0, 1.0)),
@@ -91,7 +91,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let cell_size = mix(8.0, 2.0, tentacle_density);
 
     let id = floor(p.xz / cell_size);
-    let q_xz = (fract(p.xz / cell_size) - 0.5) * cell_size;
+    let q_xz = (fract(p.xz / cell_size) - vec2<f32>(0.5)) * cell_size;
     let h = hash(id);
 
     // Anemone base height from FBM at cell center
@@ -254,8 +254,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Shift colors between deep cyan and electric magenta based on height and time
             let hue = fract(p.y * 0.1 - time * 2.0);
             let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
-            let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - 3.0);
-            let shiftColor = clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
+            let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
+            let shiftColor = clamp(p_col - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
             // Intense neon light driven by audio amplitude
             let pulse_factor = 1.0 + sin(audio_pulse * 10.0) * 0.5;

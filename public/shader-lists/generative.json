@@ -1,0 +1,2111 @@
+[
+  {
+    "id": "galaxy-sim",
+    "name": "Galaxy",
+    "url": "shaders/galaxy-compute.wgsl",
+    "category": "generative",
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "plasma",
+    "name": "Plasma Ball",
+    "url": "shaders/plasma.wgsl",
+    "category": "generative",
+    "description": "",
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-bioluminescent-abyss",
+    "name": "Bioluminescent Abyss",
+    "url": "shaders/gen-bioluminescent-abyss.wgsl",
+    "category": "generative",
+    "description": "An infinite deep underwater landscape with swaying tube worms and thermal vents, featuring bioluminescence and deep sea atmosphere.",
+    "tags": [
+      "underwater",
+      "generative",
+      "3d",
+      "bioluminescence",
+      "raymarching",
+      "volumetric"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Worm Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Current Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "bubble-chamber",
+    "name": "Bubble Chamber",
+    "url": "shaders/bubble-chamber.wgsl",
+    "category": "generative",
+    "description": "Simulates subatomic particle trails in a magnetic field using a feedback loop.",
+    "features": [
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "cosmic-jellyfish",
+    "name": "Cosmic Jellyfish",
+    "url": "shaders/cosmic-jellyfish.wgsl",
+    "category": "generative",
+    "description": "A majestic, translucent jellyfish floating in a cosmic void, with bioluminescent glow and rhythmic pulsation.",
+    "tags": [
+      "3d",
+      "raymarching",
+      "bioluminescent",
+      "space",
+      "organic",
+      "calm",
+      "procedural",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Tentacle Activity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
+    ]
+  },
+  {
+    "id": "cosmic-web",
+    "name": "Cosmic Web Filament",
+    "url": "shaders/cosmic-web.wgsl",
+    "category": "generative",
+    "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well.",
+    "tags": [
+      "space",
+      "procedural",
+      "organic",
+      "scifi",
+      "dark-matter",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Filament Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Flow Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-alien-flora",
+    "name": "Alien Flora",
+    "url": "shaders/gen-alien-flora.wgsl",
+    "category": "generative",
+    "description": "An infinite procedural forest of bioluminescent alien vegetation with swaying mushrooms and atmospheric fog.",
+    "tags": [
+      "nature",
+      "plants",
+      "bioluminescent",
+      "raymarching",
+      "3d",
+      "organic",
+      "forest",
+      "procedural",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Vegetation Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Sway Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Intensity",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-art-deco-sky",
+    "name": "Art Deco Skyscraper",
+    "url": "shaders/gen-art-deco-sky.wgsl",
+    "category": "generative",
+    "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.",
+    "tags": [
+      "3d",
+      "raymarching",
+      "architecture",
+      "art-deco",
+      "gold",
+      "scifi",
+      "procedural",
+      "infinite"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "City Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Ascent Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Gold Glow",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Fog Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ]
+  },
+  {
+    "id": "gen-biomechanical-hive",
+    "name": "Biomechanical Hive",
+    "url": "shaders/gen-biomechanical-hive.wgsl",
+    "category": "generative",
+    "description": "An infinite, claustrophobic structure of hexagonal cells blending industrial machinery with organic tissue. Features pulsating lights, rhythmic breathing, and slimy metallic textures.",
+    "tags": [
+      "scifi",
+      "biomechanical",
+      "giger",
+      "alien",
+      "raymarching",
+      "horror",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Biomass",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-bismuth-crystal-citadel",
+    "name": "Bismuth Crystal Citadel",
+    "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
+    "category": "generative",
+    "description": "An endless procedural canyon of iridescent, stair-stepped geometric bismuth crystals with thin-film interference coloring.",
+    "tags": [
+      "generative",
+      "raymarch",
+      "procedural",
+      "crystal",
+      "bismuth",
+      "metallic",
+      "iridescent",
+      "geometry",
+      "fractal"
+    ],
+    "features": [
+      "raymarched",
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Terrace Step Size",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Controls the size of the stepped terraces characteristic of bismuth crystals."
+      },
+      {
+        "id": "param2",
+        "name": "Ascension Speed",
+        "min": 0,
+        "max": 2,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Speed at which the camera moves through the infinite crystal citadel."
+      },
+      {
+        "id": "param3",
+        "name": "Metallic Shine",
+        "min": 0,
+        "max": 2,
+        "default": 0.8,
+        "step": 0.01,
+        "description": "Intensity of specular highlights on the metallic crystal surfaces."
+      },
+      {
+        "id": "param4",
+        "name": "Iridescence Shift",
+        "min": 0,
+        "max": 5,
+        "default": 1,
+        "step": 0.1,
+        "description": "Shifts the rainbow-like thin-film interference colors across the crystal surfaces."
+      }
+    ]
+  },
+  {
+    "id": "gen-brutalist-monument",
+    "name": "Brutalist Monument",
+    "url": "shaders/gen-brutalist-monument.wgsl",
+    "category": "generative",
+    "description": "Massive concrete architecture in an atmospheric void.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "brutalism",
+      "architecture",
+      "atmospheric",
+      "3d",
+      "raymarching"
+    ],
+    "params": [
+      {
+        "id": "sun_angle",
+        "name": "Sun Angle",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fog_density",
+        "name": "Fog Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "artifact_scale",
+        "name": "Artifact Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "complexity",
+        "name": "Structure Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "gen-celestial-forge",
+    "name": "Celestial Forge",
+    "url": "shaders/gen-celestial-forge.wgsl",
+    "category": "generative",
+    "description": "A massive sci-fi megastructure enclosing a miniature star, featuring contra-rotating rings, plasma arcs, and glowing panels.",
+    "tags": [
+      "space",
+      "megastructure",
+      "dyson sphere",
+      "plasma",
+      "rings",
+      "sci-fi",
+      "raymarching",
+      "3d"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Rotation Speed",
+        "min": 0,
+        "max": 2,
+        "default": 1,
+        "step": 0.01,
+        "description": "Speed of the contra-rotating ring structure."
+      },
+      {
+        "id": "param2",
+        "name": "Complexity",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Number of rings and surface detail density."
+      },
+      {
+        "id": "param3",
+        "name": "Ring Scale",
+        "min": 0.5,
+        "max": 2,
+        "default": 1,
+        "step": 0.01,
+        "description": "Overall size of the ring structure."
+      },
+      {
+        "id": "param4",
+        "name": "Core Intensity",
+        "min": 0,
+        "max": 5,
+        "default": 1,
+        "step": 0.01,
+        "description": "Brightness of the central star and emitted light."
+      }
+    ]
+  },
+  {
+    "id": "gen-chronos-labyrinth",
+    "name": "Chronos Labyrinth",
+    "url": "shaders/gen-chronos-labyrinth.wgsl",
+    "category": "generative",
+    "description": "An infinite, Escher-esque maze of shifting geometric staircases and corridors suspended over a void, with glowing temporal anomalies.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "3d",
+      "raymarching",
+      "geometry",
+      "escher",
+      "maze",
+      "impossible",
+      "abstract",
+      "infinite",
+      "generative",
+      "procedural"
+    ],
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Labyrinth Complexity",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "shift_speed",
+        "name": "Shift Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "rifts",
+        "name": "Temporal Rifts",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "material",
+        "name": "Architectural Style",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "0=Ancient Stone, 1=Obsidian & Neon"
+      }
+    ]
+  },
+  {
+    "id": "gen-cosmic-web-filament",
+    "name": "Cosmic Web Filament",
+    "url": "shaders/gen-cosmic-web-filament.wgsl",
+    "category": "generative",
+    "description": "Dark matter web with Voronoi filaments, FBM warping, and mouse gravity wells. Hypnotic cosmic structure with purple-to-cyan gradients.",
+    "tags": [
+      "generative",
+      "cosmic",
+      "voronoi",
+      "filament",
+      "organic",
+      "dark-matter",
+      "web",
+      "gravity",
+      "procedural"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "ford442",
+    "params": [
+      {
+        "id": "warp",
+        "name": "Warp Strength",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Filament Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-crystal-caverns",
+    "name": "Crystal Caverns",
+    "url": "shaders/gen-crystal-caverns.wgsl",
+    "category": "generative",
+    "description": "An infinite, procedural cave system illuminated by clusters of glowing crystals. Features stalactites, crystal clusters, and mouse-controlled light.",
+    "tags": [
+      "crystal",
+      "cave",
+      "3d",
+      "raymarching",
+      "fantasy",
+      "glowing",
+      "stalactites",
+      "procedural",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "ford442",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Cave Scale",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Crystal Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "pulse",
+        "name": "Pulse",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-ethereal-anemone-bloom",
+    "name": "Ethereal Anemone Bloom",
+    "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
+    "category": "generative",
+    "description": "A pulsating, infinite underwater expanse of translucent, bioluminescent anemone-like structures that gently sway in an invisible current, reaching out to feed on the audio frequencies.",
+    "features": [
+      "mouse-driven",
+      "raymarched"
+    ],
+    "tags": [
+      "organic",
+      "bioluminescent",
+      "underwater",
+      "fluid",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "current_speed",
+        "name": "Current Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "tentacle_density",
+        "name": "Tentacle Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "bioluminescence_glow",
+        "name": "Bioluminescence Glow",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "water_murkiness",
+        "name": "Water Murkiness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-fractal-clockwork",
+    "name": "Fractal Clockwork",
+    "url": "shaders/gen-fractal-clockwork.wgsl",
+    "category": "generative",
+    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
+    "tags": [
+      "steampunk",
+      "mechanical",
+      "3d",
+      "raymarching",
+      "gears",
+      "metallic",
+      "brass",
+      "clockwork",
+      "procedural",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "ford442",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Gear Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "teeth",
+        "name": "Teeth Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "material",
+        "name": "Material",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "labels": [
+          "Brass",
+          "Steel",
+          "Gold"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "gen-fractured-monolith",
+    "name": "Fractured Monolith",
+    "url": "shaders/gen-fractured-monolith.wgsl",
+    "category": "generative",
+    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light.",
+    "tags": [
+      "monolith",
+      "floating",
+      "fractured",
+      "glowing",
+      "ambient",
+      "generative",
+      "scifi"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Fracture Spread",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.05
+      },
+      {
+        "id": "param2",
+        "name": "Levitation Speed",
+        "min": 0,
+        "max": 3,
+        "default": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Intensity",
+        "min": 0,
+        "max": 2,
+        "default": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Rotation Speed",
+        "min": 0,
+        "max": 2,
+        "default": 0.5,
+        "step": 0.1
+      }
+    ]
+  },
+  {
+    "id": "gen-holographic-data-core",
+    "name": "Holographic Data Core",
+    "url": "shaders/gen-holographic-data-core.wgsl",
+    "category": "generative",
+    "description": "An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.",
+    "tags": [
+      "3d",
+      "raymarching",
+      "cyberpunk",
+      "hologram",
+      "data",
+      "neon",
+      "procedural",
+      "infinite"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Node Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Travel Speed",
+        "default": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.5
+      },
+      {
+        "id": "param3",
+        "name": "Data Pulse Rate",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Glitch Intensity",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-hyper-labyrinth",
+    "name": "Hyper Labyrinth",
+    "url": "shaders/gen-hyper-labyrinth.wgsl",
+    "category": "generative",
+    "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "neon",
+      "cyber",
+      "maze",
+      "4d",
+      "generative",
+      "abstract",
+      "geometric",
+      "procedural"
+    ],
+    "params": [
+      {
+        "id": "scale",
+        "name": "Labyrinth Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "morph",
+        "name": "Morph Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Neon Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "thickness",
+        "name": "Wall Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "gen-isometric-city",
+    "name": "Isometric Cyber-City",
+    "url": "shaders/gen-isometric-city.wgsl",
+    "category": "generative",
+    "description": "An infinite procedural isometric city with neon lights and traffic.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Traffic Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Neon Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-lenia-2",
+    "name": "Lenia 2.0 - Multi-Species",
+    "url": "shaders/gen-lenia-2.wgsl",
+    "category": "generative",
+    "description": "Advanced 4-species Lenia with 4 distinct kernels (Ring, Disk, Gaussian, Sharp Cross). Creatures evolve, compete, and merge. Mouse feeds different species. Truly alive.",
+    "tags": [
+      "lenia",
+      "multi-species",
+      "4-kernels",
+      "organic",
+      "creature",
+      "cellular-automata",
+      "evolution",
+      "advanced",
+      "procedural",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "ford442",
+    "params": [
+      {
+        "id": "growth",
+        "name": "Global Growth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "kernel",
+        "name": "Kernel Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Evolution Speed",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mix",
+        "name": "Cross-Species Mix",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-magnetic-ferrofluid",
+    "name": "Magnetic Ferrofluid",
+    "url": "shaders/gen-magnetic-ferrofluid.wgsl",
+    "category": "generative",
+    "description": "A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field.",
+    "tags": [
+      "abstract",
+      "liquid",
+      "metal",
+      "spiky",
+      "fluid",
+      "generative",
+      "ferrofluid"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Magnetic Strength (Spikes)",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Controls the height and intensity of the fluid spikes."
+      },
+      {
+        "id": "param2",
+        "name": "Fluid Density",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.01,
+        "description": "Controls how many small spikes and structures form."
+      },
+      {
+        "id": "param3",
+        "name": "Oscillation Speed",
+        "min": 0.1,
+        "max": 3,
+        "default": 1,
+        "step": 0.01,
+        "description": "Speed at which the fluid pulsates and shifts."
+      },
+      {
+        "id": "param4",
+        "name": "Iridescence Shift",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "step": 0.01,
+        "description": "Shifts the thin-film interference colors on the metallic surface."
+      }
+    ]
+  },
+  {
+    "id": "gen-micro-cosmos",
+    "name": "Micro-Cosmos",
+    "url": "shaders/gen-micro-cosmos.wgsl",
+    "category": "generative",
+    "description": "A microscopic view of a teeming liquid universe, filled with procedural microorganisms, drifting particles, and organic structures.",
+    "tags": [
+      "biological",
+      "organic",
+      "microscopic",
+      "liquid",
+      "life",
+      "floating",
+      "generative",
+      "procedural"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Population Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Fluid Activity",
+        "default": 0.3,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Membrane Glow",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-neuro-cosmos",
+    "name": "Neuro-Cosmos",
+    "url": "shaders/gen-neuro-cosmos.wgsl",
+    "category": "generative",
+    "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe.",
+    "tags": [
+      "network",
+      "neural",
+      "cosmic",
+      "web",
+      "3d",
+      "raymarching",
+      "voronoi",
+      "glowing",
+      "cyber",
+      "procedural",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Network Density",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Pulse Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Connection Thickness",
+        "default": 0.1,
+        "min": 0.01,
+        "max": 0.5,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-prismatic-bismuth-lattice",
+    "name": "Prismatic Bismuth Lattice",
+    "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
+    "category": "generative",
+    "description": "An endlessly folding, hyper-geometric expanse of iridescent, stepped bismuth crystals that breathe and fracture in rhythm with unseen cosmic frequencies.",
+    "tags": [
+      "crystalline",
+      "iridescent",
+      "fractal",
+      "geometric",
+      "audio-reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Complexity",
+        "default": 3,
+        "min": 1,
+        "max": 6,
+        "step": 1
+      },
+      {
+        "id": "param2",
+        "name": "Iridescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Crystal Scale",
+        "default": 1,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Fog Density",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-quantum-neural-lace",
+    "name": "Quantum Neural Lace",
+    "url": "shaders/gen-quantum-neural-lace.wgsl",
+    "category": "generative",
+    "tags": [
+      "cyber",
+      "network",
+      "3d",
+      "raymarching",
+      "scifi",
+      "glowing",
+      "lattice"
+    ],
+    "features": [
+      "raymarched",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Lattice Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion",
+        "name": "Fiber Chaos",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5
+      },
+      {
+        "id": "glow",
+        "name": "Energy Level",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "gen-raptor-mini",
+    "name": "Raptor Mini",
+    "url": "shaders/gen-raptor-mini.wgsl",
+    "category": "generative",
+    "description": "Fast predatory mini raptor agents chase the mouse and strike with claws. Audio rage mode boosts speed and attacks.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "stateful"
+    ],
+    "tags": [
+      "agent",
+      "chase",
+      "audio",
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-silica-tsunami",
+    "name": "Silica Tsunami",
+    "url": "shaders/gen-silica-tsunami.wgsl",
+    "category": "generative",
+    "description": "A slow-motion wave of refractive glass-like particles that crests and shatters, dynamically reshaping around the mouse and reacting to audio amplitude.",
+    "tags": [
+      "generative",
+      "wave",
+      "glass",
+      "refraction"
+    ],
+    "params": [
+      {
+        "id": "waveHeight",
+        "name": "Wave Height",
+        "min": 0,
+        "max": 5,
+        "default": 2,
+        "step": 0.1
+      },
+      {
+        "id": "glassRefraction",
+        "name": "Glass Refraction",
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.05
+      },
+      {
+        "id": "particleDensity",
+        "name": "Particle Density",
+        "min": 0.1,
+        "max": 2,
+        "default": 1,
+        "step": 0.1
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "min": 0,
+        "max": 3,
+        "default": 1.5,
+        "step": 0.1
+      }
+    ]
+  },
+  {
+    "id": "gen-capabilities",
+    "name": "System Monitor",
+    "url": "shaders/gen_capabilities.wgsl",
+    "category": "generative",
+    "description": "Cyberpunk system monitor demonstrating mouse inputs, time, and frame feedback.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-cyclic-automaton",
+    "name": "Cyclic Automaton",
+    "url": "shaders/gen_cyclic_automaton.wgsl",
+    "category": "generative",
+    "description": "Mesmerizing traveling rainbow waves (Cyclic Cellular Automaton).",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-fluffy-raincloud",
+    "name": "Fluffy Raincloud",
+    "url": "shaders/gen_fluffy_raincloud.wgsl",
+    "category": "generative",
+    "description": "Move the cloud with your mouse and watch it rain (try clicking!).",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-grid",
+    "name": "Neon Grid",
+    "url": "shaders/gen_grid.wgsl",
+    "category": "generative",
+    "description": "A neon grid that warps around the cursor.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-grok41-mandelbrot",
+    "name": "Grok41 Mandelbrot Explorer",
+    "url": "shaders/gen_grok41_mandelbrot.wgsl",
+    "category": "generative",
+    "description": "Animated zooming Mandelbrot fractal set with mouse and time controls.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-grok41-plasma",
+    "name": "Grok41 Plasma Waves",
+    "url": "shaders/gen_grok41_plasma.wgsl",
+    "category": "generative",
+    "description": "Classic multi-layered plasma effect with mouse-controlled warping and glow.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-grok4-life",
+    "name": "Grok4 Cellular Life",
+    "url": "shaders/gen_grok4_life.wgsl",
+    "category": "generative",
+    "description": "Conway's Game of Life simulation with mouse drawing and random seeding.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-grok4-perlin",
+    "name": "Grok4 Perlin Terrain",
+    "url": "shaders/gen_grok4_perlin.wgsl",
+    "category": "generative",
+    "description": "Multi-octave Perlin noise generating animated terrain with mouse offset.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-grokcf-interference",
+    "name": "Grokcf Wave Interference",
+    "url": "shaders/gen_grokcf_interference.wgsl",
+    "category": "generative",
+    "description": "Multi-layered sine wave interference patterns modulated by mouse position.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-grokcf-voronoi",
+    "name": "Grokcf Animated Voronoi",
+    "url": "shaders/gen_grokcf_voronoi.wgsl",
+    "category": "generative",
+    "description": "Procedural Voronoi diagram with animated cells and mouse-influenced positioning.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-hyper-warp",
+    "name": "Hyper Warp",
+    "url": "shaders/gen_hyper_warp.wgsl",
+    "category": "generative",
+    "description": "Advanced domain warping with fractal noise and reaction-diffusion feedback.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-julia-set",
+    "name": "Julia Set",
+    "url": "shaders/gen_julia_set.wgsl",
+    "category": "generative",
+    "description": "Animated Julia Set fractal controlled by mouse position.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-kimi-crystal",
+    "name": "Kimi Crystal",
+    "url": "shaders/gen_kimi_crystal.wgsl",
+    "category": "generative",
+    "description": "Animated crystalline structures growing on a hexagonal grid with icy blue colors and gold accents. Mouse creates stellar glow.",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "geometric",
+      "crystalline"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-kimi-nebula",
+    "name": "Kimi Nebula",
+    "url": "shaders/gen_kimi_nebula.wgsl",
+    "category": "generative",
+    "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds.",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "procedural",
+      "cosmic"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-orb",
+    "name": "Glowing Orb",
+    "url": "shaders/gen_orb.wgsl",
+    "category": "generative",
+    "description": "A glowing orb that follows the mouse cursor.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-psychedelic-spiral",
+    "name": "Psychedelic Spiral",
+    "url": "shaders/gen_psychedelic_spiral.wgsl",
+    "category": "generative",
+    "description": "Hypnotic spiral with intense feedback and mouse warping.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-rainbow-smoke",
+    "name": "Rainbow Smoke",
+    "url": "shaders/gen_rainbow_smoke.wgsl",
+    "category": "generative",
+    "description": "Turbulent fluid simulation with colorful, explosive interactions.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-reaction-diffusion",
+    "name": "Reaction Diffusion",
+    "url": "shaders/gen_reaction_diffusion.wgsl",
+    "category": "generative",
+    "description": "Organic coral-like growth patterns (Gray-Scott model).",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-trails",
+    "name": "Light Trails",
+    "url": "shaders/gen_trails.wgsl",
+    "category": "generative",
+    "description": "Paint light trails with your mouse. (Stateful)",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "gen-wave-equation",
+    "name": "Fluid Ripples",
+    "url": "shaders/gen_wave_equation.wgsl",
+    "category": "generative",
+    "description": "Realistic water ripple simulation with wave interference.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "generative-psy-swirls",
+    "name": "Psychedelic Swirls",
+    "url": "shaders/generative-psy-swirls.wgsl",
+    "category": "generative",
+    "description": "Generative swirling vortex fields with multi-layer procedural noise flow and spectral rainbow HSV cycles.",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "procedural",
+      "psychedelic"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "generative-turing-veins",
+    "name": "Turing Veins Generative",
+    "url": "shaders/generative-turing-veins.wgsl",
+    "category": "generative",
+    "description": "Generative multiscale reaction-diffusion Turing patterns forming organic vein networks.",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "reaction-diffusion",
+      "biological"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "kimi_flock_symphony",
+    "name": "Kimi Flock Symphony",
+    "url": "shaders/kimi_flock_symphony.wgsl",
+    "category": "generative",
+    "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
+    "tags": [
+      "boids",
+      "flocking",
+      "generative",
+      "particles",
+      "musical",
+      "interactive",
+      "procedural"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "Kimi",
+    "params": [
+      {
+        "id": "trail_length",
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow_radius",
+        "name": "Glow Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Particle Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "kimi-fractal-dreams",
+    "name": "Kimi Fractal Dreams",
+    "url": "shaders/kimi_fractal_dreams.wgsl",
+    "category": "generative",
+    "description": "Multi-layer fractal with orbit traps, burning ship variant, and smooth color cycling.",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "fractal",
+      "julia-set"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "kimi-nebula-depth",
+    "name": "Kimi Nebula Depth",
+    "url": "shaders/kimi_nebula_depth.wgsl",
+    "category": "generative",
+    "description": "Volumetric nebula with 3D noise, ray marching, and depth-based color grading.",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "volumetric",
+      "3d"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "kimi-quantum-field",
+    "name": "Kimi Quantum Field",
+    "url": "shaders/kimi_quantum_field.wgsl",
+    "category": "generative",
+    "description": "Wave interference patterns with uncertainty visualization and probability densities.",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "waves",
+      "interference"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "nebula-gyroid",
+    "name": "Nebula Gyroid",
+    "url": "shaders/nebula-gyroid.wgsl",
+    "category": "generative",
+    "description": "Ethereal, flowing organic form created with raymarched gyroid SDFs. Features iridescent lighting, multiple blended gyroid layers, and mouse-reactive domain warping for a fluid geometry effect.",
+    "tags": [
+      "generative",
+      "gyroid",
+      "raymarch",
+      "iridescent",
+      "organic",
+      "nebula",
+      "sdf",
+      "fluid",
+      "geometry",
+      "procedural"
+    ],
+    "features": [
+      "raymarched",
+      "mouse-driven"
+    ],
+    "author": "minimax.ai",
+    "params": [
+      {
+        "id": "colorSpeed",
+        "name": "Color Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fogDensity",
+        "name": "Fog Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "specularPower",
+        "name": "Specular Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "stellar-plasma",
+    "name": "Stellar Plasma",
+    "url": "shaders/stellar-plasma.wgsl",
+    "category": "generative",
+    "description": "An endlessly morphing procedural cosmos powered by domain-warped fractional brownian motion. Creates swirling, liquid-like cosmic nebulae with interactive mouse gravity.",
+    "tags": [
+      "generative",
+      "procedural",
+      "nebula",
+      "cosmic",
+      "plasma",
+      "fbm",
+      "fluid",
+      "loops",
+      "domain-warping"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "Gemini 3.1 Pro Vertex",
+    "params": [
+      {
+        "id": "hueShift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "zoomScale",
+        "name": "Zoom / Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mouseGravity",
+        "name": "Mouse Gravity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "volumetric-cloud-nebula",
+    "name": "Volumetric Cloud Nebula",
+    "url": "shaders/volumetric-cloud-nebula.wgsl",
+    "category": "generative",
+    "description": "Raymarched volumetric clouds with nebula coloring. Features procedural cloud generation with FBM noise, dynamic color palettes, and animated camera movement through a cosmic nebula.",
+    "tags": [
+      "generative",
+      "nebula",
+      "clouds",
+      "volumetric",
+      "raymarch",
+      "space",
+      "cosmic",
+      "procedural"
+    ],
+    "features": [
+      "raymarched"
+    ],
+    "author": "Kimi",
+    "params": [
+      {
+        "id": "cloudDensity",
+        "name": "Cloud Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "cameraDistance",
+        "name": "Camera Distance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "cymatic-sand",
+    "name": "Cymatic Sand",
+    "description": "Simulates Chladni plate patterns where sand accumulates on nodal lines of standing waves. Mouse X/Y controls the frequency modes.",
+    "url": "shaders/cymatic-sand.wgsl",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "simulation"
+    ],
+    "params": [
+      {
+        "id": "amount",
+        "name": "Sand Amount",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1
+      },
+      {
+        "id": "width",
+        "name": "Line Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "grain",
+        "name": "Grain Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "lichtenberg-fractal",
+    "name": "Lichtenberg Fractal",
+    "description": "Simulates high-voltage electrical branching patterns (Lichtenberg figures) that grow from the mouse cursor.",
+    "url": "shaders/lichtenberg-fractal.wgsl",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "simulation"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "branching",
+        "name": "Branching Factor",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Burn Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "clear",
+        "name": "Clear Canvas",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  {
+    "id": "predator-prey",
+    "name": "Pixel Ecology",
+    "url": "shaders/predator-prey.wgsl",
+    "category": "generative",
+    "description": "Cellular automata ecosystem with plants, herbivores, and carnivores - watch the food chain unfold.",
+    "params": [
+      {
+        "id": "eatProbability",
+        "name": "Eat Probability",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "deathRate",
+        "name": "Death Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mutationRate",
+        "name": "Mutation Rate",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "breedThreshold",
+        "name": "Breed Threshold",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "ecology",
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  }
+]
