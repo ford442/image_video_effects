@@ -264,7 +264,7 @@ extern "C" {
         wgpu::Instance instance = wgpu::CreateInstance(nullptr);
         wgpu::RequestAdapterOptions opts{};
         opts.powerPreference = wgpu::PowerPreference::HighPerformance;
-        instance.RequestAdapter(&opts, onAdapterRequest, nullptr);
+        instance.RequestAdapter(&opts, wgpu::CallbackMode::AllowSpontaneous, onAdapterRequest, nullptr);
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -304,8 +304,9 @@ void onAdapterRequest(WGPURequestAdapterStatus status, WGPUAdapter cAdapter, con
     wgpu::Adapter adapter = wgpu::Adapter::Acquire(cAdapter);
 
     wgpu::DeviceDescriptor devDesc{};
-    adapter.RequestDevice(&devDesc, onDeviceRequest, nullptr);
-  
+    adapter.RequestDevice(&devDesc, wgpu::CallbackMode::AllowSpontaneous, onDeviceRequest, nullptr);
+}
+
 EMSCRIPTEN_KEEPALIVE
 void loadImageData(const uint8_t* data, int width, int height) {
     if (!g_renderer) {
