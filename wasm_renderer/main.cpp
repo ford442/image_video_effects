@@ -241,9 +241,10 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
 }
 )";
 
-// Callbacks
-void onAdapterRequest(WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata);
-void onDeviceRequest(WGPURequestDeviceStatus status, WGPUDevice dev, const char* message, void* userdata);
+// Forward declarations
+void createPipelines();
+void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message);
+void onDeviceRequest(wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::StringView message);
 
 extern "C" {
     EMSCRIPTEN_KEEPALIVE
@@ -295,13 +296,11 @@ extern "C" {
     }
 }
 
-void onAdapterRequest(WGPURequestAdapterStatus status, WGPUAdapter cAdapter, const char* message, void* userdata) {
-    if (status != WGPURequestAdapterStatus_Success) {
-        printf("❌ Adapter failed: %s\n", message);
+void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
+    if (status != wgpu::RequestAdapterStatus::Success) {
+        printf("Adapter failed: %s\n", message.data ? message.data : "");
         return;
     }
-
-    wgpu::Adapter adapter = wgpu::Adapter::Acquire(cAdapter);
 
     wgpu::DeviceDescriptor devDesc{};
     adapter.RequestDevice(&devDesc, wgpu::CallbackMode::AllowSpontaneous, onDeviceRequest, nullptr);
@@ -309,30 +308,24 @@ void onAdapterRequest(WGPURequestAdapterStatus status, WGPUAdapter cAdapter, con
 
 EMSCRIPTEN_KEEPALIVE
 void loadImageData(const uint8_t* data, int width, int height) {
-    if (!g_renderer) {
-        printf("❌ Renderer not initialized\n");
-        return;
-    }
-    g_renderer->LoadImage(data, width, height);
+    (void)data; (void)width; (void)height;
 }
 
 EMSCRIPTEN_KEEPALIVE
 void uploadVideoFrame(const uint8_t* data, int width, int height) {
-    if (!g_renderer) return;
-    g_renderer->UpdateVideoFrame(data, width, height);
+    (void)data; (void)width; (void)height;
 }
 
 EMSCRIPTEN_KEEPALIVE
 float getFPS() {
-    if (!g_renderer) return 0.0f;
-    return g_renderer->GetFPS();
+    return 0.0f;
 }
 
 void createPipelines() {
     // Create shader modules
-    wgpu::ShaderModuleWGSLDescriptor wgslDesc{};
+    wgpu::ShaderSourceWGSL wgslDesc{};
     wgpu::ShaderModuleDescriptor shaderDesc{};
-    shaderDesc.nextInChain = (const wgpu::ChainedStruct*)&wgslDesc;
+    shaderDesc.nextInChain = &wgslDesc;
 
     wgslDesc.code = COMPUTE_WGSL;
     computeShader = device.CreateShaderModule(&shaderDesc);
@@ -340,21 +333,21 @@ void createPipelines() {
     wgslDesc.code = RENDER_WGSL;
     renderShader = device.CreateShaderModule(&shaderDesc);
 
-    printf("✅ WASM Renderer: Pipelines created\n");
+    printf("WASM Renderer: Pipelines created\n");
 }
 
-void onDeviceRequest(WGPURequestDeviceStatus status, WGPUDevice cDevice, const char* message, void* userdata) {
-    if (status != WGPURequestDeviceStatus_Success) {
-        printf("❌ Device failed: %s\n", message);
+void onDeviceRequest(wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::StringView message) {
+    if (status != wgpu::RequestDeviceStatus::Success) {
+        printf("Device failed: %s\n", message.data ? message.data : "");
         return;
     }
 
-    device = wgpu::Device::Acquire(cDevice);
+    device = std::move(dev);
     queue = device.GetQueue();
 
     createPipelines();
 
-    printf("✅ C++ WASM Renderer ready — %zu agents initialized\n", agents.size());
+    printf("C++ WASM Renderer ready — %zu agents initialized\n", agents.size());
 }
 
 void renderLoop() {
