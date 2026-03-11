@@ -265,7 +265,7 @@ extern "C" {
         wgpu::Instance instance = wgpu::CreateInstance(nullptr);
         wgpu::RequestAdapterOptions opts{};
         opts.powerPreference = wgpu::PowerPreference::HighPerformance;
-        instance.RequestAdapter(&opts, wgpu::CallbackMode::AllowSpontaneous, onAdapterRequest, nullptr);
+        instance.RequestAdapter(&opts, wgpu::CallbackMode::AllowSpontaneous, onAdapterRequest);
     }
 
     EMSCRIPTEN_KEEPALIVE
