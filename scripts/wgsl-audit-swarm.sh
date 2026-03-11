@@ -56,14 +56,14 @@ find_shaders | while read -r shader_path; do
     # Get relative path
     rel_path="${shader_path#./}"
     filename=$(basename "$shader_path")
-    
+
     # Check for textureStore pattern
     if grep -q "textureStore" "$shader_path" 2>/dev/null; then
         has_texture_store=1
     else
         has_texture_store=0
     fi
-    
+
     echo "{\"path\": \"$rel_path\", \"filename\": \"$filename\", \"has_textureStore\": $has_texture_store}"
 done > "$SHADER_MANIFEST"
 
@@ -89,7 +89,7 @@ validate_syntax_basic() {
     content=$(cat "$file")
     local errors=()
     local line_num=0
-    
+
     # Check 1: textureStore argument order
     while IFS= read -r line; do
         ((line_num++))
@@ -99,14 +99,14 @@ validate_syntax_basic() {
             if [ "$comma_count" -lt 2 ]; then
                 errors+=("$line_num: textureStore missing arguments (need texture, coords, value)")
             fi
-            
+
             # Check for vec2<i32> or vec2<u32> in coords
             if ! echo "$line" | grep -qE "vec2<i32>|vec2<u32>|vec2i|vec2u"; then
                 errors+=("$line_num: textureStore coords should be vec2<i32> or vec2<u32>")
             fi
         fi
     done <<< "$content"
-    
+
     # Check 2: Brace balance
     local open_braces close_braces
     open_braces=$(echo "$content" | tr -cd '{' | wc -c)
@@ -114,7 +114,7 @@ validate_syntax_basic() {
     if [ "$open_braces" -ne "$close_braces" ]; then
         errors+=("0: Mismatched braces - $open_braces opening, $close_braces closing")
     fi
-    
+
     # Check 3: Parentheses balance
     local open_parens close_parens
     open_parens=$(echo "$content" | tr -cd '(' | wc -c)
@@ -122,7 +122,7 @@ validate_syntax_basic() {
     if [ "$open_parens" -ne "$close_parens" ]; then
         errors+=("0: Mismatched parentheses - $open_parens opening, $close_parens closing")
     fi
-    
+
     # Check 4: Required bindings for compute shaders
     if echo "$content" | grep -q "@compute"; then
         if ! echo "$content" | grep -q "@group.*@binding"; then
@@ -132,7 +132,7 @@ validate_syntax_basic() {
             errors+=("0: Compute shader should have texture_storage_2d for output")
         fi
     fi
-    
+
     # Output JSON
     if [ ${#errors[@]} -eq 0 ]; then
         echo "{\"file\": \"$file\", \"status\": \"VALID\", \"errors\": []}"
@@ -147,29 +147,29 @@ validate_syntax_basic() {
 validate_utf8_basic() {
     local file="$1"
     local issues=()
-    
+
     # Check for BOM
     if head -c 3 "$file" | xxd -p 2>/dev/null | grep -q "efbbbf"; then
         issues+=("{\"type\": \"bom\", \"message\": \"UTF-8 BOM marker found at file start\"}")
     fi
-    
+
     # Check for replacement characters
     if grep -q $'\xEF\xBF\xBD' "$file" 2>/dev/null || grep -q '�' "$file" 2>/dev/null; then
         issues+=("{\"type\": \"replacement_char\", \"message\": \"UTF-8 replacement character found - possible corruption\"}")
     fi
-    
+
     # Check for null bytes
     if grep -q $'\x00' "$file" 2>/dev/null; then
         issues+=("{\"type\": \"null_bytes\", \"message\": \"Null bytes found in file\"}")
     fi
-    
+
     # Check for high-bit characters that might be mojibake
     local high_ascii
     high_ascii=$(grep -c '[\x80-\xFF]' "$file" 2>/dev/null || echo "0")
     if [ "$high_ascii" -gt 0 ]; then
         issues+=("{\"type\": \"high_ascii\", \"message\": \"Found $high_ascii lines with high ASCII bytes - possible encoding issues\"}")
     fi
-    
+
     # Output JSON
     if [ ${#issues[@]} -eq 0 ]; then
         echo "{\"file\": \"$file\", \"status\": \"CLEAN\", \"issues\": []}"
@@ -187,10 +187,10 @@ check_portability_basic() {
     content=$(cat "$file")
     local issues=()
     local line_num=0
-    
+
     while IFS= read -r line; do
         ((line_num++))
-        
+
         # Check workgroup size
         if echo "$line" | grep -q "@workgroup_size"; then
             # Extract workgroup size numbers
@@ -209,23 +209,23 @@ check_portability_basic() {
                 fi
             fi
         fi
-        
+
         # Check for early returns in compute shaders
         if echo "$content" | grep -q "@compute"; then
             if echo "$line" | grep -qE '^\s*return\s*;'; then
                 issues+=("{\"severity\": \"WARNING\", \"line\": $line_num, \"message\": \"Early return in compute shader\", \"suggestion\": \"Some drivers have issues with early returns in compute\"}")
             fi
         fi
-        
+
     done <<< "$content"
-    
+
     # Check storage texture format consistency
     local storage_formats
     storage_formats=$(echo "$content" | grep -oE 'texture_storage_2d<[a-z0-9]+' | sort -u | wc -l)
     if [ "$storage_formats" -gt 1 ]; then
         issues+=("{\"severity\": \"INFO\", \"line\": 0, \"message\": \"Multiple storage texture formats used\", \"suggestion\": \"Consider consistency for better cache usage\"}")
     fi
-    
+
     # Output JSON
     if [ ${#issues[@]} -eq 0 ]; then
         echo "{\"file\": \"$file\", \"severity\": \"PASS\", \"issues\": []}"
@@ -255,19 +255,19 @@ audit_shader_task() {
     local path=$(echo "$line" | jq -r '.path')
     local filename=$(echo "$line" | jq -r '.filename')
     local safe_name="${filename//[^a-zA-Z0-9._-]/_}"
-    
+
     echo "  🔍 Auditing: $path"
-    
+
     # Run all three checks
     validate_syntax_basic "$path" > "$REPORT_DIR/syntax_${safe_name}.json" 2>/dev/null || \
         echo "{\"file\": \"$path\", \"status\": \"CHECK_FAILED\", \"error\": \"syntax validation error\"}" > "$REPORT_DIR/syntax_${safe_name}.json"
-    
+
     validate_utf8_basic "$path" > "$REPORT_DIR/utf8_${safe_name}.json" 2>/dev/null || \
         echo "{\"file\": \"$path\", \"status\": \"CHECK_FAILED\", \"error\": \"utf8 validation error\"}" > "$REPORT_DIR/utf8_${safe_name}.json"
-    
+
     check_portability_basic "$path" > "$REPORT_DIR/portability_${safe_name}.json" 2>/dev/null || \
         echo "{\"file\": \"$path\", \"severity\": \"CHECK_FAILED\", \"error\": \"portability check error\"}" > "$REPORT_DIR/portability_${safe_name}.json"
-    
+
     echo "  ✅ Completed: $path"
 }
 

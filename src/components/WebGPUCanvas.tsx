@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { Renderer } from '../renderer/Renderer';
+import { type Renderer } from '../renderer/Renderer';
+import { RendererManager } from '../renderer/RendererManager';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 import { LiveStreamBridge } from './LiveStreamBridge';
 
@@ -94,20 +95,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         canvas.height = INTERNAL_RES;
         console.log(`Initializing WebGPU with canvas: ${canvas.width}x${canvas.height}`);
 
-        const renderer = new Renderer(canvas, apiBaseUrl);
+        const renderer = new RendererManager({ width: 1920, height: 1080, agentCount: 50000 });
 
         // Hook up dimensions listener - kept for potential future use or informational purposes,
         // but we are locking buffer size now.
-        renderer.onImageDimensions = (w, h) => {
-            // We no longer resize the canvas based on image dimensions
-            // But we might want to log it or use it for aspect ratio logic if needed in future
-        };
+        if ('onImageDimensions' in renderer) {
+            (renderer as any).onImageDimensions = (w: number, h: number) => {
+                // We no longer resize the canvas based on image dimensions
+                // But we might want to log it or use it for aspect ratio logic if needed in future
+            };
+        }
 
         (async () => {
-            const success = await renderer.init();
+            const success = await renderer.init(canvasRef.current!);
             if (success) {
                 if (rendererRef && 'current' in rendererRef) {
-                    (rendererRef as React.MutableRefObject<Renderer | null>).current = renderer;
+                    (rendererRef as React.MutableRefObject<any>).current = renderer;
                 }
 
                 if (onInit) onInit();
@@ -153,7 +156,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Sync inputSource to renderer
     useEffect(() => {
         if (rendererRef.current) {
-            rendererRef.current.setInputSource(inputSource);
+            if ('setInputSource' in rendererRef.current) {
+                (rendererRef.current as any).setInputSource(inputSource);
+            }
         }
     }, [inputSource, rendererRef]);
 
@@ -313,7 +318,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const rect = canvas.getBoundingClientRect();
         const x = (event.clientX - rect.left) / rect.width;
         const y = (event.clientY - rect.top) / rect.height;
-        rendererRef.current.addRipplePoint(x, y);
+        if ('addRipplePoint' in rendererRef.current) {
+            (rendererRef.current as any).addRipplePoint(x, y);
+        }
     };
 
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -356,7 +363,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             const dy = currentY - dragStartPos.current.y;
             if (dt > 0.01) {
                 const vx = dx / dt; const vy = dy / dt;
-                if (Math.sqrt(vx * vx + vy * vy) > 0.1) rendererRef.current.firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
+            if (Math.sqrt(vx * vx + vy * vy) > 0.1) {
+                if ('firePlasma' in rendererRef.current) {
+                    (rendererRef.current as any).firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
+                }
+            }
             }
             dragStartPos.current = null;
         }

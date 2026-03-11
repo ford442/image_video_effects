@@ -1,4 +1,4 @@
-import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
+import { Renderer, RendererConfig } from './Renderer';
 
 export class JSRenderer implements Renderer {
   private canvas: HTMLCanvasElement | null = null;
@@ -6,7 +6,7 @@ export class JSRenderer implements Renderer {
   private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
   private animationId: number | null = null;
-  
+
   // Sim params
   private params = {
     sensorAngle: Math.PI / 4,
@@ -31,7 +31,7 @@ export class JSRenderer implements Renderer {
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    
+
     if (!this.ctx) {
       console.error('❌ Could not get 2D context');
       return false;
@@ -71,7 +71,7 @@ export class JSRenderer implements Renderer {
     }
   }
 
-  private renderFrame = (): void => {
+  render = (): void => {
     if (!this.ctx || !this.canvas) return;
 
     // Clear
@@ -86,11 +86,11 @@ export class JSRenderer implements Renderer {
     // Visual feedback for audio
     const audioIntensity = (this.params.audioBass + this.params.audioMid + this.params.audioTreble) / 3;
     const radius = 50 + audioIntensity * 200;
-    
+
     // Mouse position indicator
     const mx = this.params.mouseX * this.canvas.width;
     const my = this.params.mouseY * this.canvas.height;
-    
+
     this.ctx.beginPath();
     this.ctx.arc(mx, my, radius, 0, Math.PI * 2);
     this.ctx.strokeStyle = `rgba(100, 255, 100, ${0.3 + audioIntensity * 0.7})`;
@@ -107,15 +107,10 @@ export class JSRenderer implements Renderer {
 
   private startRenderLoop(): void {
     const loop = () => {
-      this.renderFrame();
+      this.render();
       this.animationId = requestAnimationFrame(loop);
     };
     loop();
-  }
-
-  render(): void {
-    // Trigger a single render frame (called when needed)
-    this.renderFrame();
   }
 
   destroy(): void {

@@ -33,13 +33,13 @@ export const DanmakuOverlay: React.FC<DanmakuOverlayProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const messagesRef = useRef<DanmakuMessage[]>([]);
-  const animationRef = useRef<number | undefined>(undefined);
-  const [dimensions] = useState({ width: 1920, height: 1080 });
+  const animationRef = useRef<number>(0);
+  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
 
   // Add a new danmaku message
   const addMessage = useCallback((text?: string) => {
     if (!enabled) return;
-    
+
     const densityMultiplier = { low: 0.5, medium: 1, high: 2 }[density];
     if (Math.random() > 0.3 * densityMultiplier) return;
 
@@ -89,7 +89,7 @@ export const DanmakuOverlay: React.FC<DanmakuOverlayProps> = ({
         ctx.globalAlpha = msg.opacity;
         ctx.strokeStyle = 'rgba(0,0,0,0.5)';
         ctx.lineWidth = 2;
-        
+
         ctx.strokeText(msg.text, msg.x, msg.y);
         ctx.fillText(msg.text, msg.x, msg.y);
         ctx.globalAlpha = 1;

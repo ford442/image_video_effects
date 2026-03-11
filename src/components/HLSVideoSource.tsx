@@ -18,7 +18,7 @@ export const HLSVideoSource: React.FC<HLSVideoSourceProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const frameRef = useRef<number | undefined>(undefined);
+  const frameRef = useRef<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [quality, setQuality] = useState<string>('auto');
 

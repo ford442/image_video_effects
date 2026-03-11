@@ -276,6 +276,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the generation of complex, flowing material patterns (Damascus steel) under highly dramatic, high-contrast lighting (Tenebrism).
 
+### Suggestion: Synthwave Holographic Statue
+- **Date:** 2026-03-10
+- **Prompt:** "A giant, glowing holographic statue of an ancient deity projected over a sleek, Synthwave-style cyberpunk plaza. The statue appears to be made of rippling, glitchy liquid metal that shifts between neon magenta and cyan. The lighting is extremely vibrant, emanating mostly from the hologram itself and the retro-futuristic grid of the plaza below. The mood is nostalgic yet highly advanced, capturing a retro-futuristic metropolis at midnight. Captured with a low angle using a wide 24mm lens, emphasizing the colossal scale of the projection against a starless night sky."
+- **Negative prompt:** "daylight, dull colors, natural, realistic, organic, low contrast"
+- **Tags:** synthwave, holographic, statue, neon, cyberpunk
+- **Style / Reference:** synthwave digital art, retro-futuristic, 80s aesthetic
+- **Composition:** low angle looking up, dramatic scale
+- **Color palette:** neon magenta, electric cyan, deep grid purple, stark black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_synthwave-hologram.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of holographic transparency combined with liquid metal reflections and vibrant neon glow.
+
+### Suggestion: Tonalist Rogue Wave
+- **Date:** 2026-03-10
+- **Prompt:** "An incredibly massive, terrifying rogue wave cresting in the middle of a violently stormy ocean. The water is thick, dark, and churning, with intricate foam patterns and spray caught in the wind. The lighting is heavily subdued and moody, inspired by featuring a limited palette of deep oceanic greens and charcoal greys under a heavy, overcast sky. The mood is ominous, desolate, and entirely focused on the raw power of nature. Captured with a telephoto lens to compress the distance and make the towering wave wall feel claustrophobic and inevitable."
+- **Negative prompt:** "sunny, bright sky, tropical, boats, people, vibrant colors"
+- **Tags:** ocean, rogue wave, storm, nature, moody
+- **Style / Reference:** tonalism painting, moody seascape photography
+- **Composition:** tight framing on the wave crest, horizon line low
+- **Color palette:** deep sea green, charcoal grey, muted slate blue, stark white foam
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260310_rogue-wave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing chaotic fluid dynamics, detailed foam generation, and moody, low-contrast atmospheric lighting.
+
+### Suggestion: Cyberprep Carbon Fiber Implant
+- **Date:** 2026-03-10
+- **Prompt:** "A pristine, ultra-macro shot of a high-end cybernetic implant being seamlessly integrated into human skin. The implant's casing is made of flawless, intricately woven carbon fiber with polished titanium accents. The environment is a sterile, brightly lit Cyberprep medical facility. The lighting is clean, diffused, and surgical, highlighting the micro-textures of the skin and the perfect geometric weave of the carbon fiber. The mood is utopian, precise, and sophisticated. Captured with an extreme macro 100mm lens, razor-thin depth of field focusing exactly on the point of integration."
+- **Negative prompt:** "gritty, dirty, blood, cyberpunk, dark, dystopian, rusty"
+- **Tags:** cyberprep, macro, cybernetic, medical, futuristic
+- **Style / Reference:** photorealistic macro photography, clean futurism
+- **Composition:** extreme close-up, rule of thirds, very shallow depth of field
+- **Color palette:** sterile white, brushed silver, matte black carbon fiber, natural skin tones
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_cybernetic-implant.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of precise repeating textures (carbon fiber weave) alongside realistic human skin micro-details in bright lighting.
+
+### Suggestion: Op Art Topaz Crystal Cave
+- **Date:** 2026-03-10
+- **Prompt:** "A mind-bending view deep inside a surreal crystal cave composed entirely of perfectly faceted, giant golden topaz formations. The arrangement of the crystals creates a natural Op Art optical illusion, distorting perspective and depth. The lighting is warm and intensely refractive, bouncing endlessly between the highly polished, geometric facets of the topaz, creating dizzying infinite reflections. The mood is hypnotic, disorienting, and luxurious. Captured with a wide-angle 14mm lens, deep focus to capture the labyrinth of infinite reflections."
+- **Negative prompt:** "dull, organic rock, dirt, soft edges, natural cave, dark"
+- **Tags:** abstract, crystal, cave, optical illusion, geometric
+- **Style / Reference:** op art, surreal geometric 3D render, hyper-detailed
+- **Composition:** deep symmetrical perspective, endless tunnel effect
+- **Color palette:** intense warm gold, amber, blinding white highlights, deep warm brown
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260310_topaz-crystal-cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing multiple bounce refractions, internal crystal light scattering, and sharp geometric optical illusions.
+
+### Suggestion: Art Nouveau Bioluminescent Cavern
+- **Date:** 2026-03-10
+- **Prompt:** "An exquisite, wide shot of a breathtaking bioluminescent cavern where the glowing flora naturally grows into elegant, sweeping curves and whiplash lines characteristic of Art Nouveau design. The massive glowing vines and lily-like fungi are encased in translucent, fossilized amber, emitting a soft, warm golden and ethereal blue light. The lighting is magical and completely natural, casting intricate, ornate shadows on the smooth cavern walls. The mood is romantic, enchanted, and elegantly organic. Captured with a 35mm lens, balanced lighting with a slight soft-focus bloom on the highlights."
+- **Negative prompt:** "straight lines, modern, harsh lighting, daylight, messy, chaotic"
+- **Tags:** fantasy, nature, underground, bioluminescent, elegant
+- **Style / Reference:** art nouveau illustration, photorealistic fantasy environment
+- **Composition:** sweeping curves leading the eye, balanced asymmetry
+- **Color palette:** ethereal glowing blue, rich warm amber, deep shadowy greens
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_bioluminescent-cavern.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the AI's ability to naturally form specific architectural styles (Art Nouveau curves) out of organic, glowing plant matter and translucent amber.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -298,12 +363,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Biopunk, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
-- **Materials:** Cork, Chainmail, Fur, Amber, Slime, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx, Liquid Metal. Graphene.
-- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm, Bioluminescent Cavern. Subterranean Garden, Clockwork Universe, Time Machine.
-- **Styles:** Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Tonalism, Op Art, Low Key Photography, Art Nouveau, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Pixel Art, Risograph, Synthwave, Ukiyo-e, Gothcore, Retrowave, Cyberprep, Digital Cubism. Afrofuturism.
-- **Materials:** Cork, Chainmail, Fur, Amber, Brass, Carbon Fiber, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Topaz, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Nacre, Onyx, Liquid Metal.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Holographic Statue, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Rogue Wave, Skyhook, Orbital Ring, Cybernetic Implant, Crystal Cave, Coral Reef Megastructure, Bioluminescent Cavern. Clockwork Universe.
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Ukiyo-e, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Cork, Chainmail, Fur, Slime, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Pixel Art, Risograph, Ukiyo-e, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Cork, Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Nacre, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 

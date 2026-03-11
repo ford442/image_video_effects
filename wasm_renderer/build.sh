@@ -2,19 +2,16 @@
 set -euo pipefail
 echo "=== Building Pixelocity WASM Renderer (2026 version) ==="
 
-# Source Emscripten
-CANDIDATES=(
-    "/content/build_space/emsdk/emsdk_env.sh"
-    "$REPO_ROOT/emsdk/emsdk_env.sh"
-    "$HOME/emsdk/emsdk_env.sh"
-    "/usr/local/emsdk/emsdk_env.sh"
-)
-for f in "${CANDIDATES[@]}"; do
-    if [ -f "$f" ]; then source "$f"; break; fi
-done
-
-# Change to script directory
 cd "$(dirname "$0")"
+
+# Activate Emscripten if available
+if [ -f "/opt/emsdk/emsdk_env.sh" ]; then
+  source /opt/emsdk/emsdk_env.sh
+elif [ -f "$HOME/emsdk/emsdk_env.sh" ]; then
+  source "$HOME/emsdk/emsdk_env.sh"
+elif [ -f "../../emsdk/emsdk_env.sh" ]; then
+  source "../../emsdk/emsdk_env.sh"
+fi
 
 # Set writable cache location for TOT emscripten
 export EM_CACHE=/tmp/emscripten_cache
@@ -65,12 +62,24 @@ emcc -std=c++20 -O2 \
     -sEXPORT_NAME=PixelocityWASM \
     -o build/pixelocity_wasm.js
 
-# Copy output to public folder
-mkdir -p ../../public/wasm
-cp build/pixelocity_wasm.js build/pixelocity_wasm.wasm ../../public/wasm/
-cp wasm_bridge.js ../../public/wasm/
+# Check if emcmake is available before proceeding
+if ! command -v emcmake &> /dev/null; then
+    echo "⚠️ Warning: emcmake not found. Skipping WASM build."
+    exit 0
+fi
 
-echo "✅ WASM build complete! Files in public/wasm/"
-echo "   → pixelocity_wasm.js"
-echo "   → pixelocity_wasm.wasm"
-echo "   → wasm_bridge.js"
+# Build
+emcmake cmake -B build -S .
+emmake make -C build
+
+# Copy to public
+mkdir -p ../public/wasm
+cp build/pixelocity_wasm.js ../public/wasm/
+cp build/pixelocity_wasm.wasm ../public/wasm/
+
+# Copy bridge to src
+mkdir -p ../src/wasm
+cp wasm_bridge.js ../src/wasm/
+cp wasm_bridge.d.ts ../src/wasm/
+
+echo "✅ WASM build complete! Output in public/wasm/"

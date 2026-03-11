@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 
-export interface PerformanceMetrics {
+interface PerformanceMetrics {
   fps: number;
   frameTime: number;
   frameCount: number;
@@ -9,8 +9,8 @@ export interface PerformanceMetrics {
 export const usePerformanceMonitor = () => {
   const [fps, setFps] = useState(0);
   const [frameTime, setFrameTime] = useState(0);
-  
-  const rafRef = useRef<number | undefined>(undefined);
+
+  const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const frameCountRef = useRef(0);
   const fpsUpdateRef = useRef(0);
@@ -28,7 +28,7 @@ export const usePerformanceMonitor = () => {
         const fps = Math.round((frameCountRef.current * 1000) / (timestamp - fpsUpdateRef.current));
         setFps(fps);
         setFrameTime(delta);
-        
+
         frameCountRef.current = 0;
         fpsUpdateRef.current = timestamp;
       }

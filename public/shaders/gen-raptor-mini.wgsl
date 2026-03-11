@@ -4,9 +4,9 @@
 @group(0) @binding(3) var<uniform> u: Uniforms;
 
 struct Uniforms {
-  config: vec4<f32>,      // time, unused, resolutionX, resolutionY
-  zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>, // x=audioIntensity (rage), other slots free
+  config: vec4<f32>;      // time, unused, resolutionX, resolutionY
+  zoom_config: vec4<f32>; // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>; // x=audioIntensity (rage), other slots free
 };
 
 // core compute for generative raptors
@@ -14,9 +14,9 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let audio = u.zoom_params.x; // rage multiplier [0,1]
 
     // base color accumulation

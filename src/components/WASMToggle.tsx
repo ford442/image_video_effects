@@ -15,7 +15,7 @@ export const WASMToggle: React.FC<WASMToggleProps> = ({
   const toggle = useCallback(async () => {
     setIsLoading(true);
     const newMode = mode === 'js' ? 'wasm' : 'js';
-    
+
     try {
       await onToggle(newMode === 'wasm');
       setMode(newMode);
@@ -35,8 +35,8 @@ export const WASMToggle: React.FC<WASMToggleProps> = ({
         bottom: '20px',
         right: '20px',
         padding: '12px 24px',
-        background: mode === 'wasm' 
-          ? 'linear-gradient(135deg, #00c853, #64dd17)' 
+        background: mode === 'wasm'
+          ? 'linear-gradient(135deg, #00c853, #64dd17)'
           : 'linear-gradient(135deg, #2979ff, #448aff)',
         color: 'white',
         border: 'none',
