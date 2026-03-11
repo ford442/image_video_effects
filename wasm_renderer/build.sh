@@ -23,6 +23,13 @@ for f in "${CANDIDATES[@]}"; do
 done
 
 # Set writable cache location for TOT emscripten
+
+# Check if emcc is available before proceeding
+if ! command -v emcc &> /dev/null; then
+    echo "⚠️ Warning: emcc not found. Skipping WASM build."
+    exit 0
+fi
+
 export EM_CACHE=/tmp/emscripten_cache
 
 # Print diagnostics
@@ -80,11 +87,7 @@ PUBLIC_WASM="$SCRIPT_DIR/../../public/wasm"
 mkdir -p "$PUBLIC_WASM"
 cp "$BUILD_DIR/pixelocity_wasm.js" "$BUILD_DIR/pixelocity_wasm.wasm" "$PUBLIC_WASM/"
 cp "$SCRIPT_DIR/wasm_bridge.js" "$PUBLIC_WASM/"
-# Check if emcmake is available before proceeding
-if ! command -v emcmake &> /dev/null; then
-    echo "⚠️ Warning: emcmake not found. Skipping WASM build."
-    exit 0
-fi
+
 
 # Build
 emcmake cmake -B build -S .
