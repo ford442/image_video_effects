@@ -303,7 +303,7 @@ void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, 
     }
 
     wgpu::DeviceDescriptor devDesc{};
-    adapter.RequestDevice(&devDesc, wgpu::CallbackMode::AllowSpontaneous, onDeviceRequest, nullptr);
+    adapter.RequestDevice(&devDesc, wgpu::CallbackMode::AllowSpontaneous, onDeviceRequest);
 }
 
 EMSCRIPTEN_KEEPALIVE
