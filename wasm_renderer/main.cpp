@@ -1,3 +1,4 @@
+#include "renderer.h"
 #include <webgpu/webgpu_cpp.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
@@ -8,6 +9,8 @@
 #include <cstdlib>
 #include <cmath>
 #include <stdio.h>
+
+using namespace pixelocity;
 
 // Physarum 3.0 Agent Structure
 struct Agent {
@@ -76,6 +79,9 @@ SimParams params = {
 
 std::vector<Agent> agents;
 bool wasmMode = true;
+
+// Global renderer instance
+WebGPURenderer* g_renderer = nullptr;
 
 // Compute shader WGSL (embedded)
 const char* COMPUTE_WGSL = R"(
@@ -249,6 +255,11 @@ void onDeviceRequest(wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::S
 extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void initWasmRenderer(int width, int height, int agentCount) {
+        if (!g_renderer) {
+            g_renderer = new WebGPURenderer();
+        }
+        g_renderer->Initialize(width, height);
+
         params.width = width;
         params.height = height;
         params.agentCount = agentCount;
@@ -261,11 +272,6 @@ extern "C" {
             agents[i].angle = ((float)rand() / (float)RAND_MAX) * 6.28318f;
             agents[i].speed = 1.0f;
         }
-        
-        wgpu::Instance instance = wgpu::CreateInstance(nullptr);
-        wgpu::RequestAdapterOptions opts{};
-        opts.powerPreference = wgpu::PowerPreference::HighPerformance;
-        instance.RequestAdapter(&opts, wgpu::CallbackMode::AllowSpontaneous, onAdapterRequest);
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -294,6 +300,54 @@ extern "C" {
     void toggleRenderer(int useWasm) {
         wasmMode = useWasm != 0;
     }
+
+    EMSCRIPTEN_KEEPALIVE
+    void shutdownWasmRenderer() {
+        if (g_renderer) {
+            g_renderer->Shutdown();
+            delete g_renderer;
+            g_renderer = nullptr;
+        }
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    int loadShader(const char* id, const char* wgslCode) {
+        if (!g_renderer) return 0;
+        return g_renderer->LoadShader(id, wgslCode) ? 1 : 0;
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    void setActiveShader(const char* id) {
+        if (g_renderer) {
+            g_renderer->SetActiveShader(id);
+        }
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    void addRipple(float x, float y) {
+        if (g_renderer) {
+            g_renderer->AddRipple(x, y);
+        }
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    void clearRipples() {
+        if (g_renderer) {
+            g_renderer->ClearRipples();
+        }
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    int isRendererInitialized() {
+        return g_renderer && g_renderer->IsInitialized() ? 1 : 0;
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    void updateUniforms() {
+        if (g_renderer) {
+            g_renderer->Render();
+        }
+    }
 }
 
 void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
@@ -308,17 +362,20 @@ void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, 
 
 EMSCRIPTEN_KEEPALIVE
 void loadImageData(const uint8_t* data, int width, int height) {
-    (void)data; (void)width; (void)height;
+    if (!g_renderer) return;
+    g_renderer->LoadImage(data, width, height);
 }
 
 EMSCRIPTEN_KEEPALIVE
 void uploadVideoFrame(const uint8_t* data, int width, int height) {
-    (void)data; (void)width; (void)height;
+    if (!g_renderer) return;
+    g_renderer->UpdateVideoFrame(data, width, height);
 }
 
 EMSCRIPTEN_KEEPALIVE
 float getFPS() {
-    return 0.0f;
+    if (!g_renderer) return 0.0f;
+    return g_renderer->GetFPS();
 }
 
 void createPipelines() {
