@@ -9,8 +9,8 @@ interface RendererToggleProps {
   fixed?: boolean;
 }
 
-export const RendererToggle: React.FC<RendererToggleProps> = ({ 
-  onToggle, 
+export const RendererToggle: React.FC<RendererToggleProps> = ({
+  onToggle,
   className = '',
   showLabels = false,
   fixed = true
@@ -41,14 +41,14 @@ export const RendererToggle: React.FC<RendererToggleProps> = ({
     }
   };
 
-  const buttonText = isLoading 
-    ? '⏳ Loading...' 
-    : showLabels 
+  const buttonText = isLoading
+    ? '⏳ Loading...'
+    : showLabels
       ? (useWasm ? 'Switch to JS WebGPU' : 'Switch to C++ WASM')
       : (useWasm ? '🔄 JS WebGPU' : '⚡ C++ WASM (Native Speed)');
 
-  const positionClasses = fixed 
-    ? 'fixed bottom-8 right-8' 
+  const positionClasses = fixed
+    ? 'fixed bottom-8 right-8'
     : '';
 
   return (

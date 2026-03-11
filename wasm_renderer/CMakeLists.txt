@@ -3,14 +3,12 @@ project(PixelocityWASM CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-# Source files
-set(SOURCES
-    main.cpp
-    renderer.cpp
-)
+add_executable(pixelocity_wasm main.cpp)
 
-set(HEADERS
-    renderer.h
+# Compile options - use the old flag for header includes
+target_compile_options(pixelocity_wasm PRIVATE
+  -sUSE_WEBGPU=1
+  -O3
 )
 
 add_executable(pixelocity_wasm ${SOURCES} ${HEADERS})
@@ -65,6 +63,6 @@ target_link_options(pixelocity_wasm PRIVATE
     "-sEXPORT_NAME=PixelocityWASM"
 )
 
-set_target_properties(pixelocity_wasm PROPERTIES
-    SUFFIX ".js"
-)
+
+
+set_target_properties(pixelocity_wasm PROPERTIES SUFFIX ".js")

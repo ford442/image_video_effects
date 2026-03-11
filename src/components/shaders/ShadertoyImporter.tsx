@@ -11,11 +11,11 @@ interface ShadertoyImporterProps {
   className?: string;
 }
 
-export const ShadertoyImporter: React.FC<ShadertoyImporterProps> = ({ 
-  onImport, 
+export const ShadertoyImporter: React.FC<ShadertoyImporterProps> = ({
+  onImport,
   onImported,
   onError,
-  className = '' 
+  className = ''
 }) => {
   const [shaderId, setShaderId] = useState('');
   const [apiKey, setApiKey] = useState('');

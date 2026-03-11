@@ -80,8 +80,24 @@ PUBLIC_WASM="$SCRIPT_DIR/../../public/wasm"
 mkdir -p "$PUBLIC_WASM"
 cp "$BUILD_DIR/pixelocity_wasm.js" "$BUILD_DIR/pixelocity_wasm.wasm" "$PUBLIC_WASM/"
 cp "$SCRIPT_DIR/wasm_bridge.js" "$PUBLIC_WASM/"
+# Check if emcmake is available before proceeding
+if ! command -v emcmake &> /dev/null; then
+    echo "⚠️ Warning: emcmake not found. Skipping WASM build."
+    exit 0
+fi
 
-echo "✅ WASM build complete! Files in public/wasm/"
-echo "   → pixelocity_wasm.js"
-echo "   → pixelocity_wasm.wasm"
-echo "   → wasm_bridge.js"
+# Build
+emcmake cmake -B build -S .
+emmake make -C build
+
+# Copy to public
+mkdir -p ../public/wasm
+cp build/pixelocity_wasm.js ../public/wasm/
+cp build/pixelocity_wasm.wasm ../public/wasm/
+
+# Copy bridge to src
+mkdir -p ../src/wasm
+cp wasm_bridge.js ../src/wasm/
+cp wasm_bridge.d.ts ../src/wasm/
+
+echo "✅ WASM build complete! Output in public/wasm/"
