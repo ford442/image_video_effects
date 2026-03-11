@@ -17,9 +17,14 @@ export const useWASM = () => {
     if (moduleRef.current) return true;
 
     try {
-      const wasm = await import('/wasm/pixelocity_wasm.js');
+      // @ts-ignore
+      const wasm = await import(/* webpackIgnore: true */ '/wasm/pixelocity_wasm.js');
       if (wasm.default) {
-        await wasm.default();
+        if (typeof wasm.default === 'function') {
+          await (wasm.default as any)();
+        } else if (typeof wasm.default === 'object' && typeof (wasm.default as any).default === 'function') {
+          await (wasm.default as any).default();
+        }
       }
       moduleRef.current = wasm as unknown as WASMModule;
       setIsLoaded(true);

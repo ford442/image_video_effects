@@ -37,7 +37,7 @@ export class RendererManager {
     if (!this.canvas) return false;
 
     // Store video reference if exists
-    const video = this.currentRenderer?.['video'] as HTMLVideoElement | undefined;
+    const video = (this.currentRenderer as any)?.['video'] as HTMLVideoElement | undefined;
 
     // Destroy old renderer
     this.currentRenderer?.destroy();

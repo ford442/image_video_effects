@@ -1,4 +1,4 @@
-declare module '/wasm/pixelocity_wasm.js' {
+declare module '*/pixelocity_wasm.js' {
   export interface PixelocityWASM {
     _initWasmRenderer: (width: number, height: number, agentCount: number) => void;
     _toggleRenderer: (useWasm: number) => void;
@@ -7,7 +7,6 @@ declare module '/wasm/pixelocity_wasm.js' {
     _updateMousePos: (x: number, y: number) => void;
     default?: () => Promise<void>;
   }
-  
   const wasmModule: PixelocityWASM;
   export default wasmModule;
 }
