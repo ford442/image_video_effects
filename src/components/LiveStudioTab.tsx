@@ -41,7 +41,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
     const renderer = new RendererClass({
       ...DEFAULT_CONFIG,
       agentCount,
-    });
+    }) as Renderer;
 
     const success = await renderer.init(canvasRef.current);
 

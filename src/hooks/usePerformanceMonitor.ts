@@ -10,7 +10,7 @@ export const usePerformanceMonitor = () => {
   const [fps, setFps] = useState(0);
   const [frameTime, setFrameTime] = useState(0);
 
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const frameCountRef = useRef(0);
   const fpsUpdateRef = useRef(0);

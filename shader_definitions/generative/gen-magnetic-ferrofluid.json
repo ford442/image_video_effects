@@ -13,9 +13,6 @@
     "generative",
     "ferrofluid"
   ],
-  "features": [
-    "mouse-driven"
-  ],
   "params": [
     {
       "id": "param1",

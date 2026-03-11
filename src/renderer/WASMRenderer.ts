@@ -1,5 +1,5 @@
 import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
-import * as WasmBridge from '../../wasm_renderer/wasm_bridge.js';
+import * as WasmBridge from '../wasm/wasm_bridge.js';
 
 export class WASMRenderer implements Renderer {
   private config: RendererConfig;

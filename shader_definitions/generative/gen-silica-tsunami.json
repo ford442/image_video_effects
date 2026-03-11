@@ -10,9 +10,6 @@
     "glass",
     "refraction"
   ],
-  "features": [
-    "mouse-driven"
-  ],
   "params": [
     {
       "id": "waveHeight",

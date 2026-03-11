@@ -13,9 +13,6 @@
     "generative",
     "scifi"
   ],
-  "features": [
-    "mouse-driven"
-  ],
   "params": [
     {
       "id": "param1",

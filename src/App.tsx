@@ -259,7 +259,9 @@ function MainApp() {
 
             // Push to Renderer
             if (rendererRef.current) {
-                rendererRef.current.setImageList(manifest.map(m => m.url));
+                if (rendererRef.current.setImageList) {
+                    rendererRef.current.setImageList(manifest.map(m => m.url));
+                }
                 // If the renderer has a setVideoList method, call it here.
                 // Currently assuming Controls handles the selection via `selectedVideo` prop.
             }
@@ -282,7 +284,9 @@ function MainApp() {
             for (let i = 0; i < data.length; ++i) {
                 normalizedData[i] = 1.0 - ((data[i] - min) / range);
             }
-            rendererRef.current.updateDepthMap(normalizedData, width, height);
+            if (rendererRef.current.updateDepthMap) {
+                rendererRef.current.updateDepthMap(normalizedData, width, height);
+            }
             setStatus('Depth map updated.');
         } catch (e: any) {
             console.error("Error during analysis:", e);
@@ -292,11 +296,13 @@ function MainApp() {
 
     const handleLoadImage = useCallback(async (url: string) => {
         if (!rendererRef.current) return;
-        const newImageUrl = await rendererRef.current.loadImage(url);
-        if (newImageUrl) {
-            setCurrentImageUrl(newImageUrl);
-            if (depthEstimator) {
-                await runDepthAnalysis(newImageUrl);
+        if (rendererRef.current.loadImage) {
+            const newImageUrl = await rendererRef.current.loadImage(url);
+            if (newImageUrl) {
+                setCurrentImageUrl(newImageUrl);
+                if (depthEstimator) {
+                    await runDepthAnalysis(newImageUrl);
+                }
             }
         }
     }, [depthEstimator, runDepthAnalysis]);
@@ -386,7 +392,9 @@ function MainApp() {
     
     const onInitCanvas = useCallback(() => {
         if(rendererRef.current) {
-            setAvailableModes(rendererRef.current.getAvailableModes());
+            if (rendererRef.current.getAvailableModes) {
+                setAvailableModes(rendererRef.current.getAvailableModes());
+            }
             handleNewRandomImage();
         }
     }, [handleNewRandomImage]);
