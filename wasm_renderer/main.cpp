@@ -265,7 +265,7 @@ extern "C" {
         wgpu::Instance instance = wgpu::CreateInstance(nullptr);
         wgpu::RequestAdapterOptions opts{};
         opts.powerPreference = wgpu::PowerPreference::HighPerformance;
-        instance.RequestAdapter(&opts, wgpu::CallbackMode::AllowSpontaneous, onAdapterRequest);
+        instance.RequestAdapter(&opts, wgpu::CallbackMode::AllowSpontaneous, onAdapterRequest, nullptr);
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -303,7 +303,7 @@ void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, 
     }
 
     wgpu::DeviceDescriptor devDesc{};
-    adapter.RequestDevice(&devDesc, wgpu::CallbackMode::AllowSpontaneous, onDeviceRequest);
+    adapter.RequestDevice(&devDesc, wgpu::CallbackMode::AllowSpontaneous, onDeviceRequest, nullptr);
 }
 
 EMSCRIPTEN_KEEPALIVE
