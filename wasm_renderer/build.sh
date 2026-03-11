@@ -27,4 +27,9 @@ mkdir -p ../public/wasm
 cp build/pixelocity_wasm.js ../public/wasm/
 cp build/pixelocity_wasm.wasm ../public/wasm/
 
+# Copy bridge to src
+mkdir -p ../src/wasm
+cp wasm_bridge.js ../src/wasm/
+cp wasm_bridge.d.ts ../src/wasm/
+
 echo "✅ WASM build complete! Output in public/wasm/"

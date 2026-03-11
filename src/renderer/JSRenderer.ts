@@ -71,7 +71,7 @@ export class JSRenderer implements Renderer {
     }
   }
 
-  private render = (): void => {
+  render = (): void => {
     if (!this.ctx || !this.canvas) return;
 
     // Clear
@@ -111,10 +111,6 @@ export class JSRenderer implements Renderer {
       this.animationId = requestAnimationFrame(loop);
     };
     loop();
-  }
-
-  render(): void {
-    // Handled by render loop
   }
 
   destroy(): void {

@@ -33,7 +33,7 @@ export const DanmakuOverlay: React.FC<DanmakuOverlayProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const messagesRef = useRef<DanmakuMessage[]>([]);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(0);
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
 
   // Add a new danmaku message
