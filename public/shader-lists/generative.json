@@ -820,6 +820,9 @@
       "generative",
       "scifi"
     ],
+    "features": [
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "param1",
@@ -1067,6 +1070,9 @@
       "fluid",
       "generative",
       "ferrofluid"
+    ],
+    "features": [
+      "mouse-driven"
     ],
     "params": [
       {
@@ -1349,6 +1355,9 @@
       "wave",
       "glass",
       "refraction"
+    ],
+    "features": [
+      "mouse-driven"
     ],
     "params": [
       {

@@ -22,6 +22,16 @@ for f in "${CANDIDATES[@]}"; do
     fi
 done
 
+# Check if emcc is available early
+if ! command -v emcc &> /dev/null; then
+    echo "⚠️ Warning: emcc not found. Skipping WASM build."
+    # Create dummy files so the TypeScript build doesn't fail looking for them
+    mkdir -p "$SCRIPT_DIR/../public/wasm"
+    echo "var Module = function() { return Promise.resolve({}); }; Module.default = Module; export default Module;" > "$SCRIPT_DIR/../public/wasm/pixelocity_wasm.js"
+    touch "$SCRIPT_DIR/../public/wasm/pixelocity_wasm.wasm"
+    exit 0
+fi
+
 # Set writable cache location for TOT emscripten
 
 # Check if emcc is available before proceeding

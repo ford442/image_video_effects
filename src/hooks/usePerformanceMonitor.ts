@@ -1,11 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 
-interface PerformanceMetrics {
-  fps: number;
-  frameTime: number;
-  frameCount: number;
-}
-
 export const usePerformanceMonitor = () => {
   const [fps, setFps] = useState(0);
   const [frameTime, setFrameTime] = useState(0);

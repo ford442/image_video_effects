@@ -8,7 +8,6 @@
 // The WASM module instance
 let wasmModule = null;
 let canvas = null;
-let ctx = null;
 
 // Renderer state
 const state = {
@@ -257,7 +256,7 @@ export function uploadVideoFrame(rgbaPixels, width, height) {
 }
 
 // Default export
-export default {
+const wasmBridge = {
   initWasmRenderer,
   shutdownWasmRenderer,
   loadShader,
@@ -271,3 +270,5 @@ export default {
   uploadImageData,
   uploadVideoFrame
 };
+
+export default wasmBridge;
