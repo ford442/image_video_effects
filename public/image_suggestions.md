@@ -341,6 +341,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the AI's ability to naturally form specific architectural styles (Art Nouveau curves) out of organic, glowing plant matter and translucent amber.
 
+
+### Suggestion: Italian Futurism Metropolis Speed
+- **Date:** 2026-03-10
+- **Prompt:** "A chaotic, dynamic metropolis depicted in the style of Italian Futurism, emphasizing speed, technology, and violent movement. Abstract, jagged geometric shapes in vibrant reds, yellows, and blacks interlock to form towering skyscrapers and speeding locomotives. The composition is fragmented and kaleidoscopic, capturing the blur of motion. Stark, high-contrast directional lighting highlights the aggressive, mechanical forms. The mood is energetic, overwhelming, and hyper-modern. Shot with a wide-angle perspective to distort scale and enhance the feeling of speed."
+- **Negative prompt:** "calm, peaceful, traditional, realistic, soft, blurry, organic, nature"
+- **Tags:** art, italian futurism, abstract, city, speed
+- **Style / Reference:** Italian Futurism, Umberto Boccioni, Giacomo Balla
+- **Composition:** dynamic diagonals, fragmented and intersecting planes
+- **Color palette:** vibrant reds, yellows, blacks, steel greys
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_italian-futurism-city.jpg`
+- **License / Attribution:** Public Domain concept
+- **Notes:** Tests the model's ability to render specific historical abstract art movements and convey motion through static fragmentation.
+
+### Suggestion: Bioluminescent Tsunami Wave
+- **Date:** 2026-03-10
+- **Prompt:** "A massive, towering tsunami wave caught frozen in time just before it crashes down. The water is entirely bioluminescent, glowing intensely with neon blues and purples in the dark of night. Within the translucent wall of water, silhouetted shapes of giant marine life can be seen swirling. The sky above is dark and stormy with dramatic lightning illuminating the crest of the wave. The mood is terrifying yet awe-inspiring and beautiful. Captured with a low camera angle, wide lens, and high shutter speed to freeze the water droplets."
+- **Negative prompt:** "daylight, calm water, small wave, shore, people, boats, sunny"
+- **Tags:** nature, ocean, tsunami, bioluminescent, dramatic
+- **Style / Reference:** photorealistic, long exposure photography style
+- **Composition:** imposing, low angle, wave dominating the frame
+- **Color palette:** neon blues, deep purples, dark greys, bright white lightning flashes
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_bioluminescent-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing water rendering, transparency, and intense glowing emission under dark environmental lighting.
+
+### Suggestion: Bismuth Crystal Cavern Megastructure
+- **Date:** 2026-03-10
+- **Prompt:** "A vast underground cavern composed entirely of gigantic, iridescent bismuth crystals. The hopper-like, step-patterned formations create an alien, geometric architecture. The metallic surfaces reflect a dazzling rainbow of thin-film interference colors—pinks, greens, golds, and blues. A small, glowing orb floats in the center, casting hard, directional light that highlights the sharp, right-angled crystal edges and creates deep, colorful reflections. The mood is mysterious, quiet, and otherworldly. Shot with a sharp focus macro lens, emphasizing the microscopic-looking geometric details scaled up to massive proportions."
+- **Negative prompt:** "organic shapes, rounded, earth tones, soft lighting, daylight, water"
+- **Tags:** environment, crystals, bismuth, geometric, iridescent
+- **Style / Reference:** hyper-realistic, scientific macro photography scaled up
+- **Composition:** symmetrical, framing the central light source, deep depth of field
+- **Color palette:** iridescent rainbow colors, metallic reflections, dark background shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_bismuth-megastructure.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating metallic rendering, complex geometric displacement, and thin-film interference shaders.
+
+### Suggestion: Origami Paper Dragon Flight
+- **Date:** 2026-03-10
+- **Prompt:** "An intricately folded origami dragon soaring through a sky filled with stylized, paper-cutout clouds. The dragon is made of high-quality, textured golden foil paper with sharp, precise creases. Sunlight catches the metallic surface of the paper, creating bright glints and contrasting deep shadows in the folds. The environment is entirely constructed from different types of paper (parchment, tissue, cardstock). The mood is whimsical, artistic, and delicate. Captured with sharp focus, highlighting the fibrous texture of the paper and the sharp geometric folds."
+- **Negative prompt:** "real dragon, scales, fire, flesh, realistic clouds, photorealistic sky"
+- **Tags:** art, origami, papercraft, dragon, whimsical
+- **Style / Reference:** papercraft art, macro studio photography
+- **Composition:** dynamic flight pose, rule of thirds, angled upwards
+- **Color palette:** gold foil, off-white parchment, pale blue tissue paper
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260310_origami-dragon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing varied material textures (foil vs rough paper) and sharp geometric shadowing.
+
+### Suggestion: Afrofuturism Spaceport Market
+- **Date:** 2026-03-10
+- **Prompt:** "A bustling, vibrant spaceport marketplace designed in an Afrofuturism aesthetic. The architecture blends highly advanced, sleek spaceship technology with traditional African patterns, shapes, and materials like woven fibers, carved wood, and brass. People in vibrant, technologically enhanced traditional clothing navigate the busy market under the glow of holographic neon signs displaying geometric tribal motifs. The lighting is bright, sunny, and colorful, with dynamic shadows cast by overhead canopies. The mood is energetic, culturally rich, and highly advanced. Captured with a standard 50mm lens, eye-level perspective."
+- **Negative prompt:** "dystopian, gloomy, cyberpunk, plain, boring, monochromatic"
+- **Tags:** sci-fi, afrofuturism, market, city, vibrant
+- **Style / Reference:** cinematic concept art, highly detailed, vibrant colors
+- **Composition:** busy street level view, deep perspective down the market aisle
+- **Color palette:** rich golds, vibrant reds and greens, sleek silver tech, neon holograms
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_afrofuturism-market.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for testing complex crowd scenes, blending organic and metallic materials, and vibrant, multi-colored lighting setups.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
