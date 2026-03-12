@@ -42,6 +42,12 @@
       "title": "Ethereal Anemone Bloom",
       "added": "2026-03-10T15:14:50.343797",
       "completed": "2026-03-11T08:08:07.114865"
+    },
+    {
+      "filename": "2026-03-11_quantum-mycelium.md",
+      "title": "Quantum Mycelium",
+      "added": "2026-03-11T15:31:45.995632",
+      "completed": "2026-03-12T07:58:56.991876"
     }
   ],
   "rejected": [],
@@ -66,11 +72,6 @@
       "filename": "2026-03-08_silica-tsunami.md",
       "title": "Silica Tsunami",
       "added": "2026-03-08T15:23:19.072421"
-    },
-    {
-      "filename": "2026-03-11_quantum-mycelium.md",
-      "title": "Quantum Mycelium",
-      "added": "2026-03-11T15:31:45.995632"
     }
   ],
   "in_progress": null
