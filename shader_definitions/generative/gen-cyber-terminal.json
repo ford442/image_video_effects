@@ -1,0 +1,52 @@
+{
+  "id": "gen-cyber-terminal",
+  "name": "Procedural Cyber Terminal (ASCII)",
+  "url": "shaders/gen-cyber-terminal.wgsl",
+  "category": "generative",
+  "description": "Transforms the input video feed or image into a high-tech, procedural ASCII terminal display using Signed Distance Functions (SDFs).",
+  "tags": [
+    "ascii",
+    "terminal",
+    "retro",
+    "procedural",
+    "decoder"
+  ],
+  "features": [
+    "mouse-driven",
+    "procedural-glyphs"
+  ],
+  "params": [
+    {
+      "id": "gridDensity",
+      "name": "Grid Density",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "glyphSharpness",
+      "name": "Glyph Sharpness",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    },
+    {
+      "id": "charBrightness",
+      "name": "Character Brightness",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "id": "decoderRadius",
+      "name": "Interactive Decoder Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    }
+  ]
+}
