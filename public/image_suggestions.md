@@ -407,6 +407,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Useful for testing complex crowd scenes, blending organic and metallic materials, and vibrant, multi-colored lighting setups.
 
+### Suggestion: Neoclassical Space Station
+- **Date:** 2026-03-10
+- **Prompt:** "A grand, Neoclassical space station interior featuring massive, fluted marble columns and a domed ceiling with a vast skylight revealing a starry cosmos. The architecture is pristine and elegant, blending ancient Roman aesthetics with highly advanced, sleek silver technology. The lighting is ethereal and soft, emanating from hidden cove lights and starlight from above, casting long, dramatic shadows. The mood is awe-inspiring, intellectual, and majestic. Captured with a wide-angle 24mm lens, emphasizing the symmetry and the immense scale of the orbital structure."
+- **Negative prompt:** "dystopian, rusty, dirty, cramped, modern, boring, people"
+- **Tags:** sci-fi, architecture, neoclassical, space, grand
+- **Style / Reference:** neoclassical architecture, hyper-detailed 3D render
+- **Composition:** symmetrical, deep perspective, low angle looking up
+- **Color palette:** pristine white marble, silver chrome, deep cosmic blue, soft warm gold
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_neoclassical-space-station.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of historical architectural styles with futuristic settings and soft, indirect lighting.
+
+### Suggestion: Titanium Termite Mound Megastructure
+- **Date:** 2026-03-10
+- **Prompt:** "A colossal, towering termite mound that has been cybernetically enhanced or entirely constructed from brushed titanium and complex metallic alloys. The structure dominates a desolate, crimson desert landscape under a harsh, glaring sun. The titanium surface is intricately textured with natural, organic-looking ventilation flutes that gleam brilliantly in the sunlight. The mood is alien, imposing, and industrial. Captured with a 35mm lens from a low vantage point to make the structure look incredibly massive against the sky."
+- **Negative prompt:** "organic dirt, wood, lush green, soft, blurry, small"
+- **Tags:** sci-fi, landscape, alien, titanium, megastructure
+- **Style / Reference:** hard surface modeling, photorealistic sci-fi landscape
+- **Composition:** low angle, rule of thirds, towering presence
+- **Color palette:** brushed titanium grey, glaring white highlights, deep crimson sand, pale sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260310_titanium-termite-mound.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing complex, organic-shaped hard surface modeling and harsh, direct sunlight reflections on brushed metal.
+
+### Suggestion: Velvet Kaleidoscope Dreamscape
+- **Date:** 2026-03-10
+- **Prompt:** "A mesmerizing, surreal dreamscape composed entirely of intricate, symmetrical kaleidoscope patterns made from plush, luxurious velvet. The environment is soft and tactile, with folds and ripples of velvet forming impossible, Escher-like geometry. The lighting is soft and moody, gently grazing the texture of the fabric to highlight its plushness and depth. The mood is hypnotic, comforting, and deeply surreal. Captured with a medium 50mm lens, sharp focus on the central repeating pattern while the edges softly blur into darkness."
+- **Negative prompt:** "hard surfaces, metallic, sharp edges, bright daylight, realistic landscape"
+- **Tags:** abstract, surreal, velvet, kaleidoscope, soft
+- **Style / Reference:** surreal abstract art, highly tactile 3D render
+- **Composition:** perfectly symmetrical, mandala-like, shallow depth of field
+- **Color palette:** deep royal purple, rich burgundy, soft emerald green, velvety black shadows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260310_velvet-kaleidoscope.jpg`
+- **License / Attribution:** CC0
+- **Notes:** An excellent test for generating soft, tactile fabric textures (velvet) and complex, symmetrical repeating patterns.
+
+### Suggestion: Pixel Art Hydroelectric Dam
+- **Date:** 2026-03-10
+- **Prompt:** "A massive, brutalist hydroelectric dam nestled in a lush, mountainous gorge, rendered entirely in highly detailed, isometric pixel art. The water roaring through the spillways is animated with crisp, distinct pixels, creating a dynamic contrast with the static concrete of the dam. The lighting simulates an overcast, moody afternoon, with distinct pixel-art shading and dithering techniques. The mood is nostalgic, epic, and slightly melancholic. Captured from a fixed isometric angle, ensuring perfect grid alignment and sharp pixel edges."
+- **Negative prompt:** "photorealistic, 3D render, smooth, blurry, high resolution textures, curves"
+- **Tags:** pixel art, landscape, isometric, dam, brutalist
+- **Style / Reference:** 16-bit era pixel art, modern high-detail pixel illustration
+- **Composition:** isometric perspective, wide landscape view
+- **Color palette:** concrete greys, muted forest greens, deep river blues, bright white pixel water foam
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_pixel-art-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's capability to strictly adhere to pixel art aesthetics, isometric perspective, and dithering techniques.
+
+### Suggestion: Deconstructivism Cork Oasis
+- **Date:** 2026-03-10
+- **Prompt:** "A bizarre, peaceful oasis where all the architectural structures are designed in a chaotic, fragmented Deconstructivism style, yet built entirely from natural, textured cork. The fragmented, slanted geometric shapes of the cork buildings contrast beautifully with a small, perfectly still pool of crystal-clear water and a few sparse, exotic plants. The lighting is bright, midday desert sun, casting sharp, complex shadows from the disjointed structures onto the sand. The mood is avant-garde, serene, and highly unusual. Captured with a wide 24mm lens to emphasize the chaotic angles of the architecture."
+- **Negative prompt:** "traditional architecture, straight walls, metal, glass, dark, moody"
+- **Tags:** surreal, architecture, deconstructivism, cork, oasis
+- **Style / Reference:** deconstructivist architecture, surreal architectural visualization
+- **Composition:** chaotic yet balanced geometry, central water feature
+- **Color palette:** warm cork browns, sandy beige, bright turquoise water, stark black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260310_deconstructivism-cork-oasis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the combination of chaotic architectural styles (Deconstructivism) with unusual, specific natural materials (cork).
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -429,12 +494,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Pixel Art, Risograph, Ukiyo-e, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Cork, Chainmail, Fur, Slime, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
-- **Styles:** Brutalist Web Design, Neoclassicism, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Deconstructivism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Pixel Art, Risograph, Ukiyo-e, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Cork, Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Titanium, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Velvet, Nacre, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Space Station, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Oasis, Ant Farm, Beehive, Termite Mound, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Kaleidoscope, Tide Pool, Sundog, Hydroelectric Dam, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Risograph, Ukiyo-e, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Slime, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Risograph, Ukiyo-e, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Nacre, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 
