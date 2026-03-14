@@ -1,0 +1,94 @@
+{
+  "id": "gen_orb_2.0",
+  "name": "Quantum Orb 2.0",
+  "category": "generative",
+  "type": "compute",
+  "description": "Multi-pass HDR orb with temporal accumulation, SDF raymarching, and audio-reactive bloom. Upgrade from gen_orb.",
+  "author": "ford442",
+  "date": "2026-03-15",
+  "wgsl_file": "gen_orb_2.0.wgsl",
+  "rating": {
+    "target": 4.5,
+    "previous_version": "gen_orb",
+    "previous_rating": 2.8
+  },
+  "pipeline": {
+    "iterations_per_frame": 4,
+    "use_data_texture_a": true,
+    "use_data_texture_b": false,
+    "accumulation_mode": "temporal",
+    "tonemap": "aces",
+    "output_format": "hdr",
+    "techniques": [
+      "sdf_raymarching",
+      "temporal_accumulation",
+      "hdr_bloom",
+      "audio_reactive",
+      "multi_step_iteration"
+    ]
+  },
+  "uniforms": {
+    "param1": {
+      "label": "Glow Intensity",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "description": "Controls HDR bloom strength"
+    },
+    "param2": {
+      "label": "Orbit Speed",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3,
+      "description": "Camera rotation speed"
+    },
+    "param3": {
+      "label": "Audio Reactivity",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "description": "How much audio affects size and glow"
+    },
+    "param4": {
+      "label": "Temporal Blend",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2,
+      "description": "Frame accumulation smoothness"
+    }
+  },
+  "features": [
+    "hdr_output",
+    "temporal_smoothing",
+    "audio_reactive",
+    "sdf_composition",
+    "multi_step"
+  ],
+  "tags": [
+    "3d",
+    "raymarching",
+    "bloom",
+    "sdf",
+    "generative",
+    "audio-reactive",
+    "upgrade"
+  ],
+  "performance": {
+    "ray_march_steps": 64,
+    "iterations_per_frame": 4,
+    "target_fps": 60,
+    "complexity": "medium"
+  },
+  "upgrades_from": {
+    "shader_id": "gen_orb",
+    "improvements": [
+      "Added 3D SDF raymarching (was 2D circles)",
+      "HDR bloom with tone mapping (was LDR)",
+      "Temporal accumulation for smoothness",
+      "Multi-step iteration per frame",
+      "Audio-reactive pulsing",
+      "ACES tone mapping",
+      "SDF composition (orb + moon + ring)"
+    ]
+  }
+}
