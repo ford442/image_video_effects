@@ -1,7 +1,13 @@
 // ────────────────────────────────────────────────────────────────────────────────
-//  Rainbow Cloud - Psychedelic Sky Shader
-//  Turns any image/video into swirling, rainbow-coloured clouds with fbm density,
-//  HDR bursts, negative color voids, and curl-field feedback trails.
+//  Rainbow Cloud - Volumetric Alpha Upgrade
+//  Turns any image/video into swirling, rainbow-coloured clouds with 
+//  physically-based volumetric density and optical depth
+//  
+//  Scientific Implementation:
+//  - FBM-generated cloud density field
+//  - Optical depth accumulation for realistic alpha
+//  - HDR in-scattered light with Beer-Lambert extinction
+//  - Curl-field feedback trails with volumetric blending
 // ────────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
@@ -27,6 +33,11 @@ struct Uniforms {
   zoom_params: vec4<f32>,       // x=cloudScale, y=twistSpeed, z=feedbackStep, w=persistence
   ripples:     array<vec4<f32>, 50>,
 };
+
+// Volumetric constants for cloud rendering
+const SIGMA_T_CLOUD: f32 = 2.0;         // Cloud extinction coefficient
+const SIGMA_S_CLOUD: f32 = 1.8;         // Cloud scattering (high albedo)
+const STEP_SIZE: f32 = 0.02;            // Ray step through cloud
 
 // ───────────────────────────────────────────────────────────────────────────────
 //  2-D hash (returns a pseudo-random float in [0,1])
@@ -131,8 +142,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     density = density * (1.0 + (1.0 - depth) * depthInf * 0.5);
 
     // ──────────────────────────────────────────────────────────────────────────
-    //  Map density → rainbow hue
+    //  Volumetric Light Transport
     // ──────────────────────────────────────────────────────────────────────────
+    
+    // Calculate optical depth
+    // τ = density * step_size * extinction_coefficient
+    let opticalDepth = density * STEP_SIZE * SIGMA_T_CLOUD;
+    
+    // Transmittance (Beer-Lambert): T = exp(-τ)
+    let transmittance = exp(-opticalDepth);
+    
+    // Volumetric alpha: α = 1 - T
+    let alpha = 1.0 - transmittance;
+    
+    // Map density → rainbow hue (in-scattered light color)
     let hueBase = fract(density + time * twistSpeed);
     let sat = saturation;
     let val = mix(0.2, 1.2, density); // allow values >1 for HDR bursts
@@ -152,9 +175,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Colour-debt (negative channels) for very dark regions
     // ──────────────────────────────────────────────────────────────────────────
-    var finalRGB = cloudRGB + extra;
+    var inScattered = cloudRGB + extra;
     if (lum < 0.2) {
-        finalRGB = -finalRGB; // creates ghost-like voids
+        inScattered = -inScattered; // creates ghost-like voids
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -168,12 +191,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  Temporal blend (persistence creates silky trails)
     // ──────────────────────────────────────────────────────────────────────────
     let temporalBlend = 0.7 + persistence * 0.25; // Use persistence param (0.7 - 0.95)
-    let outCol = prevCol * temporalBlend + finalRGB * (1.0 - temporalBlend);
+    let finalRGB = prevCol * temporalBlend + inScattered * (1.0 - temporalBlend);
+    
+    // Blend with source based on density
+    let finalColor = mix(src.rgb, finalRGB, alpha * 0.8);
 
     // ──────────────────────────────────────────────────────────────────────────
-    //  Output
+    //  Output with Volumetric Alpha
     // ──────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    // RGB: In-scattered light
+    // A: Physical opacity from optical depth
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, alpha));
+    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, opticalDepth, 0.0, alpha));
+    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalRGB, alpha));
 }

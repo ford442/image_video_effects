@@ -1,6 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
-//  Aerogel Smoke
-//  Simulates the ethereal "frozen smoke" look of aerogel
+//  Aerogel Smoke - Volumetric Alpha Upgrade
+//  Simulates the ethereal "frozen smoke" look of aerogel with
+//  physically-based volumetric light transport
+//  
+//  Scientific Concepts:
+//  - Rayleigh scattering for fine aerogel particles
+//  - Mie scattering for larger particle clumps
+//  - Beer-Lambert law for extinction
+//  - Optical depth → alpha conversion
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,6 +30,17 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+// Physical constants for aerogel (silica nanoparticles)
+const SIGMA_T_AEROGEL: f32 = 1.5;       // Total extinction coefficient
+const SIGMA_S_RAYLEIGH: f32 = 0.6;      // Rayleigh scattering (fine particles)
+const SIGMA_S_MIE: f32 = 0.7;           // Mie scattering (particle clumps)
+const SIGMA_A: f32 = 0.2;               // Absorption (minimal for silica)
+const STEP_SIZE: f32 = 0.025;           // Ray step through medium
+
+// Phase function approximations
+const RAYLEIGH_G: f32 = 0.0;            // Rayleigh: isotropic-ish
+const MIE_G: f32 = 0.75;                // Mie: forward scattering
 
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -50,6 +68,12 @@ fn fbm(p: vec2<f32>) -> f32 {
     return v;
 }
 
+// Henyey-Greenstein phase function approximation
+fn phaseHG(cosTheta: f32, g: f32) -> f32 {
+    let g2 = g * g;
+    return (1.0 - g2) / (4.0 * 3.14159265 * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5));
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -69,48 +93,78 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Base Image
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    // Generate Volume Density (Smoke)
-    // Moving slowly
+    // Generate Volume Density (Aerogel Smoke)
     var p = uv * 3.0 + vec2<f32>(time * 0.05, time * 0.02);
     var density = fbm(p);
 
-    // Add detail
+    // Add detail layers
     density += fbm(p * 4.0) * 0.5;
+    density += fbm(p * 8.0) * 0.25;
     density = smoothstep(0.2, 0.8, density) * densityMult;
 
-    // Lighting (Point Light at Mouse)
+    // ═══════════════════════════════════════════════════════════════
+    //  Volumetric Light Transport for Aerogel
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Calculate optical depth through the medium
+    // τ = ∫ σ_t ds ≈ density * step_size * extinction_coeff
+    let optical_depth = density * STEP_SIZE * SIGMA_T_AEROGEL;
+    
+    // Transmittance (Beer-Lambert law): T = exp(-τ)
+    let transmittance = exp(-optical_depth);
+    
+    // Volumetric alpha: α = 1 - T
+    let alpha = 1.0 - transmittance;
+    
+    // Lighting calculation with scattering
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
     let lightFalloff = 1.0 / (1.0 + dist * dist * 10.0);
-
-    // Volumetric Shadow (Approximation)
-    // Darker where density is high, but lit by mouse
+    
+    // Light direction (from mouse)
+    let lightDir = normalize(vec3<f32>(mouse - uv, 0.5));
+    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+    let cosTheta = dot(viewDir, lightDir);
+    
+    // Combined scattering (Rayleigh + Mie)
+    let phaseR = 0.75 * (1.0 + cosTheta * cosTheta); // Rayleigh phase
+    let phaseM = phaseHG(cosTheta, MIE_G);           // Mie phase
+    let combinedPhase = mix(phaseR, phaseM, 0.5);
+    
+    // Light color (cool white for aerogel)
     let lightColor = vec3<f32>(0.9, 0.95, 1.0) * glow * lightFalloff;
-
-    // Rayleigh Scattering tint (Aerogel Blue)
-    let scatterColor = vec3<f32>(0.0, 0.5, 1.0) * scattering * lightFalloff * density;
-
-    // Composite
-    // Aerogel Appearance:
-    // - High density = White/Foggy
-    // - Edges/Thin = Blue Scattering
-    // - Absorbs background light
-
-    let aerogelColor = vec3<f32>(density) * lightColor + scatterColor;
-    let opacity = clamp(density, 0.0, 1.0);
-
-    // Mix with background
-    // Aerogel obscures background
-    var finalColor = mix(baseColor, aerogelColor, opacity);
-
+    
+    // In-scattered light
+    // L_s = L_i * σ_s * phase * density
+    let scatterCoeff = mix(SIGMA_S_RAYLEIGH, SIGMA_S_MIE, density);
+    let inScattered = lightColor * scatterCoeff * combinedPhase * density;
+    
+    // Rayleigh scattering tint (Aerogel Blue) - wavelength-dependent scattering
+    // Shorter wavelengths (blue) scatter more
+    let rayleighTint = vec3<f32>(0.3, 0.6, 1.0) * scattering * lightFalloff * density * SIGMA_S_RAYLEIGH;
+    
+    // Aerogel albedo (white/translucent)
+    let aerogelAlbedo = vec3<f32>(0.95, 0.97, 1.0);
+    let scatteredColor = inScattered * aerogelAlbedo + rayleighTint;
+    
+    // Volumetric compositing
+    // Final color = in_scattered + transmitted_background
+    // where transmitted = background * transmittance
+    var finalColor = scatteredColor + baseColor * transmittance;
+    
     // Allow fading out the effect
-    finalColor = mix(aerogelColor, finalColor, bgMix);
+    finalColor = mix(scatteredColor, finalColor, bgMix);
+    
+    // Tone map (simple gamma correction)
+    finalColor = pow(finalColor, vec3<f32>(1.0/1.2));
+    
+    // Output RGBA with volumetric alpha
+    // RGB: In-scattered + transmitted light
+    // A: Volumetric opacity from optical depth
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
-    // Tone map
-    finalColor = pow(finalColor, vec3<f32>(1.0/1.2)); // Gamma correction
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-
-    // Pass depth
+    // Pass depth with optical depth information
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Store modified depth accounting for volumetric opacity
+    let volumetricDepth = mix(depth, 0.5, alpha * 0.5);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(volumetricDepth, optical_depth, 0.0, alpha));
 }

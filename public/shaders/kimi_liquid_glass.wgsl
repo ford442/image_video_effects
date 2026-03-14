@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════
+// Kimi Liquid Glass - Caustics and chromatic refraction
+// Category: distortion
+// Features: FBM waves, caustics, Beer-Lambert transmission
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -9,8 +15,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-
-// Kimi Liquid Glass - Caustics and chromatic refraction
 
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -63,6 +67,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     
+    // Glass density parameter (via zoom_params.y)
+    let refractStrength = u.zoom_params.x * 0.05 + 0.02;
+    let glassDensity = u.zoom_params.y * 2.0 + 1.0; // Beer-Lambert density
+    let causticStrength = u.zoom_params.z * 0.5 + 0.3;
+    
     // Liquid surface height
     var height = 0.0;
     
@@ -84,9 +93,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let grad = vec2<f32>(hR - hL, hD - hU);
     
-    // Chromatic refraction
-    let refractStrength = u.zoom_params.x * 0.05 + 0.02;
+    // Normal from gradient
+    let normal = normalize(vec3<f32>(-grad * 2.0, 1.0));
+    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
     
+    // Fresnel effect
+    let cos_theta = max(dot(viewDir, normal), 0.0);
+    let R0 = 0.04; // Glass-like
+    let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
+    
+    // Glass thickness based on wave height
+    let thickness = 0.1 + abs(height) * 0.2;
+    
+    // Water/glass color (blue-green tint)
+    let waterColor = vec3<f32>(0.8, 0.9, 1.0);
+    
+    // Beer-Lambert absorption
+    let absorption = exp(-(1.0 - waterColor) * thickness * glassDensity);
+    
+    // Transmission coefficient
+    let transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
+    
+    // Chromatic refraction with RGB offsets
     let rOffset = grad * refractStrength * 1.5;
     let gOffset = grad * refractStrength;
     let bOffset = grad * refractStrength * 0.5;
@@ -101,25 +129,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let causticUV = uv * 2.0 + grad * 0.5;
     let caustic = caustics(causticUV, time * 0.5);
     let causticMask = smoothstep(0.2, 0.8, height + 0.5);
-    col += vec3<f32>(0.6, 0.9, 1.0) * caustic * causticMask * 0.3;
+    col += vec3<f32>(0.6, 0.9, 1.0) * caustic * causticMask * causticStrength;
     
     // Specular highlight
     let lightDir = normalize(vec2<f32>(0.3, 0.5));
     let spec = pow(max(0.0, dot(normalize(grad + vec2<f32>(0.0, 1.0)), lightDir)), 32.0);
     col += vec3<f32>(1.0) * spec * 0.5;
     
-    // Deep water tint
+    // Deep water tint with Beer-Lambert absorption
     let depth = smoothstep(-0.5, 0.5, height);
-    let waterColor = mix(
+    let deepWaterColor = mix(
         vec3<f32>(0.0, 0.1, 0.3),
         vec3<f32>(0.0, 0.4, 0.6),
         depth
     );
-    col = mix(col, col * waterColor, 0.3);
+    col = mix(col, col * deepWaterColor * absorption, 0.3);
     
-    // Fresnel edge
-    let fresnel = pow(1.0 - abs(height) * 2.0, 3.0);
-    col += vec3<f32>(0.8, 0.95, 1.0) * fresnel * 0.3;
+    // Fresnel edge reflection
+    let fresnelEdge = pow(1.0 - abs(height) * 2.0, 3.0);
+    col += vec3<f32>(0.8, 0.95, 1.0) * fresnelEdge * 0.3;
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    // Apply transmission alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, transmission));
 }

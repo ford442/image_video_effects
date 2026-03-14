@@ -1,13 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  atmos_volumetric_fog.wgsl - Volumetric Fog with God Rays
+//  atmos_volumetric_fog.wgsl - Volumetric Fog with God Rays & Alpha
 //  
-//  Agent: Visualist + Algorithmist
-//  Techniques:
-//    - Raymarch through volumetric medium
-//    - Height-based fog density
-//    - Light scattering (Mie + Rayleigh)
+//  Scientific Implementation:
+//    - Raymarch through volumetric medium with optical depth accumulation
+//    - Height-based fog density with extinction coefficients
+//    - Mie + Rayleigh scattering with phase functions
+//    - Beer-Lambert transmittance for physical alpha
 //    - Temporal accumulation for smoothness
-//    - Mouse-controlled light source
+//    - Mouse-controlled light source with volumetric shadows
 //  
 //  Target: 4.7★ rating
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -35,6 +35,12 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 
+// Physical extinction coefficients for atmospheric fog
+const SIGMA_T_FOG: f32 = 0.8;           // Total extinction (medium density)
+const SIGMA_S_MIE: f32 = 0.6;           // Mie scattering (aerosols)
+const SIGMA_S_RAYLEIGH: f32 = 0.15;     // Rayleigh scattering (air molecules)
+const SIGMA_A: f32 = 0.05;              // Absorption (minimal for clean fog)
+
 // Hash
 fn hash3(p: vec3<f32>) -> f32 {
     let q = fract(p * 0.1031);
@@ -45,21 +51,21 @@ fn hash3(p: vec3<f32>) -> f32 {
 fn noise(p: vec3<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
+    let f_smooth = f * f * (3.0 - 2.0 * f);
     
     let n = i.x + i.y * 57.0 + i.z * 113.0;
     return mix(
         mix(
-            mix(hash3(i), hash3(i + vec3<f32>(1, 0, 0)), f.x),
-            mix(hash3(i + vec3<f32>(0, 1, 0)), hash3(i + vec3<f32>(1, 1, 0)), f.x),
-            f.y
+            mix(hash3(i), hash3(i + vec3<f32>(1, 0, 0)), f_smooth.x),
+            mix(hash3(i + vec3<f32>(0, 1, 0)), hash3(i + vec3<f32>(1, 1, 0)), f_smooth.x),
+            f_smooth.y
         ),
         mix(
-            mix(hash3(i + vec3<f32>(0, 0, 1)), hash3(i + vec3<f32>(1, 0, 1)), f.x),
-            mix(hash3(i + vec3<f32>(0, 1, 1)), hash3(i + vec3<f32>(1, 1, 1)), f.x),
-            f.y
+            mix(hash3(i + vec3<f32>(0, 0, 1)), hash3(i + vec3<f32>(1, 0, 1)), f_smooth.x),
+            mix(hash3(i + vec3<f32>(0, 1, 1)), hash3(i + vec3<f32>(1, 1, 1)), f_smooth.x),
+            f_smooth.y
         ),
-        f.z
+        f_smooth.z
     );
 }
 
@@ -77,9 +83,9 @@ fn fbm(p: vec3<f32>) -> f32 {
     return value;
 }
 
-// Fog density at point
+// Fog density at point with height falloff
 fn fogDensity(p: vec3<f32>, time: f32) -> f32 {
-    // Height falloff
+    // Height falloff (fog is denser at bottom)
     let heightFactor = exp(-p.y * 2.0);
     
     // Turbulence
@@ -88,32 +94,20 @@ fn fogDensity(p: vec3<f32>, time: f32) -> f32 {
     return heightFactor * (0.5 + turb * 0.5);
 }
 
-// Phase function (Henyey-Greenstein approximation)
-fn phaseFunction(cosTheta: f32, g: f32) -> f32 {
+// Phase function (Henyey-Greenstein)
+fn phaseHG(cosTheta: f32, g: f32) -> f32 {
     let g2 = g * g;
     return (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5);
 }
 
 // Mie scattering (large particles)
 fn mieScattering(cosTheta: f32) -> f32 {
-    return phaseFunction(cosTheta, 0.76);
+    return phaseHG(cosTheta, 0.76);
 }
 
 // Rayleigh scattering (small particles)
 fn rayleighScattering(cosTheta: f32) -> f32 {
     return (3.0 / (16.0 * PI)) * (1.0 + cosTheta * cosTheta);
-}
-
-// Ray-sphere intersection
-fn raySphereIntersect(ro: vec3<f32>, rd: vec3<f32>, r: f32) -> vec2<f32> {
-    let b = dot(ro, rd);
-    let c = dot(ro, ro) - r * r;
-    let h = b * b - c;
-    if (h < 0.0) {
-        return vec2<f32>(-1.0, -1.0);
-    }
-    let h2 = sqrt(h);
-    return vec2<f32>(-b - h2, -b + h2);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -150,8 +144,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maxDist = 3.0;
     let stepSize = maxDist / f32(steps);
     
-    var transmittance = 1.0;
+    // Accumulate optical depth and scattered light
+    var totalOpticalDepth = 0.0;
     var scatteredLight = vec3<f32>(0.0);
+    var transmittance = 1.0;
     
     // Light color (warm sunlight)
     let lightColor = vec3<f32>(1.0, 0.95, 0.8) * lightIntensity * (1.0 + audioPulse);
@@ -162,12 +158,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let p = ro + rd * t;
         
         // Sample fog density
-        let density = fogDensity(p, time) * fogDensityScale * stepSize;
+        let rawDensity = fogDensity(p, time) * fogDensityScale;
+        let density = rawDensity * stepSize * SIGMA_T_FOG;
         
         if (density > 0.001) {
+            // Accumulate optical depth
+            totalOpticalDepth += density;
+            
             // Attenuation
-            let attenuation = exp(-density);
-            transmittance *= attenuation;
+            let stepTransmittance = exp(-density);
             
             // Light contribution
             let toLight = lightPos - p;
@@ -182,34 +181,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let beamAlignment = pow(max(dot(rd, normalize(lightPos - ro)), 0.0), 4.0);
             let godRays = 1.0 + beamAlignment * godRayStrength * 2.0;
             
-            // Add scattered light
+            // Add scattered light (accumulated along ray)
+            // L += T * σ_s * phase * L_i * density
             let lightContrib = lightColor * density * phase * godRays;
             scatteredLight += transmittance * lightContrib;
+            
+            // Update transmittance
+            transmittance *= stepTransmittance;
         }
     }
     
     // Sample background through fog
     let bgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     
-    // Combine
-    var color = bgColor * transmittance + scatteredLight;
+    // ═══════════════════════════════════════════════════════════════
+    //  Volumetric Alpha Composition
+    // ═══════════════════════════════════════════════════════════════
     
-    // Add light source glow
+    // Alpha from accumulated optical depth
+    // α = 1 - exp(-τ) where τ is total optical depth
+    let finalAlpha = 1.0 - exp(-totalOpticalDepth);
+    
+    // Combine: in-scattered light + transmitted background
+    var finalColor = scatteredLight + bgColor * transmittance;
+    
+    // Add light source glow (volumetric light source)
     let lightScreen = lightPos.xy;
     let lightDist = length(uv - lightScreen);
     let lightGlow = exp(-lightDist * 20.0) * lightIntensity * (1.0 + audioPulse * 2.0);
-    color += lightColor * lightGlow;
+    finalColor += lightColor * lightGlow;
     
     // Tone mapping
-    color = color / (1.0 + color * 0.5);
+    finalColor = finalColor / (1.0 + finalColor * 0.5);
     
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
-    color *= vignette;
+    finalColor *= vignette;
     
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, coord, vec4<f32>(1.0 - transmittance, 0.0, 0.0, 1.0));
+    // Output RGBA with volumetric alpha
+    // RGB: Combined in-scattered + transmitted light
+    // A: Physical opacity from Beer-Lambert law
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+    
+    // Store optical depth in depth texture for potential post-processing
+    textureStore(writeDepthTexture, coord, vec4<f32>(1.0 - transmittance, totalOpticalDepth, 0.0, finalAlpha));
     
     // Store for temporal accumulation
-    textureStore(dataTextureA, coord, vec4<f32>(color, transmittance));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, transmittance));
 }

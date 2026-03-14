@@ -3,42 +3,52 @@
   "name": "Crystal Freeze",
   "url": "shaders/crystal-freeze.wgsl",
   "category": "image",
-  "description": "Mouse freezes the image into growing crystal facets.",
+  "description": "Mouse freezes the image into growing ice crystals with physical light transmission. Features Voronoi-based crystal cells with Fresnel reflection, path absorption, and purity-based scattering.",
   "params": [
     {
       "id": "decay",
       "name": "Freeze Decay",
       "default": 0.99,
       "min": 0.9,
-      "max": 0.999
+      "max": 0.999,
+      "description": "How long frozen crystals persist"
     },
     {
       "id": "scale",
       "name": "Crystal Size",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Size of crystal cells"
     },
     {
       "id": "refraction",
-      "name": "Refraction",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "radius",
-      "name": "Brush Size",
+      "name": "Material IOR",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Refractive index: Ice (1.31) to Glass (1.5)"
+    },
+    {
+      "id": "purity",
+      "name": "Ice Purity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Crystal clarity: Pure ice transmits more light, cloudy ice scatters more"
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "alpha-transmission",
+    "persistence"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "crystal",
+    "ice",
+    "freeze",
+    "transmission",
+    "voronoi",
+    "physical"
   ]
 }
