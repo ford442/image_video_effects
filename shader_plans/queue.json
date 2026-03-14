@@ -54,6 +54,12 @@
       "title": "Procedural Cyber Terminal (ASCII)",
       "added": "2026-03-13T07:45:39.513095",
       "completed": "2026-03-13T07:45:39.788909"
+    },
+    {
+      "filename": "2026-03-13_stellar-web-loom.md",
+      "title": "Stellar Web-Loom",
+      "added": "2026-03-13T15:21:49.263536",
+      "completed": "2026-03-14T08:17:00.858096"
     }
   ],
   "rejected": [],
@@ -78,11 +84,6 @@
       "filename": "2026-03-08_silica-tsunami.md",
       "title": "Silica Tsunami",
       "added": "2026-03-08T15:23:19.072421"
-    },
-    {
-      "filename": "2026-03-13_stellar-web-loom.md",
-      "title": "Stellar Web-Loom",
-      "added": "2026-03-13T15:21:49.263536"
     },
     {
       "filename": "2026-03-12_cybernetic-ferro-coral.md",
