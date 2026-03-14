@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Fast Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: fast ripples, depth-aware, optimized performance
+//
+//  ALPHA PHYSICS:
+//  - Fast movement = motion blur affecting alpha
+//  - Ripple amplitude affects thickness
+//  - Depth-based opacity falloff
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -13,6 +24,57 @@ struct Uniforms {
 };
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
+
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate fast liquid alpha
+fn calculateFastAlpha(
+    rippleMag: f32,
+    depthFactor: f32,
+    motionBlur: f32
+) -> f32 {
+  // Fresnel
+  let F0 = 0.02;
+  // Approximate normal from ripple
+  let normal = normalize(vec3<f32>(rippleMag * 2.0, rippleMag * 2.0, 1.0));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let fresnel = schlickFresnel(max(0.0, dot(viewDir, normal)), F0);
+  
+  // Ripple amplitude = liquid thickness
+  let thickness = rippleMag * 4.0 + 0.1;
+  
+  // Motion blur reduces effective opacity
+  let blurFactor = exp(-motionBlur * 0.5);
+  
+  // Depth factor: background = more transparent
+  let depthAlpha = mix(0.9, 0.4, depthFactor);
+  
+  // Absorption
+  let absorption = exp(-thickness * 1.5);
+  let baseAlpha = mix(0.35, depthAlpha, absorption);
+  
+  let alpha = baseAlpha * blurFactor * (1.0 - fresnel * 0.3);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate fast liquid color with motion blur
+fn calculateFastColor(
+    baseColor: vec3<f32>,
+    rippleMag: f32,
+    depthFactor: f32
+) -> vec3<f32> {
+  // Fast liquid has slight motion blur effect
+  let blur = exp(-rippleMag * 3.0);
+  
+  // Depth-based tint
+  let depthTint = vec3<f32>(0.0, 0.05, 0.1) * (1.0 - depthFactor);
+  
+  return baseColor * blur + depthTint * rippleMag;
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -35,6 +97,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // --- Mouse-driven Ripples (FAST VARIATION) ---
   var mouseDisplacement = vec2<f32>(0.0, 0.0);
+  var totalRippleMag: f32 = 0.0;
   let rippleCount = u32(u.config.y);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let rippleData = u.ripples[i];
@@ -57,7 +120,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Faster decay
         let attenuation = 1.0 - smoothstep(0.0, 1.0, timeSinceClick / (1.5 * mix(0.5, 1.0, rippleOriginDepthFactor)));
         let falloff = 1.0 / (dist * 20.0 + 1.0);
-        mouseDisplacement += (direction_vec / dist) * wave * ripple_amplitude * falloff * attenuation;
+        let rippleContrib = (direction_vec / dist) * wave * ripple_amplitude * falloff * attenuation;
+        mouseDisplacement += rippleContrib;
+        
+        // Track total ripple magnitude for alpha
+        totalRippleMag += length(rippleContrib) * 10.0;
       }
     }
   }
@@ -65,8 +132,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // --- Final Output ---
   let totalDisplacement = mouseDisplacement + ambientDisplacement;
   let colorDisplacedUV = uv + totalDisplacement;
-  let color = textureSampleLevel(readTexture, u_sampler, colorDisplacedUV, 0.0);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  let baseColor = textureSampleLevel(readTexture, u_sampler, colorDisplacedUV, 0.0).rgb;
+  
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALPHA CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  // Motion blur approximation from displacement
+  let motionBlur = length(totalDisplacement) * 50.0;
+  
+  // Calculate color with motion effects
+  let fastColor = calculateFastColor(baseColor, totalRippleMag, center_depth);
+  
+  // Calculate alpha
+  let alpha = calculateFastAlpha(totalRippleMag, center_depth, motionBlur);
+  
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(fastColor, alpha));
 
   // Update depth texture for next frame
   let depthDisplacedUV = uv + mouseDisplacement;
