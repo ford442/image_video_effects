@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Neon Edge Reveal - Flashlight Reveal with Alpha Emission
+//  Category: lighting-effects
+//  Physics: Mouse-revealed emissive edges with alpha occlusion
+//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,18 +12,17 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -25,11 +30,25 @@ fn getLuminance(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
 }
 
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+
+    // Params
+    // x: revealRadius, y: edgeBoost, z: glowIntensity, w: occlusionBalance
+    let revealRadius = 0.2 + u.zoom_params.x * 0.3;
+    let edgeBoost = u.zoom_params.y * 2.0;
+    let glowIntensity = u.zoom_params.z * 2.0;
+    let occlusionBalance = u.zoom_params.w;
 
     // Sobel kernels
     let stepX = 1.0 / resolution.x;
@@ -60,36 +79,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Correct distance for aspect ratio
     let distToMouse = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mousePos.x * aspect, mousePos.y));
 
-    // Reveal radius
-    let revealRadius = 0.3;
+    // Reveal falloff
     let revealFalloff = 1.0 - smoothstep(0.0, revealRadius, distToMouse);
 
-    // Base color is dark
-    var finalColor = vec3<f32>(0.05, 0.05, 0.08); // Near black background
-
     // Neon color cycling
-    let neonColor1 = vec3<f32>(1.0, 0.0, 0.8); // Magenta
-    let neonColor2 = vec3<f32>(0.0, 1.0, 1.0); // Cyan
+    let neonColor1 = vec3<f32>(1.0, 0.0, 0.8);
+    let neonColor2 = vec3<f32>(0.0, 1.0, 1.0);
     let mixFactor = 0.5 + 0.5 * sin(time * 2.0 + uv.x * 3.0);
     let neonColor = mix(neonColor1, neonColor2, mixFactor);
 
-    if (edgeStrength > 0.1) {
+    // Emission calculation
+    var emission = vec3<f32>(0.0);
+    
+    if (edgeStrength > 0.05) {
         // Boost edge
-        let edge = smoothstep(0.1, 0.5, edgeStrength);
+        let edge = smoothstep(0.05, 0.3, edgeStrength);
 
         // Intensity depends on mouse proximity
-        // Near mouse: High intensity, full color
-        // Far mouse: Low intensity or hidden
+        let glow = 0.3 + 2.0 * revealFalloff;
 
-        // Let's make it always visible but glowing "hotter" near mouse
-        let glow = 0.2 + 2.0 * revealFalloff;
-
-        finalColor = mix(finalColor, neonColor * glow, edge);
+        emission = neonColor * glow * edge * edgeBoost * 2.0;
     }
 
-    // Blend a bit of original image near mouse so we can see what we are looking at
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    finalColor = mix(finalColor, original, revealFalloff * 0.5); // 50% opacity of original near mouse
+    // Calculate alpha based on emission intensity
+    let glowStrength = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    // Output with emission alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
 }
