@@ -1,4 +1,10 @@
-// Neon Edge Diffusion - compute skeleton
+// ═══════════════════════════════════════════════════════════════
+//  Neon Edge Diffusion - Diffused Glow with Alpha Emission
+//  Category: lighting-effects
+//  Physics: Diffused edge light with alpha occlusion
+//  Alpha: Core diffusion = 0.3, Glow = 0.0 (additive)
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,14 +20,20 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
-fn edge_diffusion(@builtin(global_invocation_id) gid: vec3<u32>) {
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
+fn edge_diffusion_fn(gid: vec3<u32>) {
   var coord = vec2<i32>(i32(gid.x), i32(gid.y));
   var dim = textureDimensions(readTexture);
   var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
@@ -53,6 +65,9 @@ fn diffuse_light_impl(gid: vec3<u32>) {
   var uv = vec2<f32>(f32(gid.x), f32(gid.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
   var time = u.config.x;
   
+  // Get occlusion balance from params
+  let occlusionBalance = u.zoom_params.w;
+  
   var center = textureLoad(dataTextureC, coord, 0).r;
   var left = textureLoad(dataTextureC, coord + vec2<i32>(-1,0), 0).r;
   var right = textureLoad(dataTextureC, coord + vec2<i32>(1,0), 0).r;
@@ -75,12 +90,19 @@ fn diffuse_light_impl(gid: vec3<u32>) {
     }
   }
   
+  // Emission with color shift
   let shift = diffused * 0.1;
-  let color = vec3<f32>(diffused * (1.0 - shift), diffused * (1.0 - abs(shift - 0.5)), diffused * shift);
-  textureStore(dataTextureB, coord, vec4<f32>(color, 1.0));
-  textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(color, 1.0));
+  let emission = vec3<f32>(diffused * (1.0 - shift), diffused * (1.0 - abs(shift - 0.5)), diffused * shift) * 3.0;
+  
+  // Calculate alpha based on emission intensity
+  let glowIntensity = length(emission);
+  let finalAlpha = calculateEmissiveAlpha(glowIntensity, occlusionBalance);
+  
+  textureStore(dataTextureB, coord, vec4<f32>(emission, finalAlpha));
+  textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(emission, finalAlpha));
 }
-// Main entrypoint for Neon Edge Diffusion - run diffuse_light pass
+
+// Main entrypoint for Neon Edge Diffusion
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   diffuse_light_impl(gid);
