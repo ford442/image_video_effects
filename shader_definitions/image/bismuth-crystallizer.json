@@ -3,42 +3,53 @@
   "name": "Bismuth Crystallizer",
   "url": "shaders/bismuth-crystallizer.wgsl",
   "category": "image",
-  "description": "Generates geometric hopper crystal patterns with iridescent colors, simulating Bismuth crystals.",
+  "description": "Generates geometric hopper crystal patterns with physical light transmission. Simulates bismuth crystals with thin-film interference iridescence, metallic Fresnel reflection, and oxide layer transmission.",
   "params": [
     {
       "id": "steps",
       "name": "Crystal Depth",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Depth of hopper crystal recursion"
     },
     {
       "id": "offset",
       "name": "Hopper Offset",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Offset between crystal layers"
     },
     {
-      "id": "color_shift",
+      "id": "color_freq",
       "name": "Iridescence Freq",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Thin-film interference color variation"
     },
     {
-      "id": "mix",
-      "name": "Effect Strength",
+      "id": "metallic",
+      "name": "Metallic / Mix",
       "default": 0.7,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Metallic reflection strength and effect mix"
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "alpha-transmission",
+    "iridescence"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "crystal",
+    "bismuth",
+    "hopper",
+    "iridescence",
+    "metallic",
+    "transmission",
+    "physical"
   ]
 }
