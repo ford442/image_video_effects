@@ -472,6 +472,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating the combination of chaotic architectural styles (Deconstructivism) with unusual, specific natural materials (cork).
 
+### Suggestion: Clockwork Universe Cosmos
+- **Date:** 2026-03-24
+- **Prompt:** "A majestic, wide-angle view of a Clockwork Universe, where the cosmos is driven by colossal, interwoven brass gears and gleaming astrolabes instead of gravity. The celestial subject features a giant glowing sun at its core, surrounded by mechanical planetary orbits. The lighting is cinematic, with blinding, god-ray shafts of golden sunlight glinting off the polished metal surfaces in the dark void of space. The mood is awe-inspiring, intricate, and philosophical. Captured with a wide 24mm lens to emphasize the staggering scale of the cosmic machinery."
+- **Negative prompt:** "organic, empty space, simple, messy, blurry, realistic stars"
+- **Tags:** sci-fi, steampunk, space, clockwork, cosmic
+- **Style / Reference:** steampunk concept art, hyper-detailed 3D render
+- **Composition:** wide angle, deep depth of field, centered sun
+- **Color palette:** polished brass, warm gold, deep cosmic black, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260324_clockwork-universe.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing highly reflective metallic materials and intricate, interlocking geometric structures.
+
+### Suggestion: Isometric Room
+- **Date:** 2026-03-24
+- **Prompt:** "A vibrant, playful isometric view of a quirky living room interior entirely decorated in the 1980s style. The subject features bold, clashing geometric furniture, zigzag patterns, and terrazzo floors. The lighting is bright, flat, and even, resembling a high-end studio lighting setup that eliminates deep shadows and highlights the vivid, saturated colors. The mood is energetic, retro, and whimsical. Captured with an orthographic camera perspective to emphasize the precise geometric layout and flat graphic qualities."
+- **Negative prompt:** "dark, moody, realistic, muted colors, messy, organic shapes"
+- **Tags:** retro, interior, memphis design, isometric, colorful
+- **Style / Reference:** 1980s Memphis Group, isometric 3D illustration, pop art
+- **Composition:** isometric perspective, centered room layout
+- **Color palette:** bright cyan, hot pink, vivid yellow, black and white patterns
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260324_memphis-design-room.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing flat, even lighting, high-contrast color palettes, and strict geometric shapes without perspective distortion.
+
+### Suggestion: Ancient Labyrinth
+- **Date:** 2026-03-24
+- **Prompt:** "A dusty, sun-drenched view deep inside an ancient, infinite labyrinth constructed completely from unglazed, textured terracotta bricks and clay tiles. The subject features tall, imposing walls with intricate, geometric Mayan-inspired carvings. The lighting is harsh, midday desert sunlight casting sharp, deep, and dramatic black shadows across the rough clay surfaces. The mood is mysterious, desolate, and archaic. Captured with a 35mm lens, deep focus, showing the endless, repeating corridors vanishing into the heat haze."
+- **Negative prompt:** "wet, modern, shiny, metal, grass, cold, blue"
+- **Tags:** architecture, ancient, labyrinth, terracotta, desert
+- **Style / Reference:** archaeological visualization, photorealistic ancient ruins
+- **Composition:** one-point perspective, vanishing point, leading lines
+- **Color palette:** warm baked terracotta, dusty orange, deep black shadows, stark blue sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260324_terracotta-labyrinth.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of rough, porous clay textures (terracotta) under harsh, high-contrast directional sunlight.
+
+### Suggestion: Graphene Orbital Ring City
+- **Date:** 2026-03-24
+- **Prompt:** "An epic, sweeping view of a massive Orbital Ring megastructure encircling a lush, green Earth-like planet. The ring itself is constructed from sleek, dark, ultra-strong graphene woven into an impossibly thin yet immense structure. The subject is dotted with glowing city lights and sprawling spaceports. The lighting features a dramatic sunrise cresting over the planet's horizon, casting a blinding white glare and long shadows across the graphene surface. The mood is utopian, vast, and technologically supreme. Captured with a wide-angle cinematic lens from low Earth orbit, emphasizing planetary scale."
+- **Negative prompt:** "dystopian, broken, rusty, small, low-res, cartoon"
+- **Tags:** sci-fi, megastructure, space, orbital ring, epic
+- **Style / Reference:** hard sci-fi environment design, cinematic space art
+- **Composition:** curved horizon, extreme wide angle, dynamic lighting
+- **Color palette:** dark matte graphene grey, vibrant earth greens and blues, blinding solar white
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260324_orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive scale, planetary curvature, and the matte, light-absorbing properties of a massive graphene structure.
+
+### Suggestion: Tide Pool Macro
+- **Date:** 2026-03-24
+- **Prompt:** "A stunning, ultra-macro photograph of a shallow tide pool basin where the rocky surface is entirely coated in shimmering, iridescent nacre (mother-of-pearl). The subject is half-submerged in crystal-clear water, refracting the sunlight into a spectacular array of pearlescent pastels. The lighting is bright, natural sunlight, catching the micro-ridges of the nacre to reveal its rainbow interference patterns. The mood is serene, delicate, and microscopic. Captured with an extreme macro 100mm lens, very shallow depth of field, blurring the background into a soft, glowing bokeh."
+- **Negative prompt:** "dark, muddy, gross, rough rock, wide angle, people"
+- **Tags:** macro, nature, nacre, iridescent, water
+- **Style / Reference:** photorealistic macro photography, nature documentary style
+- **Composition:** extreme close-up, rule of thirds, beautiful bokeh
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, clear water
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260324_nacre-tide-pool.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating sub-surface scattering, thin-film iridescent interference on organic shapes, and clear water refraction.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -494,11 +559,11 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Risograph, Ukiyo-e, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Slime, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Aerogel, Bismuth, Nacre, Damascus Steel, Onyx. Graphene.
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Risograph, Ukiyo-e, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Slime, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
 - **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
-- **Styles:** Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Memphis Design, Suprematism, Fauvism, Vorticism, Dadaism, Risograph, Ukiyo-e, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Terracotta, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Nacre, Onyx.
+- **Styles:** Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Fauvism, Vorticism, Dadaism, Risograph, Ukiyo-e, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Onyx.
 - **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
