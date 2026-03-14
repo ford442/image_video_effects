@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Chrome Ripple Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: chrome reflection, ripple refraction, metallic liquid
+//
+//  ALPHA PHYSICS:
+//  - Chrome/metallic has higher F0 for Fresnel
+//  - Ripples create varying thickness
+//  - Metal reflections reduce perceived transparency
+// ═══════════════════════════════════════════════════════════════════════════════
+
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -17,9 +28,65 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=FlowSpeed, y=DistortStr, z=Metalness, w=RippleFreq
   ripples: array<vec4<f32>, 50>,
 };
+
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate chrome liquid alpha
+fn calculateChromeAlpha(
+    rippleMag: f32,
+    metalness: f32,
+    viewDotNormal: f32
+) -> f32 {
+  // Chrome/metallic has high F0 (0.6-1.0 range)
+  // Base metal F0 ≈ 0.04 for dielectric, up to 1.0 for metals
+  let baseF0 = mix(0.04, 0.8, metalness);
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), baseF0);
+  
+  // Ripples create varying liquid film thickness
+  let filmThickness = rippleMag * 2.0 + 0.1;
+  
+  // For metallic liquids, absorption is different
+  // More metal = less transmission
+  let metalFactor = 1.0 - metalness * 0.6;
+  let absorption = exp(-filmThickness * metalFactor);
+  
+  // Base alpha
+  let baseAlpha = mix(0.5, 0.9, absorption);
+  
+  // High Fresnel = more reflection = less transmission
+  let alpha = baseAlpha * (1.0 - fresnel * 0.5);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate chrome color with metallic properties
+fn calculateChromeColor(
+    baseColor: vec3<f32>,
+    metalCol: vec3<f32>,
+    metalness: f32,
+    ripple: f32,
+    flowSpeed: f32
+) -> vec3<f32> {
+  // Chrome effect: high contrast, metallic tint
+  let gray = dot(baseColor, vec3<f32>(0.299, 0.587, 0.114));
+  
+  // Metallic color with ripple modulation
+  let modulatedMetal = metalCol * (0.5 + 0.5 * ripple);
+  
+  // Mix based on metalness
+  let chromeMix = mix(baseColor, modulatedMetal, metalness * (0.5 + 0.5 * ripple));
+  
+  // Add flow shimmer
+  let shimmer = vec3<f32>(0.05, 0.05, 0.05) * ripple * flowSpeed;
+  
+  return chromeMix + shimmer;
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -69,11 +136,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Make it metallic (high contrast, silver tint)
     let gray = dot(col.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let metalCol = vec3<f32>(sin(gray * 10.0 + time * flowSpeed), sin(gray * 10.0 + 2.0 + time * flowSpeed), sin(gray * 10.0 + 4.0 + time * flowSpeed)) * 0.5 + 0.5;
+    let metalCol = vec3<f32>(
+        sin(gray * 10.0 + time * flowSpeed), 
+        sin(gray * 10.0 + 2.0 + time * flowSpeed), 
+        sin(gray * 10.0 + 4.0 + time * flowSpeed)
+    ) * 0.5 + 0.5;
 
-    let finalMix = mix(col.rgb, metalCol, metalness * (0.5 + 0.5 * ripple)); // Ripple highlights metal
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // ALPHA CALCULATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    let rippleMag = abs(ripple) * distortStr;
+    let viewDotNormal = dot(viewDir, normal);
+    
+    // Calculate chrome color
+    let chromeColor = calculateChromeColor(col.rgb, metalCol, metalness, ripple, flowSpeed);
+    
+    // Calculate alpha
+    let alpha = calculateChromeAlpha(rippleMag, metalness, viewDotNormal);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalMix, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(chromeColor, alpha));
 
     // Pass-through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
