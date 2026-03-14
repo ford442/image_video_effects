@@ -1,0 +1,53 @@
+[
+  {
+    "id": "gen_quantum_foam",
+    "name": "Quantum Foam",
+    "category": "generative",
+    "type": "compute",
+    "description": "Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow",
+    "wgsl_file": "gen_quantum_foam.wgsl",
+    "uniforms": {
+      "param1": { "label": "Foam Scale", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Web Density", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Glow Intensity", "min": 0, "max": 1, "default": 0.5 },
+      "param4": { "label": "Evolution Speed", "min": 0, "max": 1, "default": 0.3 }
+    },
+    "features": ["hdr", "audio-reactive", "temporal-coherence", "fbm-noise"],
+    "tags": ["quantum", "generative", "entanglement", "volumetric", "hdr"],
+    "target_rating": 4.6
+  },
+  {
+    "id": "liquid_magnetic_ferro",
+    "name": "Magnetic Ferrofluid",
+    "category": "liquid-effects",
+    "type": "compute",
+    "description": "Interactive ferrofluid simulation with magnetic field lines, Rosensweig instability spike formation, and metallic iridescent rendering",
+    "wgsl_file": "liquid_magnetic_ferro.wgsl",
+    "uniforms": {
+      "param1": { "label": "Field Strength", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Spike Sharpness", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Viscosity", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Num Dipoles", "min": 0, "max": 1, "default": 0.5 }
+    },
+    "features": ["mouse-driven", "audio-reactive", "metallic", "magnetic-simulation"],
+    "tags": ["ferrofluid", "magnetic", "liquid", "interactive", "metallic"],
+    "target_rating": 4.7
+  },
+  {
+    "id": "interactive_neural_swarm",
+    "name": "Neural Swarm",
+    "category": "interactive-mouse",
+    "type": "compute",
+    "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
+    "wgsl_file": "interactive_neural_swarm.wgsl",
+    "uniforms": {
+      "param1": { "label": "Connection Threshold", "min": 0, "max": 1, "default": 0.3 },
+      "param2": { "label": "Signal Speed", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Glow Radius", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Network Density", "min": 0, "max": 1, "default": 0.5 }
+    },
+    "features": ["mouse-driven", "audio-reactive", "agent-based", "signal-propagation", "neon"],
+    "tags": ["neural", "network", "swarm", "interactive", "neon", "biological"],
+    "target_rating": 4.8
+  }
+]
