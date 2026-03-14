@@ -1,3 +1,15 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Oil Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: oil swirl, interference patterns, wavelength-dependent absorption
+//
+//  ALPHA PHYSICS:
+//  - Oil has higher refractive index than water (n ≈ 1.47)
+//  - Higher F0 for stronger Fresnel reflections
+//  - Yellowish absorption (wavelength-dependent)
+//  - Thicker oil = more opaque
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -43,6 +55,65 @@ fn flowPattern(p: vec2<f32>, time: f32) -> vec2<f32> {
   return flow;
 }
 
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate oil alpha - oil is more reflective and has yellowish tint
+fn calculateOilAlpha(
+    oilThickness: f32,
+    viewDotNormal: f32,
+    interference: f32
+) -> f32 {
+  // Oil has higher refractive index than water
+  // F0 ≈ ((n1-n2)/(n1+n2))² with n_oil ≈ 1.47, n_air ≈ 1.0
+  // F0 ≈ 0.036, but we use slightly higher for visual effect
+  let F0 = 0.05;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Oil absorption: thicker = more opaque, yellowish
+  // Oil absorbs blue more than red/yellow
+  let absorption = exp(-oilThickness * 1.2);
+  
+  // Interference affects transparency (constructive = more opaque)
+  let interferenceAlpha = mix(0.6, 0.9, absorption);
+  
+  // Fresnel reflection reduces transmission
+  let alpha = interferenceAlpha * (1.0 - fresnel * 0.35);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate oil color with wavelength-dependent absorption
+fn calculateOilColor(
+    baseColor: vec3<f32>,
+    oilThickness: f32,
+    interference: vec3<f32>,
+    displacementMag: f32
+) -> vec3<f32> {
+  // Oil absorbs blue light more strongly than red/yellow
+  // This gives oil its characteristic yellowish/golden appearance
+  let absorptionR = exp(-oilThickness * 0.5);
+  let absorptionG = exp(-oilThickness * 0.8);
+  let absorptionB = exp(-oilThickness * 1.3);
+  
+  // Apply wavelength-dependent absorption
+  let absorbed = vec3<f32>(
+      baseColor.r * absorptionR,
+      baseColor.g * absorptionG,
+      baseColor.b * absorptionB
+  );
+  
+  // Add interference colors (oil slick rainbow effect)
+  let oilTint = mix(absorbed, interference, 0.15);
+  
+  // Add golden sheen based on displacement
+  let goldenSheen = vec3<f32>(0.3, 0.25, 0.1) * displacementMag * 2.0;
+  
+  return oilTint + goldenSheen;
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -81,17 +152,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let displacedUV = uv + totalDisplacement;
 
   // Sample color
-  let color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
+  let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
   // Add interference pattern (oil slick colors)
   // Based on noise/displacement magnitude
   let slick = length(totalDisplacement) * 10.0;
   let interference = 0.5 + 0.5 * cos(slick + vec3<f32>(0.0, 2.0, 4.0)); // Rainbow bands
 
-  // Mix
-  let finalColor = mix(color.rgb, interference, 0.1);
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALPHA CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  // Oil thickness from displacement magnitude
+  let displacementMag = length(totalDisplacement);
+  let oilThickness = displacementMag * 8.0 + 0.15;
+  
+  // Approximate normal from displacement gradient
+  let normal = normalize(vec3<f32>(
+      -totalDisplacement.x * 20.0,
+      -totalDisplacement.y * 20.0,
+      1.0
+  ));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let viewDotNormal = dot(viewDir, normal);
+  
+  // Calculate oil color with wavelength-dependent absorption
+  let oilColor = calculateOilColor(baseColor, oilThickness, interference, displacementMag);
+  
+  // Calculate alpha
+  let avgInterference = (interference.r + interference.g + interference.b) / 3.0;
+  let alpha = calculateOilAlpha(oilThickness, viewDotNormal, avgInterference);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+  // Store with alpha
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(oilColor, alpha));
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
