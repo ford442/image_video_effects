@@ -1,13 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Surface Tension Liquid Shader
+//  Surface Tension Liquid Shader with Alpha Physics
 //  Category: liquid-effects
-//  Features: capillary waves, Laplace pressure, dispersive wave propagation
+//  Features: capillary waves, Laplace pressure, fluid transparency, Beer-Lambert
 //
 //  SCIENTIFIC BASIS:
 //  - Capillary waves: short wavelength ripples from surface tension
 //  - Laplace pressure: Δp = γκ where γ = surface tension, κ = mean curvature
-//  - Dispersion relation: ω² = (γ/ρ)k³ + gk (surface tension + gravity waves)
-//  - Wave equation with surface tension: ∂²h/∂t² = (γ/ρ)∇⁴h - g∇²h - damping
+//  - Beer-Lambert law: I = I₀ exp(-εcd) for light attenuation in fluids
+//  - Fresnel equations: reflection coefficient at fluid boundaries
+//  - Schlick's approximation: R(θ) = R₀ + (1-R₀)(1-cos θ)⁵
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,7 +24,7 @@
 struct Uniforms {
   config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
   zoom_config: vec4<f32>,         // unused, mouseX, mouseY, unused
-  zoom_params: vec4<f32>,         // surfaceTension, gravityScale, damping, rippleAmp
+  zoom_params: vec4<f32>,         // surfaceTension, gravityScale, damping, turbidity
   ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
 };
 
@@ -99,6 +100,75 @@ fn meniscusEffect(uv: vec2<f32>, depth: f32, surfaceTension: f32) -> f32 {
   return 0.0;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLUID TRANSPARENCY PHYSICS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Schlick's approximation for Fresnel reflection
+// R(θ) = R₀ + (1-R₀)(1-cos θ)⁵
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate fluid alpha based on physics:
+// - Beer-Lambert law for absorption
+// - Fresnel reflection at boundaries
+// - Depth-based thickness
+fn calculateFluidAlpha(
+    baseColor: vec3<f32>,
+    liquidThickness: f32,
+    viewDotNormal: f32,
+    turbidity: f32,
+    isBackground: f32
+) -> f32 {
+  // Fresnel: more reflective at glancing angles = less transparent
+  // Water F0 ≈ 0.02, but for artistic control we scale it
+  let F0 = 0.02;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Beer-Lambert law: absorption increases with thickness and turbidity
+  // Shallow liquid = more transparent (alpha ~ 0.3-0.6)
+  // Deep liquid = more opaque (alpha ~ 0.8-1.0)
+  let effectiveDepth = liquidThickness * (1.0 + turbidity * 2.0);
+  
+  // Absorption coefficient varies by wavelength (simplified)
+  // Water absorbs red light more than blue
+  let absorption = exp(-effectiveDepth * 2.0);
+  
+  // Combine: alpha is reduced by Fresnel reflection and absorption
+  // Background areas (no liquid) should be fully transparent
+  let baseAlpha = mix(0.3, 0.95, absorption * isBackground);
+  
+  // Fresnel reduces transmission (increases effective opacity from reflection)
+  let alpha = baseAlpha * (1.0 - fresnel * 0.5);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate liquid color with wavelength-dependent absorption
+fn calculateLiquidColor(
+    baseColor: vec3<f32>,
+    liquidThickness: f32,
+    turbidity: f32,
+    height: f32
+) -> vec3<f32> {
+  // Beer-Lambert: different wavelengths absorbed differently
+  // Water: more red absorbed (slight blue tint)
+  // Viscous fluids: more scattering (whitish)
+  let absorptionR = exp(-liquidThickness * (1.0 + turbidity));
+  let absorptionG = exp(-liquidThickness * (0.8 + turbidity * 0.9));
+  let absorptionB = exp(-liquidThickness * (0.6 + turbidity * 0.8));
+  
+  // Add subtle color tint based on liquid height
+  let heightTint = vec3<f32>(0.0, 0.1, 0.15) * height * 0.5;
+  
+  return vec3<f32>(
+      baseColor.r * absorptionR,
+      baseColor.g * absorptionG + heightTint.g,
+      baseColor.b * absorptionB + heightTint.b
+  );
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -116,7 +186,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let surfaceTension = u.zoom_params.x * 0.5 + 0.1;  // γ: 0.1 to 0.6
   let gravityScale = u.zoom_params.y * 2.0 + 0.5;    // g: 0.5 to 2.5
   let damping = u.zoom_params.z * 0.15 + 0.02;       // damping: 0.02 to 0.17
-  let rippleAmplitude = u.zoom_params.w * 0.5 + 0.5; // Base ripple amplitude
+  let turbidity = u.zoom_params.w;                    // turbidity: 0.0 to 1.0
   
   // Physical constants (normalized)
   let density = 1.0;  // ρ (water = 1)
@@ -210,7 +280,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let attenuation = 1.0 - smoothstep(0.0, 1.0, timeSinceClick / 2.5);
         
         // Capillary wave amplitude (stronger for short wavelengths)
-        let capillaryAmp = rippleAmplitude * 0.02 * mix(0.3, 1.0, rippleOriginDepth);
+        let capillaryAmp = 0.5 * 0.02 * mix(0.3, 1.0, rippleOriginDepth);
         
         sourceHeight += sin(phase) * envelope * attenuation * capillaryAmp;
         sourceVelocity += cos(phase) * envelope * attenuation * capillaryAmp * capillarySpeed;
@@ -247,7 +317,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureA, global_id.xy, heightOutput);
   
   // ═══════════════════════════════════════════════════════════════════════════════
-  // VISUAL OUTPUT: Refraction from Surface Gradient
+  // VISUAL OUTPUT: Refraction from Surface Gradient with Alpha Physics
   // ═══════════════════════════════════════════════════════════════════════════════
   
   // Calculate surface normal from height field for lighting/refraction
@@ -262,19 +332,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   
   // Sample color with displacement
   let colorUV = uv + totalDisplacement;
-  let color = textureSampleLevel(readTexture, u_sampler, colorUV, 0.0);
+  let baseColor = textureSampleLevel(readTexture, u_sampler, colorUV, 0.0).rgb;
   
   // Add specular highlight from surface curvature (Laplace pressure visualization)
   let curvature = laplacian(uv, pixelSize);
   let laplacePressure = abs(curvature) * surfaceTension * 2.0;
   let specular = pow(max(0.0, normal.z), 20.0) * laplacePressure * 0.3;
   
-  // Fresnel-like effect at steep slopes
-  let fresnel = pow(1.0 - abs(normal.z), 2.0) * 0.1;
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALPHA CHANNEL CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════════
   
-  let finalColor = color + vec4<f32>(specular + fresnel);
+  // Liquid thickness derived from wave height (absolute value represents volume)
+  let liquidThickness = abs(newHeight) * 2.0 + 0.1;
   
-  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  // View direction (assuming looking down Z axis)
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let viewDotNormal = dot(viewDir, normal);
+  
+  // Calculate liquid color with wavelength-dependent absorption
+  let liquidColor = calculateLiquidColor(baseColor, liquidThickness, turbidity, newHeight);
+  
+  // Calculate alpha based on physics
+  let alpha = calculateFluidAlpha(liquidColor, liquidThickness, viewDotNormal, turbidity, backgroundFactor);
+  
+  // Add specular to final color
+  let finalColor = liquidColor + vec3<f32>(specular);
+  
+  // Store RGBA with calculated alpha
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
   
   // Update depth texture
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
