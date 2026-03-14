@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Navier-Stokes Fluid Displacement
+//  Navier-Stokes Fluid Displacement with Alpha Physics
 //  Category: liquid-effects
-//  Features: mouse-driven, multi-pass, depth-aware
+//  Features: mouse-driven, multi-pass, depth-aware, fluid transparency
 //
 //  Implements simplified Navier-Stokes equations for incompressible flow:
 //  - ∂v/∂t = -(v·∇)v - ∇p + ν∇²v + f
@@ -9,6 +9,11 @@
 //
 //  Velocity field stored in dataTextureA (RG channels)
 //  Pressure field stored in dataTextureA (B channel)
+//
+//  ALPHA PHYSICS:
+//  - Velocity magnitude maps to liquid thickness
+//  - Beer-Lambert absorption based on flow density
+//  - Fresnel reflection at flow boundaries
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,7 +29,7 @@
 struct Uniforms {
   config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
   zoom_config: vec4<f32>,         // time, mouseX, mouseY, mouseDown
-  zoom_params: vec4<f32>,         // viscosity, pressure_iterations, flow_speed, turbulence
+  zoom_params: vec4<f32>,         // viscosity, pressure_iterations, flow_speed, turbidity
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -32,6 +37,64 @@ struct Uniforms {
 const DT: f32 = 0.016;              // Time step (60fps)
 const DISSIPATION: f32 = 0.995;      // Velocity decay
 const PRESSURE_ALPHA: f32 = 0.25;    // Jacobi relaxation factor
+
+// Schlick's approximation for Fresnel reflection
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate fluid alpha based on flow properties
+fn calculateFlowAlpha(
+    flowMagnitude: f32,
+    pressure: f32,
+    turbidity: f32,
+    viewDotNormal: f32
+) -> f32 {
+  // Fresnel: more reflective at glancing angles
+  let F0 = 0.02;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Flow thickness based on velocity magnitude and pressure
+  // High velocity = thicker liquid layer
+  let flowThickness = flowMagnitude * 0.5 + pressure * 0.3 + 0.1;
+  
+  // Beer-Lambert absorption
+  let effectiveDepth = flowThickness * (1.0 + turbidity * 3.0);
+  let absorption = exp(-effectiveDepth * 1.5);
+  
+  // Base alpha: more transparent when flow is slow
+  let baseAlpha = mix(0.4, 0.9, absorption);
+  
+  // Fresnel reduces transmission
+  let alpha = baseAlpha * (1.0 - fresnel * 0.4);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate flow color with absorption
+fn calculateFlowColor(
+    baseColor: vec3<f32>,
+    velocity: vec2<f32>,
+    pressure: f32,
+    turbidity: f32
+) -> vec3<f32> {
+  let velMag = length(velocity);
+  
+  // Wavelength-dependent absorption (motion blur effect)
+  let flowDepth = velMag * 0.3 + pressure * 0.2;
+  let absorptionR = exp(-flowDepth * (1.0 + turbidity));
+  let absorptionG = exp(-flowDepth * (0.9 + turbidity * 0.9));
+  let absorptionB = exp(-flowDepth * (0.8 + turbidity * 0.8));
+  
+  // Add subtle flow tint (cyan/blue for liquid feel)
+  let flowTint = vec3<f32>(0.0, 0.05, 0.1) * velMag * 2.0;
+  
+  return vec3<f32>(
+      baseColor.r * absorptionR,
+      baseColor.g * absorptionG + flowTint.g,
+      baseColor.b * absorptionB + flowTint.b
+  );
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -51,7 +114,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let viscosity = max(u.zoom_params.x * 0.01, 0.0001);        // Viscosity (0-1 → 0-0.01)
     let pressureIters = clamp(u.zoom_params.y * 20.0, 2.0, 20.0); // Iterations (2-20)
     let flowSpeed = u.zoom_params.z * 2.0;                       // Flow speed multiplier
-    let turbulence = u.zoom_params.w;                            // Turbulence injection
+    let turbidity = u.zoom_params.w;                            // Turbidity for alpha
 
     // Mouse interaction
     let mouse = u.zoom_config.yz;
@@ -144,7 +207,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sin(noisePos.y * 6.28 + time) * cos(noisePos.x * 4.28),
         -cos(noisePos.x * 6.28 + time * 0.7) * sin(noisePos.y * 4.28)
     );
-    velocity = velocity + curlNoise * turbulence * 0.002;
+    velocity = velocity + curlNoise * turbidity * 0.002;
 
     // ═════════════════════════════════════════════════════════════════════════
     // 6. PRESSURE PROJECTION (Simplified)
@@ -199,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 9. APPLY VELOCITY TO DISTORT IMAGE
+    // 9. APPLY VELOCITY TO DISTORT IMAGE with ALPHA PHYSICS
     // ═════════════════════════════════════════════════════════════════════════
     // Scale displacement for visual effect
     let displacementStrength = 0.02 + u.zoom_params.x * 0.03;
@@ -215,15 +278,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let r = textureSampleLevel(readTexture, u_sampler, clampedUV + vec2<f32>(chromaticOffset, 0.0), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, clampedUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clampedUV - vec2<f32>(chromaticOffset, 0.0), 0.0).b;
+    let baseColor = vec3<f32>(r, g, b);
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 10. DEPTH HANDLING
+    // 10. ALPHA CALCULATION based on flow physics
     // ═════════════════════════════════════════════════════════════════════════
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampedUV, 0.0).r;
+    
+    // Calculate approximate normal from velocity gradient
+    let velNormal = normalize(vec3<f32>(-velocity.x, -velocity.y, 0.5));
+    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+    let viewDotNormal = dot(viewDir, velNormal);
+    
+    // Calculate flow color with absorption
+    let flowColor = calculateFlowColor(baseColor, velocity, pressure, turbidity);
+    
+    // Calculate alpha
+    let alpha = calculateFlowAlpha(velMag, pressure, turbidity, viewDotNormal);
 
     // ═════════════════════════════════════════════════════════════════════════
-    // OUTPUT
+    // OUTPUT with ALPHA
     // ═════════════════════════════════════════════════════════════════════════
-    textureStore(writeTexture, coord, vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(flowColor, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
