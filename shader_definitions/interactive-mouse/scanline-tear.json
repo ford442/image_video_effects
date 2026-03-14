@@ -2,44 +2,60 @@
   "id": "scanline-tear",
   "name": "Scanline Tear",
   "url": "shaders/scanline-tear.wgsl",
-  "category": "image",
-  "description": "Glitchy horizontal tearing effect controlled by mouse position.",
+  "category": "retro-glitch",
+  "description": "Authentic analog video interlacing simulation with field-based temporal offset, HSync/VSync modeling, and VHS-style tracking errors.",
   "params": [
     {
-      "id": "intensity",
-      "name": "Tear Intensity",
+      "id": "interlaceStrength",
+      "name": "Interlace Strength",
+      "description": "Controls interlacing artifact intensity, field persistence, and combing on motion",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "stripCount",
-      "name": "Strip Count",
-      "default": 0.5,
+      "id": "hsyncError",
+      "name": "HSync Error",
+      "description": "Horizontal sync instability - creates rolling bars and horizontal displacement",
+      "default": 0.0,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "noiseSpeed",
-      "name": "Noise Speed",
-      "default": 0.5,
+      "id": "vsyncError",
+      "name": "VSync Error",
+      "description": "Vertical sync roll - creates image rolling and retrace bars",
+      "default": 0.0,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "rgbSplit",
-      "name": "RGB Split",
-      "default": 0.2,
+      "id": "colorBurstError",
+      "name": "Color Burst Error",
+      "description": "Chroma phase errors causing hue shifts and chroma noise",
+      "default": 0.0,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "features": [
-    "mouse-driven",
-    "glitch"
+    "multi-pass",
+    "glitch",
+    "temporal"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "interlacing",
+    "vhs",
+    "analog",
+    "retro",
+    "scanlines",
+    "sync-loss",
+    "tracking",
+    "video",
+    "ntsc"
   ]
 }
