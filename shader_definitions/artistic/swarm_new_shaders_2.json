@@ -1,0 +1,36 @@
+[
+  {
+    "id": "distortion_gravitational_lens",
+    "name": "Gravitational Lens",
+    "category": "distortion",
+    "type": "compute",
+    "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration",
+    "wgsl_file": "distortion_gravitational_lens.wgsl",
+    "uniforms": {
+      "param1": { "label": "Lens Strength", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Mass Count", "min": 0, "max": 1, "default": 0.3 },
+      "param3": { "label": "Disk Intensity", "min": 0, "max": 1, "default": 0.5 },
+      "param4": { "label": "Chromatic Aberration", "min": 0, "max": 1, "default": 0.2 }
+    },
+    "features": ["mouse-driven", "audio-reactive", "relativistic", "hdr"],
+    "tags": ["gravity", "lens", "einstein", "relativity", "space", "accretion"],
+    "target_rating": 4.7
+  },
+  {
+    "id": "artistic_painterly_oil",
+    "name": "Oil Painting",
+    "category": "artistic",
+    "type": "compute",
+    "description": "Oil painting effect with anisotropic Kuwahara filter, impasto texture, wet paint specular highlights, and canvas texture",
+    "wgsl_file": "artistic_painterly_oil.wgsl",
+    "uniforms": {
+      "param1": { "label": "Brush Size", "min": 0, "max": 1, "default": 0.3 },
+      "param2": { "label": "Wetness", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Color Levels", "min": 0, "max": 1, "default": 0.5 },
+      "param4": { "label": "Canvas Texture", "min": 0, "max": 1, "default": 0.3 }
+    },
+    "features": ["anisotropic", "edge-aware", "texture-synthesis"],
+    "tags": ["oil", "painting", "artistic", "impasto", "kuwahara", "canvas"],
+    "target_rating": 4.5
+  }
+]
