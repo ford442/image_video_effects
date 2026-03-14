@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════
+//  Neon Contour Drag - Warped Edge Detection with Alpha Emission
+//  Category: lighting-effects
+//  Physics: Emissive edges with UV warp and alpha occlusion
+//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -47,6 +54,13 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<f32>(u.config.zw);
@@ -54,55 +68,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = dims.x / dims.y;
 
     // Parameters
-    let edgeStrength = u.zoom_params.x * 5.0; // 0.0 to 5.0
-    let dragRadius = u.zoom_params.y;         // 0.0 to 1.0
-    let glowIntensity = u.zoom_params.z * 2.0;// 0.0 to 2.0
-    let colorShift = u.zoom_params.w;         // 0.0 to 1.0
+    // x: edgeStrength, y: dragRadius, z: glowIntensity, w: colorShift
+    let edgeStrength = u.zoom_params.x * 5.0;
+    let dragRadius = u.zoom_params.y;
+    let glowIntensity = u.zoom_params.z * 2.0;
+    let colorShift = u.zoom_params.w;
+    let occlusionBalance = 0.5;
 
     // Mouse interaction
     var mousePos = u.zoom_config.yz;
-    let mouseActive = u.zoom_config.w; // 1.0 if down, but we can use position always for "mouse-driven"
+    let mouseActive = u.zoom_config.w;
 
     // Coordinate correction for distance
     let uv_c = vec2<f32>(uv.x * aspect, uv.y);
     let mouse_c = vec2<f32>(mousePos.x * aspect, mousePos.y);
-
     let dist = distance(uv_c, mouse_c);
 
     // Drag/Warp effect based on distance
-    // We warp the UV used for edge detection towards/away from mouse
     let warpAmount = smoothstep(dragRadius, 0.0, dist) * 0.2;
     var dir = normalize(uv_c - mouse_c);
-    // Safety check for NaN
     let safeDir = select(vec2<f32>(0.0), dir, dist > 0.001);
-
     let warpUV = uv - safeDir * warpAmount;
 
     // Edge Detection
     let step = 1.0 / dims;
     let edge = sobel(warpUV, step);
 
-    // Base Color
-    var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    // Darken background to make neon pop
-    color = color * 0.2;
-
-    // Neon Glow Color
-    // Cycle hue based on time and distance from mouse
+    // Neon Glow Color - Cycle hue based on time and distance from mouse
     let hue = fract(u.config.x * 0.2 + dist * 2.0 + colorShift);
     let neonColor = hsv2rgb(vec3<f32>(hue, 0.8, 1.0));
 
-    // Add glowing edges
-    let glow = edge * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5); // Fade glow at distance
+    // Emission calculation (HDR capable)
+    let glow = edge * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5);
+    var emission = neonColor * glow;
 
-    color += neonColor * glow;
-
-    // Extra: If mouse is close, invert the edge color for a "hot" core
+    // Extra: If mouse is close, add hot core
     if (dist < 0.05) {
-        color = mix(color, vec3<f32>(1.0) - color, 1.0 - dist/0.05);
+        emission = mix(emission, vec3<f32>(1.0) - emission, 1.0 - dist/0.05);
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Calculate alpha based on emission intensity
+    let glowStrength = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+
+    // Output RGBA: RGB = emission (HDR), A = physical occlusion
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
