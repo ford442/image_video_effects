@@ -1,7 +1,10 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Neon Contour Interactive
-//  Edge detection with neon glow that reacts to mouse proximity.
-// ────────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  Neon Contour Interactive - Edge Detection with Alpha Emission
+//  Category: lighting-effects
+//  Physics: Emissive edge glow with mouse proximity interaction
+//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
@@ -20,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=time, y=mouseX, z=mouseY, w=click
-  zoom_params: vec4<f32>,       // x=Threshold, y=Glow, z=CycleSpeed, w=Pulse
+  config:      vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -40,6 +43,13 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
@@ -50,12 +60,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
 
     // Params
+    // x: Threshold, y: Glow, z: CycleSpeed, w: OcclusionBalance
     let threshold = u.zoom_params.x;
     let glowIntensity = u.zoom_params.y * 5.0;
     let cycleSpeed = u.zoom_params.z;
     let pulseSpeed = u.zoom_params.w;
+    let occlusionBalance = 0.5;
 
-    var mouse = u.zoom_config.yz; // 0-1 normalized
+    var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     // Correct aspect ratio for distance
@@ -84,24 +96,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edge = sqrt(edgeX * edgeX + edgeY * edgeY);
     let isEdge = smoothstep(localThreshold, localThreshold + 0.05, edge);
 
-    let original = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-
     // Neon Color Calculation
-    // Base hue rotates with time
     let baseHue = fract(time * cycleSpeed * 0.1);
-    // Hue shift based on edge direction or intensity
     let hue = fract(baseHue + edge * 2.0 + dist * 0.5);
-
     let pulse = sin(time * pulseSpeed * 5.0) * 0.5 + 0.5;
     let neonColor = hsv2rgb(vec3<f32>(hue, 1.0, 1.0));
 
-    // Combine
-    var finalColor = mix(original * 0.2, neonColor, isEdge * (glowIntensity + pulse));
+    // Emission calculation (HDR capable)
+    var emission = neonColor * isEdge * (glowIntensity + pulse);
 
     // Add extra glow near mouse
     if (dist < 0.2) {
-        finalColor += neonColor * (0.2 - dist) * 2.0 * glowIntensity;
+        emission += neonColor * (0.2 - dist) * 2.0 * glowIntensity;
     }
 
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    // Calculate alpha based on emission intensity
+    let glowStrength = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+
+    // Output RGBA: RGB = emission (HDR), A = physical occlusion
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(emission, finalAlpha));
 }
