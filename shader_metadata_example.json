@@ -1,0 +1,13 @@
+{
+  "shader_id": "liquid-v1",
+  "coordinate": 15,
+  "name": "Liquid (Ambient)",
+  "category": "liquid-effects",
+  "stars": 4.5,
+  "rating_count": 12,
+  "play_count": 342,
+  "features": ["mouse-driven"],
+  "tags": ["liquid", "ambient", "smooth"],
+  "zone": "ambient",
+  "menus": ["liquid-effects", "mouse-driven", "ambient"]
+}
