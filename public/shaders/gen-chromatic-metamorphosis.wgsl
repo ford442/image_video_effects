@@ -126,6 +126,52 @@ fn sceneNormal(p: vec3<f32>, t: f32, bk: f32, mt: f32) -> vec3<f32> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  Smooth noise for material texture
+// ─────────────────────────────────────────────────────────────────────────────
+fn h2_cm(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn vnoise_cm(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p); let u = f*f*(3.0-2.0*f);
+    return mix(mix(h2_cm(i),h2_cm(i+vec2<f32>(1,0)),u.x),mix(h2_cm(i+vec2<f32>(0,1)),h2_cm(i+vec2<f32>(1,1)),u.x),u.y);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Fresnel reflectance approximation (Schlick)
+// ─────────────────────────────────────────────────────────────────────────────
+fn fresnel(cosTheta: f32, F0: f32) -> f32 {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  GGX distribution for specular (for iridescent sheen)
+// ─────────────────────────────────────────────────────────────────────────────
+fn ggxD(NdotH: f32, roughness: f32) -> f32 {
+    let a  = roughness * roughness;
+    let a2 = a * a;
+    let d  = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    return a2 / (3.14159 * d * d + 1e-6);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Ambient occlusion from marching
+// ─────────────────────────────────────────────────────────────────────────────
+fn ambientOcclusion(p: vec3<f32>, N: vec3<f32>, t: f32, bk: f32, mt: f32) -> f32 {
+    var occ = 0.0;
+    var scale = 1.0;
+    for (var i = 1; i <= 5; i++) {
+        let d = 0.02 * f32(i);
+        let q = p + N * d;
+        let dist = sceneSDF(q, t, bk, mt);
+        occ += (d - dist) * scale;
+        scale *= 0.5;
+    }
+    return clamp(1.0 - occ * 3.0, 0.0, 1.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
@@ -191,6 +237,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         col = surfCol * (0.1 + diff * 0.7 * lightInt) * ao
             + vec3<f32>(1.0) * spec * 0.4
             + surfCol * rim * 0.3;
+        col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    }
+
+    if (hit) {
+        let N2 = sceneNormal(hitP, t, blendRadius, morphT);
+
+        // ── Fresnel rim light ──────────────────────────────────────────────
+        let NdotV = max(dot(N2, -rd), 0.0);
+        let fresnelW = fresnel(NdotV, 0.04);
+        let rimHue = fract(t * 0.07 + 0.6);
+        col += hsv2rgb(rimHue, 1.0, 1.0) * fresnelW * 0.4;
+
+        // ── Material noise texture ─────────────────────────────────────────
+        let matNoise = vnoise_cm(hitP.xy * 4.0 + hitP.z * vec2<f32>(1.3, 0.7));
+        col = mix(col, col * (0.7 + matNoise * 0.6), 0.3);
+
+        // ── GGX specular sheen ────────────────────────────────────────────
+        let halfV = normalize(normalize(vec3<f32>(sin(t*0.2), 0.7, cos(t*0.2))) + (-rd));
+        let NdotH = max(dot(N2, halfV), 0.0);
+        let roughness = 0.3 + matNoise * 0.4;
+        let ggxSpec = ggxD(NdotH, roughness) * 0.15;
+        col += hsv2rgb(fract(t * colorSpeed * 0.3 + 0.3), 0.7, 1.0) * ggxSpec;
+
+        // ── Full AO pass ───────────────────────────────────────────────────
+        let ao2 = ambientOcclusion(hitP, N2, t, blendRadius, morphT);
+        col *= ao2;
+
         col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     }
 

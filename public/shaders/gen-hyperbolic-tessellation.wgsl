@@ -111,6 +111,54 @@ fn orbitTrap(z: vec2<f32>, center: vec2<f32>, radius: f32) -> f32 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  Smooth noise for tile texture
+// ─────────────────────────────────────────────────────────────────────────────
+fn h2_ht(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn vnoise_ht(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p); let u = f*f*(3.0-2.0*f);
+    return mix(mix(h2_ht(i),h2_ht(i+vec2<f32>(1,0)),u.x),mix(h2_ht(i+vec2<f32>(0,1)),h2_ht(i+vec2<f32>(1,1)),u.x),u.y);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Hyperbolic distance in Poincaré disk
+// ─────────────────────────────────────────────────────────────────────────────
+fn hypDist(z1: vec2<f32>, z2: vec2<f32>) -> f32 {
+    let d  = length(z1 - z2);
+    let d1 = 1.0 - dot(z1, z1);
+    let d2 = 1.0 - dot(z2, z2);
+    let arg = clamp(1.0 + 2.0 * d * d / max(d1 * d2, 1e-8), 1.0, 1e6);
+    return log(arg + sqrt(arg * arg - 1.0));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Tile interior texture: adds Escher-like creature pattern as noise
+// ─────────────────────────────────────────────────────────────────────────────
+fn tileTexture(z: vec2<f32>, depth: f32, t: f32) -> f32 {
+    let scale = 8.0 * (1.0 + depth * 2.0);
+    let n1 = vnoise_ht(z * scale + vec2<f32>(t * 0.02, 0.0));
+    let n2 = vnoise_ht(z * scale * 2.0 + vec2<f32>(0.0, t * 0.015));
+    return n1 * 0.6 + n2 * 0.4;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Geodesic distance to nearest lattice line (for tile edge rendering)
+// ─────────────────────────────────────────────────────────────────────────────
+fn geodesicEdge(z: vec2<f32>, p: f32) -> f32 {
+    var minDist = 1e9;
+    for (var k = 0; k < 8; k++) {
+        let angle = 6.28318 * f32(k) / p;
+        let dir = vec2<f32>(cos(angle), sin(angle)) * 0.3;
+        let edgeD = abs(dot(z, vec2<f32>(-dir.y, dir.x)));
+        minDist = min(minDist, edgeD);
+    }
+    return exp(-minDist * 30.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
@@ -184,6 +232,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Tile edge darkening
     col *= (1.0 - edgeLine * 0.6);
     col += hsv2rgb(fract(hue + 0.15), 0.9, 1.0) * edgeLine * 0.3;
+
+    // ── Tile interior texture (Escher-like) ───────────────────────────────
+    let tileDetail = tileTexture(zz, depth, t) * (1.0 - edgeLine);
+    col = mix(col, col * (0.7 + tileDetail * 0.6), 0.5);
+
+    // ── Geodesic edge lines ───────────────────────────────────────────────
+    let geoEdge = geodesicEdge(zz, p);
+    col = mix(col, hsv2rgb(fract(hue + 0.25), 1.0, 1.0), geoEdge * 0.5 * (1.0 - depth));
+
+    // ── Hyperbolic distance-based fog ─────────────────────────────────────
+    let hypD = hypDist(z, vec2<f32>(0.0));
+    let fog  = exp(-hypD * 0.15);
+    col = mix(hsv2rgb(fract(t * 0.04 + 0.6), 0.3, 0.08), col, fog);
+
+    // ── Animated iridescence on tile faces ───────────────────────────────
+    let iridPhase = depth * 4.0 + t * 0.07 + length(zz) * 5.0;
+    let iridColor = hsv2rgb(fract(iridPhase * 0.5), 0.9, 0.4) * (1.0 - edgeLine);
+    col = clamp(col + iridColor * depth * 0.3, vec3<f32>(0.0), vec3<f32>(1.0));
 
     textureStore(writeTexture, gid.xy, vec4<f32>(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));

@@ -142,6 +142,29 @@ fn tidalEmission(p: vec2<f32>, wells: array<vec3<f32>, 6>, n: i32, t: f32) -> ve
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  FBM for nebula texture
+// ─────────────────────────────────────────────────────────────────────────────
+fn fbm_gs(p: vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pp = p;
+    for (var i = 0; i < 4; i++) {
+        v += a * vnoise(pp);
+        pp = pp * 2.1 + vec2<f32>(1.7, 9.2);
+        a *= 0.5;
+    }
+    return v;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Einstein ring test: check if ray approaches lensing angle
+// ─────────────────────────────────────────────────────────────────────────────
+fn einsteinRingGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32, t: f32) -> f32 {
+    let d = length(p - wellPos);
+    let eRing = sqrt(mass * 0.5); // Einstein ring radius proportional to √mass
+    let ringWidth = 0.01;
+    return smoothstep(ringWidth, 0.0, abs(d - eRing)) * mass * 8.0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
@@ -217,6 +240,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Compose ───────────────────────────────────────────────────────────
     var col = stars * darkening + emission + ripEmission;
+
+    // ── Einstein ring glows around each well ──────────────────────────────
+    for (var i = 0; i < wellCount; i++) {
+        let ering = einsteinRingGlow(p, wells[i].xy, wells[i].z, t);
+        let eHue  = fract(f32(i) / 6.0 + t * 0.05 + 0.1);
+        col += hsv2rgb(eHue, 0.9, 1.0) * ering;
+    }
+
+    // ── Relativistic Doppler: color shift based on ray velocity ───────────
+    let raySpeed = length(rayVel);
+    let blueshift = clamp(raySpeed * 5.0, 0.0, 1.0);
+    // Blue-shift approaching side, red-shift receding side
+    let dopplerHue = fract(t * 0.03 - blueshift * 0.15);
+    col = mix(col, col * hsv2rgb(dopplerHue, 0.4, 1.0), blueshift * 0.25);
+
+    // ── Dark matter "web" texture via FBM ─────────────────────────────────
+    let dmUV    = p * 4.0 + vec2<f32>(t * 0.007, -t * 0.005);
+    let dmWeb   = fbm_gs(dmUV);
+    let dmDark  = smoothstep(0.6, 1.0, dmWeb) * 0.12;
+    let dmColor = hsv2rgb(fract(t * 0.04 + dmWeb), 0.3, dmDark);
+    col = col * (1.0 - dmDark * 0.5) + dmColor;
+
+    // ── Gravitational lensing arc highlights ──────────────────────────────
+    let lensArc  = length(rayVel) * darkening * emScale * 0.3;
+    let arcColor = hsv2rgb(fract(atan2(rayVel.y, rayVel.x) / 6.28318 + t * 0.05), 0.8, lensArc);
+    col = col + arcColor * smoothstep(0.05, 0.2, raySpeed);
+
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Depth: gravitational potential (normalized)

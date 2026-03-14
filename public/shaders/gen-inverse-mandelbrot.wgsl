@@ -118,6 +118,58 @@ fn uvToC(uv: vec2<f32>, zoom: f32, center: vec2<f32>, t: f32) -> vec2<f32> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  FBM for fractal texture layering
+// ─────────────────────────────────────────────────────────────────────────────
+fn fbm_im(p: vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pp = p;
+    for (var i = 0; i < 3; i++) {
+        v += a * vnoise(pp);
+        pp = pp * 2.1 + vec2<f32>(5.2, 1.3);
+        a *= 0.5;
+    }
+    return v;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Julia set probe: a secondary fractal derived from the same point
+//  (color-space iteration with a fixed c)
+// ─────────────────────────────────────────────────────────────────────────────
+fn juliaColorProbe(z_in: vec2<f32>, c: vec2<f32>, iterations: i32, bailout: f32) -> f32 {
+    var z = z_in;
+    for (var n = 0; n < iterations; n++) {
+        z = cmul(z, z) + c;
+        if (dot(z, z) > bailout * bailout) {
+            return f32(n) / f32(iterations);
+        }
+    }
+    return 0.0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Dwell bands: stripe coloring using iteration count mod
+// ─────────────────────────────────────────────────────────────────────────────
+fn dwellBand(smooth_n: f32, maxIter: f32, bandWidth: f32, t: f32) -> f32 {
+    let band = fract(smooth_n / bandWidth + t * 0.02);
+    return smoothstep(0.4, 0.6, band) * smoothstep(0.6, 0.4, band) * 2.0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Escape-time normal for pseudo-3D shading
+// ─────────────────────────────────────────────────────────────────────────────
+fn escapeNormal(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> vec2<f32> {
+    var z = z0;
+    var dz = vec2<f32>(1.0, 0.0); // derivative
+    for (var n = 0; n < maxIter; n++) {
+        dz = cmul(dz, z) * 2.0 + vec2<f32>(1.0, 0.0);
+        z  = cmul(z, z) + c;
+        if (dot(z, z) > bailout * bailout) { break; }
+    }
+    let len = length(dz);
+    if (len < 1e-8) { return vec2<f32>(0.0, 1.0); }
+    return normalize(dz / len);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
@@ -197,6 +249,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     col = mix(col, hsv2rgb(fract(length(c) * 0.7 + t * 0.1 + cmapRot), 1.0, 1.0),
               abs(ripDistort) * 0.3);
+
+    // ── Dwell band overlay (alternate coloring) ────────────────────────────
+    if (result.escaped) {
+        let band = dwellBand(result.smooth_n, f32(maxIter), 4.0, t);
+        col = mix(col, col * (1.0 + band * 0.4), 0.5);
+    }
+
+    // ── Julia probe secondary color ────────────────────────────────────────
+    let juliaC  = vec2<f32>(sin(t * 0.07) * 0.3, cos(t * 0.05) * 0.3);
+    let juliaT  = juliaColorProbe(z0 + c * 0.1, juliaC, maxIter / 2, bailout);
+    let juliaH  = fract(juliaT * 3.0 + cmapRot + 0.25 + t * 0.04);
+    col = mix(col, hsv2rgb(juliaH, 0.9, 0.8), juliaT * 0.35);
+
+    // ── Escape-time pseudo-3D shading ─────────────────────────────────────
+    let escN = escapeNormal(c, z0, maxIter, bailout);
+    let lightDir = normalize(vec2<f32>(cos(t * 0.12), sin(t * 0.09)));
+    let diffuse = dot(escN, lightDir) * 0.5 + 0.5;
+    col = col * (0.6 + diffuse * 0.4);
+
+    // ── FBM texture on interior ────────────────────────────────────────────
+    if (!result.escaped) {
+        let fbmTex = fbm_im(c * 8.0 + t * 0.01);
+        col = mix(col, col * (0.5 + fbmTex), 0.4);
+    }
+
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
     let depthOut = select(0.2, result.smooth_n / f32(maxIter), result.escaped);

@@ -100,6 +100,49 @@ fn collapseWeight(p: vec2<f32>, collapseCenter: vec2<f32>, r: f32) -> f32 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  FBM noise (3 octaves)
+// ─────────────────────────────────────────────────────────────────────────────
+fn fbm_qs(p: vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pp = p;
+    for (var i = 0; i < 3; i++) {
+        v += a * snoise_q(pp);
+        pp = pp * 2.0 + vec2<f32>(1.7, 9.2);
+        a *= 0.5;
+    }
+    return v;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Quantum Zeno effect: observation slows probability decay
+// ─────────────────────────────────────────────────────────────────────────────
+fn zenoFactor(p: vec2<f32>, observeCenter: vec2<f32>, observeRadius: f32, t: f32) -> f32 {
+    let d = length(p - observeCenter);
+    let obs = exp(-d * d / (observeRadius * observeRadius * 4.0));
+    // The closer to the observer, the less the wave function collapses
+    return 1.0 - obs * 0.6 * abs(sin(t * 2.0));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Heisenberg uncertainty visualization: position uncertainty ↔ momentum fog
+// ─────────────────────────────────────────────────────────────────────────────
+fn heisenbergFog(prob: f32, sigma: f32) -> f32 {
+    // When position is precisely known (high prob, low sigma), momentum is uncertain
+    // → add fog proportional to 1/(prob * sigma + ε)
+    let posUncertainty = sigma;
+    let momUncertainty = 1.0 / (posUncertainty * 50.0 + 0.1);
+    return clamp(momUncertainty * 0.08, 0.0, 0.3);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Interference fringe color based on path difference
+// ─────────────────────────────────────────────────────────────────────────────
+fn fringeColor(pathDiff: f32, t: f32) -> vec3<f32> {
+    let phase  = pathDiff * 12.0;
+    let bright = pow(cos(phase) * 0.5 + 0.5, 3.0);
+    return hsv2rgb(fract(phase * 0.08 + t * 0.05), 0.9, bright);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
@@ -188,6 +231,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bg = hsv2rgb(fract(t * 0.03 + length(p) * 0.5), 0.4, 0.04 + vacuum);
 
     var col = bg + probColor * clamp(normalizedProb * 4.0, 0.0, 1.5) + intColor;
+
+    // ── Quantum Zeno effect near mouse ─────────────────────────────────────
+    let zeno = zenoFactor(p, mPos, decoherence * 6.0, t);
+    let zenoBright = (1.0 - zeno) * normalizedProb;
+    col += hsv2rgb(fract(t * 0.08 + 0.15), 0.6, zenoBright * 0.5);
+
+    // ── Heisenberg fog ────────────────────────────────────────────────────
+    let hFog = heisenbergFog(totalProb, decoherence * 2.0);
+    let fogColor = hsv2rgb(fract(t * 0.04 + 0.5 + length(p) * 0.3), 0.5, 1.0);
+    col += fogColor * hFog;
+
+    // ── Interference fringes between particle pairs ───────────────────────
+    if (numParticles >= 2) {
+        let seed0 = 0.0; let seed1 = 17.3;
+        let a0 = hash1(seed0) * 3.0 + 1.0; let b0 = hash1(seed0 + 1.0) * 3.0 + 1.0;
+        let a1 = hash1(seed1) * 3.0 + 1.0; let b1 = hash1(seed1 + 1.0) * 3.0 + 1.0;
+        let pos0 = lissajousPos(t * waveSpeed * 0.2, a0, b0, hash1(seed0+2.0)*6.28, hash1(seed0+3.0)*0.3+0.15, (hash2v(seed0+4.0)-0.5)*0.3*vec2<f32>(aspect,1.0));
+        let pos1 = lissajousPos(t * waveSpeed * 0.2, a1, b1, hash1(seed1+2.0)*6.28, hash1(seed1+3.0)*0.3+0.15, (hash2v(seed1+4.0)-0.5)*0.3*vec2<f32>(aspect,1.0));
+        let pathDiff = length(p - pos0) - length(p - pos1);
+        let fringe = fringeColor(pathDiff, t);
+        let fringeAmp = exp(-min(length(p-pos0), length(p-pos1)) * 3.0) * 0.3;
+        col += fringe * fringeAmp * collapse;
+    }
+
+    // ── FBM vacuum energy texture ─────────────────────────────────────────
+    let vacEnergy = fbm_qs(p * 8.0 + t * 0.05) * 0.04;
+    col += hsv2rgb(fract(t * 0.06 + length(p)), 0.4, vacEnergy);
+
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
     let depthOut = clamp(normalizedProb * 2.0, 0.0, 1.0);
