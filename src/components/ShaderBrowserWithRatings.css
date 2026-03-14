@@ -1,0 +1,267 @@
+.shader-browser-with-ratings {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0f;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header */
+.browser-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+.browser-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.shader-count {
+  color: #666;
+  font-weight: 400;
+}
+
+.search-input {
+  padding: 8px 16px;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 14px;
+  width: 240px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #4a9eff;
+}
+
+/* View Tabs */
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 24px;
+  border-bottom: 1px solid #1a1a2e;
+  background: #0f0f1a;
+}
+
+.view-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-tab:hover {
+  background: #1a1a2e;
+  color: #ccc;
+}
+
+.view-tab.active {
+  background: #2a2a4e;
+  color: #fff;
+}
+
+.tab-icon {
+  font-size: 14px;
+}
+
+/* Rating Filter */
+.rating-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #1a1a2e;
+  font-size: 13px;
+  color: #888;
+}
+
+.rating-filter select {
+  padding: 4px 12px;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+}
+
+/* Shader Groups */
+.shader-groups {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+.shader-group {
+  margin-bottom: 24px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.group-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.group-count {
+  padding: 2px 8px;
+  background: #1a1a2e;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #666;
+}
+
+/* Shader Grid */
+.shader-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+/* Shader Card */
+.shader-card-rating {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: #151520;
+  border: 1px solid #252535;
+  border-left: 3px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shader-card-rating:hover {
+  background: #1e1e30;
+  border-color: #3a3a50;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.shader-card-rating.selected {
+  background: #2a2a4e;
+  border-color: #4a9eff;
+  box-shadow: 0 0 0 1px #4a9eff;
+}
+
+.coord-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 6px;
+  background: rgba(74, 158, 255, 0.1);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 10px;
+  color: #4a9eff;
+}
+
+.shader-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  line-height: 1.3;
+  padding-right: 40px; /* Space for coord badge */
+}
+
+.category-tag {
+  font-size: 10px;
+  color: #888;
+  text-transform: capitalize;
+}
+
+.stats-row {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #666;
+}
+
+.play-count {
+  color: #4a9eff;
+}
+
+.rating-wrapper {
+  padding: 4px 0;
+}
+
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-size: 10px;
+  color: #666;
+}
+
+/* Loading State */
+.shader-browser-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #888;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #1a1a2e;
+  border-top-color: #4a9eff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar */
+.shader-groups::-webkit-scrollbar {
+  width: 8px;
+}
+
+.shader-groups::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+
+.shader-groups::-webkit-scrollbar-thumb {
+  background: #2a2a3e;
+  border-radius: 4px;
+}
+
+.shader-groups::-webkit-scrollbar-thumb:hover {
+  background: #3a3a50;
+}
