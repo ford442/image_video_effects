@@ -1,8 +1,15 @@
 // ═══════════════════════════════════════════════════════════════
 //  RGB Glitch Displacement - Digital glitch effect with RGB channel displacement
 //  Category: retro-glitch
-//  Features: mouse-driven
+//  Features: mouse-driven, yuv-chroma-subsampling
 //  Author: Kimi
+//  
+//  FEATURES:
+//  - YUV Chroma Subsampling (4:2:0, 4:2:2, 4:1:1 artifacts)
+//  - RGB channel displacement with mouse interaction
+//  - Block/scanline glitch patterns
+//  - Datamoshing-like temporal glitches
+//  - DCT block boundary artifacts
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,6 +33,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// ═══════════════════════════════════════════════════════════════
+//  UTILITY FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
 // Hash functions
 fn hash1(p: f32) -> f32 {
     return fract(sin(p * 127.1) * 43758.5453);
@@ -46,6 +57,124 @@ fn noise1d(p: f32) -> f32 {
     let f_smooth = f * f * (3.0 - 2.0 * f);
     return mix(hash1(i), hash1(i + 1.0), f_smooth);
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  RGB <-> YUV CONVERSION
+//  Digital video color space conversion
+// ═══════════════════════════════════════════════════════════════
+
+// Convert RGB to YUV (BT.601)
+// Y = Luma (full resolution, 0-1 range)
+// U = Cb (blue-difference chroma, mapped to 0-1)
+// V = Cr (red-difference chroma, mapped to 0-1)
+fn rgbToYuv(rgb: vec3<f32>) -> vec3<f32> {
+    let y = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+    let u = -0.169 * rgb.r - 0.331 * rgb.g + 0.5 * rgb.b + 0.5;
+    let v = 0.5 * rgb.r - 0.419 * rgb.g - 0.081 * rgb.b + 0.5;
+    return vec3<f32>(y, u, v);
+}
+
+// Convert YUV back to RGB
+fn yuvToRgb(yuv: vec3<f32>) -> vec3<f32> {
+    let y = yuv.x;
+    let u = yuv.y - 0.5;
+    let v = yuv.z - 0.5;
+    
+    let r = y + 1.402 * v;
+    let g = y - 0.344 * u - 0.714 * v;
+    let b = y + 1.772 * u;
+    
+    return clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CHROMA SUBSAMPLING
+//  Simulates digital video compression artifacts
+// ═══════════════════════════════════════════════════════════════
+
+// Sample chroma with subsampling
+// mode: 0=4:4:4 (none), 1=4:2:2 (half H), 2=4:2:0 (half both), 3=4:1:1 (quarter H)
+fn sampleChromaSubsample(uv: vec2<f32>, resolution: vec2<f32>, mode: i32, blockSize: f32) -> vec2<f32> {
+    var blockUV = uv;
+    
+    switch mode {
+        case 1: { // 4:2:2 - half horizontal resolution
+            let blockX = floor(uv.x * resolution.x / blockSize) * blockSize / resolution.x;
+            blockUV = vec2<f32>(blockX, uv.y);
+        }
+        case 2: { // 4:2:0 - half both directions (most common, causes blocky artifacts)
+            let blockX = floor(uv.x * resolution.x / blockSize) * blockSize / resolution.x;
+            let blockY = floor(uv.y * resolution.y / blockSize) * blockSize / resolution.y;
+            blockUV = vec2<f32>(blockX, blockY);
+        }
+        case 3: { // 4:1:1 - quarter horizontal (DV format, severe color bleeding)
+            let blockX = floor(uv.x * resolution.x / (blockSize * 2.0)) * blockSize * 2.0 / resolution.x;
+            blockUV = vec2<f32>(blockX, uv.y);
+        }
+        default: { // 4:4:4 - no subsampling
+            blockUV = uv;
+        }
+    }
+    
+    // Sample the color at the block position
+    let color = textureSampleLevel(readTexture, u_sampler, clamp(blockUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let yuv = rgbToYuv(color);
+    return yuv.yz; // Return U and V only
+}
+
+// Apply chroma subsampling to get final color
+fn applyChromaSubsampling(uv: vec2<f32>, resolution: vec2<f32>, mode: i32, blockSize: f32, luma: f32) -> vec3<f32> {
+    let chroma = sampleChromaSubsample(uv, resolution, mode, blockSize);
+    return yuvToRgb(vec3<f32>(luma, chroma.x, chroma.y));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DCT BLOCK ARTIFACTS
+//  Simulates MPEG/JPEG 8x8 block boundaries
+// ═══════════════════════════════════════════════════════════════
+
+fn dctBlockArtifacts(uv: vec2<f32>, resolution: vec2<f32>, intensity: f32, blockSize: f32) -> f32 {
+    let blockSizePixels = blockSize * 4.0; // DCT blocks are typically 8x8
+    let blockPos = fract(uv * resolution / blockSizePixels);
+    
+    // Detect block boundaries
+    let edgeDistX = min(blockPos.x, 1.0 - blockPos.x) * blockSizePixels;
+    let edgeDistY = min(blockPos.y, 1.0 - blockPos.y) * blockSizePixels;
+    
+    // Create emphasis at block edges
+    let edgeX = smoothstep(0.0, 1.0, edgeDistX);
+    let edgeY = smoothstep(0.0, 1.0, edgeDistY);
+    
+    return (1.0 - edgeX * edgeY) * intensity;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TEMPORAL GLITCH (DATAMOSHING)
+//  Time-based compression artifacts
+// ═══════════════════════════════════════════════════════════════
+
+fn temporalGlitch(uv: vec2<f32>, time: f32, intensity: f32, resolution: vec2<f32>) -> vec2<f32> {
+    let frameNum = floor(time * 30.0); // 30fps reference
+    let blockSize = 16.0;
+    
+    let blockX = floor(uv.x * resolution.x / blockSize);
+    let blockY = floor(uv.y * resolution.y / blockSize);
+    
+    let h = hash3(vec3<f32>(blockX, blockY, frameNum));
+    
+    // Macroblock motion vector errors
+    if (h > 0.96) {
+        let offsetX = (hash1(h) - 0.5) * intensity * 0.3;
+        let offsetY = (hash1(h + 1.0) - 0.5) * intensity * 0.1;
+        return uv + vec2<f32>(offsetX, offsetY);
+    }
+    
+    return uv;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GLITCH EFFECT FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
 
 // Block glitch pattern
 fn blockGlitch(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
@@ -139,6 +268,26 @@ fn datamosh(uv: vec2<f32>, mouse: vec2<f32>, time: f32, intensity: f32) -> vec2<
     return uv;
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  CHROMATIC ABERRATION WITH CHANNEL OFFSETS
+// ═══════════════════════════════════════════════════════════════
+
+fn chromaticAberration(uv: vec2<f32>, intensity: f32, channelOffset: f32) -> vec3<f32> {
+    let offsetR = vec2<f32>(channelOffset * intensity, 0.0);
+    let offsetG = vec2<f32>(0.0, 0.0);
+    let offsetB = vec2<f32>(-channelOffset * intensity, 0.0);
+    
+    var r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offsetR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    var g = textureSampleLevel(readTexture, u_sampler, clamp(uv + offsetG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    var b = textureSampleLevel(readTexture, u_sampler, clamp(uv + offsetB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    
+    return vec3<f32>(r, g, b);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN ENTRY POINT
+// ═══════════════════════════════════════════════════════════════
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -146,34 +295,75 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     var mouse = u.zoom_config.yz;
     
-    // Parameters from sliders
-    let glitchIntensity = u.zoom_params.x;
-    let scanlineDensity = u.zoom_params.y * 100.0 + 20.0;
-    let colorShift = u.zoom_params.z * 0.05;
+    // ═══════════════════════════════════════════════════════════
+    //  PARAMETERS FROM SLIDERS (zoom_params)
+    //  x: Chroma subsampling mode (0=4:4:4, 1=4:2:2, 2=4:2:0, 3=4:1:1)
+    //  y: Glitch intensity per channel
+    //  z: Block size
+    //  w: Temporal glitch intensity
+    // ═══════════════════════════════════════════════════════════
+    
+    let chromaMode = i32(clamp(u.zoom_params.x * 3.0 + 0.5, 0.0, 3.0));
+    let glitchIntensity = u.zoom_params.y;
+    let blockSize = mix(2.0, 16.0, u.zoom_params.z);
+    let temporalIntensity = u.zoom_params.w;
     
     var p = uv;
     
-    // === LAYER 1: Mouse-reactive wave displacement ===
+    // === LAYER 1: Temporal glitch (datamoshing-like) ===
+    p = temporalGlitch(p, time, temporalIntensity, resolution);
+    
+    // === LAYER 2: Mouse-reactive wave displacement ===
     p = waveDisplace(p, mouse, time, glitchIntensity);
     
-    // === LAYER 2: Block glitch ===
+    // === LAYER 3: Block glitch ===
     let blockOffset = blockGlitch(p, time, glitchIntensity);
     p = p + blockOffset;
     
-    // === LAYER 3: Scanline glitch ===
+    // === LAYER 4: Scanline glitch ===
     let scanOffset = scanlineGlitch(p, time, glitchIntensity);
     p.x = p.x + scanOffset;
     
-    // === LAYER 4: Pixel sorting ===
+    // === LAYER 5: Pixel sorting ===
     p = pixelSort(p, time, glitchIntensity);
     
-    // === LAYER 5: Datamosh near mouse ===
+    // === LAYER 6: Datamosh near mouse ===
     p = datamosh(p, mouse, time, glitchIntensity);
     
-    // === SAMPLE WITH RGB SHIFT ===
-    var color = rgbShift(p, mouse, colorShift);
+    // === BASE COLOR SAMPLING ===
+    var baseColor = textureSampleLevel(readTexture, u_sampler, clamp(p, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    
+    // ═══════════════════════════════════════════════════════════
+    //  YUV CHROMA SUBSAMPLING
+    //  Apply digital video compression artifacts
+    // ═══════════════════════════════════════════════════════════
+    
+    var color = baseColor;
+    
+    if (chromaMode > 0) {
+        // Convert to YUV
+        let yuv = rgbToYuv(baseColor);
+        let luma = yuv.x;
+        
+        // Apply chroma subsampling
+        color = applyChromaSubsampling(p, resolution, chromaMode, blockSize, luma);
+        
+        // Apply DCT block artifacts
+        let dctIntensity = dctBlockArtifacts(p, resolution, glitchIntensity * 0.5, blockSize);
+        color = mix(color, baseColor, dctIntensity * 0.3);
+    }
+    
+    // === RGB SHIFT WITH PER-CHANNEL GLITCH ===
+    let colorShiftAmount = glitchIntensity * 0.05;
+    let rgbShifted = rgbShift(p, mouse, colorShiftAmount);
+    color = mix(color, rgbShifted, 0.7);
+    
+    // === PER-CHANNEL CHROMATIC ABERRATION ===
+    let chromaticColor = chromaticAberration(p, glitchIntensity, 0.02);
+    color = mix(color, chromaticColor, glitchIntensity * 0.5);
     
     // === ADD SCANLINES ===
+    let scanlineDensity = 20.0 + glitchIntensity * 100.0;
     let scanline = sin(uv.y * scanlineDensity + time * 2.0);
     let scanlinePattern = 0.9 + 0.1 * scanline;
     color = color * scanlinePattern;
@@ -182,7 +372,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noise = digitalNoise(uv, time);
     color = mix(color, vec3<f32>(noise), glitchIntensity * 0.1);
     
-    // === COLOR BANDING/POSTERIZATION ===
+    // === COLOR BANDING/POSTERIZATION (compression artifact) ===
     let bands = 8.0 + (1.0 - glitchIntensity) * 24.0;
     color = floor(color * bands) / bands;
     
@@ -208,6 +398,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let barShift = sin(time * 10.0) * glitchIntensity * 0.1;
         let barColor = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(barShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
         color = mix(color, barColor.rgb, 0.5);
+    }
+    
+    // === COLOR BLEEDING (chroma subsampling side effect) ===
+    if (chromaMode > 1) {
+        let bleedAmount = 0.01 * f32(chromaMode);
+        let leftColor = textureSampleLevel(readTexture, u_sampler, clamp(p - vec2<f32>(bleedAmount, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        let rightColor = textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(bleedAmount, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        
+        // Bleed red from left, blue from right (classic composite video artifact)
+        color.r = mix(color.r, leftColor.r, glitchIntensity * 0.3);
+        color.b = mix(color.b, rightColor.b, glitchIntensity * 0.3);
     }
     
     // === MOUSE GLOW ===
