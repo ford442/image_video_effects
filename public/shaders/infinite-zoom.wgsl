@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════
+//  Infinite Zoom with Möbius Transformations
+//  Category: distortion
+//  Features: mathematical, escher-like, hyperbolic geometry
+// 
+//  Möbius transformations: f(z) = (az + b) / (cz + d)
+//  Creates conformal mappings of the complex plane for
+//  infinite tessellations with self-similar patterns.
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -8,160 +18,274 @@
 struct Uniforms {
   config: vec4<f32>,        // time, unused, resolutionX, resolutionY
   zoom_config: vec4<f32>,  // zoomTime, zoomCenterX, zoomCenterY, depth_threshold
-  zoom_params: vec4<f32>,  // fg_speed, bg_speed, parallax_str, fog_density
-  lighting_params: vec4<f32>, // light_strength, ambient, normal_strength, fog_falloff
+  zoom_params: vec4<f32>,  // zoom_speed, param_a, rotation, iteration_depth
+  lighting_params: vec4<f32>, // light_strength, ambient, normal_strength, color_cycling
 };
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
 
+// ═══════════════════════════════════════════════════════════════
+// Complex Number Operations
+// ═══════════════════════════════════════════════════════════════
+
+fn complex_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(
+        a.x * b.x - a.y * b.y,
+        a.x * b.y + a.y * b.x
+    );
+}
+
+fn complex_div(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let denom = b.x * b.x + b.y * b.y;
+    return vec2<f32>(
+        (a.x * b.x + a.y * b.y) / denom,
+        (a.y * b.x - a.x * b.y) / denom
+    );
+}
+
+fn complex_conj(z: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(z.x, -z.y);
+}
+
+fn complex_abs(z: vec2<f32>) -> f32 {
+    return length(z);
+}
+
+fn complex_exp(z: vec2<f32>) -> vec2<f32> {
+    let exp_x = exp(z.x);
+    return vec2<f32>(exp_x * cos(z.y), exp_x * sin(z.y));
+}
+
+fn complex_log(z: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(log(length(z)), atan2(z.y, z.x));
+}
+
+fn complex_pow(z: vec2<f32>, n: f32) -> vec2<f32> {
+    let r = length(z);
+    let theta = atan2(z.y, z.x);
+    let rn = pow(r, n);
+    return vec2<f32>(rn * cos(n * theta), rn * sin(n * theta));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Möbius Transformation: f(z) = (az + b) / (cz + d)
+// where ad - bc ≠ 0 (determinant condition)
+// ═══════════════════════════════════════════════════════════════
+
+fn mobius_transform(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
+    let numerator = complex_mul(a, z) + b;
+    let denominator = complex_mul(c, z) + d;
+    return complex_div(numerator, denominator);
+}
+
+// Special Möbius: f(z) = e^(iθ) * (z - a) / (1 - ā*z)  [Disk automorphism]
+fn disk_mobius(z: vec2<f32>, a: vec2<f32>, theta: f32) -> vec2<f32> {
+    let rotation = vec2<f32>(cos(theta), sin(theta));
+    let numerator = z - a;
+    let a_conj = complex_conj(a);
+    let denominator = vec2<f32>(1.0, 0.0) - complex_mul(a_conj, z);
+    return complex_mul(rotation, complex_div(numerator, denominator));
+}
+
+// Hyperbolic rotation: f(z) = (z * cosh(t) + sinh(t)) / (z * sinh(t) + cosh(t))
+fn hyperbolic_mobius(z: vec2<f32>, t: f32) -> vec2<f32> {
+    let ch = cosh(t);
+    let sh = sinh(t);
+    let a = vec2<f32>(ch, 0.0);
+    let b = vec2<f32>(sh, 0.0);
+    let c = vec2<f32>(sh, 0.0);
+    let d = vec2<f32>(ch, 0.0);
+    return mobius_transform(z, a, b, c, d);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Modular Form Coloring
+// Uses lattice periodicity for elliptic curve inspired patterns
+// ═══════════════════════════════════════════════════════════════
+
+fn weierstrass_p_prime(z: vec2<f32>, g2: f32, g3: f32) -> vec2<f32> {
+    // Simplified derivative of Weierstrass elliptic function
+    // p'(z) ≈ -2/z^3 + O(z) for small z
+    let z2 = complex_mul(z, z);
+    let z3 = complex_mul(z2, z);
+    let inv_z3 = complex_div(vec2<f32>(1.0, 0.0), z3);
+    return -2.0 * inv_z3;
+}
+
+fn lattice_modular_value(z: vec2<f32>, omega1: vec2<f32>, omega2: vec2<f32>) -> vec2<f32> {
+    // Compute z mod lattice
+    // Find coefficients such that z = m*omega1 + n*omega2
+    let det = omega1.x * omega2.y - omega1.y * omega2.x;
+    let m = (z.x * omega2.y - z.y * omega2.x) / det;
+    let n = (omega1.x * z.y - omega1.y * z.x) / det;
+    
+    // Return fractional part in lattice coordinates
+    return vec2<f32>(fract(m), fract(n));
+}
+
+fn modular_j_invariant_approx(z: vec2<f32>) -> f32 {
+    // Simplified j-invariant inspired coloring
+    // Uses the fact that j(τ) has special values at tau = i, e^(iπ/3)
+    let x = z.x;
+    let y = z.y;
+    let r2 = x * x + y * y;
+    return 1728.0 * (4.0 * x * x * x - 3.0 * x * r2) / (r2 * r2 * r2 + 0.001);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Utility Functions
+// ═══════════════════════════════════════════════════════════════
+
 fn ping_pong(a: f32) -> f32 {
-  return 1.0 - abs(fract(a * 0.5) * 2.0 - 1.0);
+    return 1.0 - abs(fract(a * 0.5) * 2.0 - 1.0);
 }
 
-fn ping_pong_v2(v: vec2<f32>) -> vec2<f32> {
-  return vec2<f32>(ping_pong(v.x), ping_pong(v.y));
+fn hue_to_rgb(h: f32) -> vec3<f32> {
+    let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
+    let p = abs(fract(h + k) * 6.0 - 3.0);
+    return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// --- IMPROVEMENT 3: Normal Reconstruction ---
-// Reconstructs a surface normal from the depth texture by sampling neighbor pixels.
-fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
-    var resolution = u.config.zw;
-    let normal_strength = u.lighting_params.z;
-
-    let offset_x = vec2<f32>(1.0 / resolution.x, 0.0);
-    let offset_y = vec2<f32>(0.0, 1.0 / resolution.y);
-
-    // Sample depth at neighboring pixels
-    let depth_x1 = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - offset_x, 0.0).r;
-    let depth_x2 = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + offset_x, 0.0).r;
-    let depth_y1 = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - offset_y, 0.0).r;
-    let depth_y2 = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + offset_y, 0.0).r;
-
-    // Create two vectors on the surface plane.
-    // The Z component is scaled by normal_strength to control the "height" of the terrain.
-    let p_dx = vec3<f32>(offset_x.x * 2.0, 0.0, (depth_x2 - depth_x1) * normal_strength);
-    let p_dy = vec3<f32>(0.0, offset_y.y * 2.0, (depth_y2 - depth_y1) * normal_strength);
-
-    // The normal is the cross product of these two vectors.
-    // The direction is flipped to point "out" of the screen (towards the camera, positive Z).
-    let n = normalize(cross(p_dy, p_dx));
-
-    return n;
+fn hsb_to_rgb(h: f32, s: f32, b: f32) -> vec3<f32> {
+    let rgb = hue_to_rgb(h);
+    return b * mix(vec3<f32>(1.0), rgb, s);
 }
 
-// --- IMPROVEMENT 2: Atmospheric Fog ---
-// Calculates fog using a more physically-based exponential falloff.
-fn calculate_fog(depth: f32, color: vec3<f32>) -> vec3<f32> {
-    let fog_density = u.zoom_params.w;
-    let fog_falloff = u.lighting_params.w;
-    let fog_color = vec3<f32>(0.05, 0.1, 0.08);
+// ═══════════════════════════════════════════════════════════════
+// Infinite Zoom with Möbius Iteration
+// ═══════════════════════════════════════════════════════════════
 
-    // Exponential fog provides a more natural falloff.
-    // pow(depth, fog_falloff) makes the fog appear more suddenly in the distance.
-    let fog_factor = 1.0 - exp(-pow(depth, fog_falloff) * fog_density);
-
-    return mix(color, fog_color, clamp(fog_factor, 0.0, 1.0));
+fn apply_mobius_zoom(uv: vec2<f32>, zoom_time: f32) -> vec2<f32> {
+    let zoom_speed = u.zoom_params.x;
+    let param_a = u.zoom_params.y;
+    let rotation = u.zoom_params.z;
+    let max_iterations = i32(clamp(u.zoom_params.w * 10.0, 1.0, 20.0));
+    
+    // Convert UV to complex plane centered at origin
+    let z0 = (uv - 0.5) * 4.0; // Scale to [-2, 2] range
+    
+    // Time-based zoom cycle
+    let t = zoom_time * zoom_speed;
+    let cycle = fract(t);
+    let iteration = floor(t);
+    
+    // Möbius transformation coefficients
+    // Create interesting pattern with time-varying parameters
+    let theta = rotation + t * 0.5;
+    let a_param = mix(0.1, 0.9, ping_pong(param_a + cycle));
+    
+    // Complex coefficients for f(z) = (az + b) / (cz + d)
+    let a = vec2<f32>(cos(theta), sin(theta));  // |a| = 1
+    let b = vec2<f32>(a_param * cos(t * 0.7), a_param * sin(t * 0.7));
+    let c = complex_conj(b);  // For unit disk preservation
+    let d = complex_conj(a);
+    
+    // Iterative Möbius transformation
+    var z = z0;
+    var accumulated_scale = 1.0;
+    
+    for (var i: i32 = 0; i < max_iterations; i = i + 1) {
+        // Apply Möbius transformation
+        z = mobius_transform(z, a, b, c, d);
+        
+        // Add hyperbolic rotation component
+        let hyper_t = 0.3 * sin(t + f32(i));
+        z = hyperbolic_mobius(z, hyper_t);
+        
+        // Accumulate scaling factor
+        accumulated_scale = accumulated_scale * (1.0 + 0.1 * sin(t * 2.0 + f32(i)));
+        
+        // Escape condition if diverging
+        if (complex_abs(z) > 10.0) {
+            z = z * 0.1;
+            break;
+        }
+    }
+    
+    // Apply zoom scaling
+    let zoom_scale = 1.0 + cycle * 3.0;
+    z = z / zoom_scale;
+    
+    // Convert back to UV space
+    var result = z / 4.0 + 0.5;
+    
+    // Wrap using modular arithmetic for infinite effect
+    result = fract(result);
+    
+    return result;
 }
 
-// samples a transformed UV for both color and depth
-fn sample_layer(uv: vec2<f32>, zoom_time: f32, zoom_center: vec2<f32>) -> vec4<f32> {
-  let transformed_uv = (uv - zoom_center) * zoom_time + zoom_center;
-  let wrapped_uv = ping_pong_v2(transformed_uv);
+// ═══════════════════════════════════════════════════════════════
+// Color Cycling Based on Iteration Depth
+// ═══════════════════════════════════════════════════════════════
 
-  let color = textureSampleLevel(readTexture, non_filtering_sampler, wrapped_uv, 0.0);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;
-
-  return vec4(color.rgb, depth);
+fn calculate_mobius_color(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
+    let zoom_speed = u.zoom_params.x;
+    let param_a = u.zoom_params.y;
+    let rotation = u.zoom_params.z;
+    let color_cycling = u.lighting_params.w;
+    
+    let t = zoom_time * zoom_speed;
+    
+    // Transform UV through Möbius iteration
+    let transformed_uv = apply_mobius_zoom(uv, zoom_time);
+    
+    // Sample texture at transformed location
+    let tex_color = textureSampleLevel(readTexture, non_filtering_sampler, transformed_uv, 0.0);
+    
+    // Modular form coloring
+    let z = (transformed_uv - 0.5) * 4.0;
+    
+    // Lattice periodicity
+    let omega1 = vec2<f32>(1.0, 0.0);
+    let omega2 = vec2<f32>(0.5, 0.866025); // 60 degree angle for hexagonal lattice
+    let lattice_coord = lattice_modular_value(z, omega1, omega2);
+    
+    // j-invariant inspired hue
+    let j_val = modular_j_invariant_approx(z * 0.5);
+    let hue = fract(abs(j_val) * 0.001 + t * color_cycling + length(lattice_coord));
+    
+    // Saturation based on distance from lattice points
+    let dist_from_lattice = length(lattice_coord - 0.5);
+    let sat = 0.5 + 0.5 * (1.0 - dist_from_lattice);
+    
+    // Brightness from texture luminance
+    let luminance = dot(tex_color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let brightness = mix(0.3, 1.0, luminance);
+    
+    let hsb_color = hsb_to_rgb(hue, sat * 0.8, brightness);
+    
+    // Blend between texture and HSB color based on parameter
+    let blend_factor = ping_pong(param_a + 0.3);
+    let final_rgb = mix(tex_color.rgb, hsb_color, blend_factor);
+    
+    return vec4<f32>(final_rgb, tex_color.a);
 }
 
-// Calculate the depth of the foreground layer for a given screen UV.
-fn get_fg_depth_at(uv: vec2<f32>, zoom_center: vec2<f32>, scale: f32) -> f32 {
-    var transformed_uv = (uv - zoom_center) / scale + zoom_center;
-    var wrapped_uv = ping_pong_v2(transformed_uv);
-    return textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;
-}
+// ═══════════════════════════════════════════════════════════════
+// Main Shader Entry
+// ═══════════════════════════════════════════════════════════════
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  var resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let zoom_time = u.zoom_config.x;
-  let zoom_center = u.zoom_config.yz;
-
-  // --- Foreground layer (zooming towards camera) ---
-  let fg_speed = u.zoom_params.x;
-  let zoom_progress = fract(zoom_time * fg_speed);
-  let scale = 1.0 + zoom_progress * 4.0; // zoom_intensity = 4.0
-
-  var transformed_uv = (uv - zoom_center) / scale + zoom_center;
-  var wrapped_uv = ping_pong_v2(transformed_uv);
-
-  var fg_color = textureSampleLevel(readTexture, non_filtering_sampler, wrapped_uv, 0.0);
-  let fg_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped_uv, 0.0).r;
-
-  // --- Background layer (the next image zooming in from the center) ---
-  let bg_speed = u.zoom_params.y;
-  let next_zoom_progress = fract(zoom_time * bg_speed + 0.5); // use offset
-  let next_scale = 1.0 + next_zoom_progress * 4.0;
-
-  let next_transformed_uv = (uv - zoom_center) / next_scale + zoom_center;
-  let next_wrapped_uv = ping_pong_v2(next_transformed_uv);
-
-  let bg_color = textureSampleLevel(readTexture, non_filtering_sampler, next_wrapped_uv, 0.0);
-
-  // --- IMPROVEMENT 1: Gradient-Based Anti-Aliasing for Depth Cutout ---
-  // Instead of alpha blending fullscreen layers, we cut a "hole" in the foreground
-  // to reveal the background, and anti-alias the edge of this hole.
-  let depth_threshold = u.zoom_config.w;
-  let dist = fg_depth - depth_threshold;
-
-  // Manual gradient calculation since dpdx/dpdy are not available in compute shaders
-  let pixel_size = 1.0 / resolution;
-  let dist_x = get_fg_depth_at(uv + vec2(pixel_size.x, 0.0), zoom_center, scale) - depth_threshold;
-  let dist_y = get_fg_depth_at(uv + vec2(0.0, pixel_size.y), zoom_center, scale) - depth_threshold;
-
-  let gradient = length(vec2(dist_x - dist, dist_y - dist));
-
-  // Create a smooth transition across the edge based on its screen-space sharpness.
-  // The '2.0' is a softness factor you can tune.
-  let edge_alpha = smoothstep(-gradient * 2.0, gradient * 2.0, dist);
-
-  var final_color = mix(bg_color, fg_color, edge_alpha);
-
-  // --- IMPROVEMENT 3: Dynamic Lighting ---
-  let light_strength = u.lighting_params.x;
-  let ambient = u.lighting_params.y;
-
-  // Reconstruct surface normal from the final, combined depth map.
-  // We use the depth of whichever layer is visible.
-  let final_depth = mix(
-      textureSampleLevel(readDepthTexture, non_filtering_sampler, next_wrapped_uv, 0.0).r,
-      fg_depth,
-      edge_alpha
-  );
-  let normal = reconstruct_normal(uv, final_depth);
-
-  // Create a moving light source (sun) that orbits.
-  let light_angle = zoom_time * 0.5;
-  let light_pos = vec3<f32>(cos(light_angle), sin(light_angle), -1.5); // Behind camera
-
-  // Calculate Lambertian diffuse lighting
-  let surface_pos = vec3<f32>(uv.x, uv.y, final_depth);
-  let light_dir = normalize(light_pos - surface_pos);
-  let diffuse = max(dot(normal, light_dir), 0.0);
-
-  // Apply lighting: ambient + diffuse
-  let lighting = ambient + diffuse * light_strength;
-  final_color = vec4<f32>(final_color.rgb * lighting, final_color.a);
-
-  // --- IMPROVEMENT 2: Apply Atmospheric Fog ---
-  // Fog is applied after lighting.
-  final_color = vec4<f32>(calculate_fog(final_depth, final_color.rgb), final_color.a);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_color.rgb, 1.0));
-
-  // --- Depth Texture Update ---
-  // Write the final, combined depth value to the output depth texture.
-  // This ensures the depth feedback loop matches the color feedback loop.
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(final_depth, 0.0, 0.0, 0.0));
+    let resolution = u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let zoom_time = u.zoom_config.x;
+    
+    // Apply Möbius infinite zoom with modular form coloring
+    let color = calculate_mobius_color(uv, zoom_time);
+    
+    // Add depth variation based on zoom cycle
+    let t = zoom_time * u.zoom_params.x;
+    let cycle = fract(t);
+    let depth_variation = 0.5 + 0.5 * sin(cycle * 6.28318);
+    
+    // Sample depth from transformed position
+    let transformed_uv = apply_mobius_zoom(uv, zoom_time);
+    let base_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, transformed_uv, 0.0).r;
+    let final_depth = mix(base_depth, depth_variation, 0.2);
+    
+    // Store results
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(final_depth, 0.0, 0.0, 0.0));
 }
