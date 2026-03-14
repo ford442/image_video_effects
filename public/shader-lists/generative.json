@@ -523,6 +523,65 @@
     ]
   },
   {
+    "id": "gen-chromatic-metamorphosis",
+    "name": "Chromatic Metamorphosis",
+    "url": "shaders/gen-chromatic-metamorphosis.wgsl",
+    "category": "generative",
+    "description": "Metaballs morph continuously between sphere, torus, box, and capsule shapes via smooth-min SDF blending. Surface color evolves independently from geometry in flowing waves.",
+    "tags": [
+      "metamorphosis",
+      "morphing",
+      "sdf",
+      "raymarching",
+      "color",
+      "organic",
+      "generative",
+      "3d"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Morph Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Speed of shape transformation cycle."
+      },
+      {
+        "id": "param2",
+        "name": "Color Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Speed at which surface color evolves independently of geometry."
+      },
+      {
+        "id": "param3",
+        "name": "Blend Radius",
+        "min": 0,
+        "max": 1,
+        "default": 0.35,
+        "step": 0.01,
+        "description": "Smooth-min radius for SDF blending between shapes."
+      },
+      {
+        "id": "param4",
+        "name": "Light Intensity",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Intensity of the key light illuminating the morphing form."
+      }
+    ]
+  },
+  {
     "id": "gen-chronos-labyrinth",
     "name": "Chronos Labyrinth",
     "url": "shaders/gen-chronos-labyrinth.wgsl",
@@ -911,6 +970,65 @@
     ]
   },
   {
+    "id": "gen-gravitational-strain",
+    "name": "Gravitational Strain Field",
+    "url": "shaders/gen-gravitational-strain.wgsl",
+    "category": "generative",
+    "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide — dark matter visualization as art.",
+    "tags": [
+      "gravity",
+      "lensing",
+      "space",
+      "physics",
+      "stars",
+      "dark-matter",
+      "generative",
+      "simulation"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Well Count",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Number of gravity wells (maps to 1–6)."
+      },
+      {
+        "id": "param2",
+        "name": "Well Mass",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Mass of each gravity well — controls bending strength."
+      },
+      {
+        "id": "param3",
+        "name": "Bend Strength",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Overall geodesic deflection amplitude."
+      },
+      {
+        "id": "param4",
+        "name": "Emission Scale",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Brightness of tidal emission at field gradient maxima."
+      }
+    ]
+  },
+  {
     "id": "gen-holographic-data-core",
     "name": "Holographic Data Core",
     "url": "shaders/gen-holographic-data-core.wgsl",
@@ -1011,6 +1129,123 @@
         "default": 0.5,
         "min": 0,
         "max": 1
+      }
+    ]
+  },
+  {
+    "id": "gen-hyperbolic-tessellation",
+    "name": "Hyperbolic Tessellation Engine",
+    "url": "shaders/gen-hyperbolic-tessellation.wgsl",
+    "category": "generative",
+    "description": "Non-Euclidean Poincaré-disk tessellation in real-time. Hyperbolic tiles subdivide infinitely toward the boundary disk, colored by recursive depth — M.C. Escher meets fractals.",
+    "tags": [
+      "hyperbolic",
+      "tessellation",
+      "fractal",
+      "non-euclidean",
+      "escher",
+      "geometric",
+      "generative"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Tile Symmetry",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Number of sides in the fundamental tile (maps to p=3–8)."
+      },
+      {
+        "id": "param2",
+        "name": "Depth Color",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "step": 0.01,
+        "description": "Hue offset for depth-based coloring."
+      },
+      {
+        "id": "param3",
+        "name": "Rotation Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Speed and direction of the global hyperbolic rotation."
+      },
+      {
+        "id": "param4",
+        "name": "Boundary Glow",
+        "min": 0,
+        "max": 1,
+        "default": 0.7,
+        "step": 0.01,
+        "description": "Brightness of the glow near the Poincaré disk boundary."
+      }
+    ]
+  },
+  {
+    "id": "gen-inverse-mandelbrot",
+    "name": "Inverse Mandelbrot Realm",
+    "url": "shaders/gen-inverse-mandelbrot.wgsl",
+    "category": "generative",
+    "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields.",
+    "tags": [
+      "mandelbrot",
+      "fractal",
+      "color-space",
+      "iteration",
+      "alien",
+      "abstract",
+      "generative",
+      "complex"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Iterations",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Maximum iteration count (maps to 20–80)."
+      },
+      {
+        "id": "param2",
+        "name": "Color Zoom",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.01,
+        "description": "Zoom level into the color-space fractal."
+      },
+      {
+        "id": "param3",
+        "name": "Colormap Rotate",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "step": 0.01,
+        "description": "Global hue rotation of the colormap."
+      },
+      {
+        "id": "param4",
+        "name": "Bailout Radius",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.01,
+        "description": "Escape radius — lower values create more intricate boundaries."
       }
     ]
   },
@@ -1426,6 +1661,65 @@
         "default": 0.6,
         "min": 0,
         "max": 1
+      }
+    ]
+  },
+  {
+    "id": "gen-quantum-superposition",
+    "name": "Quantum Superposition Lattice",
+    "url": "shaders/gen-quantum-superposition.wgsl",
+    "category": "generative",
+    "description": "Particles exist in quantum superposition — visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
+    "tags": [
+      "quantum",
+      "superposition",
+      "particles",
+      "wavefunction",
+      "probability",
+      "physics",
+      "generative",
+      "abstract"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Particle Count",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Number of quantum particles (maps to 1–8)."
+      },
+      {
+        "id": "param2",
+        "name": "Decoherence",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.01,
+        "description": "Wave-function spread (decoherence / Gaussian sigma)."
+      },
+      {
+        "id": "param3",
+        "name": "Wave Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.35,
+        "step": 0.01,
+        "description": "Oscillation frequency of the quantum wave functions."
+      },
+      {
+        "id": "param4",
+        "name": "Color Mode",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "step": 1,
+        "description": "0=per-particle spectrum, 1=time-evolving hue."
       }
     ]
   },
