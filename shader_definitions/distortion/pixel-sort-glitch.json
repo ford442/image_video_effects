@@ -6,40 +6,47 @@
   "features": [
     "mouse-driven"
   ],
-  "description": "Directional pixel sorting/smearing based on luma threshold. Mouse Y adjusts threshold.",
+  "description": "Edge-aware pixel sorting glitch with threshold masking. Creates melting pixels that flow along detected edges. Features horizontal, vertical, and angular sorting directions with adjustable window size and edge influence.",
   "params": [
     {
-      "id": "direction",
-      "name": "Direction (H/V)",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
       "id": "threshold",
-      "name": "Luma Threshold",
+      "name": "Brightness Threshold",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Pixels brighter than this threshold will be sorted; darks are protected"
     },
     {
-      "id": "strength",
-      "name": "Smear Strength",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "blockSize",
-      "name": "Block Size",
+      "id": "direction",
+      "name": "Sorting Direction",
       "default": 0.0,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "labels": ["Horizontal", "Vertical", "Angular/Edge"]
+    },
+    {
+      "id": "windowSize",
+      "name": "Sort Window Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Size of the local window for sorting (1-32 pixels)"
+    },
+    {
+      "id": "edgeInfluence",
+      "name": "Edge Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "How much detected edges affect sorting direction and flow"
     }
   ],
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "transform",
+    "glitch",
+    "edge",
+    "sort"
   ]
 }
