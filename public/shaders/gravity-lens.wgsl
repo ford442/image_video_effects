@@ -1,4 +1,20 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Gravity Lens - Schwarzschild & Kerr Metric Gravitational Lensing
+//  Category: distortion
+//  
+//  Scientific Implementation:
+//  - Schwarzschild metric for non-spinning black holes
+//  - Einstein ring formation when source aligns with lens
+//  - Kerr metric approximation for frame-dragging effects
+//  - Ray-tracing approach for realistic light bending
+//
+//  Parameters (zoom_params):
+//    x: Mass (GM/c²) - Controls lensing strength
+//    y: Einstein radius scale - Adjusts the Einstein ring size
+//    z: Spin (0-1) - Kerr angular momentum parameter (frame dragging)
+//    w: Accretion disk brightness
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,20 +22,226 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic
+  zoom_params: vec4<f32>,  // x=Mass, y=EinsteinScale, z=Spin, w=DiskBrightness
   ripples: array<vec4<f32>, 50>,
 };
+
+// Constants for physics calculations
+const PI: f32 = 3.14159265359;
+const SCHWARZSCHILD_FACTOR: f32 = 4.0; // 4GM/c² factor in deflection formula
+
+// Texture sampling with bilinear interpolation for smoother results
+fn sampleSmooth(uv: vec2<f32>) -> vec3<f32> {
+    return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+}
+
+// Schwarzschild lens equation: calculates deflection angle
+// α = 4GM/(c² * b) where b is the impact parameter
+// Returns the deflection angle in radians
+fn schwarzschildDeflection(r: f32, mass: f32) -> f32 {
+    // r is the distance from the lens center (impact parameter)
+    // Avoid division by zero with small epsilon
+    let safeR = max(r, 0.0001);
+    return SCHWARZSCHILD_FACTOR * mass / safeR;
+}
+
+// Calculate Einstein radius: θ_E = √(4GM/c² * D_ls/(D_l*D_s))
+// For our shader, we simplify with the mass parameter controlling this
+fn einsteinRadius(mass: f32, scale: f32) -> f32 {
+    return sqrt(mass * scale * 0.5);
+}
+
+// Kerr metric frame dragging effect (simplified)
+// Adds azimuthal displacement based on spin parameter
+fn kerrFrameDragging(
+    pos: vec2<f32>,
+    massCenter: vec2<f32>,
+    spin: f32,
+    r: f32
+) -> vec2<f32> {
+    if (spin < 0.001) {
+        return vec2<f32>(0.0);
+    }
+    
+    // Calculate angle from center
+    let angle = atan2(pos.y - massCenter.y, pos.x - massCenter.x);
+    
+    // Frame dragging strength falls off as 1/r³ (simplified Kerr)
+    // Innermost stable circular orbit (ISCO) effect
+    let iscoRadius = 6.0 * mass * (1.0 + spin * 0.5); // Approximate ISCO
+    let safeR = max(r, iscoRadius * 0.1);
+    
+    // Azimuthal shift proportional to spin and 1/r²
+    let dragStrength = spin * 0.02 / (safeR * safeR + 0.001);
+    let dragAngle = angle + dragStrength;
+    
+    // Convert back to offset
+    let offsetR = dragStrength * r;
+    return vec2<f32>(
+        -offsetR * sin(angle),
+        offsetR * cos(angle)
+    );
+}
+
+// Ray tracing approach: trace ray backward from observer through lens
+// Returns the UV coordinate in the source plane
+fn traceRaySchwarzschild(
+    observerUV: vec2<f32>,
+    massCenter: vec2<f32>,
+    mass: f32,
+    aspect: f32
+) -> vec2<f32> {
+    // Convert to physical coordinates (account for aspect ratio)
+    let obsPhys = vec2<f32>(
+        (observerUV.x - massCenter.x) * aspect,
+        observerUV.y - massCenter.y
+    );
+    
+    // Distance from lens center (impact parameter)
+    let r = length(obsPhys);
+    let safeR = max(r, 0.0001);
+    
+    // Schwarzschild deflection angle
+    let deflection = schwarzschildDeflection(safeR, mass);
+    
+    // The ray arrives at the observer from angle θ + α (deflection)
+    // We need to find where it originated: θ_source = θ_observed - α
+    let angle = atan2(obsPhys.y, obsPhys.x);
+    let sourceAngle = angle - deflection;
+    
+    // The source is at the same distance r but different angle
+    let sourcePhys = vec2<f32>(
+        safeR * cos(sourceAngle),
+        safeR * sin(sourceAngle)
+    );
+    
+    // Convert back to UV space
+    return vec2<f32>(
+        massCenter.x + sourcePhys.x / aspect,
+        massCenter.y + sourcePhys.y
+    );
+}
+
+// Einstein ring detection and enhancement
+// Returns intensity boost for the ring region
+fn einsteinRingIntensity(
+    uv: vec2<f32>,
+    massCenter: vec2<f32>,
+    mass: f32,
+    scale: f32,
+    aspect: f32
+) -> f32 {
+    // Calculate Einstein radius
+    let thetaE = einsteinRadius(mass, scale);
+    
+    // Physical distance from center
+    let dVec = vec2<f32>((uv.x - massCenter.x) * aspect, uv.y - massCenter.y);
+    let r = length(dVec);
+    
+    // Ring forms at Einstein radius when source is directly behind lens
+    let ringWidth = thetaE * 0.15;
+    let distFromRing = abs(r - thetaE);
+    
+    // Gaussian intensity profile for the ring
+    if (distFromRing < ringWidth * 2.0) {
+        return exp(-distFromRing * distFromRing / (ringWidth * ringWidth)) * 0.5;
+    }
+    return 0.0;
+}
+
+// Generate photon ring (light orbiting the black hole)
+// This creates a thin bright ring just outside the photon sphere
+fn photonRingIntensity(
+    uv: vec2<f32>,
+    massCenter: vec2<f32>,
+    mass: f32,
+    aspect: f32
+) -> f32 {
+    // Photon sphere radius = 3GM/c² (for Schwarzschild)
+    let photonSphereRadius = 3.0 * mass;
+    
+    let dVec = vec2<f32>((uv.x - massCenter.x) * aspect, uv.y - massCenter.y);
+    let r = length(dVec);
+    
+    // Very thin ring with sharp falloff
+    let ringWidth = mass * 0.05;
+    let distFromRing = abs(r - photonSphereRadius * 0.001); // Scale for UV space
+    
+    if (distFromRing < ringWidth) {
+        let t = distFromRing / ringWidth;
+        return exp(-t * t * 8.0) * 2.0;
+    }
+    return 0.0;
+}
+
+// Accretion disk visualization
+fn accretionDisk(
+    uv: vec2<f32>,
+    massCenter: vec2<f32>,
+    mass: f32,
+    spin: f32,
+    brightness: f32,
+    aspect: f32,
+    time: f32
+) -> vec3<f32> {
+    let dVec = vec2<f32>((uv.x - massCenter.x) * aspect, uv.y - massCenter.y);
+    let r = length(dVec);
+    
+    // Inner edge of accretion disk (ISCO - Innermost Stable Circular Orbit)
+    // For Schwarzschild: 6M, for Kerr prograde: 1M (extremal)
+    let iscoInner = mass * (6.0 - spin * 4.0); 
+    let iscoOuter = mass * 20.0;
+    
+    // Scale to UV space
+    let innerEdge = iscoInner * 0.001;
+    let outerEdge = iscoOuter * 0.001;
+    
+    if (r < innerEdge || r > outerEdge) {
+        return vec3<f32>(0.0);
+    }
+    
+    // Distance from inner edge
+    let t = (r - innerEdge) / (outerEdge - innerEdge);
+    
+    // Temperature profile: T ~ r^(-3/4) for standard disk
+    let temp = pow(1.0 - t * 0.8, 2.0);
+    
+    // Doppler beaming effect (brighter on approaching side)
+    let angle = atan2(dVec.y, dVec.x);
+    let doppler = 1.0 + spin * 0.3 * sin(angle + time * 0.5);
+    
+    // Color based on temperature (blackbody approximation)
+    // Hotter = bluer/whiter, Coolter = redder
+    let hotColor = vec3<f32>(1.0, 0.9, 0.8);
+    let coolColor = vec3<f32>(1.0, 0.4, 0.1);
+    let diskColor = mix(coolColor, hotColor, temp);
+    
+    // Intensity falloff
+    let intensity = temp * temp * temp * temp * brightness * doppler;
+    
+    // Edge falloff
+    let edgeFade = smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.8, 1.0, t));
+    
+    return diskColor * intensity * edgeFade * 3.0;
+}
+
+// Chromatic aberration due to gravitational redshift (artistic)
+fn gravitationalRedshift(uv: vec2<f32>, mass: f32, massCenter: vec2<f32>, aspect: f32) -> f32 {
+    let dVec = vec2<f32>((uv.x - massCenter.x) * aspect, uv.y - massCenter.y);
+    let r = length(dVec);
+    // Redshift increases closer to the mass
+    return 1.0 / sqrt(1.0 - mass / (r * 1000.0 + mass));
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -27,95 +249,94 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-
-    // Mouse Config
-    var mouse = u.zoom_config.yz;
-    let hasMouse = u.zoom_config.y >= 0.0;
-
-    // Params
-    let mass = u.zoom_params.x; // 0..1 Strength of distortion
-    let horizonRadius = u.zoom_params.y * 0.2; // 0..0.2 Black hole size
-    let diskIntensity = u.zoom_params.z; // 0..1 Glow at edge
-    let aberration = u.zoom_params.w; // 0..1 Chromatic aberration
-
-    // Default center if no mouse
-    var center = select(vec2<f32>(0.5, 0.5), mouse, hasMouse);
-
-    // Calculate vector from pixel to center
-    let dVec = uv - center;
-    // Correct distance for aspect ratio (physical distance on screen)
-    let dVecAspect = vec2<f32>(dVec.x * aspect, dVec.y);
-    let dist = length(dVecAspect);
-
-    // Avoid division by zero
-    let safeDist = max(dist, 0.001);
-
-    // Lens Equation Approximation
-    // Light is bent towards the mass.
-    // The observer sees light coming from an angle further OUT than the source.
-    // So we sample from a position closer IN to the mass.
-    // Offset magnitude scales with 1/r (approx for weak field) or 1/r^2 closer?
-    // Einstein radius logic implies offset ~ 1/r.
-
-    // Effect Strength
-    let strength = mass * 0.08; // Increased from 0.05
-
-    // Calculate Offset Factor (scalar)
-    // We apply this to dVec (UV space vector) to maintain circularity on screen.
-    // Factor = Strength / PhysicalDistance^2 (for 1/r^2 falloff force)
-    // Or Strength / PhysicalDistance (for 1/r deflection angle)
-    // Let's use 1/r for smoother, wider reaching distortion.
-
-    let factor = strength / (safeDist + 0.01); // Add epsilon to prevent explosion at 0
-
-    // Apply distortion
-    let offset = dVec * factor;
-
-    // Chromatic Aberration: Different wavelengths bend differently
-    let abr = 1.0 + aberration * 0.5;
-
-    // Sample Coordinates
-    // Red bends least? Blue most?
-    // Usually blue (short wavelength) refracts more.
-    // Gravity is achromatic (equivalence principle), but we are making ART.
-
-    let uvR = uv - offset * 1.0;
-    let uvG = uv - offset * (1.0 + aberration * 0.1);
-    let uvB = uv - offset * (1.0 + aberration * 0.2);
-
-    var color = vec4<f32>(0.0);
-
-    // Event Horizon (Black Hole)
+    let time = u.config.x;
+    
+    // Parameters
+    let mass = max(u.zoom_params.x * 0.3, 0.001); // GM/c², scaled for UV space
+    let einsteinScale = u.zoom_params.y; // Einstein radius scaling
+    let spin = clamp(u.zoom_params.z, 0.0, 0.99); // Kerr spin parameter
+    let diskBrightness = u.zoom_params.w;
+    
+    // Lens center (mouse position or center of screen)
+    let hasMouse = u.zoom_config.y >= 0.0 && u.zoom_config.z >= 0.0;
+    var lensCenter = select(vec2<f32>(0.5, 0.5), u.zoom_config.yz, hasMouse);
+    
+    // Schwarzschild radius (event horizon)
+    let rs = 2.0 * mass; // Schwarzschild radius
+    let horizonRadius = rs * 0.001; // Scale to UV space
+    
+    // Distance from lens center (physical)
+    let dVec = vec2<f32>((uv.x - lensCenter.x) * aspect, uv.y - lensCenter.y);
+    let dist = length(dVec);
+    
+    var color = vec3<f32>(0.0);
+    var alpha = 1.0;
+    
+    // Event horizon (black hole itself)
     if (dist < horizonRadius) {
-        color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+        color = vec3<f32>(0.0);
+        alpha = 1.0;
     } else {
-        // Sample texture with clamping to avoid edge streaks
-        let r = textureSampleLevel(readTexture, u_sampler, clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-        let g = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-        let b = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-        color = vec4<f32>(r, g, b, 1.0);
-
-        // Accretion Disk / Photon Ring (Glow at the edge of horizon)
-        // Only visible just outside the horizon
-        let edgeWidth = 0.02 + horizonRadius * 0.1;
-        if (dist > horizonRadius && dist < horizonRadius + edgeWidth) {
-            let t = (dist - horizonRadius) / edgeWidth; // 0 at horizon, 1 at outer edge
-            // Intensity decay
-            let glow = exp(-t * 5.0) * diskIntensity * 3.0;
-
-            // Fire colors (Orange/Red/Blue)
-            let glowColor = vec3<f32>(1.0, 0.5, 0.1) * glow;
-
-            // Additive blending
-            color = vec4<f32>(color.rgb + glowColor, 1.0);
+        // Ray trace backward to find source position
+        let sourceUV = traceRaySchwarzschild(uv, lensCenter, mass, aspect);
+        
+        // Apply Kerr frame dragging
+        let kerrOffset = kerrFrameDragging(uv, lensCenter, spin, dist);
+        let finalUV = sourceUV + kerrOffset;
+        
+        // Gravitational redshift factor
+        let redshift = gravitationalRedshift(uv, mass, lensCenter, aspect);
+        
+        // Sample with chromatic aberration (gravitational dispersion)
+        // Different "colors" experience slightly different effective mass
+        let dispersionR = 1.0;
+        let dispersionG = 0.98;
+        let dispersionB = 0.96;
+        
+        let uvR = lensCenter + (finalUV - lensCenter) * dispersionR;
+        let uvG = lensCenter + (finalUV - lensCenter) * dispersionG;
+        let uvB = lensCenter + (finalUV - lensCenter) * dispersionB;
+        
+        let r = sampleSmooth(uvR).r;
+        let g = sampleSmooth(uvG).g;
+        let b = sampleSmooth(uvB).b;
+        
+        color = vec3<f32>(r, g, b);
+        
+        // Apply subtle gravitational redshift near the horizon
+        let redshiftFactor = smoothstep(horizonRadius * 3.0, horizonRadius, dist);
+        color.r = mix(color.r, color.r * 1.1, redshiftFactor); // Redder near horizon
+        color.b = mix(color.b, color.b * 0.9, redshiftFactor); // Less blue near horizon
+        
+        // Einstein ring enhancement
+        let ringBoost = einsteinRingIntensity(uv, lensCenter, mass, einsteinScale, aspect);
+        color = color * (1.0 + ringBoost);
+        
+        // Photon ring (for high mass values)
+        if (mass > 0.05) {
+            let photonBoost = photonRingIntensity(uv, lensCenter, mass, aspect);
+            let photonColor = vec3<f32>(1.0, 0.95, 0.8) * photonBoost * mass * 10.0;
+            color = color + photonColor;
         }
+        
+        // Accretion disk
+        if (diskBrightness > 0.0) {
+            let diskColor = accretionDisk(uv, lensCenter, mass, spin, diskBrightness, aspect, time);
+            color = color + diskColor;
+        }
+        
+        // Intensity boost near the lens (magnification)
+        let magnification = 1.0 + mass / (dist + 0.01);
+        color = color * min(magnification, 2.0);
     }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    
+    // Output
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(10.0)), alpha));
+    
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
