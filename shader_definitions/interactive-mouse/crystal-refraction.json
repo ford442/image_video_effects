@@ -3,43 +3,53 @@
   "name": "Crystal Refraction",
   "url": "shaders/crystal-refraction.wgsl",
   "category": "image",
-  "description": "Interactive faceted crystal lens simulation with chromatic aberration and mouse-driven refraction.",
+  "description": "Interactive faceted crystal lens with physical light transmission. Features IOR-based chromatic dispersion, Fresnel reflection at edges, and variable crystal thickness affecting light path.",
   "params": [
     {
       "id": "facetScale",
-      "name": "Facet Scale",
+      "name": "Facet Count",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Number of crystal facets around mouse"
     },
     {
       "id": "dispersion",
-      "name": "Dispersion",
-      "default": 0.05,
+      "name": "IOR / Dispersion",
+      "default": 0.4,
       "min": 0.0,
-      "max": 0.1
+      "max": 1.0,
+      "description": "Refractive index affecting chromatic dispersion: Quartz to Diamond"
     },
     {
       "id": "strength",
-      "name": "Refraction",
+      "name": "Refraction Strength",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Amount of lens distortion"
     },
     {
-      "id": "smoothness",
-      "name": "Smoothness",
-      "default": 0.3,
+      "id": "thickness",
+      "name": "Crystal Thickness",
+      "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Physical thickness affecting light transmission and absorption"
     }
   ],
   "features": [
     "mouse-driven",
-    "chromatic-aberration"
+    "alpha-transmission",
+    "chromatic-aberration",
+    "physical-refraction"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "crystal",
+    "lens",
+    "refraction",
+    "dispersion",
+    "transmission",
+    "fresnel"
   ]
 }
