@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════
+//  Fluffy Raincloud with Rain - Volumetric Alpha Upgrade
+//  Category: generative
+//  Features: mouse-driven, simulation
+//  
+//  Volumetric Implementation:
+//  - Cloud density → optical depth → alpha
+//  - Beer-Lambert transmittance for realistic cloud edges
+//  - Rain rendered as participating medium
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,8 +23,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Fluffy Raincloud with Rain
-// Move mouse to position cloud, click for heavier rain
+// Scientific extinction coefficients for volumetric rendering
+const EXTINCTION_CLOUD: f32 = 2.5;      // Cloud scattering/absorption
+const EXTINCTION_RAIN: f32 = 0.8;       // Rain droplet extinction
+const STEP_SIZE: f32 = 0.02;            // Ray step through medium
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -37,7 +50,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cloud_size = 0.15;
 
     // Main cloud body
-    // Inverted smoothstep for safety
     let main_cloud = 1.0 - smoothstep(cloud_size * 0.7, cloud_size, dist);
 
     // Animated puffs for fluffiness
@@ -50,6 +62,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let puff3_d = distance(uv, mouse + vec2<f32>(sin(time * 0.6) * 0.02, cos(time * 0.5) * 0.04));
     let puff3 = 1.0 - smoothstep(cloud_size * 0.4, cloud_size * 0.7, puff3_d);
 
+    // Combine cloud densities with soft maximum for volumetric feel
     cloud_density = max(main_cloud, max(puff1, max(puff2, puff3))) * (0.5 + mouse_down * 0.5);
 
     // Rain emission from cloud
@@ -77,22 +90,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    // Visualize
-    var color = vec3<f32>(0.0);
-
-    // Sky gradient (light blue to white)
-    color = mix(vec3<f32>(0.5, 0.7, 0.95), vec3<f32>(0.9, 0.95, 1.0), uv.y);
-
+    // ═══════════════════════════════════════════════════════════════
+    //  Volumetric Light Transport
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Calculate optical depth for cloud and rain
+    // τ = ∫ σ_t ds (integrated over ray path, approximated here)
+    let cloud_optical_depth = cloud_density * STEP_SIZE * EXTINCTION_CLOUD;
+    let rain_optical_depth = rain_density * STEP_SIZE * EXTINCTION_RAIN;
+    
+    // Total optical depth
+    let total_optical_depth = cloud_optical_depth + rain_optical_depth;
+    
+    // Transmittance: T = exp(-τ)
+    let transmittance = exp(-total_optical_depth);
+    
+    // Alpha from Beer-Lambert: alpha = 1 - T
+    let final_alpha = 1.0 - transmittance;
+    
+    // Sky gradient (light blue to white) - background color
+    let sky_color = mix(vec3<f32>(0.5, 0.7, 0.95), vec3<f32>(0.9, 0.95, 1.0), uv.y);
+    
+    // In-scattered light calculation
     // Rain (bright blue-white)
     let rain_intensity = rain_density * (1.0 + abs(rain_vel.y) * 2.0);
     let rain_color = vec3<f32>(0.8, 0.9, 1.0) * rain_intensity * 2.0;
-    color = mix(color, rain_color, min(1.0, rain_intensity));
-
+    
     // Cloud (white with gray shadow)
     let cloud_brightness = smoothstep(0.0, 0.4, cloud_density);
     let cloud_color = mix(vec3<f32>(0.4, 0.4, 0.45), vec3<f32>(1.0, 1.0, 1.0), cloud_brightness);
-    color = mix(color, cloud_color, cloud_density);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    
+    // Combine in-scattered light
+    var in_scattered = vec3<f32>(0.0);
+    in_scattered += rain_color * (1.0 - exp(-rain_optical_depth)); // Rain contribution
+    in_scattered += cloud_color * (1.0 - exp(-cloud_optical_depth)); // Cloud contribution
+    
+    // Final volumetric compositing
+    // Output RGBA where:
+    // - RGB = in-scattered light (emissive + scattered)
+    // - A = accumulated opacity from density
+    let final_color = in_scattered;
+    
+    // Store state and output
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, final_alpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(rain_vel, rain_density, cloud_density));
 }

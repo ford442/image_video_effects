@@ -1,4 +1,9 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+// Glass Bead Curtain - Physical glass transmission with Beer-Lambert law
+// Category: distortion
+// Features: mouse-driven, refraction, physically-based alpha
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +17,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -34,14 +38,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bead_size = mix(10.0, 100.0, u.zoom_params.x);
     let refraction_str = u.zoom_params.y;
     let tension = u.zoom_params.z;
+    let glass_density = u.zoom_params.w * 2.0 + 0.5; // Beer-Lambert density factor
 
     // Mouse Interaction
-    // We displace the UVs used for the grid lookup to simulate the curtain opening
-
-    // Correct mouse position for aspect ratio for distance calculation
     let aspect = resolution.x / resolution.y;
     var center = mouse;
-    if (center.x < 0.0) { center = vec2<f32>(0.5, 0.5); } // Default center if no mouse
+    if (center.x < 0.0) { center = vec2<f32>(0.5, 0.5); }
 
     let dist_vec = (uv - center) * vec2<f32>(aspect, 1.0);
     let dist = length(dist_vec);
@@ -49,55 +51,69 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Repel force
     let repel_radius = 0.3;
     let interact = smoothstep(repel_radius, 0.0, dist);
-
-    // Displacement direction: away from mouse
-    // Scale by tension
     let disp = normalize(dist_vec) * interact * tension * 0.2;
-
-    // So active_uv = uv - disp.
     let active_uv = uv - vec2<f32>(disp.x / aspect, disp.y);
 
-    // Now grid logic on active_uv
+    // Grid logic on active_uv
     let px_active = active_uv * resolution;
-    let cell_uv = fract(px_active / bead_size) - 0.5; // -0.5 to 0.5
-
-    // Circular mask for bead
-    // We use cell_uv directly which is proportional to bead size
-    // cell_uv runs from -0.5 to 0.5
+    let cell_uv = fract(px_active / bead_size) - 0.5;
     let r = length(cell_uv);
 
     var final_uv = active_uv;
-    var alpha = 1.0;
+    var transmission = 1.0; // Alpha for Beer-Lambert transmission
+    var glass_thickness = 0.0;
 
     if (r < 0.5) {
-        // Inside bead: Refract
-        // Sphere height z
-        var z = sqrt(0.25 - r*r);
-        // Normal of sphere
-        var normal = normalize(vec3<f32>(cell_uv, z));
+        // Inside bead: Calculate sphere normal and thickness
+        let z = sqrt(0.25 - r*r);
+        let normal = normalize(vec3<f32>(cell_uv, z));
+        
+        // Glass thickness through sphere at this point (path length)
+        // For a sphere: thickness = 2 * z at entry point
+        glass_thickness = 2.0 * z;
 
-        // Refraction vector (simplified)
-        // Offset UV based on xy normal
+        // Refraction offset
         final_uv = active_uv - normal.xy * refraction_str * 0.5;
+        
+        // View direction (straight on for now)
+        let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+        
+        // Fresnel: more reflection at glancing angles
+        // Schlick's approximation: R = R0 + (1-R0)*(1-cos(theta))^5
+        let cos_theta = abs(dot(viewDir, normal));
+        let R0 = 0.04; // Fresnel reflectance at normal incidence (glass-air)
+        let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
+        
+        // Beer-Lambert law: I = I0 * exp(-absorption * thickness * density)
+        // Glass absorption coefficient (wavelength-dependent, simplified here)
+        let glass_color = vec3<f32>(0.95, 0.98, 1.0); // Slight blue tint
+        let absorption = exp(-(1.0 - glass_color) * glass_thickness * glass_density);
+        
+        // Transmission coefficient combines fresnel reflection and absorption
+        transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
     } else {
-        // Gap
-        // Dim the gaps
-        final_uv = active_uv;
-        alpha = 0.0; // Transparent/Black gaps
+        // Gap - fully transparent, no glass
+        transmission = 0.0;
     }
 
+    // Sample with transmission alpha
     var color = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
-
-    // Apply alpha to darken gaps
-    color = color * alpha;
-
-    // Add simple specular highlight on beads
+    
+    // Apply glass tint and absorption
     if (r < 0.5) {
+        // Apply Beer-Lambert absorption to RGB
+        let glass_tint = vec3<f32>(0.95, 0.98, 1.0);
+        color = vec4<f32>(color.rgb * glass_tint, transmission);
+        
+        // Add specular highlight on beads
         let light_dir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
-        var z = sqrt(0.25 - r*r);
-        var normal = normalize(vec3<f32>(cell_uv, z));
+        let z = sqrt(max(0.0, 0.25 - r*r));
+        let normal = normalize(vec3<f32>(cell_uv, z));
         let spec = pow(max(dot(normal, light_dir), 0.0), 20.0);
         color = color + vec4<f32>(spec * 0.5);
+    } else {
+        // Gap - transparent, show background
+        color = vec4<f32>(color.rgb, 0.0);
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);

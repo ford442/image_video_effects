@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════
+// Glass Wall - Physical glass transmission with Beer-Lambert law
+// Category: distortion
+// Features: refraction, chromatic aberration, physically-based alpha
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
@@ -26,90 +32,93 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var uv = vec2<f32>(gid.xy) / dims;
     let aspect = dims.x / dims.y;
-    var mouse = u.zoom_config.yz; // Mouse coordinates (0..1)
+    var mouse = u.zoom_config.yz;
     let time = u.config.x;
 
     // Grid configuration
-    let gridSize = 20.0; // Number of bricks across Y
+    let gridSize = 20.0;
     let scale = vec2<f32>(gridSize * aspect, gridSize);
 
     let cellID = floor(uv * scale);
-    let cellUV = fract(uv * scale); // 0..1 inside the cell
+    let cellUV = fract(uv * scale);
 
     // Cell Center in UV space
     let cellCenter = (cellID + 0.5) / scale;
 
     // Interaction Vector
-    // Fix aspect ratio for distance calculation
     let aspectVec = vec2<f32>(aspect, 1.0);
     let vecToMouse = (mouse - cellCenter) * aspectVec;
     let dist = length(vecToMouse);
 
-    // Interaction Strength (Radius)
+    // Interaction Strength
     let radius = 0.5;
     let influence = smoothstep(radius, 0.0, dist);
 
-    // Calculate simulated normal
-    // Base normal is Z-up (0,0,1). Mouse tilts it.
-    // We tilt the "brick" towards the mouse (or away).
-    // Let's make it tilt towards the mouse as if pressed down at the mouse position.
-
+    // Calculate tilt based on mouse interaction
     var tilt = vec2<f32>(0.0);
     if (dist > 0.001) {
         tilt = normalize(vecToMouse) * influence;
     }
 
-    // Refraction Offset
-    // Bevel edges of the brick for 3D look
+    // Bevel edges for 3D look
     let bevelX = smoothstep(0.0, 0.1, cellUV.x) * (1.0 - smoothstep(0.9, 1.0, cellUV.x));
     let bevelY = smoothstep(0.0, 0.1, cellUV.y) * (1.0 - smoothstep(0.9, 1.0, cellUV.y));
     let bevel = bevelX * bevelY;
 
-    // Determine displacement
-    // Displacement logic: we sample the texture at a different location.
-    // If the glass is tilted, the ray bends.
-    // Simple 2D approx: offset UV by the tilt vector.
+    // Refraction displacement
     let refractionStrength = 0.05;
     let offset = tilt * refractionStrength;
-
-    // Add slight bevel distortion to make it look like thick glass
     let bevelDistort = (vec2<f32>(0.5) - cellUV) * 0.02 * (1.0 - bevel);
 
     let finalUV = uv + offset + bevelDistort;
 
-    // Chromatic Aberration (Dispersion)
-    let caStrength = 0.01 * influence + 0.005; // More CA when tilted
+    // Calculate normal for fresnel effect
+    let normal = normalize(vec3<f32>(tilt * 2.0 + (vec2<f32>(0.5)-cellUV)*0.5, 1.0));
+    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+    
+    // Glass physical properties (parameter via zoom_params.w)
+    let glassDensity = u.zoom_params.w * 2.0 + 0.5;
+    
+    // Fresnel reflection
+    let cos_theta = max(dot(viewDir, normal), 0.0);
+    let R0 = 0.04;
+    let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
+    
+    // Glass thickness varies with tilt and bevel
+    let thickness = 0.05 + (1.0 - bevel) * 0.1 + length(tilt) * 0.05;
+    
+    // Glass color (slight blue tint)
+    let glassColor = vec3<f32>(0.93, 0.96, 1.0);
+    
+    // Beer-Lambert absorption
+    let absorption = exp(-(1.0 - glassColor) * thickness * glassDensity);
+    
+    // Transmission coefficient
+    let transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
+
+    // Chromatic Aberration with transmission-aware sampling
+    let caStrength = 0.01 * influence + 0.005;
 
     let r = textureSampleLevel(videoTex, videoSampler, finalUV + tilt * caStrength, 0.0).r;
     let g = textureSampleLevel(videoTex, videoSampler, finalUV, 0.0).g;
     let b = textureSampleLevel(videoTex, videoSampler, finalUV - tilt * caStrength, 0.0).b;
 
-    var color = vec3<f32>(r, g, b);
+    var color = vec4<f32>(r * glassColor.r, g * glassColor.g, b * glassColor.b, transmission);
 
     // Specular Highlight
-    // Pretend light source is at the mouse, or fixed.
-    // Let's have a moving light source (mouse).
-    // Normal estimation:
-    // Flat surface (0,0,1) + Tilt (x,y,0)
-    let normal = normalize(vec3<f32>(tilt * 2.0 + (vec2<f32>(0.5)-cellUV)*0.5, 1.0)); // Fake normal mixing tilt and bevel
-    let lightDir = normalize(vec3<f32>(vecToMouse, 0.5)); // Light is above the mouse
-
+    let lightDir = normalize(vec3<f32>(vecToMouse, 0.5));
     let spec = pow(max(dot(normal, lightDir), 0.0), 16.0) * influence;
+    color = color + vec4<f32>(spec * 0.8);
 
-    // Add grid lines (mortar)
+    // Add grid lines (mortar) - less transparent
     let mortar = smoothstep(0.0, 0.05, cellUV.x) * smoothstep(1.0, 0.95, cellUV.x) *
                  smoothstep(0.0, 0.05, cellUV.y) * smoothstep(1.0, 0.95, cellUV.y);
 
-    // Darken mortar
-    color = color * (0.2 + 0.8 * mortar);
+    // Darken mortar with reduced transmission
+    let mortarTransmission = transmission * 0.3;
+    color = mix(vec4<f32>(color.rgb * 0.2, mortarTransmission), color, mortar);
 
-    // Add specular
-    color += spec * 0.8;
-
-    // Debug: visualize cells
-    // color += vec3(cellUV, 0.0) * 0.1;
-
-    textureStore(outTex, gid.xy, vec4<f32>(color, 1.0));
+    textureStore(outTex, gid.xy, color);
 
     // Pass through depth
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;

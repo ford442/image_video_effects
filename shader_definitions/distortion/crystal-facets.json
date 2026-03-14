@@ -3,43 +3,52 @@
   "name": "Crystal Facets",
   "category": "distortion",
   "url": "shaders/crystal-facets.wgsl",
-  "description": "Simulates a radial cut crystal or diamond lens. The image is split into angular facets that refract light differently based on mouse interaction.",
+  "description": "Physical crystal refraction with light transmission. Simulates radial-cut crystal with proper Fresnel reflection, internal scattering from fractures, and chromatic dispersion based on refractive index.",
   "params": [
     {
       "name": "Facet Count",
       "id": "zoomParam1",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Number of crystal facets (3-16)"
     },
     {
-      "name": "Refraction",
+      "name": "Refractive Index",
       "id": "zoomParam2",
-      "default": 0.3,
+      "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "IOR mix: Glass (1.5) to Diamond (2.42)"
     },
     {
-      "name": "Rotation",
+      "name": "Fracture Density",
       "id": "zoomParam3",
-      "default": 0.1,
+      "default": 0.2,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Internal fractures reduce transmission (0=pure, 1=heavily fractured)"
     },
     {
-      "name": "Center Zoom",
+      "name": "Crystal Thickness",
       "id": "zoomParam4",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Physical thickness affecting light path and absorption"
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "alpha-transmission",
+    "physical-refraction"
   ],
   "tags": [
-    "warp",
-    "distort",
-    "transform"
+    "crystal",
+    "refraction",
+    "transmission",
+    "fresnel",
+    "dispersion",
+    "physical"
   ]
 }
