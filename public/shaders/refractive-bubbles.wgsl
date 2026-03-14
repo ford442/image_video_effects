@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════
+// Refractive Bubbles - Physical glass transmission with Beer-Lambert law
+// Category: distortion
+// Features: bubble refraction, specular highlights, physically-based alpha
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -30,17 +36,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let refrStrength = u.zoom_params.y * 0.2;
     let count = i32(u.zoom_params.z * 15.0) + 1;
     let wobble = u.zoom_params.w;
+    let glassDensity = 0.8 + u.zoom_params.w * 1.5; // Beer-Lambert density
 
     let aspect = resolution.x / resolution.y;
 
     var finalUV = uv;
     var inBubble = false;
-    var normal = vec2<f32>(0.0);
+    var bubbleNormal = vec3<f32>(0.0, 0.0, 1.0);
+    var bubbleDepth = 0.0;
+    var bubbleThickness = 0.0;
 
     for (var i = 0; i < count; i++) {
         let fi = f32(i);
         // Orbit around mouse
-        // Add some complexity to orbits so they aren't all lines
         let angle = time * (wobble + 0.1) * (fi * 0.5 + 1.0) + fi * 137.5;
         let radius = 0.05 + fi * 0.03;
 
@@ -55,34 +63,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = length(dVec);
 
         if (d < size) {
-            // Simple sphere normal approximation (Z component)
+            // Sphere normal approximation
             let z = sqrt(max(0.0, size*size - d*d));
-
-            // XY Normal component
             let nXY = dVec / size;
-            normal = nXY;
-
+            bubbleNormal = normalize(vec3<f32>(nXY, z / size));
+            bubbleDepth = z;
+            
             // Refract: displace UV based on normal
-            // Scale by Z to fake lens thickness
             finalUV = uv - nXY * refrStrength * (z / size);
             inBubble = true;
-            // Break? No, bubbles might overlap, let's take the last one or blend?
-            // Simple overwrite for now.
+            
+            // Calculate bubble wall thickness (thin film approximation)
+            // Bubbles have thin walls, thicker near edges
+            bubbleThickness = 0.01 + (d / size) * 0.02;
         }
     }
 
     var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
     if (inBubble) {
+        // View direction
+        let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+        
+        // Fresnel effect (strong at bubble edges)
+        let cos_theta = max(dot(viewDir, bubbleNormal), 0.0);
+        let R0 = 0.04; // Glass-air
+        let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
+        
+        // Thin-film interference would go here for soap bubbles
+        // For glass bubbles, use Beer-Lambert
+        
+        // Bubble glass color (very slight tint)
+        let bubbleColor = vec3<f32>(0.96, 0.98, 1.0);
+        
+        // Beer-Lambert for thin glass
+        let absorption = exp(-(1.0 - bubbleColor) * bubbleThickness * glassDensity);
+        
+        // Transmission coefficient
+        let transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
+        
+        // Apply bubble tint and alpha
+        color = vec4<f32>(color.rgb * bubbleColor, transmission);
+        
         // Add specular highlight
-        let lightDir = normalize(vec2<f32>(-0.5, -0.5));
-        let specBase = max(dot(normal, lightDir), 0.0);
+        let lightDir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
+        let specBase = max(dot(bubbleNormal, lightDir), 0.0);
         let spec = pow(specBase, 15.0);
         color = color + vec4<f32>(spec, spec, spec, 0.0) * 0.8;
 
-        // Fresnel edge
-        let fresnel = pow(length(normal), 3.0);
-        color = mix(color, vec4<f32>(0.8, 0.9, 1.0, 1.0), fresnel * 0.3);
+        // Fresnel edge enhancement
+        let fresnelEdge = pow(length(bubbleNormal.xy), 3.0);
+        color = mix(color, vec4<f32>(0.8, 0.9, 1.0, 1.0), fresnelEdge * 0.3);
+    } else {
+        // Outside bubble - fully transparent
+        color = vec4<f32>(color.rgb, 1.0);
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);

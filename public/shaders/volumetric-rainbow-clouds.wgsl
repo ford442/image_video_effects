@@ -1,4 +1,20 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Volumetric Rainbow Clouds - PASS 1 of 2 with Scientific Alpha
+//  Generates 3D noise clouds with volumetric density, lighting, and 
+//  depth-aware rainbow coloring for prismatic effects.
+//  
+//  Volumetric Implementation:
+//  - Layered 3D density sampling for optical depth
+//  - Beer-Lambert extinction for each cloud layer
+//  - Accumulated alpha from multiple scattering layers
+//  
+//  Outputs:
+//    - writeTexture: Rainbow-colored clouds with RGBA
+//    - writeDepthTexture: Cloud optical depth and depth information
+//  
+//  Next Pass: prismatic-3d-compositor.wgsl
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,19 +28,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-// ═══════════════════════════════════════════════════════════════
-//  Volumetric Rainbow Clouds - PASS 1 of 2
-//  Generates 3D noise clouds with normals, lighting, and 
-//  depth-aware rainbow coloring for volumetric prismatic effects.
-//  
-//  Outputs:
-//    - writeTexture: Rainbow-colored clouds with lighting
-//    - writeDepthTexture: Cloud density and depth information
-//  
-//  Next Pass: prismatic-3d-compositor.wgsl
-// ═══════════════════════════════════════════════════════════════
 
 struct Uniforms {
   config: vec4<f32>,
@@ -33,11 +36,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Mapping notes:
-// u.zoom_config.yz -> mouse X,Y (in pixels)
-// u.zoom_config.w -> cameraZ (mouse.w)
-// u.zoom_params.x/y/z/w -> cloud_params: scale, flowSpeed, density, lightIntensity
-// depth_params are packed into extraBuffer[0..3] if needed (fogStart, fogEnd, parallaxStrength, metallic)
+// Volumetric constants for rainbow clouds
+const SIGMA_T_CLOUD: f32 = 1.8;         // Cloud extinction
+const SIGMA_S_CLOUD: f32 = 1.6;         // High scattering albedo
+const LAYER_THICKNESS: f32 = 0.5;       // Thickness of each cloud layer
 
 fn hash3d(p: vec3<f32>) -> f32 {
     var p3 = fract(p * 0.1031);
@@ -90,23 +92,53 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let perspective = 1.0 + cameraZ;
     let perspUV = center + delta / perspective;
 
-    var cloudDensity = 0.0;
+    // ═══════════════════════════════════════════════════════════════
+    //  Volumetric Cloud Layer Sampling
+    //  Sample multiple depth layers and accumulate optical depth
+    // ═══════════════════════════════════════════════════════════════
+    
+    var totalOpticalDepth = 0.0;
+    var accumulatedColor = vec3<f32>(0.0);
+    var transmittance = 1.0;
     var normal = vec3<f32>(0.0, 0.0, 1.0);
 
-    // Sample multiple depth layers to approximate 3D
-    for (var layer: i32 = 0; layer < 3; layer = layer + 1) {
-        let layerZ = f32(layer) * 0.5 + time * flowSpeed * 0.1;
+    // Sample multiple depth layers to approximate 3D volumetric integration
+    let numLayers = 3;
+    for (var layer: i32 = 0; layer < numLayers; layer = layer + 1) {
+        let layerZ = f32(layer) * LAYER_THICKNESS + time * flowSpeed * 0.1;
         let noisePos = vec3<f32>(perspUV * scale, layerZ);
         let noise = fbm3d(noisePos);
-        cloudDensity = cloudDensity + abs(noise) * (1.0 - f32(layer) * 0.3);
+        
+        // Layer density with falloff
+        let layerWeight = 1.0 - f32(layer) * 0.3;
+        let layerDensity = abs(noise) * layerWeight * densityParam * 2.0;
+        
+        // Calculate optical depth for this layer
+        let layerOpticalDepth = layerDensity * LAYER_THICKNESS * SIGMA_T_CLOUD;
+        totalOpticalDepth += layerOpticalDepth;
+        
+        // Transmittance through this layer
+        let layerTransmittance = exp(-layerOpticalDepth);
+        
+        // Rainbow color for this layer based on position and time
+        let hue = fract(atan2(noisePos.y, noisePos.x) / (2.0 * 3.14159) + time * 0.1 + f32(layer) * 0.1);
+        let layerColor = hsv2rgb(fract(hue), 0.9, 1.0) * layerDensity * SIGMA_S_CLOUD;
+        
+        // Accumulate in-scattered light
+        accumulatedColor += transmittance * layerColor * (1.0 - layerTransmittance);
+        
+        // Update transmittance
+        transmittance *= layerTransmittance;
 
+        // Normal calculation for lighting
         let eps = 0.01;
         let dx = fbm3d(noisePos + vec3<f32>(eps, 0.0, 0.0)) - noise;
         let dy = fbm3d(noisePos + vec3<f32>(0.0, eps, 0.0)) - noise;
-        normal = normal + normalize(vec3<f32>(dx, dy, eps * 2.0)) * (1.0 - f32(layer) * 0.3);
+        normal = normal + normalize(vec3<f32>(dx, dy, eps * 2.0)) * layerWeight;
     }
 
-    cloudDensity = smoothstep(0.0, densityParam * 2.0, cloudDensity);
+    // Final cloud density from accumulated optical depth
+    let cloudDensity = 1.0 - exp(-totalOpticalDepth);
     normal = normalize(normal);
 
     // Lighting from mouse as light source
@@ -123,7 +155,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hue = (atan2(normal.y, normal.x) + time * 0.5) / (2.0 * 3.14159);
     let rainbow = hsv2rgb(fract(hue), 0.9, 1.0);
 
+    // Combine lighting with volumetric color
     let litColor = rainbow * (diffuse + 0.3) + vec3<f32>(1.0,1.0,1.0) * specular;
+    
+    // Blend volumetric accumulated color with lit color
+    let finalColor = mix(accumulatedColor, litColor * cloudDensity, 0.5);
 
     // Depth-based fog parameters
     let fogStart = 0.5;
@@ -131,8 +167,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = length(viewPos) + cloudDensity;
     let fogFactor = smoothstep(fogStart, fogEnd, depth);
     let fogColor = vec3<f32>(0.1, 0.0, 0.2);
-    let finalColor = mix(litColor, fogColor, fogFactor);
+    let finalWithFog = mix(finalColor, fogColor, fogFactor);
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // ═══════════════════════════════════════════════════════════════
+    //  Volumetric Alpha Output
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Alpha from total optical depth (Beer-Lambert)
+    let finalAlpha = 1.0 - exp(-totalOpticalDepth);
+    
+    // Output RGBA
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalWithFog, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, totalOpticalDepth, 0.0, finalAlpha));
 }

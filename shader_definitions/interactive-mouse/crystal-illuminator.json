@@ -3,9 +3,11 @@
   "name": "Crystal Illuminator",
   "url": "shaders/crystal-illuminator.wgsl",
   "category": "interactive",
-  "description": "Faceted glass surface with interactive mouse lighting.",
+  "description": "Faceted glass/gemstone surface with physical light transmission. Features Voronoi-based facets with mouse-controlled lighting, Fresnel reflection, and purity-based scattering for realistic crystal appearance.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "alpha-transmission",
+    "physical-refraction"
   ],
   "params": [
     {
@@ -14,15 +16,17 @@
       "type": "float",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Size of Voronoi crystal facets"
     },
     {
-      "id": "refraction",
-      "name": "Refraction",
+      "id": "ior",
+      "name": "Refractive Index",
       "type": "float",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "IOR: Quartz (1.54) to Diamond (2.42)"
     },
     {
       "id": "light_intensity",
@@ -30,19 +34,26 @@
       "type": "float",
       "default": 0.6,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Mouse light brightness"
     },
     {
-      "id": "facet_curvature",
-      "name": "Facet Curvature",
+      "id": "purity",
+      "name": "Crystal Purity",
       "type": "float",
-      "default": 0.2,
+      "default": 0.8,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "description": "Crystal clarity: Pure transmits more, impure scatters more"
     }
   ],
   "tags": [
-    "mouse-driven",
-    "interactive"
+    "crystal",
+    "gemstone",
+    "transmission",
+    "fresnel",
+    "voronoi",
+    "physical",
+    "mouse-driven"
   ]
 }

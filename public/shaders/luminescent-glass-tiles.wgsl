@@ -1,4 +1,9 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+// Luminescent Glass Tiles - Physical glass transmission with Beer-Lambert law
+// Category: distortion
+// Features: luma-driven distortion, mouse influence, physically-based alpha
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +17,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -20,12 +24,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-
-// Luminescent Glass Tiles
-// Param1: Grid Density
-// Param2: Refraction Strength
-// Param3: Mouse Influence Radius
-// Param4: Mouse Chaos/Turbulence
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -41,11 +39,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let refractStr = u.zoom_params.y * 0.5;
     let radius = max(u.zoom_params.z, 0.01);
     let turbulence = u.zoom_params.w;
+    let glassDensity = 1.0 + turbulence * 1.5; // Beer-Lambert density
 
     // Grid calculations
     let gridUV = uv * vec2<f32>(density * aspect, density);
     let cellID = floor(gridUV);
-    let cellUV = fract(gridUV); // 0..1 within cell
+    let cellUV = fract(gridUV);
 
     // Find center of cell in global UV space
     let cellCenterGrid = cellID + vec2<f32>(0.5);
@@ -61,19 +60,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseFactor = smoothstep(radius, 0.0, dist);
 
     // Distortion logic
-    // 'Bulge' effect based on luma: brighter = more magnification (smaller field of view)
-    // 0.5 is center of cell.
     var distUV = cellUV - 0.5;
-
-    // Scale the cell content.
-    // If scale < 1.0, we zoom in (bulge). If scale > 1.0, we zoom out (shrink).
-    // Let's make bright cells zoom in.
     var scale = 1.0 - (luma * refractStr * 2.0);
 
     // Add mouse turbulence
     if (mouseFactor > 0.0) {
         scale = scale * (1.0 - mouseFactor * turbulence);
-        // Maybe rotate too?
         let angle = mouseFactor * turbulence * 3.14;
         let s = sin(angle);
         let c = cos(angle);
@@ -81,28 +73,57 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     distUV = distUV * scale;
-    distUV = distUV + 0.5; // Back to 0..1
-
-    // Clamp to keep inside cell? Or allow bleed?
-    // Glass tiles usually clamp or repeat.
-    // Let's clamp to create distinct tiles.
-    // But we need to map back to global UV.
+    distUV = distUV + 0.5;
 
     // Reconstruct Global UV from distorted Cell UV
-    // Global = (CellID + DistortedCellUV) / Density
     let finalUV = (cellID + distUV) / vec2<f32>(density * aspect, density);
 
-    // Optional: Add a border
+    // Border distance
     let border = max(abs(distUV.x - 0.5), abs(distUV.y - 0.5));
+    
+    // Glass normal from distortion
+    let distortionVec = (finalUV - uv) * density;
+    let normal = normalize(vec3<f32>(-distortionVec * 2.0, 1.0));
+    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+    
+    // Fresnel effect
+    let cos_theta = max(dot(viewDir, normal), 0.0);
+    let R0 = 0.04;
+    let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
+    
+    // Glass thickness varies with scale and border
+    let tileThickness = 0.05 + (1.0 - scale) * 0.1;
+    let edgeThickness = smoothstep(0.4, 0.5, border) * 0.05;
+    let thickness = tileThickness + edgeThickness;
+    
+    // Luminescent glass color - shifts with luma
+    let baseGlassColor = vec3<f32>(0.92, 0.96, 1.0);
+    let luminescentTint = vec3<f32>(0.8 + luma * 0.4, 0.9 + luma * 0.2, 1.0);
+    let glassColor = mix(baseGlassColor, luminescentTint, luma * 0.5);
+    
+    // Beer-Lambert absorption
+    let absorption = exp(-(1.0 - glassColor) * thickness * glassDensity);
+    
+    // Transmission coefficient
+    var transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
+    
+    // Border reduces transmission (more opaque edges)
+    transmission = mix(transmission * 0.6, transmission, 1.0 - smoothstep(0.45, 0.48, border));
+
     var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    // Darken edges of tiles
+    // Darken edges of tiles with adjusted alpha
     if (border > 0.45) {
         color = color * 0.5;
+        transmission = transmission * 0.5;
     }
 
-    // Highlight based on luma (glass glow)
-    color = color + vec4<f32>(luma * 0.2 * mouseFactor, luma * 0.2 * mouseFactor, luma * 0.2 * mouseFactor, 0.0);
+    // Apply glass tint and transmission
+    color = vec4<f32>(color.rgb * glassColor, transmission);
+
+    // Highlight based on luma (glass glow) - adds to transmission
+    let glow = luma * 0.2 * mouseFactor;
+    color = color + vec4<f32>(glow, glow, glow, glow * 0.5);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

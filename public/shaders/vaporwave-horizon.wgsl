@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Vaporwave Horizon - Volumetric Alpha Upgrade
+//  
+//  Scientific Implementation:
+//  - Distance-based fog with optical depth
+//  - Atmospheric perspective using Beer-Lambert law
+//  - Grid rendered as emissive surface with volumetric fog overlay
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +20,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=Ripples, z=ResX, w=ResY
@@ -20,6 +27,15 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // Params
   ripples: array<vec4<f32>, 50>,
 };
+
+// Atmospheric extinction coefficients
+const SIGMA_T_ATMOSPHERE: f32 = 0.6;    // Atmospheric extinction
+const SIGMA_T_FOG: f32 = 1.2;           // Purple fog extinction
+
+// Pseudo-random hash
+fn hash(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -37,77 +53,103 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warp_amt = u.zoom_params.w;   // Curvature of grid/sky
 
     // Mouse Interaction
-    // Mouse Y sets horizon (inverted, so mouse up = higher horizon / more floor)
-    // Let's map mouse Y (0 top, 1 bottom) directly.
     let mouse_y = u.zoom_config.z;
     let horizon = mouse_y;
-
-    // Mouse X creates a curve/bend in the road
     let mouse_x = u.zoom_config.y;
     let curve = (mouse_x - 0.5) * 4.0 * warp_amt;
 
     var final_color = vec3<f32>(0.0, 0.0, 0.0);
+    var alpha = 0.0;
 
     if (uv.y < horizon) {
-        // Sky (The Image)
-        // Map UV y from [0, horizon] to [0, 1]?
-        // Or just show the top part of image? Let's squash the image to fit the sky area.
+        // ═══════════════════════════════════════════════════════════════
+        //  SKY (The Image) with Volumetric Sunset Haze
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Map UV y from [0, horizon] to [0, 1]
         let sky_uv_y = uv.y / max(horizon, 0.01);
         var sky_uv = vec2<f32>(uv.x, sky_uv_y);
 
-        // Add subtle sunset gradient
-        let gradient = smoothstep(0.0, 1.0, sky_uv_y);
-        let sunset_color = vec3<f32>(0.8, 0.2, 0.5); // Pinkish
-
+        // Sample source image
         let img_color = textureSampleLevel(readTexture, u_sampler, sky_uv, 0.0).rgb;
-        final_color = mix(img_color, sunset_color, gradient * 0.3 * glow_intensity);
+        
+        // Sunset gradient (volumetric scattering simulation)
+        let gradient = smoothstep(0.0, 1.0, sky_uv_y);
+        let sunset_color = vec3<f32>(0.8, 0.2, 0.5); // Pink/magenta sunset
+        
+        // Atmospheric optical depth (more haze near horizon)
+        let heightFactor = 1.0 - sky_uv_y;
+        let opticalDepth = heightFactor * 0.5 * SIGMA_T_ATMOSPHERE;
+        let transmittance = exp(-opticalDepth);
+        
+        // Blend image with sunset haze
+        final_color = mix(img_color * transmittance, sunset_color, gradient * 0.3 * glow_intensity * (1.0 - transmittance));
+        
+        // Sky alpha (slightly transparent to blend with potential background)
+        alpha = 0.95;
 
     } else {
-        // Floor (The Grid)
+        // ═══════════════════════════════════════════════════════════════
+        //  FLOOR (The Grid) with Volumetric Distance Fog
+        // ═══════════════════════════════════════════════════════════════
+        
         // Perspective projection
         let dy = uv.y - horizon;
-
-        // Avoid division by zero close to horizon
-        let z_depth = 1.0 / max(dy, 0.001);
+        let z_depth = 1.0 / max(dy, 0.001); // Distance from camera
 
         // Apply curve
-        let x_offset = curve * dy * dy; // Curve increases with distance (actually curve should affect far away more?)
-        // Standard "road" curve logic: x += curve * z
-
+        let x_offset = curve * dy * dy;
         let grid_u = (uv.x - 0.5 - x_offset) * z_depth * (0.5 + grid_scale) + 0.5;
         let grid_v = z_depth * (0.5 + grid_scale) + u.config.x * grid_speed;
 
         // Draw Grid Lines
-        let line_width = 0.05 * z_depth; // Lines get thicker closer to camera? No, perspective makes them thinner in screen space usually?
-        // Actually, constant width in UV space means thinner in screen space at horizon.
-
         let grid_x = abs(fract(grid_u) - 0.5);
         let grid_y = abs(fract(grid_v) - 0.5);
-
         let line_mask = step(0.45, grid_x) + step(0.45, grid_y);
         let grid_val = clamp(line_mask, 0.0, 1.0);
 
         // Reflection of Sky/Image
-        // Sample image at mirrored Y
-        let refl_y = horizon - dy; // Simple mirror
-        let refl_uv = vec2<f32>(uv.x, clamp(refl_y, 0.0, 1.0)); // Clamp
+        let refl_y = horizon - dy;
+        let refl_uv = vec2<f32>(uv.x, clamp(refl_y, 0.0, 1.0));
         let refl_color = textureSampleLevel(readTexture, u_sampler, refl_uv, 0.0).rgb;
 
-        // Grid Color (Cyan/Magenta)
-        let grid_col = vec3<f32>(0.0, 1.0, 1.0) * grid_val * glow_intensity * 2.0; // Cyan grid
+        // Grid Color (Cyan/Magenta vaporwave colors)
+        let grid_col = vec3<f32>(0.0, 1.0, 1.0) * grid_val * glow_intensity * 2.0;
 
         // Fade grid into horizon
         let fade = smoothstep(0.0, 0.2, dy);
+        
+        // Base floor color with reflection
+        var floor_color = mix(refl_color * 0.5, grid_col, grid_val * fade);
 
-        final_color = mix(refl_color * 0.5, grid_col, grid_val * fade);
-        // Add distance fog (black or purple)
-        let fog = smoothstep(0.0, 0.4, dy); // 0 at horizon, 1 near camera
-        final_color = mix(vec3<f32>(0.1, 0.0, 0.2), final_color, fog);
+        // ═══════════════════════════════════════════════════════════════
+        //  Volumetric Distance Fog on Floor
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Fog increases with distance (z_depth)
+        // τ = density * distance * extinction_coeff
+        let fogDensity = 0.15;
+        let fogDistance = z_depth * 0.3;
+        let fogOpticalDepth = fogDensity * fogDistance * SIGMA_T_FOG;
+        let fogTransmittance = exp(-fogOpticalDepth);
+        
+        // Vaporwave fog color (purple/pink)
+        let fogColor = vec3<f32>(0.4, 0.1, 0.4);
+        
+        // Apply volumetric fog
+        final_color = mix(fogColor, floor_color, fogTransmittance);
+        
+        // Alpha based on fog density (more fog = higher alpha)
+        alpha = 0.8 + (1.0 - fogTransmittance) * 0.2;
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+    // ═══════════════════════════════════════════════════════════════
+    //  Final Output with Volumetric Alpha
+    // ═══════════════════════════════════════════════════════════════
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, alpha));
 }
