@@ -1,0 +1,8237 @@
+{
+  "liquid-v1": {
+    "coordinate": 15,
+    "reason": "liquid-effects \u2192 ambient/liquid (15)",
+    "name": "Liquid (Ambient)",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-oil": {
+    "coordinate": 36,
+    "reason": "liquid-effects \u2192 ambient/liquid (36)",
+    "name": "Liquid Oil",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-rainbow": {
+    "coordinate": 40,
+    "reason": "liquid-effects \u2192 ambient/liquid (40)",
+    "name": "Liquid Rainbow",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kimi-liquid-glass": {
+    "coordinate": 43,
+    "reason": "liquid-effects \u2192 ambient/liquid (43)",
+    "name": "Kimi Liquid Glass",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven",
+      "liquid",
+      "caustics",
+      "refraction"
+    ],
+    "tags": [
+      "fluid",
+      "liquid",
+      "water"
+    ]
+  },
+  "liquid-perspective": {
+    "coordinate": 43,
+    "reason": "liquid-effects \u2192 ambient/liquid (43)",
+    "name": "Liquid Perspective",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-velocity-melt": {
+    "coordinate": 45,
+    "reason": "liquid-effects \u2192 ambient/liquid (45)",
+    "name": "Luma Velocity Melt",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-viscous-grokcf1": {
+    "coordinate": 46,
+    "reason": "liquid-effects \u2192 ambient/liquid (46)",
+    "name": "Liquid Viscous Nebula grokcf1",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-rgb": {
+    "coordinate": 47,
+    "reason": "liquid-effects \u2192 ambient/liquid (47)",
+    "name": "Liquid RGB",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-jelly": {
+    "coordinate": 48,
+    "reason": "liquid-effects \u2192 ambient/liquid (48)",
+    "name": "Liquid Jelly",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid": {
+    "coordinate": 48,
+    "reason": "liquid-effects \u2192 ambient/liquid (48)",
+    "name": "Liquid (Interactive)",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-viscous-simple": {
+    "coordinate": 49,
+    "reason": "liquid-effects \u2192 ambient/liquid (49)",
+    "name": "Liquid Viscous (Simple)",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-metal": {
+    "coordinate": 50,
+    "reason": "liquid-effects \u2192 ambient/liquid (50)",
+    "name": "Liquid Metal",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-melt-interactive": {
+    "coordinate": 51,
+    "reason": "liquid-effects \u2192 ambient/liquid (51)",
+    "name": "",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "fluid",
+      "liquid",
+      "water"
+    ]
+  },
+  "glass-wipes": {
+    "coordinate": 55,
+    "reason": "liquid-effects \u2192 ambient/liquid (55)",
+    "name": "Rainy Window",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-smear": {
+    "coordinate": 57,
+    "reason": "liquid-effects \u2192 ambient/liquid (57)",
+    "name": "Liquid Smear",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-viscous": {
+    "coordinate": 58,
+    "reason": "liquid-effects \u2192 ambient/liquid (58)",
+    "name": "Liquid Viscous",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-zoom": {
+    "coordinate": 58,
+    "reason": "liquid-effects \u2192 ambient/liquid (58)",
+    "name": "Liquid Zoom",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cosmic-jellyfish": {
+    "coordinate": 67,
+    "reason": "generative \u2192 ambient/liquid (67)",
+    "name": "Cosmic Jellyfish",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "3d",
+      "raymarching",
+      "bioluminescent",
+      "space",
+      "organic",
+      "calm",
+      "procedural",
+      "generative"
+    ]
+  },
+  "liquid-mirror": {
+    "coordinate": 70,
+    "reason": "liquid-effects \u2192 ambient/liquid (70)",
+    "name": "Liquid Mirror",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rain-ripples": {
+    "coordinate": 72,
+    "reason": "liquid-effects \u2192 ambient/liquid (72)",
+    "name": "Rain Ripples",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "viscous-drag": {
+    "coordinate": 73,
+    "reason": "liquid-effects \u2192 ambient/liquid (73)",
+    "name": "Viscous Drag",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "fluid",
+      "liquid",
+      "water"
+    ]
+  },
+  "ink-marbling": {
+    "coordinate": 82,
+    "reason": "liquid-effects \u2192 ambient/liquid (82)",
+    "name": "Ink Marbling",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gen-bioluminescent-abyss": {
+    "coordinate": 92,
+    "reason": "generative \u2192 ambient/liquid (92)",
+    "name": "Bioluminescent Abyss",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "underwater",
+      "generative",
+      "3d",
+      "bioluminescence",
+      "raymarching",
+      "volumetric"
+    ]
+  },
+  "liquid-glitch": {
+    "coordinate": 92,
+    "reason": "liquid-effects \u2192 ambient/liquid (92)",
+    "name": "Liquid Glitch",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gen-prismatic-bismuth-lattice": {
+    "coordinate": 94,
+    "reason": "generative \u2192 ambient/liquid (94)",
+    "name": "Prismatic Bismuth Lattice",
+    "category": "generative",
+    "features": [
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "crystalline",
+      "iridescent",
+      "fractal",
+      "geometric",
+      "audio-reactive"
+    ]
+  },
+  "liquid-fast": {
+    "coordinate": 96,
+    "reason": "liquid-effects \u2192 ambient/liquid (96)",
+    "name": "Liquid Fast",
+    "category": "liquid-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gen-stellar-web-loom": {
+    "coordinate": 97,
+    "reason": "generative \u2192 ambient/liquid (97)",
+    "name": "Stellar Web-Loom",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "cosmic",
+      "neuro",
+      "plasma",
+      "volumetric",
+      "audio-reactive"
+    ]
+  },
+  "gen-celestial-forge": {
+    "coordinate": 99,
+    "reason": "generative \u2192 ambient/liquid (99)",
+    "name": "Celestial Forge",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "space",
+      "megastructure",
+      "dyson sphere",
+      "plasma",
+      "rings",
+      "sci-fi",
+      "raymarching",
+      "3d"
+    ]
+  },
+  "gen-neuro-cosmos": {
+    "coordinate": 102,
+    "reason": "generative \u2192 organic/living (102)",
+    "name": "Neuro-Cosmos",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "network",
+      "neural",
+      "cosmic",
+      "web",
+      "3d",
+      "raymarching",
+      "voronoi",
+      "glowing",
+      "cyber",
+      "procedural",
+      "generative"
+    ]
+  },
+  "cosmic-web": {
+    "coordinate": 109,
+    "reason": "generative \u2192 organic/living (109)",
+    "name": "Cosmic Web Filament",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "space",
+      "procedural",
+      "organic",
+      "scifi",
+      "dark-matter",
+      "generative"
+    ]
+  },
+  "liquid-displacement": {
+    "coordinate": 115,
+    "reason": "liquid-effects \u2192 organic/living (115)",
+    "name": "Liquid Displacement",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gen-kimi-nebula": {
+    "coordinate": 122,
+    "reason": "generative \u2192 organic/living (122)",
+    "name": "Kimi Nebula",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "procedural",
+      "cosmic"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-fractured-monolith": {
+    "coordinate": 125,
+    "reason": "generative \u2192 organic/living (125)",
+    "name": "Fractured Monolith",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "monolith",
+      "floating",
+      "fractured",
+      "glowing",
+      "ambient",
+      "generative",
+      "scifi"
+    ]
+  },
+  "volumetric-cloud-nebula": {
+    "coordinate": 132,
+    "reason": "generative \u2192 organic/living (132)",
+    "name": "Volumetric Cloud Nebula",
+    "category": "generative",
+    "features": [
+      "raymarched"
+    ],
+    "tags": [
+      "generative",
+      "nebula",
+      "clouds",
+      "volumetric",
+      "raymarch",
+      "space",
+      "cosmic",
+      "procedural"
+    ]
+  },
+  "gen-trails": {
+    "coordinate": 133,
+    "reason": "generative \u2192 organic/living (133)",
+    "name": "Light Trails",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "kimi-fractal-dreams": {
+    "coordinate": 137,
+    "reason": "generative \u2192 organic/living (137)",
+    "name": "Kimi Fractal Dreams",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "fractal",
+      "julia-set"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-grokcf-voronoi": {
+    "coordinate": 140,
+    "reason": "generative \u2192 organic/living (140)",
+    "name": "Grokcf Animated Voronoi",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-art-deco-sky": {
+    "coordinate": 141,
+    "reason": "generative \u2192 organic/living (141)",
+    "name": "Art Deco Skyscraper",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "3d",
+      "raymarching",
+      "architecture",
+      "art-deco",
+      "gold",
+      "scifi",
+      "procedural",
+      "infinite"
+    ]
+  },
+  "gen-ethereal-anemone-bloom": {
+    "coordinate": 141,
+    "reason": "generative \u2192 organic/living (141)",
+    "name": "Ethereal Anemone Bloom",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "raymarched"
+    ],
+    "tags": [
+      "organic",
+      "bioluminescent",
+      "underwater",
+      "fluid",
+      "audio-reactive"
+    ]
+  },
+  "generative-turing-veins": {
+    "coordinate": 142,
+    "reason": "generative \u2192 organic/living (142)",
+    "name": "Turing Veins Generative",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "reaction-diffusion",
+      "biological"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-isometric-city": {
+    "coordinate": 143,
+    "reason": "generative \u2192 organic/living (143)",
+    "name": "Isometric Cyber-City",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "bubble-chamber": {
+    "coordinate": 145,
+    "reason": "generative \u2192 organic/living (145)",
+    "name": "Bubble Chamber",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-cosmic-web-filament": {
+    "coordinate": 145,
+    "reason": "generative \u2192 organic/living (145)",
+    "name": "Cosmic Web Filament",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "generative",
+      "cosmic",
+      "voronoi",
+      "filament",
+      "organic",
+      "dark-matter",
+      "web",
+      "gravity",
+      "procedural"
+    ]
+  },
+  "gen-crystal-caverns": {
+    "coordinate": 145,
+    "reason": "generative \u2192 organic/living (145)",
+    "name": "Crystal Caverns",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "crystal",
+      "cave",
+      "3d",
+      "raymarching",
+      "fantasy",
+      "glowing",
+      "stalactites",
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-brutalist-monument": {
+    "coordinate": 147,
+    "reason": "generative \u2192 organic/living (147)",
+    "name": "Brutalist Monument",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "brutalism",
+      "architecture",
+      "atmospheric",
+      "3d",
+      "raymarching"
+    ]
+  },
+  "gen-fluffy-raincloud": {
+    "coordinate": 147,
+    "reason": "generative \u2192 organic/living (147)",
+    "name": "Fluffy Raincloud",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-grok4-life": {
+    "coordinate": 148,
+    "reason": "generative \u2192 organic/living (148)",
+    "name": "Grok4 Cellular Life",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-bismuth-crystal-citadel": {
+    "coordinate": 149,
+    "reason": "generative \u2192 organic/living (149)",
+    "name": "Bismuth Crystal Citadel",
+    "category": "generative",
+    "features": [
+      "raymarched",
+      "mouse-driven"
+    ],
+    "tags": [
+      "generative",
+      "raymarch",
+      "procedural",
+      "crystal",
+      "bismuth",
+      "metallic",
+      "iridescent",
+      "geometry",
+      "fractal"
+    ]
+  },
+  "gen-orb": {
+    "coordinate": 149,
+    "reason": "generative \u2192 organic/living (149)",
+    "name": "Glowing Orb",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-magnetic-ferrofluid": {
+    "coordinate": 150,
+    "reason": "generative \u2192 organic/living (150)",
+    "name": "Magnetic Ferrofluid",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "abstract",
+      "liquid",
+      "metal",
+      "spiky",
+      "fluid",
+      "generative",
+      "ferrofluid"
+    ]
+  },
+  "stellar-plasma": {
+    "coordinate": 150,
+    "reason": "generative \u2192 organic/living (150)",
+    "name": "Stellar Plasma",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "generative",
+      "procedural",
+      "nebula",
+      "cosmic",
+      "plasma",
+      "fbm",
+      "fluid",
+      "loops",
+      "domain-warping"
+    ]
+  },
+  "gen-lenia-2": {
+    "coordinate": 151,
+    "reason": "generative \u2192 organic/living (151)",
+    "name": "Lenia 2.0 - Multi-Species",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "lenia",
+      "multi-species",
+      "4-kernels",
+      "organic",
+      "creature",
+      "cellular-automata",
+      "evolution",
+      "advanced",
+      "procedural",
+      "generative"
+    ]
+  },
+  "kimi-quantum-field": {
+    "coordinate": 151,
+    "reason": "generative \u2192 organic/living (151)",
+    "name": "Kimi Quantum Field",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "waves",
+      "interference"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "turing-veins": {
+    "coordinate": 151,
+    "reason": "generative \u2192 organic/living (151)",
+    "name": "Turing Veins",
+    "category": "generative",
+    "features": [
+      "generative",
+      "procedural",
+      "reaction-diffusion",
+      "turing-patterns",
+      "depth-aware",
+      "biological",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gen-capabilities": {
+    "coordinate": 152,
+    "reason": "generative \u2192 organic/living (152)",
+    "name": "System Monitor",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-hyper-labyrinth": {
+    "coordinate": 153,
+    "reason": "generative \u2192 organic/living (153)",
+    "name": "Hyper Labyrinth",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "neon",
+      "cyber",
+      "maze",
+      "4d",
+      "generative",
+      "abstract",
+      "geometric",
+      "procedural"
+    ]
+  },
+  "gen-silica-tsunami": {
+    "coordinate": 153,
+    "reason": "generative \u2192 organic/living (153)",
+    "name": "Silica Tsunami",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "generative",
+      "wave",
+      "glass",
+      "refraction"
+    ]
+  },
+  "gen-kimi-crystal": {
+    "coordinate": 153,
+    "reason": "generative \u2192 organic/living (153)",
+    "name": "Kimi Crystal",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "geometric",
+      "crystalline"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-alien-flora": {
+    "coordinate": 154,
+    "reason": "generative \u2192 organic/living (154)",
+    "name": "Alien Flora",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "nature",
+      "plants",
+      "bioluminescent",
+      "raymarching",
+      "3d",
+      "organic",
+      "forest",
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-biomechanical-hive": {
+    "coordinate": 154,
+    "reason": "generative \u2192 organic/living (154)",
+    "name": "Biomechanical Hive",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "scifi",
+      "biomechanical",
+      "giger",
+      "alien",
+      "raymarching",
+      "horror",
+      "generative"
+    ]
+  },
+  "gen-rainbow-smoke": {
+    "coordinate": 154,
+    "reason": "generative \u2192 organic/living (154)",
+    "name": "Rainbow Smoke",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-reaction-diffusion": {
+    "coordinate": 154,
+    "reason": "generative \u2192 organic/living (154)",
+    "name": "Reaction Diffusion",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-chronos-labyrinth": {
+    "coordinate": 155,
+    "reason": "generative \u2192 organic/living (155)",
+    "name": "Chronos Labyrinth",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "3d",
+      "raymarching",
+      "geometry",
+      "escher",
+      "maze",
+      "impossible",
+      "abstract",
+      "infinite",
+      "generative",
+      "procedural"
+    ]
+  },
+  "gen-quantum-neural-lace": {
+    "coordinate": 156,
+    "reason": "generative \u2192 organic/living (156)",
+    "name": "Quantum Neural Lace",
+    "category": "generative",
+    "features": [
+      "raymarched",
+      "mouse-driven"
+    ],
+    "tags": [
+      "cyber",
+      "network",
+      "3d",
+      "raymarching",
+      "scifi",
+      "glowing",
+      "lattice"
+    ]
+  },
+  "gen-cyber-terminal": {
+    "coordinate": 157,
+    "reason": "generative \u2192 organic/living (157)",
+    "name": "Procedural Cyber Terminal (ASCII)",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "procedural-glyphs"
+    ],
+    "tags": [
+      "ascii",
+      "terminal",
+      "retro",
+      "procedural",
+      "decoder"
+    ]
+  },
+  "gen-holographic-data-core": {
+    "coordinate": 157,
+    "reason": "generative \u2192 organic/living (157)",
+    "name": "Holographic Data Core",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "3d",
+      "raymarching",
+      "cyberpunk",
+      "hologram",
+      "data",
+      "neon",
+      "procedural",
+      "infinite"
+    ]
+  },
+  "gen-cyclic-automaton": {
+    "coordinate": 157,
+    "reason": "generative \u2192 organic/living (157)",
+    "name": "Cyclic Automaton",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-grok41-mandelbrot": {
+    "coordinate": 157,
+    "reason": "generative \u2192 organic/living (157)",
+    "name": "Grok41 Mandelbrot Explorer",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-grokcf-interference": {
+    "coordinate": 157,
+    "reason": "generative \u2192 organic/living (157)",
+    "name": "Grokcf Wave Interference",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-fractal-clockwork": {
+    "coordinate": 158,
+    "reason": "generative \u2192 organic/living (158)",
+    "name": "Fractal Clockwork",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "steampunk",
+      "mechanical",
+      "3d",
+      "raymarching",
+      "gears",
+      "metallic",
+      "brass",
+      "clockwork",
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-julia-set": {
+    "coordinate": 159,
+    "reason": "generative \u2192 organic/living (159)",
+    "name": "Julia Set",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-wave-equation": {
+    "coordinate": 167,
+    "reason": "generative \u2192 organic/living (167)",
+    "name": "Fluid Ripples",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "nebula-gyroid": {
+    "coordinate": 171,
+    "reason": "generative \u2192 organic/living (171)",
+    "name": "Nebula Gyroid",
+    "category": "generative",
+    "features": [
+      "raymarched",
+      "mouse-driven"
+    ],
+    "tags": [
+      "generative",
+      "gyroid",
+      "raymarch",
+      "iridescent",
+      "organic",
+      "nebula",
+      "sdf",
+      "fluid",
+      "geometry",
+      "procedural"
+    ]
+  },
+  "gen-micro-cosmos": {
+    "coordinate": 176,
+    "reason": "generative \u2192 organic/living (176)",
+    "name": "Micro-Cosmos",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "biological",
+      "organic",
+      "microscopic",
+      "liquid",
+      "life",
+      "floating",
+      "generative",
+      "procedural"
+    ]
+  },
+  "steamy-glass": {
+    "coordinate": 177,
+    "reason": "simulation \u2192 organic/living (177)",
+    "name": "Steamy Glass",
+    "category": "simulation",
+    "features": [
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "gen-grok4-perlin": {
+    "coordinate": 179,
+    "reason": "generative \u2192 organic/living (179)",
+    "name": "Grok4 Perlin Terrain",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "kimi_flock_symphony": {
+    "coordinate": 183,
+    "reason": "generative \u2192 organic/living (183)",
+    "name": "Kimi Flock Symphony",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "boids",
+      "flocking",
+      "generative",
+      "particles",
+      "musical",
+      "interactive",
+      "procedural"
+    ]
+  },
+  "kimi-nebula-depth": {
+    "coordinate": 188,
+    "reason": "generative \u2192 organic/living (188)",
+    "name": "Kimi Nebula Depth",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "volumetric",
+      "3d"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "luma-flow-field": {
+    "coordinate": 189,
+    "reason": "simulation \u2192 organic/living (189)",
+    "name": "",
+    "category": "simulation",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "gen-grid": {
+    "coordinate": 192,
+    "reason": "generative \u2192 organic/living (192)",
+    "name": "Neon Grid",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-psychedelic-spiral": {
+    "coordinate": 193,
+    "reason": "generative \u2192 organic/living (193)",
+    "name": "Psychedelic Spiral",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "digital-moss": {
+    "coordinate": 194,
+    "reason": "simulation \u2192 organic/living (194)",
+    "name": "Digital Moss",
+    "category": "simulation",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "split-flap-display": {
+    "coordinate": 194,
+    "reason": "simulation \u2192 organic/living (194)",
+    "name": "Split Flap Display",
+    "category": "simulation",
+    "features": [
+      "interactive",
+      "simulation",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gen-grok41-plasma": {
+    "coordinate": 195,
+    "reason": "generative \u2192 organic/living (195)",
+    "name": "Grok41 Plasma Waves",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "lichtenberg-fractal": {
+    "coordinate": 198,
+    "reason": "simulation \u2192 organic/living (198)",
+    "name": "Lichtenberg Fractal",
+    "category": "simulation",
+    "features": [
+      "mouse-driven",
+      "simulation"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "gen-raptor-mini": {
+    "coordinate": 199,
+    "reason": "generative \u2192 organic/living (199)",
+    "name": "Raptor Mini",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "stateful"
+    ],
+    "tags": [
+      "agent",
+      "chase",
+      "audio",
+      "procedural",
+      "generative"
+    ]
+  },
+  "nano-assembler": {
+    "coordinate": 199,
+    "reason": "simulation \u2192 organic/living (199)",
+    "name": "Nano Assembler",
+    "category": "simulation",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "photonic-caustics": {
+    "coordinate": 201,
+    "reason": "simulation \u2192 organic/living (201)",
+    "name": "Photonic Caustics",
+    "category": "simulation",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "chromatic-aberration",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "aero-chromatics": {
+    "coordinate": 202,
+    "reason": "simulation \u2192 organic/living (202)",
+    "name": "Aero Chromatics",
+    "category": "simulation",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "gen-quantum-mycelium": {
+    "coordinate": 205,
+    "reason": "generative \u2192 organic/living (205)",
+    "name": "Quantum Mycelium",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "audio-driven"
+    ],
+    "tags": [
+      "organic",
+      "microscopic",
+      "fungal",
+      "network",
+      "audio-reactive"
+    ]
+  },
+  "predator-prey": {
+    "coordinate": 205,
+    "reason": "simulation \u2192 organic/living (205)",
+    "name": "Pixel Ecology",
+    "category": "simulation",
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "ecology",
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "cymatic-sand": {
+    "coordinate": 208,
+    "reason": "simulation \u2192 organic/living (208)",
+    "name": "Cymatic Sand",
+    "category": "simulation",
+    "features": [
+      "mouse-driven",
+      "simulation"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "flow-sort": {
+    "coordinate": 214,
+    "reason": "simulation \u2192 organic/living (214)",
+    "name": "Streamline Pixel Sort",
+    "category": "simulation",
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "depth-aware",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "wave-equation": {
+    "coordinate": 215,
+    "reason": "simulation \u2192 organic/living (215)",
+    "name": "Wave Tank",
+    "category": "simulation",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gen-hyper-warp": {
+    "coordinate": 218,
+    "reason": "generative \u2192 organic/living (218)",
+    "name": "Hyper Warp",
+    "category": "generative",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "generative-psy-swirls": {
+    "coordinate": 220,
+    "reason": "generative \u2192 organic/living (220)",
+    "name": "Psychedelic Swirls",
+    "category": "generative",
+    "features": [
+      "mouse-driven",
+      "generative",
+      "procedural",
+      "psychedelic"
+    ],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "pixel-sand": {
+    "coordinate": 220,
+    "reason": "simulation \u2192 organic/living (220)",
+    "name": "Pixel Sand",
+    "category": "simulation",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-light": {
+    "coordinate": 240,
+    "reason": "lighting-effects \u2192 organic/living (240)",
+    "name": "Neon Light",
+    "category": "lighting-effects",
+    "features": [
+      "glow",
+      "neon",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "divine-light": {
+    "coordinate": 245,
+    "reason": "lighting-effects \u2192 organic/living (245)",
+    "name": "Divine Light",
+    "category": "lighting-effects",
+    "features": [
+      "mouse-driven",
+      "volumetric",
+      "atmospheric"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "bitonic-sort": {
+    "coordinate": 247,
+    "reason": "simulation \u2192 organic/living (247)",
+    "name": "Bitonic Pixel Sort",
+    "category": "simulation",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "divine-light-gpt52": {
+    "coordinate": 258,
+    "reason": "lighting-effects \u2192 interactive (258)",
+    "name": "Divine Light Cathedral gpt52",
+    "category": "lighting-effects",
+    "features": [
+      "mouse-driven",
+      "volumetric",
+      "atmospheric"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "laser-burn": {
+    "coordinate": 260,
+    "reason": "interactive-mouse \u2192 interactive (260)",
+    "name": "Laser Burn",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-pulse-edge": {
+    "coordinate": 263,
+    "reason": "lighting-effects \u2192 interactive (263)",
+    "name": "Neon Pulse Edge",
+    "category": "lighting-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "galaxy-compute": {
+    "coordinate": 263,
+    "reason": "simulation \u2192 interactive (263)",
+    "name": "Galaxy Compute",
+    "category": "simulation",
+    "features": [
+      "simulation",
+      "physics"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "psy-swirls": {
+    "coordinate": 272,
+    "reason": "generative \u2192 interactive (272)",
+    "name": "Psychedelic Rainbow Swirls",
+    "category": "generative",
+    "features": [
+      "generative",
+      "procedural",
+      "psychedelic",
+      "rainbow",
+      "swirls",
+      "vortex",
+      "depth-aware",
+      "interactive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-kuwahara": {
+    "coordinate": 277,
+    "reason": "interactive-mouse \u2192 interactive (277)",
+    "name": "Oil Painting (Kuwahara)",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "artistic"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "foil-impression": {
+    "coordinate": 280,
+    "reason": "interactive-mouse \u2192 interactive (280)",
+    "name": "Foil Impression",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chronos-brush": {
+    "coordinate": 281,
+    "reason": "interactive-mouse \u2192 interactive (281)",
+    "name": "Chronos Brush",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "motion-revealer": {
+    "coordinate": 281,
+    "reason": "interactive-mouse \u2192 interactive (281)",
+    "name": "Motion Revealer",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "ink-bleed": {
+    "coordinate": 285,
+    "reason": "interactive-mouse \u2192 interactive (285)",
+    "name": "Ink Bleed",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "charcoal-rub": {
+    "coordinate": 287,
+    "reason": "interactive-mouse \u2192 interactive (287)",
+    "name": "Charcoal Rub",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive",
+      "stateful"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "impasto-swirl": {
+    "coordinate": 288,
+    "reason": "interactive-mouse \u2192 interactive (288)",
+    "name": "Impasto Swirl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spectral-brush": {
+    "coordinate": 288,
+    "reason": "interactive-mouse \u2192 interactive (288)",
+    "name": "Spectral Brush",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "velocity-field-paint": {
+    "coordinate": 288,
+    "reason": "interactive-mouse \u2192 interactive (288)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "bubble-wrap": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Bubble Wrap",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "infinite-fractal-feedback": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Infinite Fractal Feedback",
+    "category": "interactive-mouse",
+    "features": [
+      "interactive",
+      "fractal",
+      "feedback",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-frost": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Interactive Frost",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "knitted-fabric": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Knitted Fabric",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-topography": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Luma Topography",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "lighting"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "temporal-rift": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Temporal Rift",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "thermal-touch": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Thermal Touch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vertical-slice-wave": {
+    "coordinate": 290,
+    "reason": "interactive-mouse \u2192 interactive (290)",
+    "name": "Vertical Slice Wave",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "infinite-spiral-zoom": {
+    "coordinate": 291,
+    "reason": "interactive-mouse \u2192 interactive (291)",
+    "name": "Infinite Spiral Zoom",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-halftone-spin": {
+    "coordinate": 291,
+    "reason": "interactive-mouse \u2192 interactive (291)",
+    "name": "Interactive Halftone Spin",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "halftone"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "molten-glass": {
+    "coordinate": 291,
+    "reason": "interactive-mouse \u2192 interactive (291)",
+    "name": "Molten Glass",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-delay-brush": {
+    "coordinate": 291,
+    "reason": "interactive-mouse \u2192 interactive (291)",
+    "name": "RGB Delay Brush",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "sphere-projection": {
+    "coordinate": 291,
+    "reason": "interactive-mouse \u2192 interactive (291)",
+    "name": "Sphere Projection",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "3d"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "bio-touch": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "Bio-Luminescent Touch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "digital-haze": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "hyper-chromatic-delay": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "Hyper-Chromatic Delay",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "infinite-video-feedback": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "Infinite Video Feedback",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-ring": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "mirror-drag": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "Mirror Drag",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "neon-cursor-trace": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "Neon Cursor Trace",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-flux": {
+    "coordinate": 292,
+    "reason": "interactive-mouse \u2192 interactive (292)",
+    "name": "Quantum Flux",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "chroma-depth-tunnel": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Chroma Depth Tunnel",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chroma-kinetic": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Chroma Kinetic",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-rain": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Cyber Rain",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "edge-glow-mouse": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Edge Glow",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glass-wall": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "light-leaks": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Light Leaks",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "overlay"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "motion-heatmap": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Motion Heatmap",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-strings": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Neon Strings",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neural-nexus": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Neural Nexus",
+    "category": "interactive-mouse",
+    "features": [
+      "interactive",
+      "organic",
+      "network",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "particle-disperse": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Particle Disperse",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "physics",
+      "interactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "sonar-reveal": {
+    "coordinate": 293,
+    "reason": "interactive-mouse \u2192 interactive (293)",
+    "name": "Sonar Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "dynamic-halftone": {
+    "coordinate": 294,
+    "reason": "interactive-mouse \u2192 interactive (294)",
+    "name": "Dynamic Halftone",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-emboss": {
+    "coordinate": 294,
+    "reason": "interactive-mouse \u2192 interactive (294)",
+    "name": "Interactive Emboss",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-flashlight": {
+    "coordinate": 294,
+    "reason": "interactive-mouse \u2192 interactive (294)",
+    "name": "Neon Flashlight",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-cursor": {
+    "coordinate": 294,
+    "reason": "interactive-mouse \u2192 interactive (294)",
+    "name": "Quantum Cursor",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "sequin-flip": {
+    "coordinate": 294,
+    "reason": "interactive-mouse \u2192 interactive (294)",
+    "name": "Sequin Flip",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "slinky-distort": {
+    "coordinate": 294,
+    "reason": "interactive-mouse \u2192 interactive (294)",
+    "name": "Slinky Distortion",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "dynamic-lens-flares": {
+    "coordinate": 294,
+    "reason": "lighting-effects \u2192 interactive (294)",
+    "name": "Dynamic Lens Flares",
+    "category": "lighting-effects",
+    "features": [
+      "mouse-driven",
+      "optical",
+      "cinematic"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "biomimetic-scales": {
+    "coordinate": 295,
+    "reason": "interactive-mouse \u2192 interactive (295)",
+    "name": "Biomimetic Scales",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "reality-tear": {
+    "coordinate": 295,
+    "reason": "interactive-mouse \u2192 interactive (295)",
+    "name": "Reality Tear",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "liquid-touch": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "Liquid Touch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "optical-feedback": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "Optical Feedback Loop",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "origami-fold": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "Origami Fold",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-drag-smear": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "Pixel Drag Smear",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-prism": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "radial-blur": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "Radial Blur",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-fluid": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "RGB Fluidity",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spirograph-reveal": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "Spirograph Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi-shatter": {
+    "coordinate": 296,
+    "reason": "interactive-mouse \u2192 interactive (296)",
+    "name": "Voronoi Shatter",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "circuit-breaker": {
+    "coordinate": 297,
+    "reason": "interactive-mouse \u2192 interactive (297)",
+    "name": "Circuit Breaker",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "parallax-glow-compositor": {
+    "coordinate": 297,
+    "reason": "interactive-mouse \u2192 interactive (297)",
+    "name": "Parallax Glow Compositor (Pass 2)",
+    "category": "interactive-mouse",
+    "features": [
+      "multi-pass",
+      "volumetric",
+      "depth",
+      "composite"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-shift-brush": {
+    "coordinate": 297,
+    "reason": "interactive-mouse \u2192 interactive (297)",
+    "name": "RGB Shift Brush",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "codebreaker-reveal": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "cyber-focus": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Cyber Focus",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "lighthouse-reveal": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Lighthouse Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "matrix-curtain": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Matrix Curtain",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-edge-radar": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Neon Edge Radar",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "scanline-wave": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Scanline Wave",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "signal-tuner": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Signal Tuner",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "sketch-reveal": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Sketch Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "temporal-slit-paint": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Temporal Slit Paint",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "venetian-blinds": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Venetian Blinds",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "volumetric-depth-zoom": {
+    "coordinate": 298,
+    "reason": "interactive-mouse \u2192 interactive (298)",
+    "name": "Volumetric Depth Zoom (Pass 1)",
+    "category": "interactive-mouse",
+    "features": [
+      "multi-pass",
+      "volumetric",
+      "depth",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-echo": {
+    "coordinate": 299,
+    "reason": "interactive-mouse \u2192 interactive (299)",
+    "name": "Neon Echo",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "reactive-glass-grid": {
+    "coordinate": 299,
+    "reason": "interactive-mouse \u2192 interactive (299)",
+    "name": "Reactive Glass Grid",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spectral-smear": {
+    "coordinate": 299,
+    "reason": "interactive-mouse \u2192 interactive (299)",
+    "name": "Spectral Smear",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "history"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi-light": {
+    "coordinate": 299,
+    "reason": "interactive-mouse \u2192 interactive (299)",
+    "name": "Voronoi Light",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ferrofluid": {
+    "coordinate": 300,
+    "reason": "interactive-mouse \u2192 interactive (300)",
+    "name": "Magnetic Ferrofluid",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-tunnel-interactive": {
+    "coordinate": 300,
+    "reason": "interactive-mouse \u2192 interactive (300)",
+    "name": "Quantum Tunnel",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "refraction-shards": {
+    "coordinate": 300,
+    "reason": "interactive-mouse \u2192 interactive (300)",
+    "name": "Refraction Shards",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cursor-aura": {
+    "coordinate": 301,
+    "reason": "interactive-mouse \u2192 interactive (301)",
+    "name": "Cursor Aura",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glow"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-trace": {
+    "coordinate": 301,
+    "reason": "interactive-mouse \u2192 interactive (301)",
+    "name": "Cyber Trace",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "digital-mold": {
+    "coordinate": 301,
+    "reason": "interactive-mouse \u2192 interactive (301)",
+    "name": "Digital Mold",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quad-mirror": {
+    "coordinate": 301,
+    "reason": "interactive-mouse \u2192 interactive (301)",
+    "name": "Quad Mirror",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "fiber-optic-weave": {
+    "coordinate": 302,
+    "reason": "interactive-mouse \u2192 interactive (302)",
+    "name": "Fiber Optic Weave",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "oscilloscope-overlay": {
+    "coordinate": 302,
+    "reason": "interactive-mouse \u2192 interactive (302)",
+    "name": "Oscilloscope Overlay",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "overlay"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi-glass": {
+    "coordinate": 302,
+    "reason": "interactive-mouse \u2192 interactive (302)",
+    "name": "Voronoi Glass",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "blueprint-reveal": {
+    "coordinate": 303,
+    "reason": "interactive-mouse \u2192 interactive (303)",
+    "name": "Blueprint Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-lattice": {
+    "coordinate": 303,
+    "reason": "interactive-mouse \u2192 interactive (303)",
+    "name": "Cyber Lattice",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "elastic-strip": {
+    "coordinate": 303,
+    "reason": "interactive-mouse \u2192 interactive (303)",
+    "name": "Elastic Strip",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "paper-burn": {
+    "coordinate": 303,
+    "reason": "interactive-mouse \u2192 interactive (303)",
+    "name": "Paper Burn",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "sonic-distortion": {
+    "coordinate": 303,
+    "reason": "interactive-mouse \u2192 interactive (303)",
+    "name": "Sonic Distortion",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-mosaic-projector": {
+    "coordinate": 304,
+    "reason": "interactive-mouse \u2192 interactive (304)",
+    "name": "Chromatic Mosaic",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cmyk-halftone-interactive": {
+    "coordinate": 304,
+    "reason": "interactive-mouse \u2192 interactive (304)",
+    "name": "CMYK Halftone Interactive",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "double-exposure": {
+    "coordinate": 304,
+    "reason": "interactive-mouse \u2192 interactive (304)",
+    "name": "Double Exposure Zoom",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "fabric-zipper": {
+    "coordinate": 304,
+    "reason": "interactive-mouse \u2192 interactive (304)",
+    "name": "Fabric Zipper",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "volumetric-god-rays": {
+    "coordinate": 304,
+    "reason": "interactive-mouse \u2192 interactive (304)",
+    "name": "Volumetric God Rays",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kinetic-dispersion": {
+    "coordinate": 305,
+    "reason": "interactive-mouse \u2192 interactive (305)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "moire-interference": {
+    "coordinate": 305,
+    "reason": "interactive-mouse \u2192 interactive (305)",
+    "name": "Moir\u00e9 Interference",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "night-vision-scope": {
+    "coordinate": 305,
+    "reason": "interactive-mouse \u2192 interactive (305)",
+    "name": "Night Vision Scope",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "image"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-depth-sort": {
+    "coordinate": 305,
+    "reason": "interactive-mouse \u2192 interactive (305)",
+    "name": "Pixel Depth Sort",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-sort-radial": {
+    "coordinate": 305,
+    "reason": "interactive-mouse \u2192 interactive (305)",
+    "name": "Radial Pixel Stretch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-iso-lines": {
+    "coordinate": 305,
+    "reason": "interactive-mouse \u2192 interactive (305)",
+    "name": "RGB Iso Lines",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "scan-slice": {
+    "coordinate": 305,
+    "reason": "interactive-mouse \u2192 interactive (305)",
+    "name": "Scan Slice",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "crystal-illuminator": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "Crystal Illuminator",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "cyber-slit-scan": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "webcam"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "glass-bead-curtain": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "Glass Bead Curtain",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "hex-mosaic": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "Hexagon Mosaic",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kaleido-portal-interactive": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "luma-magnetism": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "prismatic-3d-compositor": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "Prismatic 3D Compositor (Pass 2)",
+    "category": "interactive-mouse",
+    "features": [
+      "multi-pass",
+      "volumetric",
+      "depth",
+      "lighting",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "radial-rgb": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "Radial RGB",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "stereoscopic-3d": {
+    "coordinate": 306,
+    "reason": "interactive-mouse \u2192 interactive (306)",
+    "name": "Stereoscopic 3D",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "chroma-shift-grid": {
+    "coordinate": 307,
+    "reason": "interactive-mouse \u2192 interactive (307)",
+    "name": "Chroma Shift Grid",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cross-stitch": {
+    "coordinate": 307,
+    "reason": "interactive-mouse \u2192 interactive (307)",
+    "name": "Cross Stitch Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-hex-armor": {
+    "coordinate": 307,
+    "reason": "interactive-mouse \u2192 interactive (307)",
+    "name": "Cyber Hex Armor",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "overlay"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magma-fissure": {
+    "coordinate": 307,
+    "reason": "interactive-mouse \u2192 interactive (307)",
+    "name": "Magma Fissure",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-edge": {
+    "coordinate": 307,
+    "reason": "interactive-mouse \u2192 interactive (307)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "crystal-freeze": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Crystal Freeze",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-organic": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Cyber Organic Scanner",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-ripples": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Cyber Ripples",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "wave",
+      "neon"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "flux-core": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Flux Core",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glass-shatter": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Glass Shatter",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-ripple": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Interactive Ripple",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "wave"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-voronoi-web": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Voronoi Web",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "voronoi"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kimi-spotlight": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Kimi Spotlight",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive",
+      "spotlight",
+      "reveal"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "nano-repair": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Nano-Tech Repair",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-ripple-split": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Neon Ripple Split",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "pixel-reveal": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Pixel Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "selective-color": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Selective Color",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vaporwave-horizon": {
+    "coordinate": 308,
+    "reason": "interactive-mouse \u2192 interactive (308)",
+    "name": "Vaporwave Horizon",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "image"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "lens-flare-brush": {
+    "coordinate": 308,
+    "reason": "lighting-effects \u2192 interactive (308)",
+    "name": "Lens Flare Brush",
+    "category": "lighting-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "digital-reveal": {
+    "coordinate": 309,
+    "reason": "interactive-mouse \u2192 interactive (309)",
+    "name": "Digital Rain Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "artistic"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-rgb": {
+    "coordinate": 309,
+    "reason": "interactive-mouse \u2192 interactive (309)",
+    "name": "Magnetic RGB",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "paper-cutout": {
+    "coordinate": 309,
+    "reason": "interactive-mouse \u2192 interactive (309)",
+    "name": "Paper Cutout",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "particle-swarm": {
+    "coordinate": 309,
+    "reason": "interactive-mouse \u2192 interactive (309)",
+    "name": "Particle Swarm",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "physics"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "refractive-bubbles": {
+    "coordinate": 309,
+    "reason": "interactive-mouse \u2192 interactive (309)",
+    "name": "Refractive Bubbles",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "stipple-engraving": {
+    "coordinate": 309,
+    "reason": "interactive-mouse \u2192 interactive (309)",
+    "name": "Stipple Engraving",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-pulse": {
+    "coordinate": 310,
+    "reason": "interactive-mouse \u2192 interactive (310)",
+    "name": "Neon Pulse Distortion",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-explode": {
+    "coordinate": 310,
+    "reason": "interactive-mouse \u2192 interactive (310)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "contour-flow": {
+    "coordinate": 311,
+    "reason": "interactive-mouse \u2192 interactive (311)",
+    "name": "Contour Flow",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "prismatic-feedback-loop": {
+    "coordinate": 311,
+    "reason": "interactive-mouse \u2192 interactive (311)",
+    "name": "Prismatic Feedback Loop (Pass 2)",
+    "category": "interactive-mouse",
+    "features": [
+      "multi-pass",
+      "feedback",
+      "chromatic",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "radial-slit-scan": {
+    "coordinate": 311,
+    "reason": "interactive-mouse \u2192 interactive (311)",
+    "name": "Radial Slit Scan",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spectral-waves": {
+    "coordinate": 311,
+    "reason": "interactive-mouse \u2192 interactive (311)",
+    "name": "Luma Ripple",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "image"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rainbow-vector-field": {
+    "coordinate": 313,
+    "reason": "interactive-mouse \u2192 interactive (313)",
+    "name": "Rainbow Vector Field (Pass 1)",
+    "category": "interactive-mouse",
+    "features": [
+      "multi-pass",
+      "mouse-driven",
+      "color"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "focal-pixelate": {
+    "coordinate": 314,
+    "reason": "interactive-mouse \u2192 interactive (314)",
+    "name": "Focal Pixelate",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "interactive-magnetic-ripple": {
+    "coordinate": 314,
+    "reason": "interactive-mouse \u2192 interactive (314)",
+    "name": "Magnetic Ripple",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-shockwave": {
+    "coordinate": 316,
+    "reason": "interactive-mouse \u2192 interactive (316)",
+    "name": "Chromatic Shockwave",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "echo-ripple": {
+    "coordinate": 316,
+    "reason": "interactive-mouse \u2192 interactive (316)",
+    "name": "Echo Ripple",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "energy-shield": {
+    "coordinate": 316,
+    "reason": "interactive-mouse \u2192 interactive (316)",
+    "name": "Energy Shield",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "poly-art": {
+    "coordinate": 316,
+    "reason": "interactive-mouse \u2192 interactive (316)",
+    "name": "Poly Art",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kimi-ripple-touch": {
+    "coordinate": 317,
+    "reason": "interactive-mouse \u2192 interactive (317)",
+    "name": "Kimi Ripple Touch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive",
+      "ripple",
+      "water"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "magnetic-pixels": {
+    "coordinate": 317,
+    "reason": "interactive-mouse \u2192 interactive (317)",
+    "name": "Magnetic Pixels",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "crt-magnet": {
+    "coordinate": 318,
+    "reason": "interactive-mouse \u2192 interactive (318)",
+    "name": "CRT Magnet",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-luma-sort": {
+    "coordinate": 318,
+    "reason": "interactive-mouse \u2192 interactive (318)",
+    "name": "Magnetic Luma Sort",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-sort-explorer": {
+    "coordinate": 318,
+    "reason": "interactive-mouse \u2192 interactive (318)",
+    "name": "Pixel Sort Explorer",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "raindrop-ripples": {
+    "coordinate": 318,
+    "reason": "interactive-mouse \u2192 interactive (318)",
+    "name": "Raindrop Ripples",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-repel": {
+    "coordinate": 319,
+    "reason": "interactive-mouse \u2192 interactive (319)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "vhs-tracking-mouse": {
+    "coordinate": 319,
+    "reason": "interactive-mouse \u2192 interactive (319)",
+    "name": "VHS Tracking",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-stretch-cross": {
+    "coordinate": 320,
+    "reason": "interactive-mouse \u2192 interactive (320)",
+    "name": "Pixel Stretch Cross",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-wind-chimes": {
+    "coordinate": 320,
+    "reason": "interactive-mouse \u2192 interactive (320)",
+    "name": "Pixel Wind Chimes",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "scanline-sorting": {
+    "coordinate": 320,
+    "reason": "interactive-mouse \u2192 interactive (320)",
+    "name": "Scanline Sorting",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "sorting"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantized-ripples": {
+    "coordinate": 321,
+    "reason": "interactive-mouse \u2192 interactive (321)",
+    "name": "Quantized Ripples",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "block-distort-interactive": {
+    "coordinate": 322,
+    "reason": "interactive-mouse \u2192 interactive (322)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "holographic-edge-ripple": {
+    "coordinate": 323,
+    "reason": "interactive-mouse \u2192 interactive (323)",
+    "name": "Holographic Edge Ripple",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-pixel-wind": {
+    "coordinate": 323,
+    "reason": "interactive-mouse \u2192 interactive (323)",
+    "name": "Pixel Wind",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-ripple-waves": {
+    "coordinate": 323,
+    "reason": "interactive-mouse \u2192 interactive (323)",
+    "name": "RGB Ripple Waves",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-force": {
+    "coordinate": 324,
+    "reason": "interactive-mouse \u2192 interactive (324)",
+    "name": "Luma Force",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-focus": {
+    "coordinate": 324,
+    "reason": "interactive-mouse \u2192 interactive (324)",
+    "name": "Pixel Focus",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "filter"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-lens": {
+    "coordinate": 325,
+    "reason": "interactive-mouse \u2192 interactive (325)",
+    "name": "Liquid Lens",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rain-lens-wipe": {
+    "coordinate": 327,
+    "reason": "interactive-mouse \u2192 interactive (327)",
+    "name": "Rain Lens Wipe",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "sonar-pulse": {
+    "coordinate": 327,
+    "reason": "interactive-mouse \u2192 interactive (327)",
+    "name": "Sonar Pulse",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chroma-lens": {
+    "coordinate": 328,
+    "reason": "interactive-mouse \u2192 interactive (328)",
+    "name": "Chroma Lens",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gravity-lens": {
+    "coordinate": 329,
+    "reason": "interactive-mouse \u2192 interactive (329)",
+    "name": "Gravity Lens",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "anamorphic-flare": {
+    "coordinate": 330,
+    "reason": "interactive-mouse \u2192 interactive (330)",
+    "name": "Anamorphic Flare",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "data-slicer-interactive": {
+    "coordinate": 331,
+    "reason": "interactive-mouse \u2192 interactive (331)",
+    "name": "Data Slicer",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "scanline-tear": {
+    "coordinate": 332,
+    "reason": "interactive-mouse \u2192 interactive (332)",
+    "name": "Scanline Tear",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "tile-twist": {
+    "coordinate": 332,
+    "reason": "interactive-mouse \u2192 interactive (332)",
+    "name": "Tile Twist",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "digital-compression": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Digital Compression",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "hex-pulse": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Hex Pulse",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-glitch-brush": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Glitch Brush",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-glitch": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Interactive Glitch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-volumetric-zoom": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Liquid Volumetric Zoom",
+    "category": "interactive-mouse",
+    "features": [
+      "volumetric",
+      "raymarched",
+      "depth",
+      "fluid",
+      "single-pass-multilayer",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "phosphor-magnifier": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Phosphor Magnifier",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "polar-warp-interactive": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Polar Warp",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "synthwave-grid-warp": {
+    "coordinate": 333,
+    "reason": "interactive-mouse \u2192 interactive (333)",
+    "name": "Synthwave Grid",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-voronoi-lens": {
+    "coordinate": 334,
+    "reason": "interactive-mouse \u2192 interactive (334)",
+    "name": "Interactive Voronoi Lens",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-split-glitch": {
+    "coordinate": 335,
+    "reason": "interactive-mouse \u2192 interactive (335)",
+    "name": "RGB Split Glitch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-magnifier": {
+    "coordinate": 336,
+    "reason": "interactive-mouse \u2192 interactive (336)",
+    "name": "Cyber Magnifier",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "holographic-prism": {
+    "coordinate": 336,
+    "reason": "interactive-mouse \u2192 interactive (336)",
+    "name": "Holographic Prism",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-film-burn": {
+    "coordinate": 336,
+    "reason": "interactive-mouse \u2192 interactive (336)",
+    "name": "Film Burn",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "noise",
+      "texture"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "strip-scan-glitch": {
+    "coordinate": 336,
+    "reason": "interactive-mouse \u2192 interactive (336)",
+    "name": "Strip Scan Glitch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "volumetric-rainbow-clouds": {
+    "coordinate": 336,
+    "reason": "interactive-mouse \u2192 interactive (336)",
+    "name": "Volumetric Rainbow Clouds (Pass 1)",
+    "category": "interactive-mouse",
+    "features": [
+      "multi-pass",
+      "volumetric",
+      "depth",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "psychedelic-noise-flow": {
+    "coordinate": 337,
+    "reason": "interactive-mouse \u2192 interactive (337)",
+    "name": "Psychedelic Noise Flow",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "quantum-ripples": {
+    "coordinate": 337,
+    "reason": "interactive-mouse \u2192 interactive (337)",
+    "name": "Quantum Ripples",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "directional-glitch": {
+    "coordinate": 338,
+    "reason": "interactive-mouse \u2192 interactive (338)",
+    "name": "Directional Glitch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "radial-hex-lens": {
+    "coordinate": 339,
+    "reason": "interactive-mouse \u2192 interactive (339)",
+    "name": "Radial Hex Lens",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "crystal-refraction": {
+    "coordinate": 340,
+    "reason": "interactive-mouse \u2192 interactive (340)",
+    "name": "Crystal Refraction",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "data-stream": {
+    "coordinate": 340,
+    "reason": "interactive-mouse \u2192 interactive (340)",
+    "name": "Digital Stream",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-interference": {
+    "coordinate": 341,
+    "reason": "interactive-mouse \u2192 interactive (341)",
+    "name": "Magnetic Interference",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-glitch-cubes": {
+    "coordinate": 343,
+    "reason": "interactive-mouse \u2192 interactive (343)",
+    "name": "Interactive Glitch Cubes",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "pseudo-3d"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "sliding-tile-glitch": {
+    "coordinate": 343,
+    "reason": "interactive-mouse \u2192 interactive (343)",
+    "name": "Sliding Tile Glitch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "virtual-lens": {
+    "coordinate": 343,
+    "reason": "interactive-mouse \u2192 interactive (343)",
+    "name": "Virtual Lens",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "x-ray-reveal": {
+    "coordinate": 343,
+    "reason": "interactive-mouse \u2192 interactive (343)",
+    "name": "X-Ray Reveal",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "data-stream-corruption": {
+    "coordinate": 344,
+    "reason": "interactive-mouse \u2192 interactive (344)",
+    "name": "Data Stream Corruption",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-fisheye": {
+    "coordinate": 344,
+    "reason": "interactive-mouse \u2192 interactive (344)",
+    "name": "Interactive Fisheye",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "geometry"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-superposition": {
+    "coordinate": 344,
+    "reason": "interactive-mouse \u2192 interactive (344)",
+    "name": "Quantum Superposition",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-fluid-warp": {
+    "coordinate": 346,
+    "reason": "interactive-mouse \u2192 interactive (346)",
+    "name": "Neon Fluid Warp",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "split-dimension": {
+    "coordinate": 346,
+    "reason": "interactive-mouse \u2192 interactive (346)",
+    "name": "Split Dimension",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-glitch-hologram": {
+    "coordinate": 347,
+    "reason": "interactive-mouse \u2192 interactive (347)",
+    "name": "Cyber Glitch Hologram",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-warp": {
+    "coordinate": 347,
+    "reason": "interactive-mouse \u2192 interactive (347)",
+    "name": "Neon Warp",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "waveform-glitch": {
+    "coordinate": 347,
+    "reason": "interactive-mouse \u2192 interactive (347)",
+    "name": "Waveform Glitch",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-slice-interactive": {
+    "coordinate": 348,
+    "reason": "interactive-mouse \u2192 interactive (348)",
+    "name": "Luma Slice Interactive",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-time-warp": {
+    "coordinate": 349,
+    "reason": "interactive-mouse \u2192 interactive (349)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "webcam"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "neon-contour-drag": {
+    "coordinate": 349,
+    "reason": "interactive-mouse \u2192 interactive (349)",
+    "name": "Neon Wake",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "image"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ascii-decode": {
+    "coordinate": 351,
+    "reason": "interactive-mouse \u2192 interactive (351)",
+    "name": "ASCII Decode",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "ascii-lens": {
+    "coordinate": 354,
+    "reason": "interactive-mouse \u2192 interactive (354)",
+    "name": "ASCII Lens",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-echo-warp": {
+    "coordinate": 354,
+    "reason": "interactive-mouse \u2192 interactive (354)",
+    "name": "",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "hypnotic-spiral": {
+    "coordinate": 355,
+    "reason": "interactive-mouse \u2192 interactive (355)",
+    "name": "Hypnotic Spiral",
+    "category": "interactive-mouse",
+    "features": [
+      "interactive",
+      "spiral",
+      "visual",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kimi-chromatic-warp": {
+    "coordinate": 357,
+    "reason": "interactive-mouse \u2192 interactive (357)",
+    "name": "Kimi Chromatic Warp",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "interactive",
+      "chromatic",
+      "prism",
+      "warp"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "solarize-warp": {
+    "coordinate": 360,
+    "reason": "interactive-mouse \u2192 interactive (360)",
+    "name": "Solarize Warp",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glitch-cathedral": {
+    "coordinate": 361,
+    "reason": "interactive-mouse \u2192 interactive (361)",
+    "name": "Glitch Cathedral",
+    "category": "interactive-mouse",
+    "features": [
+      "interactive",
+      "glitch",
+      "geometric",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vhs-jog": {
+    "coordinate": 361,
+    "reason": "interactive-mouse \u2192 interactive (361)",
+    "name": "VHS Jog Wheel",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "velvet-vortex": {
+    "coordinate": 364,
+    "reason": "interactive-mouse \u2192 interactive (364)",
+    "name": "Velvet Vortex",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vortex-drag": {
+    "coordinate": 368,
+    "reason": "interactive-mouse \u2192 interactive (368)",
+    "name": "Vortex Drag",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-warp": {
+    "coordinate": 373,
+    "reason": "interactive-mouse \u2192 interactive (373)",
+    "name": "Liquid Warp",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "mouse-driven",
+      "interactive"
+    ]
+  },
+  "entropy-grid": {
+    "coordinate": 376,
+    "reason": "interactive-mouse \u2192 interactive (376)",
+    "name": "Entropy Grid",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "mouse-gravity": {
+    "coordinate": 379,
+    "reason": "interactive-mouse \u2192 interactive (379)",
+    "name": "Interactive Gravity",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ambient-liquid": {
+    "coordinate": 389,
+    "reason": "artistic \u2192 interactive (389)",
+    "name": "Ambient Liquid",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "swirling-void": {
+    "coordinate": 392,
+    "reason": "interactive-mouse \u2192 interactive (392)",
+    "name": "Swirling Void",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "melting-oil": {
+    "coordinate": 409,
+    "reason": "artistic \u2192 artistic (409)",
+    "name": "Melting Oil",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "spectral-distortion": {
+    "coordinate": 416,
+    "reason": "interactive-mouse \u2192 artistic (416)",
+    "name": "Spectral Distortion",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "iridescent-oil-slick": {
+    "coordinate": 417,
+    "reason": "artistic \u2192 artistic (417)",
+    "name": "Iridescent Oil Slick",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "iridescent",
+      "oil",
+      "soap-bubble",
+      "interference",
+      "rainbow",
+      "organic",
+      "flowing",
+      "kaleidoscope",
+      "artistic",
+      "stylized"
+    ]
+  },
+  "astral-kaleidoscope": {
+    "coordinate": 440,
+    "reason": "artistic \u2192 artistic (440)",
+    "name": "Astral Kaleidoscope",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "aurora-rift": {
+    "coordinate": 440,
+    "reason": "artistic \u2192 artistic (440)",
+    "name": "Aurora Rift",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-manifold-2": {
+    "coordinate": 440,
+    "reason": "artistic \u2192 artistic (440)",
+    "name": "Chromatic Manifold V2",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "double-exposure-zoom": {
+    "coordinate": 440,
+    "reason": "artistic \u2192 artistic (440)",
+    "name": "Double Exposure Zoom",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-dipole": {
+    "coordinate": 440,
+    "reason": "artistic \u2192 artistic (440)",
+    "name": "Magnetic Dipole Field",
+    "category": "artistic",
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "aurora-rift-gemini": {
+    "coordinate": 441,
+    "reason": "artistic \u2192 artistic (441)",
+    "name": "Aurora Rift Gemini",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-focus": {
+    "coordinate": 441,
+    "reason": "artistic \u2192 artistic (441)",
+    "name": "Chromatic Focus",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "lenia": {
+    "coordinate": 441,
+    "reason": "artistic \u2192 artistic (441)",
+    "name": "Lenia Cellular Automata",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "mirror-dimension": {
+    "coordinate": 441,
+    "reason": "artistic \u2192 artistic (441)",
+    "name": "Mirror Dimension",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "rorschach-inkblot": {
+    "coordinate": 441,
+    "reason": "artistic \u2192 artistic (441)",
+    "name": "Rorschach Inkblot",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-crawler": {
+    "coordinate": 442,
+    "reason": "artistic \u2192 artistic (442)",
+    "name": "Chromatic Crawler",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "frosty-window": {
+    "coordinate": 442,
+    "reason": "artistic \u2192 artistic (442)",
+    "name": "Frosty Window",
+    "category": "artistic",
+    "features": [
+      "animated",
+      "crystalline",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neural-resonance": {
+    "coordinate": 443,
+    "reason": "artistic \u2192 artistic (443)",
+    "name": "Neural Resonance",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-edge-diffusion": {
+    "coordinate": 444,
+    "reason": "artistic \u2192 artistic (444)",
+    "name": "Neon Edge Diffusion",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "physarum-gemini": {
+    "coordinate": 444,
+    "reason": "artistic \u2192 artistic (444)",
+    "name": "Physarum Gemini",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "quantum-smear": {
+    "coordinate": 444,
+    "reason": "artistic \u2192 artistic (444)",
+    "name": "Quantum Smear",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rainbow-cloud": {
+    "coordinate": 444,
+    "reason": "artistic \u2192 artistic (444)",
+    "name": "Rainbow Cloud",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "anisotropic-kuwahara": {
+    "coordinate": 445,
+    "reason": "artistic \u2192 artistic (445)",
+    "name": "Van Gogh Flow",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "interactive",
+      "painterly",
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "physarum-grokcf1": {
+    "coordinate": 445,
+    "reason": "artistic \u2192 artistic (445)",
+    "name": "Physarum grokcf1",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "iso-hills": {
+    "coordinate": 446,
+    "reason": "artistic \u2192 artistic (446)",
+    "name": "Iso Hills",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "polka-dot-reveal": {
+    "coordinate": 446,
+    "reason": "artistic \u2192 artistic (446)",
+    "name": "Polka Dot Reveal",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "encaustic-wax": {
+    "coordinate": 447,
+    "reason": "artistic \u2192 artistic (447)",
+    "name": "Encaustic Wax",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "blur",
+      "texture"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "navier-stokes-dye": {
+    "coordinate": 447,
+    "reason": "artistic \u2192 artistic (447)",
+    "name": "Navier-Stokes Dye",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "boids": {
+    "coordinate": 448,
+    "reason": "artistic \u2192 artistic (448)",
+    "name": "Boids Reveal",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "multi-turing": {
+    "coordinate": 448,
+    "reason": "artistic \u2192 artistic (448)",
+    "name": "Multiscale Turing Patterns",
+    "category": "artistic",
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "organic-growth",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "poincare-tile": {
+    "coordinate": 448,
+    "reason": "artistic \u2192 artistic (448)",
+    "name": "Hyperbolic Tiling",
+    "category": "artistic",
+    "features": [
+      "interactive",
+      "mathematical",
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "speed-lines-focus": {
+    "coordinate": 448,
+    "reason": "artistic \u2192 artistic (448)",
+    "name": "Speed Lines Focus",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi": {
+    "coordinate": 448,
+    "reason": "artistic \u2192 artistic (448)",
+    "name": "Voronoi Tessellation",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "galaxy-sim": {
+    "coordinate": 449,
+    "reason": "artistic \u2192 artistic (449)",
+    "name": "Galaxy",
+    "category": "artistic",
+    "features": [],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "quantum-wormhole": {
+    "coordinate": 449,
+    "reason": "artistic \u2192 artistic (449)",
+    "name": "Quantum Wormhole",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rain": {
+    "coordinate": 449,
+    "reason": "artistic \u2192 artistic (449)",
+    "name": "Rain",
+    "category": "artistic",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "stipple-render": {
+    "coordinate": 449,
+    "reason": "artistic \u2192 artistic (449)",
+    "name": "Stipple Render",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "chromatic-manifold": {
+    "coordinate": 450,
+    "reason": "artistic \u2192 artistic (450)",
+    "name": "Chromatic Manifold",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-foam": {
+    "coordinate": 450,
+    "reason": "artistic \u2192 artistic (450)",
+    "name": "Quantum Foam",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "astral-kaleidoscope-gemini": {
+    "coordinate": 451,
+    "reason": "artistic \u2192 artistic (451)",
+    "name": "Astral Kaleidoscope Gemini",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "plasma": {
+    "coordinate": 451,
+    "reason": "artistic \u2192 artistic (451)",
+    "name": "Plasma Ball",
+    "category": "artistic",
+    "features": [],
+    "tags": [
+      "procedural",
+      "generative"
+    ]
+  },
+  "bioluminescent": {
+    "coordinate": 452,
+    "reason": "artistic \u2192 artistic (452)",
+    "name": "Bioluminescent Growth",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "multi-mode",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatographic-separation": {
+    "coordinate": 452,
+    "reason": "artistic \u2192 artistic (452)",
+    "name": "Chromatographic Separation",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "fluid-dynamics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "fabric-step": {
+    "coordinate": 452,
+    "reason": "artistic \u2192 artistic (452)",
+    "name": "Fabric of Reality",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "neural-dreamscape": {
+    "coordinate": 452,
+    "reason": "artistic \u2192 artistic (452)",
+    "name": "Neural Dreamscape",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "holographic-contour": {
+    "coordinate": 453,
+    "reason": "artistic \u2192 artistic (453)",
+    "name": "Holographic Contour",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "thermal-vision": {
+    "coordinate": 453,
+    "reason": "artistic \u2192 artistic (453)",
+    "name": "Thermal Vision",
+    "category": "artistic",
+    "features": [
+      "color-remap",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "engraving-stipple": {
+    "coordinate": 454,
+    "reason": "artistic \u2192 artistic (454)",
+    "name": "Engraving Stipple",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "green-tracer": {
+    "coordinate": 454,
+    "reason": "artistic \u2192 artistic (454)",
+    "name": "Green Tracer World",
+    "category": "artistic",
+    "features": [
+      "temporal\u2011persistence",
+      "edge\u2011glow",
+      "film\u2011grain",
+      "depth\u2011aware",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-fractal": {
+    "coordinate": 454,
+    "reason": "artistic \u2192 artistic (454)",
+    "name": "Quantum Fractal",
+    "category": "artistic",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rotoscope-ink": {
+    "coordinate": 454,
+    "reason": "artistic \u2192 artistic (454)",
+    "name": "Rotoscope Ink",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "astral-kaleidoscope-grokcf1": {
+    "coordinate": 455,
+    "reason": "artistic \u2192 artistic (455)",
+    "name": "Astral Kaleidoscope grokcf1",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-infection": {
+    "coordinate": 455,
+    "reason": "artistic \u2192 artistic (455)",
+    "name": "Chromatic Infection",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "organic-growth",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "dla-crystals": {
+    "coordinate": 455,
+    "reason": "artistic \u2192 artistic (455)",
+    "name": "DLA Crystal Growth",
+    "category": "artistic",
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "fractal",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "echo-trace": {
+    "coordinate": 456,
+    "reason": "artistic \u2192 artistic (456)",
+    "name": "Echo Trace",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "ion-stream": {
+    "coordinate": 456,
+    "reason": "artistic \u2192 artistic (456)",
+    "name": "Ion Stream",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "snow": {
+    "coordinate": 456,
+    "reason": "artistic \u2192 artistic (456)",
+    "name": "Blizzard (Depth-Aware)",
+    "category": "artistic",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "stella-orbit": {
+    "coordinate": 456,
+    "reason": "artistic \u2192 artistic (456)",
+    "name": "Stellar Orbit",
+    "category": "artistic",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "halftone-reveal": {
+    "coordinate": 457,
+    "reason": "artistic \u2192 artistic (457)",
+    "name": "Halftone Reveal",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "physarum": {
+    "coordinate": 457,
+    "reason": "artistic \u2192 artistic (457)",
+    "name": "Physarum Slime Mold",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "reaction-diffusion": {
+    "coordinate": 457,
+    "reason": "artistic \u2192 artistic (457)",
+    "name": "Reaction-Diffusion",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  "aurora-rift-2": {
+    "coordinate": 458,
+    "reason": "artistic \u2192 artistic (458)",
+    "name": "Aurora Rift V2",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "temporal-echo": {
+    "coordinate": 458,
+    "reason": "artistic \u2192 artistic (458)",
+    "name": "Temporal Echo",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi-dynamics": {
+    "coordinate": 458,
+    "reason": "artistic \u2192 artistic (458)",
+    "name": "Voronoi Bubbles",
+    "category": "artistic",
+    "features": [
+      "interactive",
+      "depth-aware",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "neon-contour-interactive": {
+    "coordinate": 459,
+    "reason": "artistic \u2192 artistic (459)",
+    "name": "Neon Contour",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "lidar": {
+    "coordinate": 461,
+    "reason": "artistic \u2192 artistic (461)",
+    "name": "LiDAR Scanner Pro",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "multi-mode",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "mouse-pixel-sort": {
+    "coordinate": 464,
+    "reason": "artistic \u2192 artistic (464)",
+    "name": "Mouse Pixel Sort",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "astral-veins": {
+    "coordinate": 468,
+    "reason": "artistic \u2192 artistic (468)",
+    "name": "Astral Veins",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "mosaic-reveal": {
+    "coordinate": 469,
+    "reason": "artistic \u2192 artistic (469)",
+    "name": "Mosaic Reveal",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "radiating-haze": {
+    "coordinate": 469,
+    "reason": "artistic \u2192 artistic (469)",
+    "name": "Radiating Haze",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "multi-mode",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luminance-wind": {
+    "coordinate": 472,
+    "reason": "artistic \u2192 artistic (472)",
+    "name": "Luminance Wind",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spectrogram-displace": {
+    "coordinate": 478,
+    "reason": "artistic \u2192 artistic (478)",
+    "name": "Spectrogram Displace",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "static-reveal": {
+    "coordinate": 481,
+    "reason": "artistic \u2192 artistic (481)",
+    "name": "Static Reveal",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cosmic-flow": {
+    "coordinate": 482,
+    "reason": "artistic \u2192 artistic (482)",
+    "name": "Cosmic Flow Pro",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "chromatic-aberration",
+      "multi-mode",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-folds-2": {
+    "coordinate": 484,
+    "reason": "artistic \u2192 artistic (484)",
+    "name": "Chromatic Folds V2",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "crumpled-paper": {
+    "coordinate": 486,
+    "reason": "image \u2192 artistic (486)",
+    "name": "Crumpled Paper",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kintsugi-repair": {
+    "coordinate": 490,
+    "reason": "image \u2192 artistic (490)",
+    "name": "Kintsugi Repair",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chroma-threads": {
+    "coordinate": 491,
+    "reason": "image \u2192 artistic (491)",
+    "name": "",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "frost-reveal": {
+    "coordinate": 492,
+    "reason": "image \u2192 artistic (492)",
+    "name": "Frost Reveal",
+    "category": "image",
+    "features": [
+      "mouse-driven",
+      "interactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pin-art-3d": {
+    "coordinate": 493,
+    "reason": "image \u2192 artistic (493)",
+    "name": "Pin Art 3D",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ring-slicer": {
+    "coordinate": 493,
+    "reason": "image \u2192 artistic (493)",
+    "name": "Ring Slicer",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "video-echo-chamber": {
+    "coordinate": 493,
+    "reason": "image \u2192 artistic (493)",
+    "name": "Video Echo Chamber",
+    "category": "image",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spectral-mesh": {
+    "coordinate": 494,
+    "reason": "image \u2192 artistic (494)",
+    "name": "",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chrono-slit-scan": {
+    "coordinate": 495,
+    "reason": "image \u2192 artistic (495)",
+    "name": "Chrono Slit Scan",
+    "category": "image",
+    "features": [
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "concentric-spin": {
+    "coordinate": 495,
+    "reason": "image \u2192 artistic (495)",
+    "name": "Concentric Spin",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "plastic-bricks": {
+    "coordinate": 495,
+    "reason": "image \u2192 artistic (495)",
+    "name": "Plastic Bricks",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-folds": {
+    "coordinate": 496,
+    "reason": "artistic \u2192 artistic (496)",
+    "name": "Chromatic Folds",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-pixel-sort": {
+    "coordinate": 497,
+    "reason": "artistic \u2192 artistic (497)",
+    "name": "",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  "bismuth-crystallizer": {
+    "coordinate": 497,
+    "reason": "image \u2192 artistic (497)",
+    "name": "Bismuth Crystallizer",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "color-blindness": {
+    "coordinate": 499,
+    "reason": "image \u2192 artistic (499)",
+    "name": "Color Blindness Sim",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "page-curl-interactive": {
+    "coordinate": 499,
+    "reason": "image \u2192 artistic (499)",
+    "name": "Page Curl Interactive",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "radiating-displacement": {
+    "coordinate": 501,
+    "reason": "artistic \u2192 artistic (501)",
+    "name": "Radiating Displacement",
+    "category": "artistic",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "colour-masking",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "aerogel-smoke": {
+    "coordinate": 501,
+    "reason": "image \u2192 artistic (501)",
+    "name": "Aerogel Smoke",
+    "category": "image",
+    "features": [
+      "mouse-driven",
+      "volumetric"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-refraction": {
+    "coordinate": 501,
+    "reason": "image \u2192 artistic (501)",
+    "name": "Luma Refraction",
+    "category": "image",
+    "features": [
+      "mouse-driven",
+      "simulation"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voxel-depth-sort": {
+    "coordinate": 501,
+    "reason": "image \u2192 artistic (501)",
+    "name": "Voxel Depth Sort",
+    "category": "image",
+    "features": [
+      "mouse-driven",
+      "3d-effect"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "graphic-novel": {
+    "coordinate": 504,
+    "reason": "image \u2192 artistic (504)",
+    "name": "Graphic Novel",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "tesseract-fold": {
+    "coordinate": 504,
+    "reason": "image \u2192 artistic (504)",
+    "name": "Tesseract Fold",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spectral-slit-scan": {
+    "coordinate": 505,
+    "reason": "image \u2192 artistic (505)",
+    "name": "",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gamma-ray-burst": {
+    "coordinate": 507,
+    "reason": "image \u2192 artistic (507)",
+    "name": "Gamma Ray Burst",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "honey-melt": {
+    "coordinate": 507,
+    "reason": "image \u2192 artistic (507)",
+    "name": "Honey Melt",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ripple-blocks": {
+    "coordinate": 507,
+    "reason": "image \u2192 artistic (507)",
+    "name": "Ripple Blocks",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "directional-blur-wipe": {
+    "coordinate": 508,
+    "reason": "image \u2192 artistic (508)",
+    "name": "Directional Blur Wipe",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "liquid-chrome-ripple": {
+    "coordinate": 508,
+    "reason": "image \u2192 artistic (508)",
+    "name": "Liquid Chrome Ripple",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-pulse-stream": {
+    "coordinate": 508,
+    "reason": "image \u2192 artistic (508)",
+    "name": "",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "polka-wave": {
+    "coordinate": 508,
+    "reason": "image \u2192 artistic (508)",
+    "name": "Polka Wave",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "retro-gameboy": {
+    "coordinate": 508,
+    "reason": "image \u2192 artistic (508)",
+    "name": "Retro Game Boy",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "slime-drip": {
+    "coordinate": 508,
+    "reason": "image \u2192 artistic (508)",
+    "name": "Slime Drip",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "holographic-shatter": {
+    "coordinate": 509,
+    "reason": "image \u2192 artistic (509)",
+    "name": "Holographic Shatter",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vortex-prism": {
+    "coordinate": 514,
+    "reason": "artistic \u2192 artistic (514)",
+    "name": "Vortex Prism",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "circular-pixelate": {
+    "coordinate": 514,
+    "reason": "image \u2192 artistic (514)",
+    "name": "Circular Pixelate",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-ripple-distortion": {
+    "coordinate": 515,
+    "reason": "image \u2192 artistic (515)",
+    "name": "RGB Ripple Distortion",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-scattering": {
+    "coordinate": 520,
+    "reason": "image \u2192 artistic (520)",
+    "name": "Pixel Scattering",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-stretch-interactive": {
+    "coordinate": 521,
+    "reason": "image \u2192 artistic (521)",
+    "name": "Pixel Stretch",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-folds-gemini": {
+    "coordinate": 525,
+    "reason": "artistic \u2192 artistic (525)",
+    "name": "Chromatic Folds Gemini",
+    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-chroma": {
+    "coordinate": 525,
+    "reason": "image \u2192 artistic (525)",
+    "name": "Magnetic Chroma",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "hex-lens": {
+    "coordinate": 528,
+    "reason": "image \u2192 artistic (528)",
+    "name": "Hex Lens Interactive",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-halftone-scanner": {
+    "coordinate": 530,
+    "reason": "image \u2192 artistic (530)",
+    "name": "Cyber Halftone Scanner",
+    "category": "image",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "frosted-glass-lens": {
+    "coordinate": 530,
+    "reason": "image \u2192 artistic (530)",
+    "name": "Frosted Glass Lens",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "tilt-shift": {
+    "coordinate": 531,
+    "reason": "image \u2192 artistic (531)",
+    "name": "Tilt Shift Miniature",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "nebulous-dream": {
+    "coordinate": 534,
+    "reason": "artistic \u2192 artistic (534)",
+    "name": "Nebulous Dream",
+    "category": "artistic",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "fractal-noise-dissolve": {
+    "coordinate": 534,
+    "reason": "image \u2192 artistic (534)",
+    "name": "Fractal Noise Dissolve",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "optical-illusion-spin": {
+    "coordinate": 534,
+    "reason": "image \u2192 artistic (534)",
+    "name": "Optical Illusion Spin",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "steampunk-gear-lens": {
+    "coordinate": 541,
+    "reason": "image \u2192 artistic (541)",
+    "name": "Steampunk Gear Lens",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "wave-halftone": {
+    "coordinate": 543,
+    "reason": "image \u2192 artistic (543)",
+    "name": "",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "alucinate": {
+    "coordinate": 544,
+    "reason": "image \u2192 artistic (544)",
+    "name": "Alucinate",
+    "category": "image",
+    "features": [],
+    "tags": [
+      "psychedelic",
+      "warp",
+      "interactive",
+      "organic",
+      "fluid",
+      "filter",
+      "image-processing"
+    ]
+  },
+  "triangle-mosaic": {
+    "coordinate": 544,
+    "reason": "image \u2192 artistic (544)",
+    "name": "Triangle Mosaic",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "digital-lens": {
+    "coordinate": 557,
+    "reason": "image \u2192 visual effects (557)",
+    "name": "Digital Lens",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glitch-ripple-drag": {
+    "coordinate": 560,
+    "reason": "image \u2192 visual effects (560)",
+    "name": "",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "data-moshing": {
+    "coordinate": 563,
+    "reason": "image \u2192 visual effects (563)",
+    "name": "Data Moshing",
+    "category": "image",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glitch-reveal": {
+    "coordinate": 569,
+    "reason": "image \u2192 visual effects (569)",
+    "name": "Glitch Reveal",
+    "category": "image",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "breathing-kaleidoscope": {
+    "coordinate": 583,
+    "reason": "visual-effects \u2192 visual effects (583)",
+    "name": "Breathing Kaleidoscope",
+    "category": "visual-effects",
+    "features": [
+      "kaleidoscope",
+      "animated",
+      "visual-effects",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "data-scanner": {
+    "coordinate": 590,
+    "reason": "visual-effects \u2192 visual effects (590)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "chromatic-focus-interactive": {
+    "coordinate": 591,
+    "reason": "visual-effects \u2192 visual effects (591)",
+    "name": "Chromatic Focus",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "neon-edge-reveal": {
+    "coordinate": 591,
+    "reason": "visual-effects \u2192 visual effects (591)",
+    "name": "Neon Edge Reveal",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-topology": {
+    "coordinate": 591,
+    "reason": "visual-effects \u2192 visual effects (591)",
+    "name": "RGB Topology",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "temporal-rgb-smear": {
+    "coordinate": 593,
+    "reason": "visual-effects \u2192 visual effects (593)",
+    "name": "Temporal RGB Smear",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "time-slit-scan": {
+    "coordinate": 593,
+    "reason": "visual-effects \u2192 visual effects (593)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "electric-contours": {
+    "coordinate": 597,
+    "reason": "visual-effects \u2192 visual effects (597)",
+    "name": "Electric Contours",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "phantom-lag": {
+    "coordinate": 597,
+    "reason": "visual-effects \u2192 visual effects (597)",
+    "name": "Phantom Lag",
+    "category": "visual-effects",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "zipper-reveal": {
+    "coordinate": 597,
+    "reason": "visual-effects \u2192 visual effects (597)",
+    "name": "Zipper Reveal",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "luma-smear-interactive": {
+    "coordinate": 599,
+    "reason": "visual-effects \u2192 visual effects (599)",
+    "name": "Kinetic Echo",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "signal-modulation": {
+    "coordinate": 599,
+    "reason": "visual-effects \u2192 visual effects (599)",
+    "name": "Signal Modulation",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven",
+      "visual-effect"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "elastic-chromatic": {
+    "coordinate": 600,
+    "reason": "visual-effects \u2192 visual effects (600)",
+    "name": "Elastic Chromatic",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "rgb-distance-split": {
+    "coordinate": 603,
+    "reason": "visual-effects \u2192 visual effects (603)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "spectral-rain": {
+    "coordinate": 605,
+    "reason": "visual-effects \u2192 visual effects (605)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "holographic-projection": {
+    "coordinate": 607,
+    "reason": "visual-effects \u2192 visual effects (607)",
+    "name": "Holo Projector",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "neon-topology": {
+    "coordinate": 607,
+    "reason": "visual-effects \u2192 visual effects (607)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "cyber-scan": {
+    "coordinate": 608,
+    "reason": "visual-effects \u2192 visual effects (608)",
+    "name": "Cyber Scan",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "voxel-grid": {
+    "coordinate": 608,
+    "reason": "visual-effects \u2192 visual effects (608)",
+    "name": "Voxel Grid",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "holographic-sticker": {
+    "coordinate": 609,
+    "reason": "visual-effects \u2192 visual effects (609)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "hyper-space-jump": {
+    "coordinate": 609,
+    "reason": "visual-effects \u2192 visual effects (609)",
+    "name": "Hyper Space Jump",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "crt-clear-zone": {
+    "coordinate": 613,
+    "reason": "visual-effects \u2192 visual effects (613)",
+    "name": "CRT Clear Zone",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ascii-shockwave": {
+    "coordinate": 618,
+    "reason": "visual-effects \u2192 visual effects (618)",
+    "name": "ASCII Shockwave",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-edge-pulse": {
+    "coordinate": 620,
+    "reason": "visual-effects \u2192 visual effects (620)",
+    "name": "Neon Edge Pulse",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "cyber-grid-pulse": {
+    "coordinate": 622,
+    "reason": "visual-effects \u2192 visual effects (622)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "hex-circuit": {
+    "coordinate": 622,
+    "reason": "visual-effects \u2192 visual effects (622)",
+    "name": "Hex Circuit",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "phosphor-decay": {
+    "coordinate": 622,
+    "reason": "visual-effects \u2192 visual effects (622)",
+    "name": "Phosphor Decay",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "interactive-pcb-traces": {
+    "coordinate": 626,
+    "reason": "visual-effects \u2192 visual effects (626)",
+    "name": "Interactive PCB Traces",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "quantum-field-visualizer": {
+    "coordinate": 631,
+    "reason": "visual-effects \u2192 visual effects (631)",
+    "name": "Quantum Field Visualizer",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "warp-drive": {
+    "coordinate": 635,
+    "reason": "visual-effects \u2192 visual effects (635)",
+    "name": "Warp Drive",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chroma-vortex": {
+    "coordinate": 638,
+    "reason": "visual-effects \u2192 visual effects (638)",
+    "name": "",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "interactive-fresnel": {
+    "coordinate": 642,
+    "reason": "visual-effects \u2192 visual effects (642)",
+    "name": "Interactive Fresnel",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "holographic-projection-gpt52": {
+    "coordinate": 646,
+    "reason": "visual-effects \u2192 visual effects (646)",
+    "name": "Holo Projection Prism gpt52",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "animated"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  "cyber-physical-portal": {
+    "coordinate": 647,
+    "reason": "visual-effects \u2192 visual effects (647)",
+    "name": "Cyber Physical Portal",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glitch-pixel-sort": {
+    "coordinate": 661,
+    "reason": "visual-effects \u2192 visual effects (661)",
+    "name": "Glitch Pixel Sort",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-sorter": {
+    "coordinate": 662,
+    "reason": "visual-effects \u2192 visual effects (662)",
+    "name": "Pixel Sorter",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven",
+      "glitch"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi-zoom-turbulence": {
+    "coordinate": 718,
+    "reason": "geometric \u2192 retro/digital (718)",
+    "name": "Voronoi Zoom Turbulence",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "datamosh": {
+    "coordinate": 743,
+    "reason": "geometric \u2192 retro/digital (743)",
+    "name": "Datamosh",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-poly-grid": {
+    "coordinate": 746,
+    "reason": "geometric \u2192 retro/digital (746)",
+    "name": "Neon Poly Grid",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "kaleido-scope": {
+    "coordinate": 749,
+    "reason": "geometric \u2192 retro/digital (749)",
+    "name": "Kaleido-Scope",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "flip-matrix": {
+    "coordinate": 754,
+    "reason": "geometric \u2192 retro/digital (754)",
+    "name": "Flip Matrix",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kaleido-scope-grokcf1": {
+    "coordinate": 754,
+    "reason": "geometric \u2192 retro/digital (754)",
+    "name": "Kaleido-Scope Prism grokcf1",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "interactive-origami": {
+    "coordinate": 759,
+    "reason": "geometric \u2192 retro/digital (759)",
+    "name": "Interactive Origami",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kinetic-tiles": {
+    "coordinate": 759,
+    "reason": "geometric \u2192 retro/digital (759)",
+    "name": "Kinetic Tiles",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ascii-glyph": {
+    "coordinate": 762,
+    "reason": "geometric \u2192 retro/digital (762)",
+    "name": "ASCII Glyphs",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "spectrum-bleed": {
+    "coordinate": 772,
+    "reason": "retro-glitch \u2192 retro/digital (772)",
+    "name": "Spectrum Bleed",
+    "category": "retro-glitch",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "adaptive-mosaic": {
+    "coordinate": 775,
+    "reason": "geometric \u2192 retro/digital (775)",
+    "name": "",
+    "category": "geometric",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "pixelation-drift": {
+    "coordinate": 777,
+    "reason": "retro-glitch \u2192 retro/digital (777)",
+    "name": "Pixelation Drift",
+    "category": "retro-glitch",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "organic-motion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "neon-edges": {
+    "coordinate": 779,
+    "reason": "retro-glitch \u2192 retro/digital (779)",
+    "name": "Neon Edges",
+    "category": "retro-glitch",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "scan-distort": {
+    "coordinate": 779,
+    "reason": "retro-glitch \u2192 retro/digital (779)",
+    "name": "",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "hyperbolic-dreamweaver": {
+    "coordinate": 782,
+    "reason": "geometric \u2192 retro/digital (782)",
+    "name": "Hyperbolic Dreamweaver",
+    "category": "geometric",
+    "features": [
+      "geometric",
+      "psychedelic",
+      "depth-aware",
+      "non-euclidean",
+      "interactive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "halftone": {
+    "coordinate": 785,
+    "reason": "retro-glitch \u2192 retro/digital (785)",
+    "name": "Retro Halftone",
+    "category": "retro-glitch",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-rain": {
+    "coordinate": 786,
+    "reason": "retro-glitch \u2192 retro/digital (786)",
+    "name": "Pixel Rain",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vinyl-scratch": {
+    "coordinate": 786,
+    "reason": "retro-glitch \u2192 retro/digital (786)",
+    "name": "Vinyl Scratch",
+    "category": "retro-glitch",
+    "features": [
+      "retro",
+      "texture",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "digital-decay": {
+    "coordinate": 787,
+    "reason": "retro-glitch \u2192 retro/digital (787)",
+    "name": "Digital Decay",
+    "category": "retro-glitch",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "time-lag-map": {
+    "coordinate": 788,
+    "reason": "geometric \u2192 retro/digital (788)",
+    "name": "Time-Lag Map",
+    "category": "geometric",
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "motion-detection",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "digital-waves": {
+    "coordinate": 788,
+    "reason": "retro-glitch \u2192 retro/digital (788)",
+    "name": "Digital Waves",
+    "category": "retro-glitch",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-terminal-ascii": {
+    "coordinate": 790,
+    "reason": "retro-glitch \u2192 retro/digital (790)",
+    "name": "Cyber Terminal ASCII",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "crt-tv": {
+    "coordinate": 806,
+    "reason": "retro-glitch \u2192 retro/digital (806)",
+    "name": "CRT Monitor",
+    "category": "retro-glitch",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "digital-glitch": {
+    "coordinate": 810,
+    "reason": "retro-glitch \u2192 retro/digital (810)",
+    "name": "Digital Glitch",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vhs-tracking": {
+    "coordinate": 810,
+    "reason": "retro-glitch \u2192 retro/digital (810)",
+    "name": "VHS Tracking Error",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ascii-flow": {
+    "coordinate": 811,
+    "reason": "retro-glitch \u2192 retro/digital (811)",
+    "name": "",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "xerox-degrade": {
+    "coordinate": 812,
+    "reason": "retro-glitch \u2192 retro/digital (812)",
+    "name": "Xerox Degrade",
+    "category": "retro-glitch",
+    "features": [
+      "glitch",
+      "texture"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "scanline-drift": {
+    "coordinate": 821,
+    "reason": "retro-glitch \u2192 retro/digital (821)",
+    "name": "Scanline Drift",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "byte-mosh": {
+    "coordinate": 822,
+    "reason": "retro-glitch \u2192 retro/digital (822)",
+    "name": "Byte-Mosh Glitch",
+    "category": "retro-glitch",
+    "features": [
+      "interactive",
+      "chromatic-aberration",
+      "glitch",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "holographic-glitch": {
+    "coordinate": 822,
+    "reason": "retro-glitch \u2192 retro/digital (822)",
+    "name": "Holographic Glitch",
+    "category": "retro-glitch",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "chromatic-aberration",
+      "sci-fi"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-rain-interactive": {
+    "coordinate": 824,
+    "reason": "retro-glitch \u2192 retro/digital (824)",
+    "name": "Cyber Rain",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "rgb-glitch-trail": {
+    "coordinate": 825,
+    "reason": "retro-glitch \u2192 retro/digital (825)",
+    "name": "RGB Glitch Trail",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven",
+      "chromatic",
+      "trail"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "holographic-projection-failure": {
+    "coordinate": 826,
+    "reason": "retro-glitch \u2192 retro/digital (826)",
+    "name": "Holo-Projection Failure",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "datamosh-brush": {
+    "coordinate": 827,
+    "reason": "retro-glitch \u2192 retro/digital (827)",
+    "name": "Datamosh Brush",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "stateful"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "scan-distort-gpt52": {
+    "coordinate": 828,
+    "reason": "retro-glitch \u2192 retro/digital (828)",
+    "name": "Scan Distort Matrix gpt52",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "animated"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "crt-phosphor-decay": {
+    "coordinate": 832,
+    "reason": "retro-glitch \u2192 retro/digital (832)",
+    "name": "CRT Phosphor Decay",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "signal-noise": {
+    "coordinate": 835,
+    "reason": "retro-glitch \u2192 retro/digital (835)",
+    "name": "Signal Noise",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixelate-blast": {
+    "coordinate": 843,
+    "reason": "retro-glitch \u2192 retro/digital (843)",
+    "name": "",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "rgb-glitch-displacement": {
+    "coordinate": 851,
+    "reason": "retro-glitch \u2192 extreme distortion (851)",
+    "name": "RGB Glitch Displacement",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "rgb",
+      "digital",
+      "scanlines",
+      "chromatic",
+      "datamosh",
+      "retro",
+      "vintage"
+    ]
+  },
+  "bayer-dither-interactive": {
+    "coordinate": 858,
+    "reason": "retro-glitch \u2192 extreme distortion (858)",
+    "name": "Bayer Dither Interactive",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven",
+      "retro-style"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "spectral-glitch-sort": {
+    "coordinate": 859,
+    "reason": "retro-glitch \u2192 extreme distortion (859)",
+    "name": "Spectral Glitch Sort",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  "heat-haze-gpt52": {
+    "coordinate": 890,
+    "reason": "distortion \u2192 extreme distortion (890)",
+    "name": "Heat Haze Mirage gpt52",
+    "category": "distortion",
+    "features": [
+      "animated",
+      "atmospheric",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "sine-wave": {
+    "coordinate": 891,
+    "reason": "distortion \u2192 extreme distortion (891)",
+    "name": "Sine Wave Distortion",
+    "category": "distortion",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "perspective-tilt": {
+    "coordinate": 892,
+    "reason": "distortion \u2192 extreme distortion (892)",
+    "name": "Perspective Tilt",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "elastic-surface": {
+    "coordinate": 893,
+    "reason": "distortion \u2192 extreme distortion (893)",
+    "name": "Elastic Surface",
+    "category": "distortion",
+    "features": [
+      "animated",
+      "wave",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "magnetic-field": {
+    "coordinate": 894,
+    "reason": "distortion \u2192 extreme distortion (894)",
+    "name": "Magnetic Field",
+    "category": "distortion",
+    "features": [
+      "animated",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glass-brick-distortion": {
+    "coordinate": 895,
+    "reason": "distortion \u2192 extreme distortion (895)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "fluid-grid": {
+    "coordinate": 896,
+    "reason": "distortion \u2192 extreme distortion (896)",
+    "name": "Fluid Grid",
+    "category": "distortion",
+    "features": [
+      "animated",
+      "grid",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-zoom-blur": {
+    "coordinate": 896,
+    "reason": "distortion \u2192 extreme distortion (896)",
+    "name": "Interactive Zoom Blur",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "kaleidoscope": {
+    "coordinate": 898,
+    "reason": "distortion \u2192 extreme distortion (898)",
+    "name": "Kaleidoscope",
+    "category": "distortion",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gemstone-fractures": {
+    "coordinate": 899,
+    "reason": "distortion \u2192 extreme distortion (899)",
+    "name": "Gemstone Fractures",
+    "category": "distortion",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi-faceted-glass": {
+    "coordinate": 901,
+    "reason": "distortion \u2192 extreme distortion (901)",
+    "name": "Voronoi Faceted Glass",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "infinite-zoom": {
+    "coordinate": 902,
+    "reason": "distortion \u2192 extreme distortion (902)",
+    "name": "Infinite Zoom",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "refraction-tunnel": {
+    "coordinate": 904,
+    "reason": "distortion \u2192 extreme distortion (904)",
+    "name": "Refraction Tunnel",
+    "category": "distortion",
+    "features": [
+      "animated",
+      "3d",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "interactive-rgb-split": {
+    "coordinate": 905,
+    "reason": "distortion \u2192 extreme distortion (905)",
+    "name": "Interactive RGB Split",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "log-polar-droste": {
+    "coordinate": 906,
+    "reason": "distortion \u2192 extreme distortion (906)",
+    "name": "Log-Polar Droste",
+    "category": "distortion",
+    "features": [
+      "interactive",
+      "mathematical",
+      "recursive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  "heat-haze": {
+    "coordinate": 908,
+    "reason": "distortion \u2192 extreme distortion (908)",
+    "name": "Heat Haze",
+    "category": "distortion",
+    "features": [
+      "animated",
+      "atmospheric",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "phase-shift": {
+    "coordinate": 908,
+    "reason": "distortion \u2192 extreme distortion (908)",
+    "name": "Phase Shift",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "fractal-image-surf": {
+    "coordinate": 909,
+    "reason": "distortion \u2192 extreme distortion (909)",
+    "name": "Fractal Image Surf",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "fractal-kaleidoscope": {
+    "coordinate": 909,
+    "reason": "distortion \u2192 extreme distortion (909)",
+    "name": "Fractal Kaleidoscope",
+    "category": "distortion",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "pixel-storm": {
+    "coordinate": 916,
+    "reason": "distortion \u2192 extreme distortion (916)",
+    "name": "Pixel Storm",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "ethereal-swirl": {
+    "coordinate": 920,
+    "reason": "distortion \u2192 extreme distortion (920)",
+    "name": "Ethereal Swirl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "infinite-zoom-lens": {
+    "coordinate": 929,
+    "reason": "distortion \u2192 extreme distortion (929)",
+    "name": "Infinite Zoom Lens",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "cyber-lens": {
+    "coordinate": 931,
+    "reason": "distortion \u2192 extreme distortion (931)",
+    "name": "Cyber Lens",
+    "category": "distortion",
+    "features": [
+      "distortion",
+      "retro",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "vortex": {
+    "coordinate": 933,
+    "reason": "distortion \u2192 extreme distortion (933)",
+    "name": "Clean Vortex",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "glass-brick-wall": {
+    "coordinate": 934,
+    "reason": "distortion \u2192 extreme distortion (934)",
+    "name": "Glass Brick Wall",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "spiral-lens": {
+    "coordinate": 934,
+    "reason": "distortion \u2192 extreme distortion (934)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "dimension-slicer": {
+    "coordinate": 936,
+    "reason": "distortion \u2192 extreme distortion (936)",
+    "name": "Dimension Slicer",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "luminescent-glass-tiles": {
+    "coordinate": 937,
+    "reason": "distortion \u2192 extreme distortion (937)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "parallax-shift": {
+    "coordinate": 937,
+    "reason": "distortion \u2192 extreme distortion (937)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "predator-camouflage": {
+    "coordinate": 937,
+    "reason": "distortion \u2192 extreme distortion (937)",
+    "name": "Predator Camouflage",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "prismatic-mosaic": {
+    "coordinate": 937,
+    "reason": "distortion \u2192 extreme distortion (937)",
+    "name": "Prismatic Mosaic",
+    "category": "distortion",
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "bubble-lens": {
+    "coordinate": 940,
+    "reason": "distortion \u2192 extreme distortion (940)",
+    "name": "Bubble Lens",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "gravity-well": {
+    "coordinate": 940,
+    "reason": "distortion \u2192 extreme distortion (940)",
+    "name": "Gravity Well",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "temporal-distortion-field": {
+    "coordinate": 940,
+    "reason": "distortion \u2192 extreme distortion (940)",
+    "name": "Temporal Distortion Field",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "data-slicer": {
+    "coordinate": 941,
+    "reason": "distortion \u2192 extreme distortion (941)",
+    "name": "Data Slicer",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "distortion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "julia-warp": {
+    "coordinate": 941,
+    "reason": "distortion \u2192 extreme distortion (941)",
+    "name": "Julia Warp",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "complex-exponent-warp": {
+    "coordinate": 942,
+    "reason": "distortion \u2192 extreme distortion (942)",
+    "name": "Complex Exponent Warp",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "complex-math"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "fractal-glass-distort": {
+    "coordinate": 942,
+    "reason": "distortion \u2192 extreme distortion (942)",
+    "name": "Fractal Glass Distort",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "liquid-swirl": {
+    "coordinate": 942,
+    "reason": "distortion \u2192 extreme distortion (942)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "luma-glass": {
+    "coordinate": 945,
+    "reason": "distortion \u2192 extreme distortion (945)",
+    "name": "Luma Glass",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "glitch-slice-mirror": {
+    "coordinate": 948,
+    "reason": "distortion \u2192 extreme distortion (948)",
+    "name": "Glitch Slice Mirror",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "sonic-boom": {
+    "coordinate": 949,
+    "reason": "distortion \u2192 extreme distortion (949)",
+    "name": "Sonic Boom",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "liquid-warp-interactive": {
+    "coordinate": 951,
+    "reason": "distortion \u2192 extreme distortion (951)",
+    "name": "Liquid Warp",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "spectral-vortex": {
+    "coordinate": 958,
+    "reason": "distortion \u2192 extreme distortion (958)",
+    "name": "Spectral Vortex",
+    "category": "distortion",
+    "features": [],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "chromatic-swirl": {
+    "coordinate": 963,
+    "reason": "distortion \u2192 extreme distortion (963)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "prism-displacement": {
+    "coordinate": 965,
+    "reason": "distortion \u2192 extreme distortion (965)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "crystal-facets": {
+    "coordinate": 983,
+    "reason": "distortion \u2192 extreme distortion (983)",
+    "name": "Crystal Facets",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "liquid-prism": {
+    "coordinate": 991,
+    "reason": "distortion \u2192 extreme distortion (991)",
+    "name": "",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "pixel-sort-glitch": {
+    "coordinate": 992,
+    "reason": "distortion \u2192 extreme distortion (992)",
+    "name": "Pixel Sort Glitch",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "vortex-warp": {
+    "coordinate": 993,
+    "reason": "distortion \u2192 extreme distortion (993)",
+    "name": "Vortex Warp",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "black-hole": {
+    "coordinate": 996,
+    "reason": "distortion \u2192 extreme distortion (996)",
+    "name": "Gravitational Lensing",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  "voronoi-chaos": {
+    "coordinate": 1000,
+    "reason": "distortion \u2192 extreme distortion (1000)",
+    "name": "Voronoi Chaos",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  "vortex-distortion": {
+    "coordinate": 1000,
+    "reason": "distortion \u2192 extreme distortion (1000)",
+    "name": "Vortex Distortion",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  }
+}

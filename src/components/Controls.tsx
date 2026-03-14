@@ -1,6 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus } from '../AutoDJ';
+// @ts-ignore
+import shaderCoordinates from '../../shader_coordinates.json';
+
+// --- Types for Coordinate System ---
+interface ShaderCoordData {
+  coordinate: number;
+  name: string;
+  category: string;
+  features: string[];
+  tags: string[];
+}
 
 interface ControlsProps {
     modes: RenderMode[];
@@ -127,6 +138,98 @@ const Controls: React.FC<ControlsProps> = ({
     onLiveStreamLoaded,
     onExitLiveStream
 }) => {
+    // --- Coordinate System State ---
+    const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
+    const [typedNumber, setTypedNumber] = useState('');
+    const [showNumberOverlay, setShowNumberOverlay] = useState(false);
+    const numberTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Prepare coordinate data
+    const coordMap = useMemo(() => shaderCoordinates as Record<string, ShaderCoordData>, []);
+    
+    // Get coordinate for a shader ID
+    const getShaderCoordinate = (id: string): number | null => {
+        return coordMap[id]?.coordinate ?? null;
+    };
+
+    // Find shader by coordinate (closest match)
+    const findShaderByCoordinate = (targetCoord: number): string | null => {
+        let closestId: string | null = null;
+        let minDiff = Infinity;
+        
+        for (const [id, data] of Object.entries(coordMap)) {
+            const diff = Math.abs(data.coordinate - targetCoord);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestId = id;
+            }
+        }
+        
+        return closestId;
+    };
+
+    // Keyboard navigation: type number to jump
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ignore if typing in an input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            const key = e.key;
+
+            // Number keys 0-9
+            if (/^[0-9]$/.test(key)) {
+                e.preventDefault();
+                
+                if (numberTimeoutRef.current) {
+                    clearTimeout(numberTimeoutRef.current);
+                }
+
+                const newNumber = typedNumber + key;
+                setTypedNumber(newNumber);
+                setShowNumberOverlay(true);
+
+                numberTimeoutRef.current = setTimeout(() => {
+                    const coord = parseInt(newNumber, 10);
+                    if (!isNaN(coord) && coord >= 0 && coord <= 1000) {
+                        const shaderId = findShaderByCoordinate(coord);
+                        if (shaderId) {
+                            // Check if shader is available in current modes
+                            const isAvailable = availableModes.some(m => m.id === shaderId);
+                            if (isAvailable) {
+                                setMode(activeSlot, shaderId);
+                            }
+                        }
+                    }
+                    setTypedNumber('');
+                    setShowNumberOverlay(false);
+                }, 800);
+
+            } else if (key === 'Escape') {
+                if (numberTimeoutRef.current) {
+                    clearTimeout(numberTimeoutRef.current);
+                }
+                setTypedNumber('');
+                setShowNumberOverlay(false);
+                setShowCoordinateBrowser(false);
+            } else if (key === 'b' || key === 'B') {
+                // 'B' to open coordinate browser
+                if (!(e.target instanceof HTMLInputElement)) {
+                    setShowCoordinateBrowser(prev => !prev);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            if (numberTimeoutRef.current) {
+                clearTimeout(numberTimeoutRef.current);
+            }
+        };
+    }, [typedNumber, availableModes, activeSlot, setMode]);
+
     // Filter modes based on category
     const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
     const imageEntries = availableModes.filter(entry => entry.category === 'image');
@@ -139,6 +242,7 @@ const Controls: React.FC<ControlsProps> = ({
     const currentMode = modes[activeSlot];
     const currentParams = slotParams[activeSlot];
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
+    const currentCoordinate = getShaderCoordinate(currentMode);
 
     const getAiVjButtonText = () => {
         if (isAiVjMode) return 'Stop AI VJ';
@@ -146,8 +250,222 @@ const Controls: React.FC<ControlsProps> = ({
         return 'Start AI VJ';
     };
 
+    // Zone colors for coordinate display
+    const getZoneColor = (coord: number): string => {
+        if (coord < 100) return '#1a5276'; // Ambient
+        if (coord < 250) return '#1e8449'; // Organic
+        if (coord < 400) return '#2874a6'; // Interactive
+        if (coord < 550) return '#8e44ad'; // Artistic
+        if (coord < 700) return '#c0392b'; // Visual FX
+        if (coord < 850) return '#d35400'; // Retro
+        return '#7d3c98'; // Extreme
+    };
+
+    // Group shaders by zone for browser
+    const shadersByZone = useMemo(() => {
+        const zones = [
+            { label: '🌊 Ambient', min: 0, max: 100, color: '#1a5276', shaders: [] as {id: string, data: ShaderCoordData}[] },
+            { label: '🌿 Organic', min: 100, max: 250, color: '#1e8449', shaders: [] as {id: string, data: ShaderCoordData}[] },
+            { label: '👆 Interactive', min: 250, max: 400, color: '#2874a6', shaders: [] as {id: string, data: ShaderCoordData}[] },
+            { label: '🎨 Artistic', min: 400, max: 550, color: '#8e44ad', shaders: [] as {id: string, data: ShaderCoordData}[] },
+            { label: '✨ Visual FX', min: 550, max: 700, color: '#c0392b', shaders: [] as {id: string, data: ShaderCoordData}[] },
+            { label: '📺 Retro', min: 700, max: 850, color: '#d35400', shaders: [] as {id: string, data: ShaderCoordData}[] },
+            { label: '🌀 Extreme', min: 850, max: 1000, color: '#7d3c98', shaders: [] as {id: string, data: ShaderCoordData}[] },
+        ];
+
+        for (const [id, data] of Object.entries(coordMap)) {
+            const zone = zones.find(z => data.coordinate >= z.min && data.coordinate < z.max);
+            if (zone) {
+                zone.shaders.push({ id, data });
+            }
+        }
+
+        // Sort shaders within each zone by coordinate
+        zones.forEach(z => z.shaders.sort((a, b) => a.data.coordinate - b.data.coordinate));
+
+        return zones.filter(z => z.shaders.length > 0);
+    }, [coordMap]);
+
     return (
         <div className="controls">
+            {/* Number Jump Overlay */}
+            {showNumberOverlay && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.85)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        padding: '48px 64px',
+                        background: '#0f0f1a',
+                        border: '2px solid #4a9eff',
+                        borderRadius: '16px',
+                        textAlign: 'center',
+                    }}>
+                        <div style={{
+                            fontSize: '72px',
+                            fontWeight: 700,
+                            color: '#4a9eff',
+                            fontFamily: 'monospace',
+                            letterSpacing: '8px',
+                        }}>
+                            {typedNumber}
+                        </div>
+                        <div style={{ color: '#666', marginTop: '16px', fontSize: '14px' }}>
+                            Type 0-1000, ESC to cancel
+                        </div>
+                        {typedNumber && (() => {
+                            const coord = parseInt(typedNumber, 10);
+                            const shaderId = findShaderByCoordinate(coord);
+                            const shaderData = shaderId ? coordMap[shaderId] : null;
+                            return shaderData ? (
+                                <div style={{
+                                    marginTop: '16px',
+                                    padding: '12px 24px',
+                                    background: 'rgba(74,158,255,0.1)',
+                                    borderRadius: '8px',
+                                    color: '#888',
+                                }}>
+                                    → #{shaderData.coordinate} {shaderData.name}
+                                </div>
+                            ) : null;
+                        })()}
+                    </div>
+                </div>
+            )}
+
+            {/* Coordinate Browser Modal */}
+            {showCoordinateBrowser && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.9)',
+                    zIndex: 999,
+                    overflow: 'auto',
+                    padding: '24px',
+                }} onClick={() => setShowCoordinateBrowser(false)}>
+                    <div style={{
+                        maxWidth: '1200px',
+                        margin: '0 auto',
+                        background: '#0f0f1a',
+                        borderRadius: '16px',
+                        padding: '24px',
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '24px',
+                        }}>
+                            <h2 style={{ margin: 0 }}>Shader Browser (593 shaders)</h2>
+                            <button 
+                                onClick={() => setShowCoordinateBrowser(false)}
+                                style={{
+                                    padding: '8px 16px',
+                                    background: '#333',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: '#fff',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Close (ESC)
+                            </button>
+                        </div>
+
+                        {/* Spectrum Bar */}
+                        <div style={{
+                            display: 'flex',
+                            height: '48px',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            marginBottom: '24px',
+                        }}>
+                            {shadersByZone.map(zone => {
+                                const width = ((zone.max - zone.min) / 1000) * 100;
+                                return (
+                                    <div
+                                        key={zone.label}
+                                        style={{
+                                            width: `${width}%`,
+                                            backgroundColor: zone.color,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '11px',
+                                            color: 'rgba(255,255,255,0.9)',
+                                        }}
+                                    >
+                                        <span>{zone.label}</span>
+                                        <span style={{ opacity: 0.7 }}>{zone.shaders.length}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Shader Grid by Zone */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            {shadersByZone.map(zone => (
+                                <div key={zone.label}>
+                                    <h3 style={{ color: zone.color, marginBottom: '12px' }}>
+                                        {zone.label} ({zone.min}-{zone.max})
+                                    </h3>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                                        gap: '8px',
+                                    }}>
+                                        {zone.shaders.map(({ id, data }) => {
+                                            const isAvailable = availableModes.some(m => m.id === id);
+                                            const isSelected = currentMode === id;
+                                            return (
+                                                <button
+                                                    key={id}
+                                                    onClick={() => {
+                                                        if (isAvailable) {
+                                                            setMode(activeSlot, id);
+                                                            setShowCoordinateBrowser(false);
+                                                        }
+                                                    }}
+                                                    disabled={!isAvailable}
+                                                    style={{
+                                                        padding: '12px',
+                                                        background: isSelected ? 'rgba(74,158,255,0.3)' : '#1a1a2e',
+                                                        border: `1px solid ${isSelected ? '#4a9eff' : '#333'}`,
+                                                        borderRadius: '8px',
+                                                        color: isAvailable ? '#fff' : '#666',
+                                                        textAlign: 'left',
+                                                        cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                                        opacity: isAvailable ? 1 : 0.5,
+                                                    }}
+                                                >
+                                                    <div style={{ fontSize: '10px', color: '#4a9eff', fontFamily: 'monospace' }}>
+                                                        #{data.coordinate}
+                                                    </div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                                                        {data.name}
+                                                    </div>
+                                                    {!isAvailable && (
+                                                        <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                                                            (not in current category)
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* --- Input Source Selection --- */}
             <div className="control-group">
                 <label>Input Source</label>
@@ -214,6 +532,33 @@ const Controls: React.FC<ControlsProps> = ({
                     <option value="image">Effects / Filters</option>
                     <option value="shader">Procedural Generation</option>
                 </select>
+            </div>
+
+            {/* --- Coordinate Browser Button --- */}
+            <div className="control-group">
+                <button 
+                    onClick={() => setShowCoordinateBrowser(true)}
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'linear-gradient(135deg, #2a2a4e, #1a1a3e)',
+                        border: '1px solid #4a9eff',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                    }}
+                >
+                    <span>🗂️</span>
+                    <span>Browse by Coordinate (B)</span>
+                </button>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px', textAlign: 'center' }}>
+                    Tip: Type any number to jump to that shader
+                </div>
             </div>
 
             {/* --- 🎰 Roulette Section --- */}
@@ -307,16 +652,47 @@ const Controls: React.FC<ControlsProps> = ({
                         >
                             <option value="none">None</option>
                             {currentModes.map(m => (
-                                <option key={m.id} value={m.id}>{m.name}</option>
+                                <option key={m.id} value={m.id}>
+                                    {m.name} {getShaderCoordinate(m.id) !== null ? `(#${getShaderCoordinate(m.id)})` : ''}
+                                </option>
                             ))}
                             {/* Always include current mode if it's not in the list (to avoid it disappearing) */}
                             {modes[i] !== 'none' && !currentModes.find(m => m.id === modes[i]) && (
-                                <option value={modes[i]}>{availableModes.find(m => m.id === modes[i])?.name || modes[i]}</option>
+                                <option value={modes[i]}>
+                                    {availableModes.find(m => m.id === modes[i])?.name || modes[i]}
+                                    {getShaderCoordinate(modes[i]) !== null ? `(#${getShaderCoordinate(modes[i])})` : ''}
+                                </option>
                             )}
                         </select>
                     </div>
                 ))}
             </div>
+
+            {/* --- Current Shader Coordinate Display --- */}
+            {currentCoordinate !== null && (
+                <div style={{
+                    padding: '12px',
+                    background: 'rgba(74,158,255,0.1)',
+                    borderRadius: '8px',
+                    border: `1px solid ${getZoneColor(currentCoordinate)}`,
+                    marginBottom: '12px',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', color: '#888' }}>Current Shader</span>
+                        <span style={{
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            color: getZoneColor(currentCoordinate),
+                            fontFamily: 'monospace',
+                        }}>
+                            #{currentCoordinate}
+                        </span>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#fff', marginTop: '4px' }}>
+                        {currentShaderEntry?.name}
+                    </div>
+                </div>
+            )}
 
             {/* --- Source Specific Controls --- */}
             {inputSource === 'image' && (
@@ -403,7 +779,7 @@ const Controls: React.FC<ControlsProps> = ({
                     </div>
                     <div className="webcam-shaders-grid">
                         {availableModes
-                            .filter(m => webcamFunShaders.includes(m.id))
+                            .filter(m => webcamFunShaders?.includes(m.id))
                             .slice(0, 12)
                             .map(shader => (
                                 <button
