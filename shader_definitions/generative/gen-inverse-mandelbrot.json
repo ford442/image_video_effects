@@ -1,0 +1,48 @@
+{
+  "id": "gen-inverse-mandelbrot",
+  "name": "Inverse Mandelbrot Realm",
+  "url": "shaders/gen-inverse-mandelbrot.wgsl",
+  "category": "generative",
+  "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields.",
+  "tags": ["mandelbrot", "fractal", "color-space", "iteration", "alien", "abstract", "generative", "complex"],
+  "features": ["mouse-driven"],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Iterations",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Maximum iteration count (maps to 20–80)."
+    },
+    {
+      "id": "param2",
+      "name": "Color Zoom",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3,
+      "step": 0.01,
+      "description": "Zoom level into the color-space fractal."
+    },
+    {
+      "id": "param3",
+      "name": "Colormap Rotate",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.0,
+      "step": 0.01,
+      "description": "Global hue rotation of the colormap."
+    },
+    {
+      "id": "param4",
+      "name": "Bailout Radius",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3,
+      "step": 0.01,
+      "description": "Escape radius — lower values create more intricate boundaries."
+    }
+  ]
+}

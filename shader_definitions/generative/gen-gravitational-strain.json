@@ -1,0 +1,48 @@
+{
+  "id": "gen-gravitational-strain",
+  "name": "Gravitational Strain Field",
+  "url": "shaders/gen-gravitational-strain.wgsl",
+  "category": "generative",
+  "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide — dark matter visualization as art.",
+  "tags": ["gravity", "lensing", "space", "physics", "stars", "dark-matter", "generative", "simulation"],
+  "features": ["mouse-driven"],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Well Count",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Number of gravity wells (maps to 1–6)."
+    },
+    {
+      "id": "param2",
+      "name": "Well Mass",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Mass of each gravity well — controls bending strength."
+    },
+    {
+      "id": "param3",
+      "name": "Bend Strength",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Overall geodesic deflection amplitude."
+    },
+    {
+      "id": "param4",
+      "name": "Emission Scale",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Brightness of tidal emission at field gradient maxima."
+    }
+  ]
+}

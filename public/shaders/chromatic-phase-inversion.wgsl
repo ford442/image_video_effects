@@ -133,16 +133,18 @@ fn scanlineOverlay(uv: vec2<f32>, resY: f32, strength: f32) -> f32 {
 // ─────────────────────────────────────────────────────────────────────────────
 fn hueShift(c: vec3<f32>, shift: f32) -> vec3<f32> {
     let hsv = rgb2hsv(c);
-    let h6 = fract(hsv.x + shift) * 6.0;
-    let x  = hsv.y * (1.0 - abs(fract(h6 * 0.5) * 2.0 - 1.0));
+    let h6     = fract(hsv.x + shift) * 6.0;
+    let chroma = hsv.y * hsv.z;
+    let x      = chroma * (1.0 - abs(fract(h6 * 0.5) * 2.0 - 1.0));
+    let m      = hsv.z - chroma;
     var rgb = vec3<f32>(0.0);
-    if      (h6 < 1.0) { rgb = vec3<f32>(hsv.y, x, 0.0); }
-    else if (h6 < 2.0) { rgb = vec3<f32>(x, hsv.y, 0.0); }
-    else if (h6 < 3.0) { rgb = vec3<f32>(0.0, hsv.y, x); }
-    else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, hsv.y); }
-    else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, hsv.y); }
-    else               { rgb = vec3<f32>(hsv.y, 0.0, x); }
-    return (rgb + (hsv.z - hsv.y)) * hsv.z;
+    if      (h6 < 1.0) { rgb = vec3<f32>(chroma, x, 0.0); }
+    else if (h6 < 2.0) { rgb = vec3<f32>(x, chroma, 0.0); }
+    else if (h6 < 3.0) { rgb = vec3<f32>(0.0, chroma, x); }
+    else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, chroma); }
+    else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, chroma); }
+    else               { rgb = vec3<f32>(chroma, 0.0, x); }
+    return rgb + m;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

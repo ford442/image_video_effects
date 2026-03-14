@@ -202,11 +202,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Original color ────────────────────────────────────────────────────
     let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // ── Confinement: each channel suppresses the next channel's bleed ─────
-    let confR = exp(-bleedG * confinement) * lorentz.r;
-    let confG = exp(-bleedB * confinement) * lorentz.g;
-    let confB = exp(-bleedR * confinement) * lorentz.b;
-
     // ── Composite: original + confined bleed halo ─────────────────────────
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -230,6 +225,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Lorentz confinement (plasma physics-inspired) ──────────────────────
     let lorentz = lorentzConfinement(bleedR + broadR, bleedG + broadG, bleedB + broadB, confinement);
+
+    // ── Confinement: each channel suppresses the next channel's bleed ─────
+    let confR = exp(-bleedG * confinement) * lorentz.r;
+    let confG = exp(-bleedB * confinement) * lorentz.g;
+    let confB = exp(-bleedR * confinement) * lorentz.b;
 
     let depthBoost = 0.5 + depth * 0.8;
 
