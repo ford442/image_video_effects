@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Warp Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: velocity field, push/swirl interaction, flow transparency
+//
+//  ALPHA PHYSICS:
+//  - Velocity magnitude maps to liquid film thickness
+//  - Swirling regions have different transparency
+//  - Decay affects opacity over time
+// ═══════════════════════════════════════════════════════════════════════════════
+
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -17,9 +28,65 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
-  ripples: array<vec4<f32>, 50>,
+  zoom_params: vec4<f32>,  // x=Radius, y=Strength, z=Decay, w=Swirl
 };
+
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate warp alpha based on velocity field
+fn calculateWarpAlpha(
+    velocityMag: f32,
+    distRatio: f32,
+    swirl: f32
+) -> f32 {
+  // Fresnel effect (approximate from velocity)
+  let F0 = 0.02;
+  let normal = normalize(vec3<f32>(
+      -velocityMag * 0.5,
+      -velocityMag * 0.5,
+      1.0
+  ));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let fresnel = schlickFresnel(max(0.0, dot(viewDir, normal)), F0);
+  
+  // Velocity magnitude = liquid film thickness
+  // Higher velocity = thicker film
+  let thickness = velocityMag * 3.0 + 0.2;
+  
+  // Swirling regions have different optical properties
+  let swirlFactor = 1.0 + swirl * 0.2;
+  
+  // Absorption
+  let absorption = exp(-thickness * swirlFactor);
+  let baseAlpha = mix(0.4, 0.8, absorption);
+  
+  // Distance falloff: center of effect = more opaque
+  let centerAlpha = mix(1.0, baseAlpha, distRatio);
+  
+  let alpha = centerAlpha * (1.0 - fresnel * 0.3);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate warp color with flow effects
+fn calculateWarpColor(
+    baseColor: vec3<f32>,
+    velocity: vec2<f32>,
+    swirl: f32
+) -> vec3<f32> {
+  let velMag = length(velocity);
+  
+  // Flow tint based on swirl direction
+  let flowTint = vec3<f32>(0.0, 0.08, 0.12) * velMag * swirl;
+  
+  // Motion blur effect
+  let blurFactor = exp(-velMag * 2.0);
+  
+  return baseColor * blurFactor + flowTint;
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -46,6 +113,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
+    let distRatio = min(dist / radius, 1.0);
 
     if (isMouseDown && dist < radius) {
         // Add velocity away from mouse (push)
@@ -64,11 +132,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Apply velocity to UV for sampling the image
     let distortedUV = uv - velocity;
 
-    let color = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
+    let baseColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).rgb;
 
     // Store velocity for next frame
     textureStore(dataTextureA, global_id.xy, vec4<f32>(velocity, 0.0, 1.0));
 
-    // Output color
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // ALPHA CALCULATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    let velocityMag = length(velocity);
+    
+    // Calculate color with flow effects
+    let warpColor = calculateWarpColor(baseColor, velocity, swirl);
+    
+    // Calculate alpha
+    let alpha = calculateWarpAlpha(velocityMag, distRatio, swirl);
+
+    // Output color with alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(warpColor, alpha));
 }
