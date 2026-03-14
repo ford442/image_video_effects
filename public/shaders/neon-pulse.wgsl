@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
-//  Neon Pulse - Blackbody Radiation Edition
+//  Neon Pulse - Blackbody Radiation Edition with Alpha Emission
 //  Category: lighting-effects
-//  Physics: Planck's Law of Blackbody Radiation
+//  Physics: Planck's Law of Blackbody Radiation + Alpha Emission
 //  Temperature range: 1000K (red) to 10000K (blue-white)
+//  Alpha: Physical occlusion (tube=0.3, glow=0.0, additive emission)
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -52,21 +53,18 @@ fn blackbodyColor(T: f32) -> vec3<f32> {
     
     if (T < 4000.0) {
         // Cool temperatures: deep red to orange
-        // Red stays at 1.0, green increases, blue stays 0
         let localT = (T - 1000.0) / 3000.0;
         color.r = 1.0;
         color.g = localT * 0.8;
         color.b = 0.0;
     } else if (T < 7000.0) {
         // Medium temperatures: orange to yellow to white-ish
-        // Red decreases slightly, green increases, blue starts rising
         let localT = (T - 4000.0) / 3000.0;
         color.r = 1.0 - localT * 0.5;
         color.g = 0.8 + localT * 0.2;
         color.b = localT * 0.5;
     } else {
         // Hot temperatures: white to blue-white
-        // All channels rise toward white, then blue dominates
         let localT = (T - 7000.0) / 3000.0;
         let whiteLevel = 0.5 + localT * 0.5;
         color.r = whiteLevel * (1.0 - localT * 0.3);
@@ -75,7 +73,6 @@ fn blackbodyColor(T: f32) -> vec3<f32> {
     }
     
     // Apply intensity curve (Stefan-Boltzmann ~ T^4)
-    // Normalize for visual display
     let intensity = pow(T / 5000.0, 2.0) * 0.5 + 0.5;
     color = color * intensity;
     
@@ -83,10 +80,27 @@ fn blackbodyColor(T: f32) -> vec3<f32> {
 }
 
 // Temperature to wavelength (Wien's displacement law approximation)
-// Peak wavelength in nanometers
 fn peakWavelength(T: f32) -> f32 {
-    // Wien's displacement constant: b ≈ 2.898 × 10^6 nm·K
     return 2898000.0 / T;
+}
+
+// Inverse square law for light falloff
+fn inverseSquareFalloff(dist: f32, maxDist: f32) -> f32 {
+    let d = max(dist, 0.001);
+    return 1.0 / (1.0 + d * d * 10.0) * (1.0 - smoothstep(maxDist * 0.5, maxDist, dist));
+}
+
+// Alpha calculation for emissive materials
+// Core tube: alpha ~ 0.3 (partial occlusion)
+// Glow halo: alpha ~ 0.0 (transparent, additive)
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, saturate(glowIntensity) * occlusionBalance);
+}
+
+fn saturate(v: f32) -> f32 {
+    return clamp(v, 0.0, 1.0);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -99,11 +113,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // x: Base temperature (mapped 0-1 -> 1000-10000K)
     // y: Temperature gradient strength
     // z: Flicker intensity
-    // w: Stria frequency
+    // w: Occlusion balance (controls alpha: 0=transparent glow, 1=visible tube)
     let baseTempNorm = u.zoom_params.x;
     let tempGradient = u.zoom_params.y;
     let flickerIntensity = u.zoom_params.z;
-    let striaFreq = u.zoom_params.w * 10.0 + 1.0;
+    let occlusionBalance = u.zoom_params.w;
+    let striaFreq = 10.0 + 1.0;
     
     // Map normalized parameter to temperature range (1000K - 10000K)
     let baseTemp = 1000.0 + baseTempNorm * 9000.0;
@@ -121,7 +136,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let angle = atan2(uv.y - mouse.y, uv.x - mouse.x);
     
     // Gas discharge striations - periodic intensity bands
-    // Simulates the standing wave patterns in neon tubes
     let striaPhase = dist * striaFreq * 20.0 - time * 2.0;
     let stria = sin(striaPhase) * 0.5 + 0.5;
     let striaModulation = 1.0 + stria * 0.3;
@@ -131,7 +145,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flickerModulation = 1.0 + flicker * 0.5;
     
     // Temperature gradient along pulse direction
-    // Hotter at center, cooler at edges, or vice versa based on gradient param
     let tempVariation = sin(dist * 10.0 - time * 3.0) * tempGradient * 2000.0;
     let gradientOffset = (uv.x - 0.5) * tempGradient * 3000.0;
     
@@ -142,9 +155,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Get blackbody color for this temperature
     let bbColor = blackbodyColor(clampedTemp);
     
-    // Wien's displacement visualization (optional subtle effect)
+    // Wien's displacement visualization
     let peakWL = peakWavelength(clampedTemp);
-    let wlFactor = clamp(peakWL / 1000.0, 0.0, 1.0); // Normalize
+    let wlFactor = clamp(peakWL / 1000.0, 0.0, 1.0);
     
     // Edge detection for neon glow effect
     let pixelSize = 1.0 / resolution;
@@ -170,33 +183,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Thermal bloom - gas expands when hot
     let thermalExpansion = 1.0 + (clampedTemp - 5000.0) / 10000.0 * 0.2;
     
-    // Composite the neon glow
+    // Composite the neon glow with emission physics
     // Base glow from edges (ionized gas emission)
     let glowStrength = edge * 3.0 * falloff * striaModulation * flickerModulation;
-    var glow = bbColor * glowStrength;
+    var emission = bbColor * glowStrength;
     
     // Add pulse ring - the traveling ionization front
     let ringWidth = 0.02 * thermalExpansion;
     let ringDist = abs(dist - effectRadius * 0.8);
     let ring = smoothstep(ringWidth, 0.0, ringDist) * pulse;
-    glow = glow + bbColor * ring * 2.0 * flickerModulation;
+    emission = emission + bbColor * ring * 2.0 * flickerModulation;
     
     // Gas tube core - brighter center line
     let coreWidth = 0.005 * thermalExpansion;
     let coreDist = abs(dist - effectRadius * 0.5);
     let core = smoothstep(coreWidth, 0.0, coreDist) * 0.5;
-    glow = glow + bbColor * core * striaModulation;
+    emission = emission + bbColor * core * striaModulation;
     
-    // Final color composition
-    let finalColor = c + glow;
+    // Calculate alpha based on emission intensity and occlusion balance
+    // High emission = more visible tube structure
+    let totalGlowIntensity = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(totalGlowIntensity, occlusionBalance);
+    
+    // Apply inverse square falloff for physical light attenuation
+    let lightFalloff = inverseSquareFalloff(dist, effectRadius * 1.5);
+    emission = emission * lightFalloff;
     
     // Slight vignette based on temperature (hotter = more bloom)
     let bloomRadius = 1.0 + (clampedTemp / 10000.0) * 0.5;
     let vignette = smoothstep(bloomRadius, 0.3, dist);
-    let finalWithVignette = finalColor * vignette;
+    emission = emission * vignette;
     
-    // Output to writeTexture
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalWithVignette, 1.0));
+    // Output RGBA: RGB = emitted light (HDR, can exceed 1.0), A = physical occlusion
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
     
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
