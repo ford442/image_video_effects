@@ -1,7 +1,12 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Digital Haze
-//  A thick pixelated fog that obscures the image, cleared by the mouse cursor.
-// ────────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  Digital Haze - Volumetric Alpha Upgrade
+//  A thick pixelated fog with physically-based optical depth
+//  
+//  Scientific Implementation:
+//  - Distance-based fog density with Beer-Lambert extinction
+//  - Pixelation creates volumetric "cells" with depth
+//  - Mouse clears fog by locally reducing optical depth
+// ═══════════════════════════════════════════════════════════════
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
@@ -26,6 +31,11 @@ struct Uniforms {
   ripples:     array<vec4<f32>, 50>,
 };
 
+// Digital haze extinction coefficients
+const SIGMA_T_HAZE: f32 = 1.2;          // Haze extinction (thick)
+const SIGMA_T_CLEAR: f32 = 0.05;        // Clear area extinction (minimal)
+const STEP_SIZE: f32 = 0.03;            // Ray step
+
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
@@ -44,31 +54,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dist = length(dVec);
 
     // Params
-    let pixelStrength = u.zoom_params.x * 100.0 + 10.0; // Grid size roughly
+    let pixelStrength = u.zoom_params.x * 100.0 + 10.0; // Grid size
     let clearRadius = u.zoom_params.y * 0.4 + 0.05;
     let noiseAmt = u.zoom_params.z;
 
-    // Calculate Grid
-    // We want the pixelation to be coarse far away, and fine/none near mouse.
-
+    // ═══════════════════════════════════════════════════════════════
+    //  Calculate Grid-based "Volumetric Cells"
+    // ═══════════════════════════════════════════════════════════════
+    
     // Mask: 0.0 near mouse (clear), 1.0 far away (haze)
     let mask = smoothstep(clearRadius, clearRadius + 0.2, dist);
 
     // Dynamic Pixelation
-    // If mask is 0, we want UV. If mask is 1, we want quantized UV.
-    // However, mixing UVs directly can cause tearing.
-    // Instead, let's sample both and mix colors.
-
-    // Haze Layer (Pixelated + Noise)
     let gridSize = vec2<f32>(pixelStrength * aspect, pixelStrength);
     let quantizedUV = floor(uv * gridSize) / gridSize;
 
-    // Add some digital noise to the quantized UV
+    // Add digital noise to the quantized UV
     let seed = quantizedUV + vec2<f32>(time * 0.1, time * 0.05);
     let noiseVal = (hash(seed) - 0.5) * noiseAmt * 0.05;
-
     let hazeUV = quantizedUV + noiseVal;
 
+    // Sample colors
     let colClear = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     let colHaze = textureSampleLevel(videoTex, videoSampler, hazeUV, 0.0).rgb;
 
@@ -76,7 +82,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let greenTint = vec3<f32>(0.0, 0.1, 0.0) * noiseAmt;
     let finalHaze = colHaze + greenTint;
 
-    let finalColor = mix(colClear, finalHaze, mask);
+    // ═══════════════════════════════════════════════════════════════
+    //  Volumetric Fog Calculation
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Calculate optical depth based on mask (haze density)
+    // Near mouse: low density (clear), Far from mouse: high density (haze)
+    let hazeDensity = mask * SIGMA_T_HAZE + (1.0 - mask) * SIGMA_T_CLEAR;
+    
+    // Optical depth through the haze layer
+    let opticalDepth = hazeDensity * STEP_SIZE * (1.0 + noiseAmt * 0.5);
+    
+    // Transmittance (Beer-Lambert): T = exp(-τ)
+    let transmittance = exp(-opticalDepth);
+    
+    // Volumetric alpha: α = 1 - T
+    let alpha = 1.0 - transmittance;
+    
+    // In-scattered light (digital haze color)
+    let hazeColor = vec3<f32>(0.1, 0.15, 0.1); // Digital green-grey haze
+    let inScattered = hazeColor * mask * (1.0 - transmittance);
+    
+    // Volumetric composition
+    // Final = in_scattered + transmitted_clear * T + transmitted_haze * (1-T)
+    let transmittedClear = colClear * transmittance;
+    let transmittedHaze = finalHaze * (1.0 - transmittance) * 0.3;
+    
+    let finalColor = inScattered + transmittedClear + transmittedHaze;
 
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
+    // Output with volumetric alpha
+    // RGB: Combined in-scattered + transmitted light
+    // A: Opacity based on optical depth
+    textureStore(outTex, gid.xy, vec4<f32>(finalColor, alpha));
 }

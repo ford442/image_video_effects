@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════
+//  Gemstone Fractures - Physical Light Transmission with Alpha
+//  Category: distortion
+//  Features: voronoi shards, rotation, internal fractures
+//  Simulates fractured gemstone with variable purity/transmission
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,19 +19,37 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-// Simple hash for pseudo-randomness
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.xx + p3.yz) * p3.zy);
-}
-
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+const IOR_QUARTZ: f32 = 1.54;
+const IOR_DIAMOND: f32 = 2.42;
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn hash21(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+fn rot2(a: f32) -> mat2x2<f32> {
+    let c = cos(a);
+    let s = sin(a);
+    return mat2x2<f32>(c, -s, s, c);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -33,10 +58,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
+    // ═══════════════════════════════════════════════════════════════
+    // Parameters:
+    // x: scale (facet size)
+    // y: refraction + IOR
+    // z: rotationBase
+    // w: fractureDensity (affects transmission)
+    // ═══════════════════════════════════════════════════════════════
+    
     let scale = u.zoom_params.x * 20.0 + 2.0;
+    let iorMix = u.zoom_params.y;
     let refraction = u.zoom_params.y * 0.05;
     let rotationBase = u.zoom_params.z;
-    let edgeWidth = u.zoom_params.w * 0.1;
+    let fractureDensity = u.zoom_params.w; // 0 = pure, 1 = heavily fractured
+    
+    let ior = mix(IOR_QUARTZ, IOR_DIAMOND, iorMix);
+    let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
 
     let st = uv * vec2<f32>(aspect, 1.0) * scale;
     let i_st = floor(st);
@@ -44,6 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Voronoi / Cellular logic
     var m_dist = 1.0;
+    var second_dist = 1.0;
     var m_point = vec2<f32>(0.0);
     var cell_id = vec2<f32>(0.0);
 
@@ -57,9 +95,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let dist = length(diff);
 
             if (dist < m_dist) {
+                second_dist = m_dist;
                 m_dist = dist;
                 m_point = point;
                 cell_id = i_st + neighbor;
+            } else if (dist < second_dist) {
+                second_dist = dist;
             }
         }
     }
@@ -69,27 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let c = cos(rotAngle);
     let s = sin(rotAngle);
 
-    // UV offset relative to cell center (approx)
-    let cellCenter = (cell_id + 0.5) / scale;
-    // Actually we need to sample relative to the pixel we are at, but shift it based on the cell orientation.
-    // Simplification: rotate the uv lookup around the current pixel, but the angle is determined by the cell.
-    // Or better: Sample the texture at the CELL CENTER but rotated? That makes it look like tiles.
-    // Let's do: Rotate the UV space locally around the cell center.
-
-    // Convert current UV to local coords relative to cell center
-    // Wait, cell center in UV space is tricky with aspect.
-    // Let's just do a simpler distortion: offset based on cell ID hash.
-
-    // Let's stick to the rotation idea but keep it simple.
-    let localUV = (uv * vec2<f32>(aspect, 1.0) - cellCenter);
-    // This cellCenter calc is approximate because it ignores the Voronoi shift.
-    // Let's just use the current UV and rotate it by an angle unique to the cell.
-
-    // Correct logic:
-    // We are at `uv`. We belong to `cell_id`.
-    // We want to sample from a rotated version of the texture.
-
-    // Let's rotate the offset vector (uv - 0.5) by the angle.
+    // Rotate the UV space locally around the center
     var center = vec2<f32>(0.5 * aspect, 0.5);
     let fromCenter = uv * vec2<f32>(aspect, 1.0) - center;
     let rotFromCenter = vec2<f32>(
@@ -98,21 +119,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let sampleUV = (rotFromCenter + center) / vec2<f32>(aspect, 1.0);
 
-    // Chromatic aberration
-    let r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(refraction, 0.0), 0.0).r;
+    // Chromatic aberration with dispersion
+    let dispersion = (ior - 1.0) * 0.3;
+    let r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(refraction * (1.0 + dispersion), 0.0), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(refraction, 0.0), 0.0).b;
+    let b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(refraction * (1.0 - dispersion), 0.0), 0.0).b;
 
     var color = vec3<f32>(r, g, b);
 
-    // Edges
-    if (m_dist > 1.0 - edgeWidth * 5.0) { // Voronoi distance is diff length
-       // This simple check doesn't make good edges on Voronoi without second neighbor.
-       // But let's leave it simple.
-    }
+    // ═══════════════════════════════════════════════════════════════
+    // Physical Transmission & Fracture Effects
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Per-cell fracture amount
+    let cellFracture = hash21(cell_id);
+    let effectiveFracture = fractureDensity * (0.5 + 0.5 * cellFracture);
+    
+    // Purity: inverse of fracture
+    let purity = 1.0 - effectiveFracture;
+    
+    // Distance from cell center affects angle
+    let cosTheta = 1.0 - m_dist; // Approximate
+    let fresnel = fresnelSchlick(max(cosTheta, 0.0), F0);
+    
+    // Path length (longer near edges)
+    let pathLength = mix(0.05, 0.4, m_dist) / max(purity, 0.1);
+    
+    // Absorption increases with fractures
+    let absorptionCoeff = mix(0.2, 4.0, effectiveFracture);
+    let absorption = exp(-absorptionCoeff * pathLength);
+    
+    // Edge distance for highlighting
+    let edgeDist = second_dist - m_dist;
+    let edgeFactor = smoothstep(0.02, 0.0, edgeDist);
+    
+    // Transmission coefficient
+    let transmission = absorption * (1.0 - fresnel) * purity;
+    
+    // Add fracture lines (reduce transmission at cell boundaries)
+    let fractureLine = smoothstep(0.01, 0.0, edgeDist) * effectiveFracture;
+    
+    // Specular on edges
+    let specular = edgeFactor * fresnel * 0.5;
+    color += vec3<f32>(specular);
+    
+    // Fracture tint (internal scattering)
+    let fractureTint = mix(vec3<f32>(1.0), vec3<f32>(0.9, 0.85, 0.8), effectiveFracture);
+    color = color * fractureTint;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-     // Pass depth
+    // Alpha based on transmission
+    let alpha = clamp(transmission * (1.0 - fractureLine), 0.3, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    
+    // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
 }
