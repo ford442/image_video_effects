@@ -1,0 +1,70 @@
+[
+  {
+    "id": "gen_mandelbulb_3d",
+    "name": "Mandelbulb 3D",
+    "category": "generative",
+    "type": "compute",
+    "description": "3D Mandelbulb fractal with ray marching, orbit trap coloring, soft shadows, and distance-based alpha for atmospheric depth",
+    "wgsl_file": "gen_mandelbulb_3d.wgsl",
+    "uniforms": {
+      "param1": { "label": "Power", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Zoom", "min": 0, "max": 1, "default": 0.3 },
+      "param3": { "label": "Fog Density", "min": 0, "max": 1, "default": 0.2 },
+      "param4": { "label": "Color Shift", "min": 0, "max": 1, "default": 0.5 }
+    },
+    "features": ["rgba", "ray-marching", "sdf", "orbit-trap", "3d-fractal"],
+    "tags": ["mandelbulb", "fractal", "3d", "raymarch", "orbits"],
+    "target_rating": 4.8
+  },
+  {
+    "id": "holographic_interference",
+    "name": "Holographic Interference",
+    "category": "lighting-effects",
+    "type": "compute",
+    "description": "Holographic rainbow patterns with interference fringes, multi-layer ghosting with staggered alpha, and wavelength-dependent diffraction",
+    "wgsl_file": "holographic_interference.wgsl",
+    "uniforms": {
+      "param1": { "label": "Layers", "min": 0, "max": 1, "default": 0.4 },
+      "param2": { "label": "Rainbow Spread", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Coherence", "min": 0, "max": 1, "default": 0.7 },
+      "param4": { "label": "Ghost Offset", "min": 0, "max": 1, "default": 0.3 }
+    },
+    "features": ["rgba", "interference", "diffraction", "hologram", "rainbow"],
+    "tags": ["holographic", "interference", "rainbow", "ghosting", "diffraction"],
+    "target_rating": 4.6
+  },
+  {
+    "id": "liquid_crystal_birefringence",
+    "name": "Liquid Crystal",
+    "category": "distortion",
+    "type": "compute",
+    "description": "Liquid crystal optical effects with birefringent double refraction, twisted nematic polarization rotation, and Schlieren texture",
+    "wgsl_file": "liquid_crystal_birefringence.wgsl",
+    "uniforms": {
+      "param1": { "label": "Thickness", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Twist", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Birefringence", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Voltage", "min": 0, "max": 1, "default": 0.2 }
+    },
+    "features": ["rgba", "birefringence", "polarization", "liquid-crystal", "schlieren"],
+    "tags": ["liquid-crystal", "birefringence", "polarization", "optics", "lcd"],
+    "target_rating": 4.7
+  },
+  {
+    "id": "fire_smoke_volumetric",
+    "name": "Fire Smoke Volumetric",
+    "category": "simulation",
+    "type": "compute",
+    "description": "Volumetric fire and smoke with ray marching, curl noise turbulence, blackbody temperature coloring, and density-based alpha",
+    "wgsl_file": "fire_smoke_volumetric.wgsl",
+    "uniforms": {
+      "param1": { "label": "Fire Height", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Turbulence", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Smoke", "min": 0, "max": 1, "default": 0.5 },
+      "param4": { "label": "Glow", "min": 0, "max": 1, "default": 0.7 }
+    },
+    "features": ["rgba", "volumetric", "fire", "smoke", "blackbody", "curl-noise"],
+    "tags": ["fire", "smoke", "volumetric", "blackbody", "simulation", "curl"],
+    "target_rating": 4.7
+  }
+]
