@@ -2,44 +2,56 @@
   "id": "liquid-displacement",
   "name": "Liquid Displacement",
   "url": "shaders/liquid-displacement.wgsl",
-  "category": "image",
-  "description": "Liquid-like distortion that acts as a lens, pushing or pulling pixels with the mouse.",
+  "category": "liquid-effects",
+  "description": "Navier-Stokes fluid simulation for realistic water-like displacement. Features swirling eddies, vortices, and volume-conserving flow with pressure projection.",
   "params": [
     {
-      "id": "strength",
-      "name": "Strength",
+      "id": "viscosity",
+      "name": "Viscosity",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "radius",
-      "name": "Radius",
+      "id": "pressure_iterations",
+      "name": "Pressure Iterations",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "aberration",
-      "name": "Aberration",
-      "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "softness",
-      "name": "Softness",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "features": [
     "mouse-driven",
-    "chromatic-aberration"
+    "multi-pass",
+    "depth-aware"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "navier-stokes",
+    "fluid",
+    "liquid",
+    "water",
+    "simulation",
+    "vortex",
+    "eddy",
+    "interactive",
+    "physics"
   ]
 }
