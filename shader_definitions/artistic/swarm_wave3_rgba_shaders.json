@@ -1,0 +1,70 @@
+[
+  {
+    "id": "particle_dreams_alpha",
+    "name": "Particle Dreams RGBA",
+    "category": "generative",
+    "type": "compute",
+    "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
+    "wgsl_file": "particle_dreams_alpha.wgsl",
+    "uniforms": {
+      "param1": { "label": "Particle Count", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Trail Persistence", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Color Shift", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Chaos", "min": 0, "max": 1, "default": 0.2 }
+    },
+    "features": ["rgba", "alpha-trails", "temporal-feedback", "mouse-attraction", "audio-reactive"],
+    "tags": ["particles", "alpha", "trails", "dreamy", "generative"],
+    "target_rating": 4.7
+  },
+  {
+    "id": "glass_refraction_alpha",
+    "name": "Glass Refraction RGBA",
+    "category": "distortion",
+    "type": "compute",
+    "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
+    "wgsl_file": "glass_refraction_alpha.wgsl",
+    "uniforms": {
+      "param1": { "label": "Transparency", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Dispersion", "min": 0, "max": 1, "default": 0.3 },
+      "param3": { "label": "Thickness", "min": 0, "max": 1, "default": 0.5 },
+      "param4": { "label": "Roughness", "min": 0, "max": 1, "default": 0.1 }
+    },
+    "features": ["rgba", "ray-marching", "refraction", "fresnel", "chromatic", "glass"],
+    "tags": ["glass", "refraction", "dispersion", "fresnel", "raymarch", "transparent"],
+    "target_rating": 4.8
+  },
+  {
+    "id": "parallax_depth_layers",
+    "name": "Parallax Layers RGBA",
+    "category": "visual-effects",
+    "type": "compute",
+    "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
+    "wgsl_file": "parallax_depth_layers.wgsl",
+    "uniforms": {
+      "param1": { "label": "Parallax", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Layer Density", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Depth of Field", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Fog", "min": 0, "max": 1, "default": 0.2 }
+    },
+    "features": ["rgba", "parallax", "depth-layers", "alpha-occlusion", "dof", "atmospheric"],
+    "tags": ["parallax", "depth", "layers", "alpha", "perspective", "scrolling"],
+    "target_rating": 4.6
+  },
+  {
+    "id": "ink_dispersion_alpha",
+    "name": "Ink Dispersion RGBA",
+    "category": "liquid-effects",
+    "type": "compute",
+    "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
+    "wgsl_file": "ink_dispersion_alpha.wgsl",
+    "uniforms": {
+      "param1": { "label": "Diffusion", "min": 0, "max": 1, "default": 0.3 },
+      "param2": { "label": "Viscosity", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Intensity", "min": 0, "max": 1, "default": 0.7 },
+      "param4": { "label": "Reaction", "min": 0, "max": 1, "default": 0.2 }
+    },
+    "features": ["rgba", "fluid-sim", "curl-noise", "advection", "alpha-density", "mouse-spawn"],
+    "tags": ["ink", "fluid", "dispersion", "chemical", "curl", "water"],
+    "target_rating": 4.7
+  }
+]
