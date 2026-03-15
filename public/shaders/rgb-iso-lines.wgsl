@@ -1,4 +1,15 @@
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════
+//  RGB ISO Lines - Contour lines with RGB parallax and wavelength-alpha
+//  Category: artistic
+//  Features: parallax, contour-lines, wavelength-dependent-alpha
+//
+//  SCIENTIFIC MODEL:
+//  - Dispersion affects parallax offset AND alpha per channel
+//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
+//  - Red (650nm): lowest absorption, highest transmission
+//  - Blue (450nm): highest absorption, lowest transmission
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -19,7 +30,22 @@ struct Uniforms {
 @group(0) @binding(10) var<storage, read> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparisonSampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ------------------------------
+
+// ═══════════════════════════════════════════════════════════════
+//  SPECTRAL PHYSICS CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const WAVELENGTH_RED:    f32 = 650.0;  // nm
+const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
+const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
+
+// ═══════════════════════════════════════════════════════════════
+//  WAVELENGTH-DEPENDENT ALPHA
+// ═══════════════════════════════════════════════════════════════
+fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
+    let lambda_norm = (800.0 - wavelength) / 400.0;
+    let absorption = mix(0.3, 1.0, lambda_norm);
+    return exp(-thickness * absorption);
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -58,19 +84,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dist_g = abs(fract(g_val * freq) - 0.5);
   let dist_b = abs(fract(b_val * freq) - 0.5);
 
-  let line_width = thickness * 0.5; // Scale to 0-0.5 range
+  let line_width = thickness * 0.5;
 
   let r_line = smoothstep(0.5 - line_width - 0.02, 0.5 - line_width, dist_r);
   let g_line = smoothstep(0.5 - line_width - 0.02, 0.5 - line_width, dist_g);
   let b_line = smoothstep(0.5 - line_width - 0.02, 0.5 - line_width, dist_b);
 
   // Composite
-  let final_col = vec3<f32>(r_line, g_line, b_line);
+  let line_col = vec3<f32>(r_line, g_line, b_line);
 
-  // Add a faint background of original image?
+  // Add a faint background of original image
   let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * 0.1;
+  
+  let final_col = line_col + base;
 
-  textureStore(writeTexture, coord, vec4<f32>(final_col + base, 1.0));
+  // ═══════════════════════════════════════════════════════════════
+  //  WAVELENGTH-DEPENDENT ALPHA
+  //  Thickness derived from parallax amount
+  // ═══════════════════════════════════════════════════════════════
+  let parallaxLength = length(offset);
+  let dispersionThickness = parallaxLength * 10.0;
+  
+  let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
+  let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
+  let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
+  
+  let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
+  let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
+  
+  let alphaModulatedColor = vec3<f32>(
+      final_col.r * alphaR,
+      final_col.g * alphaG,
+      final_col.b * alphaB
+  );
+
+  textureStore(writeTexture, coord, vec4<f32>(alphaModulatedColor, finalAlpha));
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
