@@ -1,5 +1,14 @@
-// Byte-Mosh - Bitwise Pixel Glitching
-// XOR, AND, shift and rotate operations on pixel data
+// ═══════════════════════════════════════════════════════════════
+//  Byte-Mosh - Bitwise Pixel Glitching with Alpha Corruption
+//  Category: retro-glitch
+//
+//  XOR, AND, shift and rotate operations on pixel data:
+//  - Bit-level corruption on all channels including alpha
+//  - Block-based coherent glitches
+//  - Mouse interaction creates glitch zones
+//  - Ripple glitches with bit rotation
+//  - Alpha bit corruption creates transparency artifacts
+// ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -48,17 +57,18 @@ fn u32ToFloat(x: u32) -> f32 {
   return f32(x & 0xFFu) / MAX_CHANNEL_VALUE;
 }
 
-// Pack RGB to single u32
-fn packRGB(r: f32, g: f32, b: f32) -> u32 {
-  return (floatToU32(r) << 16u) | (floatToU32(g) << 8u) | floatToU32(b);
+// Pack RGBA to single u32 (ARGB format for bit manipulation)
+fn packRGBA(r: f32, g: f32, b: f32, a: f32) -> u32 {
+  return (floatToU32(a) << 24u) | (floatToU32(r) << 16u) | (floatToU32(g) << 8u) | floatToU32(b);
 }
 
-// Unpack u32 to RGB
-fn unpackRGB(packed: u32) -> vec3<f32> {
-  return vec3<f32>(
+// Unpack u32 to RGBA
+fn unpackRGBA(packed: u32) -> vec4<f32> {
+  return vec4<f32>(
     f32((packed >> 16u) & 0xFFu) / 255.0,
     f32((packed >> 8u) & 0xFFu) / 255.0,
-    f32(packed & 0xFFu) / 255.0
+    f32(packed & 0xFFu) / 255.0,
+    f32((packed >> 24u) & 0xFFu) / 255.0
   );
 }
 
@@ -98,12 +108,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let blockNoise = hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) + vec2<f32>(floor(time * 2.0)));
   let pixelNoise = hash21(uv * 1000.0 + vec2<f32>(time));
   
-  // Sample source
+  // Sample source with alpha
   var sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   
-  // Pack color to u32
-  var packedColor = packRGB(sourceColor.r, sourceColor.g, sourceColor.b);
+  // Pack color to u32 including alpha
+  var packedColor = packRGBA(sourceColor.r, sourceColor.g, sourceColor.b, sourceColor.a);
   
   // Apply operations based on block noise and error rate
   if (blockNoise < errorRate) {
@@ -111,53 +121,56 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let opSelector = fract(blockNoise * 7.0);
     
     if (opSelector < 0.15) {
-      // XOR with noise pattern
-      let xorPattern = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 123.0) * 16777215.0);
+      // XOR with noise pattern - affects ALL channels including alpha
+      let xorPattern = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 123.0) * 4294967295.0);
       packedColor = packedColor ^ xorPattern;
     }
     else if (opSelector < 0.3) {
-      // AND mask - creates color reduction
-      let andMask = 0xF0F0F0u << bitShift;
+      // AND mask - creates color reduction and alpha holes
+      let andMask = 0xF0F0F0F0u << bitShift;
       packedColor = packedColor & andMask;
     }
     else if (opSelector < 0.45) {
-      // OR with color - creates bright glitches
-      let orPattern = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 456.0) * 16777215.0) & 0x3F3F3Fu;
+      // OR with color - creates bright glitches and opaque artifacts
+      let orPattern = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 456.0) * 4294967295.0) & 0x7F7F7F7Fu;
       packedColor = packedColor | orPattern;
     }
     else if (opSelector < 0.6) {
-      // Bit shift left - color bleeding
+      // Bit shift left - color bleeding and alpha shift
       packedColor = packedColor << bitShift;
     }
     else if (opSelector < 0.75) {
-      // Bit shift right - darkening
+      // Bit shift right - darkening and transparency
       packedColor = packedColor >> bitShift;
     }
     else if (opSelector < 0.9) {
-      // Rotate bits - psychedelic color swap
-      let rotAmount = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 789.0) * 24.0);
+      // Rotate bits - psychedelic color swap with alpha rotation
+      let rotAmount = u32(hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 789.0) * 32.0);
       packedColor = rotateLeft(packedColor, rotAmount);
     }
     else {
-      // Channel swap via bit manipulation
+      // Channel swap via bit manipulation - includes alpha in swaps
+      let a = (packedColor >> 24u) & 0xFFu;
       let r = (packedColor >> 16u) & 0xFFu;
       let g = (packedColor >> 8u) & 0xFFu;
       let b = packedColor & 0xFFu;
-      // Swap based on time
-      let swapType = u32(time * 3.0) % 6u;
-      if (swapType == 0u) { packedColor = (g << 16u) | (r << 8u) | b; }
-      else if (swapType == 1u) { packedColor = (g << 16u) | (b << 8u) | r; }
-      else if (swapType == 2u) { packedColor = (b << 16u) | (r << 8u) | g; }
-      else if (swapType == 3u) { packedColor = (b << 16u) | (g << 8u) | r; }
-      else if (swapType == 4u) { packedColor = (r << 16u) | (b << 8u) | g; }
+      // Swap based on time - now including alpha channel
+      let swapType = u32(time * 3.0) % 8u;
+      if (swapType == 0u) { packedColor = (a << 24u) | (g << 16u) | (r << 8u) | b; }
+      else if (swapType == 1u) { packedColor = (r << 24u) | (a << 16u) | (g << 8u) | b; }
+      else if (swapType == 2u) { packedColor = (b << 24u) | (r << 16u) | (a << 8u) | g; }
+      else if (swapType == 3u) { packedColor = (g << 24u) | (b << 16u) | (r << 8u) | a; }
+      else if (swapType == 4u) { packedColor = (a << 24u) | (b << 16u) | (g << 8u) | r; }
+      else if (swapType == 5u) { packedColor = (a << 24u) | (r << 16u) | (b << 8u) | g; }
+      else if (swapType == 6u) { packedColor = (g << 24u) | (a << 16u) | (b << 8u) | r; }
       else { /* keep original */ }
     }
   }
   
   // Additional per-pixel noise corruption
   if (pixelNoise < errorRate * 0.3) {
-    // Flip random bits
-    let flipMask = u32(pixelNoise * 16777215.0) & (0xFFu << (bitShift * 3u));
+    // Flip random bits - can corrupt alpha at bit level
+    let flipMask = u32(pixelNoise * 4294967295.0) & (0xFFu << (bitShift * 4u));
     packedColor = packedColor ^ flipMask;
   }
   
@@ -170,9 +183,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let strength = 1.0 - mouseDist / mouseInfluence;
     let mouseGlitch = u32(strength * 255.0);
     
-    // XOR with distance-based pattern
-    let distPattern = u32(mouseDist * 1000.0) * 0x10101u;
-    packedColor = packedColor ^ (distPattern & ((mouseGlitch << 16u) | (mouseGlitch << 8u) | mouseGlitch));
+    // XOR with distance-based pattern - affects alpha too
+    let distPattern = u32(mouseDist * 1000.0) * 0x11111111u;
+    packedColor = packedColor ^ (distPattern & ((mouseGlitch << 24u) | (mouseGlitch << 16u) | (mouseGlitch << 8u) | mouseGlitch));
   }
   
   // Ripple glitches
@@ -192,8 +205,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   
-  // Unpack result
-  var finalColor = unpackRGB(packedColor);
+  // Unpack result including alpha
+  var finalColor = unpackRGBA(packedColor);
   
   // Scanline effect for retro feel
   let scanline = sin(uv.y * u.config.w * 3.14159) * 0.1 + 0.9;
@@ -201,7 +214,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Add temporal flicker in glitched areas
   if (blockNoise < errorRate) {
     let flicker = hash11(time * 100.0 + f32(coord.x)) * 0.2 + 0.8;
-    finalColor = finalColor * flicker * scanline;
+    finalColor.rgb = finalColor.rgb * flicker * scanline;
+    // Alpha flicker for digital corruption effect
+    finalColor.a = finalColor.a * (0.7 + flicker * 0.3);
   }
   
   // Chromatic aberration in glitched blocks
@@ -209,12 +224,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let offset = (blockNoise - errorRate * 0.25) * 0.02;
     let rSample = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(offset, 0.0), 0.0).r;
     let bSample = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(offset, 0.0), 0.0).b;
-    finalColor = vec3<f32>(rSample, finalColor.g, bSample);
+    // Preserve alpha during chromatic aberration
+    let originalAlpha = finalColor.a;
+    finalColor = vec4<f32>(rSample, finalColor.g, bSample, originalAlpha);
   }
   
-  // Clamp final color
-  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+  // Clamp final color and alpha
+  finalColor = clamp(finalColor, vec4<f32>(0.0), vec4<f32>(1.0));
   
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
+  // Output RGBA with corrupted/preserved alpha
+  textureStore(writeTexture, vec2<i32>(coord), finalColor);
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
