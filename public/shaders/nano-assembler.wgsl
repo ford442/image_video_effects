@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════
+//  Nano Assembler with Alpha Scattering
+//  Grid-based nanobot simulation with physical light transport
+//  
+//  Scientific Concepts:
+//  - Particles have physical size and opacity
+//  - Many small particles = cumulative alpha
+//  - Scattering affects perceived transparency
+//  - Assembly state affects light transmission
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -25,6 +36,24 @@ fn hash2(p: vec2<f32>) -> vec2<f32> {
     return fract((p2.xx + p2.yx) * p2.xy);
 }
 
+// Soft particle alpha
+fn softParticleAlpha(dist: f32, radius: f32) -> f32 {
+    let t = dist / radius;
+    return exp(-t * t * 2.0);
+}
+
+// Exponential transmittance
+fn transmittance(density: f32) -> f32 {
+    return exp(-density);
+}
+
+// Nanobot emission color
+fn nanobotEmission(base: vec3<f32>, assembled: f32) -> vec3<f32> {
+    // Disassembled = cyan glow, assembled = natural color
+    let disassembled_glow = vec3<f32>(0.2, 0.8, 1.0);
+    return mix(base * (0.5 + assembled), disassembled_glow, 1.0 - assembled);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<i32>(textureDimensions(writeTexture));
@@ -34,76 +63,91 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
-    let assembly_progress = u.zoom_params.x; // Assembly
-    let particle_density = u.zoom_params.y; // Density
-    let scatter_force = u.zoom_params.z; // Disruption
-    let rebuild_speed = u.zoom_params.w; // Rebuild Speed
+    let assembly_progress = u.zoom_params.x;
+    let particle_density = u.zoom_params.y;
+    let scatter_force = u.zoom_params.z;
+    let rebuild_speed = u.zoom_params.w;
 
     var mouse = u.zoom_config.yz;
     let aspect = u.config.z / u.config.w;
     let time = u.config.y;
 
-    // Gridify coordinates (simulating nanobots/pixels)
-    let grid_size = mix(50.0, 5.0, particle_density); // Inverse size
+    // Grid parameters
+    let grid_size = mix(50.0, 5.0, particle_density);
     let grid_coord = floor(uv * grid_size) / grid_size;
-
-    // Each grid cell is a "nanobot"
     let cell_center = grid_coord + vec2<f32>(0.5 / grid_size);
-    let cell_uv = fract(uv * grid_size); // 0-1 within cell
+    let cell_uv = fract(uv * grid_size);
 
-    // Mouse Interaction: Disassemble
+    // Mouse interaction
     let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dist_vec);
 
-    // Nanobot "target" position (where it wants to be)
-    // vs "current" position (scattered)
-
-    // Scatter logic:
-    // If scattered, offset the UV lookup based on noise
+    // Scatter logic
     let noise_offset = (hash2(grid_coord + time * 0.1) - 0.5) * scatter_force;
-
-    // Assembly factor (global + local mouse disruption)
-    // Mouse creates a hole in the assembly (repulsion)
     let mouse_repel = smoothstep(0.2, 0.0, dist);
     let current_state = clamp(assembly_progress - mouse_repel * scatter_force, 0.0, 1.0);
 
-    // Rebuild logic (animated)
-    // Use time to cycle the assembly if rebuild_speed > 0
+    // Rebuild animation
     let pulse = 0.5 + 0.5 * sin(time * rebuild_speed * 2.0);
     let anim_state = mix(current_state, current_state * pulse, rebuild_speed * 0.5);
 
     // Apply offset if not fully assembled
     let final_uv_offset = noise_offset * (1.0 - anim_state);
-
-    // Sample Texture (where the nanobot is carrying color from)
     let source_uv = grid_coord + final_uv_offset;
 
-    // Boundary check
-    var color = vec4<f32>(0.0);
+    // Sample texture
+    var base_color = vec4<f32>(0.0);
     if (source_uv.x >= 0.0 && source_uv.x <= 1.0 && source_uv.y >= 0.0 && source_uv.y <= 1.0) {
-        color = textureSampleLevel(readTexture, u_sampler, source_uv, 0.0);
+        base_color = textureSampleLevel(readTexture, u_sampler, source_uv, 0.0);
     }
 
-    // Render the Nanobot shape (circle or square)
-    // Square with gap
+    // ═══════════════════════════════════════════════════════════════
+    //  NANOBOT ALPHA SCATTERING
+    // ═══════════════════════════════════════════════════════════════
+
+    // Nanobot shape (square with soft edges)
     let border = 0.1;
-    let shape = step(border, cell_uv.x) * step(border, cell_uv.y) * step(cell_uv.x, 1.0 - border) * step(cell_uv.y, 1.0 - border);
-
-    // If fully assembled, merge shapes (remove gaps)
+    let cell_dist = max(abs(cell_uv.x - 0.5), abs(cell_uv.y - 0.5)) * 2.0;
+    
+    // Soft particle alpha for nanobot shape
+    let core_radius = 0.5 - border;
+    let bot_alpha = softParticleAlpha(max(0.0, cell_dist - core_radius), border * 0.5);
+    
+    // Assembly affects opacity
+    let assembled_alpha = bot_alpha * (0.3 + anim_state * 0.7);
+    
+    // Merge shapes when fully assembled
     let merge = smoothstep(0.8, 1.0, anim_state);
-    let final_alpha = mix(shape, 1.0, merge);
+    let final_alpha = mix(assembled_alpha, 1.0, merge);
 
-    // Highlight edges of bots when disassembling
-    let highlight = (1.0 - final_alpha) * vec3<f32>(0.0, 1.0, 1.0) * (1.0 - anim_state);
+    // Highlight edges when disassembling
+    let edge_dist = abs(cell_dist - core_radius);
+    let edge_highlight = (1.0 - smoothstep(0.0, 0.05, edge_dist)) * (1.0 - anim_state);
+    let highlight_color = vec3<f32>(0.0, 1.0, 1.0) * edge_highlight;
 
-    var final_color = color.rgb * final_alpha + highlight;
+    // HDR emission based on assembly state
+    let emission = nanobotEmission(base_color.rgb, anim_state);
+    let hdr_color = emission * (1.0 + edge_highlight * 2.0);
+    
+    // Grid density for cumulative alpha
+    let grid_density = final_alpha * (1.0 + scatter_force * 0.5);
+    
+    // Exponential transmittance
+    let trans = transmittance(grid_density);
+    let cumulative_alpha = 1.0 - trans;
 
-    // If empty space (no bot), black
+    // Background grid when disassembled
+    let bg_grid = vec3<f32>(0.05, 0.05, 0.1) * (1.0 - anim_state);
+    
+    // Final color composition
+    var final_color = hdr_color * final_alpha + highlight_color;
     if (final_alpha < 0.1) {
-        final_color = vec3<f32>(0.05, 0.05, 0.1) * (1.0 - anim_state); // faint background grid
+        final_color = bg_grid;
     }
 
-    textureStore(writeTexture, coord, vec4<f32>(final_color, 1.0));
+    // Output RGBA
+    let output = vec4<f32>(final_color, clamp(cumulative_alpha, 0.0, 1.0));
+    textureStore(writeTexture, coord, output);
     
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
