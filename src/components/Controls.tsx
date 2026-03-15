@@ -20,6 +20,7 @@ interface ControlsProps {
     setActiveSlot: (index: number) => void;
     slotParams: SlotParams[];
     updateSlotParam: (slotIndex: number, updates: Partial<SlotParams>) => void;
+    slotShaderStatus?: Array<'idle' | 'loading' | 'error'>;
     shaderCategory: ShaderCategory;
     setShaderCategory: (category: ShaderCategory) => void;
     zoom: number;
@@ -102,6 +103,7 @@ const Controls: React.FC<ControlsProps> = ({
     modes, setMode,
     activeSlot, setActiveSlot,
     slotParams, updateSlotParam,
+    slotShaderStatus = ['idle', 'idle', 'idle'],
     shaderCategory, setShaderCategory,
     zoom, setZoom,
     panX, setPanX,
@@ -644,20 +646,37 @@ const Controls: React.FC<ControlsProps> = ({
 
             {/* --- Stack / Slot Selection --- */}
             <div className="stack-controls">
-                {[0, 1, 2].map(i => (
+                {[0, 1, 2].map(i => {
+                    const slotStatus = slotShaderStatus[i] || 'idle';
+                    const borderColor = slotStatus === 'error' ? '#ff4444'
+                        : slotStatus === 'loading' ? '#f59e0b'
+                        : activeSlot === i ? '#61dafb' : '#333';
+                    return (
                     <div
                         key={i}
                         className={`stack-slot ${activeSlot === i ? 'active' : ''}`}
                         onClick={() => setActiveSlot(i)}
                         style={{
                             padding: '8px',
-                            border: activeSlot === i ? '1px solid #61dafb' : '1px solid #333',
+                            border: `1px solid ${borderColor}`,
                             marginBottom: '5px',
                             background: activeSlot === i ? 'rgba(97, 218, 251, 0.1)' : 'transparent',
                             cursor: 'pointer'
                         }}
                     >
-                        <div style={{marginBottom: '4px', fontSize: '12px', color: activeSlot === i ? '#61dafb' : '#888'}}>Slot {i + 1}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '12px', color: activeSlot === i ? '#61dafb' : '#888' }}>Slot {i + 1}</span>
+                            {slotStatus === 'loading' && (
+                                <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                                    ⏳ COMPILING…
+                                </span>
+                            )}
+                            {slotStatus === 'error' && (
+                                <span style={{ fontSize: '10px', color: '#ff4444', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                                    ✕ FAILED
+                                </span>
+                            )}
+                        </div>
                         <select
                             value={modes[i]}
                             onChange={(e) => setMode(i, e.target.value)}
@@ -679,7 +698,8 @@ const Controls: React.FC<ControlsProps> = ({
                             )}
                         </select>
                     </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* --- Current Shader Coordinate Display --- */}

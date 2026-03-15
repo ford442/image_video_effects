@@ -95,6 +95,7 @@ function MainApp() {
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
     const [status, setStatus] = useState('Ready.');
+    const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle']);
     
     // --- State: AI Models & VJ ---
     const [depthEstimator, setDepthEstimator] = useState<any>(null);
@@ -160,7 +161,25 @@ function MainApp() {
             next[index] = mode;
             return next;
         });
-    }, []);
+
+        if (mode === 'none') {
+            setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'idle'; return n; });
+            return;
+        }
+
+        // Attempt to load & compile the shader, tracking status
+        const shaderEntry = availableModes.find(s => s.id === mode);
+        if (shaderEntry?.url && rendererRef.current && 'loadShader' in rendererRef.current) {
+            setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
+            (rendererRef.current as any).loadShader(shaderEntry.id, shaderEntry.url)
+                .then((ok: boolean) => {
+                    setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
+                })
+                .catch(() => {
+                    setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
+                });
+        }
+    }, [availableModes, rendererRef]);
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
         setSlotParams(prev => {
@@ -974,7 +993,7 @@ function MainApp() {
                     <Controls
                         // ... pass all props to Controls component
                         modes={modes} setMode={setMode} activeSlot={activeSlot} setActiveSlot={setActiveSlot}
-                        slotParams={slotParams} updateSlotParam={updateSlotParam} shaderCategory={shaderCategory}
+                        slotParams={slotParams} updateSlotParam={updateSlotParam} slotShaderStatus={slotShaderStatus} shaderCategory={shaderCategory}
                         setShaderCategory={setShaderCategory} zoom={zoom} setZoom={setZoom} panX={panX}
                         setPanX={setPanX} panY={panY} setPanY={setPanY} onNewImage={handleNewRandomImage}
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
