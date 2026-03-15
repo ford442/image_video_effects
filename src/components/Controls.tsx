@@ -62,6 +62,7 @@ interface ControlsProps {
     onApplyWebcamShader?: (shaderId: string) => void;
     // Roulette Props
     onRoulette?: () => void;
+    onRandomizeAllSlots?: () => void;
     isRouletteActive?: boolean;
     chaosModeEnabled?: boolean;
     setChaosModeEnabled?: (enabled: boolean) => void;
@@ -127,6 +128,7 @@ const Controls: React.FC<ControlsProps> = ({
     webcamFunShaders = [],
     onApplyWebcamShader,
     onRoulette,
+    onRandomizeAllSlots,
     isRouletteActive = false,
     chaosModeEnabled = false,
     setChaosModeEnabled,
@@ -563,31 +565,43 @@ const Controls: React.FC<ControlsProps> = ({
 
             {/* --- 🎰 Roulette Section --- */}
             <div className="roulette-section">
-                <button 
-                    onClick={onRoulette}
-                    className={`roulette-btn ${isRouletteActive ? 'spinning' : ''}`}
-                    title="Press 'R' to spin!"
-                >
-                    <span className="roulette-icon">🎰</span>
-                    <span className="roulette-text">Surprise Me!</span>
-                </button>
-                
-                <div className="chaos-mode-toggle">
-                    <label className="chaos-label">
-                        <input
-                            type="checkbox"
-                            checked={chaosModeEnabled}
-                            onChange={(e) => setChaosModeEnabled?.(e.target.checked)}
-                        />
-                        <span className="chaos-text">
-                            🔥 Chaos Mode
-                            <small>Auto-switch every 6-10s</small>
-                        </span>
-                    </label>
-                </div>
-                
-                <div className="roulette-shortcut-hint">
-                    Press <kbd>R</kbd> to spin
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <button
+                        onClick={onRoulette}
+                        className={`roulette-btn ${isRouletteActive ? 'spinning' : ''}`}
+                        title="Randomize active slot shader + sliders (R)"
+                    >
+                        <span className="roulette-icon">🎰</span>
+                        <span className="roulette-text">Randomize Slot {activeSlot + 1}</span>
+                    </button>
+
+                    <button
+                        onClick={onRandomizeAllSlots}
+                        className={`roulette-btn ${isRouletteActive ? 'spinning' : ''}`}
+                        title="Randomize all 3 shader slots + sliders"
+                        style={{ marginTop: '8px', background: 'linear-gradient(145deg, #a855f7, #7c3aed)' }}
+                    >
+                        <span className="roulette-icon">🎲</span>
+                        <span className="roulette-text">Randomize All Slots</span>
+                    </button>
+
+                    <div className="chaos-mode-toggle">
+                        <label className="chaos-label">
+                            <input
+                                type="checkbox"
+                                checked={chaosModeEnabled}
+                                onChange={(e) => setChaosModeEnabled?.(e.target.checked)}
+                            />
+                            <span className="chaos-text">
+                                🔥 Chaos Mode
+                                <small>Auto-switch every 6-10s</small>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div className="roulette-shortcut-hint">
+                        Press <kbd>R</kbd> to spin
+                    </div>
                 </div>
             </div>
 

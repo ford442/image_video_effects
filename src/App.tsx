@@ -520,13 +520,12 @@ function MainApp() {
             }, 300);
         }
 
-        // Apply random shader to slot 0
-        setMode(0, randomShader.id as RenderMode);
-        setActiveSlot(0);
+        // Apply random shader to active slot
+        setMode(activeSlot, randomShader.id as RenderMode);
 
         // Randomize parameters for fresh look
         const newParams = randomizeSlotParams();
-        updateSlotParam(0, newParams);
+        updateSlotParam(activeSlot, newParams);
 
         // Show confetti on first use
         if (rouletteFirstUse) {
@@ -535,10 +534,34 @@ function MainApp() {
             setTimeout(() => setShowConfetti(false), 3000);
         }
 
-        setStatus(`🎰 Roulette: ${randomShader.name}`);
+        setStatus(`🎰 Roulette slot ${activeSlot + 1}: ${randomShader.name}`);
         setIsRouletteActive(true);
         setTimeout(() => setIsRouletteActive(false), 500);
-    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, rouletteFirstUse]);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, rouletteFirstUse, activeSlot]);
+
+    const triggerRandomizeAllSlots = useCallback(() => {
+        // Flash effect
+        if (rouletteFlashRef.current) {
+            rouletteFlashRef.current.classList.add('flash-active');
+            setTimeout(() => {
+                rouletteFlashRef.current?.classList.remove('flash-active');
+            }, 300);
+        }
+
+        const names: string[] = [];
+        for (let i = 0; i < 3; i++) {
+            const randomShader = getRandomShader();
+            if (randomShader) {
+                setMode(i, randomShader.id as RenderMode);
+                updateSlotParam(i, randomizeSlotParams());
+                names.push(randomShader.name);
+            }
+        }
+
+        setStatus(`🎲 All slots randomized: ${names.join(', ')}`);
+        setIsRouletteActive(true);
+        setTimeout(() => setIsRouletteActive(false), 500);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam]);
 
     // Chaos Mode effect
     useEffect(() => {
@@ -972,6 +995,7 @@ function MainApp() {
                         onApplyWebcamShader={applyWebcamFunShader}
                         // Roulette props
                         onRoulette={triggerRoulette}
+                        onRandomizeAllSlots={triggerRandomizeAllSlots}
                         isRouletteActive={isRouletteActive}
                         chaosModeEnabled={chaosModeEnabled}
                         setChaosModeEnabled={setChaosModeEnabled}
