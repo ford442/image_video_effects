@@ -1,4 +1,15 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Glitch Ripple Drag - Liquid Glitch with Alpha Persistence
+//  Category: retro-glitch
+//
+//  Ripples emanate from mouse, dragging pixels with persistent trails:
+//  - Expanding ring waves from mouse position
+//  - Quantized glitchy direction for pixel displacement
+//  - High persistence feedback for liquid accumulation
+//  - Color separation artifacts in glitch zones
+//  - Alpha persistence for trail fade
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +23,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -41,6 +51,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let waveFreq = 10.0 + u.zoom_params.y * 40.0;
     let persistence = 0.9 + (u.zoom_params.z * 0.099); // 0.9 - 0.999
     let glitchAmt = u.zoom_params.w;
+    let alphaFade = 1.0 - (u.zoom_params.z * 0.05); // Alpha fade based on persistence
 
     // 1. Calculate Ripple Displacement
     let dVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
@@ -76,15 +87,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleUV = uv - displacement;
 
     // Read previous frame (feedback)
-    var history = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
+    var historySample = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
+    var history = historySample;
 
     // Read current video frame
-    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // 3. Blend Logic
     // If history is empty (alpha=0), init with input.
     if (history.a < 0.1) {
-        history = inputColor;
+        history = inputSample;
     }
 
     // We mix the input video back in slowly to prevent total degradation,
@@ -93,18 +105,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // But the drag effect requires feedback.
 
     // Result = Mix(Video, History, Persistence)
-    var finalColor = mix(inputColor, history, persistence);
+    var finalColor = mix(inputSample.rgb, history.rgb, persistence);
+    // Alpha persistence: trails fade over time
+    var finalAlpha = mix(inputSample.a, history.a * alphaFade, persistence);
 
     // Add extra glitch artifact: Color separation
     if (glitchAmt > 0.5 && waveMask > 0.1) {
         let r = textureSampleLevel(dataTextureC, u_sampler, sampleUV + vec2<f32>(0.005, 0.0), 0.0).r;
         let b = textureSampleLevel(dataTextureC, u_sampler, sampleUV - vec2<f32>(0.005, 0.0), 0.0).b;
-        finalColor = vec4<f32>(r, finalColor.g, b, 1.0);
+        finalColor = vec3<f32>(r, finalColor.g, b);
+        // Glitch reduces alpha slightly for ghost effect
+        finalAlpha = finalAlpha * 0.98;
     }
 
-    finalColor.a = 1.0;
+    // Ensure minimum alpha
+    finalAlpha = clamp(finalAlpha, 0.1, 1.0);
+
+    var output = vec4<f32>(finalColor, finalAlpha);
 
     // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), output);
+    textureStore(dataTextureA, global_id.xy, output);
+    
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
