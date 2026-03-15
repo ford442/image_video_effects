@@ -1,0 +1,70 @@
+[
+  {
+    "id": "underwater_caustics",
+    "name": "Underwater Caustics",
+    "category": "lighting-effects",
+    "type": "compute",
+    "description": "Realistic underwater caustics with Gerstner wave surface simulation, refracted light patterns, god rays, and depth-based alpha",
+    "wgsl_file": "underwater_caustics.wgsl",
+    "uniforms": {
+      "param1": { "label": "Wave Scale", "min": 0, "max": 1, "default": 0.4 },
+      "param2": { "label": "Caustic Intensity", "min": 0, "max": 1, "default": 0.7 },
+      "param3": { "label": "Depth", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Clarity", "min": 0, "max": 1, "default": 0.7 }
+    },
+    "features": ["rgba", "gerstner-waves", "caustics", "god-rays", "underwater"],
+    "tags": ["water", "caustics", "underwater", "gerstner", "ocean"],
+    "target_rating": 4.7
+  },
+  {
+    "id": "matrix_digital_rain",
+    "name": "Matrix Digital Rain",
+    "category": "retro-glitch",
+    "type": "compute",
+    "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
+    "wgsl_file": "matrix_digital_rain.wgsl",
+    "uniforms": {
+      "param1": { "label": "Speed", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Density", "min": 0, "max": 1, "default": 0.5 },
+      "param3": { "label": "Glow Size", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Scanlines", "min": 0, "max": 1, "default": 0.2 }
+    },
+    "features": ["rgba", "matrix", "digital-rain", "decoding", "retro"],
+    "tags": ["matrix", "digital", "rain", "cyberpunk", "retro", "code"],
+    "target_rating": 4.6
+  },
+  {
+    "id": "aurora_borealis",
+    "name": "Aurora Borealis",
+    "category": "generative",
+    "type": "compute",
+    "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
+    "wgsl_file": "aurora_borealis.wgsl",
+    "uniforms": {
+      "param1": { "label": "Ribbons", "min": 0, "max": 1, "default": 0.4 },
+      "param2": { "label": "Flow Speed", "min": 0, "max": 1, "default": 0.4 },
+      "param3": { "label": "Ribbon Width", "min": 0, "max": 1, "default": 0.3 },
+      "param4": { "label": "Glow", "min": 0, "max": 1, "default": 0.7 }
+    },
+    "features": ["rgba", "aurora", "curl-noise", "ribbons", "atmospheric"],
+    "tags": ["aurora", "northern-lights", "atmospheric", "nature", "sky"],
+    "target_rating": 4.8
+  },
+  {
+    "id": "temporal_echo",
+    "name": "Temporal Echo",
+    "category": "distortion",
+    "type": "compute",
+    "description": "Time-warp effect with multi-frame temporal accumulation, RGB channel time offsets, ghost trails, and motion-based displacement",
+    "wgsl_file": "temporal_echo.wgsl",
+    "uniforms": {
+      "param1": { "label": "Echo Count", "min": 0, "max": 1, "default": 0.5 },
+      "param2": { "label": "Time Offset", "min": 0, "max": 1, "default": 0.3 },
+      "param3": { "label": "Decay", "min": 0, "max": 1, "default": 0.7 },
+      "param4": { "label": "Displacement", "min": 0, "max": 1, "default": 0.2 }
+    },
+    "features": ["rgba", "temporal", "echo", "motion", "feedback", "time-warp"],
+    "tags": ["temporal", "echo", "time", "ghost", "trail", "warp"],
+    "target_rating": 4.7
+  }
+]
