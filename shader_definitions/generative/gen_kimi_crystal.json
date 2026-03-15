@@ -3,15 +3,55 @@
   "name": "Kimi Crystal",
   "url": "shaders/gen_kimi_crystal.wgsl",
   "category": "generative",
-  "description": "Animated crystalline structures growing on a hexagonal grid with icy blue colors and gold accents. Mouse creates stellar glow.",
+  "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
   "features": [
     "mouse-driven",
     "generative",
     "geometric",
-    "crystalline"
+    "crystalline",
+    "alpha-transmission"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Density of hexagonal crystal grid"
+    },
+    {
+      "id": "purity",
+      "name": "Crystal Purity",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Ice crystal clarity: affects transmission and absorption"
+    },
+    {
+      "id": "growth",
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Animation speed of crystal growth"
+    },
+    {
+      "id": "thickness",
+      "name": "Crystal Thickness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Physical thickness affecting light path length"
+    }
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "crystal",
+    "ice",
+    "hexagonal",
+    "transmission",
+    "physical"
   ]
 }

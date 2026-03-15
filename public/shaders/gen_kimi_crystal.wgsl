@@ -1,9 +1,23 @@
+// ═══════════════════════════════════════════════════════════════
+//  Gen Kimi Crystal - Physical Light Transmission with Alpha
+//  Category: generative
+//  Features: hexagonal grid, crystal growth, icy transmission
+//  Animated crystalline structures with physical alpha
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(7) var dataTextureA : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC : texture_2d<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
   config: vec4<f32>,
@@ -12,8 +26,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Kimi Crystal - Growing Crystal Formations
-// Animated crystalline structures that grow and refract light
+const IOR_ICE: f32 = 1.31;
 
 fn hash(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -35,12 +48,30 @@ fn sdHexagon(p: vec2<f32>, r: f32) -> f32 {
     return length(max(h - vec2<f32>(k.z * r, r * 0.5), vec2<f32>(0.0))) + min(max(h.x - k.z * r, h.y - r * 0.5), 0.0);
 }
 
+// Fresnel for ice/glass
+fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Parameters via zoom_params:
+    // x: grid density
+    // y: crystal purity / transmission
+    // z: growth speed
+    // w: thickness / depth
+    // ═══════════════════════════════════════════════════════════════
+    
+    let gridDensity = mix(2.0, 5.0, u.zoom_params.x);
+    let crystalPurity = mix(0.3, 1.0, u.zoom_params.y);
+    let growthSpeed = mix(0.05, 0.3, u.zoom_params.z);
+    let crystalThickness = mix(0.1, 1.0, u.zoom_params.w);
     
     // Mouse interaction
     var mouse = u.zoom_config.yz;
@@ -55,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     mousePos.x *= resolution.x / resolution.y;
     
     // Crystal grid
-    let gridScale = 3.0;
+    let gridScale = gridDensity;
     var gridUV = p * gridScale;
     
     // Hexagonal grid
@@ -80,8 +111,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     // Animated crystal growth
-    let hexHash = hash(hexId + floor(time * 0.2));
-    let growthPhase = fract(time * 0.1 + hexHash * 10.0);
+    let hexHash = hash(hexId + floor(time * growthSpeed));
+    let growthPhase = fract(time * growthSpeed * 0.5 + hexHash * 10.0);
     let crystalSize = smoothstep(0.0, 0.8, growthPhase) * hexSize * 0.8;
     
     // Mouse influence on nearby crystals
@@ -106,30 +137,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let crystalDeep = vec3<f32>(0.1, 0.3, 0.6);      // Deep blue
     let goldAccent = vec3<f32>(1.0, 0.8, 0.3);       // Gold
     
+    // ═══════════════════════════════════════════════════════════════
+    // Physical Transmission Calculation
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Crystal mask (1 inside, 0 outside)
+    let crystalMask = smoothstep(0.02, -0.02, d);
+    
+    // Distance from crystal center (for Fresnel)
+    let distFromCenter = length(hexLocal) / max(crystalSize, 0.01);
+    let cosTheta = 1.0 - distFromCenter * 0.5; // Approximate view angle
+    
+    // Fresnel for ice
+    let F0 = pow((IOR_ICE - 1.0) / (IOR_ICE + 1.0), 2.0);
+    let fresnel = fresnelSchlick(max(cosTheta, 0.0), F0);
+    
+    // Path length through crystal (thicker at center)
+    let pathLength = crystalThickness * (1.0 - distFromCenter * 0.3) / crystalPurity;
+    
+    // Absorption (ice absorbs slightly, more if impure)
+    let absorptionCoeff = mix(0.5, 3.0, 1.0 - crystalPurity);
+    let absorption = exp(-absorptionCoeff * pathLength * crystalMask);
+    
+    // Transmission coefficient
+    let transmission = absorption * (1.0 - fresnel) * crystalPurity;
+    
     // Mix colors based on crystal shape
     var color = bgColor;
     
-    // Crystal body
-    let crystalMask = smoothstep(0.02, -0.02, d);
-    color = mix(color, crystalDeep, crystalMask * 0.5);
-    color = mix(color, crystalBase, crystalMask * interiorPattern);
-    color = mix(color, crystalHighlight, crystalMask * smoothstep(0.0, 0.3, -d));
+    // Crystal body with depth layers
+    color = mix(color, crystalDeep, crystalMask * 0.5 * (1.0 - distFromCenter * 0.5));
+    color = mix(color, crystalBase, crystalMask * interiorPattern * transmission);
+    color = mix(color, crystalHighlight, crystalMask * smoothstep(0.0, 0.3, -d) * transmission);
     
-    // Edge glow
+    // Edge glow (Fresnel reflection)
     let edgeGlow = smoothstep(0.05, 0.0, abs(d));
-    color += goldAccent * edgeGlow * 0.5;
+    color += goldAccent * edgeGlow * fresnel * 0.8;
     
     // Mouse interaction glow
-    color += vec3<f32>(0.5, 0.8, 1.0) * mouseGlow * 0.3;
+    color += vec3<f32>(0.5, 0.8, 1.0) * mouseGlow * 0.3 * transmission;
     
-    // Sparkles at vertices
+    // Sparkles at vertices (specular highlights)
     let vertexDist = sdHexagon(hexLocal, crystalSize * 0.9);
     let sparkle = select(0.0, 1.0, vertexDist > 0.0 && vertexDist < 0.05 && hash(hexId + vec2<f32>(time)) > 0.95);
-    color += vec3<f32>(1.0) * sparkle;
+    color += vec3<f32>(1.0) * sparkle * fresnel;
     
     // Final intensity adjustment
     color = pow(color, vec3<f32>(0.9)) * 1.1;
     
-    textureStore(writeTexture, px, vec4<f32>(color, 1.0));
-    textureStore(dataTextureA, px, vec4<f32>(color, crystalMask, 0.0, 1.0));
+    // Alpha is transmission where crystal exists
+    let alpha = mix(1.0, transmission, crystalMask);
+    
+    textureStore(writeTexture, px, vec4<f32>(color, alpha));
+    textureStore(dataTextureA, px, vec4<f32>(color, crystalMask * transmission, 0.0, 1.0));
+    
+    // Depth based on crystal presence
+    let depth = crystalMask * 0.5 + 0.5;
+    textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
