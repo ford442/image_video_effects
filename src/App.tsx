@@ -95,6 +95,7 @@ function MainApp() {
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
     const [status, setStatus] = useState('Ready.');
+    const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle']);
     
     // --- State: AI Models & VJ ---
     const [depthEstimator, setDepthEstimator] = useState<any>(null);
@@ -160,7 +161,25 @@ function MainApp() {
             next[index] = mode;
             return next;
         });
-    }, []);
+
+        if (mode === 'none') {
+            setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'idle'; return n; });
+            return;
+        }
+
+        // Attempt to load & compile the shader, tracking status
+        const shaderEntry = availableModes.find(s => s.id === mode);
+        if (shaderEntry?.url && rendererRef.current && 'loadShader' in rendererRef.current) {
+            setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
+            (rendererRef.current as any).loadShader(shaderEntry.id, shaderEntry.url)
+                .then((ok: boolean) => {
+                    setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
+                })
+                .catch(() => {
+                    setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
+                });
+        }
+    }, [availableModes, rendererRef]);
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
         setSlotParams(prev => {
@@ -520,13 +539,12 @@ function MainApp() {
             }, 300);
         }
 
-        // Apply random shader to slot 0
-        setMode(0, randomShader.id as RenderMode);
-        setActiveSlot(0);
+        // Apply random shader to active slot
+        setMode(activeSlot, randomShader.id as RenderMode);
 
         // Randomize parameters for fresh look
         const newParams = randomizeSlotParams();
-        updateSlotParam(0, newParams);
+        updateSlotParam(activeSlot, newParams);
 
         // Show confetti on first use
         if (rouletteFirstUse) {
@@ -535,10 +553,34 @@ function MainApp() {
             setTimeout(() => setShowConfetti(false), 3000);
         }
 
-        setStatus(`🎰 Roulette: ${randomShader.name}`);
+        setStatus(`🎰 Roulette slot ${activeSlot + 1}: ${randomShader.name}`);
         setIsRouletteActive(true);
         setTimeout(() => setIsRouletteActive(false), 500);
-    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, rouletteFirstUse]);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, rouletteFirstUse, activeSlot]);
+
+    const triggerRandomizeAllSlots = useCallback(() => {
+        // Flash effect
+        if (rouletteFlashRef.current) {
+            rouletteFlashRef.current.classList.add('flash-active');
+            setTimeout(() => {
+                rouletteFlashRef.current?.classList.remove('flash-active');
+            }, 300);
+        }
+
+        const names: string[] = [];
+        for (let i = 0; i < 3; i++) {
+            const randomShader = getRandomShader();
+            if (randomShader) {
+                setMode(i, randomShader.id as RenderMode);
+                updateSlotParam(i, randomizeSlotParams());
+                names.push(randomShader.name);
+            }
+        }
+
+        setStatus(`🎲 All slots randomized: ${names.join(', ')}`);
+        setIsRouletteActive(true);
+        setTimeout(() => setIsRouletteActive(false), 500);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam]);
 
     // Chaos Mode effect
     useEffect(() => {
@@ -951,7 +993,7 @@ function MainApp() {
                     <Controls
                         // ... pass all props to Controls component
                         modes={modes} setMode={setMode} activeSlot={activeSlot} setActiveSlot={setActiveSlot}
-                        slotParams={slotParams} updateSlotParam={updateSlotParam} shaderCategory={shaderCategory}
+                        slotParams={slotParams} updateSlotParam={updateSlotParam} slotShaderStatus={slotShaderStatus} shaderCategory={shaderCategory}
                         setShaderCategory={setShaderCategory} zoom={zoom} setZoom={setZoom} panX={panX}
                         setPanX={setPanX} panY={panY} setPanY={setPanY} onNewImage={handleNewRandomImage}
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
@@ -972,6 +1014,7 @@ function MainApp() {
                         onApplyWebcamShader={applyWebcamFunShader}
                         // Roulette props
                         onRoulette={triggerRoulette}
+                        onRandomizeAllSlots={triggerRandomizeAllSlots}
                         isRouletteActive={isRouletteActive}
                         chaosModeEnabled={chaosModeEnabled}
                         setChaosModeEnabled={setChaosModeEnabled}
