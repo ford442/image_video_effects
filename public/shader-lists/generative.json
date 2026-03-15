@@ -10,6 +10,62 @@
     ]
   },
   {
+    "id": "particle_dreams_alpha",
+    "name": "Particle Dreams RGBA",
+    "url": "shaders/particle_dreams_alpha.wgsl",
+    "category": "generative",
+    "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
+    "tags": [
+      "particles",
+      "alpha",
+      "trails",
+      "dreamy",
+      "generative"
+    ],
+    "features": [
+      "rgba",
+      "alpha-trails",
+      "temporal-feedback",
+      "mouse-attraction",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Particle Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Chaos",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
     "id": "plasma",
     "name": "Plasma Ball",
     "url": "shaders/plasma.wgsl",
@@ -360,7 +416,7 @@
     "name": "Bismuth Crystal Citadel",
     "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
     "category": "generative",
-    "description": "An endless procedural canyon of iridescent, stair-stepped geometric bismuth crystals with thin-film interference coloring.",
+    "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
     "tags": [
       "generative",
       "raymarch",
@@ -370,11 +426,13 @@
       "metallic",
       "iridescent",
       "geometry",
-      "fractal"
+      "fractal",
+      "alpha-transmission"
     ],
     "features": [
       "raymarched",
-      "mouse-driven"
+      "mouse-driven",
+      "physical-transmission"
     ],
     "author": "AI",
     "params": [
@@ -385,7 +443,7 @@
         "max": 1,
         "default": 0.5,
         "step": 0.01,
-        "description": "Controls the size of the stepped terraces characteristic of bismuth crystals."
+        "description": "Size of stepped terraces characteristic of bismuth crystals"
       },
       {
         "id": "param2",
@@ -394,7 +452,7 @@
         "max": 2,
         "default": 0.5,
         "step": 0.01,
-        "description": "Speed at which the camera moves through the infinite crystal citadel."
+        "description": "Camera movement speed through the crystal citadel"
       },
       {
         "id": "param3",
@@ -403,7 +461,7 @@
         "max": 2,
         "default": 0.8,
         "step": 0.01,
-        "description": "Intensity of specular highlights on the metallic crystal surfaces."
+        "description": "Specular highlight intensity on metallic surfaces"
       },
       {
         "id": "param4",
@@ -412,7 +470,7 @@
         "max": 5,
         "default": 1,
         "step": 0.1,
-        "description": "Shifts the rainbow-like thin-film interference colors across the crystal surfaces."
+        "description": "Thin-film interference color shift on crystal surfaces"
       }
     ]
   },
@@ -699,7 +757,7 @@
     "name": "Crystal Caverns",
     "url": "shaders/gen-crystal-caverns.wgsl",
     "category": "generative",
-    "description": "An infinite, procedural cave system illuminated by clusters of glowing crystals. Features stalactites, crystal clusters, and mouse-controlled light.",
+    "description": "Infinite procedural cave system with glowing crystals featuring physical light transmission. Crystals have IOR-based Fresnel reflection and variable purity affecting their glow transparency.",
     "tags": [
       "crystal",
       "cave",
@@ -709,10 +767,12 @@
       "glowing",
       "stalactites",
       "procedural",
-      "generative"
+      "generative",
+      "alpha-transmission"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "physical-transmission"
     ],
     "author": "ford442",
     "params": [
@@ -722,15 +782,17 @@
         "default": 0.25,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Size of cave structures"
       },
       {
         "id": "density",
-        "name": "Crystal Density",
+        "name": "Crystal Purity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Crystal clarity affecting transmission and glow"
       },
       {
         "id": "glow",
@@ -738,7 +800,8 @@
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Brightness of crystal glow"
       },
       {
         "id": "pulse",
@@ -746,7 +809,8 @@
         "default": 0,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Crystal pulsing animation speed"
       }
     ]
   },
@@ -1516,17 +1580,20 @@
     "name": "Prismatic Bismuth Lattice",
     "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
     "category": "generative",
-    "description": "An endlessly folding, hyper-geometric expanse of iridescent, stepped bismuth crystals that breathe and fracture in rhythm with unseen cosmic frequencies.",
+    "description": "Endlessly folding hyper-geometric expanse of iridescent bismuth crystals with physical light transmission. Features thin-film interference, metallic Fresnel reflection, and oxide layer transmission.",
     "tags": [
       "crystalline",
       "iridescent",
       "fractal",
       "geometric",
-      "audio-reactive"
+      "audio-reactive",
+      "alpha-transmission",
+      "physical"
     ],
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "physical-transmission"
     ],
     "params": [
       {
@@ -1535,7 +1602,8 @@
         "default": 3,
         "min": 1,
         "max": 6,
-        "step": 1
+        "step": 1,
+        "description": "Recursion depth of hopper crystal formation"
       },
       {
         "id": "param2",
@@ -1543,7 +1611,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Thin-film interference color intensity"
       },
       {
         "id": "param3",
@@ -1551,7 +1620,8 @@
         "default": 1,
         "min": 0.5,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "description": "Size of crystal lattice cells"
       },
       {
         "id": "param4",
@@ -1559,7 +1629,8 @@
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Atmospheric fog density"
       }
     ]
   },
@@ -2016,16 +2087,56 @@
     "name": "Kimi Crystal",
     "url": "shaders/gen_kimi_crystal.wgsl",
     "category": "generative",
-    "description": "Animated crystalline structures growing on a hexagonal grid with icy blue colors and gold accents. Mouse creates stellar glow.",
+    "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
     "features": [
       "mouse-driven",
       "generative",
       "geometric",
-      "crystalline"
+      "crystalline",
+      "alpha-transmission"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Density of hexagonal crystal grid"
+      },
+      {
+        "id": "purity",
+        "name": "Crystal Purity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "description": "Ice crystal clarity: affects transmission and absorption"
+      },
+      {
+        "id": "growth",
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Animation speed of crystal growth"
+      },
+      {
+        "id": "thickness",
+        "name": "Crystal Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Physical thickness affecting light path length"
+      }
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "crystal",
+      "ice",
+      "hexagonal",
+      "transmission",
+      "physical"
     ]
   },
   {
@@ -2044,6 +2155,62 @@
       "procedural",
       "generative"
     ]
+  },
+  {
+    "id": "gen_mandelbulb_3d",
+    "name": "Mandelbulb 3D",
+    "url": "shaders/gen_mandelbulb_3d.wgsl",
+    "category": "generative",
+    "description": "3D Mandelbulb fractal with ray marching, orbit trap coloring, soft shadows, and distance-based alpha for atmospheric depth",
+    "tags": [
+      "mandelbulb",
+      "fractal",
+      "3d",
+      "raymarch",
+      "orbits"
+    ],
+    "features": [
+      "rgba",
+      "ray-marching",
+      "sdf",
+      "orbit-trap",
+      "3d-fractal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Zoom",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Fog Density",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.8
   },
   {
     "id": "gen-orb",
@@ -2072,6 +2239,61 @@
       "procedural",
       "generative"
     ]
+  },
+  {
+    "id": "gen_quantum_foam",
+    "name": "Quantum Foam",
+    "url": "shaders/gen_quantum_foam.wgsl",
+    "category": "generative",
+    "description": "Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow",
+    "tags": [
+      "quantum",
+      "generative",
+      "entanglement",
+      "volumetric",
+      "hdr"
+    ],
+    "features": [
+      "hdr",
+      "audio-reactive",
+      "temporal-coherence",
+      "fbm-noise"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Foam Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Web Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Evolution Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
   },
   {
     "id": "gen-rainbow-smoke",
@@ -2428,6 +2650,62 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "aurora_borealis",
+    "name": "Aurora Borealis",
+    "url": "shaders/aurora_borealis.wgsl",
+    "category": "generative",
+    "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
+    "tags": [
+      "aurora",
+      "northern-lights",
+      "atmospheric",
+      "nature",
+      "sky"
+    ],
+    "features": [
+      "rgba",
+      "aurora",
+      "curl-noise",
+      "ribbons",
+      "atmospheric"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Ribbons",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Ribbon Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.8
   },
   {
     "id": "cymatic-sand",

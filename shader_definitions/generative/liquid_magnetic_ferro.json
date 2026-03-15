@@ -1,0 +1,55 @@
+{
+  "id": "liquid_magnetic_ferro",
+  "name": "Magnetic Ferrofluid",
+  "url": "shaders/liquid_magnetic_ferro.wgsl",
+  "category": "liquid-effects",
+  "description": "Interactive ferrofluid simulation with magnetic field lines, Rosensweig instability spike formation, and metallic iridescent rendering",
+  "tags": [
+    "ferrofluid",
+    "magnetic",
+    "liquid",
+    "interactive",
+    "metallic"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "metallic",
+    "magnetic-simulation"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Spike Sharpness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Viscosity",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Num Dipoles",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "target_rating": 4.7
+}

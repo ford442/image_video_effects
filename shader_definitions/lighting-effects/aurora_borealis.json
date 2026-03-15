@@ -1,0 +1,56 @@
+{
+  "id": "aurora_borealis",
+  "name": "Aurora Borealis",
+  "url": "shaders/aurora_borealis.wgsl",
+  "category": "generative",
+  "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
+  "tags": [
+    "aurora",
+    "northern-lights",
+    "atmospheric",
+    "nature",
+    "sky"
+  ],
+  "features": [
+    "rgba",
+    "aurora",
+    "curl-noise",
+    "ribbons",
+    "atmospheric"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Ribbons",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Flow Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Ribbon Width",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Glow",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "target_rating": 4.8
+}

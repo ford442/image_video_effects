@@ -1,0 +1,54 @@
+{
+  "id": "retro_phosphor_dream",
+  "name": "Phosphor Dream",
+  "url": "shaders/retro_phosphor_dream.wgsl",
+  "category": "retro-glitch",
+  "description": "Authentic CRT simulation with RGB phosphor triads, persistence afterglow, interlaced flicker, barrel distortion, and chromatic aberration",
+  "tags": [
+    "crt",
+    "retro",
+    "phosphor",
+    "analog",
+    "vintage"
+  ],
+  "features": [
+    "temporal-persistence",
+    "audio-reactive",
+    "phosphor-glow"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Curvature",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Phosphor Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Scanlines",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Flicker",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "target_rating": 4.6
+}

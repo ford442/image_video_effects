@@ -1,0 +1,58 @@
+{
+  "id": "parallax_depth_layers",
+  "name": "Parallax Layers RGBA",
+  "url": "shaders/parallax_depth_layers.wgsl",
+  "category": "visual-effects",
+  "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
+  "tags": [
+    "parallax",
+    "depth",
+    "layers",
+    "alpha",
+    "perspective",
+    "scrolling"
+  ],
+  "features": [
+    "rgba",
+    "parallax",
+    "depth-layers",
+    "alpha-occlusion",
+    "dof",
+    "atmospheric"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Parallax",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Layer Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Depth of Field",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Fog",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "target_rating": 4.6
+}

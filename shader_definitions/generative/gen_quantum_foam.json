@@ -1,0 +1,55 @@
+{
+  "id": "gen_quantum_foam",
+  "name": "Quantum Foam",
+  "url": "shaders/gen_quantum_foam.wgsl",
+  "category": "generative",
+  "description": "Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow",
+  "tags": [
+    "quantum",
+    "generative",
+    "entanglement",
+    "volumetric",
+    "hdr"
+  ],
+  "features": [
+    "hdr",
+    "audio-reactive",
+    "temporal-coherence",
+    "fbm-noise"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Foam Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Web Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Evolution Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "target_rating": 4.6
+}

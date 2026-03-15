@@ -1,0 +1,55 @@
+{
+  "id": "bio_lenia_continuous",
+  "name": "Lenia Continuous",
+  "url": "shaders/bio_lenia_continuous.wgsl",
+  "category": "simulation",
+  "description": "Continuous cellular automata (Lenia) with smooth growth functions, multiple kernel radii, and biological emergence patterns",
+  "tags": [
+    "lenia",
+    "cellular-automata",
+    "biological",
+    "emergence",
+    "simulation"
+  ],
+  "features": [
+    "feedback-loop",
+    "mouse-spawn",
+    "audio-reactive",
+    "continuous-ca"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Growth Center",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Growth Width",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Time Step",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "target_rating": 4.7
+}
