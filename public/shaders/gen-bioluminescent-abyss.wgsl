@@ -1,4 +1,9 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Bioluminescent Abyss - Generative Shader with Deep Sea Organism Properties
+//  Category: generative
+//  Features: Tube worm tissue, bioluminescent emission, organic transparency
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +17,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
@@ -21,7 +25,11 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-// Bioluminescent Abyss - Generative Shader
+// Deep Sea Organism Properties
+const WORM_TISSUE_DENSITY: f32 = 3.2;      // Tube worms are relatively dense
+const WORM_SCATTERING: f32 = 1.5;          // Moderate scattering
+const VENT_MINERAL_DENSITY: f32 = 8.0;     // Mineral deposits are opaque
+const GLOW_TRANSPARENCY: f32 = 0.65;       // Bioluminescent areas are translucent
 
 // --- Noise Functions ---
 
@@ -45,7 +53,6 @@ fn fbm(p: vec2<f32>) -> f32 {
     var a = 0.5;
     var shift = vec2<f32>(100.0);
     var pos = p;
-    // Rotate to reduce axial bias
     let rot = mat2x2<f32>(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
     for (var i = 0; i < 5; i++) {
         v += a * noise(pos);
@@ -62,7 +69,6 @@ fn sdCappedCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
     return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
-// Capped Cone - exact
 fn sdCappedCone(p: vec3<f32>, h: f32, r1: f32, r2: f32) -> f32 {
     var q = vec2<f32>(length(p.xz), p.y);
     let k1 = vec2<f32>(r2, h);
@@ -78,33 +84,86 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+// Calculate tube worm tissue thickness
+fn calculateWormThickness(p: vec3<f32>, n: vec3<f32>, radius: f32, relHeight: f32) -> f32 {
+    // Tube worms have thicker walls at base, thinner at glowing tips
+    let baseThickness = radius * 0.4;  // Wall is 40% of radius at base
+    let tipThickness = radius * 0.15;  // 15% at tip
+    return mix(baseThickness, tipThickness, relHeight);
+}
+
+// Subsurface scattering for marine organisms
+fn marineOrganismSSS(n: vec3<f32>, l: vec3<f32>, thickness: f32, 
+                     baseColor: vec3<f32>, isGlowing: bool) -> vec3<f32> {
+    // Marine organisms often show rim scattering
+    let rimDot = 1.0 - max(0.0, dot(n, -l));
+    let rimScatter = pow(rimDot, 3.0) * WORM_SCATTERING;
+    
+    // Absorption through tissue
+    let absorption = exp(-thickness * 1.5);
+    
+    // Glowing tips have internal scattering
+    var internalGlow = vec3<f32>(0.0);
+    if (isGlowing {
+        internalGlow = baseColor * absorption * 0.5;
+    }
+    
+    return baseColor * rimScatter * absorption + internalGlow;
+}
+
+// Calculate alpha for deep sea organisms
+fn calculateMarineAlpha(mat: f32, thickness: f32, n: vec3<f32>, l: vec3<f32>, 
+                        isGlowing: bool, glowIntensity: f32) -> f32 {
+    var alpha = 1.0;
+    
+    if (mat == 2.0) {  // Worm body
+        // Tube worm tissue absorption
+        let absorption = exp(-thickness * WORM_TISSUE_DENSITY);
+        alpha = 0.35 + absorption * 0.6;
+        
+        // Backlit rim glow reduces alpha
+        let rimLight = pow(1.0 - max(0.0, dot(n, l)), 2.0);
+        alpha = mix(alpha, alpha * 0.8, rimLight * 0.5);
+        
+    } else if (mat == 3.0) {  // Glowing tip
+        // Bioluminescent emission creates transparency
+        let baseAlpha = GLOW_TRANSPARENCY;
+        alpha = mix(baseAlpha, 0.5, glowIntensity * 0.4);
+        
+    } else if (mat == 4.0) {  // Vent body
+        // Mineral deposits are nearly opaque
+        alpha = 0.92;
+        
+    } else {  // Floor
+        alpha = 0.95;
+    }
+    
+    return clamp(alpha, 0.3, 0.98);
+}
+
 // --- Map Function ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
     // 1. Terrain
-    // Deep seabed with FBM noise
     let d_floor = p.y + 4.0 + fbm(p.xz * 0.2) * 2.0;
 
     // 2. Tube Worms (Domain Repetition)
-    let density = mix(10.0, 4.0, u.zoom_params.x); // Zoom X controls density (cell size)
+    let density = mix(10.0, 4.0, u.zoom_params.x);
     let cell_size = density;
 
     let id = floor(p.xz / cell_size);
     let q_xz = (fract(p.xz / cell_size) - 0.5) * cell_size;
 
-    // Hash based on ID for variation
     var h = hash(id);
 
-    // Get local height of terrain at cell center for placement
     let cell_center = (id + 0.5) * cell_size;
     let ground_y = -4.0 - fbm(cell_center * 0.2) * 2.0;
 
-    // Local p relative to ground
     var q = vec3<f32>(q_xz.x, p.y - ground_y, q_xz.y);
 
     // Swaying Logic
     var time = u.config.x;
-    let current_strength = u.zoom_params.y; // Zoom Y controls current
+    let current_strength = u.zoom_params.y;
     let sway_amount = (q.y * 0.15) * current_strength;
     let sway = vec3<f32>(
         sin(time * 0.5 + h * 10.0) * sway_amount,
@@ -117,12 +176,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Tube Worm geometry
     let worm_height = 2.0 + h * 3.0;
     let worm_radius = 0.15 + h * 0.1;
-    // Cylinder centered at height/2
     let p_worm = q - vec3<f32>(0.0, worm_height * 0.5, 0.0);
     let d_worm = sdCappedCylinder(p_worm, worm_height * 0.5, worm_radius);
 
     // 3. Thermal Vents (sparser)
-    // Use a larger grid for vents
     let vent_cell_size = 30.0;
     let vent_id = floor(p.xz / vent_cell_size);
     let vent_q_xz = (fract(p.xz / vent_cell_size) - 0.5) * vent_cell_size;
@@ -130,66 +187,34 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     var d_vent = 1000.0;
 
-    if (vent_h > 0.7) { // Only place vents in 30% of cells
+    if (vent_h > 0.7) {
         let vent_center = (vent_id + 0.5) * vent_cell_size;
         let vent_ground_y = -4.0 - fbm(vent_center * 0.2) * 2.0;
         let q_vent = vec3<f32>(vent_q_xz.x, p.y - vent_ground_y, vent_q_xz.y);
 
-        // Vent geometry: large cone
         let vent_height = 3.0 + vent_h * 2.0;
-        let vent_r1 = 1.5; // Base radius
-        let vent_r2 = 0.5; // Top radius
-        // Cone centered at height/2? No, sdCappedCone usually expects base at -h? Or centered?
-        // Wait, standard sdCappedCone is centered at 0, extends from -h to +h. Total height 2h.
-        // My function signature: sdCappedCone(p, h, r1, r2)
-        // h is half-height.
+        let vent_r1 = 1.5;
+        let vent_r2 = 0.5;
         let p_vent = q_vent - vec3<f32>(0.0, vent_height * 0.5, 0.0);
         d_vent = sdCappedCone(p_vent, vent_height * 0.5, vent_r1, vent_r2);
     }
 
     // Material logic
-    // 1.0 = Floor
-    // 2.0 = Worm Body
-    // 3.0 = Worm Tip (Glowing)
-    // 4.0 = Vent Body
-    // 5.0 = Vent Glow (Top)
-
     var d = d_floor;
     var mat = 1.0;
 
-    // Blend worm with floor
     if (d_worm < d) {
         d = d_worm;
         mat = 2.0;
-        // Check for tip
-        // Relative height in worm space
-        let rel_h = q.y; // Height from ground
+        let rel_h = q.y;
         if (rel_h > worm_height - 0.5) {
             mat = 3.0;
         }
     }
 
-    // Combine vent
     if (d_vent < d) {
         d = d_vent;
         mat = 4.0;
-        // Vent glow at top opening
-        // Vent relative height
-        // let rel_vent_h = p.y - (ground_y for vent)... complex to get exact ground here without recomputing.
-        // Approximation: top of vent is at vent_height.
-        // Let's use world y check relative to approximate vent top.
-        // Or check local p_vent.y
-        // p_vent.y goes from -h to +h. Top is +h.
-        // vent_height * 0.5 is h.
-        // Wait, I need to recompute or pass local coords.
-        // Simplifying: if d_vent is min, we are near a vent.
-        // We can re-derive local y or just assume top part glows.
-        // But we lost local context.
-        // Let's just say top 10% glows.
-        // How to know top without local context?
-        // Let's ignore vent glow for now or use world y height check if simpler.
-        // Actually, d_vent logic was inside if(vent_h > 0.7).
-        // Let's refine.
     }
 
     return vec2<f32>(d, mat);
@@ -232,17 +257,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
     var time = u.config.x * 0.1;
 
-    // Orbit camera logic
     let yaw = (mouse.x - 0.5) * 10.0 + time * 0.5;
-    let pitch = (mouse.y - 0.5) * 2.0; // +/- 1.0
+    let pitch = (mouse.y - 0.5) * 2.0;
     let dist = 10.0;
 
-    // Target moves slowly through the landscape
     let target_pos = vec3<f32>(0.0, -2.0, time * 5.0);
 
     let ro = vec3<f32>(
         target_pos.x + sin(yaw) * dist,
-        target_pos.y + pitch * 5.0 + 5.0, // Height offset
+        target_pos.y + pitch * 5.0 + 5.0,
         target_pos.z + cos(yaw) * dist
     );
 
@@ -256,53 +279,59 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mat = res.y;
 
     var color = vec3<f32>(0.0);
-    let fogColor = vec3<f32>(0.0, 0.02, 0.05); // Deep dark blue
+    var alpha = 1.0;
+    let fogColor = vec3<f32>(0.0, 0.02, 0.05);
+    let lightDir = normalize(vec3<f32>(0.2, 1.0, 0.2));
 
     if (t < 100.0) {
         var p = ro + rd * t;
         let n = calcNormal(p);
 
-        // Lighting
-        // Fake top-down light (sunlight penetrating deep)
-        let lightDir = normalize(vec3<f32>(0.2, 1.0, 0.2));
         let diff = max(dot(n, lightDir), 0.0);
 
         // Caustics projection
         let caustic_time = u.config.x * 2.0;
         let caustic_noise = noise(p.xz * 0.5 + caustic_time * 0.1);
-        let caustic = smoothstep(0.4, 0.8, caustic_noise) * 0.5; // Bright spots
+        let caustic = smoothstep(0.4, 0.8, caustic_noise) * 0.5;
 
-        var baseColor = vec3<f32>(0.05, 0.05, 0.07); // Dark rock
+        var baseColor = vec3<f32>(0.05, 0.05, 0.07);
+        var thickness = 0.2;
+        var isGlowing = false;
+        var glowIntensity = 0.0;
 
         if (mat == 2.0) { // Worm Body
-            baseColor = vec3<f32>(0.1, 0.05, 0.05); // Reddish brown
+            baseColor = vec3<f32>(0.1, 0.05, 0.05);
+            thickness = 0.12;
+            
+            // Add marine organism SSS
+            let sss = marineOrganismSSS(n, lightDir, thickness, baseColor, false);
+            baseColor += sss * 0.3;
+            
         } else if (mat == 3.0) { // Worm Tip
-            // Glowing tip
-            let glow_intensity = u.zoom_params.z; // Zoom Z controls glow
-            let color_shift = u.zoom_params.w; // Zoom W controls color
+            isGlowing = true;
+            glowIntensity = u.zoom_params.z;
+            let color_shift = u.zoom_params.w;
 
-            // Generate color based on shift
-            // 0.0 = Cyan, 0.33 = Magenta, 0.66 = Green
             let hue = color_shift + p.y * 0.1;
             let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
             let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - 3.0);
             let glowColor = clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 
-            baseColor = glowColor * 2.0 * glow_intensity; // Bright emission
-            // Add pulse
+            baseColor = glowColor * 2.0 * glowIntensity;
             baseColor *= (0.8 + 0.2 * sin(u.config.x * 2.0));
+            thickness = 0.05; // Very thin at glowing tip
+            
         } else if (mat == 4.0) { // Vent Body
-            baseColor = vec3<f32>(0.02, 0.02, 0.02); // Black
+            baseColor = vec3<f32>(0.02, 0.02, 0.02);
         }
 
         // Apply lighting
-        var lighting = baseColor * (diff * 0.5 + 0.5); // Ambient + Diffuse
+        var lighting = baseColor * (diff * 0.5 + 0.5);
 
         // Add Caustics to non-emissive parts
         if (mat != 3.0) {
             lighting += vec3<f32>(0.1, 0.2, 0.3) * caustic * diff;
         } else {
-            // Emissive doesn't receive much shadow/diffuse, it glows
             lighting = baseColor;
         }
 
@@ -311,11 +340,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Fog
         let fogAmount = 1.0 - exp(-t * 0.03);
         color = mix(color, fogColor, fogAmount);
+        
+        // Calculate marine organism alpha
+        alpha = calculateMarineAlpha(mat, thickness, n, lightDir, isGlowing, glowIntensity);
 
     } else {
         color = fogColor;
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }
