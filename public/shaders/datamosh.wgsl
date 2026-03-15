@@ -8,6 +8,9 @@
 //  - P-frame simulation: displacing pixels by accumulated motion
 //  - I-frame refreshes: periodic full frame reset
 //  - Creating authentic smearing and trailing artifacts
+//  
+//  ALPHA-AWARE: Motion trails fade with partial alpha, MPEG blocks
+//  have corrupted alpha, datamoshing creates ghost frames
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -149,16 +152,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var motion_age = prev_motion_data.b * 255.0; // Frame age of this motion vector
   var motion_strength_hist = prev_motion_data.a;
   
+  // Get source alpha from current frame
+  let current_sample = textureLoad(readTexture, coord, 0);
+  let source_alpha = current_sample.a;
+  
   // I-frame: Full refresh - reset motion vectors and use clean frame
   // P-frame: Use predicted motion and create smearing
   var output_color: vec3<f32>;
+  var output_alpha: f32;
   var new_motion_data: vec4<f32>;
   
   if (is_iframe) {
     // I-FRAME: Complete image refresh (key frame)
     // Reset motion vectors and use current input directly
-    let current_color = textureLoad(readTexture, coord, 0).rgb;
-    output_color = current_color;
+    output_color = current_sample.rgb;
+    output_alpha = source_alpha;
     
     // Estimate new motion for next P-frames
     let new_motion = estimate_motion(block_coord, block_size / 2);
@@ -210,10 +218,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wrapped_coord = vec2<i32>(wrapped_x, wrapped_y);
     
     // Sample from previous frame at displaced position (P-frame prediction)
-    let predicted_color = textureLoad(dataTextureC, wrapped_coord, 0).rgb;
+    let predicted_sample = textureLoad(dataTextureC, wrapped_coord, 0);
+    let predicted_color = predicted_sample.rgb;
+    let predicted_alpha = predicted_sample.a;
     
     // Get current frame input
-    let current_color = textureLoad(readTexture, coord, 0).rgb;
+    let current_color = current_sample.rgb;
     
     // Datamoshing blend: mix predicted (displaced) with current based on blend amount
     // High blend = more smearing/trails
@@ -223,14 +233,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (block_decision) {
       // Smear mode: blend displaced pixel with current
       output_color = mix(current_color, predicted_color, blend_amount);
+      // Alpha blending: motion trails fade with partial alpha
+      output_alpha = mix(source_alpha, predicted_alpha * (1.0 - motion_age * 0.01), blend_amount);
     } else {
       // Block artifact mode: use predicted pixel directly (creates visible blocks)
       output_color = mix(predicted_color, current_color, 0.2);
+      // Block glitches corrupt alpha too
+      output_alpha = mix(predicted_alpha * 0.9, source_alpha, 0.2);
     }
     
     // Apply feedback decay for trailing effect
-    let prev_smear = textureLoad(dataTextureC, coord, 0).rgb;
+    let prev_smear_sample = textureLoad(dataTextureC, coord, 0);
+    let prev_smear = prev_smear_sample.rgb;
+    let prev_alpha = prev_smear_sample.a;
+    
     output_color = mix(output_color, prev_smear, feedback_decay);
+    // Trail fade: motion trails have fade alpha
+    output_alpha = mix(output_alpha, prev_alpha * 0.95, feedback_decay);
     
     // Encode motion data for next frame
     let motion_encoded = motion_vector * 0.5 + 0.5;
@@ -253,18 +272,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wrong_coord = coord + wrong_offset;
     let wrapped_wrong_x = ((wrong_coord.x % dim.x) + dim.x) % dim.x;
     let wrapped_wrong_y = ((wrong_coord.y % dim.y) + dim.y) % dim.y;
-    let corrupted_color = textureLoad(dataTextureC, vec2<i32>(wrapped_wrong_x, wrapped_wrong_y), 0).rgb;
+    let corrupted_sample = textureLoad(dataTextureC, vec2<i32>(wrapped_wrong_x, wrapped_wrong_y), 0);
+    let corrupted_color = corrupted_sample.rgb;
+    let corrupted_alpha = corrupted_sample.a;
+    
     output_color = mix(output_color, corrupted_color, 0.7);
+    // Digital corruption affects alpha channel too - create ghost frames
+    output_alpha = mix(output_alpha, corrupted_alpha * 0.7 + 0.1, 0.7);
   }
+  
+  // Clamp alpha to valid range
+  output_alpha = clamp(output_alpha, 0.0, 1.0);
   
   // Store motion vector data for next frame (in dataTextureA)
   textureStore(dataTextureA, coord, new_motion_data);
   
-  // Store accumulated smear (in dataTextureB)
-  textureStore(dataTextureB, coord, vec4<f32>(output_color, 1.0));
+  // Store accumulated smear (in dataTextureB) with alpha
+  textureStore(dataTextureB, coord, vec4<f32>(output_color, output_alpha));
   
-  // Final output
-  textureStore(writeTexture, coord, vec4<f32>(output_color, 1.0));
+  // Final output with glitched/preserved alpha
+  textureStore(writeTexture, coord, vec4<f32>(output_color, output_alpha));
   
   // Pass through depth
   let depth = textureLoad(readDepthTexture, coord, 0).r;
