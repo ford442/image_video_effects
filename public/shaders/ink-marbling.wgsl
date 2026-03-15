@@ -1,4 +1,9 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Ink Marbling - Physical Media Simulation with Alpha
+//  Category: artistic
+//  Features: marble thickness → alpha, fluid dynamics opacity
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,18 +11,17 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -25,6 +29,19 @@ fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+// Hash for noise
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -40,11 +57,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
 
     // Parameters
-    let warp_strength = u.zoom_params.x * 2.0; // 0.0 to 2.0
+    let warp_strength = u.zoom_params.x * 2.0;
     let layers = 4;
-    let turbulence = u.zoom_params.y; // Frequency scaling
+    let turbulence = u.zoom_params.y;
+    let ink_viscosity = u.zoom_params.z; // Controls thickness/opacity
+    let pattern_density = u.zoom_params.w;
 
-    // Mouse Interaction: Rotate the domain around the mouse
+    // Mouse Interaction
     let aspect = resolution.x / resolution.y;
     let mouse_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(mouse_vec);
@@ -56,52 +75,84 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Domain Warping (FBM style)
-    var p = uv * 3.0; // Scale up for noise details
+    var p = uv * 3.0;
     var amp = 1.0;
+    var warp_accum = 0.0; // Track cumulative warp for thickness
 
     for (var i = 0; i < layers; i++) {
-        p = p + vec2<f32>(
+        let warp_val = vec2<f32>(
             sin(p.y * 2.0 + time * 0.2) * 1.0,
             cos(p.x * 2.0 - time * 0.3) * 1.0
         ) * warp_strength * amp;
+        
+        p = p + warp_val;
+        warp_accum += length(warp_val);
 
-        // Rotate and scale for next octave
         p = p * rot(1.0);
         p = p * (1.5 + turbulence);
         amp = amp * 0.5;
     }
 
-    // Remap p back to UV space roughly
-    // The warping moves coordinates far, so we just use the result 'p' relative to start
-    // or wrap it.
-
-    // Marble strategy: Use the warped 'p' to determine color,
-    // BUT we want to distort the *image*.
-
-    // So 'p' is our lookup coordinate.
-    // We need to normalize it back to 0..1 range or just wrap.
-    // Let's interpret the distortion as an offset to original UV.
-
-    let distortion = (p * 0.1) - (uv * 3.0 * 0.1);
-
-    // Dampen distortion based on distance from center/edges to avoid tiling artifacts if desired
-    // Or just let it flow.
-
-    let final_uv = uv + distortion * 0.2; // Scale down the total displacement
-
-    // Mirror wrap to avoid ugly edges
-    let wrapped_uv = abs(fract(final_uv * 0.5) * 2.0 - 1.0); // Wait, standard wrapping
-    // Simple repeat:
+    let distortion = (p * 0.1) - (uv_orig * 3.0 * 0.1);
+    let final_uv = uv_orig + distortion * 0.2;
     let repeat_uv = fract(final_uv);
 
-    // Mirror repeat is better for fluids
-    // let mirror_uv = 1.0 - abs(1.0 - 2.0 * fract(final_uv)); // Something like that
-
+    // Sample the underlying image
     let color = textureSampleLevel(readTexture, u_sampler, repeat_uv, 0.0);
-
-    // Add some lighting/shading based on the warp gradient?
-    // Let's keep it simple: the image just flows.
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    
+    // INK MARBLING ALPHA CALCULATION
+    // Based on fluid dynamics and ink accumulation
+    
+    // Calculate ink thickness from warp accumulation
+    // More warping = more ink mixed = thicker layer
+    let ink_thickness = smoothstep(0.0, 2.0, warp_accum * (0.5 + ink_viscosity));
+    
+    // Pattern density affects local concentration
+    let pattern_variation = hash12(uv_orig * 50.0 + time * 0.1);
+    let local_density = mix(0.5, 1.0, pattern_density) * (0.7 + 0.3 * pattern_variation);
+    
+    // FLUID THICKNESS → ALPHA MAPPING
+    // - Areas of high turbulence/convergence = ink accumulation = opaque
+    // - Thin spread areas = transparent
+    // - Water bath base = completely transparent (showing only substrate)
+    
+    // Base alpha from ink thickness
+    var ink_alpha = ink_thickness * (0.3 + ink_viscosity * 0.6);
+    
+    // Ink concentration varies with local density
+    ink_alpha *= local_density;
+    
+    // Marbling effect: bands of varying thickness
+    let band_pattern = sin(warp_accum * 5.0 + time) * 0.5 + 0.5;
+    let band_thickness = mix(0.4, 1.0, band_pattern);
+    ink_alpha *= band_thickness;
+    
+    // Edge feathering for fluid look
+    let edge_feather = smoothstep(0.0, 0.2, ink_thickness);
+    ink_alpha *= edge_feather;
+    
+    // Clamp alpha
+    ink_alpha = clamp(ink_alpha, 0.0, 0.95);
+    
+    // COLOR MODIFICATION based on ink properties
+    // Thicker ink = deeper, richer color
+    // Thinner ink = lighter, more transparent
+    var final_rgb = color.rgb;
+    
+    // Darken thicker areas (more pigment)
+    let pigment_darkening = mix(1.0, 0.7, ink_thickness * ink_viscosity);
+    final_rgb *= pigment_darkening;
+    
+    // Add slight color shift based on thickness (optical properties)
+    let color_shift = vec3<f32>(
+        1.0,
+        0.95 + 0.05 * ink_thickness,
+        0.9 + 0.1 * ink_thickness
+    );
+    final_rgb *= color_shift;
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_rgb, ink_alpha));
+    
+    // Store thickness in depth for potential multi-pass effects
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(ink_thickness, 0.0, 0.0, ink_alpha));
 }
