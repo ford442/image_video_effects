@@ -1,9 +1,8 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Rotoscope Ink – Interactive Cartoon/Ink Style
-//  - Transforms the video into a stylized "rotoscope" animation.
-//  - Uses edge detection for ink lines and color quantization for the cartoon look.
-//  - Mouse interaction: Varies line thickness and edge sensitivity locally.
-// ────────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  Rotoscope Ink - Physical Media Simulation with Alpha
+//  Category: artistic
+//  Features: ink line density → alpha, wash transparency, paper grain
+// ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -20,14 +19,20 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClick, z=ViewW, w=ViewH
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=LineThickness, y=Quantization, z=EdgeThreshold, w=Blend
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 fn getLuma(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -41,11 +46,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let texel = 1.0 / dims;
 
   // Parameters
-  // x: Line Thickness (base)
-  // y: Quantization Levels (2.0 to 16.0)
-  // z: Edge Threshold
-  // w: Ink Darkness / Blend
-
   let baseThickness = mix(0.5, 3.0, u.zoom_params.x);
   let quantLevels = mix(2.0, 16.0, u.zoom_params.y);
   let threshold = mix(0.01, 0.2, u.zoom_params.z);
@@ -56,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = dims.x / dims.y;
   let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
 
-  // Mouse boosts line thickness and lowers threshold (more detail near mouse)
+  // Mouse boosts line thickness and lowers threshold
   let influence = 1.0 - smoothstep(0.0, 0.4, dist);
   let localThickness = baseThickness + influence * 2.0;
   let localThreshold = max(0.001, threshold - influence * 0.1);
@@ -79,16 +79,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Color Quantization
   var quantColor = floor(c * quantLevels) / quantLevels;
 
+  // ROTOscope INK ALPHA CALCULATION
+  // Traditional rotoscope uses ink lines with varying thickness/density
+  
+  // Paper texture for absorption variation
+  let paperGrain = hash12(uv * 300.0) * 0.1 + 0.9;
+  
+  // INK THICKNESS → ALPHA MAPPING
+  // - Strong edges (ink lines): thick, opaque ink (alpha ~0.9-0.95)
+  // - Weak edges: thinner lines, slightly translucent (alpha ~0.6-0.8)
+  // - Washes: very thin, highly translucent (alpha ~0.2-0.4)
+  // - Paper: no ink (alpha ~0.0)
+  
+  // Base ink alpha from edge detection
+  var ink_alpha = isEdge * (0.7 + inkStrength * 0.25);
+  
+  // Edge magnitude affects line density
+  let edge_density = smoothstep(0.0, 1.0, edgeMag / (localThreshold + 0.1));
+  ink_alpha *= mix(0.7, 1.0, edge_density);
+  
+  // Paper grain creates slight variations in line quality
+  // (simulating ink bleed on rough paper)
+  let grain_effect = mix(0.92, 1.0, paperGrain);
+  ink_alpha *= grain_effect;
+  
+  // Mouse focus area gets slightly denser ink
+  let focus_boost = influence * 0.1;
+  ink_alpha = min(1.0, ink_alpha + focus_boost);
+  
   // Ink Application
-  // If edge, darken.
-  let inkColor = vec3<f32>(0.05, 0.05, 0.1); // Slightly blue-black ink
+  // Slightly blue-black ink with density variation
+  let inkColor = vec3<f32>(0.05, 0.05, 0.12);
+  
+  // Blend quantized color with ink lines
   var finalColor = mix(quantColor, inkColor, isEdge * inkStrength);
-
-  // Extra "paper" texture or noise could be added, but keeping it clean for now.
-  // Let's add a slight paper tint to highlights
+  
+  // Add slight paper tint to highlights
   if (getLuma(finalColor) > 0.9) {
-      finalColor = finalColor * vec3<f32>(1.0, 0.98, 0.95);
+      let paper_tint = vec3<f32>(1.0, 0.98, 0.94);
+      finalColor = finalColor * paper_tint;
+      
+      // Very light areas have minimal ink
+      ink_alpha *= 0.3;
   }
+  
+  // Shadow areas get more ink density
+  if (getLuma(quantColor) < 0.3) {
+      ink_alpha = mix(ink_alpha, min(1.0, ink_alpha * 1.3), inkStrength);
+  }
+  
+  // Edge feathering for brush-like quality
+  let edge_quality = smoothstep(0.0, 0.5, isEdge);
+  ink_alpha *= mix(0.8, 1.0, edge_quality);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, ink_alpha));
+  
+  // Store ink density in depth
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(ink_alpha, 0.0, 0.0, ink_alpha));
 }
