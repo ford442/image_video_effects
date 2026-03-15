@@ -1,3 +1,15 @@
+// ═══════════════════════════════════════════════════════════════
+//  Sliding Tile Glitch - Grid Displacement with Alpha Preservation
+//  Category: retro-glitch
+//
+//  Interactive grid-based tile sliding effect:
+//  - Mouse hover triggers tile offset accumulation
+//  - Chaos parameter controls random vs aligned movement
+//  - Decay returns tiles to original position
+//  - Grid lines highlight high chaos
+//  - Alpha preserved through displacement
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -5,9 +17,9 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Write State
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // Read State
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
@@ -52,7 +64,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sample previous offset from state (stored in dataTextureC)
     // We sample at the CENTER of the cell to ensure uniform value across the cell
     let cellCenterUV = (cellID + 0.5) / gridDensity;
-    var state = textureSampleLevel(dataTextureC, u_sampler, cellCenterUV, 0.0).xy; // xy = offset
+    var state = textureSampleLevel(dataTextureC, u_sampler, cellCenterUV, 0.0);
+    var offset = state.xy; // xy = offset
+    var alphaHistory = state.a; // alpha history
 
     // 2. Mouse Interaction
     var isHover = false;
@@ -79,36 +93,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             else { dir.y = (r - 0.25) * 4.0; }
         }
 
-        state += dir * slideSpeed;
+        offset += dir * slideSpeed;
+        // Active tiles have reduced alpha for ghost effect
+        alphaHistory = 0.9;
     }
 
     // Decay (return to zero)
     if (decay > 0.0) {
-        state = mix(state, vec2<f32>(0.0), decay);
+        offset = mix(offset, vec2<f32>(0.0), decay);
+        // Alpha returns to normal
+        alphaHistory = mix(alphaHistory, 1.0, decay);
     }
 
     // Store new state (redundantly for every pixel in cell, but easy)
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(state, 0.0, 1.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(offset, 0.0, alphaHistory));
 
     // 3. Render
-    // Sample image at uv + state
-    let readUV = uv + state;
-    // Mirror repeat logic manually since sampler might be clamp or repeat
-    // Let's rely on sampler's address mode (Repeat usually)
-
-    let color = textureSampleLevel(readTexture, u_sampler, readUV, 0.0);
+    // Sample image at uv + offset
+    let readUV = uv + offset;
+    
+    // Sample with alpha preservation
+    let sample = textureSampleLevel(readTexture, u_sampler, readUV, 0.0);
+    var finalColor = sample.rgb;
+    var finalAlpha = sample.a;
 
     // Add grid lines for visual style?
-    var finalColor = color.rgb;
-
     // Optional: Highlight grid edges if chaos is high
     let gridLocal = fract(gridUV);
     let border = 0.05;
     if ((gridLocal.x < border || gridLocal.y < border) && chaos > 0.8) {
         finalColor *= 0.5;
+        // Grid edges have slight alpha reduction
+        finalAlpha = finalAlpha * 0.8;
     }
+    
+    // Blend with history alpha for smooth transitions
+    finalAlpha = mix(finalAlpha, alphaHistory, 0.1);
+    finalAlpha = clamp(finalAlpha, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
 
     // Passthrough depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
