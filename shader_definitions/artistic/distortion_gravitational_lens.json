@@ -1,0 +1,56 @@
+{
+  "id": "distortion_gravitational_lens",
+  "name": "Gravitational Lens",
+  "url": "shaders/distortion_gravitational_lens.wgsl",
+  "category": "distortion",
+  "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration",
+  "tags": [
+    "gravity",
+    "lens",
+    "einstein",
+    "relativity",
+    "space",
+    "accretion"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "relativistic",
+    "hdr"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Lens Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Mass Count",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param3",
+      "name": "Disk Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Chromatic Aberration",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "target_rating": 4.7
+}

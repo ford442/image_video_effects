@@ -10,6 +10,62 @@
     ]
   },
   {
+    "id": "particle_dreams_alpha",
+    "name": "Particle Dreams RGBA",
+    "url": "shaders/particle_dreams_alpha.wgsl",
+    "category": "generative",
+    "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
+    "tags": [
+      "particles",
+      "alpha",
+      "trails",
+      "dreamy",
+      "generative"
+    ],
+    "features": [
+      "rgba",
+      "alpha-trails",
+      "temporal-feedback",
+      "mouse-attraction",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Particle Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Chaos",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
     "id": "plasma",
     "name": "Plasma Ball",
     "url": "shaders/plasma.wgsl",
@@ -2101,6 +2157,62 @@
     ]
   },
   {
+    "id": "gen_mandelbulb_3d",
+    "name": "Mandelbulb 3D",
+    "url": "shaders/gen_mandelbulb_3d.wgsl",
+    "category": "generative",
+    "description": "3D Mandelbulb fractal with ray marching, orbit trap coloring, soft shadows, and distance-based alpha for atmospheric depth",
+    "tags": [
+      "mandelbulb",
+      "fractal",
+      "3d",
+      "raymarch",
+      "orbits"
+    ],
+    "features": [
+      "rgba",
+      "ray-marching",
+      "sdf",
+      "orbit-trap",
+      "3d-fractal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Zoom",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Fog Density",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.8
+  },
+  {
     "id": "gen-orb",
     "name": "Glowing Orb",
     "url": "shaders/gen_orb.wgsl",
@@ -2127,6 +2239,61 @@
       "procedural",
       "generative"
     ]
+  },
+  {
+    "id": "gen_quantum_foam",
+    "name": "Quantum Foam",
+    "url": "shaders/gen_quantum_foam.wgsl",
+    "category": "generative",
+    "description": "Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow",
+    "tags": [
+      "quantum",
+      "generative",
+      "entanglement",
+      "volumetric",
+      "hdr"
+    ],
+    "features": [
+      "hdr",
+      "audio-reactive",
+      "temporal-coherence",
+      "fbm-noise"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Foam Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Web Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Evolution Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
   },
   {
     "id": "gen-rainbow-smoke",
@@ -2483,6 +2650,62 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "aurora_borealis",
+    "name": "Aurora Borealis",
+    "url": "shaders/aurora_borealis.wgsl",
+    "category": "generative",
+    "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
+    "tags": [
+      "aurora",
+      "northern-lights",
+      "atmospheric",
+      "nature",
+      "sky"
+    ],
+    "features": [
+      "rgba",
+      "aurora",
+      "curl-noise",
+      "ribbons",
+      "atmospheric"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Ribbons",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Ribbon Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.8
   },
   {
     "id": "cymatic-sand",
