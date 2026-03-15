@@ -1,4 +1,15 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Chromatic Swirl - Rotational chromatic aberration with wavelength-alpha
+//  Category: distortion
+//  Features: swirl-rotation, chromatic-dispersion, wavelength-dependent-alpha
+//
+//  SCIENTIFIC MODEL:
+//  - Swirl rotation creates dispersion that affects both position AND alpha
+//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
+//  - Red (650nm): lowest absorption, highest transmission
+//  - Blue (450nm): highest absorption, lowest transmission
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,17 +23,29 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=Width, w=Height
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // Params
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Chromatic Swirl
-// Swirls the image around the mouse, separating RGB channels.
+// ═══════════════════════════════════════════════════════════════
+//  SPECTRAL PHYSICS CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const WAVELENGTH_RED:    f32 = 650.0;  // nm
+const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
+const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
+
+// ═══════════════════════════════════════════════════════════════
+//  WAVELENGTH-DEPENDENT ALPHA
+// ═══════════════════════════════════════════════════════════════
+fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
+    let lambda_norm = (800.0 - wavelength) / 400.0;
+    let absorption = mix(0.3, 1.0, lambda_norm);
+    return exp(-thickness * absorption);
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -40,12 +63,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let swirlStrength = 5.0 + u.zoom_params.x * 10.0;
     let radius = 0.3 + u.zoom_params.y * 0.5;
     let aberration = 0.02 + u.zoom_params.z * 0.05;
-    let animate = u.zoom_params.w; // If > 0, swirl rotates automatically
+    let animate = u.zoom_params.w;
 
     let aspect = resolution.x / resolution.y;
     var center = mouse;
     if (mouse.x < 0.0) {
-        // Fallback if no mouse
         center = vec2<f32>(0.5, 0.5);
     }
 
@@ -53,7 +75,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
     // Calculate Swirl Angle
-    // Falloff: strong at center, 0 at radius
     var angle = 0.0;
     if (dist < radius) {
         let percent = (radius - dist) / radius;
@@ -62,18 +83,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             angle += sin(time) * 2.0 * percent;
         }
         if (mouseDown > 0.5) {
-            angle *= 2.0; // Intensify on click
+            angle *= 2.0;
         }
     }
 
-    // Function to rotate UV
+    // Rotate UV
     let sinA = sin(angle);
     let cosA = cos(angle);
     let offset = uv - center;
-    // Standard 2D rotation matrix:
-    // x' = x cos A - y sin A
-    // y' = x sin A + y cos A
-    // But we need to account for aspect ratio to rotate physically circular
     let x_corr = offset.x * aspect;
     let y_corr = offset.y;
 
@@ -82,10 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalUV_center = vec2<f32>(rotatedX / aspect, rotatedY) + center;
 
-    // Chromatic Aberration: Sample R, G, B at slightly different angles or scales
-    // We'll just offset the rotation angle slightly for each channel implies recomputing rotation?
-    // Easier: just offset the final UV slightly along the radius.
-
+    // Chromatic Aberration
     var dir = normalize(finalUV_center - center);
 
     let uvR = finalUV_center + dir * aberration * dist;
@@ -96,12 +110,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    // Check bounds to avoid streaking if desired, or let clamp handle it (sampler defaults usually clamp or repeat)
-    // Renderer uses 'repeat' for filteringSampler.
+    // ═══════════════════════════════════════════════════════════════
+    //  WAVELENGTH-DEPENDENT ALPHA
+    //  Thickness derived from swirl angle and aberration
+    // ═══════════════════════════════════════════════════════════════
+    let swirlThickness = angle * 0.5 + aberration * dist * 10.0;
+    let dispersionThickness = swirlThickness;
+    
+    let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
+    let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
+    let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
+    
+    let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
+    let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
+    
+    let finalColor = vec3<f32>(
+        r * alphaR,
+        g * alphaG,
+        b * alphaB
+    );
 
-    // Create a mask to show the effect only within radius?
-    // Actually swirl logic creates 0 angle outside radius, so it smoothly transitions to normal UV.
-    // However, the chromatic aberration offset might extend slightly outside.
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
 }
