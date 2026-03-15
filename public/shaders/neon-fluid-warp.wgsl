@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Neon Fluid Warp - Liquid Displacement with Alpha Emission
+//  Category: lighting-effects
+//  Physics: Liquid-like displacement with emissive ring glow
+//  Alpha: Core ring = 0.3, Glow = 0.0 (additive)
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +18,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -26,6 +31,13 @@ fn get_luma(color: vec3<f32>) -> f32 {
     return dot(color, vec3(0.299, 0.587, 0.114));
 }
 
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -35,10 +47,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
 
     // Parameters
-    let warpStrength = u.zoom_params.x * 0.2; // Scaling down for sane defaults
+    // x: warpStrength, y: radius, z: glowIntensity, w: occlusionBalance
+    let warpStrength = u.zoom_params.x * 0.2;
     let radius = u.zoom_params.y * 0.5;
     let glowIntensity = u.zoom_params.z;
-    let liquidity = u.zoom_params.w;
+    let liquidity = u.zoom_params.w * 0.5; // Reuse w for liquidity
+    let occlusionBalance = 0.5;
 
     // Mouse
     var mousePos = u.zoom_config.yz;
@@ -49,24 +63,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     distVec.x *= aspect;
     let dist = length(distVec);
 
-    // Warp calculation
-    // "Liquidity" adds some sine wave ripples to the direction
+    // Warp calculation with "liquidity" sine ripples
     let angle = atan2(distVec.y, distVec.x);
     let ripple = sin(dist * 20.0 - time * 5.0) * liquidity * 0.05;
 
     // Repulsion force
-    // smoothstep creates a soft boundary. The closer to mouse, the stronger the push.
     let force = smoothstep(radius, 0.0, dist);
 
     // Calculate displacement
-    // We displace the UV lookup. To simulate "pushing away", we look "towards" the mouse.
-    // wait, if I am at pixel P, and I want to see what was pushed here from P_orig,
-    // and P_orig was closer to the mouse, it means the content moved OUTWARD.
-    // So at P, I should look INWARD (towards mouse) to find the content that arrived here.
-    let displaceDir = normalize(distVec); // Pointing away from mouse
-    // If I look away from mouse, I see content that is further out -> shrinking effect.
-    // If I look towards mouse, I see content that is closer in -> expanding/repelling effect.
-
+    let displaceDir = normalize(distVec);
     let offset = -displaceDir * force * warpStrength * (1.0 + ripple);
 
     let sampleUV = uv + offset;
@@ -75,12 +80,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgba;
 
     // Edge/Stress detection for Neon Glow
-    // If the displacement is high, or changing rapidly, we add glow.
-    // Let's use the magnitude of the force derivative or just the force itself at the edge.
-    // A ring at the edge of the radius:
-    let edge = smoothstep(0.0, 0.1, abs(dist - radius * 0.8)); // 1.0 away from edge, 0.0 at edge
-    // Actually simpler:
-    let glowFactor = force * (1.0 - force) * 4.0; // Peak at force=0.5
+    let edge = smoothstep(0.0, 0.1, abs(dist - radius * 0.8));
+    let glowFactor = force * (1.0 - force) * 4.0;
 
     let neonColor = vec3<f32>(
         0.5 + 0.5 * sin(time + uv.x * 10.0),
@@ -88,11 +89,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.5 + 0.5 * sin(time + 4.0)
     );
 
-    // Add glow based on intensity and image luminance (so it looks like the image is glowing)
+    // Emission calculation
     let luma = get_luma(color.rgb);
-    color = vec4<f32>(mix(color.rgb, neonColor, glowFactor * glowIntensity * luma), color.a);
+    let emission = neonColor * glowFactor * glowIntensity * luma * 3.0;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Calculate alpha based on emission intensity
+    let glowStrength = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+
+    // Output with emission alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;

@@ -3,7 +3,7 @@
   "name": "Bismuth Crystal Citadel",
   "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
   "category": "generative",
-  "description": "An endless procedural canyon of iridescent, stair-stepped geometric bismuth crystals with thin-film interference coloring.",
+  "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
   "tags": [
     "generative",
     "raymarch",
@@ -13,11 +13,13 @@
     "metallic",
     "iridescent",
     "geometry",
-    "fractal"
+    "fractal",
+    "alpha-transmission"
   ],
   "features": [
     "raymarched",
-    "mouse-driven"
+    "mouse-driven",
+    "physical-transmission"
   ],
   "author": "AI",
   "params": [
@@ -28,7 +30,7 @@
       "max": 1.0,
       "default": 0.5,
       "step": 0.01,
-      "description": "Controls the size of the stepped terraces characteristic of bismuth crystals."
+      "description": "Size of stepped terraces characteristic of bismuth crystals"
     },
     {
       "id": "param2",
@@ -37,7 +39,7 @@
       "max": 2.0,
       "default": 0.5,
       "step": 0.01,
-      "description": "Speed at which the camera moves through the infinite crystal citadel."
+      "description": "Camera movement speed through the crystal citadel"
     },
     {
       "id": "param3",
@@ -46,7 +48,7 @@
       "max": 2.0,
       "default": 0.8,
       "step": 0.01,
-      "description": "Intensity of specular highlights on the metallic crystal surfaces."
+      "description": "Specular highlight intensity on metallic surfaces"
     },
     {
       "id": "param4",
@@ -55,7 +57,7 @@
       "max": 5.0,
       "default": 1.0,
       "step": 0.1,
-      "description": "Shifts the rainbow-like thin-film interference colors across the crystal surfaces."
+      "description": "Thin-film interference color shift on crystal surfaces"
     }
   ]
 }
