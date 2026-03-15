@@ -1,4 +1,10 @@
-// --- EDGE GLOW MOUSE ---
+// ═══════════════════════════════════════════════════════════════
+//  Edge Glow Mouse - Mouse-Driven Edge Glow with Alpha Emission
+//  Category: lighting-effects
+//  Physics: Mouse-proximity emissive edge glow with alpha occlusion
+//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -42,6 +48,19 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
+// Inverse square law for light falloff
+fn inverseSquareFalloff(dist: f32, maxDist: f32) -> f32 {
+    let d = max(dist, 0.001);
+    return 1.0 / (1.0 + d * d * 4.0) * smoothstep(maxDist, 0.0, dist);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -52,10 +71,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let step = 1.0 / resolution;
 
     // Params
-    let threshold = u.zoom_params.x;      // Edge threshold
-    let glowRadius = u.zoom_params.y;     // Mouse influence
-    let intensity = u.zoom_params.z * 5.0;// Glow Intensity
-    let colorSpeed = u.zoom_params.w;     // Color cycle
+    // x: threshold, y: glowRadius, z: intensity, w: occlusionBalance
+    let threshold = u.zoom_params.x;
+    let glowRadius = u.zoom_params.y;
+    let intensity = u.zoom_params.z * 5.0;
+    let colorSpeed = 0.5;
+    let occlusionBalance = u.zoom_params.w;
 
     // Mouse
     var mouse = u.zoom_config.yz;
@@ -64,33 +85,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = distance(uv * aspectVec, mouse * aspectVec);
 
-    // Original Color
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
     // Edge Detection
     let edgeVal = sobel(uv, step);
     let edge = smoothstep(threshold, threshold + 0.1, edgeVal);
 
-    // Mouse Influence Mask
-    // 1.0 at mouse, 0.0 at radius
+    // Mouse Influence Mask - 1.0 at mouse, 0.0 at radius
     let mask = smoothstep(glowRadius, 0.0, dist);
 
     // Glow Color
     let hue = fract(u.config.x * colorSpeed + dist);
     let glowColor = hsv2rgb(vec3<f32>(hue, 1.0, 1.0));
 
-    // Combine
-    // If edge detected AND near mouse, we add glow.
-    // If not near mouse, we might just show original or slight edge.
+    // Emission calculation with inverse square falloff
+    let falloff = inverseSquareFalloff(dist, glowRadius * 1.5);
+    let emission = glowColor * edge * intensity * mask * (1.0 + falloff * 2.0);
 
-    // Make background darker near mouse to make glow pop
-    let darkness = 1.0 - (mask * 0.8);
-    var finalColor = baseColor.rgb * darkness;
+    // Calculate alpha based on emission intensity
+    let glowStrength = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
 
-    // Add Glow
-    finalColor += glowColor * edge * intensity * mask;
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, baseColor.a));
+    // Output with emission alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
 
     // Passthrough Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
