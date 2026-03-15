@@ -1,4 +1,15 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Block Distort Interactive - Mouse-Driven Block Displacement
+//  Category: retro-glitch
+//
+//  Interactive block-based distortion effect:
+//  - Grid of blocks that respond to mouse proximity
+//  - Blocks are pushed away from mouse position
+//  - RGB split based on displacement amount
+//  - Block edges highlighted when pushed
+//  - Alpha preserved through displacement
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +23,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
@@ -70,17 +80,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Simple RGB Split based on displacement amount
     let split = displacement * rgbSplit * 5.0;
 
-    let r = textureSampleLevel(readTexture, u_sampler, uv - displacement + split, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv - displacement, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv - displacement - split, 0.0).b;
+    // Sample each channel with alpha
+    let sampleR = textureSampleLevel(readTexture, u_sampler, uv - displacement + split, 0.0);
+    let sampleG = textureSampleLevel(readTexture, u_sampler, uv - displacement, 0.0);
+    let sampleB = textureSampleLevel(readTexture, u_sampler, uv - displacement - split, 0.0);
+
+    var finalColor = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
+    
+    // Alpha handling: blend from RGB split samples
+    // Displacement creates alpha blending artifacts
+    var finalAlpha = (sampleR.a + sampleG.a + sampleB.a) / 3.0;
+    
+    // Pushed blocks have slight alpha reduction for ghost effect
+    finalAlpha = mix(finalAlpha, finalAlpha * 0.9, pushMask);
 
     // Add block edges
     let cellUV = fract(gridUV); // 0-1 within block
     let edgeDist = min(min(cellUV.x, 1.0 - cellUV.x), min(cellUV.y, 1.0 - cellUV.y));
     let edge = (1.0 - smoothstep(0.0, 0.05, edgeDist)) * pushMask; // Only show edges when pushed?
 
-    var col = vec3<f32>(r, g, b);
-    col = col + vec3<f32>(edge * 0.5);
+    finalColor = finalColor + vec3<f32>(edge * 0.5);
+    // Block edges have slight alpha boost
+    finalAlpha = mix(finalAlpha, 1.0, edge * 0.2);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    // Clamp alpha
+    finalAlpha = clamp(finalAlpha, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
