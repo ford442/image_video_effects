@@ -1,4 +1,15 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Glitch Cathedral - Stained Glass with Alpha Shattering
+//  Category: retro-glitch
+//
+//  Stained glass distortion effect:
+//  - Geometric cell patterns with rotating elements
+//  - RGB channel separation on mouse glitch
+//  - Pixel sorting effect with depth
+//  - Alpha shattering in glitch regions
+//  - Vignette and scanlines with transparency preservation
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,10 +23,9 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
   zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
   ripples: array<vec4<f32>, 50>,
@@ -58,18 +68,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gUV = uv;
     let bUV = clamp(uv - (mousePos - uv) * rgbSplit, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+    // Sample each channel with alpha
+    let rSample = textureSampleLevel(readTexture, u_sampler, rUV, 0.0);
+    let gSample = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
+    let bSample = textureSampleLevel(readTexture, u_sampler, bUV, 0.0);
+
+    // Alpha shattering: glitch creates transparency variations
+    var finalAlpha = gSample.a;
+    if (glitchIntensity > 0.1) {
+        // Glitch shards have variable alpha
+        let shardNoise = hash(cellID + vec2<f32>(time * 0.5));
+        let alphaModulation = 1.0 - glitchIntensity * 0.3 * shardNoise;
+        finalAlpha = mix(gSample.a, gSample.a * alphaModulation, glitchIntensity);
+    }
 
     // Pixel sorting effect
     let sortStrength = u.zoom_params.z * glitchIntensity;
-    let sortValue = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
+    let sortValue = dot(vec3<f32>(rSample.r, gSample.g, bSample.b), vec3<f32>(0.299, 0.587, 0.114));
     let sortedUV = clamp(uv + vec2<f32>(0.0, sortValue * sortStrength * u.zoom_config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let sortedColor = textureSampleLevel(readTexture, u_sampler, sortedUV, 0.0).rgb;
+    let sortedSample = textureSampleLevel(readTexture, u_sampler, sortedUV, 0.0);
+    let sortedColor = sortedSample.rgb;
+    // Pixel sorting can also affect alpha
+    let sortedAlpha = mix(finalAlpha, sortedSample.a, sortStrength * 0.3);
 
     // Combine effects
-    var finalColor = vec3<f32>(r, g, b) * (1.0 + glassPattern * 2.0);
+    var finalColor = vec3<f32>(rSample.r, gSample.g, bSample.b) * (1.0 + glassPattern * 2.0);
     finalColor = mix(finalColor, sortedColor, glitchIntensity * 0.5);
 
     // Add scanlines and digital noise
@@ -77,13 +100,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let digitalNoise = hash(uv + time) * glitchIntensity * 0.1;
 
     finalColor = finalColor * scanline + digitalNoise;
+    // Scanlines affect alpha slightly
+    finalAlpha = finalAlpha * scanline;
 
-    // Vignette
+    // Vignette with alpha preservation
     let vignette = 1.0 - distance(uv, vec2<f32>(0.5)) * 0.5;
     finalColor = finalColor * vignette;
+    // Vignette creates subtle edge transparency
+    finalAlpha = finalAlpha * (0.9 + vignette * 0.1);
 
-    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    // Clamp alpha
+    finalAlpha = clamp(finalAlpha, 0.0, 1.0);
 
+    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+
+    // Depth with alpha consideration
     let depth = 1.0 - clamp(distance(uv, vec2<f32>(0.5)) * 0.8, 0.0, 1.0);
     textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
