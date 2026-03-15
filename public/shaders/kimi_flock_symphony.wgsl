@@ -1,4 +1,9 @@
-// Kimi Flock Symphony - Advanced particle flocking with musical visualization
+// ═══════════════════════════════════════════════════════════════
+//  Kimi Flock Symphony with Alpha Scattering
+//  Advanced particle flocking with musical visualization
+//  With Physical Light Transport and Cumulative Alpha
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,6 +28,22 @@ struct Uniforms {
 const BOID_COUNT: u32 = 16384u;
 const MAX_SPEED: f32 = 3.0;
 const PERCEPTION_RADIUS: f32 = 0.05;
+
+// Soft particle alpha
+fn softParticleAlpha(dist: f32, radius: f32) -> f32 {
+    let t = dist / radius;
+    return exp(-t * t * 1.5);
+}
+
+// Exponential transmittance
+fn transmittance(density: f32) -> f32 {
+    return exp(-density);
+}
+
+// HDR emission
+fn hdrEmission(base: vec3<f32>, intensity: f32) -> vec3<f32> {
+    return base * (0.5 + intensity * 2.0);
+}
 
 fn hash(p: f32) -> f32 {
     return fract(sin(p * 12.9898) * 43758.5453);
@@ -76,13 +97,12 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vel = vec2<f32>(vx, vy);
     var time = u.config.x;
     
-    // Separation, Alignment, Cohesion (simplified)
+    // Separation, Alignment, Cohesion
     var sep = vec2<f32>(0.0);
     var ali = vec2<f32>(0.0);
     var coh = vec2<f32>(0.0);
     var count: f32 = 0.0;
     
-    // Sample neighbors (spatial hashing would be better but brute force for simplicity)
     for (var j: u32 = 0u; j < 256u; j = j + 1u) {
         let j_idx = (idx + j * 64u) % BOID_COUNT;
         if (j_idx == idx) { continue; }
@@ -108,21 +128,19 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
         coh = normalize(coh / count - pos) * 1.0;
     }
     
-    // Mouse attraction with spiral motion
+    // Mouse attraction with spiral
     let mouse_pos = u.zoom_config.yz;
     let to_mouse = mouse_pos - pos;
     let dist_to_mouse = length(to_mouse);
     let mouse_force = normalize(to_mouse) * 0.03;
     
-    // Add perpendicular component for spiral
     let perp = vec2<f32>(-mouse_force.y, mouse_force.x);
     let spiral_strength = u.zoom_config.w * 2.0 + 0.5;
     let spiral_force = perp * spiral_strength * smoothstep(0.5, 0.0, dist_to_mouse);
     
-    // Apply forces
     var new_vel = vel + sep * 0.5 + ali * 0.3 + coh * 0.3 + mouse_force + spiral_force;
     
-    // Add noise-based wandering
+    // Noise wandering
     let noise_force = vec2<f32>(
         noise(pos * 10.0 + time),
         noise(pos * 10.0 + time + 100.0)
@@ -139,7 +157,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     var new_pos = pos + new_vel * 0.003;
     new_pos = fract(new_pos);
     
-    // Update color based on velocity and position
+    // Update color based on velocity
     let speed_norm = speed / MAX_SPEED;
     hue = fract(hue + speed_norm * 0.01 + time * 0.02);
     energy = mix(energy, speed_norm, 0.1);
@@ -160,48 +178,73 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var time = u.config.x;
     
     // Parameters
-    let trail_length = u.zoom_params.x * 0.1;
-    let glow_radius = u.zoom_params.y * 5.0 + 1.0;
+    let glow_radius = u.zoom_params.y * 8.0 + 2.0;
     let color_shift = u.zoom_params.z;
     let density = u.zoom_params.w;
+    let particle_opacity = 0.6;
     
-    var color = vec3<f32>(0.0);
+    var accumulated_color = vec3<f32>(0.0);
+    var accumulated_density: f32 = 0.0;
     var total_energy: f32 = 0.0;
     
-    // Sample boids with trail accumulation
+    // Sample boids
     let sample_count = 2048u;
     for (var i: u32 = 0u; i < sample_count; i = i + 1u) {
         var base = i * 6u;
         let bx = extraBuffer[base + 0u] * resolution.x;
         let by = extraBuffer[base + 1u] * resolution.y;
+        let bvx = extraBuffer[base + 2u];
+        let bvy = extraBuffer[base + 3u];
         let b_hue = extraBuffer[base + 4u];
         let b_energy = extraBuffer[base + 5u];
         
         let boid_pos = vec2<f32>(bx, by);
+        let vel = vec2<f32>(bvx, bvy);
         let pixel_pos = vec2<f32>(f32(coord.x), f32(coord.y));
+        
         var d = distance(pixel_pos, boid_pos);
         
         if (d < glow_radius) {
-            let intensity = (1.0 - d / glow_radius) * b_energy;
+            // Speed for motion blur
+            let speed = length(vel);
+            
+            // Soft particle alpha
+            let alpha = softParticleAlpha(d, glow_radius) * particle_opacity * b_energy;
+            
+            // HSL color with shift
             var rgb = hsl_to_rgb(fract(b_hue + color_shift), 0.8, 0.5);
-            color += rgb * intensity * density;
-            total_energy += intensity;
+            
+            // HDR emission based on energy and speed
+            let emission = 1.0 + b_energy * 2.0 + speed * 0.5;
+            let hdr_rgb = hdrEmission(rgb, emission);
+            
+            // Accumulate
+            accumulated_color += hdr_rgb * alpha * density;
+            accumulated_density += alpha;
+            total_energy += alpha * emission;
         }
     }
     
-    // Add center glow at mouse
+    // Center glow at mouse
     var mouse = u.zoom_config.yz * resolution;
     let mouse_dist = distance(vec2<f32>(f32(coord.x), f32(coord.y)), mouse);
-    let mouse_glow = smoothstep(100.0, 0.0, mouse_dist) * 0.5;
-    color += vec3<f32>(1.0, 0.9, 0.7) * mouse_glow;
+    let mouse_alpha = softParticleAlpha(mouse_dist, 100.0) * 0.5;
+    accumulated_color += vec3<f32>(1.0, 0.9, 0.7) * mouse_alpha;
+    accumulated_density += mouse_alpha;
     
-    // Tone mapping and glow
-    color = color / (1.0 + color);
-    color = pow(color, vec3<f32>(0.8));
+    // Tone mapping
+    accumulated_color = accumulated_color / (1.0 + accumulated_color);
+    accumulated_color = pow(accumulated_color, vec3<f32>(0.8));
+    
+    // Cumulative alpha using exponential transmittance
+    let trans = transmittance(accumulated_density * 0.5);
+    let final_alpha = 1.0 - trans;
     
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.5;
-    color *= vignette;
+    accumulated_color *= vignette;
     
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+    // Output RGBA
+    let output = vec4<f32>(accumulated_color, clamp(final_alpha, 0.0, 1.0));
+    textureStore(writeTexture, coord, output);
 }
