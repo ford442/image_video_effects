@@ -228,7 +228,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       console.error(`❌ Found ${errorCount} shaders with compilation errors`);
       console.table(errors.map(e => ({ id: e.id, error: e.errorMessage?.slice(0, 100) })));
     }
-  }, [shaders, results]);
+  }, [shaders]);
 
   const stopScan = useCallback(() => {
     abortRef.current = true;
