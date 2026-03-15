@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════
+//  Charcoal Rub - Physical Media Simulation with Alpha
+//  Category: artistic
+//  Features: charcoal density → alpha, paper texture grain
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -51,19 +57,25 @@ fn fbm(p: vec2<f32>) -> f32 {
     return v;
 }
 
+// Paper grain texture
+fn paperGrain(uv: vec2<f32>, scale: f32) -> f32 {
+    let grain = fbm(uv * scale);
+    return 0.85 + 0.15 * grain;
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Params
-  let hardness = mix(0.1, 0.9, u.zoom_params.x); // How sharp the reveal edge is
-  let textureScale = mix(10.0, 100.0, u.zoom_params.y); // Paper texture scale
-  let revealRate = mix(0.01, 0.2, u.zoom_params.z); // How fast you rub
-  let fadeSpeed = mix(0.0, 0.05, u.zoom_params.w); // How fast it fades back
+  let hardness = mix(0.1, 0.9, u.zoom_params.x);
+  let textureScale = mix(10.0, 100.0, u.zoom_params.y);
+  let revealRate = mix(0.01, 0.2, u.zoom_params.z);
+  let fadeSpeed = mix(0.0, 0.05, u.zoom_params.w);
 
   var mouse = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w; // 1.0 if down
+  let mouseDown = u.zoom_config.w;
 
   // Aspect ratio correction for mouse distance
   let aspect = resolution.x / resolution.y;
@@ -93,24 +105,65 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Store state
   textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(state, 0.0, 0.0, 1.0));
 
+  // CHARCOAL PHYSICAL MEDIA ALPHA CALCULATION
+  
+  // Paper grain affects how charcoal sits on surface
+  let paperGrainVal = paperGrain(uv, textureScale * 0.1);
+  
+  // Charcoal density varies with reveal state and paper texture
+  // Charcoal fills valleys in paper first (darker), sits on peaks (lighter)
+  let charcoal_density = state * (0.5 + 0.5 * paperGrainVal);
+  
+  // CHARCOAL THICKNESS → ALPHA MAPPING
+  // - Heavy rub = more charcoal particles = higher opacity (0.8-0.95)
+  // - Light rub = scattered particles = medium opacity (0.4-0.7)
+  // - Paper only = transparent (0.0)
+  
+  // Base alpha from charcoal density
+  var charcoal_alpha = smoothstep(0.0, 0.3, charcoal_density);
+  charcoal_alpha = mix(0.0, 0.9, charcoal_alpha * charcoal_alpha);
+  
+  // Paper texture creates voids in charcoal layer (grain shows through)
+  // Peaks in paper = less charcoal contact = more transparency
+  let grain_influence = smoothstep(0.3, 0.7, paperGrainVal);
+  charcoal_alpha *= mix(0.7, 1.0, grain_influence);
+  
+  // Edge softness - charcoal particles scatter at edges
+  let edge_softness = smoothstep(0.0, 0.4, state) * (1.0 - smoothstep(0.6, 1.0, state));
+  charcoal_alpha *= 0.7 + 0.3 * edge_softness;
+  
   // Render
   // 1. Generate paper texture
   let paperNoise = fbm(uv * textureScale);
-  let paperColor = vec3<f32>(0.95, 0.95, 0.9) * (0.8 + 0.2 * paperNoise); // Off-white paper
+  let paperBaseColor = vec3<f32>(0.95, 0.94, 0.92) * (0.85 + 0.15 * paperNoise);
 
   // 2. Read actual image
   let imgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
   // 3. Charcoal effect: Image becomes grayscale and high contrast
   let luma = dot(imgColor, vec3<f32>(0.299, 0.587, 0.114));
-  let charcoalColor = vec3<f32>(smoothstep(0.8, 0.2, luma)); // Invert luma for charcoal darkness
-  // Actually, let's keep it looking like the image but "sketchy"
-  // Let's mix between paper and image based on state
-
-  // Modulate state by paper texture to make the reveal grainy
-  let revealMask = smoothstep(1.0 - hardness, 1.0, state * (0.5 + 0.5 * paperNoise));
-
-  let finalColor = mix(paperColor, imgColor * (0.5 + 0.5 * paperNoise), revealMask);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+  let charcoalColor = vec3<f32>(0.08, 0.07, 0.06) * (0.5 + 0.5 * paperGrainVal); // Warm black
+  
+  // Charcoal is darker where density is higher, with paper texture modulation
+  let charcoal_shade = mix(vec3<f32>(0.25), charcoalColor, charcoal_density);
+  
+  // Modulate reveal by paper texture for grainy charcoal look
+  let revealMask = smoothstep(1.0 - hardness, 1.0, state * paperGrainVal);
+  
+  // Final color with charcoal media properties
+  var final_rgb = mix(paperBaseColor, charcoal_shade, revealMask);
+  
+  // Add subtle charcoal dust scattering (very low alpha areas)
+  let dust_scatter = smoothstep(0.0, 0.15, state) * (1.0 - revealMask) * 0.3;
+  let dust_color = vec3<f32>(0.15, 0.14, 0.12) * paperGrainVal;
+  final_rgb = mix(final_rgb, dust_color, dust_scatter);
+  
+  // Alpha modulation by paper grain (paper shows through in grain valleys)
+  let grain_alpha_mod = mix(0.85, 1.0, grain_influence);
+  charcoal_alpha *= grain_alpha_mod;
+  
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_rgb, charcoal_alpha));
+  
+  // Store charcoal thickness in depth
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(charcoal_density, 0.0, 0.0, charcoal_alpha));
 }
