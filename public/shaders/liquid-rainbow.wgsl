@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Rainbow Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: chromatic aberration, rainbow dispersion, transparent waves
+//
+//  ALPHA PHYSICS:
+//  - Dispersion affects perceived opacity
+//  - Each wavelength has slightly different transparency
+//  - Rainbow edges have Fresnel falloff
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -13,6 +24,58 @@ struct Uniforms {
 };
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
+
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate rainbow alpha with wavelength variation
+fn calculateRainbowAlpha(
+    dispersionMag: f32,
+    viewDotNormal: f32,
+    avgColor: f32
+) -> f32 {
+  // Fresnel at rainbow edges
+  let F0 = 0.03;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Dispersion magnitude affects thickness
+  let thickness = dispersionMag * 3.0 + 0.15;
+  
+  // Rainbow has slightly higher absorption in the "colorful" regions
+  // Brighter colors = slightly more transparent
+  let brightnessFactor = mix(0.9, 1.0, avgColor);
+  
+  // Absorption
+  let absorption = exp(-thickness * 1.2);
+  let baseAlpha = mix(0.4, 0.85, absorption);
+  
+  let alpha = baseAlpha * brightnessFactor * (1.0 - fresnel * 0.25);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate rainbow color with proper dispersion
+fn calculateRainbowColor(
+    r: f32,
+    g: f32,
+    b: f32,
+    dispersionMag: f32
+) -> vec3<f32> {
+  // Enhance the rainbow effect
+  let saturation = 1.0 + dispersionMag * 0.3;
+  
+  // Slight color separation boost
+  let avg = (r + g + b) / 3.0;
+  let separated = vec3<f32>(
+      mix(avg, r, saturation),
+      mix(avg, g, saturation),
+      mix(avg, b, saturation)
+  );
+  
+  return separated;
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -64,8 +127,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
   let a = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).a;
+  
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALPHA CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  let dispersionMag = magnitude + shift_amount * 10.0;
+  let avgColor = (r + g + b) / 3.0;
+  
+  // Approximate normal from displacement
+  let normal = normalize(vec3<f32>(
+      -totalDisplacement.x * 30.0,
+      -totalDisplacement.y * 30.0,
+      1.0
+  ));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let viewDotNormal = dot(viewDir, normal);
+  
+  // Calculate rainbow color
+  let rainbowColor = calculateRainbowColor(r, g, b, dispersionMag);
+  
+  // Calculate alpha
+  let alpha = calculateRainbowAlpha(dispersionMag, viewDotNormal, avgColor);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, a));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(rainbowColor, alpha));
 
   // Pass through original depth (we don't modify it, just keep it stable)
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
