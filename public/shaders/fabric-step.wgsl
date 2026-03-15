@@ -1,5 +1,8 @@
-// Fabric of Reality - Mass-Spring Cloth Simulation
-// Verlet integration with constraint solving and tearing mechanics
+// ═══════════════════════════════════════════════════════════════
+//  Fabric of Reality - Mass-Spring Cloth Simulation with Textile Alpha
+//  Category: artistic
+//  Features: Woven textile, thread density, strain-based translucency
+// ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -8,9 +11,9 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Current position XY, Previous position XY
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // Velocity XY, constraint data
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // Read previous state
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
@@ -21,6 +24,12 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Stiffness, y=TearThreshold, z=Gravity, w=Damping
   ripples: array<vec4<f32>, 50>,
 };
+
+// Textile Material Properties
+const THREAD_DENSITY: f32 = 3.0;          // Threads per unit area
+const FABRIC_BASE_ALPHA: f32 = 0.78;      // Woven fabric is somewhat transparent
+const STRAINED_ALPHA: f32 = 0.55;         // Stretched fabric is more translucent
+const TORN_ALPHA: f32 = 0.25;             // Torn areas are very transparent
 
 const REST_LENGTH: f32 = 1.0;
 const CONSTRAINT_ITERATIONS: i32 = 4;
@@ -56,6 +65,48 @@ fn fbm(p: vec2<f32>, time: f32) -> f32 {
   return value;
 }
 
+// Calculate fabric density based on strain
+fn calculateFabricDensity(strain: f32, isTorn: bool) -> f32 {
+    if (isTorn {
+        return 0.15;
+    }
+    
+    // Higher strain = stretched threads = lower density
+    let stretchedDensity = mix(THREAD_DENSITY, THREAD_DENSITY * 0.6, strain);
+    return stretchedDensity;
+}
+
+// Fabric subsurface scattering (threads scatter light)
+fn fabricSSS(strain: f32, baseColor: vec3<f32>) -> vec3<f32> {
+    // Thread scattering creates soft diffusion
+    let threadScatter = strain * 0.3;
+    
+    // Fabric often has slight color variation from thread gaps
+    let gapTint = vec3<f32>(0.9, 0.9, 0.95);
+    
+    return mix(baseColor, baseColor * gapTint, threadScatter);
+}
+
+// Calculate alpha for textile based on strain and damage
+fn calculateFabricAlpha(strain: f32, isTorn: bool, threadDensity: f32) -> f32 {
+    var alpha = FABRIC_BASE_ALPHA;
+    
+    if (isTorn {
+        // Torn fabric is very transparent
+        alpha = TORN_ALPHA;
+    } else if (strain > 0.5) {
+        // High strain = stretched = more see-through
+        let stretchFactor = smoothstep(0.5, 1.0, strain);
+        alpha = mix(FABRIC_BASE_ALPHA, STRAINED_ALPHA, stretchFactor);
+    }
+    
+    // Thread density affects opacity (Beer-Lambert)
+    let densityAlpha = exp(-threadDensity * 0.3);
+    alpha = mix(alpha, alpha * 0.85, densityAlpha * 0.3);
+    
+    return clamp(alpha, 0.2, 0.88);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -64,7 +115,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
-  let dt = 0.016; // Fixed timestep
+  let dt = 0.016;
   
   // Parameters from zoom_params
   let stiffness = mix(0.1, 0.99, u.zoom_params.x);
@@ -75,23 +126,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Read previous state from dataTextureC
   let prevState = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   
-  // Initialize position to UV if first frame (check if state is zero)
   var pos = prevState.xy;
   var prevPos = prevState.zw;
   
   if (length(pos) < 0.001 && length(prevPos) < 0.001) {
-    // Initialize to grid position
     pos = uv;
     prevPos = uv;
   }
   
-  // Verlet integration: velocity = pos - prevPos
   var vel = (pos - prevPos) * damping;
-  
-  // Apply gravity
   vel.y = vel.y + gravity * dt;
   
-  // Apply mouse interaction as repulsive force
+  // Mouse interaction
   var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   let toMouse = pos - mouse;
   let mouseDist = length(toMouse);
@@ -118,7 +164,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   
-  // Add organic wind force using fbm noise
+  // Wind force
   let windX = fbm(pos * 4.0 + vec2<f32>(time * 0.5, 0.0), time) - 0.5;
   let windY = fbm(pos * 4.0 + vec2<f32>(0.0, time * 0.5), time) - 0.5;
   vel = vel + vec2<f32>(windX, windY) * 0.001;
@@ -127,11 +173,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let newPrevPos = pos;
   pos = pos + vel;
   
-  // Constraint solving - spring constraints with neighbors
+  // Constraint solving
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let restLen = texelSize.x * REST_LENGTH;
   
-  // Get neighbor positions
   let leftUV = uv + vec2<f32>(-texelSize.x, 0.0);
   let rightUV = uv + vec2<f32>(texelSize.x, 0.0);
   let upUV = uv + vec2<f32>(0.0, -texelSize.y);
@@ -147,51 +192,55 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var upPos = upState.xy;
   var downPos = downState.xy;
   
-  // Initialize neighbors if needed
   if (length(leftPos) < 0.001) { leftPos = leftUV; }
   if (length(rightPos) < 0.001) { rightPos = rightUV; }
   if (length(upPos) < 0.001) { upPos = upUV; }
   if (length(downPos) < 0.001) { downPos = downUV; }
   
-  // Apply spring constraints
+  var isTorn = false;
+  
   for (var iter = 0; iter < CONSTRAINT_ITERATIONS; iter = iter + 1) {
-    // Left spring
     if (coord.x > 0u) {
       let delta = pos - leftPos;
       let dist = length(delta);
       if (dist > restLen && dist < tearThreshold * restLen) {
         let correction = (dist - restLen) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
+      } else if (dist >= tearThreshold * restLen) {
+        isTorn = true;
       }
     }
     
-    // Right spring
     if (coord.x < size.x - 1u) {
       let delta = pos - rightPos;
       let dist = length(delta);
       if (dist > restLen && dist < tearThreshold * restLen) {
         let correction = (dist - restLen) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
+      } else if (dist >= tearThreshold * restLen) {
+        isTorn = true;
       }
     }
     
-    // Up spring
     if (coord.y > 0u) {
       var delta = pos - upPos;
       var dist = length(delta);
       if (dist > restLen && dist < tearThreshold * restLen) {
         var correction = (dist - restLen) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
+      } else if (dist >= tearThreshold * restLen) {
+        isTorn = true;
       }
     }
     
-    // Down spring
     if (coord.y < size.y - 1u) {
       var delta = pos - downPos;
       var dist = length(delta);
       if (dist > restLen && dist < tearThreshold * restLen) {
         var correction = (dist - restLen) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
+      } else if (dist >= tearThreshold * restLen) {
+        isTorn = true;
       }
     }
   }
@@ -201,13 +250,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     pos = uv;
   }
   
-  // Boundary constraints
   pos = clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0));
   
-  // Store state (pos.xy in xy, prevPos in zw)
+  // Store state
   textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(pos, newPrevPos));
   
-  // Calculate strain for visualization
+  // Calculate strain for visualization and alpha
   var totalStrain = 0.0;
   if (coord.x > 0u) {
     var d = length(pos - leftPos);
@@ -219,23 +267,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   totalStrain = clamp(totalStrain * 2.0, 0.0, 1.0);
   
-  // Store strain visualization
   textureStore(dataTextureB, vec2<i32>(coord), vec4<f32>(totalStrain, vel, 1.0));
   
-  // Sample source texture at deformed position for final output
+  // Sample source texture at deformed position
   let sourceColor = textureSampleLevel(readTexture, u_sampler, pos, 0.0);
   
-  // Tinting based on strain (blue = relaxed, red = strained, white = tearing)
+  // Apply fabric SSS
+  let fabricColor = fabricSSS(totalStrain, sourceColor.rgb);
+  
+  // Strain color visualization
   let strainColor = mix(
-    vec3<f32>(0.2, 0.4, 0.8),  // Relaxed - blue
-    vec3<f32>(1.0, 0.3, 0.1),  // Strained - red
+    vec3<f32>(0.2, 0.4, 0.8),
+    vec3<f32>(1.0, 0.3, 0.1),
     totalStrain
   );
   
-  // Blend strain visualization with source
-  let finalColor = mix(sourceColor.rgb, strainColor, totalStrain * 0.3);
+  let finalColor = mix(fabricColor, strainColor, totalStrain * 0.3);
   
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
+  // Calculate textile alpha
+  let threadDensity = calculateFabricDensity(totalStrain, isTorn);
+  let fabricAlpha = calculateFabricAlpha(totalStrain, isTorn, threadDensity);
+  
+  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, fabricAlpha));
   
   // Write depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, pos, 0.0).r;
