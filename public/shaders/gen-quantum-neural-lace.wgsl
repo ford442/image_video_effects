@@ -67,8 +67,14 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let node_size = cell_size * 0.15;
     // Rotate octahedron slightly over time for dynamic feel
     var p_rot = local_p;
-    p_rot.xz = rotate2D(p_rot.xz, u.config.x * 0.5);
-    p_rot.xy = rotate2D(p_rot.xy, u.config.x * 0.3);
+    let temp_p_rot_xz = rotate2D(p_rot.xz, u.config.x * 0.5);
+    p_rot.x = temp_p_rot_xz.x;
+    p_rot.z = temp_p_rot_xz.y;
+
+    let temp_p_rot_xy = rotate2D(p_rot.xy, u.config.x * 0.3);
+    p_rot.x = temp_p_rot_xy.x;
+    p_rot.y = temp_p_rot_xy.y;
+
 
     let d_node = sdOctahedron(p_rot, node_size);
 

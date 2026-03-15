@@ -74,8 +74,14 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     var localP = q - offset;
 
     // Random rotation
-    localP.xy = rotate2D(localP.xy, time * (0.1 + rand * 0.2) + rand * 6.28);
-    localP.xz = rotate2D(localP.xz, time * (0.05 + rand * 0.1));
+    let temp_localP_xy = rotate2D(localP.xy, time * (0.1 + rand * 0.2) + rand * 6.28);
+    localP.x = temp_localP_xy.x;
+    localP.y = temp_localP_xy.y;
+
+    let temp_localP_xz = rotate2D(localP.xz, time * (0.05 + rand * 0.1));
+    localP.x = temp_localP_xz.x;
+    localP.z = temp_localP_xz.y;
+
 
     // Cell Body (Ellipsoid)
     // Random scale

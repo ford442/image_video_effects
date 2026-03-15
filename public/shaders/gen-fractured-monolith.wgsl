@@ -86,7 +86,10 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     // Levitation bobbing
     bp.y -= sin(time * levSpeed) * 0.5 + 2.0;
     // Slow global rotation
-    bp.xz = rot(time * 0.2 * rotSpeed) * bp.xz;
+    let temp_bp_xz = rot(time * 0.2 * rotSpeed) * bp.xz;
+    bp.x = temp_bp_xz.x;
+    bp.z = temp_bp_xz.y;
+
 
     // Base shape: Tall box
     let baseBox = sdBox(bp, vec3<f32>(1.5, 4.0, 1.5));
@@ -105,8 +108,14 @@ fn map(p: vec3<f32>) -> vec3<f32> {
 
     // Individual piece rotation
     let localRot = (hash31(cellId + vec3<f32>(1.0)) - 0.5) * time * rotSpeed;
-    fp.xz = rot(localRot) * fp.xz;
-    fp.xy = rot(localRot * 0.5) * fp.xy;
+    let temp_fp_xz = rot(localRot) * fp.xz;
+    fp.x = temp_fp_xz.x;
+    fp.z = temp_fp_xz.y;
+
+    let temp_fp_xy = rot(localRot * 0.5) * fp.xy;
+    fp.x = temp_fp_xy.x;
+    fp.y = temp_fp_xy.y;
+
 
     // Carve out cracks
     let crackNoise = noise(bp * 3.0);
@@ -153,8 +162,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
     let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
 
-    ro.yz = rot(mouseY * 1.0) * ro.yz;
-    ro.xz = rot(mouseX * 3.14) * ro.xz;
+    let temp_ro_yz = rot(mouseY * 1.0) * ro.yz;
+    ro.y = temp_ro_yz.x;
+    ro.z = temp_ro_yz.y;
+
+    let temp_ro_xz = rot(mouseX * 3.14) * ro.xz;
+    ro.x = temp_ro_xz.x;
+    ro.z = temp_ro_xz.y;
+
 
     let ta = vec3<f32>(0.0, 2.0, 0.0);
     let ww = normalize(ta - ro);

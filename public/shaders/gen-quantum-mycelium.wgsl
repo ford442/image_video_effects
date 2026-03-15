@@ -81,9 +81,15 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Spatial folding for branching illusion
     q = abs(q) - vec3<f32>(1.0 / density, 1.0 / density, 1.0 / density);
-    q.xy = rot(0.5) * q.xy;
+    let temp_q_xy = rot(0.5) * q.xy;
+    q.x = temp_q_xy.x;
+    q.y = temp_q_xy.y;
+
     q = abs(q) - vec3<f32>(0.5 / density, 0.5 / density, 0.5 / density);
-    q.xz = rot(0.3) * q.xz;
+    let temp_q_xz = rot(0.3) * q.xz;
+    q.x = temp_q_xz.x;
+    q.z = temp_q_xz.y;
+
 
     // Base Cylinder SDF
     var d = sdCylinder(q, vec3<f32>(0.0, 0.0, 0.15 / density));

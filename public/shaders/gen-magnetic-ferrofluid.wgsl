@@ -104,8 +104,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
     let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
 
-    ro.yz = rot(mouseY * 1.5) * ro.yz;
-    ro.xz = rot(mouseX * 3.14 + u.config.x * 0.2) * ro.xz;
+    let temp_ro_yz = rot(mouseY * 1.5) * ro.yz;
+    ro.y = temp_ro_yz.x;
+    ro.z = temp_ro_yz.y;
+
+    let temp_ro_xz = rot(mouseX * 3.14 + u.config.x * 0.2) * ro.xz;
+    ro.x = temp_ro_xz.x;
+    ro.z = temp_ro_xz.y;
+
 
     let ta = vec3<f32>(0.0, 0.0, 0.0);
     let ww = normalize(ta - ro);
