@@ -90,6 +90,16 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
                 const { id, url, category: declaredCategory } = shaderDef;
                 const category = declaredCategory || dir; // fallback if field missing
 
+                // Validate required fields
+                if (!id) {
+                    console.warn(`WARNING: Missing 'id' field in ${dir}/${file} - SKIPPING`);
+                    return;
+                }
+                if (!url) {
+                    console.warn(`WARNING: Missing 'url' field in ${dir}/${file} (shader: ${id}) - SKIPPING`);
+                    return;
+                }
+
                 // warn if the file is stored in a directory different from its
                 // declared category.  this was the root cause of the "49 vs 400"
                 // confusion and helps keep the repo organized.
