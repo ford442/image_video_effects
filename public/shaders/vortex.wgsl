@@ -2,6 +2,11 @@
 //  Fluid Vortex - Curl-based velocity field with vorticity confinement
 //  Scientific: ω = ∇ × v, tangential velocity ∝ 1/r
 //  Features: Multiple vortex centers, turbulent swirls, pressure gradients
+//  
+//  ALPHA PHYSICS:
+//  - Vorticity magnitude affects light scattering
+//  - Higher velocity = more turbulent mixing = reduced alpha
+//  - Velocity gradients create transparency variations
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -224,6 +229,33 @@ fn getVortices(time: f32) -> array<Vortex, 4> {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ALPHA PHYSICS: Calculate alpha based on distortion magnitude
+// Higher distortion = more scattered light = lower alpha
+// ═══════════════════════════════════════════════════════════════
+fn calculateDistortionAlpha(
+    velocity: vec2<f32>,
+    vorticity: f32,
+    vortexStrength: f32
+) -> f32 {
+    let velMag = length(velocity);
+    
+    // Distortion magnitude combines velocity and vorticity
+    let distortionMag = velMag + abs(vorticity) * 0.1;
+    
+    // Higher distortion = more light scattering = reduced alpha
+    // Base alpha from source preservation
+    let baseAlpha = 1.0;
+    
+    // Scattering reduces opacity (physical: turbulent mixing)
+    let scatteringLoss = distortionMag * 0.3 * vortexStrength;
+    
+    // Vorticity creates local transparency variations
+    let vorticityAlpha = 1.0 - smoothstep(0.0, 0.5, abs(vorticity)) * 0.2;
+    
+    return clamp(baseAlpha * vorticityAlpha - scatteringLoss, 0.3, 1.0);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Main compute shader
 // ═══════════════════════════════════════════════════════════════
 @compute @workgroup_size(8, 8, 1)
@@ -314,7 +346,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ) - 0.5;
     velocity = velocity + turbulenceNoise * turbAmount;
     
-    // Calculate vorticity for visualization
+    // Calculate vorticity for visualization and alpha
     let vorticity = calculateVorticity(uv, vortices, time);
     
     // ═══════════════════════════════════════════════════════════
@@ -338,7 +370,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ═══════════════════════════════════════════════════════════
     // Sample texture with distorted coordinates
     // ═══════════════════════════════════════════════════════════
-    var color = textureSampleLevel(readTexture, u_sampler, fract(finalUV), 0.0);
+    var warpedColor = textureSampleLevel(readTexture, u_sampler, fract(finalUV), 0.0);
     
     // ═══════════════════════════════════════════════════════════
     // Add visual feedback for fluid properties
@@ -354,15 +386,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         1.0,                          // Green neutral
         1.0 - sign(vorticity) * 0.1   // Blue for CCW
     );
-    color = vec4<f32>(color.rgb * mix(vec3<f32>(1.0), vorticityColor, velMag * 0.3), color.a);
+    var finalRGB = warpedColor.rgb * mix(vec3<f32>(1.0), vorticityColor, velMag * 0.3);
     
     // Add subtle velocity-based brightness
-    color = vec4<f32>(color.rgb * (1.0 + velocityGlow), color.a);
+    finalRGB = finalRGB * (1.0 + velocityGlow);
+    
+    // ═══════════════════════════════════════════════════════════
+    // ALPHA CALCULATION with Physical Deformation
+    // ═══════════════════════════════════════════════════════════
+    let finalAlpha = calculateDistortionAlpha(velocity, vorticity, vortexStrength) * warpedColor.a;
     
     // ═══════════════════════════════════════════════════════════
     // Output
     // ═══════════════════════════════════════════════════════════
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, finalAlpha));
     
     // Pass through depth with velocity-based distortion
     let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, fract(finalUV), 0.0);

@@ -1,6 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  VORTEX PRISM
-//  Twisting vortex effect that separates colors prismatically.
+//  VORTEX PRISM with Alpha Physics
+//  Twisting vortex effect that separates colors prismatically with physical deformation.
+//  
+//  ALPHA PHYSICS:
+//  - Prismatic separation creates differential light paths per channel
+//  - Each RGB channel experiences different distortion = different alpha
+//  - Wavelength-dependent opacity simulates chromatic dispersion
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +36,38 @@ fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
         v.x * c - v.y * s,
         v.x * s + v.y * c
     );
+}
+
+// Calculate prismatic distortion magnitude
+fn calculatePrismaticDistortion(
+    falloff: f32,
+    twistAmount: f32,
+    prismStrength: f32
+) -> f32 {
+    let twistMag = abs(twistAmount) * falloff;
+    let prismMag = prismStrength * falloff;
+    return twistMag + prismMag;
+}
+
+// Wavelength-dependent alpha calculation
+// Blue (shorter wavelength) scatters more = lower alpha
+// Red (longer wavelength) penetrates more = higher alpha
+fn calculatePrismaticAlpha(
+    baseAlpha: f32,
+    distortionMag: f32,
+    channel: i32  // 0=R, 1=G, 2=B
+) -> f32 {
+    // Wavelength scattering factors (simplified)
+    // Shorter wavelengths scatter more
+    let scatteringFactor = vec3<f32>(0.8, 1.0, 1.3); // R, G, B
+    
+    let wavelengthScatter = scatteringFactor[channel];
+    
+    // Distortion creates scattering loss
+    let scatterLoss = distortionMag * 0.2 * wavelengthScatter;
+    
+    // Higher twist = more separation = more scattering
+    return clamp(baseAlpha - scatterLoss, 0.3, 1.0);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -67,53 +104,65 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(d);
 
     // Twist calculation
-    // Angle decreases with distance
     let falloff = smoothstep(radius, 0.0, dist);
     let twistAngle = falloff * twistAmount;
 
-    // Prismatic Separation
-    // We sample R, G, B at slightly different twist angles
+    // Calculate distortion magnitude
+    let distortionMag = calculatePrismaticDistortion(falloff, twistAmount, prismStrength);
 
+    // Prismatic Separation with per-channel angles
     let angleR = twistAngle * (1.0 - prismStrength);
     let angleG = twistAngle;
     let angleB = twistAngle * (1.0 + prismStrength);
 
-    // Rotate the displacement vector 'd' and add back to center
-    // We need to un-correct aspect ratio after rotation
-
-    // Red
+    // Red channel with rotation
     var dR = rotate(d, angleR);
     dR.x = dR.x / aspect;
     let uvR = center + dR;
 
-    // Green
+    // Green channel with rotation
     var dG = rotate(d, angleG);
     dG.x = dG.x / aspect;
     let uvG = center + dG;
 
-    // Blue
+    // Blue channel with rotation
     var dB = rotate(d, angleB);
     dB.x = dB.x / aspect;
     let uvB = center + dB;
 
-    // Sample
-    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    // Sample each channel
+    let sampleR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0);
+    let sampleG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0);
+    let sampleB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
 
-    // Vignette / fade at edge of effect
-    // Optionally mix with original coordinate if outside radius
+    // Calculate per-channel alphas with wavelength physics
+    let alphaR = calculatePrismaticAlpha(sampleR.a, distortionMag, 0);
+    let alphaG = calculatePrismaticAlpha(sampleG.a, distortionMag, 1);
+    let alphaB = calculatePrismaticAlpha(sampleB.a, distortionMag, 2);
 
-    var color = vec4<f32>(r, g, b, 1.0);
+    // Blend alphas based on prism strength
+    let avgAlpha = mix(
+        (alphaR + alphaG + alphaB) / 3.0,
+        max(max(alphaR, alphaG), alphaB),
+        prismStrength * 0.5
+    );
 
-    // Optional: add a slight glow at the center
+    // Compose final color
+    var color = vec4<f32>(sampleR.r, sampleG.g, sampleB.b, avgAlpha);
+
+    // Add subtle glow at center with alpha
     if (dist < 0.05 * radius) {
-        color = color + vec4<f32>(0.1, 0.1, 0.2, 0.0) * (1.0 - dist / (0.05 * radius));
+        let glowIntensity = (1.0 - dist / (0.05 * radius)) * 0.15;
+        let glowAlpha = glowIntensity * 0.5;
+        color = color + vec4<f32>(0.1, 0.1, 0.2, glowAlpha) * (1.0 - dist / (0.05 * radius));
+        color.a = min(color.a + glowAlpha, 1.0);
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
-    // Depth Pass-through
+    // Depth Pass-through with prismatic distortion
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Each channel effectively samples at different depth due to dispersion
+    let depthUncertainty = distortionMag * 0.05;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth * (1.0 + depthUncertainty), 0.0, 0.0, 0.0));
 }
