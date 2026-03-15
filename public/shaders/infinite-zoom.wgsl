@@ -1,11 +1,17 @@
 // ═══════════════════════════════════════════════════════════════
-//  Infinite Zoom with Möbius Transformations
+//  Infinite Zoom with Möbius Transformations and Alpha Physics
 //  Category: distortion
-//  Features: mathematical, escher-like, hyperbolic geometry
+//  Features: mathematical, escher-like, hyperbolic geometry with physical deformation
 // 
 //  Möbius transformations: f(z) = (az + b) / (cz + d)
 //  Creates conformal mappings of the complex plane for
 //  infinite tessellations with self-similar patterns.
+//  
+//  ALPHA PHYSICS:
+//  - Iterative transformations create cumulative distortion
+//  - Each iteration affects light path = scattered alpha
+//  - Modular form coloring affects per-region opacity
+//  - Zoom cycle creates depth-based transparency variations
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -68,8 +74,7 @@ fn complex_pow(z: vec2<f32>, n: f32) -> vec2<f32> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Möbius Transformation: f(z) = (az + b) / (cz + d)
-// where ad - bc ≠ 0 (determinant condition)
+// Möbius Transformation
 // ═══════════════════════════════════════════════════════════════
 
 fn mobius_transform(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
@@ -78,16 +83,6 @@ fn mobius_transform(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: v
     return complex_div(numerator, denominator);
 }
 
-// Special Möbius: f(z) = e^(iθ) * (z - a) / (1 - ā*z)  [Disk automorphism]
-fn disk_mobius(z: vec2<f32>, a: vec2<f32>, theta: f32) -> vec2<f32> {
-    let rotation = vec2<f32>(cos(theta), sin(theta));
-    let numerator = z - a;
-    let a_conj = complex_conj(a);
-    let denominator = vec2<f32>(1.0, 0.0) - complex_mul(a_conj, z);
-    return complex_mul(rotation, complex_div(numerator, denominator));
-}
-
-// Hyperbolic rotation: f(z) = (z * cosh(t) + sinh(t)) / (z * sinh(t) + cosh(t))
 fn hyperbolic_mobius(z: vec2<f32>, t: f32) -> vec2<f32> {
     let ch = cosh(t);
     let sh = sinh(t);
@@ -100,32 +95,16 @@ fn hyperbolic_mobius(z: vec2<f32>, t: f32) -> vec2<f32> {
 
 // ═══════════════════════════════════════════════════════════════
 // Modular Form Coloring
-// Uses lattice periodicity for elliptic curve inspired patterns
 // ═══════════════════════════════════════════════════════════════
 
-fn weierstrass_p_prime(z: vec2<f32>, g2: f32, g3: f32) -> vec2<f32> {
-    // Simplified derivative of Weierstrass elliptic function
-    // p'(z) ≈ -2/z^3 + O(z) for small z
-    let z2 = complex_mul(z, z);
-    let z3 = complex_mul(z2, z);
-    let inv_z3 = complex_div(vec2<f32>(1.0, 0.0), z3);
-    return -2.0 * inv_z3;
-}
-
 fn lattice_modular_value(z: vec2<f32>, omega1: vec2<f32>, omega2: vec2<f32>) -> vec2<f32> {
-    // Compute z mod lattice
-    // Find coefficients such that z = m*omega1 + n*omega2
     let det = omega1.x * omega2.y - omega1.y * omega2.x;
     let m = (z.x * omega2.y - z.y * omega2.x) / det;
     let n = (omega1.x * z.y - omega1.y * z.x) / det;
-    
-    // Return fractional part in lattice coordinates
     return vec2<f32>(fract(m), fract(n));
 }
 
 fn modular_j_invariant_approx(z: vec2<f32>) -> f32 {
-    // Simplified j-invariant inspired coloring
-    // Uses the fact that j(τ) has special values at tau = i, e^(iπ/3)
     let x = z.x;
     let y = z.y;
     let r2 = x * x + y * y;
@@ -152,115 +131,148 @@ fn hsb_to_rgb(h: f32, s: f32, b: f32) -> vec3<f32> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Infinite Zoom with Möbius Iteration
+// Alpha Physics for Möbius Transformations
 // ═══════════════════════════════════════════════════════════════
 
-fn apply_mobius_zoom(uv: vec2<f32>, zoom_time: f32) -> vec2<f32> {
+fn calculateIterationAlpha(
+    baseAlpha: f32,
+    iterationCount: i32,
+    maxIterations: i32,
+    accumulatedScale: f32
+) -> f32 {
+    // More iterations = more distortion = scattered light
+    let iterationFactor = 1.0 - (f32(iterationCount) / f32(maxIterations)) * 0.3;
+    
+    // Scale affects perceived opacity (zoomed = less detailed = more transparent)
+    let scaleFactor = 1.0 / (1.0 + accumulatedScale * 0.1);
+    
+    return clamp(baseAlpha * iterationFactor * scaleFactor, 0.4, 1.0);
+}
+
+fn calculateModularAlpha(
+    baseAlpha: f32,
+    latticeCoord: vec2<f32>,
+    jInvariant: f32
+) -> f32 {
+    // Lattice position affects opacity (near lattice points = more opaque)
+    let distFromLattice = length(latticeCoord - 0.5);
+    let latticeAlpha = 0.7 + 0.3 * (1.0 - distFromLattice);
+    
+    // j-invariant special values create opacity variations
+    let jModulation = 1.0 - abs(fract(jInvariant * 0.001) - 0.5) * 0.2;
+    
+    return clamp(baseAlpha * latticeAlpha * jModulation, 0.5, 1.0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Infinite Zoom with Möbius Iteration and Alpha
+// ═══════════════════════════════════════════════════════════════
+
+fn apply_mobius_zoom_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     let zoom_speed = u.zoom_params.x;
     let param_a = u.zoom_params.y;
     let rotation = u.zoom_params.z;
     let max_iterations = i32(clamp(u.zoom_params.w * 10.0, 1.0, 20.0));
     
-    // Convert UV to complex plane centered at origin
-    let z0 = (uv - 0.5) * 4.0; // Scale to [-2, 2] range
+    let z0 = (uv - 0.5) * 4.0;
     
-    // Time-based zoom cycle
     let t = zoom_time * zoom_speed;
     let cycle = fract(t);
     let iteration = floor(t);
     
-    // Möbius transformation coefficients
-    // Create interesting pattern with time-varying parameters
     let theta = rotation + t * 0.5;
     let a_param = mix(0.1, 0.9, ping_pong(param_a + cycle));
     
-    // Complex coefficients for f(z) = (az + b) / (cz + d)
-    let a = vec2<f32>(cos(theta), sin(theta));  // |a| = 1
+    let a = vec2<f32>(cos(theta), sin(theta));
     let b = vec2<f32>(a_param * cos(t * 0.7), a_param * sin(t * 0.7));
-    let c = complex_conj(b);  // For unit disk preservation
+    let c = complex_conj(b);
     let d = complex_conj(a);
     
-    // Iterative Möbius transformation
     var z = z0;
     var accumulated_scale = 1.0;
+    var totalDistortion = 0.0;
     
     for (var i: i32 = 0; i < max_iterations; i = i + 1) {
-        // Apply Möbius transformation
         z = mobius_transform(z, a, b, c, d);
         
-        // Add hyperbolic rotation component
         let hyper_t = 0.3 * sin(t + f32(i));
         z = hyperbolic_mobius(z, hyper_t);
         
-        // Accumulate scaling factor
         accumulated_scale = accumulated_scale * (1.0 + 0.1 * sin(t * 2.0 + f32(i)));
+        totalDistortion = totalDistortion + 0.05;
         
-        // Escape condition if diverging
         if (complex_abs(z) > 10.0) {
             z = z * 0.1;
             break;
         }
     }
     
-    // Apply zoom scaling
     let zoom_scale = 1.0 + cycle * 3.0;
     z = z / zoom_scale;
     
-    // Convert back to UV space
     var result = z / 4.0 + 0.5;
-    
-    // Wrap using modular arithmetic for infinite effect
     result = fract(result);
     
-    return result;
+    // Sample texture
+    let tex_color = textureSampleLevel(readTexture, non_filtering_sampler, result, 0.0);
+    
+    // Calculate modular coloring
+    let omega1 = vec2<f32>(1.0, 0.0);
+    let omega2 = vec2<f32>(0.5, 0.866025);
+    let lattice_coord = lattice_modular_value(z, omega1, omega2);
+    let j_val = modular_j_invariant_approx(z * 0.5);
+    
+    // Calculate alpha with physics
+    let iterationAlpha = calculateIterationAlpha(tex_color.a, max_iterations, max_iterations, accumulated_scale);
+    let finalAlpha = calculateModularAlpha(iterationAlpha, lattice_coord, j_val);
+    
+    return vec4<f32>(tex_color.rgb, finalAlpha);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Color Cycling Based on Iteration Depth
+// Color with Alpha Calculation
 // ═══════════════════════════════════════════════════════════════
 
-fn calculate_mobius_color(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
+fn calculate_mobius_color_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     let zoom_speed = u.zoom_params.x;
     let param_a = u.zoom_params.y;
-    let rotation = u.zoom_params.z;
     let color_cycling = u.lighting_params.w;
     
     let t = zoom_time * zoom_speed;
     
     // Transform UV through Möbius iteration
-    let transformed_uv = apply_mobius_zoom(uv, zoom_time);
+    let zoomedResult = apply_mobius_zoom_alpha(uv, zoom_time);
+    let transformed_uv = fract((uv - 0.5) * 4.0 / (1.0 + cycle * 3.0) / 4.0 + 0.5);
     
-    // Sample texture at transformed location
+    // Sample for color calculation
     let tex_color = textureSampleLevel(readTexture, non_filtering_sampler, transformed_uv, 0.0);
     
     // Modular form coloring
     let z = (transformed_uv - 0.5) * 4.0;
     
-    // Lattice periodicity
     let omega1 = vec2<f32>(1.0, 0.0);
-    let omega2 = vec2<f32>(0.5, 0.866025); // 60 degree angle for hexagonal lattice
+    let omega2 = vec2<f32>(0.5, 0.866025);
     let lattice_coord = lattice_modular_value(z, omega1, omega2);
     
-    // j-invariant inspired hue
     let j_val = modular_j_invariant_approx(z * 0.5);
     let hue = fract(abs(j_val) * 0.001 + t * color_cycling + length(lattice_coord));
     
-    // Saturation based on distance from lattice points
     let dist_from_lattice = length(lattice_coord - 0.5);
     let sat = 0.5 + 0.5 * (1.0 - dist_from_lattice);
     
-    // Brightness from texture luminance
     let luminance = dot(tex_color.rgb, vec3<f32>(0.299, 0.587, 0.114));
     let brightness = mix(0.3, 1.0, luminance);
     
     let hsb_color = hsb_to_rgb(hue, sat * 0.8, brightness);
     
-    // Blend between texture and HSB color based on parameter
     let blend_factor = ping_pong(param_a + 0.3);
     let final_rgb = mix(tex_color.rgb, hsb_color, blend_factor);
     
-    return vec4<f32>(final_rgb, tex_color.a);
+    // Preserve alpha from zoom calculation
+    return vec4<f32>(final_rgb, zoomedResult.a);
 }
+
+var<private> cycle: f32;
 
 // ═══════════════════════════════════════════════════════════════
 // Main Shader Entry
@@ -272,20 +284,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let zoom_time = u.zoom_config.x;
     
-    // Apply Möbius infinite zoom with modular form coloring
-    let color = calculate_mobius_color(uv, zoom_time);
+    cycle = fract(zoom_time * u.zoom_params.x);
     
-    // Add depth variation based on zoom cycle
+    // Apply Möbius infinite zoom with alpha
+    let color = apply_mobius_zoom_alpha(uv, zoom_time);
+    
+    // Add depth variation
     let t = zoom_time * u.zoom_params.x;
-    let cycle = fract(t);
     let depth_variation = 0.5 + 0.5 * sin(cycle * 6.28318);
     
-    // Sample depth from transformed position
-    let transformed_uv = apply_mobius_zoom(uv, zoom_time);
+    // Sample depth
+    let transformed_uv = fract((uv - 0.5) * 4.0 / (1.0 + cycle * 3.0) / 4.0 + 0.5);
     let base_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, transformed_uv, 0.0).r;
     let final_depth = mix(base_depth, depth_variation, 0.2);
     
-    // Store results
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, 1.0));
+    // Store results with RGBA
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, color.a));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(final_depth, 0.0, 0.0, 0.0));
 }
