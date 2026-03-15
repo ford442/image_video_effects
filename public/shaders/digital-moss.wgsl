@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════
+//  Digital Moss - Simulation with Organic Foliage Material Properties
+//  Category: simulation
+//  Features: Moss growth, leaf translucency, photosynthetic tissue
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -19,10 +25,69 @@ struct Uniforms {
 @group(0) @binding(11) var comparisonSampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+// Moss/Foliage Material Properties
+const MOSS_DENSITY: f32 = 1.5;            // Moss is relatively light
+const LEAF_SCATTERING: f32 = 1.8;         // Leaves scatter light strongly
+const CHLOROPHYLL_ABSORPTION: vec3<f32> = vec3<f32>(0.7, 0.2, 0.6); // Absorbs red/blue
+const DENSE_MOSS_ALPHA: f32 = 0.88;       // Thick moss is fairly opaque
+const YOUNG_MOSS_ALPHA: f32 = 0.45;       // Young growth is translucent
+const SCANLINE_DENSITY: f32 = 500.0;      // Digital scanline effect
+
 fn hash12(p: vec2<f32>) -> f32 {
     var p3  = fract(vec3<f32>(p.xyx) * .1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+// Calculate moss density/thickness from growth state
+fn calculateMossThickness(growth: f32, age: f32) -> f32 {
+    // Young moss is thin, mature moss is thicker
+    let maturity = smoothstep(0.0, 0.8, growth);
+    let baseThickness = mix(0.1, 0.4, maturity);
+    
+    // Age adds layers
+    let ageThickness = age * 0.05;
+    
+    return baseThickness + ageThickness;
+}
+
+// Leaf subsurface scattering (photosynthetic tissue)
+fn mossSSS(growth: f32, lightExposure: f32) -> vec3<f32> {
+    // Chlorophyll absorption (green transmission)
+    let chlorophyll = vec3<f32>(0.15, 0.85, 0.25);
+    
+    // Photosynthetic scattering
+    let scatter = lightExposure * LEAF_SCATTERING;
+    
+    // Healthy moss has vibrant green
+    let healthyColor = vec3<f32>(0.2, 0.95, 0.35);
+    
+    // Less healthy (sparse) moss is yellow-green
+    let sparseColor = vec3<f32>(0.5, 0.8, 0.2);
+    
+    let healthMix = smoothstep(0.3, 0.9, growth);
+    let baseColor = mix(sparseColor, healthyColor, healthMix);
+    
+    // Apply chlorophyll absorption
+    return baseColor * chlorophyll * (1.0 + scatter * 0.3);
+}
+
+// Calculate alpha for moss based on growth and thickness
+fn calculateMossAlpha(growth: f32, thickness: f32, scanline: f32) -> f32 {
+    // Young/ sparse moss is more transparent
+    let growthAlpha = mix(YOUNG_MOSS_ALPHA, DENSE_MOSS_ALPHA, growth);
+    
+    // Thickness affects opacity (Beer-Lambert)
+    let absorption = exp(-thickness * MOSS_DENSITY);
+    let thicknessAlpha = mix(YOUNG_MOSS_ALPHA, growthAlpha, absorption);
+    
+    // Digital scanline effect creates pattern in alpha
+    let scanAlpha = mix(thicknessAlpha, thicknessAlpha * 0.9, scanline * 0.3);
+    
+    // Very sparse areas fade out
+    let sparseFade = smoothstep(0.0, 0.15, growth);
+    
+    return clamp(scanAlpha * sparseFade + 0.2, 0.25, 0.92);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -57,11 +122,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // 2. Propagation (Cellular Automata-ish)
-    // If not fully grown, check neighbors
     if (grown < 0.9) {
-        // Sample a random neighbor based on noise
         let angle = hash12(uv * 10.0 + time) * 6.28;
-        let dist = 2.0; // Check 2 pixels away
+        let dist = 2.0;
         let offset = vec2<f32>(cos(angle), sin(angle)) * dist;
         let neighborCoord = coord + vec2<i32>(offset);
 
@@ -69,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // If neighbor has moss and this area is dark enough, spread
         if (neighborState > 0.5 && luma < 0.4) {
-             grown = min(1.0, grown + 0.05); // Slow growth
+             grown = min(1.0, grown + 0.05);
         }
     }
 
@@ -92,15 +155,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Write State for next frame
     textureStore(dataTextureA, coord, vec4<f32>(grown, 0.0, 0.0, 1.0));
 
-    // Render
-    // Moss look: Digital Matrix Green with scanlines
-    let scan = 0.8 + 0.2 * sin(uv.y * 500.0);
-    let mossColor = vec3<f32>(0.1, 0.9, 0.3) * scan;
+    // Calculate moss material properties
+    let mossThickness = calculateMossThickness(grown, grown * time * 0.1);
+    
+    // Digital scanline effect for "digital" moss look
+    let scan = 0.8 + 0.2 * sin(uv.y * SCANLINE_DENSITY);
+    
+    // Calculate SSS color
+    let lightExposure = 1.0 - luma; // Grows in dark areas
+    let mossColor = mossSSS(grown, lightExposure);
+    
+    // Apply scanline to color
+    let scannedMossColor = mossColor * scan;
 
-    // Mix based on growth
-    let finalColor = mix(imgColor, mossColor, grown * 0.9);
+    // Mix based on growth with alpha calculation
+    let mossAlpha = calculateMossAlpha(grown, mossThickness, scan);
+    
+    // Blend: image shows through moss based on alpha
+    let finalColor = mix(imgColor, scannedMossColor, grown * mossAlpha);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, mix(1.0, mossAlpha, grown)));
     
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
