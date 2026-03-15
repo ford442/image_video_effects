@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus } from '../AutoDJ';
 // @ts-ignore
-import shaderCoordinates from '../../shader_coordinates.json';
+import shaderCoordinates from '../shader_coordinates.json';
 
 // --- Types for Coordinate System ---
 interface ShaderCoordData {
@@ -153,7 +153,7 @@ const Controls: React.FC<ControlsProps> = ({
     };
 
     // Find shader by coordinate (closest match)
-    const findShaderByCoordinate = (targetCoord: number): string | null => {
+    const findShaderByCoordinate = React.useCallback((targetCoord: number): string | null => {
         let closestId: string | null = null;
         let minDiff = Infinity;
         
@@ -166,7 +166,7 @@ const Controls: React.FC<ControlsProps> = ({
         }
         
         return closestId;
-    };
+    }, [coordMap]);
 
     // Keyboard navigation: type number to jump
     useEffect(() => {
@@ -228,7 +228,7 @@ const Controls: React.FC<ControlsProps> = ({
                 clearTimeout(numberTimeoutRef.current);
             }
         };
-    }, [typedNumber, availableModes, activeSlot, setMode]);
+    }, [typedNumber, availableModes, activeSlot, setMode, findShaderByCoordinate]);
 
     // Filter modes based on category
     const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
