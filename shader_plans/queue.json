@@ -60,6 +60,12 @@
       "title": "Stellar Web-Loom",
       "added": "2026-03-13T15:21:49.263536",
       "completed": "2026-03-14T08:17:00.858096"
+    },
+    {
+      "filename": "2026-03-14_singularity-forge.md",
+      "title": "Singularity Forge",
+      "added": "2026-03-14T15:18:58.957503",
+      "completed": "2026-03-15T07:55:05.055057"
     }
   ],
   "rejected": [],
@@ -89,11 +95,6 @@
       "filename": "2026-03-12_cybernetic-ferro-coral.md",
       "title": "Cybernetic Ferro-Coral",
       "added": "2026-03-12T15:17:02.885309"
-    },
-    {
-      "filename": "2026-03-14_singularity-forge.md",
-      "title": "Singularity Forge",
-      "added": "2026-03-14T15:18:58.957503"
     }
   ],
   "in_progress": null

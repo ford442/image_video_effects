@@ -1864,6 +1864,58 @@
     ]
   },
   {
+    "id": "gen-singularity-forge",
+    "name": "Singularity Forge",
+    "url": "shaders/gen-singularity-forge.wgsl",
+    "category": "generative",
+    "description": "A hyper-dense, gravity-warped crucible of collapsing stars and chaotic plasma rings, endlessly generating and consuming geometric artifacts.",
+    "tags": [
+      "cosmic",
+      "black-hole",
+      "gravity",
+      "plasma",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "diskDensity",
+        "name": "Disk Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "jetIntensity",
+        "name": "Jet Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "gravityWarp",
+        "name": "Gravity Warp",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "timeDilation",
+        "name": "Time Dilation",
+        "default": 1,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-stellar-web-loom",
     "name": "Stellar Web-Loom",
     "url": "shaders/gen-stellar-web-loom.wgsl",
