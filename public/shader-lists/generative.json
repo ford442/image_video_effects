@@ -360,7 +360,7 @@
     "name": "Bismuth Crystal Citadel",
     "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
     "category": "generative",
-    "description": "An endless procedural canyon of iridescent, stair-stepped geometric bismuth crystals with thin-film interference coloring.",
+    "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
     "tags": [
       "generative",
       "raymarch",
@@ -370,11 +370,13 @@
       "metallic",
       "iridescent",
       "geometry",
-      "fractal"
+      "fractal",
+      "alpha-transmission"
     ],
     "features": [
       "raymarched",
-      "mouse-driven"
+      "mouse-driven",
+      "physical-transmission"
     ],
     "author": "AI",
     "params": [
@@ -385,7 +387,7 @@
         "max": 1,
         "default": 0.5,
         "step": 0.01,
-        "description": "Controls the size of the stepped terraces characteristic of bismuth crystals."
+        "description": "Size of stepped terraces characteristic of bismuth crystals"
       },
       {
         "id": "param2",
@@ -394,7 +396,7 @@
         "max": 2,
         "default": 0.5,
         "step": 0.01,
-        "description": "Speed at which the camera moves through the infinite crystal citadel."
+        "description": "Camera movement speed through the crystal citadel"
       },
       {
         "id": "param3",
@@ -403,7 +405,7 @@
         "max": 2,
         "default": 0.8,
         "step": 0.01,
-        "description": "Intensity of specular highlights on the metallic crystal surfaces."
+        "description": "Specular highlight intensity on metallic surfaces"
       },
       {
         "id": "param4",
@@ -412,7 +414,7 @@
         "max": 5,
         "default": 1,
         "step": 0.1,
-        "description": "Shifts the rainbow-like thin-film interference colors across the crystal surfaces."
+        "description": "Thin-film interference color shift on crystal surfaces"
       }
     ]
   },
@@ -699,7 +701,7 @@
     "name": "Crystal Caverns",
     "url": "shaders/gen-crystal-caverns.wgsl",
     "category": "generative",
-    "description": "An infinite, procedural cave system illuminated by clusters of glowing crystals. Features stalactites, crystal clusters, and mouse-controlled light.",
+    "description": "Infinite procedural cave system with glowing crystals featuring physical light transmission. Crystals have IOR-based Fresnel reflection and variable purity affecting their glow transparency.",
     "tags": [
       "crystal",
       "cave",
@@ -709,10 +711,12 @@
       "glowing",
       "stalactites",
       "procedural",
-      "generative"
+      "generative",
+      "alpha-transmission"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "physical-transmission"
     ],
     "author": "ford442",
     "params": [
@@ -722,15 +726,17 @@
         "default": 0.25,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Size of cave structures"
       },
       {
         "id": "density",
-        "name": "Crystal Density",
+        "name": "Crystal Purity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Crystal clarity affecting transmission and glow"
       },
       {
         "id": "glow",
@@ -738,7 +744,8 @@
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Brightness of crystal glow"
       },
       {
         "id": "pulse",
@@ -746,7 +753,8 @@
         "default": 0,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Crystal pulsing animation speed"
       }
     ]
   },
@@ -1516,17 +1524,20 @@
     "name": "Prismatic Bismuth Lattice",
     "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
     "category": "generative",
-    "description": "An endlessly folding, hyper-geometric expanse of iridescent, stepped bismuth crystals that breathe and fracture in rhythm with unseen cosmic frequencies.",
+    "description": "Endlessly folding hyper-geometric expanse of iridescent bismuth crystals with physical light transmission. Features thin-film interference, metallic Fresnel reflection, and oxide layer transmission.",
     "tags": [
       "crystalline",
       "iridescent",
       "fractal",
       "geometric",
-      "audio-reactive"
+      "audio-reactive",
+      "alpha-transmission",
+      "physical"
     ],
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "physical-transmission"
     ],
     "params": [
       {
@@ -1535,7 +1546,8 @@
         "default": 3,
         "min": 1,
         "max": 6,
-        "step": 1
+        "step": 1,
+        "description": "Recursion depth of hopper crystal formation"
       },
       {
         "id": "param2",
@@ -1543,7 +1555,8 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Thin-film interference color intensity"
       },
       {
         "id": "param3",
@@ -1551,7 +1564,8 @@
         "default": 1,
         "min": 0.5,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "description": "Size of crystal lattice cells"
       },
       {
         "id": "param4",
@@ -1559,7 +1573,8 @@
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "description": "Atmospheric fog density"
       }
     ]
   },
@@ -2016,16 +2031,56 @@
     "name": "Kimi Crystal",
     "url": "shaders/gen_kimi_crystal.wgsl",
     "category": "generative",
-    "description": "Animated crystalline structures growing on a hexagonal grid with icy blue colors and gold accents. Mouse creates stellar glow.",
+    "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
     "features": [
       "mouse-driven",
       "generative",
       "geometric",
-      "crystalline"
+      "crystalline",
+      "alpha-transmission"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Density of hexagonal crystal grid"
+      },
+      {
+        "id": "purity",
+        "name": "Crystal Purity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "description": "Ice crystal clarity: affects transmission and absorption"
+      },
+      {
+        "id": "growth",
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Animation speed of crystal growth"
+      },
+      {
+        "id": "thickness",
+        "name": "Crystal Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Physical thickness affecting light path length"
+      }
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "crystal",
+      "ice",
+      "hexagonal",
+      "transmission",
+      "physical"
     ]
   },
   {

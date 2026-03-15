@@ -1,8 +1,15 @@
 #include "renderer.h"
+
+// ARCH: [Critical] Inconsistent API usage: includes both C webgpu.h and C++ webgpu_cpp.h.
+// renderer.cpp uses C API (WGPU* types), this file uses C++ API (wgpu:: namespace).
+// This creates confusion and prevents code sharing between the two implementations.
 #include <webgpu/webgpu_cpp.h>
+
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+// ARCH: [Low] Commented include remains in code. Remove dead code.
 // #include <emscripten/html5_webgpu.h>
+
 #include <string>
 #include <vector>
 #include <cstring>
@@ -10,7 +17,26 @@
 #include <cmath>
 #include <stdio.h>
 
+// ARCH: [Low] Inconsistent header style mixing C (<stdio.h>) and C++ (<string>).
+// Prefer C++ headers: <cstdio>
+
 using namespace pixelocity;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHYSARUM SIMULATION - DEAD CODE / ALTERNATE IMPLEMENTATION
+// ═══════════════════════════════════════════════════════════════════════════════
+// ARCH: [Critical] This entire section (lines 20-248) is DEAD CODE.
+// The Physarum simulation is never used because:
+// 1. WebGPURenderer class (defined in renderer.h/cpp) is used instead
+// 2. Global state below conflicts with WebGPURenderer's internal state
+// 3. createPipelines(), renderLoop(), etc. are never called
+// 
+// This appears to be an alternative implementation that was abandoned
+// but not removed. It adds 200+ lines of maintenance burden.
+// 
+// REFACTOR: Remove all Physarum code OR merge it as an optional
+// simulation mode within WebGPURenderer class.
+// ═══════════════════════════════════════════════════════════════════════════════
 
 // Physarum 3.0 Agent Structure
 struct Agent {
@@ -37,7 +63,8 @@ struct SimParams {
     uint32_t height;
 };
 
-// Global state
+// ARCH: [Critical] Global state for Physarum - never initialized or used.
+// These globals shadow/conflict with WebGPURenderer's member variables.
 wgpu::Device device;
 wgpu::Queue queue;
 wgpu::Buffer agentBuffer[2];  // Double buffer
@@ -58,32 +85,37 @@ wgpu::ShaderModule renderShader;
 WGPUTexture videoTexture = nullptr;
 WGPUTextureView videoView = nullptr;
 
-// Simulation state
+// ARCH: [High] Global state with 15+ magic number initializers.
+// These should be named constants or loaded from config.
 int currentBuffer = 0;
 SimParams params = {
-    0.785f,  // sensorAngle (PI/4)
-    9.0f,    // sensorDist
-    0.1f,    // turnSpeed
-    0.95f,   // decayRate
-    0.5f,    // depositAmount
-    0.3f,    // videoFoodStrength
-    0.5f,    // audioPulseStrength
-    0.5f,    // mouseAttraction
+    0.785f,  // sensorAngle (PI/4) - MAGIC NUMBER
+    9.0f,    // sensorDist - MAGIC NUMBER
+    0.1f,    // turnSpeed - MAGIC NUMBER
+    0.95f,   // decayRate - MAGIC NUMBER
+    0.5f,    // depositAmount - MAGIC NUMBER
+    0.3f,    // videoFoodStrength - MAGIC NUMBER
+    0.5f,    // audioPulseStrength - MAGIC NUMBER
+    0.5f,    // mouseAttraction - MAGIC NUMBER
     0.5f, 0.5f, // mouseX, mouseY
     0.0f, 0.0f, 0.0f, // audio bands
     0.0f,    // time
-    50000,   // agentCount
-    1920,    // width
-    1080     // height
+    50000,   // agentCount - MAGIC NUMBER
+    1920,    // width - MAGIC NUMBER
+    1080     // height - MAGIC NUMBER
 };
 
 std::vector<Agent> agents;
 bool wasmMode = true;
 
-// Global renderer instance
+// ARCH: [Medium] Global renderer pointer is raw - potential memory leak
+// if exception thrown during initialization. Use std::unique_ptr.
 WebGPURenderer* g_renderer = nullptr;
 
 // Compute shader WGSL (embedded)
+// ARCH: [High] 200+ lines of embedded WGSL makes this file unmaintainable.
+// Shaders should be in separate .wgsl files loaded at runtime
+// or at least in separate header files.
 const char* COMPUTE_WGSL = R"(
 struct Agent {
     pos: vec2<f32>,
@@ -248,27 +280,43 @@ fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
 )";
 
 // Forward declarations
+// ARCH: [High] These functions are declared but implemented after being needed.
+// Organize code to avoid forward declarations where possible.
 void createPipelines();
 void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message);
 void onDeviceRequest(wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::StringView message);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// C API EXPORTS - These are the actual working functions
+// ═══════════════════════════════════════════════════════════════════════════════
+
 extern "C" {
+    // ARCH: [Medium] Inconsistent naming convention:
+    // - Some functions use camelCase: initWasmRenderer, loadShader
+    // - Some use PascalCase: SetActiveShader (not exported here)
+    // Standardize on one convention for C API exports.
+
     EMSCRIPTEN_KEEPALIVE
     void initWasmRenderer(int width, int height, int agentCount) {
+        // ARCH: [High] Using raw new without try-catch. If WebGPURenderer
+        // constructor throws, program terminates.
         if (!g_renderer) {
             g_renderer = new WebGPURenderer();
         }
         g_renderer->Initialize(width, height);
 
+        // ARCH: [Critical] These params are for the DEAD Physarum code,
+        // not for WebGPURenderer. Confusing and misleading.
         params.width = width;
         params.height = height;
         params.agentCount = agentCount;
 
-        // Initialize agents
+        // Initialize agents for Physarum (dead code)
         agents.resize(agentCount);
         for (uint32_t i = 0; i < agentCount; i++) {
             agents[i].x = (float)(rand() % width);
             agents[i].y = (float)(rand() % height);
+            // ARCH: [Low] Magic number 6.28318f = 2*PI. Use constant: constexpr float TWO_PI = 6.28318530718f;
             agents[i].angle = ((float)rand() / (float)RAND_MAX) * 6.28318f;
             agents[i].speed = 1.0f;
         }
@@ -276,15 +324,16 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void updateVideoFrame(EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx) {
-        // Video frame update from JS
-        // Import external texture from video element
-        // videoTexture = emscripten_webgpu_import_texture(ctx);
-        // Note: External texture import needs proper WebGL context handling
-        (void)ctx; // Suppress unused warning for now
+        // ARCH: [High] Function is STUB - doesn't actually update video frame.
+        // The working implementation is uploadVideoFrame() below.
+        // This function appears to be for WebGL texture import which was never completed.
+        (void)ctx;
     }
 
     EMSCRIPTEN_KEEPALIVE
     void updateAudioData(float bass, float mid, float treble) {
+        // ARCH: [High] Updates dead Physarum params, not WebGPURenderer.
+        // WebGPURenderer has no audio support currently.
         params.audioBass = bass;
         params.audioMid = mid;
         params.audioTreble = treble;
@@ -292,12 +341,16 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void updateMousePos(float x, float y) {
+        // ARCH: [High] Updates dead Physarum params, not WebGPURenderer.
+        // The JS bridge calls setActiveShader path instead.
         params.mouseX = x;
         params.mouseY = y;
     }
 
     EMSCRIPTEN_KEEPALIVE
     void toggleRenderer(int useWasm) {
+        // ARCH: [Medium] wasmMode is only checked in DEAD renderLoop().
+        // This toggle has no effect on actual rendering.
         wasmMode = useWasm != 0;
     }
 
@@ -312,6 +365,8 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     int loadShader(const char* id, const char* wgslCode) {
+        // ARCH: [High] No validation of input pointers.
+        // Null id or wgslCode will crash.
         if (!g_renderer) return 0;
         return g_renderer->LoadShader(id, wgslCode) ? 1 : 0;
     }
@@ -342,6 +397,8 @@ extern "C" {
         return g_renderer && g_renderer->IsInitialized() ? 1 : 0;
     }
 
+    // ARCH: [Critical] Function name is misleading - it calls Render(),
+    // not updateUniforms(). This suggests confusion in design.
     EMSCRIPTEN_KEEPALIVE
     void updateUniforms() {
         if (g_renderer) {
@@ -350,7 +407,13 @@ extern "C" {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// DEAD CODE - Physarum simulation functions never called
+// ═══════════════════════════════════════════════════════════════════════════════
+
 void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
+    // ARCH: [Critical] DEAD CODE - Never called because WebGPURenderer
+    // creates its own device in CreateDevice().
     if (status != wgpu::RequestAdapterStatus::Success) {
         printf("Adapter failed: %s\n", message.data ? message.data : "");
         return;
@@ -361,6 +424,9 @@ void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, 
 }
 
 extern "C" {
+    // ARCH: [Medium] Why is this EMSCRIPTEN_KEEPALIVE block separate from above?
+    // Consolidate all exports in one location for maintainability.
+
     EMSCRIPTEN_KEEPALIVE
     void loadImageData(const uint8_t* data, int width, int height) {
         if (!g_renderer) return;
@@ -369,6 +435,8 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     void uploadVideoFrame(const uint8_t* data, int width, int height) {
+        // ARCH: [Medium] This is the actual working video frame function,
+        // but named inconsistently with updateVideoFrame() stub above.
         if (!g_renderer) return;
         g_renderer->UpdateVideoFrame(data, width, height);
     }
@@ -381,7 +449,8 @@ extern "C" {
 }
 
 void createPipelines() {
-    // Create shader modules
+    // ARCH: [Critical] DEAD CODE - Never called. WebGPURenderer creates
+    // its own pipelines in CreateRenderPipeline().
     wgpu::ShaderSourceWGSL wgslDesc{};
     wgpu::ShaderModuleDescriptor shaderDesc{};
     shaderDesc.nextInChain = &wgslDesc;
@@ -396,6 +465,7 @@ void createPipelines() {
 }
 
 void onDeviceRequest(wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::StringView message) {
+    // ARCH: [Critical] DEAD CODE - Never called.
     if (status != wgpu::RequestDeviceStatus::Success) {
         printf("Device failed: %s\n", message.data ? message.data : "");
         return;
@@ -410,8 +480,12 @@ void onDeviceRequest(wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::S
 }
 
 void renderLoop() {
+    // ARCH: [Critical] DEAD CODE - This is the Physarum render loop.
+    // Never called because main() sets up a different loop or
+    // JavaScript drives rendering via updateUniforms().
     if (!wasmMode || !device) return;
 
+    // ARCH: [Low] Magic number 0.016f assumes 60 FPS. Use delta time.
     params.time += 0.016f;
 
     // Update uniform buffer
@@ -424,6 +498,8 @@ void renderLoop() {
         wgpu::ComputePassEncoder pass = encoder.BeginComputePass();
         pass.SetPipeline(agentPipeline);
         pass.SetBindGroup(0, agentBindGroup[currentBuffer]);
+        // ARCH: [Medium] Magic numbers 255 and 256.
+        // Use named constants: constexpr uint32_t WorkgroupSize = 256;
         pass.DispatchWorkgroups((params.agentCount + 255) / 256);
         pass.End();
     }
@@ -433,6 +509,7 @@ void renderLoop() {
         wgpu::ComputePassEncoder pass = encoder.BeginComputePass();
         pass.SetPipeline(trailPipeline);
         pass.SetBindGroup(0, agentBindGroup[currentBuffer]);
+        // ARCH: [Medium] Magic numbers 15 and 16.
         pass.DispatchWorkgroups((params.width + 15) / 16, (params.height + 15) / 16);
         pass.End();
     }
@@ -445,7 +522,25 @@ void renderLoop() {
 }
 
 int main() {
+    // ARCH: [Medium] main() is called during WASM initialization but
+    // doesn't actually initialize the renderer. JavaScript must call
+    // initWasmRenderer() separately. This split initialization is confusing.
     printf("Pixelocity WASM Renderer initialized\n");
+    
+    // ARCH: [Critical] This sets up renderLoop() which is DEAD CODE
+    // that uses Physarum simulation, not the WebGPURenderer.
+    // The actual rendering is driven by JavaScript calling updateUniforms().
     emscripten_set_main_loop(renderLoop, 0, true);
     return 0;
 }
+
+// ARCH: OVERALL SUMMARY FOR main.cpp:
+// This file has severe architectural issues:
+// 1. Contains two completely separate rendering systems that don't interact
+// 2. ~60% of the code is dead/unreachable
+// 3. Mixes C and C++ WebGPU APIs inconsistently
+// 4. Global state management is error-prone
+// 5. EMSCRIPTEN_KEEPALIVE exports are scattered across multiple blocks
+//
+// RECOMMENDATION: Complete rewrite. Remove all Physarum code to a separate
+// optional module, consolidate C API exports, use consistent WebGPU API style.

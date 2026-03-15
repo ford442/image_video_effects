@@ -6,14 +6,21 @@
 #include <string>
 #include <cstring>
 
+// ARCH: [Medium] Inconsistent include style: <cstring> vs <string>
+// Both are used - consolidate to C++ headers only.
+
 namespace pixelocity {
 
 // JavaScript bridge functions
 extern "C" {
+    // ARCH: [High] These extern declarations duplicate interface in main.cpp.
+    // Consider a single header file for JS/C++ interface contracts.
     extern void jsRequestAnimationFrame(void (*callback)(double time, void* userData), void* userData);
     extern void jsConsoleLog(const char* msg);
 }
 
+// ARCH: [Medium] MakeStringView is a helper that belongs in a utility header.
+// Consider WebGPUUtils.h for API adaptation helpers.
 // Helper for WGPUStringView (new API uses this instead of const char*)
 static WGPUStringView MakeStringView(const char* str) {
     WGPUStringView view;
@@ -34,6 +41,8 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight) {
     canvasWidth_ = canvasWidth;
     canvasHeight_ = canvasHeight;
     
+    // ARCH: [Low] Using printf for logging. Consider abstracting behind
+    // a Logger interface to allow different output targets (console, file, etc.)
     printf("🚀 Pixelocity WASM Renderer initializing...\n");
     printf("   Canvas: %dx%d\n", canvasWidth_, canvasHeight_);
 
@@ -67,6 +76,9 @@ void WebGPURenderer::Shutdown() {
     shaders_.clear();
 
     // Clean up textures
+    // ARCH: [High] Manual resource cleanup is error-prone.
+    // This pattern repeats for every resource type.
+    // Refactor using RAII wrappers: wgpu::Texture, wgpu::Buffer, etc.
     if (imageTexture_) wgpuTextureRelease(imageTexture_);
     if (videoTexture_) wgpuTextureRelease(videoTexture_);
     if (readTexture_) wgpuTextureRelease(readTexture_);
@@ -122,6 +134,8 @@ bool WebGPURenderer::CreateDevice() {
     
     adapter_ = nullptr;
     
+    // ARCH: [Medium] Lambda captures by reference but stores pointer to adapter_.
+    // This works but is fragile - callback lifetime must outlive the call.
     auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, 
                                WGPUStringView message, void* userdata1, void* userdata2) {
         (void)userdata2; // Unused
@@ -173,10 +187,10 @@ bool WebGPURenderer::CreateDevice() {
 
     queue_ = wgpuDeviceGetQueue(device_);
     
-    // Note: Error callback setup removed - in the new WebGPU C API,
-    // uncaptured error callbacks may need to be set differently or are
-    // handled via device lost callbacks. For now, we skip this.
-    // TODO: Investigate proper error handling for emdawnwebgpu
+    // ARCH: [High] Error handling is TODO but never implemented.
+    // Device errors (shader compilation failures, etc.) will go unreported.
+    // This makes debugging shaders extremely difficult.
+    // TODO: Implement proper error handling for emdawnwebgpu
 
     return true;
 }
@@ -205,6 +219,8 @@ bool WebGPURenderer::CreateResources() {
     comparisonSampler_ = wgpuDeviceCreateSampler(device_, &samplerDesc);
 
     // Create uniform buffer (size: 12 floats base + 50*4 floats for ripples)
+    // ARCH: [Medium] Magic number 12 should be named constant.
+    // Also, size calculation should use sizeof(Uniforms) for consistency.
     constexpr size_t uniformSize = sizeof(float) * (12 + MAX_RIPPLES * 4);
     WGPUBufferDescriptor bufferDesc = {};
     bufferDesc.nextInChain = nullptr;
@@ -215,12 +231,15 @@ bool WebGPURenderer::CreateResources() {
     uniformBuffer_ = wgpuDeviceCreateBuffer(device_, &bufferDesc);
 
     // Create extra buffer (256 floats)
+    // ARCH: [Medium] Magic number 256 - document what this buffer is for
+    // or use named constant.
     bufferDesc.label = MakeStringView("Extra Buffer");
     bufferDesc.size = 256 * sizeof(float);
     bufferDesc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
     extraBuffer_ = wgpuDeviceCreateBuffer(device_, &bufferDesc);
 
     // Create plasma buffer
+    // ARCH: [Medium] Magic number 48 = sizeof(vec4<f32>) * 3? Document this.
     bufferDesc.label = MakeStringView("Plasma Buffer");
     bufferDesc.size = MAX_PLASMA_BALLS * 48;
     bufferDesc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
@@ -280,6 +299,9 @@ bool WebGPURenderer::CreateResources() {
     wgpuQueueWriteTexture(queue_, &emptyDest, black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
     // Initialize data texture C to zeros
+    // ARCH: [High] Allocating large vector every initialization.
+    // Consider using wgpuCommandEncoderClearBuffer if available
+    // or reusing a static zero buffer.
     std::vector<float> zeros(canvasWidth_ * canvasHeight_ * 4, 0.0f);
     
     WGPUTexelCopyTextureInfo dataDest = {};
@@ -290,6 +312,8 @@ bool WebGPURenderer::CreateResources() {
     
     WGPUTexelCopyBufferLayout dataLayout = {};
     dataLayout.offset = 0;
+    // ARCH: [Medium] Magic number 16 = sizeof(float) * 4 (RGBA)
+    // Use named constant for clarity.
     dataLayout.bytesPerRow = static_cast<uint32_t>(canvasWidth_ * 16);
     dataLayout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
     
@@ -300,11 +324,14 @@ bool WebGPURenderer::CreateResources() {
     
     wgpuQueueWriteTexture(queue_, &dataDest, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &dataExtent);
 
+    // ARCH: [Critical] No validation that resources were created successfully.
+    // If device is lost or OOM, nullptrs will cause crashes later.
     return true;
 }
 
 void WebGPURenderer::CreateBindGroupLayout() {
     // Create the universal bind group layout for compute shaders
+    // ARCH: [Medium] Magic number 13 should be named constant (BindingCount).
     WGPUBindGroupLayoutEntry entries[13] = {};
     
     // Binding 0: Filtering sampler
@@ -434,6 +461,8 @@ void WebGPURenderer::CreateRenderPipeline() {
     wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
     
     WGPUShaderModuleDescriptor shaderDesc = {};
+    // ARCH: [Low] C-style cast to WGPUChainedStruct* - technically safe but
+    // consider using C++ style static_cast for consistency.
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
     
     wgslSource.code = MakeStringView(vertexShaderCode);
@@ -455,7 +484,9 @@ void WebGPURenderer::CreateRenderPipeline() {
 
     WGPUColorTargetState colorTarget = {};
     colorTarget.nextInChain = nullptr;
-    colorTarget.format = WGPUTextureFormat_BGRA8Unorm; // Standard canvas format
+    // ARCH: [High] Hardcoded BGRA8Unorm assumes canvas format.
+    // Should query actual surface format for portability.
+    colorTarget.format = WGPUTextureFormat_BGRA8Unorm;
     colorTarget.blend = &blend;
     colorTarget.writeMask = WGPUColorWriteMask_All;
 
@@ -488,7 +519,9 @@ void WebGPURenderer::CreateRenderPipeline() {
     WGPURenderPipelineDescriptor pipelineDesc = {};
     pipelineDesc.nextInChain = nullptr;
     pipelineDesc.label = MakeStringView("Render Pipeline");
-    pipelineDesc.layout = nullptr; // Auto layout
+    // ARCH: [Medium] Using auto layout (nullptr) instead of explicit layout.
+    // This works but is less efficient as layout is inferred at runtime.
+    pipelineDesc.layout = nullptr;
     pipelineDesc.vertex = vertexState;
     pipelineDesc.primitive = primitiveState;
     pipelineDesc.depthStencil = nullptr;
@@ -516,6 +549,8 @@ void WebGPURenderer::CreateBindGroups() {
     viewDesc.arrayLayerCount = 1;
     viewDesc.aspect = WGPUTextureAspect_All;
 
+    // ARCH: [Medium] Array size 13 is hardcoded.
+    // Should use constexpr or std::array for type safety.
     WGPUBindGroupEntry entries[13] = {};
     
     entries[0].binding = 0;
@@ -600,6 +635,9 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
     shaderDesc.label = MakeStringView(id);
 
+    // ARCH: [High] No shader validation before creating module.
+    // Compilation errors will only be caught via device error callback
+    // which is not currently set up.
     WGPUShaderModule module = wgpuDeviceCreateShaderModule(device_, &shaderDesc);
     if (!module) {
         printf("❌ Failed to create shader module for '%s'\n", id);
@@ -614,6 +652,8 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     pipelineDesc.compute.module = module;
     pipelineDesc.compute.entryPoint = MakeStringView("main");
 
+    // ARCH: [Critical] Pipeline creation can fail if WGSL doesn't match
+    // the bind group layout. No error handling here.
     WGPUComputePipeline pipeline = wgpuDeviceCreateComputePipeline(device_, &pipelineDesc);
     if (!pipeline) {
         printf("❌ Failed to create compute pipeline for '%s'\n", id);
@@ -621,6 +661,7 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
         return false;
     }
 
+    // ARCH: [Low] ShaderPipeline could use constructor instead of field-by-field assignment.
     ShaderPipeline sp;
     sp.module = module;
     sp.pipeline = pipeline;
@@ -643,15 +684,21 @@ void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, in
     // Pixels outside the source image remain black.
     const int dstW = canvasWidth_;
     const int dstH = canvasHeight_;
+    // ARCH: [Low] Could use std::min instead of ternary for clarity.
     const int copyW = (width  < dstW) ? width  : dstW;
     const int copyH = (height < dstH) ? height : dstH;
 
+    // ARCH: [High] Large allocation every frame for video updates.
+    // Consider using a persistent staging buffer or texture pool.
     std::vector<float> floatData(static_cast<size_t>(dstW) * dstH * 4, 0.0f);
 
+    // ARCH: [Medium] Nested loops could be optimized with SIMD or
+    // GPU-based conversion using a compute shader.
     for (int y = 0; y < copyH; y++) {
         for (int x = 0; x < copyW; x++) {
             const int srcIdx = (y * width + x) * 4;
             const int dstIdx = (y * dstW  + x) * 4;
+            // ARCH: [Medium] Magic number 255.0f should be constant.
             floatData[dstIdx + 0] = data[srcIdx + 0] / 255.0f;
             floatData[dstIdx + 1] = data[srcIdx + 1] / 255.0f;
             floatData[dstIdx + 2] = data[srcIdx + 2] / 255.0f;
@@ -667,7 +714,8 @@ void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, in
 
     WGPUTexelCopyBufferLayout layout = {};
     layout.offset = 0;
-    layout.bytesPerRow = static_cast<uint32_t>(dstW) * 16; // 4 floats * 4 bytes
+    // ARCH: [Medium] Magic number 16 = sizeof(float) * 4
+    layout.bytesPerRow = static_cast<uint32_t>(dstW) * 16;
     layout.rowsPerImage = static_cast<uint32_t>(dstH);
 
     WGPUExtent3D extent = {};
@@ -688,12 +736,24 @@ void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height
     UploadRGBA8ToReadTexture(data, width, height);
 }
 
+// ARCH: [Medium] UpdateDepthMap is declared in header but not implemented.
+// This will cause linker errors if called.
+void WebGPURenderer::UpdateDepthMap(const float* data, int width, int height) {
+    // TODO: Implement depth map upload to depthTextureRead_
+    (void)data;
+    (void)width;
+    (void)height;
+}
+
 void WebGPURenderer::SetTime(float time) {
     currentTime_ = time;
 }
 
 void WebGPURenderer::SetResolution(float width, float height) {
-    // Currently fixed at initialization
+    // ARCH: [Medium] Stubs should log warning or have [[deprecated]] attribute.
+    // Silent no-op can confuse developers expecting dynamic resolution changes.
+    (void)width;
+    (void)height;
 }
 
 void WebGPURenderer::SetMouse(float x, float y, bool down) {
@@ -725,6 +785,8 @@ void WebGPURenderer::UpdateUniformBuffer() {
     if (!uniformBuffer_) return;
 
     // Build uniform data
+    // ARCH: [Critical] VLA (Variable Length Array) - non-standard C++.
+    // Use std::vector or std::array for portability.
     float uniformData[12 + MAX_RIPPLES * 4];
     
     // config: time, rippleCount, resolutionX, resolutionY
@@ -763,6 +825,25 @@ void WebGPURenderer::UpdateUniformBuffer() {
     wgpuQueueWriteBuffer(queue_, uniformBuffer_, 0, uniformData, sizeof(uniformData));
 }
 
+// MISSING: Multi-slot render pipeline
+// The TypeScript renderer supports chaining 3 shader slots:
+//   Slot 0 (e.g., 'liquid') -> pingPongTexture1
+//   Slot 1 (e.g., 'distortion') -> pingPongTexture2  
+//   Slot 2 (e.g., 'glow') -> writeTexture -> screen
+//
+// Each slot has its own:
+//   - Shader selection
+//   - Parameters (zoomParam1-4, lightStrength, etc.)
+//   - Texture bindings (read from previous slot)
+//
+// Current implementation only supports single shader execution.
+// Need to add:
+//   - Slot state array (3 slots)
+//   - Chained compute pass execution
+//   - Per-slot parameter binding
+// Priority: CRITICAL
+// Effort: 2-3 weeks
+
 void WebGPURenderer::Render() {
     if (!initialized_ || activeShaderId_.empty()) return;
 
@@ -771,6 +852,12 @@ void WebGPURenderer::Render() {
 
     // Update uniforms
     UpdateUniformBuffer();
+    
+    // MISSING: Audio data integration
+    // Audio analyzer data (bass, mid, treble) should be uploaded to
+    // extraBuffer_ or added to uniform structure for shader access.
+    // TypeScript: updateAudioData(bass, mid, treble) -> uniform/extraBuffer
+    // Priority: HIGH
 
     // Create command encoder
     WGPUCommandEncoderDescriptor encoderDesc = {};
@@ -786,6 +873,9 @@ void WebGPURenderer::Render() {
 
     wgpuComputePassEncoderSetPipeline(computePass, it->second.pipeline);
     wgpuComputePassEncoderSetBindGroup(computePass, 0, computeBindGroup_, 0, nullptr);
+    
+    // ARCH: [Medium] Magic numbers 7 and 8 for workgroup size calculation.
+    // Use named constants: constexpr int WorkgroupSize = 8;
     wgpuComputePassEncoderDispatchWorkgroups(
         computePass, 
         (canvasWidth_ + 7) / 8, 
@@ -795,6 +885,8 @@ void WebGPURenderer::Render() {
     wgpuComputePassEncoderEnd(computePass);
 
     // Copy writeTexture to readTexture for next frame (ping-pong)
+    // ARCH: [High] Code duplication for texture copying.
+    // Refactor into helper method: CopyTexture(encoder, src, dst, extent)
     WGPUTexelCopyTextureInfo srcCopy1 = {};
     srcCopy1.texture = writeTexture_;
     srcCopy1.mipLevel = 0;
@@ -852,12 +944,16 @@ void WebGPURenderer::Render() {
     wgpuQueueSubmit(queue_, 1, &cmdBuffer);
 
     // Cleanup
+    // ARCH: [High] Releasing encoder before cmdBuffer is questionable ordering.
+    // Typically release cmdBuffer after submit, then encoder.
     wgpuComputePassEncoderRelease(computePass);
     wgpuCommandEncoderRelease(encoder);
     wgpuCommandBufferRelease(cmdBuffer);
 
     // Update FPS
     frameCount_++;
+    // ARCH: [Low] emscripten_get_now() returns time in milliseconds.
+    // Magic number 1000.0f should be named constant.
     float currentTime = emscripten_get_now() / 1000.0f;
     if (currentTime - lastFrameTime_ >= 1.0f) {
         fps_ = frameCount_ / (currentTime - lastFrameTime_);
@@ -867,8 +963,8 @@ void WebGPURenderer::Render() {
 }
 
 void WebGPURenderer::Present() {
-    // Surface presentation would happen here
-    // For Emscripten/WebGPU, this is handled by the browser's animation loop
+    // ARCH: [Low] Method documented as no-op should have comment explaining why.
+    // WebGPU surface presentation is handled by browser's animation loop.
 }
 
 } // namespace pixelocity

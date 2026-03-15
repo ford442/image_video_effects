@@ -9,6 +9,8 @@
 namespace pixelocity {
 
 // Uniform structure matching the WGSL shaders
+// PERF: MEDIUM - Structure is 848 bytes (212 floats). Consider alignment hints
+// to ensure GPU layout matches exactly. Add static_assert for size validation.
 struct Uniforms {
     float config[4];       // time, rippleCount, resolutionX, resolutionY
     float zoom_config[4];  // time, mouseX, mouseY, mouseDown
@@ -29,6 +31,10 @@ struct ShaderPipeline {
     std::string name;
 };
 
+// PERF: HIGH - Consider adding performance monitoring members:
+// - Frame time histogram for adaptive quality
+// - GPU timestamp queries for accurate GPU timing
+// - Memory usage tracking for leak detection
 class WebGPURenderer {
 public:
     WebGPURenderer();
@@ -62,6 +68,10 @@ public:
     // State queries
     bool IsInitialized() const { return initialized_; }
     float GetFPS() const { return fps_; }
+    
+    // PERF: LOW - Add performance query methods:
+    // float GetGPUTime() const { return gpuTimeMs_; }
+    // size_t GetMemoryUsage() const { return memoryUsage_; }
 
 private:
     bool CreateDevice();
@@ -110,6 +120,10 @@ private:
     WGPUBuffer uniformBuffer_ = nullptr;
     WGPUBuffer extraBuffer_ = nullptr;
     WGPUBuffer plasmaBuffer_ = nullptr;
+    
+    // PERF: HIGH - Add staging buffer for async uploads:
+    // WGPUBuffer stagingBuffer_ = nullptr;
+    // void* mappedStagingPtr_ = nullptr;
 
     // Shader storage
     std::unordered_map<std::string, ShaderPipeline> shaders_;
@@ -122,6 +136,11 @@ private:
     bool initialized_ = false;
     int canvasWidth_ = 0;
     int canvasHeight_ = 0;
+    
+    // PERF: MEDIUM - Precompute workgroup dispatch counts to avoid per-frame division:
+    // uint32_t workgroupCountX_ = 0;
+    // uint32_t workgroupCountY_ = 0;
+    
     float currentTime_ = 0.0f;
     float mouseX_ = 0.5f;
     float mouseY_ = 0.5f;
@@ -131,6 +150,10 @@ private:
     float fps_ = 0.0f;
     float lastFrameTime_ = 0.0f;
     int frameCount_ = 0;
+    
+    // PERF: LOW - Performance tracking:
+    // float gpuTimeMs_ = 0.0f;
+    // WGPUQuerySet timestampQuerySet_ = nullptr;
     
     static constexpr int MAX_RIPPLES = 50;
     static constexpr int MAX_PLASMA_BALLS = 50;

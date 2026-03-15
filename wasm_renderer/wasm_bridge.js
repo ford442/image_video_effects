@@ -10,6 +10,8 @@ let wasmModule = null;
 let canvas = null;
 let ctx = null;
 
+// ARCH: [Medium] ctx is declared but never used. Remove dead variable.
+
 // Renderer state
 const state = {
   initialized: false,
@@ -24,6 +26,10 @@ const state = {
   ripples: []
 };
 
+// ARCH: [Medium] State duplication: JS maintains state that C++ also maintains.
+// This can lead to synchronization issues. Consider making JS state read-only
+// and query C++ for authoritative values.
+
 /**
  * Initialize the WASM renderer
  * @param {HTMLCanvasElement} canvasElement - The canvas to render to
@@ -36,15 +42,22 @@ export async function initWasmRenderer(canvasElement) {
   }
 
   canvas = canvasElement;
+  // ARCH: [Medium] Hardcoded fallback 2048 should be named constant.
+  // Also, canvas.width may not reflect actual display size (use clientWidth).
   state.canvasWidth = canvas.width || 2048;
   state.canvasHeight = canvas.height || 2048;
 
   try {
     // Dynamically import the WASM module
+    // ARCH: [Low] Hardcoded path './pixelocity_wasm.js' assumes specific build output.
+    // Should be configurable via parameter or environment variable.
     const wasm = await import('./pixelocity_wasm.js');
     wasmModule = await wasm.default();
 
     // Initialize the C++ renderer
+    // ARCH: [High] Only passes width and height, but C++ function signature
+    // is initWasmRenderer(int width, int height, int agentCount).
+    // Missing third parameter causes undefined behavior!
     const result = wasmModule.ccall(
       'initWasmRenderer',
       'number',
@@ -91,6 +104,8 @@ export function loadShader(id, wgslCode) {
   }
 
   // Allocate memory for the strings
+  // ARCH: [High] Memory allocation without try-catch.
+  // If _malloc fails (OOM), subsequent operations will crash.
   const idLen = wasmModule.lengthBytesUTF8(id) + 1;
   const idPtr = wasmModule._malloc(idLen);
   wasmModule.stringToUTF8(id, idPtr, idLen);
@@ -99,6 +114,8 @@ export function loadShader(id, wgslCode) {
   const codePtr = wasmModule._malloc(codeLen);
   wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
 
+  // ARCH: [Critical] If ccall throws exception, memory is leaked.
+  // Use try-finally to ensure _free is always called.
   const result = wasmModule.ccall(
     'loadShader',
     'number',
@@ -145,6 +162,10 @@ export function updateUniforms(uniforms = {}) {
     state.zoomParams = uniforms.zoomParams;
   }
 
+  // ARCH: [Critical] This ccall signature doesn't match C++ implementation!
+  // C++ has: void updateUniforms() - no parameters
+  // But this passes 8 arguments. This will cause stack corruption or crash.
+  // The C++ code ignores these values and reads from internal state instead.
   wasmModule.ccall(
     'updateUniforms',
     null,
@@ -232,6 +253,8 @@ export async function loadShaderFromURL(id, url) {
 export function uploadImageData(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
 
+  // ARCH: [High] No validation that rgbaPixels.length matches width*height*4.
+  // Passing wrong size will cause memory corruption.
   const byteLen = rgbaPixels.length;
   const ptr = wasmModule._malloc(byteLen);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);
@@ -248,12 +271,25 @@ export function uploadImageData(rgbaPixels, width, height) {
 export function uploadVideoFrame(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
 
+  // ARCH: [High] Same memory safety issue as uploadImageData.
+  // No size validation.
+  // ARCH: [Medium] Allocating and freeing every frame is inefficient.
+  // Consider using a persistent pinned buffer.
   const byteLen = rgbaPixels.length;
   const ptr = wasmModule._malloc(byteLen);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);
   wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
   wasmModule._free(ptr);
 }
+
+// ARCH: [High] Missing API functions that exist in C++ but not exposed:
+// - SetTime(float) - exists in C++, not in JS
+// - SetResolution(float, float) - exists in C++, not in JS
+// - SetMouse(float, float, bool) - exists in C++, not in JS
+// - SetZoomParams(float, float, float, float) - exists in C++, not in JS
+// - UpdateDepthMap - exists in C++, not in JS
+//
+// This means the JS bridge cannot fully control the renderer.
 
 // Default export
 export default {
@@ -270,3 +306,10 @@ export default {
   uploadImageData,
   uploadVideoFrame
 };
+
+// ARCH: OVERALL SUMMARY FOR wasm_bridge.js:
+// 1. C/JS API mismatch in updateUniforms() - Critical bug
+// 2. Missing memory safety validations
+// 3. Missing wrapper functions for several C++ APIs
+// 4. Inefficient per-frame memory allocation
+// 5. No TypeScript type definitions for better IDE support
