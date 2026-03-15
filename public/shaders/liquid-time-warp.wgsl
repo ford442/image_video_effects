@@ -1,7 +1,12 @@
 // ────────────────────────────────────────────────────────────────────────────────
-//  Liquid Time Warp
+//  Liquid Time Warp with Alpha Physics
 //  Combines liquid distortion with temporal feedback.
 //  The history is advected by a flow field influenced by the mouse.
+//
+//  ALPHA PHYSICS:
+//  - Temporal feedback accumulates opacity
+//  - Flow velocity affects transparency
+//  - Wipe effect clears alpha
 // ────────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
@@ -35,6 +40,59 @@ fn noise(p: vec2<f32>) -> f32 {
                    dot(hash(pi + vec2<f32>(1.0, 0.0)), pf - vec2<f32>(1.0, 0.0)), w.x),
                mix(dot(hash(pi + vec2<f32>(0.0, 1.0)), pf - vec2<f32>(0.0, 1.0)),
                    dot(hash(pi + vec2<f32>(1.0, 1.0)), pf - vec2<f32>(1.0, 1.0)), w.x), w.y);
+}
+
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate time warp alpha
+fn calculateTimeWarpAlpha(
+    historyAlpha: f32,
+    flowMag: f32,
+    wipeFactor: f32,
+    decay: f32
+) -> f32 {
+  // Fresnel based on flow
+  let F0 = 0.02;
+  let normal = normalize(vec3<f32>(flowMag * 0.5, flowMag * 0.5, 1.0));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let fresnel = schlickFresnel(max(0.0, dot(viewDir, normal)), F0);
+  
+  // Flow magnitude affects transparency
+  let flowThickness = flowMag * 2.0;
+  let absorption = exp(-flowThickness * 1.5);
+  
+  // Decay affects accumulation
+  let decayAlpha = mix(0.6, 0.95, decay);
+  
+  // History accumulates, but wipe clears it
+  let accumulatedAlpha = mix(historyAlpha * decayAlpha, 0.3, wipeFactor);
+  
+  // Combine with current flow
+  let baseAlpha = mix(0.4, accumulatedAlpha, absorption);
+  
+  let alpha = baseAlpha * (1.0 - fresnel * 0.25);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate time warp color with flow tint
+fn calculateTimeWarpColor(
+    videoColor: vec3<f32>,
+    historyColor: vec3<f32>,
+    flow: vec2<f32>,
+    decay: f32,
+    wipeFactor: f32
+) -> vec3<f32> {
+  // Mix current video with decayed history
+  let mixed = mix(videoColor, historyColor, decay * (1.0 - wipeFactor));
+  
+  // Flow adds subtle tint
+  let flowTint = vec3<f32>(0.0, 0.05, 0.08) * length(flow);
+  
+  return mixed + flowTint;
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -87,26 +145,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // 3. Advect History (Sample previous frame with offset)
     let historyUV = uv - flow * distortAmt;
-    let historyColor = textureSampleLevel(feedbackTex, videoSampler, historyUV, 0.0).rgba;
+    let historySample = textureSampleLevel(feedbackTex, videoSampler, historyUV, 0.0);
+    let historyColor = historySample.rgb;
+    let historyAlpha = historySample.a;
 
     // 4. Sample Current Video
-    let videoColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgba;
+    let videoSample = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
+    let videoColor = videoSample.rgb;
 
     // 5. Combine (Feedback Loop)
     // If mouse is very close, reveal more fresh video (wipe effect)
     let wipeFactor = smoothstep(0.05, 0.0, mDist) * isMouseDown;
 
-    // Mix current video with decayed history
-    var finalColor = mix(videoColor, historyColor, decay * (1.0 - wipeFactor));
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // ALPHA CALCULATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    let flowMag = length(flow);
+    
+    // Calculate color
+    let finalColor = calculateTimeWarpColor(videoColor, historyColor, flow, decay, wipeFactor);
+    
+    // Calculate alpha
+    let alpha = calculateTimeWarpAlpha(historyAlpha, flowMag, wipeFactor, decay);
 
     // Prevent feedback explosion (clamp or slight darkening)
-    finalColor = clamp(finalColor, vec4<f32>(0.0), vec4<f32>(1.2));
+    let clampedColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.2));
 
     // Write to feedback buffer for next frame
-    textureStore(feedbackOut, gid.xy, finalColor);
+    textureStore(feedbackOut, gid.xy, vec4<f32>(clampedColor, alpha));
 
     // Write to screen
-    textureStore(outTex, gid.xy, finalColor);
+    textureStore(outTex, gid.xy, vec4<f32>(clampedColor, alpha));
 
     // Pass through depth
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
