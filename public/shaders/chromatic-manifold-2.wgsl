@@ -1,8 +1,15 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Chromatic Manifold 2 - Enhanced Color-as-Dimension Topology
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Chromatic Manifold 2 - Enhanced Color-as-Dimension Topology with Wavelength-Alpha
 //  4-D space (x, y, depth, hue) with Möbius-like hue folding,
 //  depth curvature tensor, and growing feedback folds over time.
-// ────────────────────────────────────────────────────────────────────────────────
+//
+//  SCIENTIFIC MODEL:
+//  - Fold strength affects dispersion and alpha per channel
+//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
+//  - Red (650nm): lowest absorption, highest transmission
+//  - Blue (450nm): highest absorption, lowest transmission
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
@@ -19,18 +26,33 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var compSampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ────────────────────────────────────────────────────────────────────────────────
 
 struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=foldStrength, y=pivotHue, z=satScale, w=depthInfluence
-  zoom_config: vec4<f32>,       // x=noiseAmount, y=feedbackPersist, z=rippleAmp, w=curvePower
+  config:      vec4<f32>,
+  zoom_params: vec4<f32>,
+  zoom_config: vec4<f32>,
   ripples:     array<vec4<f32>, 50>,
 };
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SPECTRAL PHYSICS CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+const WAVELENGTH_RED:    f32 = 650.0;  // nm
+const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
+const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  WAVELENGTH-DEPENDENT ALPHA
+// ═══════════════════════════════════════════════════════════════════════════════
+fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
+    let lambda_norm = (800.0 - wavelength) / 400.0;
+    let absorption = mix(0.3, 1.0, lambda_norm);
+    return exp(-thickness * absorption);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //  RGB ↔ HSV conversion
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     var p = mix(vec4<f32>(c.b, c.g, K.w, K.z), vec4<f32>(c.g, c.b, K.x, K.y), step(c.b, c.g));
@@ -54,35 +76,31 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return rgb + vec3<f32>(v - c);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 //  Möbius-like hue fold around a pivot
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 fn foldHue(h: f32, pivot: f32, strength: f32) -> f32 {
     let delta = h - pivot;
-    // Non-linear fold creates Möbius-like twist
     let folded = pivot + sign(delta) * pow(abs(delta), strength);
     return fract(folded);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 //  Wrap-around modulo for hue gradients
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 fn wrapMod(x: f32, y: f32) -> f32 {
     return x - y * floor(x / y);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 //  2-D hash for noise
-// ───────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 fn hash2(p: vec2<f32>) -> f32 {
     var p2 = fract(p * vec2<f32>(123.456, 789.012));
     p2 = p2 + dot(p2, p2 + 45.678);
     return fract(p2.x * p2.y);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
-// ───────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
@@ -91,46 +109,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let texel = 1.0 / dims;
     let time = u.config.x;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ──────────────────────────────────────────────────────────────────────────
-    let foldStrength = u.zoom_params.x * 2.0 + 0.5;         // 0.5 - 2.5
-    let pivotHue = u.zoom_params.y;                          // 0 - 1
-    let satScale = u.zoom_params.z * 0.5 + 0.75;            // 0.75 - 1.25
-    let depthInfluence = u.zoom_params.w;                    // 0 - 1
-    let noiseAmount = u.zoom_config.x * 0.003;               // noise displacement
-    let feedbackPersist = u.zoom_config.y * 0.1 + 0.9;      // 0.9 - 1.0
-    let rippleAmp = u.zoom_config.z * 0.015;                 // ripple amplitude
-    let curvePower = u.zoom_config.w * 2.0 + 1.0;           // 1 - 3
+    // Parameters
+    let foldStrength = u.zoom_params.x * 2.0 + 0.5;
+    let pivotHue = u.zoom_params.y;
+    let satScale = u.zoom_params.z * 0.5 + 0.75;
+    let depthInfluence = u.zoom_params.w;
+    let noiseAmount = u.zoom_config.x * 0.003;
+    let feedbackPersist = u.zoom_config.y * 0.1 + 0.9;
+    let rippleAmp = u.zoom_config.z * 0.015;
+    let curvePower = u.zoom_config.w * 2.0 + 1.0;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  1. Read source color & depth
-    // ──────────────────────────────────────────────────────────────────────────
+    // Read source color & depth
     let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     let depthVal = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  2. Compute local hue gradient (with wrap-around handling)
-    // ──────────────────────────────────────────────────────────────────────────
+    // Compute local hue gradient (with wrap-around handling)
     let h = rgb2hsv(srcColor).x;
     let hR = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
     let hL = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
     let hU = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
     let hD = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(0.0, texel.y), 0.0).rgb).x;
 
-    // Wrap-around gradient (handle hue discontinuity at 0/1)
+    // Wrap-around gradient
     let gradX = wrapMod(hR - hL + 1.5, 1.0) - 0.5;
     let gradY = wrapMod(hU - hD + 1.5, 1.0) - 0.5;
     let hueGrad = vec2<f32>(gradX, gradY);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  3. Depth curvature tensor
-    // ──────────────────────────────────────────────────────────────────────────
+    // Depth curvature tensor
     let curvature = pow(depthVal, curvePower) * depthInfluence;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  4. Calculate fold displacement
-    // ──────────────────────────────────────────────────────────────────────────
+    // Calculate fold displacement
     let dispBase = hueGrad * foldStrength * 0.05 * (1.0 + curvature);
 
     // Add temporal noise
@@ -142,9 +150,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var totalDisp = dispBase + noiseDisp;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  5. Mouse-driven ripples
-    // ──────────────────────────────────────────────────────────────────────────
+    // Mouse-driven ripples
     let rippleCount = u32(u.config.y);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let r = u.ripples[i];
@@ -165,30 +171,42 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  6. Sample displaced UV for color
-    // ──────────────────────────────────────────────────────────────────────────
+    // Sample displaced UV for color
     let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
     let displacedColor = textureSampleLevel(videoTex, videoSampler, displacedUV, 0.0).rgb;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  7. Fold the hue (Möbius-like effect)
-    // ──────────────────────────────────────────────────────────────────────────
+    // Fold the hue (Möbius-like effect)
     var hsv = rgb2hsv(displacedColor);
     hsv.x = foldHue(hsv.x, pivotHue, foldStrength);
     hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
     let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  8. Feedback: blend with previous frame (folds grow over time)
-    // ──────────────────────────────────────────────────────────────────────────
+    // Feedback: blend with previous frame
     let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
     let finalColor = mix(foldedColor, prev, feedbackPersist);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  9. Write outputs
-    // ──────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    // ═══════════════════════════════════════════════════════════════════════════════
+    //  WAVELENGTH-DEPENDENT ALPHA
+    //  Thickness derived from fold strength and curvature
+    // ═══════════════════════════════════════════════════════════════════════════════
+    let foldThickness = foldStrength * 0.5 + curvature * 2.0 + length(totalDisp) * 10.0;
+    let dispersionThickness = foldThickness;
+    
+    let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
+    let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
+    let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
+    
+    let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
+    let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
+    
+    let alphaModulatedColor = vec3<f32>(
+        finalColor.r * alphaR,
+        finalColor.g * alphaG,
+        finalColor.b * alphaB
+    );
+
+    // Write outputs
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(alphaModulatedColor, finalAlpha));
     textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(alphaModulatedColor, finalAlpha));
 }

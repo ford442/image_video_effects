@@ -1,7 +1,15 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Chromatic Focus Interactive
-//  Depth-of-field like effect with strong chromatic aberration away from mouse.
-// ────────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Chromatic Focus Interactive - DOF effect with wavelength-dependent alpha
+//  Category: distortion
+//  Features: depth-of-field, chromatic-aberration, wavelength-dependent-alpha
+//
+//  SCIENTIFIC MODEL:
+//  - Focus-based dispersion affects both position AND alpha per channel
+//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
+//  - Red (650nm): lowest absorption, highest transmission
+//  - Blue (450nm): highest absorption, lowest transmission
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
@@ -26,6 +34,22 @@ struct Uniforms {
   ripples:     array<vec4<f32>, 50>,
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SPECTRAL PHYSICS CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+const WAVELENGTH_RED:    f32 = 650.0;  // nm
+const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
+const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  WAVELENGTH-DEPENDENT ALPHA
+// ═══════════════════════════════════════════════════════════════════════════════
+fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
+    let lambda_norm = (800.0 - wavelength) / 400.0;
+    let absorption = mix(0.3, 1.0, lambda_norm);
+    return exp(-thickness * absorption);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
@@ -35,8 +59,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let aspect = dims.x / dims.y;
 
     // Params
-    let strength = u.zoom_params.x * 0.05; // Max displacement
-    let blurAmt = u.zoom_params.y; // Simulate blur by sampling multiple points? Or just strong separation.
+    let strength = u.zoom_params.x * 0.05;
+    let blurAmt = u.zoom_params.y;
     let focusRad = u.zoom_params.z;
     let hardness = u.zoom_params.w * 5.0 + 1.0;
 
@@ -48,15 +72,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let distVec = (uv - center) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 
-    // Calculate blur/abberation amount based on distance from focus
-    // 0 at focusRad, 1 at edges
+    // Calculate blur/aberration amount based on distance from focus
     var amount = smoothstep(focusRad, focusRad + 0.5, dist);
-    amount = pow(amount, 1.0 / hardness); // Hardness controls falloff curve
+    amount = pow(amount, 1.0 / hardness);
 
     // Direction for displacement
     var dir = normalize(distVec);
 
-    // Chromatic Abberation
+    // Chromatic Aberration
     let rOffset = dir * amount * strength;
     let bOffset = -dir * amount * strength;
     let gOffset = vec2<f32>(0.0);
@@ -65,9 +88,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let r = textureSampleLevel(videoTex, videoSampler, uv + rOffset, 0.0).r;
     let g = textureSampleLevel(videoTex, videoSampler, uv + gOffset, 0.0).g;
     let b = textureSampleLevel(videoTex, videoSampler, uv + bOffset, 0.0).b;
-
-    // Optional: Add simple blur if blurAmt > 0 (by sampling a bit further out for R and B)
-    // Actually, let's just use the CA as the "blur" style.
 
     // Vignette
     let vig = 1.0 - amount * 0.3;
@@ -82,7 +102,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    textureStore(outTex, gid.xy, vec4<f32>(color, 1.0));
+    // ═══════════════════════════════════════════════════════════════════════════════
+    //  WAVELENGTH-DEPENDENT ALPHA
+    //  Thickness derived from focus blur amount
+    // ═══════════════════════════════════════════════════════════════════════════════
+    let blurThickness = amount * 5.0 + blurAmt * 2.0;
+    let dispersionThickness = blurThickness;
+    
+    let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
+    let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
+    let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
+    
+    let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
+    let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
+    
+    let finalColor = vec3<f32>(
+        color.r * alphaR,
+        color.g * alphaG,
+        color.b * alphaB
+    );
+
+    textureStore(outTex, gid.xy, vec4<f32>(finalColor, finalAlpha));
     
     // Pass through depth
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
