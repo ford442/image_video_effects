@@ -184,7 +184,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ✨ grokcf1 UPGRADE: Time-driven hue evolution + radius shift
     let timeHue = sin(time * 0.05) * 0.5;
     hsl.x = fract(hsl.x + timeHue + r * hueShift);
-    hsl.s = min(hsl.s * 1.3, 1.0); // Slightly more saturation boost
+    hsl.y = min(hsl.y * 1.3, 1.0); // Slightly more saturation boost
     color = hsl2rgb(hsl);
     
     // -----------------------------------------------------------------

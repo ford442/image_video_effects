@@ -150,8 +150,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     
     var rd = normalize(vec3<f32>(uv, 1.0));
     
-    rd.yz = rotX * rd.yz;
-    rd.xz = rotY * rd.xz;
+    let temp_rd_yz = rotX * rd.yz;
+    rd.y = temp_rd_yz.x;
+    rd.z = temp_rd_yz.y;
+
+    let temp_rd_xz = rotY * rd.xz;
+    rd.x = temp_rd_xz.x;
+    rd.z = temp_rd_xz.y;
+
     
     let ta = vec3<f32>(0.0, time * 2.0 + 2.0, 0.0);
     let ww = normalize(ta - ro);

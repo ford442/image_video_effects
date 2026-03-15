@@ -90,7 +90,10 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     if (mouseDist < 5.0) {
         let pull = singularityPull * (1.0 - smoothstep(0.0, 5.0, mouseDist));
         let theta = pull * 2.0;
-        p.xy = rot2D(theta) * p.xy;
+        let temp_p_xy = rot2D(theta) * p.xy;
+        p.x = temp_p_xy.x;
+        p.y = temp_p_xy.y;
+
         p.x -= g_mouse.x * pull * 2.0;
         p.y -= g_mouse.y * pull * 2.0;
         p.z -= pull * 2.0;

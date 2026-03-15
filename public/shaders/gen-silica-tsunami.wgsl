@@ -88,8 +88,14 @@ fn map(p: vec3<f32>) -> vec3<f32> {
 
     // Rotate particle based on cell
     let h = hash31(vec3<f32>(cell.x, 0.0, cell.z));
-    bp.xz = rot(g_time * (0.5 + h) + h * 6.28) * bp.xz;
-    bp.xy = rot(g_time * 0.3 + h * 6.28) * bp.xy;
+    let temp_bp_xz = rot(g_time * (0.5 + h) + h * 6.28) * bp.xz;
+    bp.x = temp_bp_xz.x;
+    bp.z = temp_bp_xz.y;
+
+    let temp_bp_xy = rot(g_time * 0.3 + h * 6.28) * bp.xy;
+    bp.x = temp_bp_xy.x;
+    bp.y = temp_bp_xy.y;
+
 
     // Base shape: slightly rounded boxes
     let boxSize = particleDensity * 0.4 * (0.5 + 0.5 * h);
@@ -129,8 +135,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var ro = vec3<f32>(0.0, 5.0, -10.0);
 
     // Orbit camera with mouse
-    ro.xz = rot(mX * 2.0) * ro.xz;
-    ro.yz = rot(mY * 1.0) * ro.yz;
+    let temp_ro_xz = rot(mX * 2.0) * ro.xz;
+    ro.x = temp_ro_xz.x;
+    ro.z = temp_ro_xz.y;
+
+    let temp_ro_yz = rot(mY * 1.0) * ro.yz;
+    ro.y = temp_ro_yz.x;
+    ro.z = temp_ro_yz.y;
+
 
     let ta = vec3<f32>(0.0, 0.0, 0.0);
     let ww = normalize(ta - ro);

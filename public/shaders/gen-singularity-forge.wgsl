@@ -93,10 +93,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Camera rotation
     let camRotX = rotate2D(0.3);
     let camRotY = rotate2D(time * 0.1);
-    ro.yz = camRotX * ro.yz;
-    rd.yz = camRotX * rd.yz;
-    ro.xz = camRotY * ro.xz;
-    rd.xz = camRotY * rd.xz;
+    let temp_ro_yz = camRotX * ro.yz;
+    ro.y = temp_ro_yz.x;
+    ro.z = temp_ro_yz.y;
+
+    let temp_rd_yz = camRotX * rd.yz;
+    rd.y = temp_rd_yz.x;
+    rd.z = temp_rd_yz.y;
+
+    let temp_ro_xz = camRotY * ro.xz;
+    ro.x = temp_ro_xz.x;
+    ro.z = temp_ro_xz.y;
+
+    let temp_rd_xz = camRotY * rd.xz;
+    rd.x = temp_rd_xz.x;
+    rd.z = temp_rd_xz.y;
+
 
     // Mouse Interaction - Additional Gravity Well
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
