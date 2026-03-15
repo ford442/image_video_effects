@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
+import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
@@ -118,6 +119,7 @@ function MainApp() {
 
     // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
+    const [showShaderScanner, setShowShaderScanner] = useState(false);
 
     // --- State: Webcam ---
     const [isWebcamActive, setIsWebcamActive] = useState(false);
@@ -1023,6 +1025,8 @@ function MainApp() {
                         recordingCountdown={recordingCountdown}
                         onStartRecording={startRecording}
                         onStopRecording={stopRecording}
+                        // Dev Tools props
+                        onOpenShaderScanner={() => setShowShaderScanner(true)}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -1157,6 +1161,13 @@ function MainApp() {
                     </div>
                 </div>
             )}
+
+            {/* Shader Scanner Modal */}
+            <ShaderScanner
+                shaders={availableModes}
+                isOpen={showShaderScanner}
+                onClose={() => setShowShaderScanner(false)}
+            />
         </div>
     );
 }

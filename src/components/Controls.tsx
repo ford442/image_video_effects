@@ -76,6 +76,8 @@ interface ControlsProps {
     liveStreamUrl?: string;
     onLiveStreamLoaded?: (url: string) => void;
     onExitLiveStream?: () => void;
+    // Dev Tools Props
+    onOpenShaderScanner?: () => void;
 }
 
 // Helper function to fetch Bilibili live stream URL
@@ -140,7 +142,8 @@ const Controls: React.FC<ControlsProps> = ({
     onStopRecording,
     liveStreamUrl,
     onLiveStreamLoaded,
-    onExitLiveStream
+    onExitLiveStream,
+    onOpenShaderScanner
 }) => {
     // --- Coordinate System State ---
     const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
@@ -930,6 +933,58 @@ const Controls: React.FC<ControlsProps> = ({
             {!currentShaderEntry && (
                 <div style={{color: '#888', fontStyle: 'italic', padding: '10px'}}>
                     Select an effect for this slot to see parameters.
+                </div>
+            )}
+
+            {/* --- 🔧 Dev Tools Section --- */}
+            {onOpenShaderScanner && (
+                <div style={{
+                    marginTop: '20px',
+                    padding: '12px',
+                    background: 'rgba(255, 193, 7, 0.05)',
+                    borderRadius: '8px',
+                    border: '1px dashed #ffc107'
+                }}>
+                    <h4 style={{
+                        color: '#ffc107',
+                        fontSize: '12px',
+                        margin: '0 0 8px 0',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                    }}>
+                        🔧 Dev Tools
+                    </h4>
+                    <button
+                        onClick={onOpenShaderScanner}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            background: 'transparent',
+                            border: '1px solid #ffc107',
+                            borderRadius: '6px',
+                            color: '#ffc107',
+                            fontSize: '12px',
+                            fontFamily: 'monospace',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 193, 7, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                        }}
+                    >
+                        🔍 Scan Shaders for Errors
+                    </button>
+                    <div style={{
+                        marginTop: '6px',
+                        fontSize: '10px',
+                        color: '#888',
+                        textAlign: 'center'
+                    }}>
+                        Tests WGSL compilation on all shaders
+                    </div>
                 </div>
             )}
         </div>
