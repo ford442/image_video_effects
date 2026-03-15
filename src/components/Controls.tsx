@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus } from '../AutoDJ';
 // @ts-ignore
-import shaderCoordinates from '../../shader_coordinates.json';
+import shaderCoordinates from '../shader_coordinates.json';
 
 // --- Types for Coordinate System ---
 interface ShaderCoordData {
