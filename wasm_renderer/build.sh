@@ -98,19 +98,4 @@ mkdir -p "$PUBLIC_WASM"
 cp "$BUILD_DIR/pixelocity_wasm.js" "$BUILD_DIR/pixelocity_wasm.wasm" "$PUBLIC_WASM/"
 cp "$SCRIPT_DIR/wasm_bridge.js" "$PUBLIC_WASM/"
 
-
-# Build
-emcmake cmake -B build -S .
-emmake make -C build
-
-# Copy to public
-mkdir -p ../public/wasm
-cp build/pixelocity_wasm.js ../public/wasm/
-cp build/pixelocity_wasm.wasm ../public/wasm/
-
-# Copy bridge to src
-mkdir -p ../src/wasm
-cp wasm_bridge.js ../src/wasm/
-cp wasm_bridge.d.ts ../src/wasm/
-
 echo "✅ WASM build complete! Output in public/wasm/"
