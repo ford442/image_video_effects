@@ -24,6 +24,26 @@ const state = {
   mouseDown: false,
   zoomParams: [0.5, 0.5, 0.5, 0.5],
   ripples: []
+  
+  // MISSING: Multi-slot state (CRITICAL)
+  // TypeScript: modes[3], slotParams[3], activeSlot
+  // Need arrays for 3 shader slots with independent params.
+  // Priority: CRITICAL
+  
+  // MISSING: Recording state (HIGH)
+  // TypeScript: isRecording, recordingMode ('loop'|'continuous')
+  // Need MediaRecorder + canvas.captureStream(60) integration.
+  // Priority: HIGH
+  
+  // MISSING: Audio state (HIGH)
+  // TypeScript: audioData {bass, mid, treble}
+  // Need real-time frequency analysis integration.
+  // Priority: HIGH
+  
+  // MISSING: Input source (HIGH)  
+  // TypeScript: inputSource ('image'|'video'|'webcam'|'live'|'generative')
+  // Need to track and handle different input types.
+  // Priority: HIGH
 };
 
 // ARCH: [Medium] State duplication: JS maintains state that C++ also maintains.
@@ -291,6 +311,26 @@ export function uploadVideoFrame(rgbaPixels, width, height) {
 //
 // This means the JS bridge cannot fully control the renderer.
 
+// MISSING: Feature parity with TypeScript Renderer (COMPLETENESS ANALYSIS)
+//
+// CRITICAL Priority:
+// - setSlotShader(slotIndex, shaderId) - Multi-slot support (3 slots)
+// - setSlotParams(slotIndex, params) - Per-slot parameters
+// - updateDepthMap(data, width, height) - AI depth estimation integration
+//
+// HIGH Priority:
+// - updateAudioData(bass, mid, treble) - Audio analyzer integration
+// - startRecording(), stopRecording() - 8s video clip recording
+// - captureScreenshot() - Frame capture for sharing
+// - setInputSource(source) - 'image'|'video'|'webcam'|'live'|'generative'
+// - attachHLSStream(videoElement) - Live stream support
+//
+// MEDIUM Priority:
+// - preloadShaders(shaderList) - Shader caching/precompilation
+// - connectRemoteControl(channelName) - BroadcastChannel for remote control
+//
+// See COMPLETENESS_ANALYSIS.md for full details
+
 // Default export
 export default {
   initWasmRenderer,
@@ -305,6 +345,21 @@ export default {
   isInitialized,
   uploadImageData,
   uploadVideoFrame
+  
+  // MISSING: Multi-slot API (CRITICAL)
+  // setSlotShader, setSlotParams, setActiveSlot,
+  
+  // MISSING: Recording API (HIGH)
+  // startRecording, stopRecording, captureScreenshot,
+  
+  // MISSING: Audio API (HIGH)
+  // updateAudioData,
+  
+  // MISSING: Depth API (CRITICAL)
+  // uploadDepthMap,
+  
+  // MISSING: Input source API (HIGH)
+  // setInputSource
 };
 
 // ARCH: OVERALL SUMMARY FOR wasm_bridge.js:

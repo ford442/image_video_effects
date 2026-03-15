@@ -48,6 +48,16 @@ public:
     bool LoadShader(const char* id, const char* wgslCode);
     void SetActiveShader(const char* id);
     
+    // MISSING: Multi-slot shader management (CRITICAL)
+    // The TypeScript Renderer supports 3 shader slots that can be chained:
+    //   modes: RenderMode[] = ['liquid', 'distortion', 'glow']
+    // Each slot has independent parameters and feeds into the next.
+    // Implementation needed:
+    //   void SetSlotShader(int slotIndex, const char* id);  // slotIndex: 0-2
+    //   void SetSlotParams(int slotIndex, const float* params);  // 9 params per slot
+    //   void ExecuteSlotChain();  // Execute slots 0->1->2 in sequence
+    // Priority: CRITICAL | Effort: 2-3 weeks
+    
     // Resource management
     void LoadImage(const uint8_t* data, int width, int height);
     void UpdateVideoFrame(const uint8_t* data, int width, int height);
@@ -60,10 +70,21 @@ public:
     void SetZoomParams(float p1, float p2, float p3, float p4);
     void AddRipple(float x, float y);
     void ClearRipples();
+    
+    // MISSING: Audio analyzer integration (HIGH)
+    // void SetAudioData(float bass, float mid, float treble);
+    // Audio frequency data from Web Audio API needs to reach shaders.
+    // TS Renderer: updateAudioData(bass, mid, treble) -> extraBuffer/uniforms
+    // Priority: HIGH | Effort: 1 week
 
     // Rendering
     void Render();
     void Present();
+    
+    // MISSING: Screenshot functionality (MEDIUM)
+    // std::vector<uint8_t> CaptureScreenshot();  // Returns RGBA8 data
+    // TypeScript: getFrameImage() returns data URL for sharing
+    // Priority: MEDIUM | Effort: 2-3 days
 
     // State queries
     bool IsInitialized() const { return initialized_; }

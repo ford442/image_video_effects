@@ -112,6 +112,21 @@ bool wasmMode = true;
 // if exception thrown during initialization. Use std::unique_ptr.
 WebGPURenderer* g_renderer = nullptr;
 
+// MISSING: Multi-slot shader state (CRITICAL)
+// TypeScript maintains: modes[3], slotParams[3], activeSlot
+// Need equivalent C++ state for 3-slot shader stacking pipeline.
+// Priority: CRITICAL | Effort: Part of multi-slot implementation
+
+// MISSING: Recording state (HIGH)  
+// TypeScript: setRecording(isRecording), setRecordingMode(mode)
+// Need MediaRecorder integration for 8-second WebM clip recording.
+// Priority: HIGH | Effort: 2 weeks
+
+// MISSING: Input source tracking (HIGH)
+// TypeScript: inputSource: 'image'|'video'|'webcam'|'live'|'generative'
+// Currently only image/video upload supported. Need enum for source type.
+// Priority: HIGH | Effort: 2-3 days
+
 // Compute shader WGSL (embedded)
 // ARCH: [High] 200+ lines of embedded WGSL makes this file unmaintainable.
 // Shaders should be in separate .wgsl files loaded at runtime
@@ -446,6 +461,35 @@ extern "C" {
         if (!g_renderer) return 0.0f;
         return g_renderer->GetFPS();
     }
+    
+    // MISSING: Multi-slot shader API (CRITICAL)
+    // EMSCRIPTEN_KEEPALIVE void setSlotShader(int slotIndex, const char* shaderId);
+    // EMSCRIPTEN_KEEPALIVE void setSlotMode(int slotIndex, int mode);  // 0=none, 1=shader
+    // TypeScript: setMode(slotIndex, mode), modes: RenderMode[]
+    //
+    // MISSING: Recording API (HIGH)
+    // EMSCRIPTEN_KEEPALIVE void startRecording();
+    // EMSCRIPTEN_KEEPALIVE void stopRecording();
+    // EMSCRIPTEN_KEEPALIVE void setRecordingMode(int mode);  // 0=loop, 1=continuous
+    // TypeScript: setRecording(isRecording), setRecordingMode(mode)
+    //
+    // MISSING: Screenshot API (MEDIUM)
+    // EMSCRIPTEN_KEEPALIVE uint8_t* captureScreenshot(int* width, int* height);
+    // TypeScript: getFrameImage() -> data URL
+    //
+    // MISSING: Depth map API (CRITICAL)
+    // EMSCRIPTEN_KEEPALIVE void updateDepthMap(const float* data, int width, int height);
+    // TypeScript: updateDepthMap(data, width, height) - AI depth estimation
+    //
+    // MISSING: Audio API (HIGH)
+    // EMSCRIPTEN_KEEPALIVE void updateAudioData(float bass, float mid, float treble);
+    // TypeScript: updateAudioData(bass, mid, treble) - Web Audio API
+    //
+    // MISSING: Input source API (HIGH)
+    // EMSCRIPTEN_KEEPALIVE void setInputSource(int source);
+    // TypeScript: setInputSource('image'|'video'|'webcam'|'live'|'generative')
+    //
+    // See COMPLETENESS_ANALYSIS.md for full feature parity details
 }
 
 void createPipelines() {
