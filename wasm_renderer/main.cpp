@@ -360,22 +360,24 @@ void onAdapterRequest(wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, 
     adapter.RequestDevice(&devDesc, wgpu::CallbackMode::AllowSpontaneous, onDeviceRequest);
 }
 
-EMSCRIPTEN_KEEPALIVE
-void loadImageData(const uint8_t* data, int width, int height) {
-    if (!g_renderer) return;
-    g_renderer->LoadImage(data, width, height);
-}
+extern "C" {
+    EMSCRIPTEN_KEEPALIVE
+    void loadImageData(const uint8_t* data, int width, int height) {
+        if (!g_renderer) return;
+        g_renderer->LoadImage(data, width, height);
+    }
 
-EMSCRIPTEN_KEEPALIVE
-void uploadVideoFrame(const uint8_t* data, int width, int height) {
-    if (!g_renderer) return;
-    g_renderer->UpdateVideoFrame(data, width, height);
-}
+    EMSCRIPTEN_KEEPALIVE
+    void uploadVideoFrame(const uint8_t* data, int width, int height) {
+        if (!g_renderer) return;
+        g_renderer->UpdateVideoFrame(data, width, height);
+    }
 
-EMSCRIPTEN_KEEPALIVE
-float getFPS() {
-    if (!g_renderer) return 0.0f;
-    return g_renderer->GetFPS();
+    EMSCRIPTEN_KEEPALIVE
+    float getFPS() {
+        if (!g_renderer) return 0.0f;
+        return g_renderer->GetFPS();
+    }
 }
 
 void createPipelines() {
