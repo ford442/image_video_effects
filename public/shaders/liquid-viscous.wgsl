@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Viscous Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: vortex physics, chromatic aberration, cohesion effects
+//
+//  ALPHA PHYSICS:
+//  - Viscous liquid = more scattering = more opaque
+//  - Vortex strength affects thickness
+//  - Chromatic dispersion affects per-channel opacity
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -67,6 +78,64 @@ fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
   return flow * exp(-length(p) * 0.5);
 }
 
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate viscous liquid alpha
+fn calculateViscousAlpha(
+    vortexStrength: f32,
+    chromaticMag: f32,
+    viewDotNormal: f32,
+    depthFactor: f32
+) -> f32 {
+  // Viscous liquid has higher base F0 due to density
+  let F0 = 0.04;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Viscous = more scattering = more opaque
+  let viscosityFactor = 1.0 + vortexStrength * 0.5;
+  
+  // Chromatic dispersion affects effective thickness
+  let chromaticThickness = chromaticMag * 2.0 + 0.2;
+  
+  // Depth factor: more viscous in foreground
+  let depthOpacity = mix(0.95, 0.5, depthFactor);
+  
+  // Absorption with viscosity
+  let absorption = exp(-chromaticThickness * viscosityFactor);
+  let baseAlpha = mix(0.4, depthOpacity, absorption);
+  
+  let alpha = baseAlpha * (1.0 - fresnel * 0.3);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate viscous color with cohesion effects
+fn calculateViscousColor(
+    r: f32,
+    g: f32,
+    b: f32,
+    vortexStrength: f32,
+    chromaticOffset: f32
+) -> vec3<f32> {
+  // Viscous liquid slightly desaturates colors (scattering)
+  let avg = (r + g + b) / 3.0;
+  let saturation = 1.0 - vortexStrength * 0.1;
+  
+  let desaturated = vec3<f32>(
+      mix(avg, r, saturation),
+      mix(avg, g, saturation),
+      mix(avg, b, saturation)
+  );
+  
+  // Add viscous "glow" at vortex centers
+  let glow = vec3<f32>(0.02, 0.03, 0.04) * vortexStrength;
+  
+  return desaturated + glow;
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -90,6 +159,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Vortex calculation
   var mouseDisplacement = vec2<f32>(0.0);
   var chromaticAccumulator = 0.0;
+  var totalVortexStrength: f32 = 0.0;
   let rippleCount = u32(u.config.y);
 
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -135,6 +205,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         mouseDisplacement += vortexDisplacement;
         chromaticAccumulator += chromaticStrength * length(vortexDisplacement) * 100.0;
+        totalVortexStrength += length(vortexDisplacement) * 100.0;
       }
     }
   }
@@ -169,12 +240,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let redChannel = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
   let greenChannel = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).g;
   let blueChannel = textureSampleLevel(readTexture, u_sampler, blueUV, 0.0).b;
-  let alpha = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).a;
 
-  let color = vec4<f32>(redChannel, greenChannel, blueChannel, alpha);
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALPHA CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  // Approximate normal from displacement
+  let normal = normalize(vec3<f32>(
+      -totalDisplacement.x * 20.0,
+      -totalDisplacement.y * 20.0,
+      1.0
+  ));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let viewDotNormal = dot(viewDir, normal);
+  
+  // Calculate viscous color
+  let viscousColor = calculateViscousColor(redChannel, greenChannel, blueChannel, totalVortexStrength, chromaticOffset);
+  
+  // Calculate alpha
+  let alpha = calculateViscousAlpha(totalVortexStrength, chromaticOffset, viewDotNormal, center_depth);
 
   // --- Final Output ---
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(viscousColor, alpha));
 
   // Update depth texture for next frame
   let depthDisplacedUV = uv + finalMouseDisplacement;
