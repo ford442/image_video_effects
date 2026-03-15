@@ -1,17 +1,21 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Bioluminescent - Image Effect with Organic Material Properties
+//  Category: artistic
+//  Features: Reaction-diffusion growth, subsurface scattering, tissue alpha
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Growth buffer
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // Normal buffer
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
@@ -21,6 +25,11 @@ struct Uniforms {
 };
 @group(0) @binding(3) var<uniform> u: Uniforms;
 
+// Organic Growth Properties
+const BIO_TISSUE_DENSITY: f32 = 2.0;      // Density of organic growth
+const VEIN_OPACITY: f32 = 0.85;           // Veins are semi-transparent
+const GLOW_TRANSPARENCY: f32 = 0.6;       // Bioluminescent areas transmit light
+
 // Hash for randomness
 fn hash(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -29,27 +38,10 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 
 // 3D noise for organic variation
-fn noise(p: vec3<f32>) -> f32 {
-    var i = floor(p);
-    var f = fract(p);
-    var u = f * f * (3.0 - 2.0 * f);
-    
-    return mix(mix(mix(hash(i.xy + vec2<f32>(0.0, 0.0)), hash(i.xy + vec2<f32>(1.0, 0.0)), u.x),
-                   mix(hash(i.xy + vec2<f32>(0.0, 1.0)), hash(i.xy + vec2<f32>(1.0, 1.0)), u.x), u.y),
-               mix(mix(hash(i.xy + vec2<f32>(0.0, 0.0) + vec2<f32>(113.0, 113.0)), hash(i.xy + vec2<f32>(1.0, 0.0) + vec2<f32>(113.0, 113.0)), u.x),
-                   mix(hash(i.xy + vec2<f32>(0.0, 1.0) + vec2<f32>(113.0, 113.0)), hash(i.xy + vec2<f32>(1.0, 1.0) + vec2<f32>(113.0, 113.0)), u.x), u.y), u.z);
-}
-
-// Better 3D noise approximation since the above hash hack is a bit weird for 3d
 fn noise3d(p: vec3<f32>) -> f32 {
     var i = floor(p);
     var f = fract(p);
-    
-    // Smoothstep interpolation
     var u = f * f * (3.0 - 2.0 * f);
-    
-    // Hash function that handles 3D input better
-    // Simple way: offset the 2D hash
     let n = i.x + i.y * 57.0 + i.z * 113.0;
     
     return mix(mix(mix(hash(vec2<f32>(n + 0.0, 0.0)), hash(vec2<f32>(n + 1.0, 0.0)), u.x),
@@ -57,7 +49,6 @@ fn noise3d(p: vec3<f32>) -> f32 {
                mix(mix(hash(vec2<f32>(n + 113.0, 0.0)), hash(vec2<f32>(n + 114.0, 0.0)), u.x),
                    mix(hash(vec2<f32>(n + 170.0, 0.0)), hash(vec2<f32>(n + 171.0, 0.0)), u.x), u.y), u.z);
 }
-
 
 // Calculate surface normal from depth
 fn calculate_normal(uv: vec2<f32>, depth: f32, texel: vec2<f32>) -> vec3<f32> {
@@ -77,32 +68,23 @@ fn growth_step(uv: vec2<f32>, current: f32, normal: vec3<f32>, time: f32,
                spread_speed: f32, density: f32, depth_influence: f32, depth: f32, res: vec2<f32>) -> f32 {
     var texel = 1.0 / res;
     
-    // Sample neighbors with organic noise offset
     let noise_val = noise3d(vec3<f32>(uv * 5.0, time * 0.1)); 
     let noise_val2 = noise3d(vec3<f32>(uv * 5.0 + 10.0, time * 0.1));
     
-    let noise_offset = vec2<f32>(noise_val * 0.5, noise_val2 * 0.5) * texel * 2.0; // Scale offset by texel
+    let noise_offset = vec2<f32>(noise_val * 0.5, noise_val2 * 0.5) * texel * 2.0;
     
     let n1 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0) + noise_offset, 0.0).r;
     let n2 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(texel.x, 0.0) + noise_offset, 0.0).r;
     let n3 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y) + noise_offset, 0.0).r;
     let n4 = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y) + noise_offset, 0.0).r;
     
-    // Average neighbor growth
     var neighbor_avg = (n1 + n2 + n3 + n4) * 0.25;
     
-    // Surface normal influence (grow on flat/upward surfaces)
     let flatness = smoothstep(0.3, 0.8, normal.y);
-    // Recalculate dx/dy for edge avoidance locally if needed, or approximate from neighboring samples or normal
-    let edge_avoidance = 1.0; // Simplified for now
-    
-    // Depth masking (avoid background)
+    let edge_avoidance = 1.0;
     let depth_mask = smoothstep(0.1, 0.9, depth);
     
-    // Growth factor
     var growth = neighbor_avg * spread_speed * flatness * edge_avoidance * depth_mask;
-    
-    // Decay over time
     let decay = 0.998;
     
     return min(1.0, current * decay + growth * density);
@@ -123,6 +105,44 @@ fn bio_color(t: f32, mode: f32, pulse: f32) -> vec3<f32> {
     }
 }
 
+// Calculate organic alpha for growth pattern
+fn calculateGrowthAlpha(growth: f32, vein_pattern: f32, glow_intensity: f32) -> f32 {
+    // Base alpha from growth density
+    // Thicker growth = more opaque
+    let densityAlpha = mix(0.2, VEIN_OPACITY, growth);
+    
+    // Veins are more opaque than surrounding tissue
+    let veinAlpha = mix(densityAlpha, VEIN_OPACITY * 0.95, vein_pattern * 0.5);
+    
+    // Bioluminescent glow reduces alpha for light transmission
+    let glowAlpha = mix(veinAlpha, GLOW_TRANSPARENCY, glow_intensity * growth * 0.6);
+    
+    // Apply Beer-Lambert style absorption
+    let absorption = exp(-growth * BIO_TISSUE_DENSITY * 0.5);
+    let finalAlpha = mix(glowAlpha, glowAlpha * 0.7, absorption * 0.3);
+    
+    return clamp(finalAlpha, 0.25, 0.92);
+}
+
+// Subsurface scattering for organic growth
+fn growthSSS(growth: f32, vein_pattern: f32, baseColor: vec3<f32>) -> vec3<f32> {
+    // Organic tissue absorbs different wavelengths
+    let absorptionR = exp(-growth * 1.2);
+    let absorptionG = exp(-growth * 0.9);
+    let absorptionB = exp(-growth * 0.7);
+    
+    let scattered = vec3<f32>(
+        baseColor.r * absorptionR,
+        baseColor.g * absorptionG,
+        baseColor.b * absorptionB
+    );
+    
+    // Veins scatter differently
+    let veinScatter = vein_pattern * vec3<f32>(0.3, 0.5, 0.4) * growth;
+    
+    return scattered + veinScatter;
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -131,15 +151,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var texel = 1.0 / resolution;
 
     // Parameters
-    let spread_speed = u.zoom_params.x * 0.02 + 1.0; // Needs to be > 1 to spread? Or additive. Original code used * 0.02 which makes it tiny.
-    // Actually the logic is neighbor_avg * spread_speed. If spread_speed < 1 it will decay. 
-    // Let's stick closer to the user provided logic but ensure it spreads.
-    // User logic: let spread_speed = u.zoom_params.x * 0.02; -> this seems too small for a multiplicative factor.
-    // Reaction diffusion usually needs slightly > 1 or additive terms.
-    // Let's assume the user meant additive or a strong multiplier.
-    // Let's try adjusting:
     let spread_mult = 1.0 + u.zoom_params.x * 0.1; 
-    
     let branch_density = u.zoom_params.y;
     let glow_intensity = u.zoom_params.z;
     let spore_count = u32(u.zoom_params.w * 10.0);
@@ -154,30 +166,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate surface normal
     let normal = calculate_normal(uv, depth, texel);
 
-    // --- Initialize or load growth state ---
+    // Initialize or load growth state
     var growth = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
     
-    // --- Interactive Spore Placement ---
-    // Each ripple becomes a growth seed
+    // Interactive Spore Placement
     let ripple_count = u32(u.config.y); 
-    // Warning: ripple_count logic might differ in actual app, usually u.config.y is just a count.
     
-    for (var i: u32 = 0u; i < min(50u, spore_count + 1u); i = i + 1u) { // Check active ripples, simplified loop
-         // Actually we should iterate through all ripples if they are active
-         // But the User Code used u.config.y as ripple count.
-         // Let's just iterate a fixed amount or up to ripple count if available.
-         // Since we don't know exact ripple count passed in uniform (it varies), let's check array.
-         // Actually u.config.y IS ripple count.
+    for (var i: u32 = 0u; i < min(50u, spore_count + 1u); i = i + 1u) {
          if (i < u32(u.config.y)) {
             let ripple = u.ripples[i];
             var center = ripple.xy;
-            let age = time - ripple.z; // ripple.z is start time? or normalized age?
-                                       // Usually in this app ripples are [x, y, startTime, maxRadius]
+            let age = time - ripple.z;
                                        
-            // Spores activate after 0.1 seconds and last 2 seconds
             if (age > 0.1 && age < 2.0) {
                 let d = distance(uv, center);
-                // Fix aspect ratio distro
                 let aspect = resolution.x / resolution.y;
                 let d_aspect = distance(uv * vec2<f32>(aspect, 1.0), center * vec2<f32>(aspect, 1.0));
                 
@@ -187,33 +189,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
          }
     }
 
-    // --- Growth Simulation ---
+    // Growth Simulation
     if (growth_rate > 0.01) {
-        // Use the corrected growth_step
-        // We use spread_mult as 'spread_speed'
         growth = growth_step(uv, growth, normal, time, spread_mult, branch_density, depth_influence, depth, resolution);
     }
 
     // Store growth for next frame
     textureStore(dataTextureA, global_id.xy, vec4<f32>(growth, 0.0, 0.0, 1.0));
 
-    // --- Vein Structure ---
-    // Create vein-like patterns from growth map
+    // Vein Structure
     let vein_noise = noise3d(vec3<f32>(uv * 20.0, time * 0.5));
     let veins = smoothstep(0.3, 0.7, growth + vein_noise * 0.2);
 
-    // --- Glow & Lighting ---
-    // Distance-based glow falloff
+    // Glow & Lighting
     let glow_falloff = pow(growth, 2.0) * glow_intensity;
     let bio_light = bio_color(time, color_mode, pulse) * glow_falloff;
     
     // Subsurface scattering approximation
     let ss_scatter = smoothstep(0.0, 0.5, growth) * 0.3;
     
-    // --- Composition ---
-    // Multiply blend for organic integration
-    let final_color = base_color * (1.0 - veins * 0.3) + bio_light + ss_scatter;
+    // Apply organic SSS to base color
+    let scatteredBase = growthSSS(growth, veins, base_color);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+    // Composition with alpha calculation
+    let growth_alpha = calculateGrowthAlpha(growth, veins, glow_intensity);
+    let final_color = scatteredBase * (1.0 - veins * 0.3) + bio_light + ss_scatter;
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, growth_alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
