@@ -537,6 +537,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating sub-surface scattering, thin-film iridescent interference on organic shapes, and clear water refraction.
 
+### Suggestion: Ukiyo-e Solarpunk Cityscape
+- **Date:** 2026-05-15
+- **Prompt:** "A majestic Solarpunk city built into a steep mountainside, depicted in a traditional Japanese Ukiyo-e woodblock print style. The city is constructed with intricate porcelain towers, bamboo scaffolding, and lush vertical gardens. The lighting features a flat, stylized morning sun piercing through stylized, swirling mist. The mood is serene, harmonious, and historical yet futuristic. Captured with the flat perspective typical of classic Ukiyo-e prints, focusing on bold outlines and solid color blocks."
+- **Negative prompt:** "photorealistic, 3D render, modern, dark, dystopian, messy, cluttered"
+- **Tags:** solarpunk, city, ukiyo-e, retro-futuristic, serene
+- **Style / Reference:** Ukiyo-e traditional woodblock print, Hokusai-inspired
+- **Composition:** flat perspective, wide landscape, rule of thirds
+- **Color palette:** indigo blue, muted vermilion, pale yellow, lush bamboo green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260515_ukiyoe-solarpunk.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's ability to blend a specific historical art style (Ukiyo-e) with a futuristic subject (Solarpunk).
+
+### Suggestion: Risograph Glacial Fjord
+- **Date:** 2026-05-15
+- **Prompt:** "A massive, towering glacier calving into a deep, freezing fjord, rendered entirely in the style of a vintage Risograph print. The icy subject is heavily textured with distinctive riso dot halftones, misregistration artifacts, and vibrant overlapping ink layers. The lighting is stylized and graphic, relying on the high-contrast interplay of only three ink colors. The mood is raw, graphic, and nostalgic. Captured with a wide-angle perspective, emphasizing the massive scale of the ice wall against the flat, textured sky."
+- **Negative prompt:** "photorealistic, smooth gradients, 3D render, perfectly aligned, high resolution"
+- **Tags:** landscape, glacier, risograph, graphic, vintage
+- **Style / Reference:** Risograph printing, halftone dot pattern, graphic illustration
+- **Composition:** wide landscape, bold graphic shapes
+- **Color palette:** fluorescent pink, bright teal, sunflower yellow, off-white paper texture
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_risograph-glacier.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating stylistic constraints, specifically the generation of halftone dot patterns and limited ink palettes.
+
+### Suggestion: Fauvism Mangrove Swamp
+- **Date:** 2026-05-15
+- **Prompt:** "A dense, overgrown mangrove swamp depicted in a wild, energetic Fauvism style. The twisted roots and thick, dripping slime of the swamp are painted with bold, non-naturalistic colors and thick, aggressive brushstrokes. The lighting is completely arbitrary and expressive, ignoring realistic shadows in favor of vibrant color contrasts. The mood is wild, untamed, and emotionally charged. Captured with a chaotic, immersive perspective as if standing waist-deep in the vibrant, murky water."
+- **Negative prompt:** "realistic colors, photorealistic, subtle, calm, detailed textures, boring"
+- **Tags:** nature, swamp, fauvism, abstract, vibrant
+- **Style / Reference:** Henri Matisse inspired, thick impasto oil paint
+- **Composition:** dense, immersive, lack of deep perspective
+- **Color palette:** unnatural vivid reds, toxic greens, bright oranges, deep purples
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260515_fauvism-swamp.jpg`
+- **License / Attribution:** Public Domain concept
+- **Notes:** Tests the AI's understanding of art movements that rely on arbitrary, emotionally driven color palettes rather than realism.
+
+### Suggestion: Crosshatched Subterranean Canyon
+- **Date:** 2026-05-15
+- **Prompt:** "A colossal, seemingly bottomless subterranean canyon composed entirely of jagged slate and cracked clay, rendered completely through meticulous, dense ink crosshatching. The rocky subject is detailed with thousands of fine, intersecting black lines that create depth, shadow, and texture. The lighting is harsh and directional, emanating from a single glowing fissure deep below, creating extreme contrast between the stark white paper and the deep, ink-black shadows. The mood is oppressive, detailed, and masterful. Captured with a deep perspective, drawing the eye down into the abyss."
+- **Negative prompt:** "colors, grayscale gradients, smooth, photorealistic, photography, soft"
+- **Tags:** landscape, canyon, crosshatching, ink, underground
+- **Style / Reference:** traditional ink drawing, dense crosshatching, Gustave Doré inspired
+- **Composition:** deep vertical perspective, stark contrast
+- **Color palette:** pure black ink, stark white paper
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260515_crosshatched-canyon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing the model's ability to generate structural depth and shading using only fine, intersecting line art.
+
+### Suggestion: Metaphysical Quantum Computer
+- **Date:** 2026-05-15
+- **Prompt:** "A highly advanced, sprawling quantum computer installation placed inexplicably in a deserted, sunbaked Italian piazza, rendered in the haunting, enigmatic style of Metaphysical Art. The sleek silicone and kevlar components of the futuristic computer contrast sharply with the ancient, arched arcades and long, dramatic afternoon shadows. The lighting is stark, melancholic, and theatrical, freezing the bizarre juxtaposition in a timeless moment. The mood is eerie, dreamlike, and profoundly still. Captured with a deep, surreal perspective and a low horizon line."
+- **Negative prompt:** "busy, people, realistic sci-fi, dark, neon, cyberpunk, cluttered"
+- **Tags:** sci-fi, surreal, metaphysical, quantum computer, eerie
+- **Style / Reference:** Giorgio de Chirico inspired, surrealism
+- **Composition:** deep perspective, low horizon, extreme long shadows
+- **Color palette:** sunbaked terracotta, muted olive green, deep sky blue, stark black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_metaphysical-quantum.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates the combination of highly advanced technological subjects with deeply historical, surreal, and melancholic art styles.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -559,12 +624,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Fauvism, Vorticism, Dadaism, Tenebrism, Risograph, Ukiyo-e, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Slime, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
-- **Styles:** Brutalist Web Design, Metaphysical Art, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Crosshatching, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Fauvism, Vorticism, Dadaism, Risograph, Ukiyo-e, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Silicone, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Porcelain, Chiffon, Tweed, Granite, Organza, Cracked Clay, Slate, Kevlar, Perovskite, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Solar Punk City, Quantum Computer, Ancient Ruins, Meteor Crater, Swamp, Glacier, Canyon, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Dadaism, Tenebrism, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Perovskite, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Ancient Ruins, Meteor Crater, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Dadaism, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Perovskite, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Ancient Ruins, Meteor Crater, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 
