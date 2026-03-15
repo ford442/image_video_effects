@@ -1,4 +1,9 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Biomechanical Hive - Generative Shader with Chitinous Tissue Properties
+//  Category: generative
+//  Features: Chitinous shell, organic transparency, core bioluminescence
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +17,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
@@ -21,9 +25,12 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-// Biomechanical Hive - Generative Shader
+// Biomechanical Material Properties
+const CHITIN_DENSITY: f32 = 4.5;          // Chitinous shell is fairly opaque
+const CHITIN_TRANSPARENCY: f32 = 0.75;    // Semi-transparent like insect wings
+const CORE_EMISSION_ALPHA: f32 = 0.55;    // Glowing core is more transparent
+const MEMBRANE_THINNESS: f32 = 0.15;      // Thin membrane areas
 
-// Helper Functions
 fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
     let c = cos(angle);
@@ -33,7 +40,7 @@ fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
 fn hash(p: vec3<f32>) -> f32 {
     let p3 = fract(p * 0.1031);
     let d = dot(p3, vec3<f32>(p3.y + 19.19, p3.z + 19.19, p3.x + 19.19));
-    return fract((p3.x + p3.y) * p3.z + d); // Fixed hash function logic
+    return fract((p3.x + p3.y) * p3.z + d);
 }
 
 fn noise(p: vec3<f32>) -> f32 {
@@ -67,13 +74,6 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 fn sdHexPrism(p: vec3<f32>, h: vec2<f32>) -> f32 {
     let k = vec3<f32>(-0.8660254, 0.5, 0.57735027);
     let p_abs = abs(p);
-    var p_mod = p_abs;
-    p_mod.x -= 2.0 * min(dot(k.xy, p_mod.xy), 0.0) * k.x;
-    p_mod.y -= 2.0 * min(dot(k.xy, p_mod.xy), 0.0) * k.y;
-    // Wait, the standard swizzle logic is trickier in WGSL without full swizzle support on assignment
-    // Re-implementing carefully
-
-    // Correct logic for p.xy -= ...
     let dot_k_p = dot(k.xy, p_abs.xy);
     let offset = 2.0 * min(dot_k_p, 0.0);
     var p_xy = p_abs.xy - vec2<f32>(offset * k.x, offset * k.y);
@@ -85,125 +85,108 @@ fn sdHexPrism(p: vec3<f32>, h: vec2<f32>) -> f32 {
     return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
+// Calculate chitinous shell thickness
+fn calculateChitinThickness(p: vec3<f32>, localP: vec3<f32>, cellSize: f32) -> f32 {
+    // Ribbed structure creates varying thickness
+    let rib_freq = 10.0;
+    let rib_pattern = sin(localP.z * rib_freq) * 0.5 + 0.5;
+    
+    // Base thickness varies with ribs
+    let baseThickness = mix(MEMBRANE_THINNESS, MEMBRANE_THINNESS * 2.5, rib_pattern);
+    
+    // Add organic variation
+    let noiseThickness = fbm(p * 3.0) * 0.05;
+    
+    return baseThickness + noiseThickness;
+}
+
+// Chitinous subsurface scattering (similar to insect wings/exoskeletons)
+fn chitinSSS(n: vec3<f32>, l: vec3<f32>, v: vec3<f32>, thickness: f32, 
+             baseColor: vec3<f32>, isCore: bool) -> vec3<f32> {
+    // Chitin has characteristic oily/iridescent scattering
+    let rimDot = 1.0 - max(0.0, dot(n, v));
+    let rimScatter = pow(rimDot, 3.0) * 1.5;
+    
+    // Thin film interference approximation
+    let interference = sin(thickness * 50.0) * 0.5 + 0.5;
+    let iridescence = vec3<f32>(
+        interference * 0.3,
+        interference * 0.5,
+        interference * 0.7
+    );
+    
+    var scatter = baseColor * (rimScatter + iridescence * 0.3);
+    
+    // Core has internal glow
+    if (isCore {
+        scatter += baseColor * 0.8 * (1.0 - thickness * 2.0);
+    }
+    
+    return scatter;
+}
+
+// Calculate alpha for biomechanical materials
+fn calculateBiomechAlpha(mat: f32, thickness: f32, pulse: f32, isNearCore: bool) -> f32 {
+    var alpha = 1.0;
+    
+    if (mat == 1.0) {  // Chitinous walls
+        // Thinner areas more transparent (like insect wing membranes)
+        let membraneAlpha = mix(CHITIN_TRANSPARENCY, 0.9, thickness * 4.0);
+        
+        // Pulse affects transparency (breathing effect)
+        let breathing = sin(pulse * 3.14159) * 0.1 + 0.9;
+        alpha = membraneAlpha * breathing;
+        
+    } else if (mat == 2.0) {  // Bioluminescent core
+        // Core is semi-transparent with emission
+        let baseCoreAlpha = CORE_EMISSION_ALPHA;
+        // Pulse makes core flash and become more transparent
+        let pulseAlpha = mix(baseCoreAlpha, 0.4, pulse * 0.5);
+        alpha = pulseAlpha;
+    }
+    
+    return clamp(alpha, 0.35, 0.95);
+}
+
 // Scene Map
 fn map(p: vec3<f32>) -> vec2<f32> {
-    // Parameters
-    let density = mix(4.0, 10.0, u.zoom_params.x); // Zoom/Scale
+    let density = mix(4.0, 10.0, u.zoom_params.x);
     let pulseSpeed = u.zoom_params.y;
     let biomass = u.zoom_params.z;
 
-    // Domain Repetition
-    // We want infinite repetition.
-    // Let's just do a simple modulo for now, maybe with some offset
-    let cell_size = 12.0 / density; // Base size
+    let cell_size = 12.0 / density;
     let q = p;
-
-    // Hexagonal offset logic for Z rows?
-    // Let's just use a rectangular grid of hex prisms that touch
-    // Hex width is sqrt(3) * radius
-    // Hex height is 2 * radius
-    // We want them packed.
-    // Let's just use standard mod for simplicity and rely on smin to blend
 
     let spacing = vec3<f32>(cell_size * 2.0, cell_size * 2.0, cell_size * 4.0);
     let id = floor((p + spacing * 0.5) / spacing);
     let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;
 
-    // Rotate local_p based on ID to create variation?
-    // local_p.xy = rotate2D(local_p.xy, id.z * 1.0);
-
-    // 1. Base Geometry: Hex Prism
-    // Orient along Z
     let hex_h = vec2<f32>(cell_size * 0.8, cell_size * 1.8);
-    // Rotate 90 deg around X to make it a tunnel?
-    // No, let's keep it as pillars for now, or rotate p
-
-    // Let's make it a tunnel structure: infinite in Z, tiled in XY
-    // But we are inside?
-    // If we are inside, we need negative SDF or just walls.
-
-    // Let's invert the logic: We have a block of space, and we subtract hex prisms to make tunnels?
-    // Or we place hex prisms and we travel between them?
-    // The prompt says "structure composed of hexagonal cells". "Claustrophobic".
-    // "Walls are ribbed... centers glow".
-
-    // Let's model a single cell interior.
-    // Modulo position to be inside a cell.
-    // To make it infinite, we just repeat the cell.
-
-    let hex_tunnel_p = vec3<f32>(local_p.x, local_p.y, p.z); // Infinite Z for the prism
-    // But we want cells, not infinite tubes? "Hexagonal cells".
-    // So repeated in Z too.
-
-    // Create hollow cells by inverting the SDF
-    // Inside the hex prism, sdHexPrism is negative. We want positive distance (empty space) inside.
-    // So d = -sdHexPrism.
-    // The "walls" are where sdHexPrism is positive (outside the prism).
-    // We make the prism slightly smaller than the grid cell to leave thick walls.
-
     let d_hex = sdHexPrism(local_p, hex_h * 0.9);
-    let d_base = -d_hex; // Inverted: Positive inside, Negative in walls
+    let d_base = -d_hex;
 
-    // 2. Pipes/Ribs
-    // Rings around the hex prism
+    // Ribs/Pipes
     let rib_freq = 10.0;
     let rib_amp = 0.05;
     let ribs = sin(local_p.z * rib_freq) * rib_amp;
 
-    // 3. Organic Displacement
+    // Organic Displacement
     var time = u.config.x * pulseSpeed;
-    var pulse = sin(time * 2.0) * 0.5 + 0.5; // 0..1
+    var pulse = sin(time * 2.0) * 0.5 + 0.5;
     let noise_val = fbm(p * 2.0 + vec3<f32>(0.0, 0.0, time * 0.2));
     let displacement = noise_val * biomass * 0.5;
 
-    // Breathing effect
     let breathing = sin(time + p.z) * 0.05;
 
-    // Combine
     let d_organic = d_base + ribs + displacement + breathing;
 
-    // 4. Smooth Blend with some inner structure?
-    // Let's add a "core" sphere in the middle of the hex
-    let d_core = length(local_p) - cell_size * 0.3;
-
-    // Connect core to walls with "tendrils"
-    // Tendrils are just noise?
-
-    // Final blending
-    let d = smin(d_organic, d_core, 0.3);
-
-    // Material
-    // If close to core, mat = 2.0 (Glow)
-    // Else mat = 1.0 (Biomechanical Wall)
-    var mat = 1.0;
-
-    // Fix material logic: d_organic is the field we are marching.
-    // d_core is the sphere SDF (positive outside, negative inside).
-    // We want the core to be an object inside the hollow cell.
-    // So the core is SOLID (d < 0 inside? No, standard object is d > 0 outside).
-    // Wait, we inverted the world!
-    // Wall: d_base < 0. Empty space: d_base > 0.
-    // We raymarch in empty space (d > 0).
-    // If we hit a wall, d -> 0.
-    // Now we want a glowing core in the center.
-    // A sphere object in the center.
-    // Standard sphere: d_sphere = length(p) - r.
-    // Outside sphere: d > 0. Inside sphere: d < 0.
-    // So the sphere is a "solid" object in our empty space.
-    // So we just take min(d_organic, d_sphere).
-    // d_organic defines the room walls. d_sphere defines the central ball.
-    // Both are positive in the empty air between them.
-
+    // Core sphere
     let d_sphere_core = length(local_p) - cell_size * 0.2;
 
     // Combine walls and core
-    // d_organic is distance to walls (inverted).
-    // d_sphere_core is distance to sphere.
-    // We want the union of walls and sphere as obstacles.
-    // Union of obstacles = min(d_walls, d_sphere).
-
     let d_final = min(d_organic, d_sphere_core);
 
+    var mat = 1.0;
     if (d_sphere_core < d_organic) {
          mat = 2.0;
     }
@@ -245,20 +228,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Camera
-    var mouse = u.zoom_config.yz; // 0..1
+    var mouse = u.zoom_config.yz;
     var time = u.config.x;
 
     let yaw = (mouse.x - 0.5) * 6.28;
     let pitch = (mouse.y - 0.5) * 3.14;
 
-    // Move camera through the hive
     let cam_pos = vec3<f32>(0.0, 0.0, time * 2.0);
-    // Add some mouse offset to look around but stay near center
-    // The cell center is at (0,0) in local coords.
-
     let ro = cam_pos;
 
-    // Look direction
     let forward = normalize(vec3<f32>(sin(yaw), sin(pitch), cos(yaw)));
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
@@ -271,53 +249,58 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mat = res.y;
 
     var color = vec3<f32>(0.0);
-    let fogColor = vec3<f32>(0.01, 0.01, 0.02); // Very dark
+    var alpha = 1.0;
+    let fogColor = vec3<f32>(0.01, 0.01, 0.02);
 
     if (t < 100.0) {
         var p = ro + rd * t;
         let n = calcNormal(p);
 
-        // Lighting
         let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
-        // Pulsating light from the core
         var pulse = sin(u.config.x * u.zoom_params.y * 5.0) * 0.5 + 0.5;
 
-        // Base Material Color
-        // Metallic/Organic Dark
         var baseColor = vec3<f32>(0.1, 0.1, 0.15);
+        var thickness = 0.2;
+        var isCore = false;
+        
+        // Calculate cell-local position for thickness
+        let cell_size = 12.0 / mix(4.0, 10.0, u.zoom_params.x);
+        let spacing = vec3<f32>(cell_size * 2.0, cell_size * 2.0, cell_size * 4.0);
+        let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;
+        
         if (mat == 2.0) {
-            // Core Glow
+            isCore = true;
             let hueShift = u.zoom_params.w;
-            let hue = 0.1 + hueShift; // Amber default
-            // HSV to RGB roughly
-            // Amber: 0.1 -> Yellow/Orange
-            // Green: 0.3
-            // Red: 0.0
-            // Let's just mix colors
-            let coreColor1 = vec3<f32>(1.0, 0.6, 0.1); // Amber
-            let coreColor2 = vec3<f32>(0.1, 1.0, 0.2); // Green
-            let coreColor3 = vec3<f32>(1.0, 0.1, 0.2); // Red
+            let hue = 0.1 + hueShift;
+
+            let coreColor1 = vec3<f32>(1.0, 0.6, 0.1);
+            let coreColor2 = vec3<f32>(0.1, 1.0, 0.2);
+            let coreColor3 = vec3<f32>(1.0, 0.1, 0.2);
 
             var mixColor = coreColor1;
             if (hueShift > 0.3) { mixColor = mix(coreColor1, coreColor2, (hueShift - 0.3) * 3.0); }
             if (hueShift > 0.6) { mixColor = mix(coreColor2, coreColor3, (hueShift - 0.6) * 3.0); }
 
             baseColor = mixColor * (1.0 + pulse);
-
-            // Add noise texture to core
             baseColor += fbm(p * 5.0) * 0.2;
+            thickness = 0.1; // Core is less dense
         } else {
-            // Wall
+            // Wall - calculate chitinous thickness
+            thickness = calculateChitinThickness(p, local_p, cell_size);
+            
             // Shiny, slimy
-            // Specular
-            let ref = reflect(rd, n);
+            let ref = reflect(-rd, n);
             let spec = pow(max(dot(ref, lightDir), 0.0), 16.0);
             baseColor += vec3<f32>(1.0) * spec * 0.5;
 
             // Rim
             let rim = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
             baseColor += vec3<f32>(0.2, 0.3, 0.4) * rim;
+            
+            // Apply chitinous SSS
+            let sss = chitinSSS(n, lightDir, -rd, thickness, baseColor, false);
+            baseColor += sss * 0.4;
         }
 
         // Diffuse
@@ -327,12 +310,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Fog
         let fogAmount = 1.0 - exp(-t * 0.05);
         color = mix(color, fogColor, fogAmount);
+        
+        // Calculate biomechanical alpha
+        let isNearCore = length(local_p) < cell_size * 0.4;
+        alpha = calculateBiomechAlpha(mat, thickness, pulse, isNearCore);
 
     } else {
         color = fogColor;
     }
 
-    // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Output with alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }
