@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid RGB Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: RGB split, chromatic displacement, depth-aware
+//
+//  ALPHA PHYSICS:
+//  - RGB channels have slightly different opacities
+//  - Displacement magnitude affects alpha
+//  - Depth factor modulates transparency
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -13,6 +24,63 @@ struct Uniforms {
 };
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
+
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate RGB liquid alpha
+fn calculateRGBAlpha(
+    displacementMag: f32,
+    depthFactor: f32,
+    viewDotNormal: f32
+) -> f32 {
+  // Fresnel
+  let F0 = 0.025;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Displacement = liquid film thickness
+  let thickness = displacementMag * 5.0 + 0.1;
+  
+  // Depth factor: foreground more opaque, background more transparent
+  let depthAlpha = mix(0.9, 0.4, depthFactor);
+  
+  // Absorption
+  let absorption = exp(-thickness * 1.5);
+  let baseAlpha = mix(0.35, depthAlpha, absorption);
+  
+  let alpha = baseAlpha * (1.0 - fresnel * 0.3);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate RGB color with channel-specific processing
+fn calculateRGBColor(
+    r: f32,
+    g: f32,
+    b: f32,
+    displacementMag: f32,
+    depthFactor: f32
+) -> vec3<f32> {
+  // RGB channels have slightly different "liquid" properties
+  // Red: penetrates deeper
+  // Green: balanced
+  // Blue: scatters more
+  
+  let r_absorb = exp(-displacementMag * 0.8);
+  let g_absorb = exp(-displacementMag * 1.0);
+  let b_absorb = exp(-displacementMag * 1.2);
+  
+  // Depth factor affects each channel
+  let depthAtten = 1.0 - depthFactor * 0.2;
+  
+  return vec3<f32>(
+      r * r_absorb * depthAtten,
+      g * g_absorb * depthAtten,
+      b * b_absorb * depthAtten
+  );
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -69,9 +137,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let redChannel = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
   let greenChannel = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).g;
   let blueChannel = textureSampleLevel(readTexture, u_sampler, blueUV, 0.0).b;
-  let alpha = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).a;
+  
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALPHA CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  // Approximate normal from displacement
+  let normal = normalize(vec3<f32>(
+      -totalDisplacement.x * 20.0,
+      -totalDisplacement.y * 20.0,
+      1.0
+  ));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let viewDotNormal = dot(viewDir, normal);
+  
+  // Calculate RGB color with channel-specific absorption
+  let rgbColor = calculateRGBColor(redChannel, greenChannel, blueChannel, displacementMagnitude, center_depth);
+  
+  // Calculate alpha
+  let alpha = calculateRGBAlpha(displacementMagnitude, center_depth, viewDotNormal);
 
-  let color = vec4<f32>(redChannel, greenChannel, blueChannel, alpha);
+  let color = vec4<f32>(rgbColor, alpha);
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
   // Update depth texture for next frame
