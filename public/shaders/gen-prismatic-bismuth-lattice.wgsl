@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Prismatic Bismuth Lattice - Physical Light Transmission
+//  Category: generative
+//  Features: raymarch, recursive boxes, thin-film interference
+//  Hyper-geometric bismuth lattice with metallic transmission
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,23 +18,17 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount/Audio, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Complexity, y=Iridescence, z=CrystalScale, w=FogDensity
+    config: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
 
-// ----------------------------------------------------------------
-// Prismatic Bismuth Lattice
-// Category: generative
-// ----------------------------------------------------------------
-
 const PI: f32 = 3.14159265359;
+const IOR_BISMUTH: f32 = 1.8;
 
-// --- Noise Functions ---
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
@@ -58,7 +58,6 @@ fn fbm(p: vec2<f32>) -> f32 {
     return v;
 }
 
-// --- SDF Primitives ---
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     let q = abs(p) - b;
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
@@ -70,11 +69,10 @@ fn mat2(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// --- Map Function ---
 fn map(pos: vec3<f32>) -> vec2<f32> {
     var p = pos;
     let time = u.config.x;
-    let audio = u.config.y; // Audio-reactive folding
+    let audio = u.config.y;
 
     // Mouse-driven localized spatial twist
     let mouse = u.zoom_config.yz;
@@ -94,19 +92,17 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     }
 
     // Domain Repetition
-    let scale = u.zoom_params.z; // Crystal Scale
+    let scale = u.zoom_params.z;
     let c = vec3<f32>(4.0 * scale);
     var q = p;
     q = (fract(q / c + vec3<f32>(0.5)) - vec3<f32>(0.5)) * c;
 
     // Recursive Box for Hopper Crystal
-    let complexity = i32(u.zoom_params.x); // 1 to 6
+    let complexity = i32(u.zoom_params.x);
     var d = 1000.0;
 
-    // Audio-reactive folding effect
     let fold = 1.0 + audio * 0.1 * sin(time * 2.0);
 
-    // Generate step sizes based on ID
     let id = floor(p / c + vec3<f32>(0.5));
     let h = hash(id.xz + vec2<f32>(id.y));
 
@@ -125,7 +121,6 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
         }
     }
 
-    // Add subtle displacement
     current_d += fbm(p.xz * 2.0) * 0.1 * scale;
     d = current_d;
 
@@ -160,6 +155,11 @@ fn pal(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f
     return a + b * cos(vec3<f32>(2.0 * PI) * (c * t + d));
 }
 
+// Fresnel for metals
+fn fresnelMetal(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
+    return F0 + (vec3<f32>(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -169,6 +169,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (vec2<f32>(global_id.xy) - resolution * vec2<f32>(0.5)) / vec2<f32>(resolution.y);
     let time = u.config.x;
+
+    // Parameters
+    let complexity = u.zoom_params.x;
+    let irid_strength = u.zoom_params.y;
+    let crystalScale = u.zoom_params.z;
+    let fogDensity = u.zoom_params.w;
+    let metallic = 0.7 + irid_strength * 0.3;
+    let oxidePurity = 0.6 + complexity * 0.1;
 
     // Camera setup
     let camZ = time * 2.0;
@@ -185,8 +193,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mat = res.y;
 
     var color = vec3<f32>(0.0);
-    let fogDensity = u.zoom_params.w;
-    let fogColor = vec3<f32>(0.05, 0.0, 0.1); // Deep purple/black void
+    let fogColor = vec3<f32>(0.05, 0.0, 0.1);
+    var alpha = 0.95; // Background slightly transparent
 
     if (t < 50.0) {
         var p = ro + rd * t;
@@ -201,37 +209,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let spec = pow(max(dot(reflect(-lightDir, n), viewDir), 0.0), 32.0);
 
         // Iridescence / Thin-film interference
-        let irid_strength = u.zoom_params.y;
-        let thickness = mat + u.config.y * 0.1; // Mat is hash, adds variation + audio react
+        let thickness = mat + u.config.y * 0.1;
 
-        // Cosine based palette for iridescence
         let a = vec3<f32>(0.5, 0.5, 0.5);
         let b = vec3<f32>(0.5, 0.5, 0.5);
         let c = vec3<f32>(1.0, 1.0, 1.0);
         let d = vec3<f32>(0.0, 0.33, 0.67);
 
-        // The color shifts based on view angle and thickness
         let irid_color = pal(ndotv * 2.0 + thickness, a, b, c, d);
 
         // Base metallic color
         let base_color = vec3<f32>(0.2, 0.2, 0.2);
 
+        // Metallic Fresnel
+        let F0_bismuth = vec3<f32>(0.7, 0.75, 0.8);
+        let fresnel = fresnelMetal(ndotv, F0_bismuth * metallic);
+        
         // Mix base and iridescence
         var mat_color = mix(base_color, irid_color, vec3<f32>(irid_strength));
 
         color = mat_color * vec3<f32>(diff * 0.5 + 0.5) + vec3<f32>(spec);
 
-        // Audio reactive glow on edges (simulated by ndotv being small)
+        // Audio reactive glow on edges
         let edge = smoothstep(0.4, 0.0, ndotv);
         color += irid_color * vec3<f32>(edge * u.config.y * 2.0);
 
         // Volumetric Prismatic Fog
         let fogAmount = 1.0 - exp(-t * fogDensity * 0.1);
         color = mix(color, fogColor, vec3<f32>(fogAmount));
+        
+        // ═══════════════════════════════════════════════════════════════
+        // Metallic Transmission Alpha
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Bismuth is mostly reflective, but oxide layers transmit
+        let oxideTransmission = (1.0 - metallic * 0.7) * oxidePurity;
+        let transmission = oxideTransmission * (1.0 - length(fresnel) * 0.3);
+        alpha = mix(0.4, 1.0, metallic * 0.8 + length(fresnel) * 0.2);
+        
     } else {
         color = fogColor;
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 50.0, 0.0, 0.0, 0.0));
 }

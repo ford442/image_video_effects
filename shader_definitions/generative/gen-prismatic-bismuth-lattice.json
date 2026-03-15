@@ -3,9 +3,21 @@
   "name": "Prismatic Bismuth Lattice",
   "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
   "category": "generative",
-  "description": "An endlessly folding, hyper-geometric expanse of iridescent, stepped bismuth crystals that breathe and fracture in rhythm with unseen cosmic frequencies.",
-  "tags": ["crystalline", "iridescent", "fractal", "geometric", "audio-reactive"],
-  "features": ["audio-reactive", "mouse-driven"],
+  "description": "Endlessly folding hyper-geometric expanse of iridescent bismuth crystals with physical light transmission. Features thin-film interference, metallic Fresnel reflection, and oxide layer transmission.",
+  "tags": [
+    "crystalline",
+    "iridescent",
+    "fractal",
+    "geometric",
+    "audio-reactive",
+    "alpha-transmission",
+    "physical"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "physical-transmission"
+  ],
   "params": [
     {
       "id": "param1",
@@ -13,7 +25,8 @@
       "default": 3.0,
       "min": 1.0,
       "max": 6.0,
-      "step": 1.0
+      "step": 1.0,
+      "description": "Recursion depth of hopper crystal formation"
     },
     {
       "id": "param2",
@@ -21,7 +34,8 @@
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "description": "Thin-film interference color intensity"
     },
     {
       "id": "param3",
@@ -29,7 +43,8 @@
       "default": 1.0,
       "min": 0.5,
       "max": 5.0,
-      "step": 0.1
+      "step": 0.1,
+      "description": "Size of crystal lattice cells"
     },
     {
       "id": "param4",
@@ -37,7 +52,8 @@
       "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "description": "Atmospheric fog density"
     }
   ]
 }
