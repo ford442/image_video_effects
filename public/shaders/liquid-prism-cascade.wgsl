@@ -1,15 +1,13 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 //  Liquid Prism Cascade
-//  Category: EFFECT | Complexity: VERY_HIGH
-//  Colors separate along curved refractive planes like light through liquid
-//  prisms, creating a 3D depth illusion. Image detail is preserved but colors
-//  float independently through layered color-space warping.
-//  Mathematical approach: Snell's law refraction per-channel, depth-driven
-//  curvature fields, spectral dispersion with Cauchy coefficients, feedback
-//  trail blending for temporal persistence of prismatic ghosts.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+//  Category: EFFECT
+//  Complexity: HIGH
+//  Visual concept: Colors separate along curved planes like light through prisms,
+//    creating a layered 3-D depth illusion where each channel drifts independently.
+//  Mathematical approach: Per-channel UV warping with curved dispersion vectors
+//    derived from local luminance gradient + depth curvature; ripple-modulated
+//    prismatic offset; HSV twist layer composited additively.
+// ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,218 +21,230 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=PrismDensity, y=MouseX, z=MouseY, w=TrailDecay
-    zoom_params: vec4<f32>,  // x=Dispersion, y=CurvatureStrength, z=RefractIndex, w=SpectrumShift
+    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    zoom_params: vec4<f32>, // x=DispersionStrength, y=CurvatureScale,
+                             // z=PrismTwist, w=DepthWeight
     ripples: array<vec4<f32>, 50>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Hash functions
+//  Luminance
 // ─────────────────────────────────────────────────────────────────────────────
-fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
-}
-
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-    var k = vec2<f32>(
-        dot(p, vec2<f32>(127.1, 311.7)),
-        dot(p, vec2<f32>(269.5, 183.3))
-    );
-    return fract(sin(k) * 43758.5453);
+fn luma(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Smooth 2D value noise
+//  2-D hash for micro-noise
 // ─────────────────────────────────────────────────────────────────────────────
-fn valueNoise(p: vec2<f32>) -> f32 {
+fn hash2f(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Smooth value noise (2-D)
+// ─────────────────────────────────────────────────────────────────────────────
+fn vnoise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
-    let a = hash21(i);
-    let b = hash21(i + vec2<f32>(1.0, 0.0));
-    let c = hash21(i + vec2<f32>(0.0, 1.0));
-    let d = hash21(i + vec2<f32>(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    return mix(
+        mix(hash2f(i + vec2<f32>(0.0, 0.0)), hash2f(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash2f(i + vec2<f32>(0.0, 1.0)), hash2f(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FBM for curvature field
+//  Prismatic dispersion offset for a given channel index (0=R, 1=G, 2=B)
+//  Simulates Cauchy dispersion: shorter wavelengths bend more.
 // ─────────────────────────────────────────────────────────────────────────────
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-    var sum = 0.0;
-    var amp = 0.5;
-    var freq = 1.0;
-    for (var i = 0; i < octaves; i++) {
-        sum += amp * valueNoise(p * freq);
-        freq *= 2.0;
-        amp *= 0.5;
-    }
-    return sum;
+fn prismOffset(channel: i32, grad: vec2<f32>, strength: f32, twist: f32, t: f32) -> vec2<f32> {
+    // Wavelength weights: red bends least, blue most
+    let wl = array<f32, 3>(0.6, 1.0, 1.5);
+    let w = wl[channel];
+    // Rotate gradient slightly per channel + time
+    let angle = (f32(channel) - 1.0) * twist + t * 0.1;
+    let cs = cos(angle);
+    let sn = sin(angle);
+    let rotGrad = vec2<f32>(cs * grad.x - sn * grad.y, sn * grad.x + cs * grad.y);
+    return rotGrad * strength * w * 0.018;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Curl noise for flow field
+//  Accumulate ripple displacement
 // ─────────────────────────────────────────────────────────────────────────────
-fn curlField(p: vec2<f32>, t: f32) -> vec2<f32> {
-    let e = 0.01;
-    let nx = fbm(p + vec2<f32>(e, 0.0) + t * 0.1, 4) - fbm(p - vec2<f32>(e, 0.0) + t * 0.1, 4);
-    let ny = fbm(p + vec2<f32>(0.0, e) + t * 0.1, 4) - fbm(p - vec2<f32>(0.0, e) + t * 0.1, 4);
-    return vec2<f32>(ny, -nx) / (2.0 * e);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Cauchy dispersion: refractive index varies per wavelength
-//  Red (700nm) → lower refraction, Blue (450nm) → higher refraction
-// ─────────────────────────────────────────────────────────────────────────────
-fn cauchyRefract(baseIOR: f32, channel: f32) -> f32 {
-    // channel: 0=R, 1=G, 2=B
-    let wavelength = mix(0.70, 0.45, channel / 2.0);
-    let B = 0.01;
-    return baseIOR + B / (wavelength * wavelength);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  2D refraction through a curved surface
-//  Returns displaced UV for a single color channel
-// ─────────────────────────────────────────────────────────────────────────────
-fn prismRefract(uv: vec2<f32>, normal: vec2<f32>, ior: f32) -> vec2<f32> {
-    let incident = normalize(uv - 0.5);
-    let cosI = dot(-incident, normal);
-    let sinT2 = (1.0 / (ior * ior)) * (1.0 - cosI * cosI);
-    let cosT = sqrt(max(0.0, 1.0 - sinT2));
-    let refracted = incident / ior + normal * (cosI / ior - cosT);
-    return refracted;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Compute depth-driven surface normal (gradient of depth field)
-// ─────────────────────────────────────────────────────────────────────────────
-fn depthNormal(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
-    let dR = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
-    let dL = textureSampleLevel(readDepthTexture, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).r;
-    let dU = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-    let dD = textureSampleLevel(readDepthTexture, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).r;
-    return normalize(vec2<f32>(dR - dL, dU - dD) + vec2<f32>(0.0001));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
-// ─────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let dims = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(id.xy);
-    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
-
-    let uv = fragCoord / dims;
-    let texel = 1.0 / dims;
-    let time = u.config.x;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ─────────────────────────────────────────────────────────────────────────
-    let dispersion = u.zoom_params.x * 0.06 + 0.005;       // 0.005 – 0.065
-    let curvatureStr = u.zoom_params.y * 3.0 + 0.5;        // 0.5 – 3.5
-    let baseIOR = u.zoom_params.z * 0.4 + 1.1;             // 1.1 – 1.5
-    let spectrumShift = u.zoom_params.w;                     // 0 – 1
-    let prismDensity = u.zoom_config.x * 4.0 + 1.0;        // 1 – 5
-    let trailDecay = u.zoom_config.w * 0.3 + 0.6;          // 0.6 – 0.9
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Read depth and compute curved refractive surface
-    // ─────────────────────────────────────────────────────────────────────────
-    let depth = textureSampleLevel(readDepthTexture, u_sampler, uv, 0.0).r;
-    let dNormal = depthNormal(uv, texel);
-
-    // Curl flow creates slowly drifting prism orientations
-    let flow = curlField(uv * prismDensity, time);
-    let prismNormal = normalize(dNormal * curvatureStr + flow * 0.3);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Ripple interaction: local curvature spikes
-    // ─────────────────────────────────────────────────────────────────────────
-    var rippleWarp = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
-    for (var i = 0u; i < rippleCount; i++) {
+fn rippleDisp(uv: vec2<f32>, t: f32, rippleCount: u32) -> vec2<f32> {
+    var disp = vec2<f32>(0.0);
+    for (var i: u32 = 0u; i < rippleCount; i++) {
         let r = u.ripples[i];
-        let dist = distance(uv, r.xy);
-        let age = time - r.z;
-        if (age > 0.0 && age < 4.0) {
-            let wave = sin(dist * 40.0 - age * 5.0) * exp(-dist * 8.0) * exp(-age * 0.8);
-            rippleWarp += normalize(uv - r.xy + vec2<f32>(0.0001)) * wave * 0.02;
+        let age = t - r.z;
+        if (age < 0.0 || age > 4.0) { continue; }
+        let d = distance(uv, r.xy);
+        let wave = sin(d * 40.0 - age * 6.0) * exp(-d * 5.0) * exp(-age * 1.2);
+        let env = (1.0 - age / 4.0);
+        if (d > 0.001) {
+            disp += normalize(uv - r.xy) * wave * env * 0.012;
         }
     }
+    return disp;
+}
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Per-channel prismatic refraction (Cauchy dispersion)
-    // ─────────────────────────────────────────────────────────────────────────
-    let effectiveNormal = normalize(prismNormal + rippleWarp * 20.0);
+// ─────────────────────────────────────────────────────────────────────────────
+//  Fractional Brownian Motion (4 octaves)
+// ─────────────────────────────────────────────────────────────────────────────
+fn fbm(p: vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pp = p;
+    for (var i = 0; i < 4; i++) {
+        v += a * vnoise(pp);
+        pp = pp * 2.1 + vec2<f32>(1.7, 9.2);
+        a *= 0.5;
+    }
+    return v;
+}
 
-    // Each channel refracts differently through the curved surface
-    let iorR = cauchyRefract(baseIOR, 0.0 + spectrumShift);
-    let iorG = cauchyRefract(baseIOR, 1.0 + spectrumShift);
-    let iorB = cauchyRefract(baseIOR, 2.0 + spectrumShift);
+// ─────────────────────────────────────────────────────────────────────────────
+//  Spectral Cauchy dispersion coefficient for wavelength λ (nm, normalized)
+//  Cauchy: n(λ) = A + B/λ²
+// ─────────────────────────────────────────────────────────────────────────────
+fn cauchyN(lambda: f32, A: f32, B: f32) -> f32 {
+    return A + B / (lambda * lambda + 0.01);
+}
 
-    let dispR = prismRefract(uv, effectiveNormal, iorR) * dispersion;
-    let dispG = prismRefract(uv, effectiveNormal, iorG) * dispersion;
-    let dispB = prismRefract(uv, effectiveNormal, iorB) * dispersion;
+// ─────────────────────────────────────────────────────────────────────────────
+//  Chromatic aberration angle from index of refraction difference
+// ─────────────────────────────────────────────────────────────────────────────
+fn chromaticAngle(nDiff: f32, incidence: f32) -> f32 {
+    return asin(clamp(sin(incidence) / (nDiff + 1.0), -1.0, 1.0));
+}
 
-    // Depth modulates displacement: foreground refracts more than background
-    let depthScale = 0.3 + depth * 0.7;
+// ─────────────────────────────────────────────────────────────────────────────
+//  Hue-preserving tone mapping
+// ─────────────────────────────────────────────────────────────────────────────
+fn toneMap(c: vec3<f32>) -> vec3<f32> {
+    let lum = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let mapped = lum / (lum + 1.0);
+    return c * (mapped / max(lum, 0.001));
+}
 
-    let uvR = clamp(uv + dispR * depthScale + rippleWarp, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvG = clamp(uv + dispG * depthScale + rippleWarp, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvB = clamp(uv + dispB * depthScale + rippleWarp, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
-    var prismColor = vec3<f32>(r, g, b);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Secondary refraction layer: a second curved plane offset in depth
-    // ─────────────────────────────────────────────────────────────────────────
-    let flow2 = curlField(uv * prismDensity * 1.5 + 3.7, time * 0.7);
-    let norm2 = normalize(dNormal * curvatureStr * 0.6 + flow2 * 0.5);
-    let disp2R = prismRefract(uv, norm2, iorR * 1.05) * dispersion * 0.5;
-    let disp2B = prismRefract(uv, norm2, iorB * 1.05) * dispersion * 0.5;
-
-    let uv2R = clamp(uv + disp2R * (1.0 - depthScale), vec2<f32>(0.0), vec2<f32>(1.0));
-    let uv2B = clamp(uv + disp2B * (1.0 - depthScale), vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let r2 = textureSampleLevel(readTexture, u_sampler, uv2R, 0.0).r;
-    let b2 = textureSampleLevel(readTexture, u_sampler, uv2B, 0.0).b;
-    prismColor = mix(prismColor, vec3<f32>(r2, prismColor.g, b2), 0.3);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Prismatic caustic highlights
-    // ─────────────────────────────────────────────────────────────────────────
-    let causticPattern = fbm(uv * prismDensity * 8.0 + flow * 2.0 + time * 0.3, 5);
-    let causticEdge = smoothstep(0.55, 0.7, causticPattern);
-    let causticHue = fract(causticPattern * 3.0 + time * 0.05 + spectrumShift);
-    let causticCol = vec3<f32>(
-        smoothstep(0.0, 0.33, causticHue) - smoothstep(0.33, 0.66, causticHue),
-        smoothstep(0.33, 0.66, causticHue) - smoothstep(0.66, 1.0, causticHue),
-        smoothstep(0.66, 1.0, causticHue) + (1.0 - smoothstep(0.0, 0.15, causticHue))
+// ─────────────────────────────────────────────────────────────────────────────
+//  Soft-light blend mode
+// ─────────────────────────────────────────────────────────────────────────────
+fn softLight(base: vec3<f32>, blend: vec3<f32>) -> vec3<f32> {
+    return mix(
+        2.0 * base * blend + base * base * (1.0 - 2.0 * blend),
+        2.0 * base * (1.0 - blend) + sqrt(base) * (2.0 * blend - 1.0),
+        step(0.5, blend)
     );
-    prismColor += causticCol * causticEdge * 0.15 * dispersion * 10.0;
+}
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Feedback trail: prismatic ghosts persist and drift
-    // ─────────────────────────────────────────────────────────────────────────
-    let trailUV = clamp(uv + flow * 0.003, vec2<f32>(0.0), vec2<f32>(1.0));
-    let trail = textureSampleLevel(dataTextureC, u_sampler, trailUV, 0.0).rgb;
-    let finalColor = mix(prismColor, trail, trailDecay);
+// ─────────────────────────────────────────────────────────────────────────────
+//  Main
+// ─────────────────────────────────────────────────────────────────────────────
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let res   = u.config.zw;
+    let uv    = vec2<f32>(gid.xy) / res;
+    let t     = u.config.x;
+    let tx    = 1.0 / res;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Output
-    // ─────────────────────────────────────────────────────────────────────────
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Parameters
+    let dispStrength = u.zoom_params.x * 2.0 + 0.3;    // 0.3 – 2.3
+    let curvScale    = u.zoom_params.y * 3.0 + 0.5;    // 0.5 – 3.5
+    let prismTwist   = u.zoom_params.z * 3.14159;       // 0 – π
+    let depthWeight  = u.zoom_params.w;                  // 0 – 1
+
+    // ── Luminance gradient (finite differences) ───────────────────────────
+    let lumC  = luma(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb);
+    let lumR  = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(tx.x, 0.0), 0.0).rgb);
+    let lumL  = luma(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(tx.x, 0.0), 0.0).rgb);
+    let lumU  = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, tx.y), 0.0).rgb);
+    let lumD  = luma(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, tx.y), 0.0).rgb);
+    let lumGrad = vec2<f32>(lumR - lumL, lumU - lumD);
+
+    // ── Depth curvature ───────────────────────────────────────────────────
+    let depth  = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(tx.x * 2.0, 0.0), 0.0).r;
+    let depthL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(tx.x * 2.0, 0.0), 0.0).r;
+    let depthU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, tx.y * 2.0), 0.0).r;
+    let depthD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, tx.y * 2.0), 0.0).r;
+    let depthCurv = vec2<f32>(depthR - depthL, depthU - depthD) * curvScale;
+
+    // Combined gradient (luminance + depth curvature)
+    let grad = lumGrad + depthCurv * depthWeight;
+
+    // ── Slow curved warp via noise ─────────────────────────────────────────
+    let noiseUV   = uv * 3.5 + vec2<f32>(t * 0.04, t * 0.03);
+    let noiseBend = (vnoise(noiseUV) - 0.5) * 0.007;
+    let bentGrad  = grad + vec2<f32>(noiseBend, noiseBend * 0.7);
+
+    // ── Ripple displacement ───────────────────────────────────────────────
+    let ripples = rippleDisp(uv, t, u32(u.config.y));
+
+    // ── Per-channel prismatic sampling ────────────────────────────────────
+    var rgb: array<f32, 3>;
+    for (var ch = 0; ch < 3; ch++) {
+        let off  = prismOffset(ch, bentGrad, dispStrength, prismTwist, t);
+        let sUV  = clamp(uv + off + ripples, vec2<f32>(0.0), vec2<f32>(1.0));
+        let col  = textureSampleLevel(readTexture, u_sampler, sUV, 0.0);
+        if (ch == 0) { rgb[0] = col.r; }
+        else if (ch == 1) { rgb[1] = col.g; }
+        else { rgb[2] = col.b; }
+    }
+
+    // ── Prismatic glow: add a faint additive halo in the dispersion direction
+    let glowAmt = length(bentGrad) * 0.6;
+    let glowR = textureSampleLevel(readTexture, u_sampler,
+        clamp(uv + bentGrad * 0.03 + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let glowB = textureSampleLevel(readTexture, u_sampler,
+        clamp(uv - bentGrad * 0.03 + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+
+    var outColor = vec4<f32>(
+        clamp(rgb[0] + glowR * glowAmt * 0.15, 0.0, 1.0),
+        clamp(rgb[1], 0.0, 1.0),
+        clamp(rgb[2] + glowB * glowAmt * 0.15, 0.0, 1.0),
+        1.0
+    );
+
+    // ── FBM-modulated prismatic shimmer ───────────────────────────────────
+    let fbmVal  = fbm(uv * 6.0 + vec2<f32>(t * 0.02, -t * 0.015));
+    let shimmer = fbmVal * 0.04 * dispStrength;
+    let shimmerColor = vec3<f32>(
+        shimmer * sin(t + 0.0) * 0.5 + 0.5,
+        shimmer * sin(t + 2.094) * 0.5 + 0.5,
+        shimmer * sin(t + 4.189) * 0.5 + 0.5
+    );
+
+    // ── Cauchy dispersion enhancement ─────────────────────────────────────
+    let nR = cauchyN(0.65, 1.45, 0.01);
+    let nB = cauchyN(0.45, 1.45, 0.01);
+    let cauchyDisp = (nB - nR) * length(bentGrad) * dispStrength * 0.02;
+    let cauchyShift = vec2<f32>(cos(t * 0.1), sin(t * 0.1)) * cauchyDisp;
+    let extraR = textureSampleLevel(readTexture, u_sampler,
+        clamp(uv + cauchyShift + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let extraB = textureSampleLevel(readTexture, u_sampler,
+        clamp(uv - cauchyShift + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+
+    // ── Tone-mapped composite with shimmer ────────────────────────────────
+    let prismFinal = toneMap(vec3<f32>(
+        clamp(outColor.r * 0.85 + extraR * 0.15 + shimmerColor.r, 0.0, 1.0),
+        clamp(outColor.g + shimmerColor.g, 0.0, 1.0),
+        clamp(outColor.b * 0.85 + extraB * 0.15 + shimmerColor.b, 0.0, 1.0)
+    ));
+    outColor = vec4<f32>(softLight(outColor.rgb, prismFinal) * 0.6 + prismFinal * 0.4, 1.0);
+
+    // ── Edge vignette darkening for depth of field feel ───────────────────
+    // Smooth radial falloff keeps focal center bright while darkening corners.
+    // Combined with prismatic shimmer this creates a focused-lens aesthetic.
+    let edgeDist = length(uv - vec2<f32>(0.5));
+    let vignette = 1.0 - smoothstep(0.35, 0.85, edgeDist) * 0.4;
+    outColor = vec4<f32>(outColor.rgb * vignette, 1.0);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(clamp(outColor.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

@@ -1,0 +1,48 @@
+{
+  "id": "gen-chromatic-metamorphosis",
+  "name": "Chromatic Metamorphosis",
+  "url": "shaders/gen-chromatic-metamorphosis.wgsl",
+  "category": "generative",
+  "description": "Metaballs morph continuously between sphere, torus, box, and capsule shapes via smooth-min SDF blending. Surface color evolves independently from geometry in flowing waves.",
+  "tags": ["metamorphosis", "morphing", "sdf", "raymarching", "color", "organic", "generative", "3d"],
+  "features": ["mouse-driven"],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Morph Speed",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Speed of shape transformation cycle."
+    },
+    {
+      "id": "param2",
+      "name": "Color Speed",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Speed at which surface color evolves independently of geometry."
+    },
+    {
+      "id": "param3",
+      "name": "Blend Radius",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.35,
+      "step": 0.01,
+      "description": "Smooth-min radius for SDF blending between shapes."
+    },
+    {
+      "id": "param4",
+      "name": "Light Intensity",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "step": 0.01,
+      "description": "Intensity of the key light illuminating the morphing form."
+    }
+  ]
+}

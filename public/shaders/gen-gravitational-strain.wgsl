@@ -1,16 +1,16 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 //  Gravitational Strain Field
-//  Category: GENERATIVE | Complexity: VERY_HIGH
-//  Invisible gravity wells warp space itself. Space curvature rendered as
-//  visual distortion, with emission where fields collide. Dark matter
-//  visualization as art—seeing the unseeable.
-//  Mathematical approach: N-body gravitational field with Schwarzschild-like
-//  metric distortion, geodesic ray tracing through curved spacetime,
-//  tidal strain tensor visualization (eigenvalue coloring), gravitational
-//  wave emission at merger events, accretion disk glow.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+//  Category: GENERATIVE
+//  Complexity: VERY HIGH
+//  Visual concept: Invisible gravity wells warp space itself. We render the
+//    curvature of space as visual distortion, with bright emission at field
+//    collision zones — dark matter visualization as fine art.
+//  Mathematical approach: N gravity wells each contribute a metric tensor
+//    deformation to the ray. Rays are traced along geodesics by integrating
+//    dv/ds = -∇Φ where Φ = Σ -GM/r. Lensed image is sampled from a
+//    procedural star-field background. Tidal forces emit color where |∇²Φ|
+//    is large (field gradient maxima).
+// ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -24,295 +24,255 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=WellCount, y=MouseX, z=MouseY, w=WaveAmplitude
-    zoom_params: vec4<f32>,  // x=FieldStrength, y=StrainVis, z=AccretionGlow, w=OrbitSpeed
+    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    zoom_params: vec4<f32>, // x=WellCount(1-6), y=WellMass, z=BendStrength, w=EmissionScale
     ripples: array<vec4<f32>, 50>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Hash functions
-// ─────────────────────────────────────────────────────────────────────────────
-fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
-}
-
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-    return vec2<f32>(
-        fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453),
-        fract(sin(dot(p, vec2<f32>(269.5, 183.3))) * 43758.5453)
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Noise for background nebula
-// ─────────────────────────────────────────────────────────────────────────────
-fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
-        mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
-        u.y
-    );
-}
-
-fn fbm(p: vec2<f32>) -> f32 {
-    var v = 0.0; var a = 0.5; var freq = 1.0;
-    for (var i = 0; i < 5; i++) {
-        v += a * valueNoise(p * freq);
-        a *= 0.5; freq *= 2.0;
-    }
-    return v;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  HSV to RGB
+//  HSV → RGB
 // ─────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
-    let h6 = h * 6.0;
-    let x = c * (1.0 - abs(h6 % 2.0 - 1.0));
+    let c = v * s; let h6 = fract(h) * 6.0;
+    let x = c * (1.0 - abs(fract(h6 * 0.5) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
-    if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
+    if      (h6 < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
     else if (h6 < 3.0) { rgb = vec3<f32>(0.0, c, x); }
     else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, c); }
     else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
     else               { rgb = vec3<f32>(c, 0.0, x); }
-    return rgb + vec3<f32>(v - c);
+    return rgb + (v - c);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Gravity well positions (orbiting each other)
+//  Hash / noise
 // ─────────────────────────────────────────────────────────────────────────────
-fn wellPosition(idx: i32, time: f32, orbitSpeed: f32) -> vec3<f32> {
-    let fi = f32(idx);
-    let seed = vec2<f32>(fi * 17.3, fi * 31.7 + 5.0);
-    let basePos = (hash22(seed) * 2.0 - 1.0) * 1.5;
-
-    // Orbit around center of mass
-    let phase = time * orbitSpeed * (0.3 + fi * 0.15) + fi * 1.57;
-    let orbitR = 0.5 + fi * 0.3;
-    let pos = vec2<f32>(
-        basePos.x * 0.3 + orbitR * cos(phase),
-        basePos.y * 0.3 + orbitR * sin(phase * 0.7 + fi)
-    );
-
-    // Mass varies per well
-    let mass = 0.5 + hash21(seed + 100.0) * 1.5;
-
-    return vec3<f32>(pos, mass);
+fn h1(n: f32) -> f32 { return fract(sin(n * 127.1 + 311.7) * 43758.5); }
+fn h2(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn vnoise(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(h2(i), h2(i+vec2<f32>(1,0)), u.x), mix(h2(i+vec2<f32>(0,1)), h2(i+vec2<f32>(1,1)), u.x), u.y);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Compute gravitational field and tidal strain at a point
-//  Returns: (deflection.xy, potential, strain_magnitude)
+//  Gravitational potential Φ at 2-D position p from N wells
 // ─────────────────────────────────────────────────────────────────────────────
-fn gravField(p: vec2<f32>, time: f32, numWells: i32, fieldStr: f32, orbitSpeed: f32) -> vec4<f32> {
-    var totalDeflection = vec2<f32>(0.0);
-    var totalPotential = 0.0;
-    var strainMag = 0.0;
-
-    for (var i = 0; i < 8; i++) {
-        if (i >= numWells) { break; }
-        let well = wellPosition(i, time, orbitSpeed);
-        let wellPos = well.xy;
-        let mass = well.z;
-
-        let diff = p - wellPos;
-        let dist = length(diff) + 0.05; // softening
-        let dir = diff / dist;
-
-        // Gravitational deflection (like gravitational lensing)
-        let strength = mass * fieldStr / (dist * dist);
-        totalDeflection -= dir * strength;
-
-        // Newtonian potential
-        totalPotential -= mass / dist;
-
-        // Tidal strain: second derivative of potential
-        // Strain ~ mass / r³ (tidal force)
-        strainMag += mass / (dist * dist * dist);
+fn gravPotential(p: vec2<f32>, wells: array<vec3<f32>, 6>, n: i32) -> f32 {
+    var phi = 0.0;
+    for (var i = 0; i < n; i++) {
+        let wpos = wells[i].xy;
+        let mass = wells[i].z;
+        let r    = length(p - wpos) + 0.05;
+        phi     -= mass / r;
     }
-
-    return vec4<f32>(totalDeflection, totalPotential, strainMag);
+    return phi;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Gravitational wave pattern
-//  Simulates the "+" and "×" polarization modes
+//  Gravitational gradient ∇Φ
 // ─────────────────────────────────────────────────────────────────────────────
-fn gravWave(p: vec2<f32>, time: f32, amplitude: f32) -> f32 {
-    var wave = 0.0;
-    // Multiple wave sources (from orbiting pairs)
-    for (var i = 0; i < 3; i++) {
-        let fi = f32(i);
-        let freq = 2.0 + fi * 1.5;
-        let phase = time * freq + fi * 2.09;
-        let waveDir = vec2<f32>(cos(fi * 1.2), sin(fi * 1.2));
-
-        // Plus polarization
-        let hPlus = sin(dot(p, waveDir) * 8.0 - phase);
-        // Cross polarization
-        let hCross = sin(dot(p, vec2<f32>(-waveDir.y, waveDir.x)) * 8.0 - phase + 1.57);
-
-        let r = length(p);
-        let decay = amplitude / (r + 0.5);
-        wave += (hPlus + hCross * 0.5) * decay;
+fn gravGrad(p: vec2<f32>, wells: array<vec3<f32>, 6>, n: i32) -> vec2<f32> {
+    var g = vec2<f32>(0.0);
+    for (var i = 0; i < n; i++) {
+        let wpos = wells[i].xy;
+        let mass = wells[i].z;
+        let d    = p - wpos;
+        let r2   = dot(d, d) + 0.0025;
+        g       += d * mass / (r2 * sqrt(r2));
     }
-    return wave;
+    return -g;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
+//  Procedural star field
 // ─────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let dims = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(id.xy);
-    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
-
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
-    let time = u.config.x;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ─────────────────────────────────────────────────────────────────────────
-    let fieldStr = u.zoom_params.x * 0.08 + 0.01;          // 0.01 – 0.09
-    let strainVis = u.zoom_params.y * 2.0 + 0.3;           // 0.3 – 2.3
-    let accretionGlow = u.zoom_params.z * 1.5 + 0.2;       // 0.2 – 1.7
-    let orbitSpeed = u.zoom_params.w * 1.5 + 0.2;          // 0.2 – 1.7
-    let numWells = i32(u.zoom_config.x * 5.0 + 3.0);       // 3 – 8
-    let waveAmp = u.zoom_config.w * 0.5 + 0.05;            // 0.05 – 0.55
-
-    // Mouse adds an extra gravity well
-    let mouseUV = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) / dims * 2.0 - 1.0);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Background: starfield + nebula (this is what gets lensed)
-    // ─────────────────────────────────────────────────────────────────────────
-    var bgUV = uv;
-
-    // Apply gravitational lensing to background UV
-    let field = gravField(uv, time, numWells, fieldStr, orbitSpeed);
-    let deflection = field.xy;
-    let potential = field.z;
-    let strain = field.w;
-
-    // Mouse gravity well
-    let mouseDiff = uv - mouseUV;
-    let mouseDist = length(mouseDiff) + 0.1;
-    let mouseDeflect = -normalize(mouseDiff) * 0.02 / (mouseDist * mouseDist);
-
-    bgUV = uv + deflection + mouseDeflect;
-
-    // Gravitational wave distortion
-    let gWave = gravWave(uv, time, waveAmp);
-    bgUV += vec2<f32>(gWave * 0.01, gWave * 0.01);
-
-    // Stars
-    let starField = pow(hash21(floor(bgUV * 150.0)), 30.0);
-    let starColor = vec3<f32>(0.9, 0.95, 1.0) * starField;
-
-    // Nebula
-    let nebulaR = fbm(bgUV * 2.0 + time * 0.02);
-    let nebulaG = fbm(bgUV * 2.0 + 10.0 + time * 0.015);
-    let nebulaB = fbm(bgUV * 2.0 + 20.0 + time * 0.025);
-    let nebula = vec3<f32>(nebulaR * 0.15, nebulaG * 0.1, nebulaB * 0.2);
-
-    var col = starColor + nebula + vec3<f32>(0.005, 0.008, 0.015);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Tidal strain visualization: color-code the strain tensor
-    // ─────────────────────────────────────────────────────────────────────────
-    let strainNorm = strain * strainVis;
-    let strainColor = hsv2rgb(
-        fract(0.6 - strainNorm * 0.5), // Blue (weak) → Red (strong)
-        0.7,
-        min(strainNorm * 0.8, 0.6)
-    );
-    col += strainColor;
-
-    // Strain field lines (visualize gradient direction)
-    let eps = 0.01;
-    let fieldR = gravField(uv + vec2<f32>(eps, 0.0), time, numWells, fieldStr, orbitSpeed).w;
-    let fieldL = gravField(uv - vec2<f32>(eps, 0.0), time, numWells, fieldStr, orbitSpeed).w;
-    let fieldU = gravField(uv + vec2<f32>(0.0, eps), time, numWells, fieldStr, orbitSpeed).w;
-    let fieldD = gravField(uv - vec2<f32>(0.0, eps), time, numWells, fieldStr, orbitSpeed).w;
-    let strainGrad = vec2<f32>(fieldR - fieldL, fieldU - fieldD);
-    let strainLines = abs(sin(atan2(strainGrad.y, strainGrad.x) * 8.0 + length(strainGrad) * 50.0));
-    col += vec3<f32>(0.1, 0.15, 0.3) * smoothstep(0.95, 1.0, strainLines) * strainNorm * 0.5;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Accretion disks around gravity wells
-    // ─────────────────────────────────────────────────────────────────────────
-    for (var i = 0; i < 8; i++) {
-        if (i >= numWells) { break; }
-        let well = wellPosition(i, time, orbitSpeed);
-        let wellPos = well.xy;
-        let mass = well.z;
-
-        let diff = uv - wellPos;
-        let dist = length(diff);
-
-        // Accretion ring
-        let ringRadius = mass * 0.15;
-        let ringWidth = 0.04;
-        let ring = exp(-pow((dist - ringRadius) / ringWidth, 2.0));
-
-        // Rotation pattern
-        let angle = atan2(diff.y, diff.x);
-        let spiral = sin(angle * 3.0 - time * 4.0 * orbitSpeed - dist * 20.0) * 0.5 + 0.5;
-
-        let diskHue = fract(0.05 + dist * 2.0); // Red-orange-yellow
-        let diskColor = hsv2rgb(diskHue, 0.8, 1.0);
-        col += diskColor * ring * spiral * accretionGlow * mass;
-
-        // Event horizon glow
-        let horizonGlow = exp(-dist * 15.0 / mass) * mass * 0.2;
-        col += vec3<f32>(0.1, 0.05, 0.2) * horizonGlow * accretionGlow;
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Gravitational wave visualization
-    // ─────────────────────────────────────────────────────────────────────────
-    let waveVis = abs(gWave);
-    let waveColor = hsv2rgb(fract(0.5 + gWave * 0.5), 0.6, waveVis * 0.3);
-    col += waveColor * waveAmp * 2.0;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Ripple interaction: create temporary gravity sources
-    // ─────────────────────────────────────────────────────────────────────────
-    let rippleCount = u32(u.config.y);
-    for (var i = 0u; i < rippleCount; i++) {
-        let r = u.ripples[i];
-        let rUV = (r.xy * 2.0 - 1.0);
-        let dist = length(uv - rUV);
-        let age = time - r.z;
-        if (age > 0.0 && age < 5.0) {
-            // Merger event: expanding gravitational wave front
-            let waveFront = exp(-abs(dist - age * 0.6) * 12.0) * exp(-age * 0.4);
-            let mergerColor = hsv2rgb(fract(dist * 2.0 + 0.6), 0.7, 1.0);
-            col += mergerColor * waveFront * 0.5;
-
-            // Central flash (merger moment)
-            let flash = exp(-dist * 8.0) * exp(-age * 3.0);
-            col += vec3<f32>(1.0, 0.8, 0.5) * flash;
+fn starField(uv: vec2<f32>, t: f32) -> vec3<f32> {
+    var col = vec3<f32>(0.0);
+    // Multiple scales of star density
+    let scales = array<f32, 3>(40.0, 80.0, 160.0);
+    for (var s = 0; s < 3; s++) {
+        let sc  = scales[s];
+        let cell = floor(uv * sc);
+        let frac = fract(uv * sc);
+        let seed = h2(cell + vec2<f32>(f32(s) * 73.1, 0.0));
+        if (seed > 0.97) {
+            let starPos = vec2<f32>(h2(cell + 1.0), h2(cell + 2.0));
+            let dist    = length(frac - starPos);
+            let twinkle = 0.7 + 0.3 * sin(t * (seed * 5.0 + 1.0) + seed * 100.0);
+            let bright  = exp(-dist * sc * 0.4) * twinkle;
+            let hue     = fract(seed * 3.7 + t * 0.01);
+            col        += hsv2rgb(hue, 0.3 + seed * 0.4, bright * 0.8 / f32(s + 1));
         }
     }
+    // Nebula glow
+    let nebHue = fract(vnoise(uv * 3.0 + t * 0.005) + t * 0.01);
+    col += hsv2rgb(nebHue, 0.6, vnoise(uv * 6.0 + t * 0.01) * 0.12);
+    return col;
+}
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Vignette and tone mapping
-    // ─────────────────────────────────────────────────────────────────────────
-    col *= 1.0 - 0.3 * dot(uv, uv) * 0.25;
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(0.4545));
+// ─────────────────────────────────────────────────────────────────────────────
+//  Tidal emission: bright where field curvature (∇²Φ) is large
+// ─────────────────────────────────────────────────────────────────────────────
+fn tidalEmission(p: vec2<f32>, wells: array<vec3<f32>, 6>, n: i32, t: f32) -> vec3<f32> {
+    let eps = 0.01;
+    let phi  = gravPotential(p, wells, n);
+    let phiR = gravPotential(p + vec2<f32>(eps, 0.0), wells, n);
+    let phiL = gravPotential(p - vec2<f32>(eps, 0.0), wells, n);
+    let phiU = gravPotential(p + vec2<f32>(0.0, eps), wells, n);
+    let phiD = gravPotential(p - vec2<f32>(0.0, eps), wells, n);
+    let laplacian = abs((phiR + phiL + phiU + phiD - 4.0 * phi) / (eps * eps));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Also add gradient magnitude (shear stress)
+    let gx = (phiR - phiL) / (2.0 * eps);
+    let gy = (phiU - phiD) / (2.0 * eps);
+    let gradMag = length(vec2<f32>(gx, gy));
+
+    let emission = clamp(laplacian * 0.03 + gradMag * 0.5, 0.0, 3.0);
+    let hue = fract(phi * 0.3 + t * 0.08);
+    return hsv2rgb(hue, 0.9, 1.0) * emission;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FBM for nebula texture
+// ─────────────────────────────────────────────────────────────────────────────
+fn fbm_gs(p: vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pp = p;
+    for (var i = 0; i < 4; i++) {
+        v += a * vnoise(pp);
+        pp = pp * 2.1 + vec2<f32>(1.7, 9.2);
+        a *= 0.5;
+    }
+    return v;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Einstein ring test: check if ray approaches lensing angle
+// ─────────────────────────────────────────────────────────────────────────────
+fn einsteinRingGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32, t: f32) -> f32 {
+    let d = length(p - wellPos);
+    let eRing = sqrt(mass * 0.5); // Einstein ring radius proportional to √mass
+    let ringWidth = 0.01;
+    return smoothstep(ringWidth, 0.0, abs(d - eRing)) * mass * 8.0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Main
+// ─────────────────────────────────────────────────────────────────────────────
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let res    = u.config.zw;
+    let uv     = vec2<f32>(gid.xy) / res;
+    let t      = u.config.x;
+    let mouse  = u.zoom_config.yz;
+
+    let wellCount   = i32(u.zoom_params.x * 5.0 + 1.5);   // 1 – 6
+    let wellMass    = u.zoom_params.y * 0.08 + 0.01;        // 0.01 – 0.09
+    let bendStrength = u.zoom_params.z * 0.15 + 0.02;       // 0.02 – 0.17
+    let emScale     = u.zoom_params.w * 3.0 + 0.5;          // 0.5 – 3.5
+
+    let aspect = res.x / res.y;
+    let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+
+    // ── Set up gravity wells ───────────────────────────────────────────────
+    var wells: array<vec3<f32>, 6>;
+    for (var i = 0; i < 6; i++) {
+        let seed = f32(i) * 13.7;
+        let orbitR = h1(seed) * 0.25 + 0.1;
+        let orbitS = (h1(seed + 1.0) * 0.5 + 0.3) * (select(-1.0, 1.0, i32(h1(seed + 2.0) * 10.0) % 2 == 0));
+        let angle  = orbitS * t + h1(seed + 3.0) * 6.28318;
+        let wx     = cos(angle) * orbitR * aspect;
+        let wy     = sin(angle) * orbitR;
+        let mass   = wellMass * (h1(seed + 4.0) * 0.8 + 0.4);
+        wells[i] = vec3<f32>(wx, wy, mass);
+    }
+    // Add mouse-controlled well
+    let mouseWell = vec2<f32>((mouse.x - 0.5) * aspect, mouse.y - 0.5);
+    wells[0] = vec3<f32>(mouseWell.x, mouseWell.y, wellMass * 1.5);
+
+    // ── Ray deflection: trace geodesic via Euler integration ─────────────
+    var rayPos = p;
+    var rayVel = vec2<f32>(0.0);
+    let steps  = 20;
+    let stepSz = 1.0 / f32(steps);
+
+    for (var s = 0; s < steps; s++) {
+        let acc  = gravGrad(rayPos, wells, wellCount) * bendStrength;
+        rayVel  += acc * stepSz;
+        rayPos  += rayVel * stepSz;
+    }
+
+    // ── Sample lensed star field ───────────────────────────────────────────
+    let lensedUV = (rayPos / vec2<f32>(aspect, 1.0) + 0.5);
+    let stars    = starField(lensedUV, t);
+
+    // ── Tidal emission ────────────────────────────────────────────────────
+    let emission = tidalEmission(p, wells, wellCount, t) * emScale;
+
+    // ── Schwarzschild-like darkening near wells ───────────────────────────
+    var darkening = 1.0;
+    for (var i = 0; i < wellCount; i++) {
+        let d     = length(p - wells[i].xy);
+        let rs    = wells[i].z * 2.0; // Schwarzschild-like radius
+        darkening *= 1.0 - exp(-d * d / (rs * rs * 0.1)) * 0.85;
+    }
+
+    // ── Ripple: adds temporary extra gravity well ─────────────────────────
+    let ripCount = u32(u.config.y);
+    var ripEmission = vec3<f32>(0.0);
+    for (var i: u32 = 0u; i < ripCount; i++) {
+        let r   = u.ripples[i];
+        let age = t - r.z;
+        if (age < 0.0 || age > 3.0) { continue; }
+        let rp  = (r.xy - 0.5) * vec2<f32>(aspect, 1.0);
+        let d   = length(p - rp);
+        let ring = exp(-(d - age * 0.3) * (d - age * 0.3) * 80.0) * exp(-age * 1.5);
+        ripEmission += hsv2rgb(fract(age * 0.4), 0.9, ring * 2.0);
+    }
+
+    // ── Compose ───────────────────────────────────────────────────────────
+    var col = stars * darkening + emission + ripEmission;
+
+    // ── Einstein ring glows around each well ──────────────────────────────
+    for (var i = 0; i < wellCount; i++) {
+        let ering = einsteinRingGlow(p, wells[i].xy, wells[i].z, t);
+        let eHue  = fract(f32(i) / 6.0 + t * 0.05 + 0.1);
+        col += hsv2rgb(eHue, 0.9, 1.0) * ering;
+    }
+
+    // ── Relativistic Doppler: color shift based on ray velocity ───────────
+    let raySpeed = length(rayVel);
+    let blueshift = clamp(raySpeed * 5.0, 0.0, 1.0);
+    // Blue-shift approaching side, red-shift receding side
+    let dopplerHue = fract(t * 0.03 - blueshift * 0.15);
+    col = mix(col, col * hsv2rgb(dopplerHue, 0.4, 1.0), blueshift * 0.25);
+
+    // ── Dark matter "web" texture via FBM ─────────────────────────────────
+    let dmUV    = p * 4.0 + vec2<f32>(t * 0.007, -t * 0.005);
+    let dmWeb   = fbm_gs(dmUV);
+    let dmDark  = smoothstep(0.6, 1.0, dmWeb) * 0.12;
+    let dmColor = hsv2rgb(fract(t * 0.04 + dmWeb), 0.3, dmDark);
+    col = col * (1.0 - dmDark * 0.5) + dmColor;
+
+    // ── Gravitational lensing arc highlights ──────────────────────────────
+    let lensArc  = length(rayVel) * darkening * emScale * 0.3;
+    let arcColor = hsv2rgb(fract(atan2(rayVel.y, rayVel.x) / 6.28318 + t * 0.05), 0.8, lensArc);
+    col = col + arcColor * smoothstep(0.05, 0.2, raySpeed);
+
+    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Depth: gravitational potential (normalized)
+    let phi = gravPotential(p, wells, wellCount);
+    let depthOut = clamp((-phi) / (wellMass * f32(wellCount) * 20.0), 0.0, 1.0);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
 }

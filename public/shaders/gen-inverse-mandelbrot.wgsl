@@ -1,16 +1,16 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 //  Inverse Mandelbrot Realm
-//  Category: GENERATIVE | Complexity: VERY_HIGH
-//  Inverse/reciprocal iteration in color-space rather than position-space.
-//  Instead of z → z² + c, we iterate color vectors: c → f(c, z) where z is
-//  the spatial coordinate. Generates alien fractals where colors iterate instead
-//  of coordinates—a completely novel aesthetic.
-//  Mathematical approach: Color-space Mandelbrot with reciprocal mapping,
-//  quaternion iteration for 3-channel color, escape-time coloring in RGB
-//  dimensions, Julia set morphing via mouse position.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+//  Category: GENERATIVE
+//  Complexity: VERY HIGH
+//  Visual concept: Instead of iterating coordinates in the complex plane, we
+//    iterate color-space vectors through the Mandelbrot map. Each pixel's RGB
+//    becomes a complex number that orbits, accumulates, and escapes — creating
+//    alien fractal color fields that change with every parameter tweak.
+//  Mathematical approach: Treat (R+iG) as a complex number z; iterate
+//    z → z² + c where c is derived from position; track whether the color
+//    vector escapes; use smooth colouring with orbit traps on the B channel.
+//    Result: fractal structure in color-space, not position-space.
+// ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -24,249 +24,259 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=IterMode, y=MouseX, z=MouseY, w=Saturation
-    zoom_params: vec4<f32>,  // x=Zoom, y=MaxIter, z=ColorRotSpeed, w=InversePower
+    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    zoom_params: vec4<f32>, // x=Iterations, y=ColorZoom, z=CmapRotate, w=BailoutRadius
     ripples: array<vec4<f32>, 50>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Complex operations
+//  Complex multiplication
 // ─────────────────────────────────────────────────────────────────────────────
 fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    return vec2<f32>(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
-}
-
-fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    let d = dot(b, b) + 1e-12;
-    return vec2<f32>(a.x * b.x + a.y * b.y, a.y * b.x - a.x * b.y) / d;
-}
-
-fn cpow(z: vec2<f32>, n: f32) -> vec2<f32> {
-    let r = length(z);
-    let theta = atan2(z.y, z.x);
-    let rn = pow(r + 1e-10, n);
-    return rn * vec2<f32>(cos(n * theta), sin(n * theta));
+    return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  3D "tricomplex" multiplication for color-space iteration
-//  Extends complex multiplication to 3 components using quaternion-like rules
-// ─────────────────────────────────────────────────────────────────────────────
-fn triMul(a: vec3<f32>, b: vec3<f32>) -> vec3<f32> {
-    return vec3<f32>(
-        a.x * b.x - a.y * b.y - a.z * b.z,
-        a.x * b.y + a.y * b.x + a.z * b.z * 0.5,
-        a.x * b.z + a.z * b.x + a.y * b.y * 0.5
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Reciprocal in color space: 1/c where c is a 3D color vector
-// ─────────────────────────────────────────────────────────────────────────────
-fn triReciprocal(c: vec3<f32>) -> vec3<f32> {
-    let d = dot(c, c) + 1e-8;
-    return vec3<f32>(c.x, -c.y, -c.z) / d;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hash
-// ─────────────────────────────────────────────────────────────────────────────
-fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  HSV to RGB
+//  HSV → RGB
 // ─────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
-    let h6 = h * 6.0;
-    let x = c * (1.0 - abs(h6 % 2.0 - 1.0));
+    let c = v * s; let h6 = fract(h) * 6.0;
+    let x = c * (1.0 - abs(fract(h6 * 0.5) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
-    if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
+    if      (h6 < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
     else if (h6 < 3.0) { rgb = vec3<f32>(0.0, c, x); }
     else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, c); }
     else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
     else               { rgb = vec3<f32>(c, 0.0, x); }
-    return rgb + vec3<f32>(v - c);
+    return rgb + (v - c);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Color-space Mandelbrot iteration
-//  Instead of z → z² + c (position), we do:
-//  color → f(color, position) where f uses tricomplex arithmetic
-//  The "escape" happens in color-magnitude space
+//  Value noise
 // ─────────────────────────────────────────────────────────────────────────────
-fn colorMandelbrot(pos: vec2<f32>, juliaC: vec2<f32>, maxIter: i32, invPower: f32, mode: f32, time: f32) -> vec4<f32> {
-    // Initial color seeded from position
-    var c = vec3<f32>(pos.x, pos.y, sin(pos.x * pos.y + time * 0.1) * 0.5);
+fn h2(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn vnoise(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(h2(i), h2(i+vec2<f32>(1,0)), u.x), mix(h2(i+vec2<f32>(0,1)), h2(i+vec2<f32>(1,1)), u.x), u.y);
+}
 
-    // Julia constant embedded in color space
-    let jc = vec3<f32>(juliaC.x * 0.8, juliaC.y * 0.8, sin(time * 0.3) * 0.3);
+// ─────────────────────────────────────────────────────────────────────────────
+//  Smooth escape-count (continuous coloring)
+// ─────────────────────────────────────────────────────────────────────────────
+struct MandResult {
+    escaped:  bool,
+    smooth_n: f32,  // smooth iteration count [0, maxIter]
+    orbit_min: f32, // minimum |z| during orbit (orbit trap)
+    final_z:  vec2<f32>,
+};
 
-    var z = c;
-    var escaped = false;
-    var iter = 0;
-    var colorAccum = vec3<f32>(0.0);
-    var orbitTrap = 1e5;
+fn inverseMandelbrot(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> MandResult {
+    var z = z0;
+    var orbitMin = 1e9;
+    var res: MandResult;
+    res.escaped  = false;
+    res.smooth_n = 0.0;
+    res.orbit_min = 0.0;
+    res.final_z  = z;
 
-    for (var i = 0; i < 64; i++) {
-        if (i >= maxIter) { break; }
-
-        // === Iteration modes ===
-        if (mode < 0.33) {
-            // Mode 1: Standard tricomplex Mandelbrot
-            // z → z² + c (in color space)
-            z = triMul(z, z) + c;
-        } else if (mode < 0.66) {
-            // Mode 2: Reciprocal iteration (the "inverse" part)
-            // z → 1/z^n + c
-            let zp = triMul(z, z);
-            z = triReciprocal(zp) * invPower + c;
-        } else {
-            // Mode 3: Hybrid—alternates between forward and inverse
-            if (i % 2 == 0) {
-                z = triMul(z, z) + c;
-            } else {
-                z = triReciprocal(z) * invPower + jc;
-            }
+    for (var n = 0; n < maxIter; n++) {
+        // Standard Mandelbrot iteration: z → z² + c
+        z = cmul(z, z) + c;
+        let len2 = dot(z, z);
+        orbitMin = min(orbitMin, length(z));
+        if (len2 > bailout * bailout) {
+            // Smooth coloring: n + 1 - log2(log2(|z|))
+            let sn = f32(n) + 1.0 - log2(log2(sqrt(len2)));
+            res.escaped  = true;
+            res.smooth_n = sn;
+            res.orbit_min = orbitMin;
+            res.final_z  = z;
+            return res;
         }
-
-        // Track orbit trap: minimum distance to origin in color space
-        let mag = length(z);
-        orbitTrap = min(orbitTrap, mag);
-
-        // Accumulate color from orbit (for smooth coloring)
-        colorAccum += abs(z) / f32(maxIter);
-
-        // Escape condition in color space
-        if (mag > 4.0) {
-            escaped = true;
-            iter = i;
-            break;
-        }
-        iter = i;
     }
-
-    // Smooth iteration count for anti-aliasing
-    let smoothIter = f32(iter) + 1.0 - log(log(length(z) + 1e-6)) / log(2.0);
-
-    return vec4<f32>(colorAccum, smoothIter);
+    res.orbit_min = orbitMin;
+    res.final_z   = z;
+    return res;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
+//  Map UV to parameter space (with zoom, pan, mouse)
+// ─────────────────────────────────────────────────────────────────────────────
+fn uvToC(uv: vec2<f32>, zoom: f32, center: vec2<f32>, t: f32) -> vec2<f32> {
+    let aspect = 1.0; // handled outside
+    let c = (uv - 0.5) * 2.5 / zoom + center;
+    return c;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FBM for fractal texture layering
+// ─────────────────────────────────────────────────────────────────────────────
+fn fbm_im(p: vec2<f32>) -> f32 {
+    var v = 0.0; var a = 0.5; var pp = p;
+    for (var i = 0; i < 3; i++) {
+        v += a * vnoise(pp);
+        pp = pp * 2.1 + vec2<f32>(5.2, 1.3);
+        a *= 0.5;
+    }
+    return v;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Julia set probe: a secondary fractal derived from the same point
+//  (color-space iteration with a fixed c)
+// ─────────────────────────────────────────────────────────────────────────────
+fn juliaColorProbe(z_in: vec2<f32>, c: vec2<f32>, iterations: i32, bailout: f32) -> f32 {
+    var z = z_in;
+    for (var n = 0; n < iterations; n++) {
+        z = cmul(z, z) + c;
+        if (dot(z, z) > bailout * bailout) {
+            return f32(n) / f32(iterations);
+        }
+    }
+    return 0.0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Dwell bands: stripe coloring using iteration count mod
+// ─────────────────────────────────────────────────────────────────────────────
+fn dwellBand(smooth_n: f32, maxIter: f32, bandWidth: f32, t: f32) -> f32 {
+    let band = fract(smooth_n / bandWidth + t * 0.02);
+    return smoothstep(0.4, 0.6, band) * smoothstep(0.6, 0.4, band) * 2.0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Escape-time normal for pseudo-3D shading
+// ─────────────────────────────────────────────────────────────────────────────
+fn escapeNormal(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> vec2<f32> {
+    var z = z0;
+    var dz = vec2<f32>(1.0, 0.0); // derivative
+    for (var n = 0; n < maxIter; n++) {
+        dz = cmul(dz, z) * 2.0 + vec2<f32>(1.0, 0.0);
+        z  = cmul(z, z) + c;
+        if (dot(z, z) > bailout * bailout) { break; }
+    }
+    let len = length(dz);
+    if (len < 1e-8) { return vec2<f32>(0.0, 1.0); }
+    return normalize(dz / len);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let dims = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(id.xy);
-    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let res   = u.config.zw;
+    let uv    = vec2<f32>(gid.xy) / res;
+    let t     = u.config.x;
+    let mouse = u.zoom_config.yz;
 
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
-    let time = u.config.x;
+    let maxIter    = i32(u.zoom_params.x * 60.0 + 20.0);  // 20 – 80
+    let colorZoom  = u.zoom_params.y * 3.0 + 0.5;          // 0.5 – 3.5
+    let cmapRot    = u.zoom_params.z * 2.0;                  // 0 – 2 (hue offset)
+    let bailout    = u.zoom_params.w * 8.0 + 2.0;           // 2 – 10
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ─────────────────────────────────────────────────────────────────────────
-    let zoom = exp(u.zoom_params.x * 4.0 - 2.0);           // 0.13 – 7.4
-    let maxIter = i32(u.zoom_params.y * 40.0 + 16.0);      // 16 – 56
-    let colorRotSpeed = u.zoom_params.z * 0.3 + 0.02;      // 0.02 – 0.32
-    let invPower = u.zoom_params.w * 3.0 + 0.5;            // 0.5 – 3.5
-    let iterMode = u.zoom_config.x;                          // 0 – 1
-    let saturation = u.zoom_config.w * 0.6 + 0.4;          // 0.4 – 1.0
+    let aspect = res.x / res.y;
 
-    // Julia constant from mouse position
-    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
-    let juliaC = vec2<f32>(mouseX, mouseY) * 0.8;
+    // ── Coordinate mapping ─────────────────────────────────────────────────
+    // c: position-space parameter (the "c" in z² + c)
+    // Slowly pan through the Mandelbrot set, center on mouse
+    let panX = sin(t * 0.04) * 0.3 + (mouse.x - 0.5) * 0.5;
+    let panY = cos(t * 0.031) * 0.2 + (mouse.y - 0.5) * 0.4;
+    let center = vec2<f32>(-0.5 + panX, panY);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Slow pan and zoom animation
-    // ─────────────────────────────────────────────────────────────────────────
-    let panX = sin(time * 0.07) * 0.3;
-    let panY = cos(time * 0.05) * 0.2;
-    let pos = uv / zoom + vec2<f32>(panX, panY);
+    let aspectUV = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+    let c = aspectUV * 2.5 / colorZoom + center;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Run color-space fractal iteration
-    // ─────────────────────────────────────────────────────────────────────────
-    let result = colorMandelbrot(pos, juliaC, maxIter, invPower, iterMode, time);
-    let colorAccum = result.xyz;
-    let smoothIter = result.w;
+    // ── Color-space initial vector (z0): derived from position noise ───────
+    // This is the "inverse" part: z0 is a color-like vector, not just (0,0)
+    let noiseX = vnoise(uv * 5.0 + vec2<f32>(t * 0.02, 0.0)) * 2.0 - 1.0;
+    let noiseY = vnoise(uv * 5.0 + vec2<f32>(0.0, t * 0.017)) * 2.0 - 1.0;
+    let z0 = vec2<f32>(noiseX, noiseY) * 0.3;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Coloring: the accumulated color orbit IS the color
-    //  This is the key insight—we're iterating colors, so the orbit itself
-    //  contains the visual information
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Iterate ────────────────────────────────────────────────────────────
+    let result = inverseMandelbrot(c, z0, maxIter, bailout);
 
-    // Normalize accumulated color
-    var col = colorAccum * 3.0;
+    // ── Coloring ───────────────────────────────────────────────────────────
+    var col: vec3<f32>;
 
-    // Rotate hue over time for living, breathing fractal
-    let hueAngle = time * colorRotSpeed;
-    let cosH = cos(hueAngle);
-    let sinH = sin(hueAngle);
-    let rotated = vec3<f32>(
-        col.r * cosH - col.g * sinH,
-        col.r * sinH + col.g * cosH,
-        col.b
-    );
-    col = abs(rotated);
+    if (!result.escaped) {
+        // Interior: color by orbit trap
+        let interior = result.orbit_min;
+        let hue = fract(interior * 3.0 + cmapRot + t * 0.03);
+        col = hsv2rgb(hue, 0.7, 0.3 + interior * 0.4);
+    } else {
+        // Exterior: smooth iteration count coloring
+        let sn = result.smooth_n / f32(maxIter);
 
-    // Iteration-based secondary coloring
-    let iterColor = hsv2rgb(
-        fract(smoothIter * 0.03 + time * 0.01),
-        saturation,
-        0.9
-    );
-    col = mix(col, iterColor, 0.35);
+        // Primary color: smooth iteration count → hue
+        let hue1 = fract(sn * 2.5 + cmapRot + t * 0.05);
+        let sat1 = 0.8 + sn * 0.2;
+        let val1 = 0.7 + sn * 0.3;
+        let baseCol = hsv2rgb(hue1, sat1, val1);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Deep interior: special coloring for non-escaping regions
-    // ─────────────────────────────────────────────────────────────────────────
-    if (smoothIter >= f32(maxIter) - 1.0) {
-        // Inside the set: use orbit trap coloring
-        let trapColor = hsv2rgb(
-            fract(length(colorAccum) * 2.0 + time * 0.05),
-            0.6 * saturation,
-            0.3 + length(colorAccum) * 0.4
-        );
-        col = trapColor;
+        // Orbit trap color: minimum distance → secondary hue
+        let orbitHue = fract(result.orbit_min * 5.0 + cmapRot + 0.5 + t * 0.03);
+        let orbitCol = hsv2rgb(orbitHue, 1.0, 1.0);
+
+        // Blend based on escape speed
+        let blendFactor = smoothstep(0.0, 0.4, sn);
+        col = mix(baseCol, orbitCol, blendFactor * 0.4);
+
+        // Edge-sharpening: use |final_z| for fine detail
+        let fz = length(result.final_z);
+        let edgeDetail = fract(fz * 3.0) * 0.15;
+        col += hsv2rgb(fract(hue1 + 0.33), 1.0, 1.0) * edgeDetail;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Ripple interaction: perturbation in color-parameter space
-    // ─────────────────────────────────────────────────────────────────────────
-    let rippleCount = u32(u.config.y);
-    for (var i = 0u; i < rippleCount; i++) {
-        let r = u.ripples[i];
-        let rUV = (r.xy * 2.0 - 1.0);
-        let dist = length(uv - rUV);
-        let age = time - r.z;
-        if (age > 0.0 && age < 4.0) {
-            let wave = exp(-abs(dist - age * 0.5) * 10.0) * exp(-age * 0.6);
-            let waveColor = hsv2rgb(fract(dist * 3.0 + age), 0.9, 1.0);
-            col += waveColor * wave * 0.3;
-        }
+    // ── Ripple interaction: distort c slightly near ripples ────────────────
+    let ripCount = u32(u.config.y);
+    var ripDistort = 0.0;
+    for (var i: u32 = 0u; i < ripCount; i++) {
+        let r   = u.ripples[i];
+        let age = t - r.z;
+        if (age < 0.0 || age > 3.0) { continue; }
+        let d   = distance(uv, r.xy);
+        ripDistort += sin(d * 25.0 - age * 5.0) * exp(-d * 6.0) * exp(-age * 1.5) * 0.3;
+    }
+    col = mix(col, hsv2rgb(fract(length(c) * 0.7 + t * 0.1 + cmapRot), 1.0, 1.0),
+              abs(ripDistort) * 0.3);
+
+    // ── Dwell band overlay (alternate coloring) ────────────────────────────
+    if (result.escaped) {
+        let band = dwellBand(result.smooth_n, f32(maxIter), 4.0, t);
+        col = mix(col, col * (1.0 + band * 0.4), 0.5);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Final processing
-    // ─────────────────────────────────────────────────────────────────────────
-    // Vignette
-    col *= 1.0 - 0.3 * dot(uv, uv) * 0.3;
+    // ── Julia probe secondary color ────────────────────────────────────────
+    let juliaC  = vec2<f32>(sin(t * 0.07) * 0.3, cos(t * 0.05) * 0.3);
+    let juliaT  = juliaColorProbe(z0 + c * 0.1, juliaC, maxIter / 2, bailout);
+    let juliaH  = fract(juliaT * 3.0 + cmapRot + 0.25 + t * 0.04);
+    col = mix(col, hsv2rgb(juliaH, 0.9, 0.8), juliaT * 0.35);
 
-    // Tone mapping
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(0.4545));
+    // ── Escape-time pseudo-3D shading ─────────────────────────────────────
+    let escN = escapeNormal(c, z0, maxIter, bailout);
+    let lightDir = normalize(vec2<f32>(cos(t * 0.12), sin(t * 0.09)));
+    let diffuse = dot(escN, lightDir) * 0.5 + 0.5;
+    col = col * (0.6 + diffuse * 0.4);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // ── FBM texture on interior ────────────────────────────────────────────
+    if (!result.escaped) {
+        let fbmTex = fbm_im(c * 8.0 + t * 0.01);
+        col = mix(col, col * (0.5 + fbmTex), 0.4);
+    }
+
+    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    let depthOut = select(0.2, result.smooth_n / f32(maxIter), result.escaped);
+    textureStore(writeTexture, gid.xy, vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
 }

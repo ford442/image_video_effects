@@ -1,15 +1,15 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 //  Hyperbolic Tessellation Engine
-//  Category: GENERATIVE | Complexity: VERY_HIGH
-//  Recursive hyperbolic geometry in real-time. Non-Euclidean tiles subdivide
-//  infinitely, colored by their recursive depth. M.C. Escher meets fractals
-//  in the Poincaré disk model.
-//  Mathematical approach: Poincaré disk model with Möbius isometries, hyperbolic
-//  distance metric, recursive tiling via {p,q} Schläfli symbols, geodesic arc
-//  rendering, depth-based coloring with interference patterns.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+//  Category: GENERATIVE
+//  Complexity: VERY HIGH
+//  Visual concept: Non-Euclidean Poincaré-disk tessellation rendered in
+//    real-time. Hyperbolic tiles subdivide infinitely toward the boundary,
+//    colored by recursive depth — M.C. Escher meets fractals.
+//  Mathematical approach: Poincaré disk model with Möbius transformation
+//    orbit-trapping; each pixel is iteratively mapped to the fundamental
+//    domain via hyperbolic isometries; depth=iteration count; color from HSV
+//    with depth-derived hue; mouse steers the hyperbolic origin.
+// ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,260 +23,234 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=TileP, y=MouseX, z=MouseY, w=ColorMode
-    zoom_params: vec4<f32>,  // x=RotationSpeed, y=RecursionDepth, z=EdgeGlow, w=Zoom
+    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    zoom_params: vec4<f32>, // x=TileSymmetry(3-8), y=DepthColor, z=RotSpeed, w=BoundaryGlow
     ripples: array<vec4<f32>, 50>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Complex arithmetic
-// ─────────────────────────────────────────────────────────────────────────────
-fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    return vec2<f32>(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
-}
-
-fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    let d = dot(b, b) + 1e-12;
-    return vec2<f32>(a.x * b.x + a.y * b.y, a.y * b.x - a.x * b.y) / d;
-}
-
-fn cconj(z: vec2<f32>) -> vec2<f32> {
-    return vec2<f32>(z.x, -z.y);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Möbius transformation in the Poincaré disk
-//  Maps z → (z - a) / (1 - conj(a)*z) — isometry of hyperbolic plane
-// ─────────────────────────────────────────────────────────────────────────────
-fn hyperbolicMobius(z: vec2<f32>, a: vec2<f32>) -> vec2<f32> {
-    let num = z - a;
-    let den = vec2<f32>(1.0, 0.0) - cmul(cconj(a), z);
-    return cdiv(num, den);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hyperbolic distance in Poincaré disk
-// ─────────────────────────────────────────────────────────────────────────────
-fn hyperbolicDist(a: vec2<f32>, b: vec2<f32>) -> f32 {
-    let diff = a - b;
-    let denom = 1.0 - 2.0 * dot(a, b) + dot(a, a) * dot(b, b);
-    let delta = dot(diff, diff) / max(denom, 1e-8);
-    return log(1.0 + 2.0 * delta + 2.0 * sqrt(delta * (delta + 1.0) + 1e-8));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Reflect point across a geodesic circle in the Poincaré disk
-//  Circle: center c, radius r (hyperbolic)
-// ─────────────────────────────────────────────────────────────────────────────
-fn reflectGeodesic(z: vec2<f32>, center: vec2<f32>, radius: f32) -> vec2<f32> {
-    let translated = hyperbolicMobius(z, center);
-    let r = length(translated);
-    let reflected = translated * (radius * radius) / max(r * r, 1e-8);
-    return hyperbolicMobius(reflected, -center);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hyperbolic rotation (rotation in the disk preserves hyperbolic metric)
-// ─────────────────────────────────────────────────────────────────────────────
-fn hyperRotate(z: vec2<f32>, angle: f32) -> vec2<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return vec2<f32>(z.x * c - z.y * s, z.x * s + z.y * c);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hash
-// ─────────────────────────────────────────────────────────────────────────────
-fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  HSV to RGB
+//  HSV → RGB
 // ─────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
-    let h6 = h * 6.0;
-    let x = c * (1.0 - abs(h6 % 2.0 - 1.0));
+    let c  = v * s;
+    let h6 = fract(h) * 6.0;
+    let x  = c * (1.0 - abs(fract(h6 * 0.5) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
-    if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
+    if      (h6 < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
     else if (h6 < 3.0) { rgb = vec3<f32>(0.0, c, x); }
     else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, c); }
     else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
     else               { rgb = vec3<f32>(c, 0.0, x); }
-    return rgb + vec3<f32>(v - c);
+    return rgb + (v - c);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Tile the hyperbolic plane using {p, q} tiling
-//  Repeatedly reflects across fundamental domain edges
-//  Returns: (distance to nearest edge, recursion depth, cell ID)
+//  Complex arithmetic
 // ─────────────────────────────────────────────────────────────────────────────
-fn tilePoincare(z_in: vec2<f32>, p: f32, q: f32, maxIter: i32) -> vec3<f32> {
+fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
+}
+fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let d = dot(b, b) + 1e-12;
+    return vec2<f32>(dot(a, b), a.y*b.x - a.x*b.y) / d;
+}
+fn cconj(z: vec2<f32>) -> vec2<f32> { return vec2<f32>(z.x, -z.y); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Poincaré-disk Möbius translation: moves point c to origin
+//  T_c(z) = (z - c) / (1 - conj(c) * z)
+// ─────────────────────────────────────────────────────────────────────────────
+fn poincareMobius(z: vec2<f32>, c: vec2<f32>) -> vec2<f32> {
+    return cdiv(z - c, vec2<f32>(1.0, 0.0) - cmul(cconj(c), z));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Hyperbolic rotation (pure rotation in Poincaré disk = usual complex rotation)
+// ─────────────────────────────────────────────────────────────────────────────
+fn hypRot(z: vec2<f32>, angle: f32) -> vec2<f32> {
+    let s = sin(angle); let c = cos(angle);
+    return vec2<f32>(c*z.x - s*z.y, s*z.x + c*z.y);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Fold z into fundamental domain of {p,q} tessellation.
+//  Uses a "reflection" approach: reflect across each generator until inside.
+//  Returns (folded_z, iteration_count).
+// ─────────────────────────────────────────────────────────────────────────────
+fn tessellate(z_in: vec2<f32>, p: f32, q: f32, maxIter: i32) -> vec2<f32> {
+    // Vertex of fundamental triangle at origin for {p,q}
+    // cosh(edge_length) = cos(π/p)*cos(π/q)/sin(π/p)/sin(π/q) ... simplified
+    let r = cos(3.14159265 / p) / sin(3.14159265 * (0.5 - 1.0/q) + 3.14159265/p);
     var z = z_in;
-    let pi = 3.14159265;
-
-    // Fundamental domain edge parameters for {p, q} tiling
-    let angleP = pi / p;
-    let angleQ = pi / q;
-
-    // Geodesic mirror distance from center
-    let cosP = cos(angleP);
-    let cosQ = cos(angleQ);
-    let sinP = sin(angleP);
-    let mirrorDist = sqrt((cosQ * cosQ - sinP * sinP) / (1.0 - sinP * sinP + 1e-6));
-
-    var depth = 0.0;
-    var cellId = 0.0;
-
+    // Iteratively reflect across the p generator edges
     for (var i = 0; i < maxIter; i++) {
-        // Reflect across rotational symmetry planes of the p-gon
-        let theta = atan2(z.y, z.x);
-        let sector = floor(theta / (2.0 * angleP) + 0.5);
-        let foldAngle = sector * 2.0 * angleP;
-        z = hyperRotate(z, -foldAngle);
-        if (z.y < 0.0) {
-            z.y = -z.y;
-            depth += 1.0;
+        let zLen2 = dot(z, z);
+        if (zLen2 > 0.999) { break; }
+        // Reflection across circle of radius r centered at (r, 0)
+        let d2 = dot(z - vec2<f32>(r, 0.0), z - vec2<f32>(r, 0.0));
+        let rr = r * 0.7; // reflection circle radius
+        if (d2 < rr * rr) {
+            // Invert through circle
+            z = vec2<f32>(r, 0.0) + cdiv(vec2<f32>(rr * rr, 0.0), cconj(z - vec2<f32>(r, 0.0)));
         }
-        cellId += sector * pow(p, f32(i));
-
-        // Reflect across the geodesic edge (hyperbolic reflection)
-        let edgeCenter = vec2<f32>(mirrorDist, 0.0);
-        let distToEdge = hyperbolicDist(z, edgeCenter);
-        if (distToEdge < 0.5) {
-            z = hyperbolicMobius(z, edgeCenter);
-            z = z * (-1.0);
-            z = hyperbolicMobius(z, -edgeCenter);
-            depth += 1.0;
-        }
+        // Rotate by 2π/p to try next edge
+        z = hypRot(z, 6.28318 / p);
     }
-
-    // Distance to nearest fundamental domain edge
-    let theta = atan2(z.y, z.x);
-    let edgeDist = min(abs(sin(theta * p * 0.5)), abs(length(z) - mirrorDist * 0.5));
-
-    return vec3<f32>(edgeDist, depth, cellId);
+    return z;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
+//  Orbit trap: measure how close z comes to a reference set
+// ─────────────────────────────────────────────────────────────────────────────
+fn orbitTrap(z: vec2<f32>, center: vec2<f32>, radius: f32) -> f32 {
+    return smoothstep(radius, 0.0, length(z - center));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Smooth noise for tile texture
+// ─────────────────────────────────────────────────────────────────────────────
+fn h2_ht(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn vnoise_ht(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p); let u = f*f*(3.0-2.0*f);
+    return mix(mix(h2_ht(i),h2_ht(i+vec2<f32>(1,0)),u.x),mix(h2_ht(i+vec2<f32>(0,1)),h2_ht(i+vec2<f32>(1,1)),u.x),u.y);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Hyperbolic distance in Poincaré disk
+// ─────────────────────────────────────────────────────────────────────────────
+fn hypDist(z1: vec2<f32>, z2: vec2<f32>) -> f32 {
+    let d  = length(z1 - z2);
+    let d1 = 1.0 - dot(z1, z1);
+    let d2 = 1.0 - dot(z2, z2);
+    let arg = clamp(1.0 + 2.0 * d * d / max(d1 * d2, 1e-8), 1.0, 1e6);
+    return log(arg + sqrt(arg * arg - 1.0));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Tile interior texture: adds Escher-like creature pattern as noise
+// ─────────────────────────────────────────────────────────────────────────────
+fn tileTexture(z: vec2<f32>, depth: f32, t: f32) -> f32 {
+    let scale = 8.0 * (1.0 + depth * 2.0);
+    let n1 = vnoise_ht(z * scale + vec2<f32>(t * 0.02, 0.0));
+    let n2 = vnoise_ht(z * scale * 2.0 + vec2<f32>(0.0, t * 0.015));
+    return n1 * 0.6 + n2 * 0.4;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Geodesic distance to nearest lattice line (for tile edge rendering)
+// ─────────────────────────────────────────────────────────────────────────────
+fn geodesicEdge(z: vec2<f32>, p: f32) -> f32 {
+    var minDist = 1e9;
+    for (var k = 0; k < 8; k++) {
+        let angle = 6.28318 * f32(k) / p;
+        let dir = vec2<f32>(cos(angle), sin(angle)) * 0.3;
+        let edgeD = abs(dot(z, vec2<f32>(-dir.y, dir.x)));
+        minDist = min(minDist, edgeD);
+    }
+    return exp(-minDist * 30.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let dims = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(id.xy);
-    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let res   = u.config.zw;
+    let uv    = vec2<f32>(gid.xy) / res;
+    let t     = u.config.x;
+    let mouse = u.zoom_config.yz;
 
-    let uv = (fragCoord * 2.0 - dims) / min(dims.x, dims.y);
-    let time = u.config.x;
+    // Parameters
+    let tileSym    = u.zoom_params.x * 5.0 + 3.0;   // p: 3 – 8
+    let depthColor = u.zoom_params.y;                  // hue offset 0-1
+    let rotSpeed   = u.zoom_params.z * 0.3 - 0.15;   // -0.15 – 0.15 rad/s
+    let boundGlow  = u.zoom_params.w;                  // 0 – 1
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ─────────────────────────────────────────────────────────────────────────
-    let rotSpeed = u.zoom_params.x * 1.5 + 0.1;            // 0.1 – 1.6
-    let maxDepth = i32(u.zoom_params.y * 12.0 + 4.0);      // 4 – 16
-    let edgeGlow = u.zoom_params.z * 2.0 + 0.3;            // 0.3 – 2.3
-    let zoom = u.zoom_params.w * 0.5 + 0.5;                // 0.5 – 1.0
-    let tileP = floor(u.zoom_config.x * 4.0 + 4.0);       // 4 – 8 (polygon sides)
-    let tileQ = 3.0;                                        // meeting at vertex
-    let colorMode = u.zoom_config.w;                        // 0 – 1
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Map to Poincaré disk
-    // ─────────────────────────────────────────────────────────────────────────
-    var z = uv * zoom;
-    let r = length(z);
-
-    // Outside the disk → dark space
-    if (r >= 0.99) {
-        let outerGlow = exp(-(r - 1.0) * 20.0) * 0.1;
-        let col = vec3<f32>(0.05, 0.08, 0.15) * outerGlow;
-        textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Map UV to Poincaré disk (aspect-correct, within radius 0.97)
+    let aspect = res.x / res.y;
+    var z = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 1.94;
+    let diskRadius = length(z);
+    if (diskRadius >= 0.98) {
+        // Outside disk: boundary color
+        let boundary = smoothstep(0.98, 1.0, diskRadius);
+        let bgColor  = hsv2rgb(t * 0.05 + depthColor, 0.6, boundary * boundGlow * 0.5);
+        textureStore(writeTexture, gid.xy, vec4<f32>(bgColor, 1.0));
+        textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 1.0));
         return;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Animate: slow rotation + drift
-    // ─────────────────────────────────────────────────────────────────────────
-    z = hyperRotate(z, time * rotSpeed * 0.1);
+    // Apply time-varying global rotation
+    z = hypRot(z, t * rotSpeed);
 
-    // Mouse interaction: Möbius translation toward mouse
-    let mouseUV = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) / dims * 2.0 - 1.0) * 0.3;
-    let mouseInDisk = mouseUV * min(length(mouseUV), 0.5) / max(length(mouseUV), 0.001);
-    z = hyperbolicMobius(z, mouseInDisk * 0.2);
+    // Shift disk center toward mouse
+    let mCenter = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 0.5;
+    let mLen = length(mCenter);
+    var safeCenter = mCenter;
+    if (mLen > 0.9) { safeCenter = mCenter * (0.9 / mLen); }
+    z = poincareMobius(z, safeCenter);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Tile the hyperbolic plane
-    // ─────────────────────────────────────────────────────────────────────────
-    let tileResult = tilePoincare(z, tileP, tileQ, maxDepth);
-    let edgeDist = tileResult.x;
-    let depth = tileResult.y;
-    let cellId = tileResult.z;
+    // ── Iterative tessellation ────────────────────────────────────────────
+    let p = floor(tileSym);
+    let q = 3.0; // {p, 3} tessellation
+    let maxIter = 24;
+    var iter = 0;
+    var zz = z;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Coloring based on recursion depth and cell identity
-    // ─────────────────────────────────────────────────────────────────────────
-    let normalizedDepth = depth / f32(maxDepth);
-
-    // Color scheme 1: rainbow depth
-    let hue1 = fract(normalizedDepth * 2.0 + time * 0.05 + hash21(vec2<f32>(cellId, depth)) * 0.3);
-    let sat1 = 0.7 + 0.3 * sin(depth * 1.5);
-    let val1 = 0.9 - normalizedDepth * 0.5;
-    let col1 = hsv2rgb(hue1, sat1, val1);
-
-    // Color scheme 2: cool/warm alternation
-    let warm = vec3<f32>(0.95, 0.5, 0.2);
-    let cool = vec3<f32>(0.15, 0.4, 0.9);
-    let alt = sin(depth * 3.14159 * 0.5 + cellId * 0.1);
-    let col2 = mix(cool, warm, alt * 0.5 + 0.5) * val1;
-
-    var tileColor = mix(col1, col2, colorMode);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Edge rendering: geodesic arcs glow
-    // ─────────────────────────────────────────────────────────────────────────
-    let edgeWidth = 0.02 + 0.01 * sin(time * 2.0);
-    let edgeLine = smoothstep(edgeWidth, edgeWidth * 0.3, edgeDist);
-    let edgeColor = hsv2rgb(fract(time * 0.1 + depth * 0.15), 0.5, 1.0);
-    tileColor = mix(tileColor, edgeColor, edgeLine * edgeGlow);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Depth fade: tiles shrink to infinity at disk boundary
-    // ─────────────────────────────────────────────────────────────────────────
-    let diskFade = 1.0 - smoothstep(0.85, 0.99, r);
-    tileColor *= diskFade;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Ripple interaction: hyperbolic waves
-    // ─────────────────────────────────────────────────────────────────────────
-    let rippleCount = u32(u.config.y);
-    for (var i = 0u; i < rippleCount; i++) {
-        let rp = u.ripples[i];
-        let rpUV = (rp.xy * dims * 2.0 - dims) / min(dims.x, dims.y) * zoom;
-        let hDist = hyperbolicDist(z, rpUV);
-        let age = time - rp.z;
-        if (age > 0.0 && age < 5.0) {
-            let wave = sin(hDist * 15.0 - age * 3.0) * exp(-hDist * 2.0) * exp(-age * 0.5);
-            tileColor += edgeColor * wave * 0.3;
-        }
+    for (var k = 0; k < maxIter; k++) {
+        let prev = zz;
+        zz = tessellate(zz, p, q, 3);
+        // Count meaningful moves
+        if (length(zz - prev) > 0.001) { iter++; }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Subtle disk border ring
-    // ─────────────────────────────────────────────────────────────────────────
-    let borderRing = exp(-abs(r - 0.98) * 200.0) * 0.3;
-    tileColor += vec3<f32>(0.5, 0.7, 1.0) * borderRing;
+    // ── Depth from iteration count ────────────────────────────────────────
+    let depth = f32(iter) / f32(maxIter);
 
-    // Tone mapping
-    tileColor = tileColor / (tileColor + vec3<f32>(1.0));
-    tileColor = pow(tileColor, vec3<f32>(0.4545));
+    // ── Orbit trap for edge lines ─────────────────────────────────────────
+    let edgeLine = orbitTrap(zz, vec2<f32>(0.0), 0.08);
+    let vertexGlow = orbitTrap(zz, vec2<f32>(cos(t * 0.7) * 0.15, sin(t * 0.5) * 0.15), 0.05);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(tileColor, 1.0));
+    // ── Color mapping ─────────────────────────────────────────────────────
+    let hue  = fract(depth * 0.7 + depthColor + t * 0.04);
+    let sat  = 0.7 + depth * 0.3;
+    let val  = 0.15 + (1.0 - depth) * 0.7 + edgeLine * 0.4 + vertexGlow * 0.6;
+
+    // Boundary glow: brighter toward disk edge
+    let glowFalloff = smoothstep(0.7, 0.97, diskRadius) * boundGlow;
+    let glowHue     = fract(hue + 0.5);
+    var col = hsv2rgb(hue, sat, clamp(val, 0.0, 1.0));
+    col = mix(col, hsv2rgb(glowHue, 1.0, 1.0), glowFalloff * 0.4);
+
+    // Tile edge darkening
+    col *= (1.0 - edgeLine * 0.6);
+    col += hsv2rgb(fract(hue + 0.15), 0.9, 1.0) * edgeLine * 0.3;
+
+    // ── Tile interior texture (Escher-like) ───────────────────────────────
+    let tileDetail = tileTexture(zz, depth, t) * (1.0 - edgeLine);
+    col = mix(col, col * (0.7 + tileDetail * 0.6), 0.5);
+
+    // ── Geodesic edge lines ───────────────────────────────────────────────
+    let geoEdge = geodesicEdge(zz, p);
+    col = mix(col, hsv2rgb(fract(hue + 0.25), 1.0, 1.0), geoEdge * 0.5 * (1.0 - depth));
+
+    // ── Hyperbolic distance-based fog ─────────────────────────────────────
+    let hypD = hypDist(z, vec2<f32>(0.0));
+    let fog  = exp(-hypD * 0.15);
+    col = mix(hsv2rgb(fract(t * 0.04 + 0.6), 0.3, 0.08), col, fog);
+
+    // ── Animated iridescence on tile faces ───────────────────────────────
+    let iridPhase = depth * 4.0 + t * 0.07 + length(zz) * 5.0;
+    let iridColor = hsv2rgb(fract(iridPhase * 0.5), 0.9, 0.4) * (1.0 - edgeLine);
+    col = clamp(col + iridColor * depth * 0.3, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

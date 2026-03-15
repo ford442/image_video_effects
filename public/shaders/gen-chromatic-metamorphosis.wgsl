@@ -1,15 +1,15 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 //  Chromatic Metamorphosis
-//  Category: GENERATIVE | Complexity: VERY_HIGH
-//  Shape-shifting blobs that morph between geometric forms (sphere → torus →
-//  cube → asymmetric) while color dances independently across surfaces.
-//  Beauty in transformation itself.
-//  Mathematical approach: Ray marching with SDF morphing via smooth interpolation
-//  between primitive SDFs, independent color field via 3D noise mapped to surface
-//  normals, iridescent Fresnel coating, temporal morphing with easing functions.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+//  Category: GENERATIVE
+//  Complexity: VERY HIGH
+//  Visual concept: Metaballs morph continuously between sphere, torus, cube,
+//    and asymmetric shapes. Color evolves independently from geometry, sliding
+//    across surfaces in waves. Beauty in perpetual transformation.
+//  Mathematical approach: Smooth-min SDF blending of sphere/torus/box SDFs;
+//    time-driven interpolation weights; surface color is a function of normal
+//    direction + UV-like projection independent of geometry; ray marching with
+//    soft shadows and ambient occlusion.
+// ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,258 +23,252 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=MorphSpeed, y=MouseX, z=MouseY, w=IridescenceStr
-    zoom_params: vec4<f32>,  // x=BlobCount, y=Smoothness, z=ColorSpeed, w=Deformation
+    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    zoom_params: vec4<f32>, // x=MorphSpeed, y=ColorSpeed, z=BlendRadius, w=LightIntensity
     ripples: array<vec4<f32>, 50>,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Rotation
-// ─────────────────────────────────────────────────────────────────────────────
-fn rot2(a: f32) -> mat2x2<f32> {
-    let s = sin(a); let c = cos(a);
-    return mat2x2<f32>(c, -s, s, c);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hash and noise
-// ─────────────────────────────────────────────────────────────────────────────
-fn hash31(p: vec3<f32>) -> f32 {
-    let h = dot(p, vec3<f32>(127.1, 311.7, 74.7));
-    return fract(sin(h) * 43758.5453123);
-}
-
-fn noise3D(p: vec3<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(mix(hash31(i), hash31(i + vec3<f32>(1, 0, 0)), u.x),
-            mix(hash31(i + vec3<f32>(0, 1, 0)), hash31(i + vec3<f32>(1, 1, 0)), u.x), u.y),
-        mix(mix(hash31(i + vec3<f32>(0, 0, 1)), hash31(i + vec3<f32>(1, 0, 1)), u.x),
-            mix(hash31(i + vec3<f32>(0, 1, 1)), hash31(i + vec3<f32>(1, 1, 1)), u.x), u.y),
-        u.z
-    );
-}
-
-fn fbm3(p: vec3<f32>) -> f32 {
-    var v = 0.0; var a = 0.5; var freq = 1.0;
-    for (var i = 0; i < 4; i++) {
-        v += a * noise3D(p * freq);
-        a *= 0.5; freq *= 2.0;
-    }
-    return v;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  SDF primitives
-// ─────────────────────────────────────────────────────────────────────────────
-fn sdSphere(p: vec3<f32>, r: f32) -> f32 { return length(p) - r; }
-
-fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
-    let q = vec2<f32>(length(p.xz) - t.x, p.y);
-    return length(q) - t.y;
-}
-
-fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    let q = abs(p) - b;
-    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
-}
-
-fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
-    let q = abs(p);
-    return (q.x + q.y + q.z - s) * 0.57735;
-}
-
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - h * h * k * 0.25;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Smooth easing for morph transitions
-// ─────────────────────────────────────────────────────────────────────────────
-fn easeInOut(t: f32) -> f32 {
-    return t * t * (3.0 - 2.0 * t);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  HSV to RGB
+//  HSV → RGB
 // ─────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    let c = v * s;
-    let h6 = h * 6.0;
-    let x = c * (1.0 - abs(h6 % 2.0 - 1.0));
+    let c = v * s; let h6 = fract(h) * 6.0;
+    let x = c * (1.0 - abs(fract(h6 * 0.5) * 2.0 - 1.0));
     var rgb = vec3<f32>(0.0);
-    if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
+    if      (h6 < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
     else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
     else if (h6 < 3.0) { rgb = vec3<f32>(0.0, c, x); }
     else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, c); }
     else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
     else               { rgb = vec3<f32>(c, 0.0, x); }
-    return rgb + vec3<f32>(v - c);
+    return rgb + (v - c);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Scene SDF: morphing shapes
+//  SDFs
 // ─────────────────────────────────────────────────────────────────────────────
-fn map(p_in: vec3<f32>, time: f32, morphSpeed: f32, blobCount: f32, smoothK: f32, deform: f32) -> vec2<f32> {
-    var d = 1e5;
-
-    // Morph phase: cycles through 4 shapes
-    let cycle = time * morphSpeed;
-    let phase = cycle % 4.0;
-    let t = easeInOut(fract(cycle));
-    let shapeIdx = i32(floor(phase));
-
-    let numBlobs = i32(blobCount * 3.0 + 2.0); // 2-5 blobs
-
-    for (var i = 0; i < 5; i++) {
-        if (i >= numBlobs) { break; }
-        let fi = f32(i);
-
-        // Each blob orbits independently
-        let orbitAngle = time * (0.5 + fi * 0.2) + fi * 1.256;
-        let orbitRadius = 0.8 + fi * 0.3;
-        var blobPos = vec3<f32>(
-            orbitRadius * cos(orbitAngle),
-            sin(time * 0.7 + fi * 2.0) * 0.5,
-            orbitRadius * sin(orbitAngle * 0.8 + fi)
-        );
-
-        let localP = p_in - blobPos;
-
-        // Organic deformation
-        let deformNoise = fbm3(localP * 2.0 + time * 0.3 + fi * 10.0) * deform;
-
-        // Morph between shapes
-        var shape: f32;
-        let nextShape = (shapeIdx + 1) % 4;
-
-        var s1: f32; var s2: f32;
-        if (shapeIdx == 0) { s1 = sdSphere(localP, 0.5); }
-        else if (shapeIdx == 1) { s1 = sdTorus(localP, vec2<f32>(0.4, 0.15)); }
-        else if (shapeIdx == 2) { s1 = sdBox(localP, vec3<f32>(0.35)); }
-        else { s1 = sdOctahedron(localP, 0.6); }
-
-        if (nextShape == 0) { s2 = sdSphere(localP, 0.5); }
-        else if (nextShape == 1) { s2 = sdTorus(localP, vec2<f32>(0.4, 0.15)); }
-        else if (nextShape == 2) { s2 = sdBox(localP, vec3<f32>(0.35)); }
-        else { s2 = sdOctahedron(localP, 0.6); }
-
-        shape = mix(s1, s2, t) + deformNoise * 0.2;
-        d = smin(d, shape, smoothK);
-    }
-
-    return vec2<f32>(d, 0.0);
+fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
+    return length(p) - r;
+}
+fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
+    let q = vec2<f32>(length(p.xz) - t.x, p.y);
+    return length(q) - t.y;
+}
+fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
+    let q = abs(p) - b;
+    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a; let ba = b - a;
+    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Normal calculation
+//  Smooth min (k controls blend radius)
 // ─────────────────────────────────────────────────────────────────────────────
-fn calcNormal(p: vec3<f32>, time: f32, ms: f32, bc: f32, sk: f32, df: f32) -> vec3<f32> {
-    let e = vec2<f32>(0.001, 0.0);
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  3-D rotation helpers
+// ─────────────────────────────────────────────────────────────────────────────
+fn rotY(p: vec3<f32>, a: f32) -> vec3<f32> {
+    let s = sin(a); let c = cos(a);
+    return vec3<f32>(c*p.x + s*p.z, p.y, -s*p.x + c*p.z);
+}
+fn rotX(p: vec3<f32>, a: f32) -> vec3<f32> {
+    let s = sin(a); let c = cos(a);
+    return vec3<f32>(p.x, c*p.y - s*p.z, s*p.y + c*p.z);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Morphing SDF: blend between 4 shapes by time-driven weights
+// ─────────────────────────────────────────────────────────────────────────────
+fn sceneSDF(p_in: vec3<f32>, t: f32, blendK: f32, morphT: f32) -> f32 {
+    let p = rotX(rotY(p_in, t * 0.17), t * 0.13);
+
+    // Phase: 0=sphere, 1=torus, 2=box, 3=capsule, cycles smoothly
+    let phase = fract(morphT * 0.25) * 4.0;
+    let w0 = smoothstep(0.0, 1.0, 1.0 - abs(phase - 0.0)) + smoothstep(0.0, 1.0, 1.0 - abs(phase - 4.0));
+    let w1 = smoothstep(0.0, 1.0, 1.0 - abs(phase - 1.0));
+    let w2 = smoothstep(0.0, 1.0, 1.0 - abs(phase - 2.0));
+    let w3 = smoothstep(0.0, 1.0, 1.0 - abs(phase - 3.0));
+
+    let s0 = sdSphere(p, 0.75);
+    let s1 = sdTorus(p, vec2<f32>(0.55, 0.22));
+    let s2 = sdBox(p, vec3<f32>(0.52, 0.52, 0.52));
+    let s3 = sdCapsule(p, vec3<f32>(0.0, -0.45, 0.0), vec3<f32>(0.0, 0.45, 0.0), 0.32);
+
+    // Weighted SDF interpolation via smin chain
+    var d = s0 * w0;
+    d = smin(d, s1, blendK * w1 + 0.01);
+    d = smin(d, s2, blendK * w2 + 0.01);
+    d = smin(d, s3, blendK * w3 + 0.01);
+    return d;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Estimate normal
+// ─────────────────────────────────────────────────────────────────────────────
+fn sceneNormal(p: vec3<f32>, t: f32, bk: f32, mt: f32) -> vec3<f32> {
+    let e = 0.002;
     return normalize(vec3<f32>(
-        map(p + e.xyy, time, ms, bc, sk, df).x - map(p - e.xyy, time, ms, bc, sk, df).x,
-        map(p + e.yxy, time, ms, bc, sk, df).x - map(p - e.yxy, time, ms, bc, sk, df).x,
-        map(p + e.yyx, time, ms, bc, sk, df).x - map(p - e.yyx, time, ms, bc, sk, df).x
+        sceneSDF(p + vec3<f32>(e,0,0), t, bk, mt) - sceneSDF(p - vec3<f32>(e,0,0), t, bk, mt),
+        sceneSDF(p + vec3<f32>(0,e,0), t, bk, mt) - sceneSDF(p - vec3<f32>(0,e,0), t, bk, mt),
+        sceneSDF(p + vec3<f32>(0,0,e), t, bk, mt) - sceneSDF(p - vec3<f32>(0,0,e), t, bk, mt)
     ));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
+//  Smooth noise for material texture
+// ─────────────────────────────────────────────────────────────────────────────
+fn h2_cm(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn vnoise_cm(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p); let u = f*f*(3.0-2.0*f);
+    return mix(mix(h2_cm(i),h2_cm(i+vec2<f32>(1,0)),u.x),mix(h2_cm(i+vec2<f32>(0,1)),h2_cm(i+vec2<f32>(1,1)),u.x),u.y);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Fresnel reflectance approximation (Schlick)
+// ─────────────────────────────────────────────────────────────────────────────
+fn fresnel(cosTheta: f32, F0: f32) -> f32 {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  GGX distribution for specular (for iridescent sheen)
+// ─────────────────────────────────────────────────────────────────────────────
+fn ggxD(NdotH: f32, roughness: f32) -> f32 {
+    let a  = roughness * roughness;
+    let a2 = a * a;
+    let d  = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    return a2 / (3.14159 * d * d + 1e-6);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Ambient occlusion from marching
+// ─────────────────────────────────────────────────────────────────────────────
+fn ambientOcclusion(p: vec3<f32>, N: vec3<f32>, t: f32, bk: f32, mt: f32) -> f32 {
+    var occ = 0.0;
+    var scale = 1.0;
+    for (var i = 1; i <= 5; i++) {
+        let d = 0.02 * f32(i);
+        let q = p + N * d;
+        let dist = sceneSDF(q, t, bk, mt);
+        occ += (d - dist) * scale;
+        scale *= 0.5;
+    }
+    return clamp(1.0 - occ * 3.0, 0.0, 1.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Main
 // ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let dims = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(id.xy);
-    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let res   = u.config.zw;
+    let uv    = (vec2<f32>(gid.xy) - res * 0.5) / min(res.x, res.y);
+    let t     = u.config.x;
+    let mouse = u.zoom_config.yz;
 
-    let uv = (fragCoord * 2.0 - dims) / dims.y;
-    let time = u.config.x;
+    let morphSpeed  = u.zoom_params.x * 0.4 + 0.05;
+    let colorSpeed  = u.zoom_params.y * 0.6 + 0.1;
+    let blendRadius = u.zoom_params.z * 0.4 + 0.05;
+    let lightInt    = u.zoom_params.w * 2.0 + 0.5;
 
-    // Parameters
-    let morphSpeed = u.zoom_config.x * 0.5 + 0.1;
-    let iridescence = u.zoom_config.w * 1.5 + 0.2;
-    let blobCount = u.zoom_params.x;
-    let smoothK = u.zoom_params.y * 0.8 + 0.2;
-    let colorSpeed = u.zoom_params.z * 2.0 + 0.3;
-    let deform = u.zoom_params.w * 1.5;
+    let morphT = t * morphSpeed;
 
     // Camera
-    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
-    var ro = vec3<f32>(0.0, 0.0, 5.0);
-    ro.yz = rot2(mouseY * 1.0) * ro.yz;
-    ro.xz = rot2(mouseX * 3.14 + time * 0.15) * ro.xz;
+    let camPos = vec3<f32>(
+        sin(t * 0.08 + mouse.x * 3.14) * 2.2,
+        cos(t * 0.06 + mouse.y * 1.5) * 0.8,
+        cos(t * 0.08 + mouse.x * 3.14) * 2.2
+    );
+    let target = vec3<f32>(0.0, 0.0, 0.0);
+    let fwd    = normalize(target - camPos);
+    let right  = normalize(cross(fwd, vec3<f32>(0.0, 1.0, 0.0)));
+    let up     = cross(right, fwd);
 
-    let ta = vec3<f32>(0.0);
-    let ww = normalize(ta - ro);
-    let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
-    let vv = cross(uu, ww);
-    let rd = normalize(uv.x * uu + uv.y * vv + 2.0 * ww);
+    let rd = normalize(fwd + uv.x * right + uv.y * up);
+    var ro = camPos;
 
-    // Raymarch
-    var t = 0.0;
-    var hit = false;
-    for (var i = 0; i < 100; i++) {
-        let p = ro + rd * t;
-        let d = map(p, time, morphSpeed, blobCount, smoothK, deform).x;
-        if (d < 0.001) { hit = true; break; }
-        if (t > 25.0) { break; }
-        t += d * 0.7;
+    // Ray march
+    var tRay = 0.01;
+    var hit  = false;
+    var hitP = vec3<f32>(0.0);
+    for (var i = 0; i < 80; i++) {
+        let p  = ro + rd * tRay;
+        let d  = sceneSDF(p, t, blendRadius, morphT);
+        if (d < 0.001) { hit = true; hitP = p; break; }
+        if (tRay > 8.0) { break; }
+        tRay += d * 0.9;
     }
 
-    // Background: gradient with subtle stars
-    var col = mix(vec3<f32>(0.02, 0.03, 0.08), vec3<f32>(0.08, 0.04, 0.12), uv.y * 0.5 + 0.5);
-    let stars = pow(hash31(rd * 400.0), 25.0);
-    col += vec3<f32>(stars * 0.5);
+    var col = vec3<f32>(0.02, 0.02, 0.06); // background
 
     if (hit) {
-        let p = ro + rd * t;
-        let n = calcNormal(p, time, morphSpeed, blobCount, smoothK, deform);
-        let v = normalize(ro - p);
+        let N = sceneNormal(hitP, t, blendRadius, morphT);
 
-        // Independent color field: 3D noise mapped to surface
-        let colorNoise = fbm3(p * 1.5 + time * colorSpeed * 0.3);
-        let colorNoise2 = fbm3(p * 3.0 - time * colorSpeed * 0.2 + 50.0);
-        let baseHue = fract(colorNoise * 2.0 + time * colorSpeed * 0.05);
-        let baseSat = 0.6 + 0.4 * colorNoise2;
-        let baseCol = hsv2rgb(baseHue, baseSat, 0.9);
+        // Independent color field: based on normal + time, not geometry phase
+        let colorPhase = dot(N, vec3<f32>(0.577)) * 2.0 + t * colorSpeed;
+        let hue = fract(colorPhase * 0.5 + 0.15);
+        let sat = 0.6 + 0.4 * abs(sin(colorPhase * 1.7));
+        let surfCol = hsv2rgb(hue, sat, 1.0);
 
         // Lighting
-        let lightDir = normalize(vec3<f32>(1.0, 1.5, 0.8));
-        let diff = max(dot(n, lightDir), 0.0);
-        let hal = normalize(lightDir + v);
-        let spec = pow(max(dot(n, hal), 0.0), 32.0);
-        let fresnel = pow(1.0 - max(dot(n, v), 0.0), 5.0);
-
-        // Iridescent Fresnel: color shifts with viewing angle
-        let iridHue = fract(fresnel * 2.0 + dot(n, vec3<f32>(1.0, 0.0, 0.0)) * 0.5 + time * 0.1);
-        let iridCol = hsv2rgb(iridHue, 0.9, 1.0);
-
-        col = baseCol * (diff * 0.7 + 0.3);
-        col += vec3<f32>(1.0) * spec * 0.5;
-        col += iridCol * fresnel * iridescence;
+        let lightDir = normalize(vec3<f32>(sin(t * 0.2), 0.7, cos(t * 0.2)));
+        let diff = max(dot(N, lightDir), 0.0);
+        let spec = pow(max(dot(reflect(-lightDir, N), -rd), 0.0), 32.0);
+        let rim  = pow(1.0 - max(dot(N, -rd), 0.0), 3.0);
 
         // AO approximation
-        let ao = 0.5 + 0.5 * map(p + n * 0.1, time, morphSpeed, blobCount, smoothK, deform).x / 0.1;
-        col *= clamp(ao, 0.3, 1.0);
+        let ao = 1.0 - smoothstep(0.0, 0.3, abs(sceneSDF(hitP + N * 0.08, t, blendRadius, morphT)));
 
-        // Distance fog
-        col = mix(col, vec3<f32>(0.02, 0.03, 0.08), 1.0 - exp(-0.06 * t));
+        col = surfCol * (0.1 + diff * 0.7 * lightInt) * ao
+            + vec3<f32>(1.0) * spec * 0.4
+            + surfCol * rim * 0.3;
+        col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     }
 
-    // Vignette
-    col *= 1.0 - 0.3 * length(uv);
+    if (hit) {
+        let N2 = sceneNormal(hitP, t, blendRadius, morphT);
 
-    // Tone map + gamma
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(0.4545));
+        // ── Fresnel rim light ──────────────────────────────────────────────
+        let NdotV = max(dot(N2, -rd), 0.0);
+        let fresnelW = fresnel(NdotV, 0.04);
+        let rimHue = fract(t * 0.07 + 0.6);
+        col += hsv2rgb(rimHue, 1.0, 1.0) * fresnelW * 0.4;
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+        // ── Material noise texture ─────────────────────────────────────────
+        let matNoise = vnoise_cm(hitP.xy * 4.0 + hitP.z * vec2<f32>(1.3, 0.7));
+        col = mix(col, col * (0.7 + matNoise * 0.6), 0.3);
+
+        // ── GGX specular sheen ────────────────────────────────────────────
+        let halfV = normalize(normalize(vec3<f32>(sin(t*0.2), 0.7, cos(t*0.2))) + (-rd));
+        let NdotH = max(dot(N2, halfV), 0.0);
+        let roughness = 0.3 + matNoise * 0.4;
+        let ggxSpec = ggxD(NdotH, roughness) * 0.15;
+        col += hsv2rgb(fract(t * colorSpeed * 0.3 + 0.3), 0.7, 1.0) * ggxSpec;
+
+        // ── Full AO pass ───────────────────────────────────────────────────
+        let ao2 = ambientOcclusion(hitP, N2, t, blendRadius, morphT);
+        col *= ao2;
+
+        col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    }
+
+    // Depth
+    let depthVal = select(0.0, 1.0 - tRay / 8.0, hit);
+    textureStore(writeTexture, gid.xy, vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 1.0));
 }
