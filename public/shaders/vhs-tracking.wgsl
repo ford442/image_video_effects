@@ -32,7 +32,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 }
 
 fn hash3(p: vec3<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(p, vec3<f32>(12.9898, 78.233, 45.164))) * 43758.5453);
 }
 
 // Simple noise function
