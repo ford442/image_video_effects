@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Metal Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: mercury-like, specular highlights, HSL color tinting
+//
+//  ALPHA PHYSICS:
+//  - Liquid metal has very high reflectivity
+//  - Mercury-like: high density, opaque appearance
+//  - Specular affects perceived transparency
+// ═══════════════════════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -43,6 +54,52 @@ fn hslToRgb(h: f32, s: f32, l: f32) -> vec3<f32> {
   return vec3<f32>(r+m, g+m, b+m);
 }
 
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate liquid metal alpha
+fn calculateMetalAlpha(
+    specular: f32,
+    rippleMag: f32,
+    viewDotNormal: f32
+) -> f32 {
+  // Liquid metal has very high F0 (mercury ~0.9+)
+  let F0 = 0.85;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Ripples create surface variation but metal is generally opaque
+  let surfaceVariation = 1.0 - rippleMag * 0.2;
+  
+  // Specular highlights increase perceived opacity
+  let specularFactor = 1.0 - specular * 0.1;
+  
+  // Liquid metal is mostly opaque (alpha 0.85-0.98)
+  let baseAlpha = mix(0.85, 0.98, surfaceVariation);
+  
+  // Fresnel effect: edges more reflective, slightly more transparent
+  let alpha = baseAlpha * specularFactor * (1.0 - fresnel * 0.15);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate liquid metal color
+fn calculateMetalColor(
+    baseColor: vec3<f32>,
+    specular: f32,
+    tintCol: vec3<f32>,
+    ripple: f32
+) -> vec3<f32> {
+  // Base metal look: high contrast, metallic tint
+  let metal_look = baseColor * mix(vec3<f32>(1.0), tintCol, 0.5) + vec3<f32>(specular);
+  
+  // Ripple adds surface variation
+  let rippleTint = vec3<f32>(0.02, 0.02, 0.03) * ripple;
+  
+  return metal_look + rippleTint;
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
@@ -81,6 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(dist_vec);
 
+  var ripple: f32 = 0.0;
   let blob_radius = 0.2;
   if (dist < blob_radius) {
      // Create a spherical normal perturbation
@@ -88,7 +146,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
      // Simple bump: gradient away from mouse
      let mouse_dir = normalize(dist_vec);
      // Use sine wave for ripple effect
-     let ripple = sin(dist * 50.0 - u.config.x * 5.0) * pct * distortion_amt;
+     ripple = sin(dist * 50.0 - u.config.x * 5.0) * pct * distortion_amt;
 
      // Add to normal xy
      normal.x += mouse_dir.x * ripple;
@@ -118,9 +176,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Tint
   let tint_col = hslToRgb(tint_hue, 0.5, 0.5);
 
-  // Composite
-  // Make it look metallic: Video color * Tint + White Specular
-  let metal_look = base_color * mix(vec3<f32>(1.0), tint_col, 0.5) + vec3<f32>(spec);
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALPHA CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  let rippleMag = abs(ripple);
+  let viewDotNormal = dot(view_dir, normal);
+  
+  // Calculate metal color
+  let metalColor = calculateMetalColor(base_color, spec, tint_col, ripple);
+  
+  // Calculate alpha
+  let alpha = calculateMetalAlpha(spec, rippleMag, viewDotNormal);
 
-  textureStore(writeTexture, coord, vec4<f32>(metal_look, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(metalColor, alpha));
 }
