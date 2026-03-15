@@ -1,4 +1,15 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Glitch Reveal - Block Scatter with Alpha Masking
+//  Category: retro-glitch
+//
+//  Interactive reveal effect with block-based scattering:
+//  - Grid-based block offset scattering
+//  - Mouse proximity reveals unscattered image
+//  - Channel shifting on scattered blocks
+//  - Digital border with alpha masking
+//  - Alpha preserved for reveal transitions
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +23,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
@@ -92,24 +102,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleUV = clamp(uv + blockOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Color Glitch: occasionally swap channels on scattered blocks
-    var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    var colorSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    var color = colorSample.rgb;
+    var alpha = colorSample.a;
 
     if (mask > 0.01 && scatter > 0.0) {
          if (rand.x > 0.8) {
-             // Simple channel shift
-             let r = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.01 * mask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-             color = vec4<f32>(r, color.g, color.b, color.a);
+             // Simple channel shift with alpha preservation
+             let rSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.01 * mask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+             color = vec3<f32>(rSample.r, colorSample.g, colorSample.b);
+             // Scattered blocks have slightly corrupted alpha
+             alpha = mix(colorSample.a, rSample.a * 0.9 + 0.1, mask * 0.3);
          } else if (rand.x < 0.2) {
-             // Invert?
-             // color = vec4<f32>(1.0 - color.rgb, color.a);
+             // Invert with alpha modulation
+             color = vec3<f32>(1.0 - colorSample.r, 1.0 - colorSample.g, 1.0 - colorSample.b);
+             alpha = colorSample.a * 0.95;
          }
     }
 
-    // Add a digital border around the revealed area
+    // Add a digital border around the revealed area with alpha
     let border = smoothstep(revealRadius, revealRadius + 0.01, dist) - smoothstep(revealRadius + 0.01, revealRadius + 0.02, dist);
     if (border > 0.0 && mask < 0.9) {
-        color = mix(color, vec4<f32>(0.0, 1.0, 0.5, 1.0), border * 0.5);
+        let borderColor = vec3<f32>(0.0, 1.0, 0.5);
+        color = mix(color, borderColor, border * 0.5);
+        // Border has solid alpha
+        alpha = mix(alpha, 1.0, border * 0.3);
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Clamp alpha
+    alpha = clamp(alpha, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
