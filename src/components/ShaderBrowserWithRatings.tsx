@@ -160,7 +160,7 @@ interface ShaderCardProps {
   };
   isSelected: boolean;
   onSelect: () => void;
-  onRate: (id: string, rating: number) => Promise<void>;
+  onRate: (id: string, rating: number) => Promise<any>;
 }
 
 const ShaderCard: React.FC<ShaderCardProps> = ({

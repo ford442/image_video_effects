@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
-import { ShaderCoordinateMenu } from './components/ShaderCoordinateMenu';
+import { ShaderCoordinateMenu } from './ShaderCoordinateMenu';
 import shaderCoordinates from '../shader_coordinates.json';
 
 // ═══════════════════════════════════════════════════════════════════════════════
