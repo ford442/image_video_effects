@@ -1,3 +1,15 @@
+// ═══════════════════════════════════════════════════════════════
+//  RGB Delay Brush - Temporal RGB splitting with wavelength-alpha
+//  Category: artistic
+//  Features: brush, temporal-delay, wavelength-dependent-alpha
+//
+//  SCIENTIFIC MODEL:
+//  - Different temporal delay per channel affects alpha
+//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
+//  - Red (650nm): fastest response, highest transmission
+//  - Blue (450nm): slowest response, lowest transmission
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -19,6 +31,22 @@ struct Uniforms {
 @group(0) @binding(11) var comparisonSampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+// ═══════════════════════════════════════════════════════════════
+//  SPECTRAL PHYSICS CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const WAVELENGTH_RED:    f32 = 650.0;  // nm
+const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
+const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
+
+// ═══════════════════════════════════════════════════════════════
+//  WAVELENGTH-DEPENDENT ALPHA
+// ═══════════════════════════════════════════════════════════════
+fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
+    let lambda_norm = (800.0 - wavelength) / 400.0;
+    let absorption = mix(0.3, 1.0, lambda_norm);
+    return exp(-thickness * absorption);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
@@ -32,8 +60,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var mouse = u.zoom_config.yz;
 
   // Params
-  let persistence = u.zoom_params.x; // High = old frame stays longer (global)
-  let split = u.zoom_params.y; // Strength of RGB separation (brush)
+  let persistence = u.zoom_params.x;
+  let split = u.zoom_params.y;
   let radius = u.zoom_params.z * 0.5;
 
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -44,21 +72,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);
   let dist = length(uv_corrected - mouse_corrected);
 
-  let mask = smoothstep(radius, radius * 0.5, dist); // 1.0 inside, 0.0 outside
+  let mask = smoothstep(radius, radius * 0.5, dist);
 
-  // Calculate reaction speeds for each channel.
-  // Speed 1.0 = Instant update (Current frame).
-  // Speed 0.01 = Very slow update (Trails).
-
-  // Base fade speed depends on persistence
-  // map persistence 0.5->0.99 to speed 0.5 -> 0.01
+  // Calculate reaction speeds for each channel
   let base_speed = (1.0 - persistence) * 2.0;
 
   // Apply RGB split based on mask
-  // We want the Red channel to be fastest, Blue slowest (or vice versa) to create fringe.
-
-  // Inside brush (mask=1), we slow down G and B significantly more if split is high.
-
   let s_r = base_speed;
   let s_g = max(0.005, base_speed - (mask * split * 0.05));
   let s_b = max(0.001, base_speed - (mask * split * 0.1));
@@ -67,7 +86,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   new_color.r = mix(prev.r, current.r, clamp(s_r, 0.0, 1.0));
   new_color.g = mix(prev.g, current.g, clamp(s_g, 0.0, 1.0));
   new_color.b = mix(prev.b, current.b, clamp(s_b, 0.0, 1.0));
-  new_color.a = 1.0;
+
+  // ═══════════════════════════════════════════════════════════════
+  //  WAVELENGTH-DEPENDENT ALPHA
+  //  Thickness derived from temporal split (delay) amount
+  // ═══════════════════════════════════════════════════════════════
+  let temporalThickness = mask * split * 5.0;
+  
+  let alphaR = calculateChannelAlpha(temporalThickness, WAVELENGTH_RED);
+  let alphaG = calculateChannelAlpha(temporalThickness, WAVELENGTH_GREEN);
+  let alphaB = calculateChannelAlpha(temporalThickness, WAVELENGTH_BLUE);
+  
+  let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
+  let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
+  
+  new_color.r = new_color.r * alphaR;
+  new_color.g = new_color.g * alphaG;
+  new_color.b = new_color.b * alphaB;
+  new_color.a = finalAlpha;
 
   textureStore(dataTextureA, coord, new_color);
   textureStore(writeTexture, coord, new_color);
