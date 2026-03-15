@@ -1,4 +1,15 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Data Stream Corruption - Matrix Rain with Alpha Degradation
+//  Category: retro-glitch
+//
+//  Digital rain effect with progressive corruption:
+//  - Matrix-style character streams
+//  - Mouse brush adds corruption that persists
+//  - Blocky displacement and channel splitting
+//  - Alpha degradation in corrupted regions
+//  - Ghost frames with partial transparency
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,13 +17,12 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
@@ -37,10 +47,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
 
-    // --- Persistence Logic (Corruption Map) ---
+    // --- Persistence Logic (Corruption Map with Alpha History) ---
     // Read previous frame's state from dataTextureC
     let oldState = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     var corruption = oldState.r;
+    var alphaHistory = oldState.a;
 
     // Mouse Interaction
     var mouse = u.zoom_config.yz;
@@ -61,13 +72,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Soft brush edge
         let strength = smoothstep(brushRadius, brushRadius * 0.5, dist);
         corruption += strength * 0.5;
+        // Corruption also affects alpha - creates ghosting
+        alphaHistory = min(alphaHistory + strength * 0.3, 1.0);
     }
 
     // Decay
     corruption = clamp(corruption * persistence, 0.0, 1.0);
+    alphaHistory = alphaHistory * persistence;
 
     // Store updated corruption state for next frame
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(corruption, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(corruption, 0.0, 0.0, alphaHistory));
 
     // --- Render Logic ---
 
@@ -88,7 +102,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let effectiveCorruption = corruption * maxCorruption;
 
     var sampleUV = uv;
-    var finalColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let inputSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    var finalColor = inputSample;
 
     if (effectiveCorruption > 0.01) {
         // Blocky displacement
@@ -99,26 +114,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let displaceY = (blockRandom - 0.5) * 0.1 * effectiveCorruption;
         sampleUV.y += displaceY;
 
+        // Re-sample after displacement
+        let displacedSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+        
         // Channel Split
         let rgbSplit = 0.02 * effectiveCorruption;
         let r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(rgbSplit, 0.0), 0.0).r;
-        let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+        let g = displacedSample.g;
         let b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(rgbSplit, 0.0), 0.0).b;
+        // Alpha corruption: displaced alpha is blended with ghost alpha
+        let corruptedAlpha = mix(displacedSample.a, alphaHistory, effectiveCorruption * 0.5);
 
-        finalColor = vec4<f32>(r, g, b, 1.0);
+        finalColor = vec4<f32>(r, g, b, corruptedAlpha);
 
-        // Apply "Digital Stream" overlay
+        // Apply "Digital Stream" overlay with alpha-aware blending
         let streamColor = vec3<f32>(0.2, 1.0, 0.4); // Matrix green
         let streamIntensity = isChar * effectiveCorruption * colRandom;
 
-        // Brighten characters, darken background
-        finalColor = mix(finalColor, vec4<f32>(streamColor, 1.0), streamIntensity * 0.8);
+        // Brighten characters, darken background with alpha modulation
+        let streamBlend = streamIntensity * 0.8;
+        finalColor.rgb = mix(finalColor.rgb, streamColor, streamBlend);
+        // Stream effect increases alpha for digital look
+        finalColor.a = mix(finalColor.a, 0.9 + streamIntensity * 0.1, streamBlend);
 
         // Darken non-character areas heavily if corrupted
         if (isChar < 0.5) {
-             finalColor = mix(finalColor, vec4<f32>(0.0, 0.0, 0.0, 1.0), effectiveCorruption * 0.5);
+             finalColor = mix(finalColor, vec4<f32>(0.0, 0.0, 0.0, finalColor.a * 0.5), effectiveCorruption * 0.5);
         }
     }
+    
+    // Ensure alpha is valid
+    finalColor.a = clamp(finalColor.a, 0.0, 1.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
