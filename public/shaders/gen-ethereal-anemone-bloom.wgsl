@@ -1,7 +1,9 @@
-// ----------------------------------------------------------------
-// Ethereal Anemone Bloom
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
+//  Ethereal Anemone Bloom - Generative Shader with Organic Materials
+//  Category: generative
+//  Features: Translucent tentacle tissue, bioluminescence, subsurface scattering
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -22,6 +24,11 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+// Anemone Tissue Properties
+const TENTACLE_DENSITY: f32 = 1.8;      // Less dense than skin
+const TISSUE_SCATTERING: f32 = 2.2;     // High scattering for gelatinous look
+const TIP_EMISSION: f32 = 1.5;          // Bioluminescent emission strength
 
 // --- Helpers ---
 
@@ -65,7 +72,6 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// Capped Cone
 fn sdCappedCone(p: vec3<f32>, h: f32, r1: f32, r2: f32) -> f32 {
     let q = vec2<f32>(length(p.xz), p.y);
     let k1 = vec2<f32>(r2, h);
@@ -74,6 +80,58 @@ fn sdCappedCone(p: vec3<f32>, h: f32, r1: f32, r2: f32) -> f32 {
     let cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
     let s = select(1.0, -1.0, cb.x < 0.0 && ca.y < 0.0);
     return s * sqrt(min(dot(ca, ca), dot(cb, cb)));
+}
+
+// Calculate tissue thickness at a point
+fn calculateTissueThickness(p: vec3<f32>, n: vec3<f32>, baseRadius: f32) -> f32 {
+    // Tentacles are thinner at tips, thicker at base
+    let normalizedHeight = clamp(p.y / 5.0, 0.0, 1.0);
+    // Tips are very thin (0.1), base is thicker (0.4 relative to radius)
+    let relativeThickness = mix(0.4, 0.08, normalizedHeight);
+    return relativeThickness * baseRadius;
+}
+
+// Subsurface scattering for gelatinous tissue
+fn gelatinousSSS(n: vec3<f32>, l: vec3<f32>, v: vec3<f32>, thickness: f32, 
+                 baseColor: vec3<f32>, glowIntensity: f32) -> vec3<f32> {
+    // Forward scattering (rim light transmission)
+    let rimDot = 1.0 - max(0.0, dot(n, v));
+    let forwardScatter = pow(rimDot, 4.0) * TISSUE_SCATTERING;
+    
+    // Back scattering (translucency through tissue)
+    let backDot = max(0.0, dot(n, -l));
+    let backScatter = pow(backDot, 2.0) * 0.8;
+    
+    // Combine scatterings
+    let scatter = forwardScatter + backScatter;
+    
+    // Tissue color absorption - anemones have cyan/green tint
+    let tissueTint = vec3<f32>(0.6, 0.9, 0.95);
+    
+    return baseColor * tissueTint * scatter * (1.0 + glowIntensity * 0.5);
+}
+
+// Calculate alpha for gelatinous tissue
+fn calculateGelatinousAlpha(thickness: f32, n: vec3<f32>, l: vec3<f32>, 
+                            isTip: bool, glowIntensity: f32) -> f32 {
+    // Base alpha from thickness using Beer-Lambert
+    // Thinner = more translucent
+    let absorption = exp(-thickness * TENTACLE_DENSITY);
+    var alpha = 0.25 + absorption * 0.7;
+    
+    // Tips are very translucent
+    if (isTip {
+        alpha = mix(alpha, 0.35, 0.6);
+    }
+    
+    // Backlit areas more translucent
+    let backlit = max(0.0, dot(n, -l));
+    alpha = mix(alpha, alpha * 0.7, backlit * 0.5);
+    
+    // Bioluminescent emission reduces alpha for glow effect
+    let glowAlpha = mix(alpha, 0.5, glowIntensity * 0.3);
+    
+    return clamp(glowAlpha, 0.25, 0.9);
 }
 
 // --- Map Function ---
@@ -86,23 +144,19 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let d_floor = p.y - groundHeight;
 
     // 2. Anemones (Domain Repetition)
-    let tentacle_density = u.zoom_params.y; // 0.1 to 1.0
-    // As density increases, cell size decreases (more clustered)
+    let tentacle_density = u.zoom_params.y;
     let cell_size = mix(8.0, 2.0, tentacle_density);
 
     let id = floor(p.xz / cell_size);
     let q_xz = (fract(p.xz / cell_size) - vec2<f32>(0.5)) * cell_size;
     let h = hash(id);
 
-    // Anemone base height from FBM at cell center
     let cell_center = (id + 0.5) * cell_size;
     let local_ground = groundBase + fbm(cell_center * 0.2) * 2.0;
 
-    // Local coordinates relative to anemone base
     var q = vec3<f32>(q_xz.x, p.y - local_ground, q_xz.y);
 
     // Mouse Interaction (Vortex/Eddy)
-    // Map mouse (0 to 1) to world space bounds roughly matching view
     let mouseWorldX = (u.zoom_config.y - 0.5) * 30.0;
     let mouseWorldZ = (u.zoom_config.z - 0.5) * 30.0;
     let mouseWorld = vec3<f32>(mouseWorldX, 0.0, mouseWorldZ);
@@ -120,7 +174,6 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         cos(time * 1.2 + h * 6.28 + p.y * 0.1) * sway_amt
     );
 
-    // Add mouse force (push away from mouse center)
     if (distToMouse > 0.1) {
         let dirToMouse = normalize(p - mouseWorld);
         sway += dirToMouse * mouseForce * (q.y * 0.1);
@@ -136,12 +189,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         let th = hash(id + vec2<f32>(f32(i), 0.0));
         let height = 3.0 + th * 2.0;
 
-        // Offset each tentacle
         let angle = th * 6.28 + f32(i) * 1.57;
         let radius = 0.5 + th * 0.5;
         let offset = vec3<f32>(cos(angle)*radius, 0.0, sin(angle)*radius);
 
-        // Cone centered vertically
         let p_cone = q - offset - vec3<f32>(0.0, height * 0.5, 0.0);
         let base_r = 0.4 + th * 0.2;
         let top_r = 0.05;
@@ -151,11 +202,11 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     }
 
     var d = d_floor;
-    var mat = 1.0; // Floor
+    var mat = 1.0;
 
     if (d_tentacles < d) {
         d = d_tentacles;
-        mat = 2.0; // Base tentacle
+        mat = 2.0;
         // Check if we are near the top of the tentacles
         if (q.y > 2.0) {
             mat = 3.0; // Glowing tip
@@ -205,7 +256,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x * 0.2;
 
     // 1. Ray setup and camera matrix
-    let ro = vec3<f32>(time * 2.0, -1.0, time * 2.0); // Moving camera
+    let ro = vec3<f32>(time * 2.0, -1.0, time * 2.0);
     let target = ro + vec3<f32>(cos(time*0.5), -0.2, sin(time*0.5));
 
     let forward = normalize(target - ro);
@@ -220,24 +271,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // 3. Shading and color accumulation
     var color = vec3<f32>(0.0);
-    let fogColor = vec3<f32>(0.0, 0.05, 0.12); // Deep water murk
+    var alpha = 1.0;
+    let fogColor = vec3<f32>(0.0, 0.05, 0.12);
     let water_murkiness = u.zoom_params.w;
+    let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.2));
 
     if (t < 80.0) {
         let p = ro + rd * t;
         let n = calcNormal(p);
 
-        let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.2));
         let diff = max(dot(n, lightDir), 0.0);
         let ambient = 0.1;
 
-        var baseColor = vec3<f32>(0.05, 0.08, 0.1); // seabed
+        var baseColor = vec3<f32>(0.05, 0.08, 0.1);
+        var thickness = 0.2;
+        var isTip = false;
 
         if (mat == 2.0 || mat == 3.0) {
-            baseColor = vec3<f32>(0.1, 0.3, 0.4); // Deep fleshy cyan
-
-            // Subsurface Scattering Approximation
-            // Sample SDF slightly deeper into surface
+            baseColor = vec3<f32>(0.1, 0.3, 0.4);
+            
+            // Calculate tissue thickness based on position
+            // Thicker at base, thinner at tips
+            let relativeHeight = clamp((p.y + 4.0) / 5.0, 0.0, 1.0);
+            thickness = mix(0.35, 0.08, relativeHeight);
+            
+            // Sample SDF for actual thickness approximation
             let sss_d = map(p - n * 0.4).x;
             let sss = clamp(0.5 + sss_d * 2.0, 0.0, 1.0);
             let sss_color = vec3<f32>(0.0, 0.5, 0.8) * sss;
@@ -246,28 +304,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
 
         var emissive = vec3<f32>(0.0);
+        var glowIntensity = 0.0;
+        
         if (mat == 3.0) {
-            // Bioluminescent Audio-Pulse at tips
-            let glow_intensity = u.zoom_params.z;
-            let audio_pulse = u.config.y; // Audio accumulator proxy
+            isTip = true;
+            glowIntensity = u.zoom_params.z;
+            let audio_pulse = u.config.y;
 
-            // Shift colors between deep cyan and electric magenta based on height and time
+            // Shift colors between deep cyan and electric magenta
             let hue = fract(p.y * 0.1 - time * 2.0);
             let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
             let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
             let shiftColor = clamp(p_col - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
-            // Intense neon light driven by audio amplitude
             let pulse_factor = 1.0 + sin(audio_pulse * 10.0) * 0.5;
-            emissive = shiftColor * glow_intensity * 2.0 * pulse_factor;
+            emissive = shiftColor * glowIntensity * 2.0 * pulse_factor;
+        }
+
+        // Apply gelatinous subsurface scattering for tentacles
+        if (mat == 2.0 || mat == 3.0) {
+            let sss = gelatinousSSS(n, lightDir, -rd, thickness, baseColor, glowIntensity);
+            baseColor += sss * 0.5;
         }
 
         color = baseColor * (diff + ambient) + emissive;
 
         // 4. Volumetric fog application
-        // Distance-based volumetric fog for deep-ocean feel
         let fogAmount = 1.0 - exp(-t * 0.02 * water_murkiness);
         color = mix(color, fogColor, fogAmount);
+        
+        // Calculate organic alpha for gelatinous tissue
+        if (mat == 2.0 || mat == 3.0) {
+            alpha = calculateGelatinousAlpha(thickness, n, lightDir, isTip, glowIntensity);
+        } else {
+            alpha = 0.95; // Seabed is mostly opaque
+        }
+
     } else {
         color = fogColor;
     }
@@ -275,7 +347,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Gamma correction
     color = pow(color, vec3<f32>(0.4545));
 
-    // 5. writeTexture update
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // 5. writeTexture update with alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 80.0, 0.0, 0.0, 0.0));
 }
