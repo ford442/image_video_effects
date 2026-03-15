@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Volumetric Zoom Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: volumetric layers, zoom effect, chromatic separation
+//
+//  ALPHA PHYSICS:
+//  - Layer depth affects opacity
+//  - Fog density controls transparency falloff
+//  - Chromatic separation has wavelength-dependent alpha
+// ═══════════════════════════════════════════════════════════════════════════════
+
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -69,6 +80,36 @@ fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate volumetric alpha
+fn calculateVolumetricAlpha(
+    layerDepth: f32,
+    fogDensity: f32,
+    viewDotNormal: f32,
+    accumulatedWeight: f32
+) -> f32 {
+  // Fresnel at volume boundaries
+  let F0 = 0.03;
+  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
+  
+  // Fog density affects transparency
+  let fogAmount = exp(-layerDepth * fogDensity * 3.0);
+  
+  // Deeper layers = more fog = more transparent
+  let depthAlpha = mix(0.95, 0.4, fogAmount);
+  
+  // Accumulated weight affects opacity
+  let weightAlpha = mix(0.5, 0.9, smoothstep(0.0, 1.0, accumulatedWeight));
+  
+  let alpha = depthAlpha * weightAlpha * (1.0 - fresnel * 0.2);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var resolution = vec2<f32>(u.config.z, u.config.w);
@@ -138,11 +179,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let final = chromaticColor + vec3<f32>(edgeGlow, edgeGlow * 0.8, edgeGlow * 0.6);
 
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // ALPHA CALCULATION
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    let fogDensity = u.zoom_params.w;
+    let normal = reconstruct_normal(uv, baseDepth);
+    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+    let viewDotNormal = dot(viewDir, normal);
+    
+    // Average layer depth for alpha calculation
+    let avgLayerDepth = 0.5;
+    let normalizedWeight = totalWeight / f32(layers);
+    
+    // Calculate alpha
+    let alpha = calculateVolumetricAlpha(avgLayerDepth, fogDensity, viewDotNormal, normalizedWeight);
+    
     // Fog
-    let fog = exp(-baseDepth * u.zoom_params.w * 3.0);
+    let fog = exp(-baseDepth * fogDensity * 3.0);
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let outColor = mix(final, fogColor, 1.0 - fog);
 
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, 1.0));
+    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, alpha));
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
 }
