@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Liquid Zoom Shader with Alpha Physics
+//  Category: liquid-effects
+//  Features: parallax zoom, depth-based speed, fog integration
+//
+//  ALPHA PHYSICS:
+//  - Zoom progress affects layer opacity
+//  - Parallax factor controls transparency
+//  - Fog density for distance fade
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -22,16 +33,70 @@ fn ping_pong_v2(v: vec2<f32>) -> vec2<f32> {
   return vec2<f32>(ping_pong(v.x), ping_pong(v.y));
 }
 
+// Schlick's approximation for Fresnel
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// Calculate zoom layer alpha
+fn calculateZoomAlpha(
+    zoomProgress: f32,
+    parallaxFactor: f32,
+    fogDensity: f32,
+    fadeIn: f32,
+    fadeOut: f32
+) -> f32 {
+  // Fresnel (subtle for zoom effect)
+  let F0 = 0.02;
+  let fresnel = schlickFresnel(0.8, F0); // Approximate view angle
+  
+  // Zoom progress affects opacity: objects fade in and out
+  let zoomAlpha = fadeIn * fadeOut;
+  
+  // Parallax factor: background stays more opaque
+  let parallaxAlpha = mix(zoomAlpha, 1.0, 1.0 - smoothstep(0.0, 0.1, parallaxFactor));
+  
+  // Fog reduces opacity for distant objects
+  let fogAmount = pow(1.0 - parallaxFactor, 2.0) * fogDensity;
+  let fogAlpha = mix(parallaxAlpha, 0.3, fogAmount);
+  
+  let alpha = fogAlpha * (1.0 - fresnel * 0.15);
+  
+  return clamp(alpha, 0.0, 1.0);
+}
+
+// Calculate zoom color with fog
+fn calculateZoomColor(
+    layerColor: vec3<f32>,
+    fogAmount: f32,
+    zoomProgress: f32
+) -> vec3<f32> {
+  let fogColor = vec3<f32>(0.05, 0.1, 0.08);
+  
+  // Objects get slightly desaturated as they zoom
+  let avg = (layerColor.r + layerColor.g + layerColor.b) / 3.0;
+  let saturation = 1.0 - zoomProgress * 0.1;
+  let desaturated = vec3<f32>(
+      mix(avg, layerColor.r, saturation),
+      mix(avg, layerColor.g, saturation),
+      mix(avg, layerColor.b, saturation)
+  );
+  
+  return mix(desaturated, fogColor, fogAmount);
+}
+
 fn sample_zooming_layer(
   uv: vec2<f32>,
   depth: f32,
   zoom_time: f32,
   zoom_center: vec2<f32>,
-  cycle_offset: f32
+  cycle_offset: f32,
+  outAlpha: ptr<function, f32>
 ) -> vec4<f32> {
   var fg_speed = u.zoom_params.x;
   var bg_speed = u.zoom_params.y;
   var parallax_strength = u.zoom_params.z;
+  var fog_density = u.zoom_params.w;
 
   // Depth 0.0 = Near, 1.0 = Far
   // parallax_factor: 1.0 (Near) -> 0.0 (Far)
@@ -77,8 +142,16 @@ fn sample_zooming_layer(
   // If parallax_factor is 0 (Far), alpha becomes 1.0.
   // If parallax_factor is 1 (Near), alpha is governed by the fade loop.
   alpha = mix(alpha, 1.0, 1.0 - smoothstep(0.0, 0.1, parallax_factor));
+  
+  // Calculate zoom alpha with fog
+  let zoomAlpha = calculateZoomAlpha(zoom_progress, parallax_factor, fog_density, fade_in, fade_out);
+  *outAlpha = zoomAlpha;
 
-  return vec4(color.rgb, alpha);
+  // Calculate fog amount
+  let fog_amount = pow(depth, 2.0) * fog_density;
+  let finalColor = calculateZoomColor(color.rgb, fog_amount, zoom_progress);
+
+  return vec4(finalColor, zoomAlpha);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -92,24 +165,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // --- Compositing ---
   // Layer 1 and Layer 2 provide the continuous stream of objects.
-  let layer1 = sample_zooming_layer(uv, static_depth, zoom_time, zoom_center, 0.0);
-  let layer2 = sample_zooming_layer(uv, static_depth, zoom_time, zoom_center, 0.5);
+  var layer1Alpha: f32 = 0.0;
+  var layer2Alpha: f32 = 0.0;
+  let layer1 = sample_zooming_layer(uv, static_depth, zoom_time, zoom_center, 0.0, &layer1Alpha);
+  let layer2 = sample_zooming_layer(uv, static_depth, zoom_time, zoom_center, 0.5, &layer2Alpha);
 
   // Blend layers.
   // Since we forced background alpha to 1.0, both layers might be opaque in background.
   // But they should be identical in background (scale 1.0, same UVs).
   // So standard mixing is fine.
   var final_color = mix(layer1, layer2, layer2.a);
-
-  // --- Fog ---
-  // Fog should apply to distant objects (high depth value).
-  let fog_density = u.zoom_params.w;
-  let fog_color = vec3<f32>(0.05, 0.1, 0.08); 
-  let fog_amount = pow(static_depth, 2.0) * fog_density; 
   
-  final_color = vec4<f32>(mix(final_color.rgb, fog_color, fog_amount), final_color.a);
+  // Combined alpha
+  let combinedAlpha = max(layer1Alpha, layer2Alpha * layer2.a);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_color.rgb, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_color.rgb, combinedAlpha));
 
 
   // --- Depth Texture Update ---
