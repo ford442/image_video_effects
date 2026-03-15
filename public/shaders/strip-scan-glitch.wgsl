@@ -1,6 +1,19 @@
+// ═══════════════════════════════════════════════════════════════
+//  Strip Scan Glitch - Vertical Strip Displacement with Alpha
+//  Category: retro-glitch
+//
+//  Vertical strip-based glitch effect:
+//  - Quantized X coordinates create strips
+//  - Per-strip vertical offset with brightness modulation
+//  - Horizontal jitter for glitchiness
+//  - RGB split chromatic aberration
+//  - Alpha preserved through strip displacement
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
@@ -17,8 +30,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,         // Parameters 1-4
   ripples: array<vec4<f32>, 50>,
 };
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -66,7 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Calculate Y offset
     // Sine wave pattern + constant flow
-    let yOffset = speed * time * (0.5 + stripHash * 0.5) + sin(uv.y * 10.0 + time) * 0.05 * jitterParam;
+    let yOffset = speed * time * (0.5 + 0.5 * stripHash) + sin(uv.y * 10.0 + time) * 0.05 * jitterParam;
 
     // Horizontal Jitter (Glitch)
     // Occurs randomly or periodically
@@ -86,11 +97,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uvB = vec2<f32>(uv.x + xOffset - split, uv.y + yOffset);
 
     // Use non_filtering_sampler here as well
-    let sampleR = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvR), 0.0).r;
-    let sampleG = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvG), 0.0).g;
-    let sampleB = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvB), 0.0).b;
+    let sampleR = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvR), 0.0);
+    let sampleG = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvG), 0.0);
+    let sampleB = textureSampleLevel(readTexture, non_filtering_sampler, fract(uvB), 0.0);
 
-    let finalColor = vec4<f32>(sampleR, sampleG, sampleB, 1.0);
+    // RGB channels from split samples with alpha blending
+    var finalColor = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
+    
+    // Alpha handling: blend alpha from each channel sample
+    // Strips with high jitter have corrupted alpha
+    let jitterAlphaMod = 1.0 - abs(jitter) * jitterParam * 0.2;
+    var finalAlpha = (sampleR.a + sampleG.a + sampleB.a) / 3.0 * jitterAlphaMod;
+    
+    // Strip-based alpha variation for glitch effect
+    if (stripHash > 0.9) {
+        // Occasionally corrupt strip alpha
+        finalAlpha = finalAlpha * 0.8;
+    }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    // Clamp alpha
+    finalAlpha = clamp(finalAlpha, 0.0, 1.0);
+
+    let finalColorVec = vec4<f32>(finalColor, finalAlpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColorVec);
+    
+    // Pass through depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
