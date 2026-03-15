@@ -5,6 +5,7 @@
     "category": "post-processing",
     "type": "compute",
     "description": "High-quality HDR bloom with multi-tap Gaussian blur, anamorphic stretch, and lens dirt effects",
+    "url": "/shaders/pp-bloom.wgsl",
     "wgsl_file": "pp-bloom.wgsl",
     "uniforms": {
       "param1": { "label": "Intensity", "min": 0, "max": 1, "default": 0.5 },
@@ -21,6 +22,7 @@
     "category": "post-processing",
     "type": "compute",
     "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
+    "url": "/shaders/pp-tone-map.wgsl",
     "wgsl_file": "pp-tone-map.wgsl",
     "uniforms": {
       "param1": { "label": "Algorithm", "min": 0, "max": 1, "default": 0 },
@@ -37,6 +39,7 @@
     "category": "post-processing",
     "type": "compute",
     "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
+    "url": "/shaders/pp-chromatic.wgsl",
     "wgsl_file": "pp-chromatic.wgsl",
     "uniforms": {
       "param1": { "label": "Amount", "min": 0, "max": 1, "default": 0.2 },
@@ -53,6 +56,7 @@
     "category": "post-processing",
     "type": "compute",
     "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
+    "url": "/shaders/pp-vignette.wgsl",
     "wgsl_file": "pp-vignette.wgsl",
     "uniforms": {
       "param1": { "label": "Vignette", "min": 0, "max": 1, "default": 0.4 },
@@ -69,6 +73,7 @@
     "category": "post-processing",
     "type": "compute",
     "description": "Unsharp mask sharpening with edge detection, halo control, and multiple enhancement modes",
+    "url": "/shaders/pp-sharpen.wgsl",
     "wgsl_file": "pp-sharpen.wgsl",
     "uniforms": {
       "param1": { "label": "Amount", "min": 0, "max": 1, "default": 0.3 },
@@ -85,6 +90,7 @@
     "category": "post-processing",
     "type": "compute",
     "description": "Screen-space ambient occlusion for added depth, with color bleeding from occluding surfaces",
+    "url": "/shaders/pp-ssao.wgsl",
     "wgsl_file": "pp-ssao.wgsl",
     "uniforms": {
       "param1": { "label": "Radius", "min": 0, "max": 1, "default": 0.3 },
