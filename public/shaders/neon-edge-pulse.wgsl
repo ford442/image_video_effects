@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════
+//  Neon Edge Pulse - Pulsing Edges with Alpha Emission
+//  Category: lighting-effects
+//  Physics: Time-pulsing emissive edges with alpha occlusion
+//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
+// ═══════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,20 +12,32 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
+// Inverse square law for light falloff
+fn inverseSquareFalloff(dist: f32, maxDist: f32) -> f32 {
+    let d = max(dist, 0.001);
+    return 1.0 / (1.0 + d * d * 5.0) * smoothstep(maxDist, 0.0, dist);
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -31,10 +49,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
 
     // Params
-    let edgeThreshold = u.zoom_params.x; // 0.0 to 1.0
+    // x: edgeThreshold, y: pulseSpeed, z: glowIntensity, w: occlusionBalance
+    let edgeThreshold = u.zoom_params.x;
     let pulseSpeed = u.zoom_params.y * 5.0;
     let glowIntensity = u.zoom_params.z * 5.0;
-    let colorShift = u.zoom_params.w;
+    let colorShift = 0.5;
+    let occlusionBalance = u.zoom_params.w;
 
     // Mouse
     var mousePos = u.zoom_config.yz;
@@ -55,18 +75,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gradY = b - t;
 
     let edge = sqrt(gradX * gradX + gradY * gradY);
-    let edgeMag = length(edge); // Simple magnitude
-
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let edgeMag = length(edge);
 
     // Pulse
     let pulse = (sin(time * pulseSpeed - dist * 10.0) + 1.0) * 0.5;
 
-    // Mix
-    var finalColor = original.rgb;
-
+    // Emission calculation
+    var emission = vec3<f32>(0.0);
+    
     // Only apply neon if edge is strong enough
-    if (edgeMag > edgeThreshold * 0.2) { // Scale threshold
+    if (edgeMag > edgeThreshold * 0.2) {
         // Neon color generation
         let hue = fract(time * 0.1 + colorShift + dist * 0.5);
         let neon = vec3<f32>(
@@ -77,9 +95,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Intensity increases near mouse (flashlight)
         let mouseFactor = 1.0 / (dist * 5.0 + 0.2);
+        let falloff = inverseSquareFalloff(dist, 0.5);
 
-        finalColor = mix(finalColor, neon, clamp(edgeMag * glowIntensity * pulse * mouseFactor, 0.0, 1.0));
+        emission = neon * edgeMag * glowIntensity * pulse * mouseFactor * (1.0 + falloff);
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    // Calculate alpha based on emission intensity
+    let glowStrength = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+
+    // Output with emission alpha
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
 }
