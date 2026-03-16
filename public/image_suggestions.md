@@ -602,6 +602,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Evaluates the combination of highly advanced technological subjects with deeply historical, surreal, and melancholic art styles.
 
+
+### Suggestion: Perovskite Meteor Crater
+- **Date:** 2026-06-01
+- **Prompt:** "A massive, ancient meteor crater situated in a desolate, rocky wasteland. The interior of the crater is lined with gigantic, glowing perovskite crystals that emit a pulsating, ethereal green and blue light. The lighting is low-key and dramatic, relying on the bioluminescent glow of the crystals contrasting with the deep shadows of the crater walls. The mood is eerie, alien, and majestic. Captured with a wide-angle 14mm lens from the rim of the crater, emphasizing the vast scale and depth of the impact site."
+- **Negative prompt:** "daylight, sun, flat, smooth, modern, buildings"
+- **Tags:** landscape, sci-fi, meteor crater, crystals, glowing
+- **Style / Reference:** photorealistic sci-fi environment, hyper-detailed 3D render
+- **Composition:** wide landscape, deep perspective, rule of thirds
+- **Color palette:** dark slate grey, glowing neon green, ethereal blue, stark black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260601_perovskite-crater.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing luminescent crystal textures and extreme scale landscapes.
+
+### Suggestion: Dadaism Wind Tunnel
+- **Date:** 2026-06-01
+- **Prompt:** "A chaotic and absurd Dadaism collage featuring the interior of an industrial wind tunnel testing a vintage Victorian armchair. The composition is disjointed, utilizing cut-out photographs, mismatched newspaper clippings, and bold, jarring typography. The lighting is harsh and mismatched, emphasizing the cutout nature of the elements with hard drop shadows. The mood is nonsensical, satirical, and rebellious. Captured with a flat, top-down perspective, emphasizing the two-dimensional collage aesthetic against a stark white background."
+- **Negative prompt:** "realistic, 3d render, smooth, orderly, symmetric, photography"
+- **Tags:** abstract, collage, dadaism, industrial, absurd
+- **Style / Reference:** Dadaism art movement, Hannah Höch inspired, mixed media collage
+- **Composition:** flat layout, fragmented, asymmetrical
+- **Color palette:** vintage sepia, stark black and white, bold primary color accents
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260601_dadaism-windtunnel.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's ability to create non-realistic, flat, cutout collage styles and absurd juxtapositions.
+
+### Suggestion: Basalt Gothcore Cathedral
+- **Date:** 2026-06-01
+- **Prompt:** "A colossal, foreboding Gothcore cathedral carved entirely out of dark, jagged basalt stone, standing alone on a foggy, desolate moor. The architecture features hyper-exaggerated, needle-like spires and massive flying buttresses resembling skeletal ribs. The lighting is extremely moody and cinematic, with a pale, full moon casting harsh, silvery rim light on the wet stone, while thick, rolling fog obscures the base. The mood is dark, melancholic, and menacing. Captured with a 35mm lens, low angle looking up to accentuate the imposing height of the spires."
+- **Negative prompt:** "bright, sunny, colorful, modern, clean, peaceful"
+- **Tags:** gothcore, architecture, dark, cathedral, basalt
+- **Style / Reference:** dark fantasy concept art, photorealistic rendering
+- **Composition:** low angle, symmetrical, imposing scale
+- **Color palette:** deep charcoal grey, pale moonlight white, subtle sickly greens in the fog
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260601_basalt-cathedral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for generating hyper-detailed, jagged stone textures and moody, foggy lighting.
+
+### Suggestion: Burlap Circuit Board Macro
+- **Date:** 2026-06-01
+- **Prompt:** "An ultra-macro, surreal photograph of a complex computer circuit board where the fiberglass substrate is replaced by rough, woven burlap, and the intricate conductive traces are made of polished copper wire. The subject features tiny, glowing microchips and resistors. The lighting is warm and directional, grazing the rough texture of the burlap and casting sharp, tiny shadows from the copper components. The mood is a bizarre blend of rustic and highly technological. Captured with an extreme macro 100mm lens, razor-thin depth of field, highlighting the contrast between organic fabric and precise metal."
+- **Negative prompt:** "wide angle, humans, outdoor, flat lighting, smooth plastic"
+- **Tags:** macro, technology, surreal, burlap, circuit
+- **Style / Reference:** surreal still-life photography, hyper-detailed texture study
+- **Composition:** extreme close-up, shallow depth of field, diagonal leading lines
+- **Color palette:** warm earth tones, bright copper, subtle glowing red LEDs
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260601_burlap-circuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing the contrast between rough organic textures (burlap) and polished metal elements at macro scale.
+
+### Suggestion: Northern Renaissance Spider Web
+- **Date:** 2026-06-01
+- **Prompt:** "An incredibly detailed and meticulous oil painting of a complex, dew-covered spider web suspended between dead thistle branches, rendered in the precise style of the Northern Renaissance. The subject is highly symbolic and hyper-realistic, capturing every microscopic drop of moisture reflecting the world around it. The lighting is soft, natural, and diffused, creating subtle modeling on the branches and brilliant tiny specular highlights on the water drops. The mood is quiet, contemplative, and slightly grim. Captured with the flat, even perspective typical of 15th-century Flemish oil painting."
+- **Negative prompt:** "modern art, abstract, photography, bright colors, sunny, rough brushstrokes"
+- **Tags:** art, northern renaissance, nature, macro, detailed
+- **Style / Reference:** Northern Renaissance oil painting, Jan van Eyck inspired, hyper-detailed
+- **Composition:** tight framing, balanced, highly detailed foreground
+- **Color palette:** muted olive greens, dark earthy browns, bright silver dew drops
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260601_renaissance-spiderweb.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests historical painting styles, specifically the meticulous detail and subtle glazing of Northern Renaissance art.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -624,12 +690,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Dadaism, Tenebrism, Biopunk, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Perovskite, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Ancient Ruins, Meteor Crater, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
-- **Styles:** Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Northern Renaissance, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Dadaism, Gothcore, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Burlap, Latex, Basalt, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Perovskite, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Ancient Ruins, Meteor Crater, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Spider Web, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Wind Tunnel, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Styles:** Geometric Abstraction, Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Latex, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Ancient Ruins, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Latex, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Ancient Ruins, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 
