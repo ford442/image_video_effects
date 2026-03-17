@@ -668,6 +668,70 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests historical painting styles, specifically the meticulous detail and subtle glazing of Northern Renaissance art.
 
+### Suggestion: Tachisme Neutron Star Collision
+- **Date:** 2026-10-24
+- **Prompt:** "A cataclysmic neutron star collision depicted in the expressive, non-geometric style of Tachisme. The subject is a violent, cosmic explosion of swirling matter and energy, created with spontaneous, thick splatters and drips of digital paint. The lighting is intensely bright at the core, fading into deep, chaotic space, capturing raw energy rather than realistic physics. The mood is destructive, primal, and overwhelmingly powerful. Captured with a wide perspective to frame the immense, abstract cosmic event."
+- **Negative prompt:** "geometric, neat, orderly, photorealistic, photography, soft, calm"
+- **Tags:** space, abstract, tachisme, explosion, cosmic
+- **Style / Reference:** Tachisme, European Abstract Expressionism, spontaneous drips
+- **Composition:** chaotic center, expansive edges, dynamic movement
+- **Color palette:** blinding white, fiery orange, deep void black, electric blue splatters
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261024_tachisme-neutron-star.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the AI's ability to render a specific abstract art movement (Tachisme) applied to an epic cosmic event.
+
+### Suggestion: Subterranean Sand Ant Farm
+- **Date:** 2026-10-24
+- **Prompt:** "A highly detailed, cross-section macro view of a giant, ancient ant farm built entirely from intricate layers of multicolored sand. The subject features massive worker ants navigating complex, glowing tunnels. The lighting is warm and directional from the surface, casting long shadows down the tunnels, with subtle bioluminescent fungi providing ambient glow in the deeper chambers. The mood is industrious, hidden, and fascinating. Captured with a macro lens, maintaining sharp focus on the granular texture of the sand and the segmented bodies of the ants."
+- **Negative prompt:** "blurry, lowres, bright daylight, open sky, cartoon, simple"
+- **Tags:** macro, nature, insect, sand, underground
+- **Style / Reference:** photorealistic macro photography, cross-section diorama
+- **Composition:** cross-section view, complex tunnel network, rule of thirds
+- **Color palette:** earthy browns, warm ochre, amber, subtle bioluminescent green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261024_sand-ant-farm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing granular textures (sand) and complex, interwoven tunnel geometry.
+
+### Suggestion: Aluminum Foil Cocoon
+- **Date:** 2026-10-24
+- **Prompt:** "An ultra-realistic, close-up shot of a mysterious, metallic cocoon hanging from a dead branch, composed entirely of crinkled, highly reflective aluminum foil. The subject is catching harsh, directional studio lighting that creates sharp, bright highlights and deep, jagged shadows across the thousands of small creases. The environment is pitch black, isolating the cocoon completely. The mood is stark, alien, and sterile. Captured with a 50mm lens, very sharp focus on the metallic crinkles."
+- **Negative prompt:** "organic, soft, blurry, colorful background, bright environment, silk"
+- **Tags:** macro, abstract, metallic, cocoon, isolated
+- **Style / Reference:** macro studio photography, high contrast lighting
+- **Composition:** centered subject, isolated on black, striking contrast
+- **Color palette:** gleaming silver, pure black shadows, stark white highlights
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261024_aluminum-foil-cocoon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of sharp, crinkled metallic textures and complex micro-reflections.
+
+### Suggestion: Brutalist Web Design Diorama
+- **Date:** 2026-10-24
+- **Prompt:** "A surreal, isometric 3D diorama representing a physical manifestation of Brutalist Web Design. The subject is a miniature, clunky cityscape built from overlapping, raw HTML elements, unstyled default buttons, and harsh, unaligned text blocks. The lighting is completely flat, harsh, and artificial, resembling a glowing computer monitor with no ambient occlusion. The mood is chaotic, nostalgic, and intentionally anti-design. Captured from a strict isometric perspective, highlighting the jagged, overlapping layers of the 'webpage' physicalized."
+- **Negative prompt:** "smooth, elegant, modern, gradient, realistic, soft lighting"
+- **Tags:** surreal, isometric, diorama, brutalist, web
+- **Style / Reference:** Brutalist Web Design, isometric 3D illustration
+- **Composition:** isometric, centralized, overlapping unaligned elements
+- **Color palette:** stark white, default hyperlink blue, pure black text, harsh red alerts
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261024_brutalist-web-diorama.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the translation of an abstract, digital aesthetic (Brutalist Web Design) into a physical, 3D diorama space.
+
+### Suggestion: Granite Sundog Reflection
+- **Date:** 2026-10-24
+- **Prompt:** "A breathtaking, wide-angle landscape featuring a massive, perfectly polished monolithic wall of black granite standing in a frozen, snow-covered wasteland. The subject is the sky above, where a brilliant sundog (parhelion) phenomenon creates glowing halos and mock suns, which are perfectly mirrored in the pristine granite surface. The lighting is blindingly bright and freezing cold, with the sun low on the horizon. The mood is majestic, desolate, and overwhelmingly vast. Captured with an ultra-wide 14mm lens, deep depth of field to capture the sky and its reflection simultaneously."
+- **Negative prompt:** "warm, tropical, cloudy, dull, blurry, rough stone"
+- **Tags:** landscape, winter, phenomenon, granite, reflection
+- **Style / Reference:** photorealistic nature photography, epic scale
+- **Composition:** wide landscape, low horizon, perfectly mirrored reflection
+- **Color palette:** blinding white snow, freezing pale blue, warm golden sundogs, deep black granite
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261024_granite-sundog.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating perfect mirror reflections on heavy stone (granite) and complex atmospheric optical phenomena (sundogs).
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -690,12 +754,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Latex, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Diorama, Nebula, Quasar, Pulsar, Tsunami, Ancient Ruins, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
-- **Styles:** Brutalist Web Design, Hard Edge Painting, Tachisme, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Sand, Latex, Velcro, Sandpaper, Cellophane, Aluminum Foil, Chiffon, Tweed, Granite, Organza, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Diorama, Nebula, Pulsar, Tsunami, Ancient Ruins, Fjord, Ant Farm, Beehive, Beaver Dam, Bird's Nest, Cocoon, Neutron Star Collision, Tide Pool, Sundog, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Styles:** Geometric Abstraction, Hard Edge Painting, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Nebula, Quasar, Pulsar, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Hard Edge Painting, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Nebula, Pulsar, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 
