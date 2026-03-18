@@ -732,6 +732,71 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20261024_granite-sundog.jpg`
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating perfect mirror reflections on heavy stone (granite) and complex atmospheric optical phenomena (sundogs).
+### Suggestion: Chainmail Hard Surface Modeling
+- **Date:** 2026-10-25
+- **Prompt:** "A highly detailed, photorealistic render of complex hard surface modeling focusing on an intricate, industrial chainmail structure. The subject features rigid, interlocking metallic rings that weave seamlessly into heavy mechanical plating. The lighting is harsh, directional studio lighting that creates sharp, bright highlights and deep, jagged shadows across the metallic geometry. The environment is pitch black, isolating the structure completely. The mood is stark, alien, and sterile. Captured with a 50mm lens, very sharp focus on the metallic crinkles."
+- **Negative prompt:** "organic, soft, blurry, colorful background, bright environment, silk"
+- **Tags:** macro, abstract, metallic, chainmail, isolated
+- **Style / Reference:** Hard Surface Modeling, high contrast lighting
+- **Composition:** centered subject, isolated on black, striking contrast
+- **Color palette:** gleaming silver, pure black shadows, stark white highlights
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261025_chainmail-hard-surface.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of sharp, crinkled metallic textures and complex micro-reflections.
+
+### Suggestion: Velvet Kaleidoscope Dreamscape
+- **Date:** 2026-10-25
+- **Prompt:** "A mesmerizing, surreal dreamscape composed entirely of intricate, symmetrical kaleidoscope patterns made from plush, luxurious fur. The environment is soft and tactile, with folds and ripples of fur forming impossible, Escher-like geometry. The lighting is soft and moody, gently grazing the texture of the fabric to highlight its plushness and depth. The mood is hypnotic, comforting, and deeply surreal. Captured with a medium 50mm lens, sharp focus on the central repeating pattern while the edges softly blur into darkness."
+- **Negative prompt:** "hard surfaces, metallic, sharp edges, bright daylight, realistic landscape"
+- **Tags:** abstract, surreal, fur, kaleidoscope, soft
+- **Style / Reference:** surreal abstract art, highly tactile 3D render
+- **Composition:** perfectly symmetrical, mandala-like, shallow depth of field
+- **Color palette:** deep royal purple, rich burgundy, soft emerald green, velvety black shadows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261025_fur-kaleidoscope.jpg`
+- **License / Attribution:** CC0
+- **Notes:** An excellent test for generating soft, tactile fabric textures (fur) and complex, symmetrical repeating patterns.
+
+### Suggestion: Geometric Abstraction Nebula
+- **Date:** 2026-10-25
+- **Prompt:** "A breathtaking, wide-angle shot of a cataclysmic nebula expanding through deep space, depicted through Geometric Abstraction. The subject is a chaotic, swirling cloud of superheated plasma, glowing stellar dust, and intricate magnetic filaments, formed by sharp, intersecting geometric planes. The lighting is extremely bright and dynamic, emanating from a blindingly white dwarf star at the center, casting dramatic light through the gaseous nebula. The mood is awe-inspiring and destructive. Captured as if by the James Webb Space Telescope, high dynamic range, cosmic scale."
+- **Negative prompt:** "earth, planets, spaceships, cartoon, simple colors, soft shapes"
+- **Tags:** sci-fi, space, nebula, cosmic, epic
+- **Style / Reference:** Geometric Abstraction, hyper-detailed, JWST style
+- **Composition:** wide angle, expansive, centered explosion
+- **Color palette:** fiery oranges, blinding whites, deep cosmic blues, vibrant magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261025_geometric-nebula.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex volumetric lighting, particle dispersion, and vibrant cosmic color palettes mapped to rigid geometry.
+
+### Suggestion: Rayograph Pulsar
+- **Date:** 2026-10-25
+- **Prompt:** "A violently rotating pulsar star depicted in the experimental, cameraless style of a Rayograph. The subject is a rapidly spinning celestial object emitting twin beams of intense electromagnetic radiation, represented by stark, overlapping photogram silhouettes of circular and conical objects. The lighting is harsh and direct, creating a high-contrast interplay of stark white silhouettes against a pure black background. The mood is scientific, abstract, and intense. Captured using a flat, 2D photogram process to eliminate depth."
+- **Negative prompt:** "3d, realistic space, colorful, soft gradients, glowing aura"
+- **Tags:** abstract, space, pulsar, rayograph, black and white
+- **Style / Reference:** Rayograph, Man Ray inspired, experimental photography
+- **Composition:** asymmetrical balance, stark contrast, flat shapes
+- **Color palette:** pure black, stark white, sharp greyscale gradients
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261025_rayograph-pulsar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Pushes the model to represent a complex cosmic phenomenon using the experimental, flat silhouettes of cameraless photography (Rayograph).
+
+### Suggestion: Hard Edge Quasar
+- **Date:** 2026-10-25
+- **Prompt:** "A mesmerizing visualization of a quasar represented through Hard Edge Painting, constructed entirely of flat, solid blocks of color with razor-sharp boundaries. The central subject, a stylized quasar, is a bright cyan circle surrounded by concentric, jagged rings of pure white, deep blue, and vibrant magenta. The lighting is entirely absent, relying solely on the intense saturation and contrast of the solid colors against a deep black void to create a stark, graphic mood. Captured with a perfectly flat, orthographic perspective."
+- **Negative prompt:** "gradients, soft edges, 3d, realistic stars, messy, blurry, complex textures"
+- **Tags:** sci-fi, abstract, space, quasar, geometric, flat
+- **Style / Reference:** Hard Edge Painting, Frank Stella inspired, minimalist graphic art
+- **Composition:** perfectly symmetrical, centered, high contrast
+- **Color palette:** deep black void, pure white core, cyan, magenta, deep blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261025_hard-edge-quasar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the interaction of extreme light sources with highly scattering, low-density translucent materials like aerogel.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -754,12 +819,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Geometric Abstraction, Hard Edge Painting, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Nebula, Quasar, Pulsar, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
-- **Styles:** Hard Edge Painting, Neo-Geo, Rayograph, Hard Surface Modeling, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Chainmail, Fur, Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Nebula, Pulsar, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Retrowave, Digital Cubism. Afrofuturism.
+- **Materials:** Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 
