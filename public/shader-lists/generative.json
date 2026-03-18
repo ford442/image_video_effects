@@ -1972,10 +1972,6 @@
     "url": "shaders/gen-xeno-botanical-synth-flora.wgsl",
     "category": "generative",
     "description": "A dense, alien jungle of luminescent, synthetic flora that blooms and breathes with the rhythm of sound, blending organic curves with crystalline cybernetic materials.",
-    "features": [
-      "mouse-driven",
-      "raymarched"
-    ],
     "tags": [
       "organic",
       "botanical",
@@ -1983,9 +1979,13 @@
       "bioluminescent",
       "audio-reactive"
     ],
+    "features": [
+      "mouse-driven",
+      "audio-driven"
+    ],
     "params": [
       {
-        "id": "flora_density",
+        "id": "floraDensity",
         "name": "Flora Density",
         "default": 2,
         "min": 0.5,
@@ -1993,7 +1993,7 @@
         "step": 0.1
       },
       {
-        "id": "bloom_intensity",
+        "id": "bloomIntensity",
         "name": "Bloom Intensity",
         "default": 1.5,
         "min": 0,
@@ -2001,7 +2001,7 @@
         "step": 0.1
       },
       {
-        "id": "cyber_circuit_glow",
+        "id": "cyberCircuitGlow",
         "name": "Cyber-Circuit Glow",
         "default": 0.8,
         "min": 0,
@@ -2009,7 +2009,7 @@
         "step": 0.1
       },
       {
-        "id": "growth_warp",
+        "id": "growthWarp",
         "name": "Growth Warp",
         "default": 1,
         "min": 0.1,
