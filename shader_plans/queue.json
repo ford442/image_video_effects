@@ -66,6 +66,12 @@
       "title": "Singularity Forge",
       "added": "2026-03-14T15:18:58.957503",
       "completed": "2026-03-15T07:55:05.055057"
+    },
+    {
+      "filename": "2026-03-16_xeno-botanical-synth-flora.md",
+      "title": "Xeno-Botanical Synth-Flora",
+      "added": "2026-03-16T15:25:27.944847",
+      "completed": "2026-03-18T08:04:16.193555"
     }
   ],
   "rejected": [],
@@ -100,11 +106,6 @@
       "filename": "2026-03-15_chromatic-glass-lattice.md",
       "title": "Chromatic Glass Lattice",
       "added": "2026-03-15T15:34:17.644228"
-    },
-    {
-      "filename": "2026-03-16_xeno-botanical-synth-flora.md",
-      "title": "Xeno-Botanical Synth-Flora",
-      "added": "2026-03-16T15:25:27.944847"
     }
   ],
   "in_progress": null
