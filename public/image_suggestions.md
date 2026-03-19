@@ -797,6 +797,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the interaction of extreme light sources with highly scattering, low-density translucent materials like aerogel.
 
+### Suggestion: Bioluminescent Fungi Under the Stars
+- **Date:** 2026-03-22
+- **Prompt:** "A macro, low-key photography shot of bioluminescent fungi glowing in neon blues and greens against a dark forest floor. The lighting is ethereal, casting soft shadows, with a starry night sky barely visible through the canopy above. The mood is magical and serene."
+- **Negative prompt:** "daylight, sun, bright, simple, flat"
+- **Tags:** macro, fantasy, nature, bioluminescent
+- **Style / Reference:** low key photography, macro lens
+- **Composition:** close-up, shallow depth of field
+- **Color palette:** neon blue, green, deep black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260322_bioluminescent-fungi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing macro depth-of-field and soft glowing emission.
+
+### Suggestion: Subterranean Crystal Garden
+- **Date:** 2026-03-22
+- **Prompt:** "A vast subterranean garden filled with colossal, iridescent bismuth and onyx crystals instead of plants. A glowing underground river weaves through the geometric structures, reflecting their faceted colors. The camera captures a wide, dramatic angle with dramatic, directional god-rays piercing through a cavern opening above."
+- **Negative prompt:** "trees, grass, surface, dull, dark"
+- **Tags:** fantasy, subterranean, crystals, landscape
+- **Style / Reference:** fantasy concept art, highly detailed
+- **Composition:** wide shot, leading lines
+- **Color palette:** iridescent, purple, magenta, gold
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260322_subterranean-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating sharp geometric rendering and complex refractions.
+
+### Suggestion: Steampunk Time Machine
+- **Date:** 2026-03-22
+- **Prompt:** "A highly intricate, polished brass and mahogany time machine sitting in a Victorian laboratory filled with drafting paper and tools. The machine features glowing blue energy coils, gears, and a plush leather seat. The lighting is warm and cinematic, coming from gas lamps and the machine's own energy pulse, with a hint of mist on the floor."
+- **Negative prompt:** "modern, sleek, plastic, minimal"
+- **Tags:** steampunk, sci-fi, machinery, interior
+- **Style / Reference:** photorealistic, steampunk aesthetic
+- **Composition:** eye-level, focused subject
+- **Color palette:** warm brass, mahogany red, glowing blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260322_time-machine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing metallic materials and complex details.
+
+### Suggestion: Generative Fluid Simulation Sphere
+- **Date:** 2026-03-22
+- **Prompt:** "A perfect sphere made of generative fluid simulation suspended in a pitch-black void. The fluid mixes vibrant liquid neon pink, cyan, and orange colors in complex, swirling, marbled patterns. The lighting is studio-style, perfectly highlighting the glossy, wet surface of the fluid sphere."
+- **Negative prompt:** "matte, dull, flat, rigid, geometric"
+- **Tags:** abstract, fluid, 3d, colorful
+- **Style / Reference:** 3D render, generative art
+- **Composition:** center-focused, symmetrical
+- **Color palette:** neon pink, cyan, orange, black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260322_fluid-sphere.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for evaluating fluid dynamics and glossy specular highlights.
+
+### Suggestion: Circuit Board Megacity
+- **Date:** 2026-03-22
+- **Prompt:** "A sprawling cyberpunk megacity viewed from a bird's-eye perspective, where the city blocks and skyscrapers perfectly mimic a complex, glowing green and gold macro circuit board. Glowing data streams pulse along the 'traces' acting as highways. The mood is high-tech and imposing, with moody, atmospheric fog rolling through the lower levels."
+- **Negative prompt:** "nature, organic, daytime, simple"
+- **Tags:** cyberpunk, sci-fi, macro, abstract city
+- **Style / Reference:** macro photography, digital art
+- **Composition:** bird's-eye view, dense
+- **Color palette:** neon green, gold, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260322_circuit-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests intricate detail generation and abstract conceptual blending.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -820,11 +886,11 @@ To help organize prompts, please use tags from the following categories:
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
 - **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Bioluminescent Fungi, Coral Reef Megastructure, Dyson Swarm. Subterranean Garden, Clockwork Universe, Time Machine.
+- **Materials:** Brass, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure, Dyson Swarm. Clockwork Universe,
 - **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Brass, Generative Fluid Simulation, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Circuit Board Macro, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Materials:** Brass, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Onyx.
+- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 
