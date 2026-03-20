@@ -1460,6 +1460,58 @@
     ]
   },
   {
+    "id": "gen-liquid-crystal-hive-mind",
+    "name": "Liquid-Crystal Hive-Mind",
+    "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
+    "category": "generative",
+    "description": "A vast, breathing network of hexagonal bio-synthetic cells containing turbulent, iridescent liquid crystals that synchronize and glow with a pulsing collective consciousness.",
+    "tags": [
+      "cellular",
+      "liquid-crystal",
+      "fluid-dynamics",
+      "honeycomb",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "cellDensity",
+        "name": "Cell Density",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "fluidTurbulence",
+        "name": "Fluid Turbulence",
+        "default": 2.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "syncPulse",
+        "name": "Sync Pulse",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "disruptionRadius",
+        "name": "Disruption Radius",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "id": "gen-magnetic-ferrofluid",
     "name": "Magnetic Ferrofluid",
     "url": "shaders/gen-magnetic-ferrofluid.wgsl",
