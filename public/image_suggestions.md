@@ -863,6 +863,72 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Tests intricate detail generation and abstract conceptual blending.
 
 
+
+### Suggestion: Bioluminescent Bismuth Geode
+- **Date:** 2026-03-24
+- **Prompt:** "A macro photograph of a cracked, ancient geode revealing a chaotic, stepped interior of iridescent bismuth crystals. The crystals glow with an inner bioluminescence in hues of deep magenta and cyan. Soft, volumetric lighting catches the metallic sheen, while the background is a pitch-black void."
+- **Negative prompt:** "blurry, out of focus, overexposed, artificial lighting, people"
+- **Tags:** macro, geode, bismuth, bioluminescent, abstract
+- **Style / Reference:** photorealistic, highly detailed, macro photography
+- **Composition:** close-up, centered
+- **Color palette:** magenta, cyan, gold, pitch black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260324_bismuth-geode.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing metallic reflections, thin-film interference, and internal glow.
+
+### Suggestion: Afrofuturist Megacity at Dusk
+- **Date:** 2026-03-24
+- **Prompt:** "A sweeping aerial view of a sprawling Afrofuturist megacity at dusk. Towering skyscrapers blend traditional African geometric patterns with advanced, glowing holographic technology. Hovercraft weave between buildings, and the sky is painted in warm oranges and purples as the city lights begin to illuminate the bustling streets below."
+- **Negative prompt:** "dull, flat lighting, historical, underdeveloped, poor quality"
+- **Tags:** afrofuturism, cyberpunk, megacity, aerial, sci-fi
+- **Style / Reference:** cinematic, architectural visualization, inspired by Syd Mead
+- **Composition:** wide shot, aerial perspective
+- **Color palette:** warm orange, purple, neon gold, cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260324_afrofuturist-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex urban architecture, glowing holograms, and sunset lighting gradients.
+
+### Suggestion: Retrowave Neon Highway
+- **Date:** 2026-03-24
+- **Prompt:** "A classic retrowave scene: a low-angle shot of a sleek, dark sports car speeding down an endless neon grid highway towards a massive, glowing pink and orange wireframe sun sinking below the horizon. The sky is a deep, starry purple, and laser-like palm trees line the road. The atmosphere is filled with a soft, glowing synthwave fog."
+- **Negative prompt:** "daytime, realistic sun, modern cars, photorealistic, drab colors"
+- **Tags:** retrowave, synthwave, 80s, neon, driving
+- **Style / Reference:** digital art, 1980s retro-futurism, outrun style
+- **Composition:** low angle, leading lines, symmetrical
+- **Color palette:** hot pink, neon orange, deep purple, cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260324_retrowave-highway.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating intense neon colors, grid patterns, and retro-stylized fog effects.
+
+### Suggestion: Dyson Swarm Construction Over an Exoplanet
+- **Date:** 2026-03-24
+- **Prompt:** "A vast, epic sci-fi scene showing the construction of a massive Dyson swarm around a blazing, blue-white star. Millions of intricate, hexagonal solar mirrors orbit in dense rings. In the foreground, a rugged, mountainous exoplanet is illuminated by the intense starlight and the reflections from the swarm. Tiny construction drones buzz around like fireflies against the dark cosmic void."
+- **Negative prompt:** "earth, green grass, clouds, simple, empty space"
+- **Tags:** sci-fi, space, dyson swarm, megastructure, epic
+- **Style / Reference:** space art, cinematic, hyper-detailed, hard sci-fi
+- **Composition:** wide epic scale, foreground framing, deep depth of field
+- **Color palette:** blinding white, electric blue, deep black, metallic silver
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260324_dyson-swarm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing massive scale, repetitive geometric structures, and harsh, single-source directional lighting.
+
+### Suggestion: Ancient Ruins in an Underground Fjord
+- **Date:** 2026-03-24
+- **Prompt:** "A massive, underground fjord illuminated by bioluminescent fungi. Colossal, weathered stone ruins of an ancient civilization cling to the sheer, dark rock faces. A calm, dark river flows through the center. Small, glowing boats navigate the water, providing scale to the towering, mysterious structures."
+- **Negative prompt:** "daylight, modern buildings, dry, bright, surface, sky"
+- **Tags:** fantasy, ruins, fjord, underground, mysterious
+- **Style / Reference:** fantasy concept art, atmospheric, highly detailed
+- **Composition:** wide shot, low angle looking up, dramatic
+- **Color palette:** deep blue, cyan, glowing green, dark stone
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260324_underground-ruins.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests water reflections, towering vertical environments, and scattered glowing light sources.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -885,12 +951,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Retrowave, Digital Cubism. Afrofuturism.
-- **Materials:** Brass, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Bismuth, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure, Dyson Swarm. Clockwork Universe,
-- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Retrowave, Digital Cubism. Afrofuturism.
+- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Digital Cubism.
+- **Materials:** Brass, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Tsunami, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure,  Clockwork Universe,
+- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Digital Cubism.
 - **Materials:** Brass, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Onyx.
-- **Subjects:** Geode, Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Ancient Ruins, Fjord, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Subjects:** Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
 
 ---
 
