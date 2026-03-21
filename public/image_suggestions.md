@@ -929,6 +929,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests water reflections, towering vertical environments, and scattered glowing light sources.
 
+
+### Suggestion: Neo-Geo Latex Fashion
+- **Date:** 2026-10-26
+- **Prompt:** "A striking, high-fashion portrait shot of a model wearing an avant-garde outfit made entirely of glossy, brightly colored latex, designed in the geometric, hard-edged style of Neo-Geo art. The subject is posed dynamically against a stark, minimalist background. The lighting is harsh, using multiple directional strobes to create intense specular highlights on the shiny latex surface and deep, sharp shadows. The mood is artificial, ultra-modern, and slick. Captured with a 85mm portrait lens, ensuring sharp focus on the sharp geometric angles of the garment."
+- **Negative prompt:** "organic, soft, messy, matte, dull colors, natural lighting"
+- **Tags:** fashion, portrait, neo-geo, latex, modern
+- **Style / Reference:** Neo-Geo art movement, high-fashion editorial photography
+- **Composition:** medium portrait, dynamic angles, striking geometry
+- **Color palette:** high-saturation primary colors, glossy black, blinding white highlights
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261026_neo-geo-latex.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing highly specular, glossy materials (latex) combined with strict geometric shapes and bright, primary colors.
+
+### Suggestion: Suprematist Oil Rig
+- **Date:** 2026-10-26
+- **Prompt:** "An imposing offshore oil rig rising from a turbulent ocean, reimagined entirely through the abstract, geometric language of Suprematism. The subject is composed of floating, intersecting squares, circles, and crosses suspended above the churning water. The lighting is flat and unnatural, highlighting the pure geometric forms without realistic shading, creating a stark contrast against the dark, textured sea. The mood is revolutionary, abstract, and dominant. Captured from a low angle, emphasizing the monolithic scale of the geometric construct."
+- **Negative prompt:** "photorealistic, rusty metal, detailed machinery, soft, cloudy"
+- **Tags:** abstract, suprematism, industrial, ocean, geometric
+- **Style / Reference:** Kazimir Malevich inspired, abstract architectural visualization
+- **Composition:** dynamic diagonals, low angle, abstract arrangement
+- **Color palette:** stark black, pure white, vibrant red, deep ocean blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261026_suprematist-oil-rig.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the intersection of abstract geometric art movements (Suprematism) with industrial subjects and contrasting organic elements (ocean).
+
+### Suggestion: Cellophane Bird's Nest
+- **Date:** 2026-10-26
+- **Prompt:** "A highly detailed macro photograph of an intricate bird's nest woven entirely from crinkled, iridescent strips of transparent cellophane. The delicate subject rests securely in the fork of a gnarled, dark wood branch. The lighting is soft, back-lit morning sunlight, passing through the cellophane to create thousands of tiny, colorful refractions and glowing edges. The mood is fragile, whimsical, and strangely beautiful. Captured with a 100mm macro lens, incredibly shallow depth of field, rendering the background into a soft, glowing bokeh."
+- **Negative prompt:** "twigs, straw, mud, opaque, dull, wide angle, messy"
+- **Tags:** macro, nature, surreal, cellophane, iridescent
+- **Style / Reference:** macro nature photography, surreal still-life
+- **Composition:** tight close-up, rule of thirds, beautiful bokeh
+- **Color palette:** transparent iridescent pastels, glowing warm sunlight, deep brown wood
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261026_cellophane-birds-nest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating complex, overlapping layers of transparent, highly refractive materials (cellophane) and macro bokeh.
+
+### Suggestion: Vorticist Skyhook
+- **Date:** 2026-10-26
+- **Prompt:** "A colossal, rotating skyhook megastructure suspended in the upper atmosphere, depicted in the harsh, fragmented style of Vorticism. The subject features aggressive, jagged diagonal lines radiating outward, capturing the immense rotational energy of the tether. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, mechanical, and overpowering. Captured with a dynamic, tilted perspective to emphasize vertigo and motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural"
+- **Tags:** sci-fi, abstract, vorticism, megastructure, dynamic
+- **Style / Reference:** Vorticism art movement, Wyndham Lewis inspired, hard-edged abstraction
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold atmospheric blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261026_vorticist-skyhook.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Vorticism to a massive sci-fi engineering concept.
+
+### Suggestion: Digital Cubism Coral Reef Megastructure
+- **Date:** 2026-10-26
+- **Prompt:** "A sprawling, underwater coral reef megastructure rendered in a stylized Digital Cubism aesthetic. The massive subject is broken down into multifaceted, overlapping geometric planes, displaying multiple viewpoints of the intricate coral formations simultaneously. The lighting is vibrant and ethereal, with dappled sunlight filtering down through the water, striking the various angled facets to create a mosaic of glowing color. The mood is complex, vibrant, and analytical. Captured with a wide-angle perspective, attempting to encompass the overwhelming scale and multifaceted nature of the reef."
+- **Negative prompt:** "realistic underwater photography, soft, organic, murky, dull, simple"
+- **Tags:** abstract, underwater, digital cubism, coral, complex
+- **Style / Reference:** Digital Cubism, fragmented 3D rendering, vibrant colors
+- **Composition:** dense, multi-perspective, overwhelming detail
+- **Color palette:** vibrant coral pinks, neon cyan, deep ocean blue, bright yellow accents
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261026_digital-cubism-coral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the model's ability to deconstruct complex organic environments (coral reef) into the multi-perspective geometry of Cubism.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -951,12 +1017,12 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Tenebrism, Biopunk, Digital Cubism.
-- **Materials:** Brass, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Aerogel, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Tsunami, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure,  Clockwork Universe,
-- **Styles:** Neo-Geo, Ashcan School, Italian Futurism, Low Key Photography, Suprematism, Vorticism, Digital Cubism.
-- **Materials:** Brass, Latex, Velcro, Sandpaper, Cellophane, Chiffon, Tweed, Organza, Onyx.
-- **Subjects:** Supernova, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Beehive, Beaver Dam, Bird's Nest, Tide Pool, Oil Rig, Supervolcano, Magnetar, Origami, Skyhook, Orbital Ring, Coral Reef Megastructure. Clockwork Universe.
+- **Styles:** Ashcan School, Rayonism, De Stijl, Italian Futurism, Low Key Photography, Tenebrism, Biopunk.
+- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Aerogel, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Tsunami, Exoplanet Core, Bioluminescent Reef, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring,
+- **Styles:** Ashcan School, Rayonism, De Stijl, Italian Futurism, Low Key Photography.
+- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Onyx.
+- **Subjects:** Supernova, Exoplanet Core, Bioluminescent Reef, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring,
 
 ---
 
