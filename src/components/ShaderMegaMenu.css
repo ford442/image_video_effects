@@ -1,0 +1,213 @@
+/* ===== ShaderMegaMenu ===== */
+
+/* Wrapper */
+.smm-wrapper {
+  width: 100%;
+}
+
+/* Trigger button */
+.smm-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #eee;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+
+.smm-trigger:hover {
+  border-color: #61dafb;
+}
+
+.smm-trigger.open {
+  border-color: #61dafb;
+  background: #2a2a2a;
+}
+
+.smm-trigger-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.smm-trigger-chevron {
+  font-size: 9px;
+  color: #888;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ===== Overlay (fixed, via portal) ===== */
+.smm-overlay {
+  position: fixed;
+  background: #141420;
+  border: 1px solid #444;
+  border-radius: 6px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.75);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+/* Search row */
+.smm-search {
+  padding: 8px 10px;
+  border-bottom: 1px solid #2a2a3a;
+  flex-shrink: 0;
+}
+
+.smm-search input {
+  width: 100%;
+  background: #1e1e2e;
+  border: 1px solid #444;
+  color: #eee;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.smm-search input:focus {
+  border-color: #61dafb;
+}
+
+/* None row */
+.smm-none-row {
+  padding: 4px 8px 4px;
+  border-bottom: 1px solid #2a2a3a;
+  flex-shrink: 0;
+}
+
+.smm-none-item {
+  width: 100%;
+  color: #888;
+  font-style: italic;
+}
+
+/* ===== Column grid (default mode) ===== */
+.smm-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 0 2px;
+  overflow-y: auto;
+  padding: 0 4px 8px;
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+}
+
+.smm-column {
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.smm-col-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7a8aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 4px 3px;
+  border-bottom: 1px solid #2a2a3a;
+  position: sticky;
+  top: 0;
+  background: #141420;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.smm-col-count {
+  font-weight: 400;
+  color: #555;
+  font-size: 9px;
+}
+
+/* ===== Flat list (search mode) ===== */
+.smm-flat {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 4px 8px 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.smm-empty {
+  color: #666;
+  font-size: 12px;
+  padding: 12px 8px;
+  font-style: italic;
+}
+
+/* ===== Items ===== */
+.smm-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: #ccc;
+  cursor: pointer;
+  border-radius: 3px;
+  user-select: none;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.smm-item:hover {
+  background: #252535;
+  color: #eee;
+}
+
+.smm-item.selected {
+  background: rgba(97, 218, 251, 0.15);
+  color: #61dafb;
+}
+
+.smm-item.focused {
+  outline: 1px solid rgba(97, 218, 251, 0.5);
+  outline-offset: -1px;
+}
+
+.smm-item.selected.focused {
+  outline-color: #61dafb;
+}
+
+.smm-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.smm-item-coord {
+  font-size: 9px;
+  color: #555;
+  flex-shrink: 0;
+  font-family: monospace;
+  letter-spacing: -0.5px;
+}
+
+.smm-item.selected .smm-item-coord {
+  color: rgba(97, 218, 251, 0.5);
+}
