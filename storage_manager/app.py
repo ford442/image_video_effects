@@ -609,7 +609,13 @@ async def list_shaders(
             index.sort(key=lambda s: s.get("name", "").lower())
         elif sort_by == "coordinate":
             index.sort(key=lambda s: s.get("coordinate", 9999))
-        
+
+        # Ensure all shaders have rating defaults
+        for shader in index:
+            shader.setdefault("stars", 0.0)
+            shader.setdefault("rating_count", 0)
+            shader.setdefault("play_count", 0)
+
         await cache.set(cache_key, index, ttl=300)
         return index
     except Exception as e:
