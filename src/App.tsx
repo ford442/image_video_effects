@@ -8,6 +8,7 @@ import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
+import { listShaders } from './services/shaderApi';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -288,6 +289,30 @@ function MainApp() {
             }
         };
         fetchImageManifest();
+    }, []);
+
+    // --- Load Available Shaders ---
+    useEffect(() => {
+        const loadAvailableShaders = async () => {
+            try {
+                const shaders = await listShaders();
+                // Convert API response to ShaderEntry format
+                const entries: ShaderEntry[] = shaders.map(shader => ({
+                    id: shader.id,
+                    name: shader.name,
+                    url: `/shaders/${shader.id}.wgsl`,
+                    category: (shader.id.includes('gen') ? 'generative' : 'image') as ShaderCategory,
+                    description: shader.description,
+                    tags: shader.tags,
+                }));
+                setAvailableModes(entries);
+                console.log(`✅ Loaded ${entries.length} shaders`);
+            } catch (error) {
+                console.warn('Failed to load shaders from API:', error);
+                // Silently fail - shader list will be empty but app won't crash
+            }
+        };
+        loadAvailableShaders();
     }, []);
 
     // --- Image Loading ---
