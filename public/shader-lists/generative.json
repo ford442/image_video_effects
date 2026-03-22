@@ -1,12 +1,316 @@
 [
   {
-    "id": "galaxy-sim",
-    "name": "Galaxy",
-    "url": "shaders/galaxy-compute.wgsl",
+    "id": "cellular-automata-3d",
+    "name": "Cellular Automata 3D",
+    "url": "shaders/cellular-automata-3d.wgsl",
     "category": "generative",
+    "description": "3D Game of Life rendered with volume raymarching. Glowing 3D structures that evolve frame-by-frame.",
+    "features": [
+      "advanced-hybrid",
+      "3d-ca",
+      "volume-raymarching",
+      "transfer-function",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "evolution_speed",
+        "name": "Evolution Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Speed of CA evolution"
+      },
+      {
+        "id": "initial_density",
+        "name": "Initial Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Initial cell density"
+      },
+      {
+        "id": "color_cycling",
+        "name": "Color Cycling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Speed of color cycling"
+      },
+      {
+        "id": "camera_rotation",
+        "name": "Camera Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Camera rotation speed"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash3 (gen-xeno-botanical-synth-flora.wgsl)",
+      "3D CA rules (26 neighbors)",
+      "Volume raymarching",
+      "Transfer function coloring"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "holographic-interferometry",
+    "name": "Holographic Interferometry",
+    "url": "shaders/holographic-interferometry.wgsl",
+    "category": "generative",
+    "description": "Simulated hologram with interference fringe patterns. Rainbow interference fringes with speckled laser light.",
+    "features": [
+      "advanced-hybrid",
+      "interference-patterns",
+      "holography",
+      "phase-coloring",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "fringe_density",
+        "name": "Fringe Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of interference fringes"
+      },
+      {
+        "id": "coherence",
+        "name": "Coherence Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Laser coherence (affects speckle size)"
+      },
+      {
+        "id": "reconstruction_angle",
+        "name": "Reconstruction Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Hologram reconstruction angle"
+      },
+      {
+        "id": "saturation",
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Saturation of holographic colors"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "Interference pattern math",
+      "Speckle noise generation"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "multi-fractal-compositor",
+    "name": "Multi-Fractal Compositor",
+    "url": "shaders/multi-fractal-compositor.wgsl",
+    "category": "generative",
+    "description": "Smoothly blend between multiple fractal types. Mandelbrot, Julia, Burning Ship, and Newton fractals.",
+    "features": [
+      "advanced-hybrid",
+      "mandelbrot",
+      "julia",
+      "burning-ship",
+      "smooth-blend",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Zoom Level",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Zoom level into fractal"
+      },
+      {
+        "id": "iterations",
+        "name": "Iteration Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Maximum iterations"
+      },
+      {
+        "id": "domain_warp",
+        "name": "Domain Warp",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of domain warping"
+      },
+      {
+        "id": "fractal_blend",
+        "name": "Fractal Blend",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend between fractal types"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "Mandelbrot iteration",
+      "Julia iteration",
+      "Burning Ship iteration",
+      "Newton fractal"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "neural-raymarcher",
+    "name": "Neural Raymarcher",
+    "url": "shaders/neural-raymarcher.wgsl",
+    "category": "generative",
+    "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness.",
+    "features": [
+      "advanced-hybrid",
+      "sdf-raymarching",
+      "neural-patterns",
+      "volumetric",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "network_depth",
+        "name": "Network Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of neural network layers"
+      },
+      {
+        "id": "activation_vis",
+        "name": "Activation Visualization",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Visibility of activation patterns"
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Volumetric glow intensity"
+      },
+      {
+        "id": "camera_rotation",
+        "name": "Camera Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Camera orbit position"
+      }
+    ],
+    "chunks_used": [
+      "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
+      "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "Activation functions (tanh, ReLU, sigmoid)"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "galaxy-sim",
+    "name": "Galaxy Simulation",
+    "url": "shaders/galaxy.wgsl",
+    "category": "generative",
+    "description": "Animated galaxy simulation with spiral arms and starfield with RGBA depth-aware rendering.",
+    "features": [
+      "depth-aware",
+      "upgraded-rgba",
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "galaxy",
+      "space",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -73,7 +377,14 @@
     "description": "",
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven"
     ]
   },
   {
@@ -264,10 +575,14 @@
       "organic",
       "forest",
       "procedural",
-      "generative"
+      "generative",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -318,10 +633,14 @@
       "gold",
       "scifi",
       "procedural",
-      "infinite"
+      "infinite",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -369,11 +688,14 @@
       "mechanical",
       "clockwork",
       "quantum",
-      "orrery"
+      "orrery",
+      "audio",
+      "music"
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -411,6 +733,118 @@
     ]
   },
   {
+    "id": "gen-audio-spirograph",
+    "name": "Audio Spirograph",
+    "url": "shaders/gen-audio-spirograph.wgsl",
+    "category": "generative",
+    "description": "Audio-reactive spirograph with harmonic resonance using epitrochoid and hypotrochoid curves with musical frequency ratios",
+    "tags": [
+      "generative",
+      "audio-reactive",
+      "spirograph",
+      "harmonic",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "animated",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "baseFreq",
+        "name": "Base Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trailLength",
+        "name": "Trail Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "lineThickness",
+        "name": "Line Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-bifurcation-diagram",
+    "name": "Bifurcation Diagram",
+    "url": "shaders/gen-bifurcation-diagram.wgsl",
+    "category": "generative",
+    "description": "Logistic map bifurcation diagram visualizing the transition from order to chaos with density-based coloring and Lyapunov exponent highlighting",
+    "tags": [
+      "generative",
+      "chaos",
+      "mathematical",
+      "fractal",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "rPosition",
+        "name": "R Parameter Position",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom Level",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "iterations",
+        "name": "Iteration Count",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorScheme",
+        "name": "Color Scheme",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-biomechanical-hive",
     "name": "Biomechanical Hive",
     "url": "shaders/gen-biomechanical-hive.wgsl",
@@ -423,10 +857,14 @@
       "alien",
       "raymarching",
       "horror",
-      "generative"
+      "generative",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -479,12 +917,16 @@
       "iridescent",
       "geometry",
       "fractal",
-      "alpha-transmission"
+      "alpha-transmission",
+      "audio",
+      "music"
     ],
     "features": [
       "raymarched",
       "mouse-driven",
-      "physical-transmission"
+      "physical-transmission",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "AI",
     "params": [
@@ -533,14 +975,18 @@
     "category": "generative",
     "description": "Massive concrete architecture in an atmospheric void.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "brutalism",
       "architecture",
       "atmospheric",
       "3d",
-      "raymarching"
+      "raymarching",
+      "audio",
+      "music"
     ],
     "params": [
       {
@@ -587,10 +1033,14 @@
       "rings",
       "sci-fi",
       "raymarching",
-      "3d"
+      "3d",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "AI",
     "params": [
@@ -646,10 +1096,14 @@
       "color",
       "organic",
       "generative",
-      "3d"
+      "3d",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "AI",
     "params": [
@@ -698,7 +1152,9 @@
     "category": "generative",
     "description": "An infinite, Escher-esque maze of shifting geometric staircases and corridors suspended over a void, with glowing temporal anomalies.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "3d",
@@ -710,7 +1166,9 @@
       "abstract",
       "infinite",
       "generative",
-      "procedural"
+      "procedural",
+      "audio",
+      "music"
     ],
     "params": [
       {
@@ -763,10 +1221,14 @@
       "dark-matter",
       "web",
       "gravity",
-      "procedural"
+      "procedural",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "ford442",
     "params": [
@@ -820,11 +1282,16 @@
       "stalactites",
       "procedural",
       "generative",
-      "alpha-transmission"
+      "alpha-transmission",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
-      "physical-transmission"
+      "physical-transmission",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "ford442",
     "params": [
@@ -877,11 +1344,15 @@
       "terminal",
       "retro",
       "procedural",
-      "decoder"
+      "decoder",
+      "audio",
+      "music"
     ],
     "features": [
       "mouse-driven",
-      "procedural-glyphs"
+      "procedural-glyphs",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -931,11 +1402,15 @@
       "plasma",
       "kaleidoscope",
       "audio-reactive",
-      "liquid"
+      "liquid",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -980,14 +1455,19 @@
     "description": "A pulsating, infinite underwater expanse of translucent, bioluminescent anemone-like structures that gently sway in an invisible current, reaching out to feed on the audio frequencies.",
     "features": [
       "mouse-driven",
-      "raymarched"
+      "raymarched",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "organic",
       "bioluminescent",
       "underwater",
       "fluid",
-      "audio-reactive"
+      "audio-reactive",
+      "audio",
+      "music",
+      "reactive"
     ],
     "params": [
       {
@@ -1040,10 +1520,15 @@
       "brass",
       "clockwork",
       "procedural",
-      "generative"
+      "generative",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "ford442",
     "params": [
@@ -1099,10 +1584,15 @@
       "glowing",
       "ambient",
       "generative",
-      "scifi"
+      "scifi",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1153,10 +1643,14 @@
       "stars",
       "dark-matter",
       "generative",
-      "simulation"
+      "simulation",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "AI",
     "params": [
@@ -1212,10 +1706,14 @@
       "data",
       "neon",
       "procedural",
-      "infinite"
+      "infinite",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1259,7 +1757,9 @@
     "category": "generative",
     "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "neon",
@@ -1269,7 +1769,9 @@
       "generative",
       "abstract",
       "geometric",
-      "procedural"
+      "procedural",
+      "audio",
+      "music"
     ],
     "params": [
       {
@@ -1315,10 +1817,14 @@
       "non-euclidean",
       "escher",
       "geometric",
-      "generative"
+      "generative",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "AI",
     "params": [
@@ -1374,10 +1880,14 @@
       "alien",
       "abstract",
       "generative",
-      "complex"
+      "complex",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "AI",
     "params": [
@@ -1426,7 +1936,9 @@
     "category": "generative",
     "description": "An infinite procedural isometric city with neon lights and traffic.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1453,7 +1965,10 @@
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -1472,10 +1987,15 @@
       "evolution",
       "advanced",
       "procedural",
-      "generative"
+      "generative",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "ford442",
     "params": [
@@ -1524,11 +2044,14 @@
       "liquid-crystal",
       "fluid-dynamics",
       "honeycomb",
-      "audio-reactive"
+      "audio-reactive",
+      "audio",
+      "music"
     ],
     "features": [
       "mouse-driven",
-      "audio-driven"
+      "audio-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1578,10 +2101,14 @@
       "spiky",
       "fluid",
       "generative",
-      "ferrofluid"
+      "ferrofluid",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1623,6 +2150,62 @@
     ]
   },
   {
+    "id": "gen-magnetic-field-lines",
+    "name": "Magnetic Field Lines",
+    "url": "shaders/gen-magnetic-field-lines.wgsl",
+    "category": "generative",
+    "description": "Magnetic dipole field visualization with field lines and charged particles following the field, featuring North (blue) and South (red) poles",
+    "tags": [
+      "generative",
+      "physics",
+      "magnetic",
+      "field-lines",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "fieldStrength",
+        "name": "Field Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "particleSpeed",
+        "name": "Particle Speed",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "numDipoles",
+        "name": "Number of Dipoles",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trailLength",
+        "name": "Trail Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-micro-cosmos",
     "name": "Micro-Cosmos",
     "url": "shaders/gen-micro-cosmos.wgsl",
@@ -1636,10 +2219,14 @@
       "life",
       "floating",
       "generative",
-      "procedural"
+      "procedural",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1673,6 +2260,118 @@
         "min": 0,
         "max": 1,
         "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-mycelium-network",
+    "name": "Mycelium Network",
+    "url": "shaders/gen-mycelium-network.wgsl",
+    "category": "generative",
+    "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips",
+    "tags": [
+      "generative",
+      "organic",
+      "nature",
+      "bioluminescent",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "growthRate",
+        "name": "Growth Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "branching",
+        "name": "Branching Factor",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "nutrientDensity",
+        "name": "Nutrient Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "biolumIntensity",
+        "name": "Bioluminescence",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-neural-fractal",
+    "name": "Neural Fractal",
+    "url": "shaders/gen-neural-fractal.wgsl",
+    "category": "generative",
+    "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z²+c iterations",
+    "tags": [
+      "generative",
+      "fractal",
+      "neural",
+      "mathematical",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Zoom Level",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorSpeed",
+        "name": "Color Cycling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "iterations",
+        "name": "Iteration Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mutation",
+        "name": "Mutation Factor",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -1746,12 +2445,15 @@
       "geometric",
       "audio-reactive",
       "alpha-transmission",
-      "physical"
+      "physical",
+      "audio",
+      "music"
     ],
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "physical-transmission"
+      "physical-transmission",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1803,11 +2505,15 @@
       "microscopic",
       "fungal",
       "network",
-      "audio-reactive"
+      "audio-reactive",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
-      "audio-driven"
+      "audio-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1856,11 +2562,15 @@
       "raymarching",
       "scifi",
       "glowing",
-      "lattice"
+      "lattice",
+      "audio",
+      "music"
     ],
     "features": [
       "raymarched",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1907,10 +2617,15 @@
       "probability",
       "physics",
       "generative",
-      "abstract"
+      "abstract",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "AI",
     "params": [
@@ -1953,6 +2668,62 @@
     ]
   },
   {
+    "id": "gen-quasicrystal",
+    "name": "Quasicrystal",
+    "url": "shaders/gen-quasicrystal.wgsl",
+    "category": "generative",
+    "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices",
+    "tags": [
+      "generative",
+      "quasicrystal",
+      "symmetry",
+      "mathematical",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "symmetry",
+        "name": "Symmetry Order",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Pattern Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorCycle",
+        "name": "Color Cycling",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "projAngle",
+        "name": "Projection Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-raptor-mini",
     "name": "Raptor Mini",
     "url": "shaders/gen-raptor-mini.wgsl",
@@ -1961,14 +2732,17 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "stateful"
+      "stateful",
+      "audio-driven"
     ],
     "tags": [
       "agent",
       "chase",
       "audio",
       "procedural",
-      "generative"
+      "generative",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -1981,10 +2755,14 @@
       "generative",
       "wave",
       "glass",
-      "refraction"
+      "refraction",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -2032,11 +2810,15 @@
       "black-hole",
       "gravity",
       "plasma",
-      "audio-reactive"
+      "audio-reactive",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
-      "audio-driven"
+      "audio-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -2084,10 +2866,14 @@
       "neuro",
       "plasma",
       "volumetric",
-      "audio-reactive"
+      "audio-reactive",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -2125,6 +2911,229 @@
     ]
   },
   {
+    "id": "gen-string-theory",
+    "name": "String Theory",
+    "url": "shaders/gen-string-theory.wgsl",
+    "category": "generative",
+    "description": "Vibrating string visualizations with interference patterns and harmonics based on the 1D wave equation",
+    "tags": [
+      "generative",
+      "physics",
+      "waves",
+      "harmonics",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "animated",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "fundamental",
+        "name": "Fundamental Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "harmonicRichness",
+        "name": "Harmonic Richness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "excitement",
+        "name": "Pluck Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-supernova-remnant",
+    "name": "Supernova Remnant",
+    "url": "shaders/gen-supernova-remnant.wgsl",
+    "category": "generative",
+    "description": "Expanding shell structures with shockwave physics and Rayleigh-Taylor instability patterns, inspired by Hubble nebula images",
+    "tags": [
+      "generative",
+      "nebula",
+      "physics",
+      "space",
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "explosionEnergy",
+        "name": "Explosion Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "shellDensity",
+        "name": "Shell Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chaos",
+        "name": "Turbulence/Chaos",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorTemp",
+        "name": "Temperature Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-topology-flow",
+    "name": "Topology Flow",
+    "url": "shaders/gen-topology-flow.wgsl",
+    "category": "generative",
+    "description": "Topological surface flow visualization inspired by Morse theory, showing gradient flows converging and diverging at critical points",
+    "tags": [
+      "generative",
+      "topology",
+      "flow",
+      "mathematical",
+      "procedural",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "complexity",
+        "name": "Height Complexity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "particleDensity",
+        "name": "Particle Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trailPersistence",
+        "name": "Trail Persistence",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-voronoi-crystal",
+    "name": "Voronoi Crystal",
+    "url": "shaders/gen-voronoi-crystal.wgsl",
+    "category": "generative",
+    "description": "Animated crystal growth using Voronoi diagrams with time-evolving seeds, featuring icy facets and rainbow iridescence",
+    "tags": [
+      "generative",
+      "voronoi",
+      "crystal",
+      "procedural",
+      "animated",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "growthSpeed",
+        "name": "Growth Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "crystalCount",
+        "name": "Crystal Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "irregularity",
+        "name": "Irregularity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-xeno-botanical-synth-flora",
     "name": "Xeno-Botanical Synth-Flora",
     "url": "shaders/gen-xeno-botanical-synth-flora.wgsl",
@@ -2135,11 +3144,15 @@
       "botanical",
       "cybernetic",
       "bioluminescent",
-      "audio-reactive"
+      "audio-reactive",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
-      "audio-driven"
+      "audio-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -2220,44 +3233,58 @@
   },
   {
     "id": "gen-grid",
-    "name": "Neon Grid",
+    "name": "Domain-Warped FBM Grid",
     "url": "shaders/gen_grid.wgsl",
     "category": "generative",
-    "description": "A neon grid that warps around the cursor.",
+    "description": "Organic flowing grid using domain warping and FBM noise with RGBA depth-aware rendering.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "domain-warping"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "noise",
+      "grid"
     ]
   },
   {
     "id": "gen-grok41-mandelbrot",
-    "name": "Grok41 Mandelbrot Explorer",
+    "name": "Buddhabrot Nebula",
     "url": "shaders/gen_grok41_mandelbrot.wgsl",
     "category": "generative",
-    "description": "Animated zooming Mandelbrot fractal set with mouse and time controls.",
+    "description": "Orbit accumulation rendering creating nebula-like fractal patterns with RGBA depth-aware rendering.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "fractal",
+      "mandelbrot"
     ]
   },
   {
     "id": "gen-grok41-plasma",
-    "name": "Grok41 Plasma Waves",
+    "name": "Spherical Harmonics Plasma",
     "url": "shaders/gen_grok41_plasma.wgsl",
     "category": "generative",
-    "description": "Classic multi-layered plasma effect with mouse-controlled warping and glow.",
+    "description": "3D gas giant atmosphere using spherical harmonics with RGBA depth-aware rendering.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "3d"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "sphere",
+      "atmosphere"
     ]
   },
   {
@@ -2281,6 +3308,9 @@
     "category": "generative",
     "description": "Multi-octave Perlin noise generating animated terrain with mouse offset.",
     "features": [
+      "upgraded-rgba",
+      "depth-aware",
+      "procedural",
       "mouse-driven"
     ],
     "tags": [
@@ -2290,30 +3320,40 @@
   },
   {
     "id": "gen-grokcf-interference",
-    "name": "Grokcf Wave Interference",
+    "name": "Chladni Plate Cymatics",
     "url": "shaders/gen_grokcf_interference.wgsl",
     "category": "generative",
-    "description": "Multi-layered sine wave interference patterns modulated by mouse position.",
+    "description": "Sand patterns from vibrating plate standing waves with RGBA depth-aware rendering.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "cymatics",
+      "interference"
     ]
   },
   {
     "id": "gen-grokcf-voronoi",
-    "name": "Grokcf Animated Voronoi",
+    "name": "Worley Noise Cellular",
     "url": "shaders/gen_grokcf_voronoi.wgsl",
     "category": "generative",
-    "description": "Procedural Voronoi diagram with animated cells and mouse-influenced positioning.",
+    "description": "Organic cellular patterns using Worley noise with FBM layering and RGBA depth-aware rendering.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "animated"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "voronoi",
+      "cellular"
     ]
   },
   {
@@ -2476,16 +3516,20 @@
   },
   {
     "id": "gen-orb",
-    "name": "Glowing Orb",
+    "name": "Lorenz Strange Attractor",
     "url": "shaders/gen_orb.wgsl",
     "category": "generative",
-    "description": "A glowing orb that follows the mouse cursor.",
+    "description": "Chaotic particle system visualization based on the Lorenz attractor with RGBA depth-aware rendering.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "particles",
+      "mathematical-art"
     ]
   },
   {
@@ -2587,16 +3631,21 @@
   },
   {
     "id": "gen-trails",
-    "name": "Light Trails",
+    "name": "Boids Flocking",
     "url": "shaders/gen_trails.wgsl",
     "category": "generative",
-    "description": "Paint light trails with your mouse. (Stateful)",
+    "description": "Craig Reynolds' boids flocking simulation with alpha scattering and RGBA depth-aware rendering.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba",
+      "particles"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "flocking",
+      "particles"
     ]
   },
   {
@@ -2768,11 +3817,16 @@
       "sdf",
       "fluid",
       "geometry",
-      "procedural"
+      "procedural",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
       "raymarched",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "minimax.ai",
     "params": [
@@ -2825,10 +3879,15 @@
       "fbm",
       "fluid",
       "loops",
-      "domain-warping"
+      "domain-warping",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "author": "Gemini 3.1 Pro Vertex",
     "params": [
@@ -2912,6 +3971,328 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "hybrid-cyber-organic",
+    "name": "Hybrid Cyber-Organic",
+    "url": "shaders/hybrid-cyber-organic.wgsl",
+    "category": "generative",
+    "description": "Digital circuit traces that grow organically with neon glow, combining hexagonal grid structures with cellular growth patterns",
+    "features": [
+      "hybrid",
+      "circuit-patterns",
+      "organic-growth",
+      "neon-glow",
+      "hex-grid",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "circuit_density",
+        "name": "Circuit Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of hexagonal circuit grid"
+      },
+      {
+        "id": "growth",
+        "name": "Organic Growth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Amount of organic growth over circuits"
+      },
+      {
+        "id": "glow",
+        "name": "Neon Glow",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Glow intensity of active circuits"
+      },
+      {
+        "id": "chaos",
+        "name": "Randomness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Chaos/randomness in growth patterns"
+      }
+    ],
+    "chunks_used": [
+      "hexEdgeDist (hex-circuit.wgsl)",
+      "fbm2 growth pattern (digital-moss.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "hybrid-fractal-feedback",
+    "name": "Hybrid Fractal Feedback",
+    "url": "shaders/hybrid-fractal-feedback.wgsl",
+    "category": "generative",
+    "description": "Julia set fractal with feedback trails and per-channel temporal delay creating RGB separation trails",
+    "features": [
+      "hybrid",
+      "julia-set",
+      "temporal-feedback",
+      "rgb-delay",
+      "fractal",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Zoom Level",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Fractal zoom level"
+      },
+      {
+        "id": "feedback",
+        "name": "Feedback Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of temporal feedback trails"
+      },
+      {
+        "id": "rgb_delay",
+        "name": "RGB Channel Delay",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Temporal offset between RGB channels"
+      },
+      {
+        "id": "color_cycle",
+        "name": "Color Cycling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Speed of palette color cycling"
+      }
+    ],
+    "chunks_used": [
+      "juliaIterate (julia-warp.wgsl)",
+      "fbm2 flow field (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "hybrid-magnetic-field",
+    "name": "Hybrid Magnetic Field",
+    "url": "shaders/hybrid-magnetic-field.wgsl",
+    "category": "generative",
+    "description": "Magnetic field line visualization with flowing particles and FBM-varied field distortion",
+    "features": [
+      "hybrid",
+      "vector-field",
+      "particle-trails",
+      "magnetic-distortion",
+      "glow",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "field_strength",
+        "name": "Field Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Strength of magnetic dipole field"
+      },
+      {
+        "id": "line_density",
+        "name": "Line Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Number of field lines displayed"
+      },
+      {
+        "id": "trails",
+        "name": "Trail Persistence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How long particle trails persist"
+      },
+      {
+        "id": "distortion",
+        "name": "Field Distortion",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "FBM noise influence on field"
+      }
+    ],
+    "chunks_used": [
+      "magnetic field calculation",
+      "fbm2 variation (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "rot2 (kaleidoscope.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "hybrid-noise-kaleidoscope",
+    "name": "Hybrid Noise Kaleidoscope",
+    "url": "shaders/hybrid-noise-kaleidoscope.wgsl",
+    "category": "generative",
+    "description": "Domain-warped FBM noise fed through kaleidoscope symmetry with dynamic hue shifting and RGB channel splits",
+    "features": [
+      "hybrid",
+      "fbm-noise",
+      "kaleidoscope",
+      "chromatic-aberration",
+      "hue-shift",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "noise_scale",
+        "name": "Noise Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Scale of the FBM noise pattern"
+      },
+      {
+        "id": "segments",
+        "name": "Kaleidoscope Segments",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Number of mirror segments in kaleidoscope"
+      },
+      {
+        "id": "chromatic",
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "RGB channel separation amount"
+      },
+      {
+        "id": "hue_speed",
+        "name": "Hue Shift Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Speed of color cycling"
+      }
+    ],
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "kaleidoscope (kaleidoscope.wgsl)",
+      "hueShift (stellar-plasma.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "hybrid-sdf-plasma",
+    "name": "Hybrid SDF Plasma Field",
+    "url": "shaders/hybrid-sdf-plasma.wgsl",
+    "category": "generative",
+    "description": "Raymarched SDF scene with plasma noise displacement and dynamic palette-based coloring",
+    "features": [
+      "hybrid",
+      "raymarching",
+      "sdf",
+      "plasma-noise",
+      "palette-cycling",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "plasma_detail",
+        "name": "Plasma Detail",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Detail level of plasma noise displacement"
+      },
+      {
+        "id": "color_speed",
+        "name": "Color Cycle Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Speed of palette color cycling"
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Plasma glow strength"
+      },
+      {
+        "id": "quality",
+        "name": "Raymarch Quality",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Raymarching step count (affects performance)"
+      }
+    ],
+    "chunks_used": [
+      "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
+      "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
+      "fbm3 (gen-xeno-botanical-synth-flora.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
   },
   {
     "id": "aurora_borealis",
