@@ -16,6 +16,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.config.y;
+    let audioBass = u.config.y * 1.2;
+    let audioMid = u.config.z;
+    let audioHigh = u.config.w;
+    let audioReactivity = 1.0 + audioOverall * 0.5;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let audio = u.zoom_params.x; // rage multiplier [0,1]
 
@@ -30,8 +36,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // compute a pseudo-random seed from index
         let fi = f32(i);
         // circular orbit plus time noise
-        let baseAngle = 6.2831853 * (fi / f32(agentCount)) + time * 0.3;
-        let radius = 0.2 + 0.1 * sin(time * 1.5 + fi * 0.002);
+        let baseAngle = 6.2831853 * (fi / f32(agentCount)) + time * 0.3 * audioReactivity;
+        let radius = 0.2 + 0.1 * sin(time * 1.5 * audioReactivity + fi * 0.002);
         var pos = vec2<f32>(0.5) + vec2<f32>(cos(baseAngle), sin(baseAngle)) * radius;
 
         // chase the mouse: move a tiny step toward the cursor each frame
@@ -44,12 +50,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = distance(uv, pos);
         if (d < 0.008) {
             // base body color with a scale pattern
-            let scale = fract(sin((fi + time * 10.0) * 12.9898) * 43758.5453);
+            let scale = fract(sin((fi + time * 10.0 * audioReactivity) * 12.9898) * 43758.5453);
             let body = mix(vec3<f32>(0.1, 0.3, 0.1), vec3<f32>(0.2, 0.8, 0.2), scale);
             col += body * (1.0 - d / 0.008);
 
             // claw strike effect occasionally
-            let clawChance = fract(sin(fi * 78.233 + time * 40.0) * 124.123);
+            let clawChance = fract(sin(fi * 78.233 + time * 40.0 * audioReactivity) * 124.123);
             if (clawChance < 0.02 + audio * 0.05) {
                 // highlight with bright spike
                 col += vec3<f32>(1.0, 0.5, 0.2) * (1.0 - d / 0.008);

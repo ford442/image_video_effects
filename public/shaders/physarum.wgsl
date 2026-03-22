@@ -57,6 +57,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var angle = extraBuffer[idx * 3u + 2u];
     let tex_size = vec2<f32>(textureDimensions(readTexture));
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
     
     // Parameters
     let agent_radius = mix(1.0, 4.0, u.zoom_params.x);

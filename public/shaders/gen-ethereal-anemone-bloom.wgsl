@@ -166,12 +166,18 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Swaying Logic
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.config.y;
+    let audioBass = u.config.y * 1.2;
+    let audioMid = u.config.z;
+    let audioHigh = u.config.w;
+    let audioReactivity = 1.0 + audioOverall * 0.5;
     let current_speed = u.zoom_params.x;
     let sway_amt = (q.y * 0.2) * current_speed;
     var sway = vec3<f32>(
-        sin(time * 1.5 + h * 6.28 + p.y * 0.1) * sway_amt,
+        sin(time * 1.5 * audioReactivity + h * 6.28 + p.y * 0.1) * sway_amt,
         0.0,
-        cos(time * 1.2 + h * 6.28 + p.y * 0.1) * sway_amt
+        cos(time * 1.2 * audioReactivity + h * 6.28 + p.y * 0.1) * sway_amt
     );
 
     if (distToMouse > 0.1) {
@@ -256,8 +262,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x * 0.2;
 
     // 1. Ray setup and camera matrix
-    let ro = vec3<f32>(time * 2.0, -1.0, time * 2.0);
-    let target = ro + vec3<f32>(cos(time*0.5), -0.2, sin(time*0.5));
+    let ro = vec3<f32>(time * 2.0 * audioReactivity, -1.0, time * 2.0 * audioReactivity);
+    let target = ro + vec3<f32>(cos(time*0.5 * audioReactivity), -0.2, sin(time*0.5 * audioReactivity));
 
     let forward = normalize(target - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
@@ -312,7 +318,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let audio_pulse = u.config.y;
 
             // Shift colors between deep cyan and electric magenta
-            let hue = fract(p.y * 0.1 - time * 2.0);
+            let hue = fract(p.y * 0.1 - time * 2.0 * audioReactivity);
             let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
             let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
             let shiftColor = clamp(p_col - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));

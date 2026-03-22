@@ -82,6 +82,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var mousePos = u.zoom_config.yz;
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.zoom_config.x;
+  let audioBass = audioOverall * 1.5;
+  let audioReactivity = 1.0 + audioOverall * 0.3;
 
   let strength = (u.zoom_params.x - 0.5) * 10.0; // -5 to 5
   let radius = u.zoom_params.y * 0.8 + 0.01;

@@ -1,14 +1,9 @@
-// ═══════════════════════════════════════════════════════════════
-//  Aerogel Smoke - Volumetric Alpha Upgrade
-//  Simulates the ethereal "frozen smoke" look of aerogel with
-//  physically-based volumetric light transport
-//  
-//  Scientific Concepts:
-//  - Rayleigh scattering for fine aerogel particles
-//  - Mie scattering for larger particle clumps
-//  - Beer-Lambert law for extinction
-//  - Optical depth → alpha conversion
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  aerogel-smoke
+//  Category: atmospheric
+//  Features: upgraded-rgba, depth-aware, volumetric-alpha
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;

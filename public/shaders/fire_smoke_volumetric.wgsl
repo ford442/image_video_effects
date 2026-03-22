@@ -1,15 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  fire_smoke_volumetric.wgsl - Volumetric Fire/Smoke with Density Alpha
-//  
-//  RGBA Focus: Alpha = smoke density, RGB = blackbody temperature
-//  Techniques:
-//    - Ray-marched volumetric fire
-//    - Curl noise for turbulent motion
-//    - Blackbody radiation coloring (temperature)
-//    - Mouse creates heat source
-//    - Audio drives turbulence
-//  
-//  Target: 4.7★ rating
+//  Fire Smoke Volumetric - Advanced Alpha with Physical Transmittance
+//  Category: volumetric/atmospheric
+//  Alpha Mode: Physical Transmittance (Beer's Law) + Depth-Layered
+//  Features: advanced-alpha, fire, smoke, volumetric
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,204 +26,73 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
 
-// Hash functions
-fn hash2(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+// Mode 4: Physical Transmittance
+fn physicalTransmittance(
+    baseColor: vec3<f32>,
+    opticalDepth: f32,
+    absorptionCoeff: vec3<f32>
+) -> vec3<f32> {
+    let transmittance = exp(-absorptionCoeff * opticalDepth);
+    return baseColor * transmittance;
 }
 
-fn hash3(p: vec3<f32>) -> f32 {
-    let q = fract(p * 0.1031);
-    return fract((q.x + q.y) * q.z);
+fn volumetricAlpha(density: f32, thickness: f32) -> f32 {
+    return 1.0 - exp(-density * thickness);
+}
+
+// Mode 1: Depth-Layered Alpha
+fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthAlpha = mix(0.3, 1.0, depth);
+    return mix(1.0, depthAlpha, depthWeight);
 }
 
 // Noise
-fn noise3(p: vec3<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    
-    return mix(
-        mix(
-            mix(hash3(i), hash3(i + vec3<f32>(1,0,0)), f.x),
-            mix(hash3(i + vec3<f32>(0,1,0)), hash3(i + vec3<f32>(1,1,0)), f.x),
-            f.y
-        ),
-        mix(
-            mix(hash3(i + vec3<f32>(0,0,1)), hash3(i + vec3<f32>(1,0,1)), f.x),
-            mix(hash3(i + vec3<f32>(0,1,1)), hash3(i + vec3<f32>(1,1,1)), f.x),
-            f.y
-        ),
-        f.z
-    );
-}
-
-// Curl noise for divergence-free velocity
-fn curlNoise3D(p: vec3<f32>, time: f32) -> vec3<f32> {
-    let eps = 0.01;
-    
-    let dx = vec3<f32>(eps, 0.0, 0.0);
-    let dy = vec3<f32>(0.0, eps, 0.0);
-    let dz = vec3<f32>(0.0, 0.0, eps);
-    
-    let pTime = vec3<f32>(p.xy, p.z + time * 0.5);
-    
-    let x1 = noise3(pTime + dy);
-    let x2 = noise3(pTime - dy);
-    let x3 = noise3(pTime + dz);
-    let x4 = noise3(pTime - dz);
-    
-    let y1 = noise3(pTime + dx);
-    let y2 = noise3(pTime - dx);
-    let y3 = noise3(pTime + dz);
-    let y4 = noise3(pTime - dz);
-    
-    let z1 = noise3(pTime + dx);
-    let z2 = noise3(pTime - dx);
-    let z3 = noise3(pTime + dy);
-    let z4 = noise3(pTime - dy);
-    
-    return vec3<f32>(
-        (z3 - z4 - y3 + y4) / (2.0 * eps),
-        (x3 - x4 - z1 + z2) / (2.0 * eps),
-        (y1 - y2 - x1 + x2) / (2.0 * eps)
-    );
-}
-
-// Temperature to blackbody color
-fn blackbodyColor(t: f32) -> vec3<f32> {
-    // Approximate blackbody radiation
-    let temp = clamp(t, 0.0, 1.0);
-    
-    // Red to yellow to white
-    let r = 1.0;
-    let g = smoothstep(0.0, 0.6, temp);
-    let b = smoothstep(0.4, 1.0, temp);
-    
-    return vec3<f32>(r, g, b);
-}
-
-// Fire density field
-fn fireDensity(p: vec3<f32>, time: f32, mouse: vec3<f32>, audioPulse: f32) -> vec4<f32> {
-    let uv = p.xy;
-    let height = p.z;
-    
-    // Turbulence
-    let turb = curlNoise3D(p * 2.0, time);
-    let warpedP = p + turb * 0.1 * (1.0 + audioPulse);
-    
-    // Base noise
-    let n1 = noise3(warpedP * 2.0 + vec3<f32>(0.0, -time * 0.5, 0.0));
-    let n2 = noise3(warpedP * 4.0 + vec3<f32>(0.0, -time * 1.0, 0.0)) * 0.5;
-    let n3 = noise3(warpedP * 8.0 + vec3<f32>(0.0, -time * 2.0, 0.0)) * 0.25;
-    
-    let noiseVal = n1 + n2 + n3;
-    
-    // Height falloff (fire rises)
-    let heightFalloff = exp(-height * 2.0);
-    
-    // Mouse heat source
-    let toMouse = length(uv - mouse.xy);
-    let heatSource = smoothstep(0.2, 0.0, toMouse) * (1.0 - height * 0.5);
-    
-    // Temperature (0 = cool smoke, 1 = hot fire)
-    let temp = (noiseVal * 0.5 + 0.5) * heightFalloff * (1.0 + heatSource * 2.0);
-    temp = clamp(temp + heatSource, 0.0, 1.0);
-    
-    // Density (smoke)
-    let density = smoothstep(0.3, 0.7, temp) * heightFalloff * (1.0 - temp * 0.5);
-    density = density * (1.0 + audioPulse * 0.5);
-    
-    // Color from temperature
-    let color = blackbodyColor(temp);
-    
-    // Smoke adds gray as it cools
-    let smokeColor = vec3<f32>(0.3, 0.3, 0.35);
-    let finalColor = mix(smokeColor, color, temp);
-    
-    return vec4<f32>(finalColor, density);
+fn hash(p: vec3<f32>) -> f32 {
+    return fract(sin(dot(p, vec3<f32>(12.9898, 78.233, 54.53))) * 43758.5453);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let coord = vec2<i32>(global_id.xy);
-    
-    if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
-        return;
-    }
-    
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     
-    // Parameters
-    let fireHeight = 0.5 + u.zoom_params.x; // 0.5-1.5
-    let turbulence = u.zoom_params.y; // 0-1
-    let smokeAmount = u.zoom_params.z; // 0-1
-    let glowIntensity = 0.5 + u.zoom_params.w; // 0.5-1.5
+    let fireIntensity = u.zoom_params.x * 2.0;
+    let smokeDensity = u.zoom_params.y;
+    let depthWeight = u.zoom_params.z;
+    let turbulence = u.zoom_params.w;
     
-    let mousePos = u.zoom_config.yz;
-    let audioPulse = u.zoom_config.w;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    // Ray march setup
-    let ro = vec3<f32>(uv, 0.0);
-    let rd = vec3<f32>(0.0, 0.0, 1.0);
+    // Fire/Smoke noise
+    let noiseUV = vec3<f32>(uv * 5.0, time * 0.5);
+    let n = hash(vec3<i32>(noiseUV * 10.0));
     
-    let steps = 32;
-    let stepSize = fireHeight / f32(steps);
+    let fireShape = smoothstep(0.3, 0.7, 1.0 - uv.y + n * turbulence);
+    let density = fireShape * smokeDensity;
     
-    var accumColor = vec3<f32>(0.0);
-    var transmittance = 1.0;
-    var maxTemp = 0.0;
+    // Fire color gradient
+    let fireColor = mix(
+        vec3<f32>(1.0, 0.8, 0.1),
+        vec3<f32>(0.8, 0.2, 0.05),
+        uv.y * fireIntensity
+    ) * fireShape;
     
-    // Ray march through fire volume
-    for (var i: i32 = 0; i < steps; i = i + 1) {
-        let t = f32(i) * stepSize;
-        let p = ro + rd * t;
-        
-        let sampleRGBA = fireDensity(p, time * (1.0 + audioPulse), 
-                                     vec3<f32>(mousePos, 0.0), audioPulse);
-        
-        // Apply turbulence
-        let turb = curlNoise3D(p * 3.0, time);
-        sampleRGBA.a *= 1.0 + length(turb) * turbulence * 0.5;
-        
-        // Smoke amount adjustment
-        sampleRGBA.a = mix(sampleRGBA.a * 0.3, sampleRGBA.a, smokeAmount + (1.0 - sampleRGBA.w));
-        
-        // Beer-Lambert absorption
-        let absorption = exp(-sampleRGBA.a * stepSize * 5.0);
-        
-        // Accumulate
-        let emission = sampleRGBA.rgb * sampleRGBA.a * stepSize * glowIntensity;
-        accumColor += transmittance * emission;
-        transmittance *= absorption;
-        
-        maxTemp = max(maxTemp, sampleRGBA.w);
-        
-        if (transmittance < 0.01) { break; }
-    }
+    // Smoke color
+    let smokeColor = vec3<f32>(0.3, 0.3, 0.35) * density;
     
-    // Background
-    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let finalColor = mix(smokeColor, fireColor, fireShape);
     
-    // Blend
-    let finalRGB = accumColor + bg * transmittance;
-    let finalAlpha = 1.0 - transmittance;
+    let opticalDepth = density * (1.0 + turbulence);
+    let absorptionCoeff = vec3<f32>(0.5, 0.6, 0.7);
+    let transmitted = physicalTransmittance(finalColor, opticalDepth, absorptionCoeff);
     
-    // HDR bloom from hot areas
-    let bloom = maxTemp * maxTemp * glowIntensity * 0.5;
-    finalRGB += vec3<f32>(1.0, 0.7, 0.3) * bloom;
+    let volAlpha = volumetricAlpha(density, 1.0);
+    let alpha = volAlpha * depthLayeredAlpha(uv, depthWeight);
     
-    // Tone mapping
-    finalRGB = finalRGB / (1.0 + finalRGB * 0.3);
-    
-    // Vignette
-    let vignette = 1.0 - length(uv - 0.5) * 0.3;
-    
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB * vignette, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(finalAlpha, 0.0, 0.0, 1.0));
-    
-    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(transmitted, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

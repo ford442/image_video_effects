@@ -5,7 +5,9 @@
   "category": "generative",
   "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "neon",
@@ -15,7 +17,9 @@
     "generative",
     "abstract",
     "geometric",
-    "procedural"
+    "procedural",
+    "audio",
+    "music"
   ],
   "params": [
     {

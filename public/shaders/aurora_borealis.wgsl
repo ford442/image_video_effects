@@ -1,16 +1,9 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  aurora_borealis.wgsl - Aurora Borealis with Ribbon Particles
-//  
-//  RGBA Focus: Alpha = aurora ribbon density/glow
-//  Techniques:
-//    - Multiple flowing ribbon curves
-//    - Curl noise for turbulent flow
-//    - Height-based color (green to red)
-//    - Starfield background
-//    - Mouse attracts aurora curtains
-//  
-//  Target: 4.8★ rating
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  aurora_borealis
+//  Category: atmospheric
+//  Features: upgraded-rgba, depth-aware, ribbon-alpha
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;

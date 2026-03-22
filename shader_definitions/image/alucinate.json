@@ -3,6 +3,7 @@
   "name": "Alucinate",
   "url": "shaders/alucinate.wgsl",
   "category": "image",
+  "features": ["upgraded-rgba", "depth-aware", "chromatic-aberration", "warping"],
   "tags": [
     "psychedelic",
     "warp",

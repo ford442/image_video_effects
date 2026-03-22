@@ -1,0 +1,57 @@
+{
+  "id": "hybrid-chromatic-liquid",
+  "name": "Hybrid Chromatic Liquid",
+  "url": "shaders/hybrid-chromatic-liquid.wgsl",
+  "category": "distortion",
+  "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field",
+  "features": ["hybrid", "liquid-distortion", "chromatic-aberration", "flow-field", "fresnel", "randomization-safe"],
+  "params": [
+    {
+      "id": "flow_scale",
+      "name": "Flow Field Scale",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Scale of the flow field pattern"
+    },
+    {
+      "id": "distortion",
+      "name": "Liquid Distortion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Amount of liquid displacement"
+    },
+    {
+      "id": "chromatic",
+      "name": "RGB Split",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Chromatic aberration strength"
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Animation speed of flow field"
+    }
+  ],
+  "chunks_used": [
+    "fbm2 (gen_grid.wgsl)",
+    "fresnelSchlick (crystal-facets.wgsl)",
+    "flow-field pattern (luma-flow-field.wgsl)"
+  ],
+  "created_by": "Agent 2A - Shader Surgeon",
+  "created_date": "2026-03-22"
+}

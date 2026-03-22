@@ -5,10 +5,14 @@
   "category": "image",
   "description": "Sobel edge detection with neon-diffusion and color bleeding.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music"
   ]
 }

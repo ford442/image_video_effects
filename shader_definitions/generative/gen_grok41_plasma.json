@@ -1,14 +1,19 @@
 {
   "id": "gen-grok41-plasma",
-  "name": "Grok41 Plasma Waves",
+  "name": "Spherical Harmonics Plasma",
   "url": "shaders/gen_grok41_plasma.wgsl",
   "category": "generative",
-  "description": "Classic multi-layered plasma effect with mouse-controlled warping and glow.",
+  "description": "3D gas giant atmosphere using spherical harmonics with RGBA depth-aware rendering.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "3d"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "sphere",
+    "atmosphere"
   ]
 }

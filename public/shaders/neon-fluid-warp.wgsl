@@ -45,6 +45,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
 
     // Parameters
     // x: warpStrength, y: radius, z: glowIntensity, w: occlusionBalance
@@ -65,7 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Warp calculation with "liquidity" sine ripples
     let angle = atan2(distVec.y, distVec.x);
-    let ripple = sin(dist * 20.0 - time * 5.0) * liquidity * 0.05;
+    let ripple = sin(dist * 20.0 - time * 5.0 * audioReactivity) * liquidity * 0.05;
 
     // Repulsion force
     let force = smoothstep(radius, 0.0, dist);

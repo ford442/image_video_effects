@@ -36,10 +36,15 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

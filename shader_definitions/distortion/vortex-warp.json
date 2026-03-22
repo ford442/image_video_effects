@@ -4,7 +4,9 @@
   "url": "shaders/vortex-warp.wgsl",
   "category": "image",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "description": "Swirls the image around the mouse cursor.",
   "params": [
@@ -32,6 +34,9 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

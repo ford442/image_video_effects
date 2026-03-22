@@ -6,7 +6,7 @@ A React-based web application that runs a wide variety of GPU shader effects (co
 
 - **Interactive Fluid Effects**: Click on images to create ripples and fluid-like distortions
 - **AI Depth Estimation**: Uses the DPT-Hybrid-MIDAS model for depth map generation
-- **Multiple Shader Effects**: Dozens of shader modes across multiple categories (fluid, simulation, audio-driven, feedback, sorting, distortion, and abstract visuals)
+- **680+ Shader Effects**: 678 shaders across 15 categories (fluid, simulation, audio-driven, feedback, sorting, distortion, generative, hybrid, and abstract visuals)
 - **Dynamic Shader Loading**: Shaders are loaded from a configuration file for easy extensibility
 - **WebGPU Powered**: High-performance compute shaders for real-time rendering
 
@@ -39,39 +39,35 @@ The application will open at `http://localhost:3000`.
 4. Select different effect modes from the dropdown
 5. Click and drag on the image to create interactive ripples
 
-## Available Effect Modes (Selected)
+## Available Effect Categories
 
-| Mode | Description |
-|------|-------------|
-| Liquid (Interactive) | Basic fluid simulation with mouse-driven ripples |
-| Liquid (Ambient) | Continuous ambient fluid motion |
-| Liquid Zoom | Zoom-based parallax effect |
-| Liquid Perspective | 3D perspective distortion |
-| Liquid Viscous | Slower, more viscous fluid behavior |
-| Clean Vortex | Swirling vortex effect |
-| Liquid Fast | Quick, responsive ripples |
-| Liquid RGB | RGB color channel separation |
-| Liquid Metal | Metallic reflection simulation |
-| Liquid Jelly | Bouncy, jelly-like distortion |
-| Liquid Rainbow | Rainbow color shift effects |
-| Liquid Oil | Oil-on-water iridescence |
-| Liquid Glitch | Digital glitch artifacts |
-| Plasma Ball | Animated plasma ball effect |
-| Melting Oil | Sobel gradient-driven oil painting flow |
-| Physarum Slime Mold | Agent-based slime mold texture feeder |
-| Pixel Sand | Falling granular cellular automata |
-| Navier-Stokes Dye | Velocity advection and dye injection |
-| Temporal Echo | Feedback buffer time-slicing and history |
-| Reaction-Diffusion | Grey-Scott multi-channel color bleed |
-| Lenia CA | Continuous Lenia-style cellular automata |
-| Bitonic Pixel Sort | Workgroup-enabled pixel sorting |
-| Julia Warp | Complex fractal warp with orbit traps |
-| Voronoi | Animated tessellation and feature-driven cells |
-| Spectrogram Displace | Audio FFT-driven displacement |
-| Datamosh | Optical-flow datamosh and smear accumulation |
-| ASCII Glyphs | Atlas-based glyph morphing and SDF render |
-| Neon Edge Diffusion | Edge detection with neon diffusion |
-| Boids | Flocking masks to reveal textures |
+| Category | Count | Description |
+|----------|-------|-------------|
+| **Image** | 405 | Image processing and filtering effects |
+| **Generative** | 97 | Procedural art, fractals, and generative patterns |
+| **Interactive** | 38 | Mouse and touch-driven interactions |
+| **Distortion** | 32 | Spatial warping and distortion effects |
+| **Simulation** | 30 | Physics simulations and cellular automata |
+| **Artistic** | 20 | Creative and artistic visual effects |
+| **Visual Effects** | 18 | Post-processing and visual enhancements |
+| **Hybrid** | 20 | Combined technique shaders (Phase A & B) |
+| **Retro/Glitch** | 13 | Retro aesthetics and glitch art |
+| **Lighting** | 14 | Volumetric lighting and glow effects |
+| **Geometric** | 9 | Geometric patterns and tessellations |
+| **Liquid** | 6 | Fluid and liquid simulations |
+
+### Featured Shader Examples
+
+| Shader | Category | Description |
+|--------|----------|-------------|
+| Neural Raymarcher | Advanced Hybrid | Raymarched neural network visualization |
+| Gravitational Lensing | Advanced Hybrid | Black hole light bending simulation |
+| Quantum Foam | Simulation | 3-pass quantum field simulation |
+| Aurora Rift | Lighting | Volumetric aurora borealis effect |
+| Hyper Tensor Fluid | Advanced Hybrid | Tensor field fluid dynamics |
+| Audio Spirograph | Generative | Audio-reactive geometric patterns |
+| Chromatic Reaction-Diffusion | Artistic | Per-channel Gray-Scott patterns |
+| Hybrid Spectral Sorting | Hybrid | Audio-driven pixel sorting |
 
 ## Project Structure
 
@@ -86,7 +82,7 @@ image_video_effects/
 │   │   ├── lighting-effects.json     # Plasma/cosmic effects (14 entries)
 │   │   ├── distortion.json           # Spatial distortion (11 entries)
 │   │   └── artistic.json             # Creative effects (28 entries)
-│   └── shaders/             # WGSL compute shaders (144 total)
+│   └── shaders/             # WGSL compute shaders (680+ total)
 │       ├── liquid.wgsl
 │       ├── liquid-*.wgsl    # Various liquid effects
 │       ├── plasma.wgsl

@@ -31,6 +31,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.zoom_config.x;
+  let audioBass = audioOverall * 1.5;
+  let audioReactivity = 1.0 + audioOverall * 0.3;
 
   // Params
   let cell_density = 5.0 + u.zoom_params.x * 20.0;

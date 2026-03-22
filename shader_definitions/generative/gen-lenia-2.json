@@ -14,10 +14,15 @@
     "evolution",
     "advanced",
     "procedural",
-    "generative"
+    "generative",
+    "audio",
+    "music",
+    "reactive"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "author": "ford442",
   "params": [

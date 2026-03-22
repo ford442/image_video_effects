@@ -1,0 +1,57 @@
+{
+  "id": "hybrid-cyber-organic",
+  "name": "Hybrid Cyber-Organic",
+  "url": "shaders/hybrid-cyber-organic.wgsl",
+  "category": "generative",
+  "description": "Digital circuit traces that grow organically with neon glow, combining hexagonal grid structures with cellular growth patterns",
+  "features": ["hybrid", "circuit-patterns", "organic-growth", "neon-glow", "hex-grid", "randomization-safe"],
+  "params": [
+    {
+      "id": "circuit_density",
+      "name": "Circuit Density",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of hexagonal circuit grid"
+    },
+    {
+      "id": "growth",
+      "name": "Organic Growth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Amount of organic growth over circuits"
+    },
+    {
+      "id": "glow",
+      "name": "Neon Glow",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Glow intensity of active circuits"
+    },
+    {
+      "id": "chaos",
+      "name": "Randomness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Chaos/randomness in growth patterns"
+    }
+  ],
+  "chunks_used": [
+    "hexEdgeDist (hex-circuit.wgsl)",
+    "fbm2 growth pattern (digital-moss.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)"
+  ],
+  "created_by": "Agent 2A - Shader Surgeon",
+  "created_date": "2026-03-22"
+}

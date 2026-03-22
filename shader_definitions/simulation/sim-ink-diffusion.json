@@ -1,0 +1,64 @@
+{
+  "id": "sim-ink-diffusion",
+  "name": "Ink Diffusion",
+  "url": "shaders/sim-ink-diffusion.wgsl",
+  "category": "artistic",
+  "description": "Fluid ink diffusion with paper absorption. Multi-channel Gray-Scott with Wolfram-validated parameters.",
+  "features": ["simulation", "reaction-diffusion", "multi-channel", "paper-texture", "randomization-safe"],
+  "params": [
+    {
+      "id": "wetness",
+      "name": "Paper Wetness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Paper wetness affects diffusion rate"
+    },
+    {
+      "id": "viscosity",
+      "name": "Ink Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Ink viscosity"
+    },
+    {
+      "id": "feed_rate",
+      "name": "Feed Rate",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Chemical feed rate"
+    },
+    {
+      "id": "color_mixing",
+      "name": "Color Mixing",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Color mixing intensity"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "Gray-Scott reaction-diffusion",
+    "Multi-channel processing",
+    "Paper texture simulation"
+  ],
+  "wolfram_params": {
+    "coral": "F=0.0545, k=0.062",
+    "fingerprint": "F=0.0545, k=0.063",
+    "spots_waves": "F=0.018, k=0.050"
+  },
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22"
+}

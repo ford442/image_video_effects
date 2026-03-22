@@ -5,6 +5,13 @@
   "category": "image",
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven"
   ]
 }

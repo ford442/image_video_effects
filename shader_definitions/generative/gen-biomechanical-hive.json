@@ -11,10 +11,14 @@
     "alien",
     "raymarching",
     "horror",
-    "generative"
+    "generative",
+    "audio",
+    "music"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

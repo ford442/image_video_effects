@@ -1,15 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  holographic_interference.wgsl - Holographic Rainbow with Alpha Ghosting
-//  
-//  RGBA Focus: Alpha = hologram ghost intensity/phase coherence
-//  Techniques:
-//    - Interference pattern simulation
-//    - Wavelength-dependent phase shift (rainbow)
-//    - Multi-layer ghost images with staggered alpha
-//    - Diffraction grating effect
-//    - Mouse-controlled light source position
-//  
-//  Target: 4.6★ rating
+//  Holographic Interference - Advanced Alpha with Depth-Layered
+//  Category: complex-multi-effect
+//  Alpha Mode: Depth-Layered Alpha + Physical Transmittance
+//  Features: advanced-alpha, interference-patterns, thin-film
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,74 +26,36 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
 
-// Wavelength to RGB
-fn wavelengthToRGB(wavelength: f32) -> vec3<f32> {
-    // Approximate visible spectrum (380-700nm)
-    var color: vec3<f32>;
-    
-    if (wavelength >= 380.0 && wavelength < 440.0) {
-        let t = (wavelength - 380.0) / (440.0 - 380.0);
-        color = vec3<f32>(-(t - 1.0), 0.0, 1.0);
-    } else if (wavelength >= 440.0 && wavelength < 490.0) {
-        let t = (wavelength - 440.0) / (490.0 - 440.0);
-        color = vec3<f32>(0.0, t, 1.0);
-    } else if (wavelength >= 490.0 && wavelength < 510.0) {
-        let t = (wavelength - 490.0) / (510.0 - 490.0);
-        color = vec3<f32>(0.0, 1.0, -(t - 1.0));
-    } else if (wavelength >= 510.0 && wavelength < 580.0) {
-        let t = (wavelength - 510.0) / (580.0 - 510.0);
-        color = vec3<f32>(t, 1.0, 0.0);
-    } else if (wavelength >= 580.0 && wavelength < 645.0) {
-        let t = (wavelength - 580.0) / (645.0 - 580.0);
-        color = vec3<f32>(1.0, -(t - 1.0), 0.0);
-    } else if (wavelength >= 645.0 && wavelength < 700.0) {
-        color = vec3<f32>(1.0, 0.0, 0.0);
-    }
-    
-    return saturate(color);
+// Mode 1: Depth-Layered Alpha
+fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthAlpha = mix(0.4, 1.0, depth);
+    return mix(1.0, depthAlpha, depthWeight);
 }
 
-// Interference intensity
-fn interferenceIntensity(pathDiff: f32, wavelength: f32) -> f32 {
-    let phase = 2.0 * PI * pathDiff / wavelength;
-    return 0.5 + 0.5 * cos(phase);
+// Thin film interference alpha
+fn interferenceAlpha(opticalPath: f32, baseAlpha: f32) -> f32 {
+    let interference = 0.5 + 0.5 * cos(opticalPath * 10.0);
+    return baseAlpha * (0.7 + interference * 0.3);
 }
 
-// Diffraction grating
-fn diffractionGrating(uv: vec2<f32>, lineSpacing: f32, wavelength: f32, angle: f32) -> f32 {
-    let d = sin(angle) + uv.x / lineSpacing;
-    return 0.5 + 0.5 * sin(d * 2.0 * PI * wavelength);
-}
-
-// Holographic ghost layer
-fn holographicLayer(uv: vec2<f32>, offset: vec2<f32>, time: f32, wavelength: f32, audioPulse: f32) -> vec4<f32> {
-    let shiftedUV = uv + offset * (1.0 + audioPulse * 0.3);
-    
-    // Interference fringes
-    let dist = length(shiftedUV - 0.5);
-    let fringe = interferenceIntensity(dist * 100.0, wavelength);
-    
-    // Diffraction pattern
-    let diffraction = diffractionGrating(shiftedUV, 0.01, wavelength, time * 0.5);
-    
-    // Combine
-    let intensity = fringe * diffraction;
-    let color = wavelengthToRGB(wavelength * 300.0 + 400.0) * intensity;
-    
-    // Alpha decreases with layer depth (ghosting effect)
-    let alpha = intensity * (0.6 - length(offset) * 2.0);
-    
-    return vec4<f32>(color, max(alpha, 0.0));
+// Combined alpha
+fn calculateInterferenceAlpha(
+    uv: vec2<f32>,
+    opticalPath: f32,
+    params: vec4<f32>
+) -> f32 {
+    let depthAlpha = depthLayeredAlpha(uv, params.z);
+    let intAlpha = interferenceAlpha(opticalPath, params.x);
+    return clamp(depthAlpha * intAlpha, 0.0, 1.0);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let coord = vec2<i32>(global_id.xy);
-    
-    if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
     
@@ -108,64 +63,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     
     // Parameters
-    let numLayers = i32(3.0 + u.zoom_params.x * 5.0); // 3-8 ghost layers
-    let rainbowSpread = u.zoom_params.y; // Wavelength spread
-    let coherence = 0.5 + u.zoom_params.z * 0.5; // Phase coherence (affects alpha)
-    let ghostOffset = u.zoom_params.w * 0.1; // Layer offset amount
+    let filmThickness = u.zoom_params.x * 2.0 + 0.5;
+    let wavelengthScale = u.zoom_params.y * 5.0 + 1.0;
+    let depthWeight = u.zoom_params.z;
+    let interferenceStrength = u.zoom_params.w;
     
-    let mousePos = u.zoom_config.yz;
-    let audioPulse = u.zoom_config.w;
+    // Sample depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    // Accumulate holographic layers
-    var accumRGBA = vec4<f32>(0.0);
+    // Thin film interference calculation
+    let angle = length(uv - 0.5) * wavelengthScale;
+    let opticalPath = filmThickness * cos(angle) + time * 0.2;
     
-    for (var i: i32 = 0; i < numLayers; i = i + 1) {
-        let fi = f32(i);
-        
-        // Layer offset (ghosting)
-        let angle = fi * 0.5 + time * 0.2;
-        let offset = vec2<f32>(cos(angle), sin(angle)) * ghostOffset * fi;
-        
-        // Wavelength varies per layer and time
-        let wavelength = 1.0 + fi * rainbowSpread + sin(time + fi) * 0.2;
-        
-        let layer = holographicLayer(uv, offset, time, wavelength, audioPulse);
-        
-        // Alpha modulation by coherence
-        layer.a *= coherence * (1.0 + audioPulse * sin(fi * 2.0 + time * 3.0));
-        
-        // Composite
-        accumRGBA.rgb = layer.rgb * layer.a + accumRGBA.rgb * (1.0 - layer.a);
-        accumRGBA.a = layer.a + accumRGBA.a * (1.0 - layer.a);
-    }
+    // RGB interference
+    let rPhase = opticalPath / 650.0;
+    let gPhase = opticalPath / 530.0;
+    let bPhase = opticalPath / 460.0;
     
-    // Add interference from mouse position (light source)
-    let toMouse = length(uv - mousePos);
-    let lightWave = interferenceIntensity(toMouse * 50.0, 0.5 + audioPulse * 0.3);
-    let lightColor = wavelengthToRGB(500.0 + sin(time) * 100.0);
-    accumRGBA.rgb += lightColor * lightWave * 0.3 * coherence;
-    accumRGBA.a = min(accumRGBA.a + lightWave * 0.2, 1.0);
+    let r = 0.5 + 0.5 * cos(rPhase * 20.0);
+    let g = 0.5 + 0.5 * cos(gPhase * 20.0);
+    let b = 0.5 + 0.5 * cos(bPhase * 20.0);
     
-    // Sample background through hologram
-    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let finalRGB = mix(bg, accumRGBA.rgb, accumRGBA.a);
-    let finalAlpha = accumRGBA.a;
+    let interferenceColor = vec3<f32>(r, g, b) * interferenceStrength;
     
-    // HDR glow
-    finalRGB = finalRGB * (1.0 + audioPulse * 0.5);
+    // Sample base
+    let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     
-    // Tone mapping
-    finalRGB = finalRGB / (1.0 + finalRGB * 0.3);
+    // Blend interference with base
+    let finalColor = mix(baseSample.rgb, interferenceColor, interferenceStrength * 0.5);
     
-    // Vignette
-    let vignette = 1.0 - length(uv - 0.5) * 0.3;
+    // ═══ ADVANCED ALPHA CALCULATION ═══
+    let alpha = calculateInterferenceAlpha(uv, opticalPath, u.zoom_params);
     
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB * vignette, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(finalAlpha, 0.0, 0.0, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
     
-    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, finalAlpha));
-}
-
-fn saturate(v: vec3<f32>) -> vec3<f32> {
-    return clamp(v, vec3<f32>(0.0), vec3<f32>(1.0));
+    // Pass through depth
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

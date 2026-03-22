@@ -1,14 +1,18 @@
 {
   "id": "gen-grok41-mandelbrot",
-  "name": "Grok41 Mandelbrot Explorer",
+  "name": "Buddhabrot Nebula",
   "url": "shaders/gen_grok41_mandelbrot.wgsl",
   "category": "generative",
-  "description": "Animated zooming Mandelbrot fractal set with mouse and time controls.",
+  "description": "Orbit accumulation rendering creating nebula-like fractal patterns with RGBA depth-aware rendering.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "fractal",
+    "mandelbrot"
   ]
 }

@@ -1,9 +1,10 @@
-// ===============================================================
-// Aurora Rift – Hyper-Spectral Flux
-// A self-organising aurora in 4-D colour-space with curl-driven flow,
-// quaternion-rotated RGB, multi-layer parallax, anisotropic diffusion,
-// and spectral-power post-process. HDR output with negative values allowed.
-// ===============================================================
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Aurora Rift - Advanced Alpha with Physical Transmittance
+//  Category: atmospheric
+//  Alpha Mode: Physical Transmittance (Beer's Law) + Depth-Layered
+//  Features: advanced-alpha, volumetric, raymarching, beel-law
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
@@ -22,15 +23,49 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
-    zoom_params: vec4<f32>,       // x=scale, y=flowSpeed, z=diffusionRate, w=fbmOctaves
-    zoom_config: vec4<f32>,       // x=rotationSpeed, y=depthParallax, z=emitThresh, w=chromaticSpread
+    config:      vec4<f32>,
+    zoom_params: vec4<f32>,
+    zoom_config: vec4<f32>,
     ripples:     array<vec4<f32>, 50>,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hash functions
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 4: Physical Transmittance (Beer's Law)
+fn physicalTransmittance(
+    baseColor: vec3<f32>,
+    opticalDepth: f32,
+    absorptionCoeff: vec3<f32>
+) -> vec3<f32> {
+    let transmittance = exp(-absorptionCoeff * opticalDepth);
+    return baseColor * transmittance;
+}
+
+// Volumetric alpha from density and thickness
+fn volumetricAlpha(density: f32, thickness: f32) -> f32 {
+    return 1.0 - exp(-density * thickness);
+}
+
+// Mode 1: Depth-Layered Alpha for atmospheric perspective
+fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
+    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depthAlpha = mix(0.3, 1.0, depth);
+    return mix(1.0, depthAlpha, depthWeight);
+}
+
+// Combined atmospheric alpha
+fn calculateAtmosphericAlpha(
+    uv: vec2<f32>,
+    opticalDepth: f32,
+    density: f32,
+    params: vec4<f32>
+) -> f32 {
+    let volAlpha = volumetricAlpha(density, opticalDepth);
+    let depthAlpha = depthLayeredAlpha(uv, params.z);
+    return clamp(volAlpha * depthAlpha, 0.0, 1.0);
+}
+
+// Hash functions
 fn hash2(p: vec2<f32>) -> f32 {
     var h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
@@ -41,20 +76,12 @@ fn hash3(p: vec3<f32>) -> f32 {
     return fract(sin(h) * 43758.5453123);
 }
 
-fn hash4(p: vec4<f32>) -> f32 {
-    let dot4 = dot(p, vec4<f32>(1.0, 57.0, 113.0, 157.0));
-    return fract(sin(dot4) * 43758.5453123);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  4-D gradient noise
-// ─────────────────────────────────────────────────────────────────────────────
+// 4D gradient noise
 fn noise4d(p: vec4<f32>) -> f32 {
     var i = floor(p);
     var f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     
-    // Sample 16 corners of hypercube
     var sum = 0.0;
     for (var w: i32 = 0; w <= 1; w = w + 1) {
         for (var z: i32 = 0; z <= 1; z = z + 1) {
@@ -65,7 +92,7 @@ fn noise4d(p: vec4<f32>) -> f32 {
                     let wy = select(u.y, 1.0 - u.y, y == 1);
                     let wz = select(u.z, 1.0 - u.z, z == 1);
                     let ww = select(u.w, 1.0 - u.w, w == 1);
-                    sum = sum + wx * wy * wz * ww * hash4(corner);
+                    sum = sum + wx * wy * wz * ww * hash3(corner.xyz);
                 }
             }
         }
@@ -73,9 +100,7 @@ fn noise4d(p: vec4<f32>) -> f32 {
     return sum * 2.0 - 1.0;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  FBM (2-D)
-// ─────────────────────────────────────────────────────────────────────────────
+// FBM
 fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     var sum = 0.0;
     var amp = 0.5;
@@ -88,9 +113,7 @@ fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     return sum;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Curl noise (divergence-free)
-// ─────────────────────────────────────────────────────────────────────────────
+// Curl noise
 fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
     let eps = 0.001;
     let n1 = fbm(p + vec2<f32>(eps, 0.0), time, 4);
@@ -100,9 +123,7 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
     return vec2<f32>(n2 - n4, n1 - n3) / (2.0 * eps);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Voronoi cell distance
-// ─────────────────────────────────────────────────────────────────────────────
+// Voronoi cell
 fn voronoiCell(p: vec2<f32>) -> f32 {
     var i = floor(p);
     var f = fract(p);
@@ -119,20 +140,16 @@ fn voronoiCell(p: vec2<f32>) -> f32 {
     return best;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Quaternion rotation of RGB
-// ─────────────────────────────────────────────────────────────────────────────
+// Quaternion rotation
 fn quaternionRotate(col: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> {
     let s = sin(angle * 0.5);
-    var c = cos(angle * 0.5);
+    let c = cos(angle * 0.5);
     let q = vec4<f32>(normalize(axis) * s, c);
     let t = 2.0 * cross(q.xyz, col);
     return col + q.w * t + cross(q.xyz, t);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  HSV → RGB
-// ─────────────────────────────────────────────────────────────────────────────
+// HSV to RGB
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     var c = v * s;
     let h6 = h * 6.0;
@@ -147,9 +164,7 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return rgb + vec3<f32>(v - c);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Spectral power distribution
-// ─────────────────────────────────────────────────────────────────────────────
+// Spectral power
 fn spectralPower(col: vec3<f32>, pattern: f32) -> vec3<f32> {
     let safeCol = max(col, vec3<f32>(0.001));
     let high = pow(safeCol, vec3<f32>(2.0));
@@ -158,9 +173,6 @@ fn spectralPower(col: vec3<f32>, pattern: f32) -> vec3<f32> {
     return mix(low, high, pattern) + band * pattern * 0.12;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
-// ─────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
@@ -168,34 +180,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
-    let globalIntensity = 1.0;
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ────────────────────────────────────────────────────────────────────────
-    let scale = u.zoom_params.x * 3.5 + 0.5;                // 0.5 - 4.0
-    let flowSpeed = u.zoom_params.y * 2.8 + 0.2;            // 0.2 - 3.0
-    let diffusionRate = u.zoom_params.z * 0.8 + 0.1;        // 0.1 - 0.9
-    let fbmOctaves = i32(u.zoom_params.w * 5.0 + 2.0);      // 2 - 7
-    let rotSpeed = u.zoom_config.x * 1.9 + 0.1;             // 0.1 - 2.0
-    let depthParallax = u.zoom_config.y * 0.8;               // 0 - 0.8
-    let emitThresh = u.zoom_config.z * 0.25 + 0.05;         // 0.05 - 0.3
-    let chromaSpread = u.zoom_config.w * 0.5;                // 0 - 0.5
+    // Parameters
+    let scale = u.zoom_params.x * 3.5 + 0.5;
+    let flowSpeed = u.zoom_params.y * 2.8 + 0.2;
+    let diffusionRate = u.zoom_params.z * 0.8 + 0.1;
+    let fbmOctaves = i32(u.zoom_params.w * 5.0 + 2.0);
+    let rotSpeed = u.zoom_config.x * 1.9 + 0.1;
+    let depthParallax = u.zoom_config.y * 0.8;
+    let emitThresh = u.zoom_config.z * 0.25 + 0.05;
+    let chromaSpread = u.zoom_config.w * 0.5;
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Sample source colour & depth
-    // ────────────────────────────────────────────────────────────────────────
     let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Build the curl-flow field (depth-aware)
-    // ────────────────────────────────────────────────────────────────────────
+    // Curl flow field
     let curl = curlNoise(uv * scale + depth * depthParallax, time * flowSpeed);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Multi-layer parallax (three depth planes)
-    // ────────────────────────────────────────────────────────────────────────
+    // Multi-layer parallax
     var totalWarp = vec2<f32>(0.0);
     var totalWeight = 0.0;
     for (var layer: i32 = 0; layer < 3; layer = layer + 1) {
@@ -208,43 +210,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     totalWarp = totalWarp / max(totalWeight, 0.0001);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Voronoi + FBM hybrid (cellular foam)
-    // ────────────────────────────────────────────────────────────────────────
+    // Voronoi + FBM hybrid
     let cellDist = voronoiCell(uv * scale * 2.0 + totalWarp);
     let fbmVal = fbm(uv * scale * 4.0 + curl, time, fbmOctaves);
     let foamPattern = smoothstep(0.0, 0.12, cellDist) * 0.6 + smoothstep(0.2, 0.4, fbmVal) * 0.4;
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  4-D hyper-noise (depth-dependent foam surface)
-    // ────────────────────────────────────────────────────────────────────────
+    // 4D hyper-noise
     let hyper = noise4d(vec4<f32>(uv * scale * 1.5, time * 0.4, depth * 2.0));
     let hyperMod = (hyper + 1.0) * 0.5;
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Phase-interference (three sinusoidal wavefronts)
-    // ────────────────────────────────────────────────────────────────────────
+    // Phase interference
     let waveA = sin(length(uv - 0.5) * 28.0 - time * 3.2);
     let waveB = sin(atan2(uv.y - 0.5, uv.x - 0.5) * 22.0 + time * 2.7);
     let waveC = sin(dot(uv - 0.5, vec2<f32>(1.1, 0.9)) * 30.0 - time * 4.1);
     let interference = (waveA * waveB * waveC + 1.0) * 0.5;
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Combine into pattern scalar
-    // ────────────────────────────────────────────────────────────────────────
+    // Pattern
     let pattern = (foamPattern * 0.4 + hyperMod * 0.3 + interference * 0.3) *
                   (1.0 + (1.0 - depth) * 1.5);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Quaternion rotation of source colour
-    // ────────────────────────────────────────────────────────────────────────
+    // Quaternion rotation
     let axis = normalize(srcCol + vec3<f32>(0.12, 0.07, 0.04));
     let angle = time * rotSpeed + pattern * 3.2;
     let quatCol = quaternionRotate(srcCol, angle, axis);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Chromatic dispersion
-    // ────────────────────────────────────────────────────────────────────────
+    // Chromatic dispersion
     let disp = pattern * chromaSpread * texel * 28.0;
     let rUV = clamp(uv + totalWarp * disp + curl * 0.018, vec2<f32>(0.0), vec2<f32>(1.0));
     let gUV = clamp(uv + totalWarp * disp * 0.93 + curl * 0.012, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -255,36 +245,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let b = textureSampleLevel(videoTex, videoSampler, bUV, 0.0).b;
     let dispersed = vec3<f32>(r, g, b);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Emissive plasma on cell borders
-    // ────────────────────────────────────────────────────────────────────────
+    // Emissive plasma
     let border = smoothstep(emitThresh, 1.0, smoothstep(0.08, 0.12, cellDist) * pattern * length(curl));
     let plasma = hsv2rgb(fract(time * 0.07 + pattern + hyper), 0.9, 1.0);
     let emissive = mix(dispersed, plasma, border * 0.55);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Anisotropic diffusion (temporal blur along flow)
-    // ────────────────────────────────────────────────────────────────────────
+    // Anisotropic diffusion
     let historyUV = clamp(uv + totalWarp * 0.28, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = textureSampleLevel(historyTex, videoSampler, historyUV, 0.0).rgb;
     let flowDir = normalize(totalWarp + curl + vec2<f32>(0.001));
     let anisotropy = 1.0 - abs(dot(flowDir, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.28;
     let diffused = mix(emissive, history, diffusionRate * anisotropy);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Spectral power distribution
-    // ────────────────────────────────────────────────────────────────────────
+    // Spectral power
     let spectral = spectralPower(diffused, pattern);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Final intensity blend
-    // ────────────────────────────────────────────────────────────────────────
-    let finalCol = mix(srcCol, spectral, globalIntensity);
+    // Final blend
+    let finalCol = mix(srcCol, spectral, 1.0);
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Output
-    // ────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(diffused, 1.0));
+    // ═══ ADVANCED ALPHA CALCULATION - Physical Transmittance ═══
+    // Calculate optical depth based on pattern density
+    let density = pattern * 2.0;
+    let opticalDepth = foamPattern * (1.0 + hyperMod);
+    let alpha = calculateAtmosphericAlpha(uv, opticalDepth, density, u.zoom_params);
+
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, alpha));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(diffused, alpha));
     textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

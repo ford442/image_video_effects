@@ -1,7 +1,9 @@
-// ---------------------------------------------------------------
-//  Astral Kaleidoscope grokcf1 - An enhanced, multi-layered,
-//  depth-aware, spiraling tunnel of light.
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  astral-kaleidoscope-grokcf1
+//  Category: psychedelic
+//  Features: upgraded-rgba, depth-aware
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
@@ -204,6 +206,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ---------------------------------------------------------------
     let finalCol = mix(color, feedback, 0.6); // Slightly more feedback visibility
     
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
+    // Calculate luminance-based alpha
+    let luma = dot(finalCol, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = mix(0.7, 1.0, luma);
+    let finalAlpha = mix(alpha * 0.8, alpha, staticDepth);
+    
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, finalAlpha));
     textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

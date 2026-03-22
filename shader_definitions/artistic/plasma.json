@@ -6,6 +6,13 @@
   "description": "",
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven"
   ]
 }

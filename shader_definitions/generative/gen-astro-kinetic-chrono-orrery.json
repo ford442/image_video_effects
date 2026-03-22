@@ -9,11 +9,14 @@
     "mechanical",
     "clockwork",
     "quantum",
-    "orrery"
+    "orrery",
+    "audio",
+    "music"
   ],
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

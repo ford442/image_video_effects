@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════════
+//  frosty-window - Interactive frost effect with mouse melting
+//  Category: distortion
+//  Features: upgraded-rgba, depth-aware, interactive, persistence
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -22,6 +29,7 @@ struct Uniforms {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  let coord = vec2<i32>(global_id.xy);
   var uv = vec2<f32>(global_id.xy) / resolution;
 
   // Params
@@ -48,10 +56,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Write frost state to dataTextureA
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(frostLevel, 0.0, 0.0, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(frostLevel, 0.0, 0.0, 1.0));
 
   // Effect
-  var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
   if (frostLevel > 0.0) {
      let noise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -59,10 +67,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
      let radius = frostLevel * blurStrength * 0.01;
      let offset = vec2<f32>(cos(angle), sin(angle)) * radius;
 
-     let blurredColor = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0);
-     let frostColor = blurredColor + vec4<f32>(0.1, 0.1, 0.2, 0.0) * frostLevel;
-     color = mix(color, frostColor, frostLevel * frostOpacity);
+     let blurredColor = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
+     let frostTint = vec3<f32>(0.1, 0.1, 0.2) * frostLevel;
+     color = mix(color, blurredColor + frostTint, frostLevel * frostOpacity);
   }
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  // Calculate alpha based on frost level and luminance
+  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let frostAlpha = mix(0.85, 1.0, frostLevel * 0.5 + luma * 0.5);
+  let finalAlpha = mix(frostAlpha * 0.8, frostAlpha, depth);
+
+  textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

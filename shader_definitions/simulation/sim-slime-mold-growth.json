@@ -1,0 +1,60 @@
+{
+  "id": "sim-slime-mold-growth",
+  "name": "Slime Mold Growth",
+  "url": "shaders/sim-slime-mold-growth.wgsl",
+  "category": "simulation",
+  "description": "Physarum-style slime mold with trail following. Branching network of glowing trails exploring space.",
+  "features": ["simulation", "agent-based", "chemoattractant", "sensor-steering", "randomization-safe"],
+  "params": [
+    {
+      "id": "sensor_angle",
+      "name": "Sensor Angle",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Steering sensitivity (sensor angle)"
+    },
+    {
+      "id": "decay",
+      "name": "Trail Decay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Trail decay rate"
+    },
+    {
+      "id": "particle_count",
+      "name": "Particle Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Number of simulated particles"
+    },
+    {
+      "id": "randomness",
+      "name": "Randomness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Randomness/jitter in movement"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "hash22 (gen_grid.wgsl)",
+    "Physarum agent simulation",
+    "Trail deposition",
+    "Sensor-based steering"
+  ],
+  "performance_target": "30-45 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22"
+}

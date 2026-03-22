@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Phantom Lag - Temporal echo / motion trails effect
+//  Category: visual-effects
+//  Features: upgraded-rgba, depth-aware, temporal-echo, motion-trails
+//  Upgraded: 2026-03-22
+//  By: Agent 1A - Alpha Channel Specialist
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,9 +31,11 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    
     var uv = vec2<f32>(global_id.xy) / resolution;
+    let coord = vec2<i32>(global_id.xy);
 
-    let decay = 0.9 + u.zoom_params.x * 0.09; // 0.9 to 0.99
+    let decay = 0.9 + u.zoom_params.x * 0.09;
     let echoX = (u.zoom_params.y - 0.5) * 0.05;
     let echoY = (u.zoom_params.z - 0.5) * 0.05;
     let hueShift = u.zoom_params.w;
@@ -41,21 +51,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Hue shift on history
     if (hueShift > 0.01) {
-        // Simple shift: rotate RGB
-        // r->g, g->b, b->r approx
         let old = newHistory;
         newHistory.r = mix(old.r, old.g, hueShift * 0.1);
         newHistory.g = mix(old.g, old.b, hueShift * 0.1);
         newHistory.b = mix(old.b, old.r, hueShift * 0.1);
     }
 
+    // Calculate alpha based on history accumulation
+    let luma = dot(newHistory.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Higher alpha for brighter, more accumulated areas
+    let alpha = mix(0.75, 1.0, luma * decay);
+    let depthAlpha = mix(0.6, 1.0, depth);
+    let finalAlpha = (alpha + depthAlpha) * 0.5;
+
     // Output to screen
-    textureStore(writeTexture, vec2<i32>(global_id.xy), newHistory);
+    textureStore(writeTexture, coord, vec4<f32>(newHistory.rgb, finalAlpha));
 
     // Output to history buffer
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), newHistory);
+    textureStore(dataTextureA, coord, vec4<f32>(newHistory.rgb, finalAlpha));
 
-     // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
+    // Pass depth
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -39,11 +39,16 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "vfx",
     "particles",
-    "glow"
+    "glow",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

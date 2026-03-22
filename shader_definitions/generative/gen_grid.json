@@ -1,14 +1,19 @@
 {
   "id": "gen-grid",
-  "name": "Neon Grid",
+  "name": "Domain-Warped FBM Grid",
   "url": "shaders/gen_grid.wgsl",
   "category": "generative",
-  "description": "A neon grid that warps around the cursor.",
+  "description": "Organic flowing grid using domain warping and FBM noise with RGBA depth-aware rendering.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "domain-warping"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "noise",
+    "grid"
   ]
 }

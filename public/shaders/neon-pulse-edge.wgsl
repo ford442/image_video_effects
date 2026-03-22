@@ -44,6 +44,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.zoom_config.x;
+  let audioBass = audioOverall * 1.5;
+  let audioReactivity = 1.0 + audioOverall * 0.3;
 
   var mousePos = u.zoom_config.yz;
 
@@ -73,9 +77,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (edge > threshold) {
       // Base Neon Color with time cycling
       var neon = vec3<f32>(
-          0.5 + 0.5 * sin(time * speed),
-          0.5 + 0.5 * sin(time * speed + 2.0),
-          0.5 + 0.5 * sin(time * speed + 4.0)
+          0.5 + 0.5 * sin(time * speed * audioReactivity),
+          0.5 + 0.5 * sin(time * speed * audioReactivity + 2.0),
+          0.5 + 0.5 * sin(time * speed * audioReactivity + 4.0)
       );
 
       // Mouse Interaction

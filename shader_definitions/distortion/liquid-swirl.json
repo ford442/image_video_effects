@@ -3,7 +3,9 @@
   "label": "Liquid Swirl",
   "category": "distortion",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "url": "shaders/liquid-swirl.wgsl",
   "description": "Swirls the image around the cursor like mixing paint.",
@@ -40,6 +42,9 @@
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "transform",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

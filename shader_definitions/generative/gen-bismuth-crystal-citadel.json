@@ -14,12 +14,16 @@
     "iridescent",
     "geometry",
     "fractal",
-    "alpha-transmission"
+    "alpha-transmission",
+    "audio",
+    "music"
   ],
   "features": [
     "raymarched",
     "mouse-driven",
-    "physical-transmission"
+    "physical-transmission",
+    "audio-reactive",
+    "audio-driven"
   ],
   "author": "AI",
   "params": [
