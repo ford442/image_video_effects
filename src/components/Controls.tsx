@@ -3,6 +3,8 @@ import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from
 import { AIStatus } from '../AutoDJ';
 // @ts-ignore
 import shaderCoordinates from '../shader_coordinates.json';
+import { ShaderMegaMenu } from './ShaderMegaMenu';
+import type { ShaderMegaMenuOption } from './ShaderMegaMenu';
 
 // --- Types for Coordinate System ---
 interface ShaderCoordData {
@@ -248,6 +250,28 @@ const Controls: React.FC<ControlsProps> = ({
     const currentModes = getCurrentCategoryModes();
     const currentMode = modes[activeSlot];
     const currentParams = slotParams[activeSlot];
+
+    const slotMenuOptions = useMemo(
+        () => currentModes.map((m): ShaderMegaMenuOption => ({
+            id: m.id,
+            name: m.name,
+            coordinate: coordMap[m.id]?.coordinate ?? null,
+            category: coordMap[m.id]?.category ?? m.category,
+        })),
+        [currentModes, coordMap]
+    );
+
+    const generativeMenuOptions = useMemo(
+        () => availableModes
+            .filter(m => m.category === 'generative')
+            .map((m): ShaderMegaMenuOption => ({
+                id: m.id,
+                name: m.name,
+                coordinate: coordMap[m.id]?.coordinate ?? null,
+                category: coordMap[m.id]?.category ?? m.category,
+            })),
+        [availableModes, coordMap]
+    );
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
     const currentCoordinate = getShaderCoordinate(currentMode);
 
@@ -680,26 +704,13 @@ const Controls: React.FC<ControlsProps> = ({
                                 </span>
                             )}
                         </div>
-                        <select
+                        <ShaderMegaMenu
+                            options={slotMenuOptions}
                             value={modes[i]}
-                            onChange={(e) => setMode(i, e.target.value)}
+                            onChange={(id) => setMode(i, id as RenderMode)}
+                            includeNone={true}
                             onClick={(e) => e.stopPropagation()}
-                            style={{width: '100%'}}
-                        >
-                            <option value="none">None</option>
-                            {currentModes.map(m => (
-                                <option key={m.id} value={m.id}>
-                                    {m.name} {getShaderCoordinate(m.id) !== null ? `(#${getShaderCoordinate(m.id)})` : ''}
-                                </option>
-                            ))}
-                            {/* Always include current mode if it's not in the list (to avoid it disappearing) */}
-                            {modes[i] !== 'none' && !currentModes.find(m => m.id === modes[i]) && (
-                                <option value={modes[i]}>
-                                    {availableModes.find(m => m.id === modes[i])?.name || modes[i]}
-                                    {getShaderCoordinate(modes[i]) !== null ? `(#${getShaderCoordinate(modes[i])})` : ''}
-                                </option>
-                            )}
-                        </select>
+                        />
                     </div>
                     );
                 })}
@@ -835,11 +846,12 @@ const Controls: React.FC<ControlsProps> = ({
             {inputSource === 'generative' && activeGenerativeShader && setActiveGenerativeShader && (
                 <div className="control-group" style={{marginTop: '10px'}}>
                      <div style={{marginBottom: '5px'}}>Input Source:</div>
-                     <select value={activeGenerativeShader} onChange={(e) => setActiveGenerativeShader(e.target.value)} style={{width: '100%', marginBottom: '8px'}}>
-                        {availableModes.filter(m => m.category === 'generative').map(g => (
-                             <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                     </select>
+                     <ShaderMegaMenu
+                        options={generativeMenuOptions}
+                        value={activeGenerativeShader}
+                        onChange={setActiveGenerativeShader}
+                        includeNone={false}
+                     />
                      <div style={{fontSize: '11px', color: '#888', fontStyle: 'italic', padding: '5px 0'}}>
                          Move mouse to interact. Click/Drag for more effects.
                      </div>
