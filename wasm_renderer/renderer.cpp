@@ -6,8 +6,55 @@
 #include <string>
 #include <cstring>
 
-// ARCH: [Medium] Inconsistent include style: <cstring> vs <string>
-// Both are used - consolidate to C++ headers only.
+// ═══════════════════════════════════════════════════════════════════════════════
+// renderer.cpp - WebGPU Compute Shader Renderer Implementation
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// PURPOSE:
+//   This file implements the WebGPURenderer class for high-performance GPU
+//   image/video processing using WebGPU compute shaders.
+//
+// STATUS:
+//   ⚠️  INCOMPLETE - This renderer is NOT production ready
+//   
+//   Working features:
+//     ✅ WebGPU device initialization
+//     ✅ Single shader execution
+//     ✅ Basic image/video upload
+//     ✅ Uniform updates (time, mouse, params)
+//     ✅ Ping-pong texture for feedback effects
+//
+//   Missing features (blocking production use):
+//     ❌ Multi-slot shader pipeline (3 slots like TypeScript)
+//     ❌ Audio reactivity (bass/mid/treble uniforms)
+//     ❌ Depth map integration (AI depth estimation)
+//     ❌ Recording/screenshot capture
+//     ❌ Generative shader support (no-input shaders)
+//     ❌ Efficient video upload (currently allocates per-frame)
+//
+// ARCHITECTURE:
+//   The renderer uses a ping-pong texture approach:
+//     readTexture_  -> Compute Shader -> writeTexture_
+//     Then swap: writeTexture_ becomes input for next frame
+//
+//   For multi-slot support (TODO Phase 2), this becomes:
+//     Input -> Slot 0 (read->write) -> Slot 1 (read->write) -> Slot 2 -> Output
+//
+// DEVELOPMENT ROADMAP:
+//   See RENDERER_PLAN.md for the 8-week development plan
+//
+// CURRENT LIMITATIONS:
+//   1. Single shader only - can't chain multiple effects
+//   2. No audio input - shaders can't react to music
+//   3. Video upload allocates memory every frame (slow)
+//   4. No way to capture output (screenshots/recording)
+//   5. Depth map stubbed but non-functional
+//
+// RECOMMENDATION:
+//   Keep using the JS/TS renderer for production. This C++ renderer is for
+//   development/testing only until Phase 2+ features are complete.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
 
 namespace pixelocity {
 

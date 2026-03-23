@@ -23,6 +23,43 @@
 using namespace pixelocity;
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// main.cpp - WASM JavaScript Bridge
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// PURPOSE:
+//   Provides the C API exports that JavaScript calls via Emscripten.
+//   This is the glue layer between the TypeScript app and C++ renderer.
+//
+// CRITICAL WARNING:
+//   This file contains TWO SEPARATE rendering systems that don't interact:
+//
+//   1. WebGPURenderer (lines 315-493) - ACTUALLY USED
+//      The real renderer that handles shaders, images, etc.
+//      JavaScript calls these via wasm_bridge.js
+//
+//   2. Physarum Simulation (lines 40-566) - DEAD CODE, NEVER CALLED
+//      An abandoned slime mold simulation experiment.
+//      Global state conflicts with WebGPURenderer.
+//      emscripten_set_main_loop(renderLoop, ...) starts but renderLoop
+//      uses different device/context than WebGPURenderer.
+//
+// TODO(Phase 1): Remove all Physarum code
+//   - Delete lines 40-109 (Physarum globals)
+//   - Delete lines 130-295 (Physarum shaders)
+//   - Delete lines 429-566 (Physarum functions)
+//   - Delete lines 568-579 (main with wrong loop)
+//   - Keep lines 115-129, 305-493 (WebGPURenderer exports)
+//
+// API EXPORT CONVENTIONS:
+//   - Use wasm* prefix for all exports (wasmInit, wasmLoadShader, etc.)
+//   - Return int for boolean status (1=success, 0=failure)
+//   - Use simple C types only (no STL containers in signatures)
+//
+// See RENDERER_PLAN.md for the complete C API specification.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PHYSARUM SIMULATION - DEAD CODE / ALTERNATE IMPLEMENTATION
 // ═══════════════════════════════════════════════════════════════════════════════
 // ARCH: [Critical] This entire section (lines 20-248) is DEAD CODE.
