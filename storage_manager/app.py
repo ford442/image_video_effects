@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
 import io
 from ftplib import FTP
 import uvicorn
