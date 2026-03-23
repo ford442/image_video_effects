@@ -138,13 +138,17 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 const width = entry.contentRect.width;
                 const height = entry.contentRect.height;
 
+                console.log(`🔍 ResizeObserver fired: ${width}x${height}`);
+
                 if (width > 0 && height > 0) {
                     setDisplaySize({ width, height });
                     // Mark canvas as ready for WebGPU initialization
                     if (!canvasReady) {
-                        console.log(`Canvas ready: ${width}x${height}`);
+                        console.log(`✅ Canvas ready: ${width}x${height}`);
                         setCanvasReady(true);
                     }
+                } else {
+                    console.warn(`⚠️ Container has zero dimensions: ${width}x${height}`);
                 }
             }
         });
@@ -394,6 +398,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Calculate canvas style to be a square that fits within the container (CSS Contain)
     const canvasSize = Math.min(displaySize.width, displaySize.height);
+    if (displaySize.width !== 1 || displaySize.height !== 1) {
+        console.log(`📐 Canvas size calculated: ${canvasSize}px (from ${displaySize.width}x${displaySize.height})`);
+    }
     const canvasStyle: React.CSSProperties = {
         position: 'absolute',
         width: `${canvasSize}px`,
