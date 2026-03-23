@@ -1,14 +1,9 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  artistic_painterly_oil.wgsl - Oil Painting with Physical Media Alpha
-//  
-//  Physical Properties:
-//    - Paint thickness → alpha (impasto = opaque, glaze = translucent)
-//    - Pigment density affects opacity
-//    - Wet paint sheen (specular)
-//    - Canvas texture interaction
-//  
-//  Target: 4.5★ rating
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  artistic_painterly_oil
+//  Category: artistic
+//  Features: upgraded-rgba, depth-aware, physical-media-alpha
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;

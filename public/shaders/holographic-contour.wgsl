@@ -87,7 +87,7 @@ fn interferenceColor(uv: vec2<f32>, mousePos: vec2<f32>, time: f32) -> vec3<f32>
     let dist = length(toMouse);
     
     // Viewing angle affects interference
-    let viewAngle = angle + time * 0.1;
+    let viewAngle = angle + time * 0.1 * (1.0 + audioOverall * 0.3);
     
     // Optical path difference (varies with angle for thin film)
     let opticalPath = 320.0 / 750.0 + dist * 0.1; // ~320nm film thickness
@@ -111,10 +111,10 @@ fn interferenceColor(uv: vec2<f32>, mousePos: vec2<f32>, time: f32) -> vec3<f32>
 fn scanlineAlpha(uv: vec2<f32>, time: f32, intensity: f32) -> f32 {
     // Horizontal scanlines at ~600 lines
     let scanPos = uv.y * 600.0;
-    let scanline = sin(scanPos + time * 10.0) * 0.5 + 0.5;
+    let scanline = sin(scanPos + time * 10.0 * (1.0 + audioOverall * 0.3)) * 0.5 + 0.5;
     
     // Vertical retrace effect
-    let retrace = sin(uv.x * 200.0 - time * 30.0) * 0.5 + 0.5;
+    let retrace = sin(uv.x * 200.0 - time * 30.0 * (1.0 + audioOverall * 0.3)) * 0.5 + 0.5;
     
     return 1.0 - scanline * retrace * intensity * 0.3;
 }
@@ -143,6 +143,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Mouse Position
     let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let time = u.config.x;
+    // ═══ AUDIO INPUT ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
 
     // Sobel Edge Detection
     let dx = vec2<i32>(1, 0);
@@ -180,14 +183,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let angle = atan2(to_mouse.y, to_mouse.x);
         
         // Calculate diffraction efficiency based on angle
-        let viewAngle = angle + time * 0.2;
+        let viewAngle = angle + time * 0.2 * (1.0 + audioOverall * 0.3);
         diffraction_efficiency = diffractionEfficiency(uv, viewAngle, 0.5);
         
         // Enhanced edge intensity from interference
         let edge_intensity = (edge - threshold) * 3.0;
         
         // Interference creates rainbow colors at edges
-        let hue = fract(angle / 6.28 + time * 0.1);
+        let hue = fract(angle / 6.28 + time * 0.1 * (1.0 + audioOverall * 0.3));
         
         // Spectral colors from thin-film interference
         let r_val = 0.5 + 0.5 * cos(6.28 * (hue + 0.0));
@@ -210,7 +213,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ═══════════════════════════════════════════════════════════════
     
     // 60Hz flicker typical of holographic projectors
-    let flicker = 0.92 + 0.08 * sin(time * 377.0); // 60Hz = 377 rad/s
+    let flicker = 0.92 + 0.08 * sin(time * 377.0 * (1.0 + audioOverall * 0.3)); // 60Hz = 377 rad/s
     alpha *= flicker;
     
     // Scanline alpha modulation
@@ -224,7 +227,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     final_color = mix(final_color, ghost_color * interference, REFLECTION_COEFF * 0.3);
     
     // Temporal noise (holographic speckle)
-    let speckle = fract(sin(dot(uv + time * 0.1, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let speckle = fract(sin(dot(uv + time * 0.1 * (1.0 + audioOverall * 0.3), vec2<f32>(12.9898, 78.233))) * 43758.5453);
     alpha *= 0.95 + speckle * 0.1;
 
     // Output with calculated alpha

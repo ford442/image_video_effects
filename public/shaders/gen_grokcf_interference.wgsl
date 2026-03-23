@@ -1,20 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Chladni Plate Cymatics - Modal Synthesis Visualization
 //  Category: generative
-//  Description: Sand patterns from vibrating plate standing waves
-//  
-//  Scientific basis: Chladni figures form when a plate vibrates at
-//  resonant frequencies, creating nodes (zero displacement) where
-//  particles accumulate and antinodes (max displacement) that clear
-//  particles. Different (m,n) modal numbers produce distinct patterns.
-// ═══════════════════════════════════════════════════════════════
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+//  Features: upgraded-rgba, depth-aware, procedural, animated, organic
+//  Scientific basis: Chladni figures from vibrating plate standing waves
+//  Upgraded: 2026-03-22
+//  By: Agent 1A - Alpha Channel Specialist
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -23,6 +14,19 @@ struct Uniforms {
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
 
 // Modal numbers for Chladni patterns (m, n, amplitude, phase)
 const MODES: array<vec4<f32>, 8> = array<vec4<f32>, 8>(
@@ -59,6 +63,7 @@ fn noise(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
+    let coord = vec2<i32>(global_id.xy);
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
     
@@ -159,11 +164,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let boundary = smoothstep(0.98, 1.0, edgeDist);
     color = mix(color, vec3<f32>(0.3, 0.25, 0.2), boundary * 0.5);
     
-    // Output color
-    let finalColor = vec4<f32>(color, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    // Calculate alpha based on content presence
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let alpha = mix(0.7, 1.0, luma);
+    
+    // Depth-aware alpha modulation
+    let depthAlpha = mix(0.6, 1.0, depth);
+    let finalAlpha = (alpha + depthAlpha) * 0.5;
+    
+    // Output RGBA color
+    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
     
     // Store vibration energy in depth for potential post-processing
     let depthValue = vibrationEnergy * 0.5 + 0.5;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthValue, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthValue, 0.0, 0.0, 0.0));
 }

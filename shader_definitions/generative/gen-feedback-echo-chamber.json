@@ -1,0 +1,57 @@
+{
+  "id": "gen-feedback-echo-chamber",
+  "name": "Feedback Echo Chamber",
+  "url": "shaders/gen-feedback-echo-chamber.wgsl",
+  "category": "image",
+  "description": "Multi-layer temporal echo with feedback decay, creating ghost images of previous frames fading into depth with color grading per layer",
+  "tags": [
+    "temporal",
+    "echo",
+    "feedback",
+    "multi-layer",
+    "ghosting",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "temporal",
+    "multi-pass",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "echoCount",
+      "name": "Echo Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "decayRate",
+      "name": "Decay Rate",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "spacing",
+      "name": "Echo Spacing",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

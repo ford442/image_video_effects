@@ -13,10 +13,14 @@
     "organic",
     "forest",
     "procedural",
-    "generative"
+    "generative",
+    "audio",
+    "music"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

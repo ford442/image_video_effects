@@ -194,7 +194,7 @@ function MainApp() {
     // --- EFFECT: Auto-Switch Generative Mode ---
     // This fixes the issue where generative mode wouldn't replace image/video input
     useEffect(() => {
-        if (shaderCategory === 'shader') {
+        if (shaderCategory === 'generative') {
             // When user selects "Procedural Generation", force input source to generative
             setInputSource('generative');
             setStatus('Switched to Generative Input');

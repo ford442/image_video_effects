@@ -6,6 +6,13 @@
   "description": "Orbital motion patterns with stellar particle systems.",
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven"
   ]
 }

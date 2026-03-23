@@ -82,11 +82,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let velDir = normalize(vel);
           let speed = length(vel);
           let time = u.config.x;
+          // ═══ AUDIO REACTIVITY ═══
+          let audioOverall = u.config.y;
+          let audioBass = u.config.y * 1.2;
+          let audioMid = u.config.z;
+          let audioHigh = u.config.w;
+          let audioReactivity = 1.0 + audioOverall * 0.5;
 
           // Noise offset
           // Animate noise with time and velocity
           // Increased frequency and speed for more chaos
-          let noiseVal = fbm(uv * 20.0 - vel * time * 8.0 + vec2<f32>(ball.info.z));
+          let noiseVal = fbm(uv * 20.0 - vel * time * 8.0 * audioReactivity + vec2<f32>(ball.info.z));
 
           // Distort the field
           // Make it trail behind significantly

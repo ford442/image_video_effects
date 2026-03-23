@@ -3,7 +3,7 @@
   "name": "Hyperbolic Dreamweaver",
   "url": "shaders/hyperbolic-dreamweaver.wgsl",
   "category": "image",
-  "description": "Infinite non-Euclidean Poincaré disk tilings weaving the image through psychedelic Möbius transformations, depth-aware curvature, chromatic aberration, and glowing symmetry lines. Mouse centers the dream; ripples perturb the fabric.",
+  "description": "Infinite non-Euclidean Poincar\u00e9 disk tilings weaving the image through psychedelic M\u00f6bius transformations, depth-aware curvature, chromatic aberration, and glowing symmetry lines. Mouse centers the dream; ripples perturb the fabric.",
   "params": [
     {
       "name": "Tile Count",
@@ -44,10 +44,15 @@
     "depth-aware",
     "non-euclidean",
     "interactive",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

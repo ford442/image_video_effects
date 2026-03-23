@@ -5,6 +5,10 @@
   "category": "image",
   "description": "A low-resolution mosaic filter that clarifies into high-resolution video near the mouse cursor.",
   "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "mosaic",
+    "interactive-reveal",
     "mouse-driven"
   ],
   "params": [

@@ -5,7 +5,9 @@
   "category": "visual-effects",
   "description": "Transforms the image into a flickering hologram. Move mouse to focus and stabilize the projection.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -40,6 +42,9 @@
   "tags": [
     "vfx",
     "particles",
-    "glow"
+    "glow",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

@@ -1,9 +1,9 @@
-// ═══════════════════════════════════════════════════════════════
-//  Neon Cursor Trace - Mouse Trail with Alpha Emission
-//  Category: lighting-effects
-//  Physics: Persistent cursor trail with emissive decay
-//  Alpha: Core trail = 0.3, Glow = 0.0 (additive)
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Neon Cursor Trace - Advanced Alpha with Luminance Key
+//  Category: glow/light-effects
+//  Alpha Mode: Luminance Key Alpha + Effect Intensity
+//  Features: advanced-alpha, cursor-trace, neon, trail
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,67 +26,47 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Alpha calculation for emissive materials
-fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
-    let coreAlpha = 0.3 * glowIntensity;
-    let glowAlpha = 0.0;
-    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 6: Luminance Key Alpha
+fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    return smoothstep(threshold - softness, threshold + softness, luma);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-
-    // Parameters
-    // x: decaySpeed, y: traceWidth, z: neonIntensity, w: occlusionBalance
-    let decaySpeed = 0.9 + (u.zoom_params.x * 0.095);
-    let traceWidth = 0.01 + (u.zoom_params.y * 0.1);
-    let neonIntensity = 1.0 + (u.zoom_params.z * 4.0);
-    let occlusionBalance = u.zoom_params.w;
-
-    let aspect = resolution.x / resolution.y;
-    var mousePos = u.zoom_config.yz;
-
-    // Sample previous frame (history)
-    var history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-
-    // Decay history
-    history = history * decaySpeed;
-
-    // Add new mouse trail
-    let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
-    let brush = 1.0 - smoothstep(traceWidth * 0.5, traceWidth, dist);
-
-    // Add to history (accumulate)
-    let t = u.config.x;
-    let brushColor = vec3<f32>(
-        0.5 + 0.5 * sin(t),
-        0.5 + 0.5 * sin(t + 2.09),
-        0.5 + 0.5 * sin(t + 4.18)
-    );
-
-    if (dist < traceWidth) {
-        history = history + vec4<f32>(brushColor * brush, brush);
-    }
-
-    // Clamp history
-    history = clamp(history, vec4<f32>(0.0), vec4<f32>(2.0));
-
-    // Write updated history
-    textureStore(dataTextureA, global_id.xy, history);
-
-    // Emission calculation from trail
-    let emission = history.rgb * neonIntensity * 2.0;
-
-    // Calculate alpha based on emission intensity
-    let glowIntensity = length(emission) * history.a;
-    let finalAlpha = calculateEmissiveAlpha(glowIntensity, occlusionBalance);
-
-    // Output with emission alpha
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
-
-    // Pass through depth
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
+    
+    let traceIntensity = u.zoom_params.x;
+    let traceWidth = u.zoom_params.y * 0.1;
+    let lumaThreshold = u.zoom_params.z * 0.5;
+    let softness = u.zoom_params.w * 0.2;
+    
+    let mousePos = u.zoom_config.yz;
+    let mouseDist = distance(uv, mousePos);
+    
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    
+    // Cursor trail
+    let trail = smoothstep(traceWidth, 0.0, mouseDist);
+    
+    // Neon trace color
+    let neonColor = vec3<f32>(
+        0.5 + 0.5 * sin(time * 3.0 * audioReactivity),
+        0.5 + 0.5 * sin(time * 3.0 * audioReactivity + 2.09),
+        0.5 + 0.5 * sin(time * 3.0 * audioReactivity + 4.18)
+    );
+    
+    let traceColor = neonColor * trail * traceIntensity;
+    let alpha = luminanceKeyAlpha(traceColor, lumaThreshold, softness) * trail;
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(traceColor, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

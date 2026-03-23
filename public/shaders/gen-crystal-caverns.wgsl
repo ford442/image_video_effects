@@ -42,7 +42,7 @@ fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32) -> vec2<f32> {
 
   let cell = floor(ps * 0.8);
   var q = ps - cell * 1.25;
-  let crystal = sdSphere(q + vec3<f32>(0.0, sin(time * pulse * 8.0 + length(cell)) * 0.3, 0.0), 0.4);
+  let crystal = sdSphere(q + vec3<f32>(0.0, sin(time * pulse * audioReactivity * 8.0 + length(cell)) * 0.3, 0.0), 0.4);
 
   let id = (cell.x + cell.y + cell.z) % 3.0;
   let finalD = min(d, crystal * (1.0 + id * 0.2));
@@ -54,6 +54,12 @@ fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32) -> vec2<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.config.y;
+  let audioBass = u.config.y * 1.2;
+  let audioMid = u.config.z;
+  let audioHigh = u.config.w;
+  let audioReactivity = 1.0 + audioOverall * 0.5;
   var mouse = u.zoom_config.yz;
   
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
@@ -87,7 +93,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   if (t < 79.0) {
     var p = ro + rd * t;
     if (mat > 1.5) {
-      let glow = pow(glowIntensity * 1.5 + sin(time * 8.0) * pulse * 0.3, 2.0);
+      let glow = pow(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * pulse * 0.3, 2.0);
       col = vec3<f32>(0.4, 0.8, 1.0) * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.6;
     } else {
       col = vec3<f32>(0.15, 0.1, 0.08);

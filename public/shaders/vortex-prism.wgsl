@@ -74,6 +74,10 @@ fn calculatePrismaticAlpha(
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
 
     // Params
     let twistAmount = (u.zoom_params.x - 0.5) * 20.0; // -10 to 10

@@ -5,6 +5,9 @@
   "category": "generative",
   "description": "Multi-octave Perlin noise generating animated terrain with mouse offset.",
   "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "procedural",
     "mouse-driven"
   ],
   "tags": [

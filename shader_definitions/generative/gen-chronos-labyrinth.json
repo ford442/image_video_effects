@@ -5,7 +5,9 @@
   "category": "generative",
   "description": "An infinite, Escher-esque maze of shifting geometric staircases and corridors suspended over a void, with glowing temporal anomalies.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "3d",
@@ -17,7 +19,9 @@
     "abstract",
     "infinite",
     "generative",
-    "procedural"
+    "procedural",
+    "audio",
+    "music"
   ],
   "params": [
     {

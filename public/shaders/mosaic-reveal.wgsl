@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  mosaic-reveal - Interactive mosaic reveal effect
+//  Category: distortion
+//  Features: upgraded-rgba, depth-aware, mosaic, interactive-reveal
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,7 +22,7 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=MosaicSize, y=RevealRadius, z=EdgeSoftness, w=Unused
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -26,6 +32,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
@@ -39,24 +47,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = distance((uv - mouse) * aspectVec, vec2<f32>(0.0));
 
     // Calculate Mosaic UV
-    // Blocks
     let uvPix = floor(uv * mosaicSize) / mosaicSize;
-    // Center of block
     let uvCenter = uvPix + (0.5 / mosaicSize);
 
-    // Sample Mosaic
-    let colMosaic = textureSampleLevel(readTexture, non_filtering_sampler, uvCenter, 0.0);
+    // Sample Mosaic and Full Res
+    let colMosaic = textureSampleLevel(readTexture, non_filtering_sampler, uvCenter, 0.0).rgb;
+    let colFull = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    // Sample Full Res
-    let colFull = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // Mask
-    // 0 = Mosaic, 1 = Full
-    // If dist < radius, show Full.
+    // Mask: 0 = Mosaic, 1 = Full
     let mask = 1.0 - smoothstep(radius, radius + 0.1 + softness * 0.2, dist);
 
-    let finalColor = mix(colMosaic, colFull, mask);
+    let color = mix(colMosaic, colFull, mask);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    // Calculate alpha based on mask transition and luminance
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let maskAlpha = mix(0.9, 1.0, mask);
+    let alpha = mix(maskAlpha * 0.8, maskAlpha, luma);
+    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+
+    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

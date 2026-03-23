@@ -50,12 +50,12 @@ fn sceneSDF(p: vec3<f32>, time: f32, mouse: vec2<f32>) -> f32 {
   // Domain warping based on mouse
   var warp = p;
   let mouseInfluence = length(mouse) * 0.5;
-  warp += 0.1 * sin(p.yzx * 3.0 + time * 0.5) * mouseInfluence;
+  warp += 0.1 * sin(p.yzx * 3.0 + time * 0.5 * audioReactivity) * mouseInfluence;
 
   // Multiple gyroid layers for complexity
   let gyroid1 = sdGyroid(warp, 2.5, 0.03, 0.0);
-  let gyroid2 = sdGyroid(warp + vec3<f32>(time * 0.1, 0.0, 0.0), 4.0, 0.02, 0.0);
-  let gyroid3 = sdGyroid(warp * 1.5 + vec3<f32>(0.0, time * 0.15, 0.0), 6.0, 0.015, 0.0);
+  let gyroid2 = sdGyroid(warp + vec3<f32>(time * 0.1 * audioReactivity, 0.0, 0.0), 4.0, 0.02, 0.0);
+  let gyroid3 = sdGyroid(warp * 1.5 + vec3<f32>(0.0, time * 0.15 * audioReactivity, 0.0), 6.0, 0.015, 0.0);
 
   // Blend them together
   var d = smin(gyroid1, gyroid2, 0.1);
@@ -102,6 +102,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.config.y;
+  let audioBass = u.config.y * 1.2;
+  let audioMid = u.config.z;
+  let audioHigh = u.config.w;
+  let audioReactivity = 1.0 + audioOverall * 0.5;
   var mouse = u.zoom_config.yz;
 
   // Parameters
@@ -116,7 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   p.x *= aspect;
 
   // Camera setup - orbiting camera
-  let camPos = vec3<f32>(2.5 * sin(time * 0.2), 1.0 + 0.5 * cos(time * 0.3), 2.5 * cos(time * 0.2));
+  let camPos = vec3<f32>(2.5 * sin(time * 0.2 * audioReactivity), 1.0 + 0.5 * cos(time * 0.3 * audioReactivity), 2.5 * cos(time * 0.2 * audioReactivity));
   let target_pos = vec3<f32>(0.0, 0.0, 0.0);
 
   // Camera matrix
@@ -157,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Iridescence based on view angle
     let iriAngle = dot(normal, viewDir);
     let iriColor = palette(
-      iriAngle * 2.0 + time * 0.3 * colorSpeed,
+      iriAngle * 2.0 + time * 0.3 * audioReactivity * colorSpeed,
       vec3<f32>(0.5, 0.5, 0.5),
       vec3<f32>(0.5, 0.5, 0.5),
       vec3<f32>(1.0, 1.0, 1.0),

@@ -4,6 +4,10 @@
   "url": "shaders/ion-stream.wgsl",
   "category": "image",
   "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "displacement",
+    "turbulence",
     "mouse-driven"
   ],
   "description": "A stream of ionized particles that reacts to the mouse cursor, tinting pixels as they flow.",

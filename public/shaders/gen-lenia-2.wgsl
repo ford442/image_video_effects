@@ -52,6 +52,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var uv = vec2<f32>(id.xy) / res;
   let state = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.config.y;
+  let audioBass = u.config.y * 1.2;
+  let audioMid = u.config.z;
+  let audioHigh = u.config.w;
+  let audioReactivity = 1.0 + audioOverall * 0.5;
   var mouse = u.zoom_config.yz;
 
   // Parameters
@@ -92,7 +98,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   }
 
   // Audio-reactive global pulse
-  let pulse = sin(time * 12.0) * 0.3 + sin(time * 28.0) * 0.15;
+  let pulse = sin(time * 12.0 * audioReactivity) * 0.3 + sin(time * 28.0 * audioReactivity) * 0.15;
   newState += vec4<f32>(pulse, pulse * 1.3, pulse * 0.8, pulse * 1.1) * 0.015;
 
   newState = clamp(newState, vec4<f32>(0.0), vec4<f32>(1.0));

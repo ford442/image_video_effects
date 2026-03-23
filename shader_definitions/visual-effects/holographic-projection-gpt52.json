@@ -7,7 +7,9 @@
   "features": [
     "mouse-driven",
     "glitch",
-    "animated"
+    "animated",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -42,6 +44,8 @@
   "tags": [
     "vfx",
     "particles",
-    "glow"
+    "glow",
+    "audio",
+    "music"
   ]
 }

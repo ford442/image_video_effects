@@ -1,0 +1,71 @@
+{
+  "id": "holographic-interferometry",
+  "name": "Holographic Interferometry",
+  "url": "shaders/holographic-interferometry.wgsl",
+  "category": "generative",
+  "description": "Simulated hologram with interference fringe patterns. Rainbow interference fringes with speckled laser light.",
+  "features": [
+    "advanced-hybrid",
+    "interference-patterns",
+    "holography",
+    "phase-coloring",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "fringe_density",
+      "name": "Fringe Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of interference fringes"
+    },
+    {
+      "id": "coherence",
+      "name": "Coherence Length",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Laser coherence (affects speckle size)"
+    },
+    {
+      "id": "reconstruction_angle",
+      "name": "Reconstruction Angle",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Hologram reconstruction angle"
+    },
+    {
+      "id": "saturation",
+      "name": "Color Saturation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Saturation of holographic colors"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "Interference pattern math",
+    "Speckle noise generation"
+  ],
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22",
+  "tags": [
+    "audio",
+    "music",
+    "reactive"
+  ]
+}

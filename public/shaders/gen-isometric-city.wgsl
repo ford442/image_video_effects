@@ -115,6 +115,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.config.y;
+    let audioBass = u.config.y * 1.2;
+    let audioMid = u.config.z;
+    let audioHigh = u.config.w;
+    let audioReactivity = 1.0 + audioOverall * 0.5;
 
     // Camera Setup (Isometric / Orthographic)
     // Isometric view: look at (0,0,0) from (1,1,1) (normalized)
@@ -147,8 +153,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Flyover animation
     // u.zoom_params.y is Speed.
     let speed = mix(0.5, 5.0, u.zoom_params.y);
-    ro.z += time * speed;
-    ro.x += time * speed * 0.5;
+    ro.z += time * speed * audioReactivity;
+    ro.x += time * speed * audioReactivity * 0.5;
 
     // Raymarch
     var res = raymarch(ro, rd);
@@ -267,7 +273,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
            let laneID = floor(p_hit.xz / gridSize);
            let laneHash = hash12(laneID);
            let trafficSpeed = speed * (laneHash * 2.0 + 1.0);
-           let trafficPos = fract(time * trafficSpeed + laneHash * 100.0);
+           let trafficPos = fract(time * trafficSpeed * audioReactivity + laneHash * 100.0);
 
            // Determine if we are on X street or Z street
            var isTraffic = 0.0;
@@ -276,11 +282,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
            // So we are on a line where x is constant integer. That is a Z-aligned street.
 
            if (gridUV.x > 0.45) { // Z-street
-               var flow = fract(p_hit.z * 0.5 + time * trafficSpeed); // movement along Z
+               var flow = fract(p_hit.z * 0.5 + time * trafficSpeed * audioReactivity); // movement along Z
                if (flow > 0.9) { isTraffic = 1.0; }
            }
            if (gridUV.y > 0.45) { // X-street
-               var flow = fract(p_hit.x * 0.5 - time * trafficSpeed); // movement along X
+               var flow = fract(p_hit.x * 0.5 - time * trafficSpeed * audioReactivity); // movement along X
                if (flow > 0.9) { isTraffic = 1.0; }
            }
 

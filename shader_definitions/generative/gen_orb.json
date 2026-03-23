@@ -1,14 +1,18 @@
 {
   "id": "gen-orb",
-  "name": "Glowing Orb",
+  "name": "Lorenz Strange Attractor",
   "url": "shaders/gen_orb.wgsl",
   "category": "generative",
-  "description": "A glowing orb that follows the mouse cursor.",
+  "description": "Chaotic particle system visualization based on the Lorenz attractor with RGBA depth-aware rendering.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "particles",
+    "mathematical-art"
   ]
 }

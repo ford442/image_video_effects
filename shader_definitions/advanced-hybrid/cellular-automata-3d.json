@@ -1,0 +1,73 @@
+{
+  "id": "cellular-automata-3d",
+  "name": "Cellular Automata 3D",
+  "url": "shaders/cellular-automata-3d.wgsl",
+  "category": "generative",
+  "description": "3D Game of Life rendered with volume raymarching. Glowing 3D structures that evolve frame-by-frame.",
+  "features": [
+    "advanced-hybrid",
+    "3d-ca",
+    "volume-raymarching",
+    "transfer-function",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "evolution_speed",
+      "name": "Evolution Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Speed of CA evolution"
+    },
+    {
+      "id": "initial_density",
+      "name": "Initial Density",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Initial cell density"
+    },
+    {
+      "id": "color_cycling",
+      "name": "Color Cycling",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Speed of color cycling"
+    },
+    {
+      "id": "camera_rotation",
+      "name": "Camera Rotation",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Camera rotation speed"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "hash3 (gen-xeno-botanical-synth-flora.wgsl)",
+    "3D CA rules (26 neighbors)",
+    "Volume raymarching",
+    "Transfer function coloring"
+  ],
+  "performance_target": "30-45 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22",
+  "tags": [
+    "audio",
+    "music",
+    "reactive"
+  ]
+}

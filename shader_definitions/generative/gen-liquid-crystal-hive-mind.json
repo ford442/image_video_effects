@@ -4,8 +4,20 @@
   "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
   "category": "generative",
   "description": "A vast, breathing network of hexagonal bio-synthetic cells containing turbulent, iridescent liquid crystals that synchronize and glow with a pulsing collective consciousness.",
-  "tags": ["cellular", "liquid-crystal", "fluid-dynamics", "honeycomb", "audio-reactive"],
-  "features": ["mouse-driven", "audio-driven"],
+  "tags": [
+    "cellular",
+    "liquid-crystal",
+    "fluid-dynamics",
+    "honeycomb",
+    "audio-reactive",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-driven",
+    "audio-reactive"
+  ],
   "params": [
     {
       "id": "cellDensity",

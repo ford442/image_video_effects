@@ -222,6 +222,10 @@ fn orbit_f1_f1_(t_2 : ptr<function, f32>, n_2 : ptr<function, f32>) -> vec3<f32>
     var param_3 = *n_2;
     let off = randVec_f1_(&param_3) * (*t_2 + 0.05) * 0.6;
     let time = u.config.x + fract(sin(*n_2 * 12345.5)) * 5.0;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
     return p_12 + off * sin(time + 0.5 * sin(0.5 * time));
 }
 

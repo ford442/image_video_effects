@@ -38,10 +38,15 @@
     "depth-aware",
     "temporal-persistence",
     "chromatic-aberration",
-    "sci-fi"
+    "sci-fi",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

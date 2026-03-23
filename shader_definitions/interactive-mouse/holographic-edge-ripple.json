@@ -4,7 +4,9 @@
   "url": "shaders/holographic-edge-ripple.wgsl",
   "category": "image",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "description": "Edges ripple and split into RGB components based on mouse proximity.",
   "params": [
@@ -39,6 +41,8 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music"
   ]
 }

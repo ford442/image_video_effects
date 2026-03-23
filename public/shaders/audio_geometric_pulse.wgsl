@@ -1,16 +1,9 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  audio_geometric_pulse.wgsl - Audio-Reactive Geometric Patterns
-//  
-//  Agent: Interactivist + Algorithmist + Visualist
-//  Techniques:
-//    - Geometric primitives with audio-driven morphing
-//    - Pulse wave propagation from center
-//    - Kaleidoscope symmetry
-//    - Frequency band visualization
-//    - Neon/glow effects
-//  
-//  Target: 4.6★ rating
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  audio_geometric_pulse
+//  Category: audio-reactive
+//  Features: upgraded-rgba, depth-aware
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -201,9 +194,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - length(uvFull - 0.5) * 0.4;
     color *= vignette;
     
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, coord, vec4<f32>(length(color), 0.0, 0.0, 1.0));
+    // Sample depth for alpha calculation
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvFull, 0.0).r;
+    
+    // Calculate luminance-based alpha
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = mix(0.7, 1.0, luma);
+    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+    
+    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(length(color), 0.0, 0.0, finalAlpha));
     
     // Store for feedback
-    textureStore(dataTextureA, coord, vec4<f32>(color, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(color, finalAlpha));
 }

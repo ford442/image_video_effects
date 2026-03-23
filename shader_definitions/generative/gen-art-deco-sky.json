@@ -4,8 +4,23 @@
   "url": "shaders/gen-art-deco-sky.wgsl",
   "category": "generative",
   "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.",
-  "tags": ["3d", "raymarching", "architecture", "art-deco", "gold", "scifi", "procedural", "infinite"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "3d",
+    "raymarching",
+    "architecture",
+    "art-deco",
+    "gold",
+    "scifi",
+    "procedural",
+    "infinite",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
   "params": [
     {
       "id": "param1",

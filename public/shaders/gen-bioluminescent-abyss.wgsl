@@ -104,7 +104,7 @@ fn marineOrganismSSS(n: vec3<f32>, l: vec3<f32>, thickness: f32,
     
     // Glowing tips have internal scattering
     var internalGlow = vec3<f32>(0.0);
-    if (isGlowing {
+    if (isGlowing) {
         internalGlow = baseColor * absorption * 0.5;
     }
     

@@ -274,7 +274,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         alpha = calculateOrganicAlpha(mat, thickness, n, lightDir);
         
         // Bioluminescent areas have slightly lower alpha for glow effect
-        if (mat == 2.0 && u.zoom_params.z > 0.7 {
+        if (mat == 2.0 && u.zoom_params.z > 0.7) {
             alpha = mix(alpha, 0.75, 0.3);
         }
 

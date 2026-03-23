@@ -152,6 +152,16 @@ export class RendererManager {
     return this.metrics.isWASM;
   }
 
+  /**
+   * Render method called by WebGPUCanvas animation loop.
+   * The actual rendering is handled internally by the active renderer's own loop.
+   * This method exists to satisfy the interface expected by WebGPUCanvas.
+   */
+  render(..._args: any[]): void {
+    // Rendering is handled internally by JSRenderer/WASMRenderer's own animation loops
+    // This method prevents "render is not a function" errors from WebGPUCanvas
+  }
+
   destroy(): void {
     this.currentRenderer?.destroy();
     this.currentRenderer = null;

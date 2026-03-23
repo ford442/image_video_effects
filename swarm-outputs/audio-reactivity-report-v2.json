@@ -1,0 +1,506 @@
+{
+  "total": 55,
+  "wgsl_updated": 46,
+  "json_updated": 55,
+  "status_counts": {
+    "already_has_audio": 9,
+    "updated": 46
+  },
+  "results": [
+    {
+      "shader_id": "stellar-plasma",
+      "status": "already_has_audio",
+      "has_audio_vars": true,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "gen-xeno-botanical-synth-flora",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "tensor-flow-sculpting",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "hyperbolic-dreamweaver",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "liquid-metal",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "voronoi-glass",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "chromatic-manifold",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "infinite-fractal-feedback",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "ethereal-swirl",
+      "status": "already_has_audio",
+      "has_audio_vars": false,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "gen-audio-spirograph",
+      "status": "already_has_audio",
+      "has_audio_vars": false,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "high"
+    },
+    {
+      "shader_id": "quantum-superposition",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "kimi_liquid_glass",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "crystal-refraction",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "gen-voronoi-crystal",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "gen-supernova-remnant",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "gen-string-theory",
+      "status": "already_has_audio",
+      "has_audio_vars": false,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "plasma",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "holographic-projection",
+      "status": "already_has_audio",
+      "has_audio_vars": true,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "holographic-glitch",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "holographic-contour",
+      "status": "already_has_audio",
+      "has_audio_vars": true,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "medium"
+    },
+    {
+      "shader_id": "neon-pulse",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-light",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-edges",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-echo",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-warp",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-strings",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-fluid-warp",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-topology",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-edge-pulse",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "neon-edge-reveal",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "neon"
+    },
+    {
+      "shader_id": "vortex",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "vortex"
+    },
+    {
+      "shader_id": "vortex-distortion",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "vortex"
+    },
+    {
+      "shader_id": "vortex-warp",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "vortex"
+    },
+    {
+      "shader_id": "vortex-prism",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "vortex"
+    },
+    {
+      "shader_id": "velvet-vortex",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "vortex"
+    },
+    {
+      "shader_id": "hyper-tensor-fluid",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "neural-raymarcher",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "chromatic-reaction-diffusion",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "audio-voronoi-displacement",
+      "status": "already_has_audio",
+      "has_audio_vars": false,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "fractal-boids-field",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "holographic-interferometry",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "gravitational-lensing",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "cellular-automata-3d",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "spectral-flow-sorting",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "multi-fractal-compositor",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "phase_b"
+    },
+    {
+      "shader_id": "gen-neural-fractal",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-mycelium-network",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-magnetic-field-lines",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-bifurcation-diagram",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-quantum-superposition",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-quantum-mycelium",
+      "status": "already_has_audio",
+      "has_audio_vars": false,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-quasicrystal",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-cymatic-plasma-mandalas",
+      "status": "already_has_audio",
+      "has_audio_vars": false,
+      "has_audio_usage": true,
+      "wgsl_updated": false,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-ethereal-anemone-bloom",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    },
+    {
+      "shader_id": "gen-singularity-forge",
+      "status": "updated",
+      "has_audio_vars": false,
+      "has_audio_usage": false,
+      "wgsl_updated": true,
+      "json_updated": true,
+      "priority": "generative"
+    }
+  ]
+}

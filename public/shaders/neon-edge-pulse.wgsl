@@ -1,9 +1,9 @@
-// ═══════════════════════════════════════════════════════════════
-//  Neon Edge Pulse - Pulsing Edges with Alpha Emission
-//  Category: lighting-effects
-//  Physics: Time-pulsing emissive edges with alpha occlusion
-//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Neon Edge Pulse - Advanced Alpha with Edge-Preserve
+//  Category: edge-detection
+//  Alpha Mode: Edge-Preserve Alpha + Luminance Key
+//  Features: advanced-alpha, pulsing-edges, neon-glow
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,17 +26,38 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Alpha calculation for emissive materials
-fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
-    let coreAlpha = 0.3 * glowIntensity;
-    let glowAlpha = 0.0;
-    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 2: Edge-Preserve Alpha
+fn edgePreserveAlpha(uv: vec2<f32>, pixelSize: vec2<f32>, edgeThreshold: f32) -> f32 {
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    
+    let depthEdge = length(vec2<f32>(dR - dL, dU - dD));
+    let edgeMask = smoothstep(edgeThreshold * 0.5, edgeThreshold, depthEdge);
+    return mix(0.2, 1.0, edgeMask);
 }
 
-// Inverse square law for light falloff
-fn inverseSquareFalloff(dist: f32, maxDist: f32) -> f32 {
-    let d = max(dist, 0.001);
-    return 1.0 / (1.0 + d * d * 5.0) * smoothstep(maxDist, 0.0, dist);
+// Mode 6: Luminance Key Alpha
+fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    return smoothstep(threshold - softness, threshold + softness, luma);
+}
+
+// Combined alpha
+fn calculateEdgePulseAlpha(
+    color: vec3<f32>,
+    uv: vec2<f32>,
+    pixelSize: vec2<f32>,
+    pulseIntensity: f32,
+    params: vec4<f32>
+) -> f32 {
+    let edgeAlpha = edgePreserveAlpha(uv, pixelSize, params.x);
+    let lumaAlpha = luminanceKeyAlpha(color, params.y, params.z);
+    return clamp(edgeAlpha * lumaAlpha * pulseIntensity, 0.0, 1.0);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -45,65 +66,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-
-    // Params
-    // x: edgeThreshold, y: pulseSpeed, z: glowIntensity, w: occlusionBalance
-    let edgeThreshold = u.zoom_params.x;
-    let pulseSpeed = u.zoom_params.y * 5.0;
-    let glowIntensity = u.zoom_params.z * 5.0;
-    let colorShift = 0.5;
-    let occlusionBalance = u.zoom_params.w;
-
-    // Mouse
-    var mousePos = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-    let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
-
-    // Sobel Kernels
-    let stepX = 1.0 / resolution.x;
-    let stepY = 1.0 / resolution.y;
-
-    let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -stepY), 0.0).rgb;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, stepY), 0.0).rgb;
-    let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, 0.0), 0.0).rgb;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, 0.0), 0.0).rgb;
-
-    let gradX = r - l;
-    let gradY = b - t;
-
-    let edge = sqrt(gradX * gradX + gradY * gradY);
-    let edgeMag = length(edge);
-
-    // Pulse
-    let pulse = (sin(time * pulseSpeed - dist * 10.0) + 1.0) * 0.5;
-
-    // Emission calculation
-    var emission = vec3<f32>(0.0);
     
-    // Only apply neon if edge is strong enough
-    if (edgeMag > edgeThreshold * 0.2) {
-        // Neon color generation
-        let hue = fract(time * 0.1 + colorShift + dist * 0.5);
-        let neon = vec3<f32>(
-            0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
-            0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
-            0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
-        );
-
-        // Intensity increases near mouse (flashlight)
-        let mouseFactor = 1.0 / (dist * 5.0 + 0.2);
-        let falloff = inverseSquareFalloff(dist, 0.5);
-
-        emission = neon * edgeMag * glowIntensity * pulse * mouseFactor * (1.0 + falloff);
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let pixelSize = 1.0 / resolution;
+    let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
+    
+    let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
+    let pulseSpeed = u.zoom_params.y * 5.0;
+    let lumaThreshold = u.zoom_params.z * 0.5;
+    let softness = u.zoom_params.w * 0.2;
+    
+    let pulse = 0.5 + 0.5 * sin(time * pulseSpeed * audioReactivity);
+    
+    // Edge detection
+    let stepX = pixelSize.x;
+    let stepY = pixelSize.y;
+    
+    let t_c = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -stepY), 0.0).rgb;
+    let m_l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, 0.0), 0.0).rgb;
+    let m_c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let m_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, 0.0), 0.0).rgb;
+    let b_c = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, stepY), 0.0).rgb;
+    
+    fn luma(c: vec3<f32>) -> f32 {
+        return dot(c, vec3<f32>(0.299, 0.587, 0.114));
     }
-
-    // Calculate alpha based on emission intensity
-    let glowStrength = length(emission);
-    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
-
-    // Output with emission alpha
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
+    
+    let gx = -luma(m_l) + luma(m_r);
+    let gy = -luma(t_c) + luma(b_c);
+    let edgeStrength = sqrt(gx * gx + gy * gy);
+    
+    // Pulsing neon color
+    let neonColor = vec3<f32>(
+        0.5 + 0.5 * sin(time * 3.0 * audioReactivity),
+        0.5 + 0.5 * sin(time * 3.0 * audioReactivity + 2.09),
+        0.5 + 0.5 * sin(time * 3.0 * audioReactivity + 4.18)
+    );
+    
+    let emission = neonColor * edgeStrength * (0.5 + pulse) * 3.0;
+    
+    let alpha = calculateEdgePulseAlpha(emission, uv, pixelSize, 0.5 + pulse, u.zoom_params);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
+    
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

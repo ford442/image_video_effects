@@ -116,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate yarn alpha based on stitch properties
     var yarnAlpha = KNIT_ALPHA;
     
-    if (isStitchGap {
+    if (isStitchGap) {
         // Gaps between stitches are more transparent
         yarnAlpha = STITCH_GAP_ALPHA;
     } else if (height > 0.6) {

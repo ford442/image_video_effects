@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Lens Flare Brush - Advanced Alpha with Luminance Key
+//  Category: glow/light-effects
+//  Alpha Mode: Luminance Key Alpha + Effect Intensity
+//  Features: advanced-alpha, lens-flare, mouse-interactive
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +18,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -21,84 +26,99 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 6: Luminance Key Alpha
+fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    return smoothstep(threshold - softness, threshold + softness, luma);
+}
+
+// Mode 5: Effect Intensity Alpha for brush size
+fn effectIntensityAlpha(intensity: f32, falloff: f32) -> f32 {
+    return mix(0.3, 1.0, intensity * falloff);
+}
+
+// Combined alpha for lens flare
+fn calculateFlareAlpha(
+    color: vec3<f32>,
+    intensity: f32,
+    falloff: f32,
+    params: vec4<f32>
+) -> f32 {
+    // params.x = brush intensity
+    // params.y = luminance threshold
+    // params.z = softness
+    
+    let lumaAlpha = luminanceKeyAlpha(color, params.y, params.z);
+    let effectAlpha = effectIntensityAlpha(intensity, falloff);
+    
+    return clamp(lumaAlpha * effectAlpha, 0.0, 1.0);
+}
+
+// Lens flare element
+fn flareElement(uv: vec2<f32>, pos: vec2<f32>, size: f32) -> f32 {
+    let d = length(uv - pos);
+    return exp(-d * d / (size * size));
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
-
-    // Params
-    let threshold = u.zoom_params.x; // 0.5 to 0.95
-    let flareIntensity = u.zoom_params.y * 5.0;
-    let stretch = u.zoom_params.z * 0.1; // Horizontal stretch factor
-    let colorShift = u.zoom_params.w;
-
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // Calculate Mouse Influence Mask
-    let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
-    let influence = smoothstep(0.5, 0.0, dist); // Only generate flares near mouse (0.5 radius)
-
-    if (influence <= 0.01) {
-        textureStore(writeTexture, vec2<i32>(global_id.xy), baseColor);
-        let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
-        return;
-    }
-
-    // Generate Flares
-    // We want to sample bright pixels that are horizontally aligned with current pixel,
-    // but within the mouse radius.
-
-    // Instead of gathering samples *for* the flare, we are simulating the flare *at* the pixel.
-    // So we need to look at neighbors horizontally.
-
+    
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    
+    // Parameters
+    let brushIntensity = u.zoom_params.x;
+    let flareSize = u.zoom_params.y * 0.5 + 0.05;
+    let lumaThreshold = u.zoom_params.z * 0.5;
+    let softness = u.zoom_params.w * 0.2;
+    
+    let mousePos = u.zoom_config.yz;
+    let mouseDist = distance(uv, mousePos);
+    
+    // Multiple flare elements
     var flareAccum = vec3<f32>(0.0);
-    let samples = 10;
-
-    // Anamorphic lens flares are horizontal streaks.
-    // So if I am at pixel P, I am affected by bright pixels P_left and P_right.
-    // The influence decays with distance.
-
-    for (var i = -samples; i <= samples; i++) {
-        if (i == 0) { continue; }
-
-        // Offset in UV space
-        // Large offset to simulate long streaks
-        let offset = f32(i) * stretch;
-        let sampleUV = uv + vec2<f32>(offset, 0.0);
-
-        if (sampleUV.x < 0.0 || sampleUV.x > 1.0) { continue; }
-
-        let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-        let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-
-        if (lum > threshold) {
-             // Calculate weight based on distance
-             let weight = 1.0 / (abs(f32(i)) + 1.0);
-
-             // Tint
-             // Anamorphic is usually blue
-             let tint = mix(vec3<f32>(0.5, 0.7, 1.0), vec3<f32>(1.0, 0.8, 0.5), colorShift);
-
-             // Additional mask: The source pixel must also be near the mouse?
-             // The prompt says "Generate flares from bright pixels near the mouse".
-             // So sampleUV must be near mouse.
-             let sourceDist = distance(vec2<f32>(sampleUV.x * aspect, sampleUV.y), vec2<f32>(mouse.x * aspect, mouse.y));
-             let sourceInfluence = smoothstep(0.5, 0.0, sourceDist);
-
-             flareAccum += col * weight * tint * sourceInfluence;
-        }
+    
+    // Main flare at mouse
+    let mainFlare = flareElement(uv, mousePos, flareSize);
+    
+    // Ghost flares
+    for (var i: i32 = 0; i < 5; i++) {
+        let fi = f32(i);
+        let ghostPos = mousePos + vec2<f32>(
+            sin(fi * 1.3 + time * 0.2) * 0.2,
+            cos(fi * 0.9) * 0.15
+        );
+        let ghostSize = flareSize * (0.5 - fi * 0.08);
+        let ghost = flareElement(uv, ghostPos, ghostSize);
+        
+        let ghostColor = vec3<f32>(
+            0.5 + 0.5 * sin(fi * 1.2),
+            0.5 + 0.5 * sin(fi * 1.2 + 2.0),
+            0.5 + 0.5 * sin(fi * 1.2 + 4.0)
+        );
+        
+        flareAccum += ghostColor * ghost * brushIntensity;
     }
-
-    let finalColor = baseColor.rgb + flareAccum * flareIntensity * influence;
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-
+    
+    // Main flare color
+    let mainColor = vec3<f32>(1.0, 0.9, 0.7) * mainFlare * brushIntensity * 2.0;
+    let finalColor = flareAccum + mainColor;
+    
+    // Falloff from brush center
+    let brushFalloff = 1.0 - smoothstep(0.0, flareSize * 3.0, mouseDist);
+    
+    // ═══ ADVANCED ALPHA CALCULATION ═══
+    let alpha = calculateFlareAlpha(finalColor, brushIntensity, brushFalloff, u.zoom_params);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    
+    // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

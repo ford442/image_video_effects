@@ -68,8 +68,8 @@ fn growth_step(uv: vec2<f32>, current: f32, normal: vec3<f32>, time: f32,
                spread_speed: f32, density: f32, depth_influence: f32, depth: f32, res: vec2<f32>) -> f32 {
     var texel = 1.0 / res;
     
-    let noise_val = noise3d(vec3<f32>(uv * 5.0, time * 0.1)); 
-    let noise_val2 = noise3d(vec3<f32>(uv * 5.0 + 10.0, time * 0.1));
+    let noise_val = noise3d(vec3<f32>(uv * 5.0, time * 0.1 * audioReactivity)); 
+    let noise_val2 = noise3d(vec3<f32>(uv * 5.0 + 10.0, time * 0.1 * audioReactivity));
     
     let noise_offset = vec2<f32>(noise_val * 0.5, noise_val2 * 0.5) * texel * 2.0;
     
@@ -148,6 +148,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
     var texel = 1.0 / resolution;
 
     // Parameters
@@ -198,7 +202,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, global_id.xy, vec4<f32>(growth, 0.0, 0.0, 1.0));
 
     // Vein Structure
-    let vein_noise = noise3d(vec3<f32>(uv * 20.0, time * 0.5));
+    let vein_noise = noise3d(vec3<f32>(uv * 20.0, time * 0.5 * audioReactivity));
     let veins = smoothstep(0.3, 0.7, growth + vein_noise * 0.2);
 
     // Glow & Lighting

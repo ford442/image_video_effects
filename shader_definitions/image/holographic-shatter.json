@@ -5,7 +5,9 @@
   "url": "shaders/holographic-shatter.wgsl",
   "category": "image",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -39,6 +41,8 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music"
   ]
 }
