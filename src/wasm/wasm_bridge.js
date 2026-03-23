@@ -24,7 +24,8 @@ const state = {
 };
 
 /**
- * Initialize the WASM renderer
+ * Initialize the WASM renderer using script tag loading
+ * This is more reliable than ES module dynamic imports for Emscripten UMD output
  * @param {HTMLCanvasElement} canvasElement - The canvas to render to
  * @returns {Promise<boolean>} Success status
  */
@@ -38,31 +39,58 @@ export async function initWasmRenderer(canvasElement) {
   state.canvasWidth = canvas.width || 2048;
   state.canvasHeight = canvas.height || 2048;
 
-  try {
+  return new Promise((resolve) => {
     // Determine the correct base path for WASM files
-    // Handle both root deployment (/index.html) and subdirectory (/path/index.html)
     const pathname = window.location.pathname;
-    const basePath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname.replace(/\/[^/]*$/, '');
+    const basePath = pathname.endsWith('/') 
+      ? pathname.slice(0, -1) 
+      : pathname.replace(/\/[^/]*$/, '');
     const wasmJsPath = basePath + '/wasm/pixelocity_wasm.js';
     const wasmBinaryPath = basePath + '/wasm/pixelocity_wasm.wasm';
     
-    console.log('[WASM] Loading JS from:', wasmJsPath);
+    console.log('[WASM] Loading from:', wasmJsPath);
     console.log('[WASM] Binary path:', wasmBinaryPath);
     
-    // Dynamically import the WASM module using absolute URL
-    // This avoids path resolution issues when bundled
-    // @ts-ignore
-    const wasmModuleFactory = await import(/* webpackIgnore: true */ wasmJsPath);
-    
-    // Emscripten exports either as default or as PixelocityWASM property
-    const factory = wasmModuleFactory.default || wasmModuleFactory.PixelocityWASM || wasmModuleFactory;
-    
-    if (typeof factory !== 'function') {
-      console.error('[WASM] Module factory is not a function:', factory);
-      return false;
+    // Check if already loaded (e.g., from previous session)
+    if (window.PixelocityWASM) {
+      console.log('[WASM] Module already loaded on window');
+      initializeModule(window.PixelocityWASM, wasmBinaryPath, resolve);
+      return;
     }
     
-    // Initialize with locateFile to help Emscripten find the .wasm binary
+    // Load script dynamically
+    const script = document.createElement('script');
+    script.src = wasmJsPath;
+    script.async = true;
+    
+    script.onload = () => {
+      if (!window.PixelocityWASM) {
+        console.error('[WASM] PixelocityWASM not found on window after script load');
+        console.log('[WASM] window keys:', Object.keys(window).filter(k => k.includes('WASM') || k.includes('Pixel')));
+        resolve(false);
+        return;
+      }
+      console.log('[WASM] Script loaded, initializing module...');
+      initializeModule(window.PixelocityWASM, wasmBinaryPath, resolve);
+    };
+    
+    script.onerror = (err) => {
+      console.error('[WASM] Failed to load script:', err);
+      resolve(false);
+    };
+    
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * Initialize the Emscripten module and the C++ renderer
+ */
+async function initializeModule(factory, wasmBinaryPath, resolve) {
+  try {
+    console.log('[WASM] Factory type:', typeof factory);
+    
+    // Initialize the module with locateFile to find the .wasm binary
     wasmModule = await factory({
       locateFile: (path) => {
         if (path.endsWith('.wasm')) {
@@ -71,6 +99,8 @@ export async function initWasmRenderer(canvasElement) {
         return path;
       }
     });
+    
+    console.log('[WASM] Module initialized, calling C++ init...');
 
     // Initialize the C++ renderer
     const result = wasmModule.ccall(
@@ -82,15 +112,16 @@ export async function initWasmRenderer(canvasElement) {
 
     if (result !== 0) {
       console.error('Failed to initialize WASM renderer');
-      return false;
+      resolve(false);
+      return;
     }
 
     state.initialized = true;
     console.log('✅ WASM Renderer initialized');
-    return true;
+    resolve(true);
   } catch (err) {
-    console.error('Failed to load WASM module:', err);
-    return false;
+    console.error('Failed to initialize module:', err);
+    resolve(false);
   }
 }
 
@@ -127,6 +158,7 @@ export function loadShader(id, wgslCode) {
   const codePtr = wasmModule._malloc(codeLen);
   wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
 
+  // Call the C++ function
   const result = wasmModule.ccall(
     'loadShader',
     'number',
@@ -134,108 +166,18 @@ export function loadShader(id, wgslCode) {
     [idPtr, codePtr]
   );
 
-  // Free allocated memory
+  // Free memory
   wasmModule._free(idPtr);
   wasmModule._free(codePtr);
 
-  return result === 0;
-}
-
-/**
- * Set the active shader for rendering
- * @param {string} id - Shader identifier
- */
-export function setActiveShader(id) {
-  if (!state.initialized || !wasmModule) return;
-
-  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
-  const idPtr = wasmModule._malloc(idLen);
-  wasmModule.stringToUTF8(id, idPtr, idLen);
-  wasmModule.ccall('setActiveShader', null, ['number'], [idPtr]);
-  wasmModule._free(idPtr);
-
-  state.activeShader = id;
-}
-
-/**
- * Update uniform values
- * @param {Object} uniforms - Uniform values
- */
-export function updateUniforms(uniforms = {}) {
-  if (!state.initialized || !wasmModule) return;
-
-  state.time = uniforms.time ?? state.time;
-  state.mouseX = uniforms.mouseX ?? state.mouseX;
-  state.mouseY = uniforms.mouseY ?? state.mouseY;
-  state.mouseDown = uniforms.mouseDown ?? state.mouseDown;
-
-  if (uniforms.zoomParams) {
-    state.zoomParams = uniforms.zoomParams;
-  }
-
-  wasmModule.ccall(
-    'updateUniforms',
-    null,
-    ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number'],
-    [
-      state.time,
-      state.mouseX,
-      state.mouseY,
-      state.mouseDown ? 1 : 0,
-      state.zoomParams[0],
-      state.zoomParams[1],
-      state.zoomParams[2],
-      state.zoomParams[3]
-    ]
-  );
-}
-
-/**
- * Add a ripple effect at the given position
- * @param {number} x - Normalized X position (0-1)
- * @param {number} y - Normalized Y position (0-1)
- */
-export function addRipple(x, y) {
-  if (!state.initialized || !wasmModule) return;
-
-  wasmModule.ccall('addRipple', null, ['number', 'number'], [x, y]);
-  state.ripples.push({ x, y, time: state.time });
-}
-
-/**
- * Clear all ripples
- */
-export function clearRipples() {
-  if (!state.initialized || !wasmModule) return;
-
-  wasmModule.ccall('clearRipples', null, [], []);
-  state.ripples = [];
-}
-
-/**
- * Get current FPS
- * @returns {number} Frames per second
- */
-export function getFPS() {
-  if (!state.initialized || !wasmModule) return 0;
-
-  return wasmModule.ccall('getFPS', 'number', [], []);
-}
-
-/**
- * Check if renderer is initialized
- * @returns {boolean}
- */
-export function isInitialized() {
-  if (!wasmModule) return false;
-  return wasmModule.ccall('isRendererInitialized', 'number', [], []) !== 0;
+  return result !== 0;
 }
 
 /**
  * Load a shader from a URL
  * @param {string} id - Shader identifier
- * @param {string} url - URL to fetch WGSL code from
- * @returns {Promise<boolean>}
+ * @param {string} url - URL to fetch WGSL from
+ * @returns {Promise<boolean>} Success status
  */
 export async function loadShaderFromURL(id, url) {
   try {
@@ -263,6 +205,43 @@ export async function loadShaderFromURL(id, url) {
   }
 }
 
+/** Switch to a previously loaded shader. */
+export function setActiveShader(id) {
+  if (!state.initialized || !wasmModule) return;
+
+  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
+  const idPtr = wasmModule._malloc(idLen);
+  wasmModule.stringToUTF8(id, idPtr, idLen);
+
+  wasmModule.ccall('setActiveShader', null, ['number'], [idPtr]);
+
+  wasmModule._free(idPtr);
+  state.activeShader = id;
+}
+
+/** Add a ripple at normalized coordinates. */
+export function addRipple(x, y) {
+  if (!state.initialized || !wasmModule) return;
+  wasmModule.ccall('addRipple', null, ['number', 'number'], [x, y]);
+}
+
+/** Clear all ripples. */
+export function clearRipples() {
+  if (!state.initialized || !wasmModule) return;
+  wasmModule.ccall('clearRipples', null, [], []);
+}
+
+/** Get current FPS. */
+export function getFPS() {
+  if (!state.initialized || !wasmModule) return 0;
+  return wasmModule.ccall('getFPS', 'number', [], []);
+}
+
+/** Check if renderer is initialized. */
+export function isInitialized() {
+  return state.initialized;
+}
+
 /**
  * Upload RGBA pixel data as an image (one-time load).
  * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
@@ -272,30 +251,60 @@ export async function loadShaderFromURL(id, url) {
 export function uploadImageData(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
 
-  const byteLen = rgbaPixels.length;
-  const ptr = wasmModule._malloc(byteLen);
+  const ptr = wasmModule._malloc(rgbaPixels.length);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);
-  wasmModule.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, width, height]);
+
+  wasmModule.ccall(
+    'loadImageData',
+    null,
+    ['number', 'number', 'number'],
+    [ptr, width, height]
+  );
+
   wasmModule._free(ptr);
 }
 
 /**
- * Upload RGBA pixel data as a video frame (called every frame).
- * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
+ * Upload RGBA pixel data as a video frame.
+ * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes
  * @param {number} width
  * @param {number} height
  */
 export function uploadVideoFrame(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
 
-  const byteLen = rgbaPixels.length;
-  const ptr = wasmModule._malloc(byteLen);
+  const ptr = wasmModule._malloc(rgbaPixels.length);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);
-  wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
+
+  wasmModule.ccall(
+    'uploadVideoFrame',
+    null,
+    ['number', 'number', 'number'],
+    [ptr, width, height]
+  );
+
   wasmModule._free(ptr);
 }
 
-// Default export
+/**
+ * Update uniform values
+ * @param {Object} uniforms - Object with time, mouseX, mouseY, mouseDown, zoom_params
+ */
+export function updateUniforms(uniforms) {
+  if (!state.initialized || !wasmModule) return;
+
+  // Update local state
+  if (uniforms.time !== undefined) state.time = uniforms.time;
+  if (uniforms.mouseX !== undefined) state.mouseX = uniforms.mouseX;
+  if (uniforms.mouseY !== undefined) state.mouseY = uniforms.mouseY;
+  if (uniforms.mouseDown !== undefined) state.mouseDown = uniforms.mouseDown;
+  if (uniforms.zoom_params) state.zoomParams = uniforms.zoom_params;
+
+  // Call C++ update (this triggers a render frame)
+  wasmModule.ccall('updateUniforms', null, [], []);
+}
+
+// For compatibility with older code
 const wasmBridge = {
   initWasmRenderer,
   shutdownWasmRenderer,

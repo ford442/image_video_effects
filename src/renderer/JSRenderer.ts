@@ -5,7 +5,9 @@ export class JSRenderer implements Renderer {
   private ctx: CanvasRenderingContext2D | null = null;
   private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
+  private image: HTMLImageElement | null = null;
   private animationId: number | null = null;
+  private showDebugInfo: boolean = true;
 
   // Sim params
   private params = {
@@ -45,10 +47,29 @@ export class JSRenderer implements Renderer {
 
   setVideo(video: HTMLVideoElement): void {
     this.video = video;
+    this.image = null; // Clear image when video is set
   }
 
   updateVideoFrame(): void {
     // Video is sampled directly in render loop
+  }
+
+  async loadImage(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        this.image = img;
+        this.video = null; // Clear video when image is loaded
+        console.log(`✅ JSRenderer: Image loaded ${img.width}x${img.height}`);
+        resolve(url);
+      };
+      img.onerror = (err) => {
+        console.error('❌ JSRenderer: Failed to load image:', err);
+        reject(err);
+      };
+      img.src = url;
+    });
   }
 
   updateAudioData(bass: number, mid: number, treble: number): void {
@@ -81,6 +102,32 @@ export class JSRenderer implements Renderer {
     this.ctx.fillStyle = '#000000';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+    // Draw image if available
+    if (this.image && this.image.complete) {
+      // Maintain aspect ratio
+      const canvasAspect = this.canvas.width / this.canvas.height;
+      const imageAspect = this.image.width / this.image.height;
+      
+      let drawWidth = this.canvas.width;
+      let drawHeight = this.canvas.height;
+      let offsetX = 0;
+      let offsetY = 0;
+      
+      if (imageAspect > canvasAspect) {
+        // Image is wider - fit to height
+        drawHeight = this.canvas.height;
+        drawWidth = this.canvas.height * imageAspect;
+        offsetX = (this.canvas.width - drawWidth) / 2;
+      } else {
+        // Image is taller - fit to width
+        drawWidth = this.canvas.width;
+        drawHeight = this.canvas.width / imageAspect;
+        offsetY = (this.canvas.height - drawHeight) / 2;
+      }
+      
+      this.ctx.drawImage(this.image, offsetX, offsetY, drawWidth, drawHeight);
+    }
+
     // Draw video if available
     if (this.video && this.video.readyState >= 2) {
       this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
@@ -100,14 +147,23 @@ export class JSRenderer implements Renderer {
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
-    // Status text - ALWAYS draw this to verify rendering is working
-    this.ctx.fillStyle = '#00ff00';
-    this.ctx.font = '16px monospace';
-    this.ctx.fillText(`✓ Rendering (${this.canvas.width}x${this.canvas.height})`, 10, 30);
-    this.ctx.font = '14px monospace';
-    this.ctx.fillText(`Audio: ${(audioIntensity * 100).toFixed(1)}%`, 10, 60);
-    this.ctx.fillText(`Agents: ${this.config.agentCount}`, 10, 80);
-    this.ctx.fillText(`Mouse: ${this.params.mouseX.toFixed(2)}, ${this.params.mouseY.toFixed(2)}`, 10, 100);
+    // Status text
+    if (this.showDebugInfo) {
+      this.ctx.fillStyle = '#00ff00';
+      this.ctx.font = '16px monospace';
+      this.ctx.fillText(`✓ Rendering (${this.canvas.width}x${this.canvas.height})`, 10, 30);
+      this.ctx.font = '14px monospace';
+      this.ctx.fillText(`Audio: ${(audioIntensity * 100).toFixed(1)}%`, 10, 60);
+      this.ctx.fillText(`Agents: ${this.config.agentCount}`, 10, 80);
+      this.ctx.fillText(`Mouse: ${this.params.mouseX.toFixed(2)}, ${this.params.mouseY.toFixed(2)}`, 10, 100);
+      if (this.image) {
+        this.ctx.fillText(`Image: ${this.image.width}x${this.image.height}`, 10, 120);
+      } else if (this.video) {
+        this.ctx.fillText(`Video: ${this.video.videoWidth}x${this.video.videoHeight}`, 10, 120);
+      } else {
+        this.ctx.fillText('No input source', 10, 120);
+      }
+    }
   };
 
   private startRenderLoop(): void {
