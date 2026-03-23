@@ -239,15 +239,13 @@ const Controls: React.FC<ControlsProps> = ({
         };
     }, [typedNumber, availableModes, activeSlot, setMode, findShaderByCoordinate]);
 
-    // Filter modes based on category
-    const shaderEntries = availableModes.filter(entry => entry.category === 'shader');
-    const imageEntries = availableModes.filter(entry => entry.category === 'image');
+    const currentModes = useMemo(() => {
+        if (shaderCategory === 'generative') {
+            return availableModes.filter(entry => entry.category === 'generative');
+        }
 
-    const getCurrentCategoryModes = () => {
-        return shaderCategory === 'shader' ? shaderEntries : imageEntries;
-    };
-
-    const currentModes = getCurrentCategoryModes();
+        return availableModes.filter(entry => entry.category !== 'generative');
+    }, [availableModes, shaderCategory]);
     const currentMode = modes[activeSlot];
     const currentParams = slotParams[activeSlot];
 
@@ -561,7 +559,7 @@ const Controls: React.FC<ControlsProps> = ({
                 <label htmlFor="category-select">Effect Filter</label>
                 <select id="category-select" value={shaderCategory} onChange={(e) => setShaderCategory(e.target.value as ShaderCategory)}>
                     <option value="image">Effects / Filters</option>
-                    <option value="shader">Procedural Generation</option>
+                    <option value="generative">Procedural Generation</option>
                 </select>
             </div>
 

@@ -1320,6 +1320,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed.
 
+### Suggestion: Ashcan School City Street
+- **Date:** 2026-10-31
+- **Prompt:** "A bustling, gritty early 20th-century city street scene depicted in the Ashcan School art style. The subject features working-class pedestrians, horse-drawn carts, and dense tenement buildings. The lighting is overcast and realistic, casting soft, murky shadows that highlight the dirt and texture of the urban environment. The mood is authentic, raw, and full of everyday life. Captured with an eye-level, documentary-style perspective, emphasizing the unglamorous reality of the city."
+- **Negative prompt:** "modern, bright, cheerful, clean, sci-fi, surreal, highly saturated"
+- **Tags:** art, city, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, crowded street, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull reds, ochre
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261031_ashcan-school-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing gritty, unidealized urban scenes and historical art styles.
+
+### Suggestion: Exoplanet Core Liquid Diamond
+- **Date:** 2026-10-31
+- **Prompt:** "An ultra-macro, theoretical visualization deep within the core of a massive exoplanet. The subject is an ocean of liquid diamond and super-compressed carbon structures churning under unimaginable pressure. The lighting is completely internal, glowing with an intense, blinding white and electric blue heat that refracts wildly through the crystalline facets. The mood is extreme, alien, and awe-inspiring. Captured with a microscopic camera perspective, freezing the chaotic, crystalline fluid dynamics in sharp focus."
+- **Negative prompt:** "surface, sky, life, dark, muddy, soft, blurry"
+- **Tags:** sci-fi, space, macro, exoplanet, core, diamond
+- **Style / Reference:** hyper-realistic scientific visualization, 3D render
+- **Composition:** chaotic, dense, sharp macro focus
+- **Color palette:** blinding white, electric blue, intense cyan, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing extreme internal lighting, refraction, and complex crystal fluid simulations.
+
+### Suggestion: Magnetar Plasma Storm
+- **Date:** 2026-10-31
+- **Prompt:** "A breathtaking, epic space scene featuring a terrifying magnetar star violently erupting. The subject is a hyper-dense neutron star surrounded by fiercely glowing, twisted magnetic field lines trapping superheated plasma. The lighting is blindingly bright and high-contrast, dominated by the extreme, raw energy radiating from the star against the pitch-black void of space. The mood is apocalyptic, powerful, and majestic. Captured with a wide-angle cinematic lens, showcasing the vast, twisted magnetic flares arching into deep space."
+- **Negative prompt:** "calm, planets, earth-like, soft lighting, simple, low contrast"
+- **Tags:** sci-fi, space, magnetar, cosmic, epic, plasma
+- **Style / Reference:** cinematic space art, astrophotography, JWST style
+- **Composition:** centered subject, dynamic curved flares, wide perspective
+- **Color palette:** blinding white, intense violet, fiery orange, pitch black void
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_magnetar-storm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing twisted, glowing emission lines (magnetic fields) and extreme high-contrast cosmic phenomena.
+
+### Suggestion: Giant Hexagonal Beehive
+- **Date:** 2026-10-31
+- **Prompt:** "An ultra-macro view deep inside a giant, complex beehive. The subject consists of perfectly repeating, translucent amber-colored hexagonal wax cells filled with glowing golden honey. The lighting is warm and directional, filtering through the semi-transparent wax walls to create a mesmerizing sub-surface scattering effect and a rich, golden ambiance. The mood is industrious, organic, and mathematically perfect. Captured with a 100mm macro lens, deep depth of field to emphasize the endless geometric repetition of the honeycomb structure."
+- **Negative prompt:** "messy, chaotic, dark, dull, artificial, plastic, people"
+- **Tags:** macro, nature, beehive, hexagonal, golden
+- **Style / Reference:** macro nature photography, hyper-detailed structure
+- **Composition:** full frame repeating pattern, deep perspective
+- **Color palette:** warm gold, rich amber, deep translucent orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_giant-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating sub-surface scattering on organic materials and the generation of perfect, repeating geometric patterns (hexagons).
+
+### Suggestion: Photorealistic Beaver Dam
+- **Date:** 2026-10-31
+- **Prompt:** "A photorealistic, highly detailed landscape photograph of an intricate beaver dam blocking a tranquil forest stream. The subject is a massive construction of chewed logs, thick mud, and woven branches holding back a deep pool of clear water. The lighting is crisp, early morning sunlight piercing through the dense forest canopy, casting dappled light and reflections on the still water. The mood is peaceful, natural, and harmonious. Captured with a 35mm lens from the edge of the water, showing both the complex texture of the dam and the calm ecosystem it creates."
+- **Negative prompt:** "urban, modern, stylized, painted, blurry, low resolution, people"
+- **Tags:** nature, landscape, photorealism, forest, beaver dam
+- **Style / Reference:** National Geographic style nature photography, hyper-detailed
+- **Composition:** wide shot, low angle near water surface, leading lines of the stream
+- **Color palette:** rich earthy browns, lush forest greens, clear blue water reflections, golden sunlight
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing complex organic structures (woven branches and mud), clear water reflections, and dappled forest lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1347,6 +1412,13 @@ To keep the collection diverse, consider adding prompts for:
 - **Styles:** Ashcan School, Rayonism, De Stijl, Low Key Photography.
 - **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Organza, Onyx.
 - **Subjects:** Supernova, Exoplanet Core, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring
+- **Styles:** Rayonism, De Stijl, Italian Futurism, Low Key Photography, Tenebrism, Biopunk.
+- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Aerogel, Damascus Steel, Onyx. Graphene.
+- **Subjects:** Tsunami, Bioluminescent Reef, Tide Pool, Supervolcano, Origami, Orbital Ring,
+- **Styles:** Rayonism, De Stijl, Italian Futurism, Low Key Photography.
+- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Onyx.
+- **Subjects:** Supernova, Bioluminescent Reef, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Tide Pool, Supervolcano, Origami, Orbital Ring,
+
 ---
 
 ## Agent suggestions
