@@ -1,0 +1,72 @@
+{
+  "id": "fractal-boids-field",
+  "name": "Fractal Boids Field",
+  "url": "shaders/fractal-boids-field.wgsl",
+  "category": "simulation",
+  "description": "Flocking behavior on a fractal vector field. Swarms of particles flowing through organic fractal currents.",
+  "features": [
+    "advanced-hybrid",
+    "boids",
+    "fractal-flow-field",
+    "gpu-particles",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "boid_count",
+      "name": "Boid Count",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Number of simulated boids"
+    },
+    {
+      "id": "flow_strength",
+      "name": "Flow Field Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Influence of fractal flow field"
+    },
+    {
+      "id": "trail_persistence",
+      "name": "Trail Persistence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How long trails persist"
+    },
+    {
+      "id": "separation",
+      "name": "Separation Distance",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Boid separation distance"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "fbm2 (gen_grid.wgsl)",
+    "domainWarp",
+    "Boids separation/alignment/cohesion"
+  ],
+  "performance_target": "45-60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22",
+  "tags": [
+    "audio",
+    "music",
+    "reactive"
+  ]
+}

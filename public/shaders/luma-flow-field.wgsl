@@ -1,5 +1,11 @@
-// Luma Flow Field - Simulation
-// Features: flow field, luminance driven, simulation
+// ═══════════════════════════════════════════════════════════════════
+//  Luma Flow Field - Luminance-driven flow simulation
+//  Category: simulation
+//  Features: upgraded-rgba, depth-aware, flow-field, luminance-driven
+//  Upgraded: 2026-03-22
+//  By: Agent 1A - Alpha Channel Specialist
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -29,6 +35,7 @@ fn getLuma(color: vec3<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(textureDimensions(readTexture));
     let id = vec2<i32>(global_id.xy);
+    let coord = vec2<i32>(global_id.xy);
     if (id.x >= i32(resolution.x) || id.y >= i32(resolution.y)) {
         return;
     }
@@ -56,6 +63,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Fade and update
     color = mix(color, new_color, 0.9);
     color *= 0.99; // decay
+    
+    // Calculate alpha based on luminance and flow strength
+    let displacementStrength = length(displacement);
+    let flowAlpha = mix(0.7, 1.0, smoothstep(0.0, 0.05, displacementStrength));
+    let lumaAlpha = mix(0.6, 1.0, luma);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthAlpha = mix(0.6, 1.0, depth);
+    let alpha = (flowAlpha + lumaAlpha + depthAlpha) / 3.0;
 
-    textureStore(writeTexture, id, vec4<f32>(color, 1.0));
+    // Output RGBA
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    
+    // Output depth
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

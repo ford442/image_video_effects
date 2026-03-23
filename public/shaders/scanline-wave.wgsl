@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Scanline Wave - Sine wave distortion effect
+//  Category: distortion
+//  Features: upgraded-rgba, depth-aware, mouse-driven, wave-distortion
+//  Upgraded: 2026-03-22
+//  By: Agent 1A - Alpha Channel Specialist
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +19,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -27,6 +33,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
     var uv = vec2<f32>(global_id.xy) / resolution;
+    let coord = vec2<i32>(global_id.xy);
     var mousePos = u.zoom_config.yz;
     let time = u.config.x;
 
@@ -34,26 +41,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let freq = mix(10.0, 200.0, u.zoom_params.x);
     let amp = u.zoom_params.y * 0.1;
     let speed = (u.zoom_params.z - 0.5) * 20.0;
-    let mouse_influence = u.zoom_params.w; // 0 = global, 1 = local to mouse y
+    let mouse_influence = u.zoom_params.w;
 
     // Calculate wave
-    // Base wave
     var wave = sin(uv.y * freq + time * speed) * amp;
 
     // Influence
     if (mouse_influence > 0.0) {
         let distY = abs(uv.y - mousePos.y);
-        let influence = smoothstep(0.5, 0.0, distY); // localized around mouse Y
+        let influence = smoothstep(0.5, 0.0, distY);
         wave *= mix(1.0, influence, mouse_influence);
     }
 
     let finalUV = vec2(uv.x + wave, uv.y);
 
     let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
-
-    // Pass depth
+    
+    // Calculate alpha based on effect strength and luminance
+    let effectStrength = abs(wave) / (amp + 0.001);
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
+    let alpha = mix(0.7, 1.0, luma);
+    
+    // Effect intensity modulates alpha
+    let effectAlpha = mix(0.8, 1.0, smoothstep(0.0, 0.5, effectStrength));
+    let depthAlpha = mix(0.6, 1.0, depth);
+    let finalAlpha = (alpha + effectAlpha + depthAlpha) / 3.0;
+
+    // Output RGBA
+    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+
+    // Output depth
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

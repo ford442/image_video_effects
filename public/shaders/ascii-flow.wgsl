@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  ascii-flow
+//  Category: stylize
+//  Features: upgraded-rgba, depth-aware
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +18,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -116,5 +121,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tint = vec3<f32>(0.2, 1.0, 0.4);
     let final_color = mix(color, tint, 0.7) * shape;
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, 1.0));
+    // Sample depth for alpha calculation
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Calculate luminance-based alpha
+    let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = mix(0.7, 1.0, luma);
+    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+    
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, finalAlpha));
+    
+    // Pass depth
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

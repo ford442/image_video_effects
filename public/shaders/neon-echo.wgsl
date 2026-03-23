@@ -1,9 +1,9 @@
-// ═══════════════════════════════════════════════════════════════
-//  Neon Echo - Echo Trail Effect with Alpha Emission
-//  Category: lighting-effects
-//  Physics: Persistent echo trails with emissive decay
-//  Alpha: Core echo = 0.3, Glow = 0.0 (additive)
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Neon Echo - Advanced Alpha with Accumulative
+//  Category: feedback/temporal
+//  Alpha Mode: Accumulative Alpha + Luminance Key
+//  Features: advanced-alpha, neon, echo, temporal
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,90 +26,64 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Helper for hue rotation
-fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
-    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
-    let cosAngle = cos(shift * 6.28318);
-    return vec3<f32>(color * cosAngle + cross(k, color) * sin(shift * 6.28318) + k * dot(k, color) * (1.0 - cosAngle));
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 3: Accumulative Alpha
+fn accumulativeAlpha(
+    newColor: vec3<f32>,
+    newAlpha: f32,
+    prevColor: vec3<f32>,
+    prevAlpha: f32,
+    accumulationRate: f32
+) -> vec4<f32> {
+    let accumulatedAlpha = prevAlpha * (1.0 - accumulationRate * 0.1) + newAlpha * accumulationRate;
+    let totalAlpha = min(accumulatedAlpha, 1.0);
+    let blendFactor = select(newAlpha * accumulationRate / totalAlpha, 0.0, totalAlpha < 0.001);
+    let color = mix(prevColor, newColor, blendFactor);
+    return vec4<f32>(color, totalAlpha);
 }
 
-// Alpha calculation for emissive materials
-fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
-    let coreAlpha = 0.3 * glowIntensity;
-    let glowAlpha = 0.0;
-    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+// Mode 6: Luminance Key Alpha
+fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    return smoothstep(threshold - softness, threshold + softness, luma);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-
-    // Params
-    // x: decay, y: threshold, z: hueParam, w: occlusionBalance
-    let decay = u.zoom_params.x;
-    let threshold = u.zoom_params.y;
-    let hueParam = u.zoom_params.z;
-    let occlusionBalance = u.zoom_params.w;
-
-    // Current Frame
-    let currentColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // History Frame (Previous state)
-    let historyColor = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-
-    // Calculate Luminance/Edge
-    let luma = dot(currentColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
-
-    // Simple neighbor sampling for edge detection
-    let offset = 1.0 / resolution;
-    let left = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-offset.x, 0.0), 0.0);
-    let right = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(offset.x, 0.0), 0.0);
-    let up = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -offset.y), 0.0);
-    let down = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, offset.y), 0.0);
-
-    let edgeX = length(right.rgb - left.rgb);
-    let edgeY = length(down.rgb - up.rgb);
-    let edgeStrength = sqrt(edgeX * edgeX + edgeY * edgeY);
-
-    // Determine if we should spawn a new "echo" pixel
-    var newEcho = vec3<f32>(0.0);
-
-    if (edgeStrength > threshold) {
-        // Calculate dynamic color based on Mouse Pos and Time
-        let mouseX = u.zoom_config.y;
-        let mouseY = u.zoom_config.z;
-        let distToMouse = distance(uv, vec2<f32>(mouseX, mouseY));
-
-        // Base color cycles over time and space
-        let baseHue = hueParam + u.config.x * 0.1 + distToMouse;
-        let tint = hueShift(vec3<f32>(1.0, 0.0, 0.0), baseHue);
-
-        newEcho = currentColor.rgb * tint * 3.0; // Boost brightness for HDR emission
-    }
-
-    // Combine history with decay
-    let fadedHistory = historyColor.rgb * (1.0 - decay * 0.1);
-
-    // Add new echo (use max to keep bright trails)
-    let resultRGB = max(fadedHistory, newEcho);
-
-    // Calculate alpha based on emission intensity
-    let glowIntensity = length(resultRGB);
-    let finalAlpha = calculateEmissiveAlpha(glowIntensity, occlusionBalance);
-
-    let resultColor = vec4<f32>(resultRGB, max(historyColor.a * (1.0 - decay * 0.05), length(newEcho) * 0.5));
-
-    // Write to history buffer for next frame
-    textureStore(dataTextureA, global_id.xy, resultColor);
-
-    // Write to display with emission alpha
-    // Screen blend for glow effect
-    let displayColor = resultRGB * 1.5; // Boost for HDR emission
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayColor, finalAlpha));
-
-    // Pass depth
+    let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
+    let uv = vec2<f32>(global_id.xy) / u.config.zw;
+    let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
+    
+    let accumulationRate = u.zoom_params.x;
+    let echoScale = u.zoom_params.y;
+    let lumaThreshold = u.zoom_params.z * 0.5;
+    let softness = u.zoom_params.w * 0.2;
+    
+    let current = textureLoad(readTexture, coord, 0);
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    
+    // Neon color based on position
+    let neonColor = vec3<f32>(
+        0.5 + 0.5 * sin(uv.x * 10.0 + time),
+        0.5 + 0.5 * sin(uv.y * 10.0 + time + 2.09),
+        0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + time + 4.18)
+    );
+    
+    let echo = prev.rgb * echoScale;
+    let blended = mix(echo, neonColor, 0.3);
+    
+    let newAlpha = luminanceKeyAlpha(blended, lumaThreshold, softness);
+    
+    let accumulated = accumulativeAlpha(blended, newAlpha, prev.rgb, prev.a, accumulationRate);
+    
+    textureStore(dataTextureA, coord, accumulated);
+    textureStore(writeTexture, global_id.xy, accumulated);
+    
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

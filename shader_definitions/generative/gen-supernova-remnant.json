@@ -1,0 +1,56 @@
+{
+  "id": "gen-supernova-remnant",
+  "name": "Supernova Remnant",
+  "url": "shaders/gen-supernova-remnant.wgsl",
+  "category": "generative",
+  "description": "Expanding shell structures with shockwave physics and Rayleigh-Taylor instability patterns, inspired by Hubble nebula images",
+  "tags": [
+    "generative",
+    "nebula",
+    "physics",
+    "space",
+    "procedural",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "animated",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "explosionEnergy",
+      "name": "Explosion Energy",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "shellDensity",
+      "name": "Shell Density",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chaos",
+      "name": "Turbulence/Chaos",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "colorTemp",
+      "name": "Temperature Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

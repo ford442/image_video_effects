@@ -1,0 +1,56 @@
+{
+  "id": "gen-magnetic-field-lines",
+  "name": "Magnetic Field Lines",
+  "url": "shaders/gen-magnetic-field-lines.wgsl",
+  "category": "generative",
+  "description": "Magnetic dipole field visualization with field lines and charged particles following the field, featuring North (blue) and South (red) poles",
+  "tags": [
+    "generative",
+    "physics",
+    "magnetic",
+    "field-lines",
+    "procedural",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "animated",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "fieldStrength",
+      "name": "Field Strength",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "particleSpeed",
+      "name": "Particle Speed",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "numDipoles",
+      "name": "Number of Dipoles",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "trailLength",
+      "name": "Trail Length",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

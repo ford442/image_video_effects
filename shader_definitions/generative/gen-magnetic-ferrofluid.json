@@ -11,10 +11,14 @@
     "spiky",
     "fluid",
     "generative",
-    "ferrofluid"
+    "ferrofluid",
+    "audio",
+    "music"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

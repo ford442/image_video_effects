@@ -1,0 +1,60 @@
+{
+  "id": "hybrid-spectral-sorting",
+  "name": "Hybrid Spectral Sorting",
+  "url": "shaders/hybrid-spectral-sorting.wgsl",
+  "category": "distortion",
+  "description": "Audio-reactive pixel sorting with frequency-based color shifts and displacement based on spectral analysis",
+  "features": ["hybrid", "pixel-sorting", "spectral-analysis", "audio-reactive", "hue-shift", "randomization-safe"],
+  "params": [
+    {
+      "id": "sort_threshold",
+      "name": "Sort Sensitivity",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Luminance threshold for pixel sorting"
+    },
+    {
+      "id": "spectral_bands",
+      "name": "Spectral Bands",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Number of frequency bands"
+    },
+    {
+      "id": "displacement",
+      "name": "Spectral Displacement",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Displacement based on spectral energy"
+    },
+    {
+      "id": "hue_shift",
+      "name": "Hue Shift",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Color shift based on frequency band"
+    }
+  ],
+  "chunks_used": [
+    "pixel sorting pattern (bitonic-sort)",
+    "spectral analysis (spectrogram-displace)",
+    "audio-reactive pattern",
+    "fbm2 (gen_grid.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)",
+    "hueShift (stellar-plasma.wgsl)"
+  ],
+  "created_by": "Agent 2A - Shader Surgeon",
+  "created_date": "2026-03-22"
+}

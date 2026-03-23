@@ -3,9 +3,17 @@
   "name": "Liquid Jelly",
   "url": "shaders/liquid-jelly.wgsl",
   "category": "image",
-  "description": "",
+  "description": "Elastic liquid effect with subsurface scattering and alpha physics",
+  "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "elastic-bounce",
+    "volume-shading",
+    "subsurface-scattering"
+  ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "liquid"
   ]
 }

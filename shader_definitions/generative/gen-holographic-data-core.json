@@ -4,8 +4,23 @@
   "url": "shaders/gen-holographic-data-core.wgsl",
   "category": "generative",
   "description": "An infinite journey through a quantum lattice of glowing data nodes and pulsing circuits.",
-  "tags": ["3d", "raymarching", "cyberpunk", "hologram", "data", "neon", "procedural", "infinite"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "3d",
+    "raymarching",
+    "cyberpunk",
+    "hologram",
+    "data",
+    "neon",
+    "procedural",
+    "infinite",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
   "params": [
     {
       "id": "param1",

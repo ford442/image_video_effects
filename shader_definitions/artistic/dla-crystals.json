@@ -38,10 +38,15 @@
     "temporal-persistence",
     "interactive",
     "fractal",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "simulation",
-    "physics"
+    "physics",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

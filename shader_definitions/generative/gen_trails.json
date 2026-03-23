@@ -1,14 +1,19 @@
 {
   "id": "gen-trails",
-  "name": "Light Trails",
+  "name": "Boids Flocking",
   "url": "shaders/gen_trails.wgsl",
   "category": "generative",
-  "description": "Paint light trails with your mouse. (Stateful)",
+  "description": "Craig Reynolds' boids flocking simulation with alpha scattering and RGBA depth-aware rendering.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "particles"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "flocking",
+    "particles"
   ]
 }

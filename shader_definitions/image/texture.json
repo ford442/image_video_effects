@@ -1,0 +1,16 @@
+{
+  "id": "texture",
+  "name": "Texture Display",
+  "url": "shaders/texture.wgsl",
+  "category": "image",
+  "description": "Basic image/video texture display with RGBA depth-aware processing.",
+  "features": [
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "image",
+    "video",
+    "basic"
+  ]
+}

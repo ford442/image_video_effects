@@ -21,7 +21,7 @@ Your SOLE task is to create visual effects by writing **WGSL Compute Shaders** t
 
 **Pixelocity** is a React-based web application that runs GPU shader effects using WebGPU. It features:
 
-- **587+ shader effects** across 11 categories (liquid, distortion, artistic, generative, etc.)
+- **678 shader effects** across 15 categories (liquid, distortion, artistic, generative, hybrid, simulation, etc.)
 - **Real-time interactive effects** with mouse-driven ripples and distortions
 - **AI-powered depth estimation** using DPT-Hybrid-MIDAS model via Xenova Transformers
 - **AI VJ Mode** (Alucinate) that auto-generates visual stacks using WebLLM (Gemma-2-2b-it)
@@ -54,7 +54,7 @@ image_video_effects/
 │   │   ├── texture.wgsl        # Final render pass shader
 │   │   ├── imageVideo.wgsl     # Image/video display shader
 │   │   ├── galaxy.wgsl         # Procedural galaxy shader
-│   │   └── ...                 # 580+ more shader files
+│   │   └── ...                 # 670+ more shader files
 │   ├── shader-lists/           # GENERATED - DO NOT EDIT DIRECTLY
 │   │   ├── liquid-effects.json
 │   │   ├── interactive-mouse.json
@@ -278,17 +278,22 @@ This matches the dispatch: `dispatchWorkgroups(Math.ceil(width/8), Math.ceil(hei
 
 | Category | Description | Count |
 |----------|-------------|-------|
-| `liquid-effects` | Fluid simulations, ripples, viscosity | 20+ |
-| `interactive-mouse` | Mouse-driven interactive effects | 170+ |
-| `visual-effects` | Visual/glitch/chromatic effects | 30+ |
-| `lighting-effects` | Plasma, glow, lens flares | 14+ |
-| `distortion` | Spatial distortions, warps | 60+ |
-| `artistic` | Creative/artistic effects | 90+ |
-| `retro-glitch` | Retro aesthetics, VHS, CRT | 26+ |
-| `simulation` | Physics, cellular automata | 16+ |
-| `geometric` | Geometric patterns, tessellations | 10+ |
-| `image` | Image processing effects | 50+ |
-| `generative` | Procedural generation (no input needed) | 30+ |
+| Category | Description | Count |
+|----------|-------------|-------|
+| `image` | Image processing effects | 405 |
+| `generative` | Procedural generation (no input needed) | 97 |
+| `interactive-mouse` | Mouse-driven interactive effects | 38 |
+| `distortion` | Spatial distortions, warps | 32 |
+| `simulation` | Physics, cellular automata | 30 |
+| `artistic` | Creative/artistic effects | 20 |
+| `visual-effects` | Visual/glitch/chromatic effects | 18 |
+| `hybrid` | Combined technique shaders (Phase A) | 10 |
+| `advanced-hybrid` | Complex multi-technique shaders (Phase B) | 10 |
+| `retro-glitch` | Retro aesthetics, VHS, CRT | 13 |
+| `lighting-effects` | Plasma, glow, lens flares | 14 |
+| `geometric` | Geometric patterns, tessellations | 9 |
+| `liquid-effects` | Fluid simulations, ripples, viscosity | 6 |
+| `post-processing` | Post-processing effects | 6 |
 
 ---
 
@@ -479,6 +484,119 @@ Mark with metadata:
   "multipass": { "pass": 1, "totalPasses": 2, "nextShader": "prismatic-feedback-loop" },
   "features": ["multi-pass-1"]
 }
+```
+
+### Data Texture Convention (New in Phase B)
+
+For complex multi-pass shaders, use the data texture binding convention:
+
+```wgsl
+// Pass 1: Write to dataTextureA
+@group(0) @binding(13) var dataTextureA: texture_storage_2d<rgba32float, write>;
+
+// Pass 2: Read from dataTextureC (fed with dataTextureA content)
+// Write to dataTextureB
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;  // Previous pass output
+```
+
+See `quantum-foam-pass*.wgsl` and `sim-fluid-feedback-field-pass*.wgsl` for examples.
+
+---
+
+## Optimization Patterns (Phase B Discoveries)
+
+### 1. Distance-Based LOD
+Reduce noise octaves for distant pixels:
+```wgsl
+let dist = length(uv - 0.5);
+let octaves = i32(mix(6.0, 2.0, dist * 1.5));  // Fewer octaves at edges
+```
+
+### 2. Early Exit
+Skip calculations for minimal effect regions:
+```wgsl
+if (effectStrength < 0.01) {
+    textureStore(writeTexture, global_id.xy, originalColor);
+    return;
+}
+```
+
+### 3. Cached Calculations
+Store expensive results for reuse:
+```wgsl
+// Cache eigenvalues for tensor field
+let eigen = cachedEigenvalues[tid];
+```
+
+### 4. Branchless Code
+Use `select()` instead of if-statements where possible:
+```wgsl
+// Branchless
+let result = select(b, a, condition);
+
+// Instead of
+var result: f32;
+if (condition) { result = a; } else { result = b; }
+```
+
+---
+
+## Hybrid Shader Creation Patterns
+
+### Chunk Attribution
+Always attribute borrowed code chunks:
+```wgsl
+// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
+fn hash12(p: vec2<f32>) -> f32 {
+    // ... implementation
+}
+```
+
+### Standard Hybrid Header
+```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  {Shader Name}
+//  Category: {category}
+//  Features: {feature-list}
+//  Complexity: {Low|Medium|High|Very High}
+//  Chunks From: {source shaders}
+//  Created: {date}
+//  By: {agent}
+// ═══════════════════════════════════════════════════════════════════
+```
+
+### Feature Tags for Hybrids
+- `advanced-hybrid` - Complex multi-technique shaders
+- `raymarched` - Uses raymarching
+- `simulation` - Physics simulation
+- `audio-reactive` - Responds to audio input
+- `temporal` - Uses feedback/history
+- `depth-aware` - Uses depth texture
+
+---
+
+## Audio Reactivity Patterns
+
+### Reading Audio Input
+```wgsl
+// Audio values are passed via plasmaBuffer or custom uniform
+let bass = plasmaBuffer[0].x;      // Low frequencies
+let mids = plasmaBuffer[0].y;      // Mid frequencies
+let treble = plasmaBuffer[0].z;    // High frequencies
+```
+
+### Common Audio Patterns
+```wgsl
+// Bass pulse
+let pulse = 1.0 + bass * 0.5;
+
+// Color shift based on frequency
+let hueShift = fract(time * 0.1 + bass * 0.2);
+
+// Beat detection (simplified)
+let beat = step(0.7, bass);
 ```
 
 ---

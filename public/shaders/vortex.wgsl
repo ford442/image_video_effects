@@ -94,7 +94,7 @@ fn calculateVorticity(uv: vec2<f32>, vortices: array<Vortex, 4>, time: f32) -> f
         let tail = 1.0 / (1.0 + pow(dist / v.coreRadius, 2.0));
         
         // Time-varying vorticity for life-like motion
-        let pulse = 1.0 + 0.1 * sin(time * 2.0 + f32(i));
+        let pulse = 1.0 + 0.1 * sin(time * 2.0 * audioReactivity + f32(i));
         
         vorticity = vorticity + v.strength * v.rotationDir * (core + 0.3 * tail) * pulse;
     }
@@ -194,14 +194,14 @@ fn getVortices(time: f32) -> array<Vortex, 4> {
     
     // Vortex 1: Primary, follows mouse loosely
     vortices[0] = Vortex(
-        vec2<f32>(0.5 + 0.1 * sin(time * 0.3), 0.5 + 0.1 * cos(time * 0.4)),
+        vec2<f32>(0.5 + 0.1 * sin(time * 0.3 * audioReactivity), 0.5 + 0.1 * cos(time * 0.4 * audioReactivity)),
         0.15,
         0.08,
         1.0
     );
     
     // Vortex 2: Secondary, orbits primary
-    let orbitAngle = time * 0.5;
+    let orbitAngle = time * 0.5 * audioReactivity;
     vortices[1] = Vortex(
         vec2<f32>(0.5 + 0.25 * cos(orbitAngle), 0.5 + 0.25 * sin(orbitAngle)),
         0.1,
@@ -211,7 +211,7 @@ fn getVortices(time: f32) -> array<Vortex, 4> {
     
     // Vortex 3: Counter-rotating, slower
     vortices[2] = Vortex(
-        vec2<f32>(0.3 + 0.15 * sin(time * 0.2 + 1.0), 0.7 + 0.1 * cos(time * 0.25)),
+        vec2<f32>(0.3 + 0.15 * sin(time * 0.2 * audioReactivity + 1.0), 0.7 + 0.1 * cos(time * 0.25 * audioReactivity)),
         0.08,
         0.05,
         1.0
@@ -219,7 +219,7 @@ fn getVortices(time: f32) -> array<Vortex, 4> {
     
     // Vortex 4: Small, fast, chaotic
     vortices[3] = Vortex(
-        vec2<f32>(0.7 + 0.08 * sin(time * 0.8), 0.3 + 0.08 * cos(time * 0.7)),
+        vec2<f32>(0.7 + 0.08 * sin(time * 0.8 * audioReactivity), 0.3 + 0.08 * cos(time * 0.7 * audioReactivity)),
         0.06,
         0.04,
         -1.0
@@ -263,6 +263,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
     
     // Read parameters
     let vortexStrength = u.zoom_params.x;      // 0.0 to 1.0
@@ -282,7 +286,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let turbAmount = turbulence * 0.02;
     
     // Vortex 1: Primary central vortex
-    let t1 = time * speedScale;
+    let t1 = time * speedScale * audioReactivity;
     vortices[0] = Vortex(
         vec2<f32>(
             0.5 + 0.1 * sin(t1 * 0.3),
@@ -339,10 +343,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     velocity = velocity + confinementForce;
     
     // Add turbulent noise
-    let turbUV = uv * 3.0 + time * 0.1;
+    let turbUV = uv * 3.0 + time * 0.1 * audioReactivity;
     let turbulenceNoise = vec2<f32>(
-        fbm(turbUV + vec2<f32>(0.0, time * 0.05), 3),
-        fbm(turbUV + vec2<f32>(100.0, time * 0.05), 3)
+        fbm(turbUV + vec2<f32>(0.0, time * 0.05 * audioReactivity), 3),
+        fbm(turbUV + vec2<f32>(100.0, time * 0.05 * audioReactivity), 3)
     ) - 0.5;
     velocity = velocity + turbulenceNoise * turbAmount;
     

@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Neon Flashlight - Advanced Alpha with Edge-Preserve
+//  Category: edge-detection
+//  Alpha Mode: Edge-Preserve Alpha + Luminance Key
+//  Features: advanced-alpha, flashlight, edge-reveal
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +18,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -21,67 +26,59 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn sobel(uv: vec2<f32>, res: vec2<f32>) -> f32 {
-    let x = 1.0 / res.x;
-    let y = 1.0 / res.y;
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
 
-    // Luminance-based Sobel
-    let tl = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2(-x, -y), 0.0).rgb, vec3(0.333));
-    let t  = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2( 0.0, -y), 0.0).rgb, vec3(0.333));
-    let tr = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2( x, -y), 0.0).rgb, vec3(0.333));
-    let l  = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2(-x,  0.0), 0.0).rgb, vec3(0.333));
-    let r  = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2( x,  0.0), 0.0).rgb, vec3(0.333));
-    let bl = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2(-x,  y), 0.0).rgb, vec3(0.333));
-    let b  = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2( 0.0,  y), 0.0).rgb, vec3(0.333));
-    let br = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2( x,  y), 0.0).rgb, vec3(0.333));
-
-    let gx = tl * -1.0 + tr * 1.0 + l * -2.0 + r * 2.0 + bl * -1.0 + br * 1.0;
-    let gy = tl * -1.0 + t * -2.0 + tr * -1.0 + bl * 1.0 + b * 2.0 + br * 1.0;
-
-    return sqrt(gx * gx + gy * gy);
+// Mode 2: Edge-Preserve Alpha
+fn edgePreserveAlpha(uv: vec2<f32>, pixelSize: vec2<f32>, edgeThreshold: f32) -> f32 {
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let depthEdge = length(vec2<f32>(dR - dL, dU - dD));
+    let edgeMask = smoothstep(edgeThreshold * 0.5, edgeThreshold, depthEdge);
+    return mix(0.2, 1.0, edgeMask);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
-    var uv = vec2<f32>(global_id.xy) / resolution;
-
-    // Params
-    let radius = mix(0.1, 0.6, u.zoom_params.x);
-    let neonIntensity = u.zoom_params.y * 3.0;
-    let edgeThreshold = u.zoom_params.z;
-    let ambient = u.zoom_params.w;
-
-    // Mouse Info
-    var mousePos = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-    let distVec = (uv - mousePos) * vec2(aspect, 1.0);
-    let dist = length(distVec);
-
-    // Spotlight Falloff
-    let spotlight = 1.0 - smoothstep(radius * 0.5, radius, dist);
-
-    // Edge Detection
-    let edge = sobel(uv, resolution);
-    let neon = max(0.0, edge - edgeThreshold) * neonIntensity;
-
-    // Base Color
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-
-    // Neon Color (Boost saturation for neon effect)
-    let neonColor = baseColor * neon * 2.0;
-
-    // Ambient Color
-    let ambientColor = baseColor * ambient;
-
-    // Mix
-    let finalColor = mix(ambientColor, neonColor + ambientColor * 0.2, spotlight);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalColor, 1.0));
-
-    // Pass depth
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let pixelSize = 1.0 / resolution;
+    let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
+    
+    let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
+    let beamRadius = u.zoom_params.y * 0.3;
+    let intensity = u.zoom_params.z * 3.0;
+    let colorShift = u.zoom_params.w;
+    
+    let mousePos = u.zoom_config.yz;
+    let mouseDist = distance(uv, mousePos);
+    
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
+    
+    // Flashlight beam falloff
+    let beamFalloff = 1.0 - smoothstep(0.0, beamRadius, mouseDist);
+    
+    // Edge detection
+    let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
+    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
+    let edge = length(r - l);
+    
+    // Neon color
+    let neonColor = vec3<f32>(
+        0.5 + 0.5 * sin(colorShift * 6.28 + time),
+        0.5 + 0.5 * sin(colorShift * 6.28 + time + 2.09),
+        0.5 + 0.5 * sin(colorShift * 6.28 + time + 4.18)
+    );
+    
+    let emission = neonColor * edge * beamFalloff * intensity;
+    let alpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold) * beamFalloff;
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

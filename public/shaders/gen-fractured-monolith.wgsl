@@ -68,13 +68,19 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     var glow = 0.0;
 
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.config.y;
+    let audioBass = u.config.y * 1.2;
+    let audioMid = u.config.z;
+    let audioHigh = u.config.w;
+    let audioReactivity = 1.0 + audioOverall * 0.5;
     let spread = u.zoom_params.x * 2.0;
     let levSpeed = u.zoom_params.y;
     let rotSpeed = u.zoom_params.w;
 
     // --- Liquid Terrain ---
     // Smooth wavy floor
-    let wave = sin(p.x * 0.5 + time * 0.5) * cos(p.z * 0.5 + time * 0.3) * 0.2;
+    let wave = sin(p.x * 0.5 + time * 0.5 * audioReactivity) * cos(p.z * 0.5 + time * 0.3 * audioReactivity) * 0.2;
     let floorDist = sdPlane(p, vec3<f32>(0.0, 1.0, 0.0), 2.0) + wave;
     if (floorDist < d) {
         d = floorDist;
@@ -84,9 +90,9 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     // --- Monolith ---
     var bp = p;
     // Levitation bobbing
-    bp.y -= sin(time * levSpeed) * 0.5 + 2.0;
+    bp.y -= sin(time * levSpeed * audioReactivity) * 0.5 + 2.0;
     // Slow global rotation
-    let temp_bp_xz = rot(time * 0.2 * rotSpeed) * bp.xz;
+    let temp_bp_xz = rot(time * 0.2 * audioReactivity * rotSpeed) * bp.xz;
     bp.x = temp_bp_xz.x;
     bp.z = temp_bp_xz.y;
 
@@ -104,10 +110,10 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     let drift = (hash31(cellId) - 0.5) * spread;
     var fp = bp;
     var dir = normalize(cellCenter + vec3<f32>(0.001));
-    fp -= dir * drift * (1.0 + sin(time * 0.5 + hash31(cellId)*10.0) * 0.2);
+    fp -= dir * drift * (1.0 + sin(time * 0.5 * audioReactivity + hash31(cellId)*10.0) * 0.2);
 
     // Individual piece rotation
-    let localRot = (hash31(cellId + vec3<f32>(1.0)) - 0.5) * time * rotSpeed;
+    let localRot = (hash31(cellId + vec3<f32>(1.0)) - 0.5) * time * rotSpeed * audioReactivity;
     let temp_fp_xz = rot(localRot) * fp.xz;
     fp.x = temp_fp_xz.x;
     fp.z = temp_fp_xz.y;

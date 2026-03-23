@@ -12,10 +12,14 @@
     "life",
     "floating",
     "generative",
-    "procedural"
+    "procedural",
+    "audio",
+    "music"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

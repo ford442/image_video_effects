@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Video Echo Chamber - Advanced Alpha with Accumulative
+//  Category: feedback/temporal
+//  Alpha Mode: Accumulative Alpha + Depth-Layered
+//  Features: advanced-alpha, temporal-feedback, echo-chamber
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,98 +12,113 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 3: Accumulative Alpha (Feedback Systems)
+fn accumulativeAlpha(
+    newColor: vec3<f32>,
+    newAlpha: f32,
+    prevColor: vec3<f32>,
+    prevAlpha: f32,
+    accumulationRate: f32
+) -> vec4<f32> {
+    let accumulatedAlpha = prevAlpha * (1.0 - accumulationRate * 0.1) + newAlpha * accumulationRate;
+    let totalAlpha = min(accumulatedAlpha, 1.0);
+    
+    let blendFactor = select(newAlpha * accumulationRate / totalAlpha, 0.0, totalAlpha < 0.001);
+    let color = mix(prevColor, newColor, blendFactor);
+    
+    return vec4<f32>(color, totalAlpha);
+}
+
+// Mode 1: Depth-Layered Alpha
+fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthAlpha = mix(0.5, 1.0, depth);
+    return mix(1.0, depthAlpha, depthWeight);
+}
+
+// Combined alpha for echo chamber
+fn calculateEchoAlpha(
+    uv: vec2<f32>,
+    brightness: f32,
+    params: vec4<f32>
+) -> f32 {
+    let baseAlpha = brightness * depthLayeredAlpha(uv, params.z);
+    return clamp(baseAlpha, 0.0, 1.0);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-
-    var uv = vec2<f32>(global_id.xy) / resolution;
-
-    // Mouse interaction
-    var mouse = u.zoom_config.yz;
-    // Params: Decay, Radius, EchoStrength, ColorShift
-    let decayBase = u.zoom_params.x; // 0.0 - 1.0 (default e.g. 0.8)
-    let mouseRadius = u.zoom_params.y; // 0.0 - 1.0
-    let echoStr = u.zoom_params.z; // 0.0 - 1.0
-    let colorShift = u.zoom_params.w; // 0.0 - 1.0
-
-    // Read current video frame
-    let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    // Read history (previous frame's accumulated trails)
+    let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
+    let uv = vec2<f32>(global_id.xy) / u.config.zw;
+    let time = u.config.x;
+    
+    // Parameters
+    let accumulationRate = u.zoom_params.x;
+    let echoDecay = u.zoom_params.y;
+    let depthWeight = u.zoom_params.z;
+    let echoCount = i32(u.zoom_params.w * 8.0 + 2.0);
+    
+    // Current frame
+    let current = textureLoad(readTexture, coord, 0);
+    
+    // Previous accumulated frame
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-
-    // Calculate mouse influence
-    let aspect = resolution.x / resolution.y;
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-
-    // Influence is 1.0 near mouse, 0.0 far away
-    // Using smoothstep for soft edge
-    let influence = 1.0 - smoothstep(0.0, max(0.01, mouseRadius), dist);
-
-    // Determine effective decay
-    // If echoStr is high, we want MORE history (slower decay).
-    // Let's map decayBase to background decay.
-    // Mouse proximity increases trail persistence (makes decay closer to 1.0)
-
-    // Base mix: 0.1 means mostly new frame, 0.9 means mostly old frame.
-    // We want trails to persist.
-
-    let baseMix = decayBase; // e.g. 0.5
-    let activeMix = 0.95 + (0.04 * echoStr); // very persistent near mouse
-
-    // effectiveMix blends between base and active based on mouse influence
-    let effectiveMix = mix(baseMix, activeMix, influence * echoStr);
-
-    // Apply color shift to history before blending
-    // Rotate RGB channels slightly based on colorShift
-    var histColor = prev;
-    if (colorShift > 0.01) {
-        let shiftAmt = colorShift * 0.2; // Scaling
-        let r = prev.r;
-        let g = prev.g;
-        let b = prev.b;
-        // Simple hue rotation approx
-        histColor = vec4<f32>(
-            mix(r, g, shiftAmt),
-            mix(g, b, shiftAmt),
-            mix(b, r, shiftAmt),
-            prev.a
-        );
+    
+    // Create echo effect by sampling at different scales
+    var echoAccum = vec3<f32>(0.0);
+    var totalWeight = 0.0;
+    
+    for (var i: i32 = 0; i < echoCount; i++) {
+        let fi = f32(i);
+        let scale = 1.0 - fi * 0.05;
+        let echoUV = (uv - 0.5) / scale + 0.5;
+        
+        if (echoUV.x >= 0.0 && echoUV.x <= 1.0 && echoUV.y >= 0.0 && echoUV.y <= 1.0) {
+            let echoSample = textureSampleLevel(dataTextureC, u_sampler, echoUV, 0.0);
+            let weight = pow(echoDecay, fi);
+            echoAccum += echoSample.rgb * weight;
+            totalWeight += weight;
+        }
     }
-
-    // Combine current and history
-    // We want the current frame to always be visible "on top" but trails behind.
-    // Standard feedback: new = mix(current, history, decay)
-    // If decay is high (0.9), history dominates -> blur.
-    // If decay is low (0.1), current dominates -> no trails.
-
-    let result = mix(current, histColor, effectiveMix);
-
-    // Always keep alpha 1.0
-    let finalColor = vec4<f32>(result.rgb, 1.0);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-
-    // Pass-through depth
+    
+    let echoColor = echoAccum / max(totalWeight, 0.001);
+    
+    // Blend current with echo
+    let blended = mix(echoColor, current.rgb, 0.3);
+    
+    // ═══ ADVANCED ALPHA CALCULATION ═══
+    let brightness = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
+    let newAlpha = calculateEchoAlpha(uv, brightness, u.zoom_params);
+    
+    // Accumulate alpha over time
+    let accumulated = accumulativeAlpha(
+        blended,
+        newAlpha,
+        prev.rgb,
+        prev.a,
+        accumulationRate
+    );
+    
+    textureStore(dataTextureA, coord, accumulated);
+    textureStore(writeTexture, global_id.xy, accumulated);
+    
+    // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

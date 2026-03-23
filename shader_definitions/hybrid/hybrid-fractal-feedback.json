@@ -1,0 +1,57 @@
+{
+  "id": "hybrid-fractal-feedback",
+  "name": "Hybrid Fractal Feedback",
+  "url": "shaders/hybrid-fractal-feedback.wgsl",
+  "category": "generative",
+  "description": "Julia set fractal with feedback trails and per-channel temporal delay creating RGB separation trails",
+  "features": ["hybrid", "julia-set", "temporal-feedback", "rgb-delay", "fractal", "randomization-safe"],
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Zoom Level",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Fractal zoom level"
+    },
+    {
+      "id": "feedback",
+      "name": "Feedback Strength",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of temporal feedback trails"
+    },
+    {
+      "id": "rgb_delay",
+      "name": "RGB Channel Delay",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Temporal offset between RGB channels"
+    },
+    {
+      "id": "color_cycle",
+      "name": "Color Cycling",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Speed of palette color cycling"
+    }
+  ],
+  "chunks_used": [
+    "juliaIterate (julia-warp.wgsl)",
+    "fbm2 flow field (gen_grid.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)"
+  ],
+  "created_by": "Agent 2A - Shader Surgeon",
+  "created_date": "2026-03-22"
+}

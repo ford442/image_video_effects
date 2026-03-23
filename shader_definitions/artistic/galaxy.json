@@ -1,10 +1,23 @@
 {
   "id": "galaxy-sim",
-  "name": "Galaxy",
-  "url": "shaders/galaxy-compute.wgsl",
+  "name": "Galaxy Simulation",
+  "url": "shaders/galaxy.wgsl",
   "category": "generative",
+  "description": "Animated galaxy simulation with spiral arms and starfield with RGBA depth-aware rendering.",
+  "features": [
+    "depth-aware",
+    "upgraded-rgba",
+    "animated",
+    "audio-reactive",
+    "audio-driven"
+  ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "galaxy",
+    "space",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

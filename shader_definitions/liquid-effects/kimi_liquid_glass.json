@@ -8,11 +8,16 @@
     "mouse-driven",
     "liquid",
     "caustics",
-    "refraction"
+    "refraction",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "fluid",
     "liquid",
-    "water"
+    "water",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

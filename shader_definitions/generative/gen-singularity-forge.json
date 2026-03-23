@@ -4,8 +4,21 @@
   "url": "shaders/gen-singularity-forge.wgsl",
   "category": "generative",
   "description": "A hyper-dense, gravity-warped crucible of collapsing stars and chaotic plasma rings, endlessly generating and consuming geometric artifacts.",
-  "tags": ["cosmic", "black-hole", "gravity", "plasma", "audio-reactive"],
-  "features": ["mouse-driven", "audio-driven"],
+  "tags": [
+    "cosmic",
+    "black-hole",
+    "gravity",
+    "plasma",
+    "audio-reactive",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-driven",
+    "audio-reactive"
+  ],
   "params": [
     {
       "id": "diskDensity",

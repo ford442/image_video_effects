@@ -11,12 +11,15 @@
     "geometric",
     "audio-reactive",
     "alpha-transmission",
-    "physical"
+    "physical",
+    "audio",
+    "music"
   ],
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "physical-transmission"
+    "physical-transmission",
+    "audio-driven"
   ],
   "params": [
     {

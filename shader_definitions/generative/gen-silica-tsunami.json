@@ -8,10 +8,14 @@
     "generative",
     "wave",
     "glass",
-    "refraction"
+    "refraction",
+    "audio",
+    "music"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

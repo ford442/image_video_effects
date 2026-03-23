@@ -4,7 +4,9 @@
   "url": "shaders/vortex-distortion.wgsl",
   "category": "distortion",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "description": "A swirling vortex centered on the mouse that twists the image and adds chromatic aberration.",
   "params": [
@@ -40,6 +42,9 @@
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "transform",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

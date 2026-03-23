@@ -67,7 +67,7 @@ fn fbm(p: vec2<f32>, time: f32) -> f32 {
 
 // Calculate fabric density based on strain
 fn calculateFabricDensity(strain: f32, isTorn: bool) -> f32 {
-    if (isTorn {
+    if (isTorn) {
         return 0.15;
     }
     
@@ -91,7 +91,7 @@ fn fabricSSS(strain: f32, baseColor: vec3<f32>) -> vec3<f32> {
 fn calculateFabricAlpha(strain: f32, isTorn: bool, threadDensity: f32) -> f32 {
     var alpha = FABRIC_BASE_ALPHA;
     
-    if (isTorn {
+    if (isTorn) {
         // Torn fabric is very transparent
         alpha = TORN_ALPHA;
     } else if (strain > 0.5) {

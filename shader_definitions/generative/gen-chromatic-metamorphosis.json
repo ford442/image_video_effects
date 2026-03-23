@@ -4,8 +4,23 @@
   "url": "shaders/gen-chromatic-metamorphosis.wgsl",
   "category": "generative",
   "description": "Metaballs morph continuously between sphere, torus, box, and capsule shapes via smooth-min SDF blending. Surface color evolves independently from geometry in flowing waves.",
-  "tags": ["metamorphosis", "morphing", "sdf", "raymarching", "color", "organic", "generative", "3d"],
-  "features": ["mouse-driven"],
+  "tags": [
+    "metamorphosis",
+    "morphing",
+    "sdf",
+    "raymarching",
+    "color",
+    "organic",
+    "generative",
+    "3d",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
   "author": "AI",
   "params": [
     {

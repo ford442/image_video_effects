@@ -12,10 +12,14 @@
     "rings",
     "sci-fi",
     "raymarching",
-    "3d"
+    "3d",
+    "audio",
+    "music"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "author": "AI",
   "params": [

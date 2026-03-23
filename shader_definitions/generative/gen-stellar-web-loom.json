@@ -9,10 +9,14 @@
     "neuro",
     "plasma",
     "volumetric",
-    "audio-reactive"
+    "audio-reactive",
+    "audio",
+    "music"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

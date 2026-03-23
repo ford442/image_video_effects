@@ -11,10 +11,15 @@
     "glowing",
     "ambient",
     "generative",
-    "scifi"
+    "scifi",
+    "audio",
+    "music",
+    "reactive"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

@@ -4,7 +4,9 @@
   "url": "shaders/chroma-vortex.wgsl",
   "category": "visual-effects",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -44,6 +46,8 @@
   "tags": [
     "vfx",
     "particles",
-    "glow"
+    "glow",
+    "audio",
+    "music"
   ]
 }

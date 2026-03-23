@@ -6,14 +6,19 @@
   "description": "A pulsating, infinite underwater expanse of translucent, bioluminescent anemone-like structures that gently sway in an invisible current, reaching out to feed on the audio frequencies.",
   "features": [
     "mouse-driven",
-    "raymarched"
+    "raymarched",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "organic",
     "bioluminescent",
     "underwater",
     "fluid",
-    "audio-reactive"
+    "audio-reactive",
+    "audio",
+    "music",
+    "reactive"
   ],
   "params": [
     {

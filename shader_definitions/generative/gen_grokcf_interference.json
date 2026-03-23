@@ -1,14 +1,19 @@
 {
   "id": "gen-grokcf-interference",
-  "name": "Grokcf Wave Interference",
+  "name": "Chladni Plate Cymatics",
   "url": "shaders/gen_grokcf_interference.wgsl",
   "category": "generative",
-  "description": "Multi-layered sine wave interference patterns modulated by mouse position.",
+  "description": "Sand patterns from vibrating plate standing waves with RGBA depth-aware rendering.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "cymatics",
+    "interference"
   ]
 }

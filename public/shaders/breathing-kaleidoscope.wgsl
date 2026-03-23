@@ -35,6 +35,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
     let cycleSpeed = u.zoom_params.x;      // From JSON param[0]
     let segments = max(1.0, u.zoom_params.y); // From JSON param[1]
     let rotationSpeed = u.zoom_params.z;   // From JSON param[2]
@@ -63,12 +67,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Strength cycles 0->1->0 (!wrap)
-    let strength = ping_pong(time * cycleSpeed);
+    let strength = ping_pong(time * cycleSpeed * audioReactivity);
 
     // Segment angle and limited rotation
     let segmentAngle = 6.28318530718 / segments;
     let maxRotation = segmentAngle * maxRotationPercent;
-    let rotation = ping_pong(time * rotationSpeed) * maxRotation;
+    let rotation = ping_pong(time * rotationSpeed * audioReactivity) * maxRotation;
 
     // Convert to polar coords from center
     let delta = (uv + mouseDisplacement) - center;

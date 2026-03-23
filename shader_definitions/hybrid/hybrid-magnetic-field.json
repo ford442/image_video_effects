@@ -1,0 +1,58 @@
+{
+  "id": "hybrid-magnetic-field",
+  "name": "Hybrid Magnetic Field",
+  "url": "shaders/hybrid-magnetic-field.wgsl",
+  "category": "generative",
+  "description": "Magnetic field line visualization with flowing particles and FBM-varied field distortion",
+  "features": ["hybrid", "vector-field", "particle-trails", "magnetic-distortion", "glow", "randomization-safe"],
+  "params": [
+    {
+      "id": "field_strength",
+      "name": "Field Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Strength of magnetic dipole field"
+    },
+    {
+      "id": "line_density",
+      "name": "Line Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Number of field lines displayed"
+    },
+    {
+      "id": "trails",
+      "name": "Trail Persistence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How long particle trails persist"
+    },
+    {
+      "id": "distortion",
+      "name": "Field Distortion",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "FBM noise influence on field"
+    }
+  ],
+  "chunks_used": [
+    "magnetic field calculation",
+    "fbm2 variation (gen_grid.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)",
+    "rot2 (kaleidoscope.wgsl)"
+  ],
+  "created_by": "Agent 2A - Shader Surgeon",
+  "created_date": "2026-03-22"
+}
