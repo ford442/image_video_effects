@@ -69,7 +69,13 @@ export class JSRenderer implements Renderer {
   }
 
   render = (): void => {
-    if (!this.ctx || !this.canvas) return;
+    if (!this.ctx || !this.canvas) {
+      console.warn('🚨 JSRenderer.render: Missing context or canvas!', {
+        ctx: this.ctx ? 'present' : 'NULL',
+        canvas: this.canvas ? `${this.canvas.width}x${this.canvas.height}` : 'NULL'
+      });
+      return;
+    }
 
     // Clear
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
@@ -103,8 +109,14 @@ export class JSRenderer implements Renderer {
   };
 
   private startRenderLoop(): void {
+    let frameCount = 0;
     const loop = () => {
       this.render();
+      frameCount++;
+      // Log once per 60 frames to avoid spam
+      if (frameCount % 60 === 0) {
+        console.log(`🎨 JSRenderer: ${frameCount} frames rendered, canvas: ${this.canvas?.width}x${this.canvas?.height}, ctx: ${this.ctx ? 'OK' : 'NULL'}`);
+      }
       this.animationId = requestAnimationFrame(loop);
     };
     loop();
