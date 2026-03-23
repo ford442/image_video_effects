@@ -132,26 +132,49 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const container = containerRef.current;
         if (!container) return;
 
+        // Try to get initial size from container
+        const rect = container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0 && displaySize.width === 1) {
+            console.log(`📦 Initial container size from getBoundingClientRect: ${rect.width}x${rect.height}`);
+            setDisplaySize({ width: rect.width, height: rect.height });
+            if (!canvasReady) {
+                setCanvasReady(true);
+            }
+        }
+
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 // Get the displayed size (CSS pixels)
                 const width = entry.contentRect.width;
                 const height = entry.contentRect.height;
 
+                console.log(`🔍 ResizeObserver fired: ${width}x${height}`);
+
                 if (width > 0 && height > 0) {
                     setDisplaySize({ width, height });
                     // Mark canvas as ready for WebGPU initialization
                     if (!canvasReady) {
-                        console.log(`Canvas ready: ${width}x${height}`);
+                        console.log(`✅ Canvas ready: ${width}x${height}`);
                         setCanvasReady(true);
                     }
+                } else {
+                    console.warn(`⚠️ Container has zero dimensions: ${width}x${height}`);
                 }
             }
         });
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, [canvasReady]); // Add canvasReady to prevent duplicate triggers
+    }, [canvasReady, displaySize.width]); // Add displaySize.width to re-run if needed
+
+    // Sync video element to renderer
+    useEffect(() => {
+        if (rendererRef.current && videoRef.current) {
+            if ('setVideo' in rendererRef.current) {
+                (rendererRef.current as any).setVideo(videoRef.current);
+            }
+        }
+    }, [rendererRef]);
 
     // Sync inputSource to renderer
     useEffect(() => {
@@ -392,18 +415,26 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     };
 
-    // Calculate canvas style to be a square that fits within the container (CSS Contain)
+    // Calculate canvas style to be a square that fits within the container
     const canvasSize = Math.min(displaySize.width, displaySize.height);
+    const finalCanvasSize = Math.max(canvasSize, 100); // Ensure minimum visible size
+
+    if (displaySize.width !== 1 || displaySize.height !== 1) {
+        console.log(`📐 Canvas size calculated: ${finalCanvasSize}px (from ${displaySize.width}x${displaySize.height})`);
+    } else {
+        console.warn(`⚠️ Canvas size is still using default (1x1), using fallback display size`);
+    }
+
     const canvasStyle: React.CSSProperties = {
         position: 'absolute',
-        width: `${canvasSize}px`,
-        height: `${canvasSize}px`,
+        width: `${finalCanvasSize}px`,
+        height: `${finalCanvasSize}px`,
         left: '50%',
         top: '50%',
         transform: 'translate(-50%, -50%)',
         display: 'block',
         touchAction: 'none',
-        // Optional: Ensure it doesn't overflow if something goes wrong with calculation
+        // Ensure it doesn't overflow
         maxWidth: '100%',
         maxHeight: '100%'
     };
