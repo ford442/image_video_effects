@@ -10,12 +10,12 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import List, Optional
 from datetime import datetime
-from enum import Enum
-
+import io
+from ftplib import FTP
 import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from aiocache import Cache
 
@@ -26,8 +26,14 @@ from google.oauth2 import service_account
 # ========================= CONFIGURATION =========================
 BUCKET_NAME = os.environ.get("GCP_BUCKET_NAME")
 CREDENTIALS_JSON = os.environ.get("GCP_CREDENTIALS")
-
-# --- STORAGE MAP (extended for Brainfuck WASM benchmarks) ---
+# --- FTP CONFIGURATION ---
+FTP_HOST = os.environ.get("FTP_HOST", "")
+FTP_USER = os.environ.get("FTP_USER", "")
+FTP_PASS = os.environ.get("FTP_PASS", "")
+FTP_DIR = os.environ.get("FTP_DIR", "/shaders")
+FTP_ENABLED = bool(FTP_HOST)
+# --- STORAGE MAP ---
+# Defines the folder structure inside the bucket
 STORAGE_MAP = {
     "song": {"folder": "songs/", "index": "songs/_songs.json"},
     "pattern": {"folder": "patterns/", "index": "patterns/_patterns.json"},
@@ -61,8 +67,37 @@ def get_gcs_client():
 async def run_io(func, *args, **kwargs):
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(io_executor, lambda: func(*args, **kwargs))
+# --- FTP HELPERS ---
+def _fetch_ftp_file_sync(filename: str) -> str:
+    """Connect to FTP, download a .wgsl file, return as UTF-8 string."""
+    ftp = FTP(FTP_HOST)
+    try:
+        ftp.login(FTP_USER, FTP_PASS)
+        ftp.cwd(FTP_DIR)
+        buffer = io.BytesIO()
+        ftp.retrbinary(f"RETR {filename}", buffer.write)
+        buffer.seek(0)
+        return buffer.read().decode("utf-8")
+    finally:
+        try:
+            ftp.quit()
+        except Exception:
+            ftp.close()
 
-# ========================= LIFESPAN =========================
+def _list_ftp_files_sync() -> list:
+    """List all .wgsl files on the FTP server."""
+    ftp = FTP(FTP_HOST)
+    try:
+        ftp.login(FTP_USER, FTP_PASS)
+        ftp.cwd(FTP_DIR)
+        files = ftp.nlst()
+        return [f for f in files if f.endswith(".wgsl")]
+    finally:
+        try:
+            ftp.quit()
+        except Exception:
+            ftp.close()
+# --- LIFESPAN ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global gcs_client, bucket
@@ -1495,6 +1530,159 @@ async def list_gcs_folder(folder: str = Query(..., description="Folder name, e.g
         return {"folder": prefix, "count": len(files), "files": files}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/shaders/categories")
+async def list_categories():
+    """Return the category hierarchy for UI rendering."""
+    return {
+        "groups": CATEGORY_GROUPS,
+        "all_categories": [c.value for c in ShaderCategory]
+    }
+@app.post("/api/shaders/upload")
+async def upload_shader(
+    file: UploadFile = File(...),  # The .wgsl file
+    name: str = Form(...),
+    description: str = Form(""),
+    tags: str = Form(""),  # Comma-separated
+    author: str = Form("ford442")
+):
+    if not file.filename.endswith(".wgsl"):
+        raise HTTPException(400, "Only .wgsl files allowed")
+    
+    shader_id = str(uuid.uuid4())
+    storage_filename = f"{shader_id}.wgsl"
+    config = STORAGE_MAP["shader"]
+    full_path = f"{config['folder']}{storage_filename}"
+    
+    meta = {
+        "id": shader_id,
+        "name": name,
+        "author": author,
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "description": description,
+        "tags": [t.strip() for t in tags.split(",")] if tags else [],
+        "filename": storage_filename,
+        "stars": 0.0,
+        "rating_count": 0
+    }
+    
+    async with INDEX_LOCK:
+        try:
+            # 1. Upload the .wgsl file
+            blob = bucket.blob(full_path)
+            await run_io(blob.upload_from_file, file.file, content_type="text/plain")
+            
+            # 2. Save metadata.json
+            await save_metadata(shader_id, meta)
+            
+            # Clear list cache
+            await cache.delete("shaders:list")
+            
+            return {"success": True, "id": shader_id, "meta": meta}
+        except Exception as e:
+            raise HTTPException(500, f"Shader upload failed: {str(e)}")
+   
+# ========================= FTP BRIDGE ENDPOINTS =========================
+
+@app.get("/api/shaders/{shader_id}/wgsl", response_class=PlainTextResponse)
+async def get_shader_wgsl(shader_id: str):
+    """Returns raw WGSL text for direct consumption by WebGPU renderer.
+    Resolution order: memory cache → GCS bucket → FTP server."""
+    cache_key = f"shader_wgsl:{shader_id}"
+    cached = await cache.get(cache_key)
+    if cached:
+        return PlainTextResponse(cached, media_type="text/plain")
+
+    # Try GCS
+    config = STORAGE_MAP["shader"]
+    blob_path = f"{config['folder']}{shader_id}.wgsl"
+    blob = bucket.blob(blob_path)
+    if await run_io(blob.exists):
+        code = await run_io(blob.download_as_text)
+        await cache.set(cache_key, code, ttl=3600)
+        return PlainTextResponse(code, media_type="text/plain")
+
+    # Fallback to FTP
+    if FTP_ENABLED:
+        try:
+            code = await run_io(_fetch_ftp_file_sync, f"{shader_id}.wgsl")
+            await cache.set(cache_key, code, ttl=3600)
+            return PlainTextResponse(code, media_type="text/plain")
+        except Exception:
+            pass
+
+    raise HTTPException(404, f"Shader {shader_id} not found")
+
+@app.get("/api/ftp/shaders/{filename}")
+async def get_ftp_shader(filename: str):
+    """Fetch a shader directly from FTP with cache. Returns JSON with code and metadata."""
+    if not FTP_ENABLED:
+        raise HTTPException(503, "FTP not configured")
+    if not filename.endswith(".wgsl"):
+        filename += ".wgsl"
+    cache_key = f"ftp_shader_code:{filename}"
+    cached = await cache.get(cache_key)
+    if cached:
+        return {"source": "cache", "filename": filename, "code": cached}
+    try:
+        code = await run_io(_fetch_ftp_file_sync, filename)
+        await cache.set(cache_key, code, ttl=3600)
+        return {"source": "ftp", "filename": filename, "code": code}
+    except Exception as e:
+        logging.error(f"FTP fetch failed for {filename}: {e}")
+        raise HTTPException(404, f"FTP fetch failed: {str(e)}")
+
+@app.post("/api/admin/sync-ftp-to-gcs")
+async def sync_ftp_to_gcs():
+    """Scan FTP directory and import missing .wgsl shaders into GCS bucket."""
+    if not FTP_ENABLED:
+        raise HTTPException(503, "FTP not configured")
+    config = STORAGE_MAP["shader"]
+    report = {"added": 0, "skipped": 0, "errors": []}
+
+    async with INDEX_LOCK:
+        try:
+            ftp_files = await run_io(_list_ftp_files_sync)
+            index = await run_io(_read_json_sync, config["index"])
+            if not isinstance(index, list):
+                index = []
+            existing = {item.get("filename", "") for item in index}
+
+            for fname in ftp_files:
+                if fname in existing:
+                    report["skipped"] += 1
+                    continue
+                try:
+                    code = await run_io(_fetch_ftp_file_sync, fname)
+                    blob = bucket.blob(f"{config['folder']}{fname}")
+                    await run_io(blob.upload_from_string, code, content_type="text/plain")
+                    shader_id = fname.replace(".wgsl", "")
+                    index.insert(0, {
+                        "id": shader_id,
+                        "name": shader_id.replace("-", " ").title(),
+                        "filename": fname,
+                        "author": "ftp-import",
+                        "date": datetime.now().strftime("%Y-%m-%d"),
+                        "type": "shader",
+                        "description": "Imported from FTP",
+                        "tags": ["ftp-import"],
+                        "stars": 0.0,
+                        "rating_count": 0,
+                        "play_count": 0
+                    })
+                    report["added"] += 1
+                except Exception as e:
+                    logging.error(f"Failed to import {fname} from FTP: {e}")
+                    report["errors"].append({"file": fname, "error": str(e)})
+
+            if report["added"] > 0:
+                await run_io(_write_json_sync, config["index"], index)
+            await cache.clear()
+        except Exception as e:
+            raise HTTPException(500, f"FTP sync failed: {str(e)}")
+
+    report["total"] = len(index)
+    return report
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=7860)

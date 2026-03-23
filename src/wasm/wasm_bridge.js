@@ -218,6 +218,18 @@ export async function loadShaderFromURL(id, url) {
     const wgslCode = await response.text();
     return loadShader(id, wgslCode);
   } catch (err) {
+    // Fallback to local /shaders/ path if API URL failed
+    if (!url.startsWith('/shaders/')) {
+      console.warn(`API fetch failed for ${id}, trying local fallback...`);
+      try {
+        const fallback = await fetch(`/shaders/${id}.wgsl`);
+        if (fallback.ok) {
+          return loadShader(id, await fallback.text());
+        }
+      } catch (_) {
+        // Both failed
+      }
+    }
     console.error(`Failed to load shader from ${url}:`, err);
     return false;
   }

@@ -13,6 +13,7 @@ export const WEBCAM_FUN_SHADERS = [
 
 export const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 export const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
+export const SHADER_WGSL_URL = `${API_BASE_URL}/api/shaders`;
 export const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
 export const LOCAL_MANIFEST_URL = './image_manifest.json';
 export const BUCKET_BASE_URL = 'https://storage.googleapis.com/my-sd35-space-images-2025';
