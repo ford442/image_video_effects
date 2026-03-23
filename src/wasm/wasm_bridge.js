@@ -41,7 +41,7 @@ export async function initWasmRenderer(canvasElement) {
   try {
     // Dynamically import the WASM module
     // @ts-ignore
-    const wasm = await import(/* webpackIgnore: true */ '/wasm/pixelocity_wasm.js');
+    const wasm = await import(/* webpackIgnore: true */ './wasm/pixelocity_wasm.js');
     wasmModule = await wasm.default();
 
     // Initialize the C++ renderer
