@@ -40,13 +40,19 @@ export async function initWasmRenderer(canvasElement) {
 
   try {
     // Determine the correct base path for WASM files
-    const basePath = window.location.pathname.replace(/\/[^/]*$/, '');
+    // Handle both root deployment (/index.html) and subdirectory (/path/index.html)
+    const pathname = window.location.pathname;
+    const basePath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname.replace(/\/[^/]*$/, '');
+    const wasmJsPath = basePath + '/wasm/pixelocity_wasm.js';
     const wasmBinaryPath = basePath + '/wasm/pixelocity_wasm.wasm';
+    
+    console.log('[WASM] Loading JS from:', wasmJsPath);
     console.log('[WASM] Binary path:', wasmBinaryPath);
     
-    // Dynamically import the WASM module
+    // Dynamically import the WASM module using absolute URL
+    // This avoids path resolution issues when bundled
     // @ts-ignore
-    const wasm = await import(/* webpackIgnore: true */ './wasm/pixelocity_wasm.js');
+    const wasm = await import(/* webpackIgnore: true */ wasmJsPath);
     
     // Initialize with locateFile to help Emscripten find the .wasm binary
     wasmModule = await wasm.default({
