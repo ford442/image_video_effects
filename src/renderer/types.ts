@@ -1,6 +1,29 @@
 export type RenderMode = string;
 
-export type ShaderCategory = 'shader' | 'image' | 'video' | 'simulation' | 'feedback' | 'sorting' | 'warp' | 'tessellation' | 'audio' | 'glyph' | 'edge' | 'geometry' | 'artistic' | 'glitch' | 'temporal' | 'generative';
+export type ShaderCategory =
+    | 'shader'
+    | 'image'
+    | 'video'
+    | 'simulation'
+    | 'feedback'
+    | 'sorting'
+    | 'warp'
+    | 'tessellation'
+    | 'audio'
+    | 'glyph'
+    | 'edge'
+    | 'geometry'
+    | 'artistic'
+    | 'glitch'
+    | 'temporal'
+    | 'generative'
+    | 'distortion'
+    | 'geometric'
+    | 'interactive-mouse'
+    | 'lighting-effects'
+    | 'liquid-effects'
+    | 'retro-glitch'
+    | 'visual-effects';
 
 // Added 'webcam', 'generative', and 'live' (HLS streaming)
 export type InputSource = 'image' | 'video' | 'webcam' | 'generative' | 'live';
