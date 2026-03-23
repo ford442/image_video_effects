@@ -37,11 +37,8 @@ export class JSRenderer implements Renderer {
       return false;
     }
 
-    // Set canvas size
-    canvas.width = this.config.width;
-    canvas.height = this.config.height;
-
-    console.log('✅ JS Renderer initialized');
+    // Canvas size already set by WebGPUCanvas, don't override it
+    console.log(`✅ JS Renderer initialized with canvas size: ${canvas.width}x${canvas.height}`);
     this.startRenderLoop();
     return true;
   }
@@ -72,10 +69,16 @@ export class JSRenderer implements Renderer {
   }
 
   render = (): void => {
-    if (!this.ctx || !this.canvas) return;
+    if (!this.ctx || !this.canvas) {
+      console.warn('🚨 JSRenderer.render: Missing context or canvas!', {
+        ctx: this.ctx ? 'present' : 'NULL',
+        canvas: this.canvas ? `${this.canvas.width}x${this.canvas.height}` : 'NULL'
+      });
+      return;
+    }
 
-    // Clear
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    // Clear - use solid black to ensure we see rendering
+    this.ctx.fillStyle = '#000000';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Draw video if available
@@ -97,17 +100,25 @@ export class JSRenderer implements Renderer {
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
-    // Status text
+    // Status text - ALWAYS draw this to verify rendering is working
     this.ctx.fillStyle = '#00ff00';
+    this.ctx.font = '16px monospace';
+    this.ctx.fillText(`✓ Rendering (${this.canvas.width}x${this.canvas.height})`, 10, 30);
     this.ctx.font = '14px monospace';
-    this.ctx.fillText(`Audio: ${(audioIntensity * 100).toFixed(1)}%`, 10, 20);
-    this.ctx.fillText(`Agents: ${this.config.agentCount}`, 10, 40);
-    this.ctx.fillText(`Mouse: ${this.params.mouseX.toFixed(2)}, ${this.params.mouseY.toFixed(2)}`, 10, 60);
+    this.ctx.fillText(`Audio: ${(audioIntensity * 100).toFixed(1)}%`, 10, 60);
+    this.ctx.fillText(`Agents: ${this.config.agentCount}`, 10, 80);
+    this.ctx.fillText(`Mouse: ${this.params.mouseX.toFixed(2)}, ${this.params.mouseY.toFixed(2)}`, 10, 100);
   };
 
   private startRenderLoop(): void {
+    let frameCount = 0;
     const loop = () => {
       this.render();
+      frameCount++;
+      // Log once per 60 frames to avoid spam
+      if (frameCount % 60 === 0) {
+        console.log(`🎨 JSRenderer: ${frameCount} frames rendered, canvas: ${this.canvas?.width}x${this.canvas?.height}, ctx: ${this.ctx ? 'OK' : 'NULL'}`);
+      }
       this.animationId = requestAnimationFrame(loop);
     };
     loop();

@@ -307,7 +307,8 @@ function MainApp() {
                 const entries: ShaderEntry[] = Object.entries(coordMap).map(([id, data]) => ({
                     id,
                     name: data.name || id,
-                    url: `${SHADER_WGSL_URL}/${id}/wgsl`,
+                    // Use local shader files directly - more reliable than API
+                    url: `./shaders/${id}.wgsl`,
                     category: (data.category?.includes('gen') || id.includes('gen') ? 'generative' : 'image') as ShaderCategory,
                     description: data.reason || '',
                     tags: data.tags || [],
