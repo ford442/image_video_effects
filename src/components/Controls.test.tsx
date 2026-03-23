@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Controls from './Controls';
 import { ShaderEntry, SlotParams } from '../renderer/types';
@@ -110,4 +110,82 @@ test('does not render Rain controls when active slot mode is not rain', () => {
     );
 
     expect(screen.queryByText(/Rain Speed/)).not.toBeInTheDocument();
+});
+
+test('filters slot mega-menu to non-generative or generative shaders based on effect filter', () => {
+    const megaMenuModes: ShaderEntry[] = [
+        { id: 'liquid', name: 'Liquid', url: 'shaders/liquid.wgsl', category: 'image' },
+        { id: 'paint-flow', name: 'Paint Flow', url: 'shaders/paint-flow.wgsl', category: 'artistic' },
+        { id: 'gen-orb', name: 'Gen Orb', url: 'shaders/gen-orb.wgsl', category: 'generative' }
+    ];
+
+    const { rerender } = render(
+        <Controls
+            modes={['liquid', 'none', 'none']}
+            setMode={mockSetMode}
+            activeSlot={0}
+            setActiveSlot={mockSetActiveSlot}
+            slotParams={mockSlotParams}
+            updateSlotParam={mockUpdateSlotParam}
+            shaderCategory="image"
+            setShaderCategory={mockSetShaderCategory}
+            zoom={1} setZoom={() => {}}
+            panX={0} setPanX={() => {}}
+            panY={0} setPanY={() => {}}
+            onNewImage={() => {}}
+            autoChangeEnabled={false} setAutoChangeEnabled={() => {}}
+            autoChangeDelay={10} setAutoChangeDelay={() => {}}
+            onLoadModel={() => {}}
+            isModelLoaded={false}
+            availableModes={megaMenuModes}
+            inputSource="image" setInputSource={() => {}}
+            videoList={[]} selectedVideo="" setSelectedVideo={() => {}}
+            isMuted={false} setIsMuted={() => {}}
+            onUploadImageTrigger={() => {}}
+            onUploadVideoTrigger={() => {}}
+            isAiVjMode={false}
+            onToggleAiVj={() => {}}
+            aiVjStatus={'idle'}
+        />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /liquid/i }));
+    expect(screen.getByText('Paint Flow')).toBeInTheDocument();
+    expect(screen.queryByText('Gen Orb')).not.toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByText('Paint Flow'));
+
+    rerender(
+        <Controls
+            modes={['gen-orb', 'none', 'none']}
+            setMode={mockSetMode}
+            activeSlot={0}
+            setActiveSlot={mockSetActiveSlot}
+            slotParams={mockSlotParams}
+            updateSlotParam={mockUpdateSlotParam}
+            shaderCategory="generative"
+            setShaderCategory={mockSetShaderCategory}
+            zoom={1} setZoom={() => {}}
+            panX={0} setPanX={() => {}}
+            panY={0} setPanY={() => {}}
+            onNewImage={() => {}}
+            autoChangeEnabled={false} setAutoChangeEnabled={() => {}}
+            autoChangeDelay={10} setAutoChangeDelay={() => {}}
+            onLoadModel={() => {}}
+            isModelLoaded={false}
+            availableModes={megaMenuModes}
+            inputSource="image" setInputSource={() => {}}
+            videoList={[]} selectedVideo="" setSelectedVideo={() => {}}
+            isMuted={false} setIsMuted={() => {}}
+            onUploadImageTrigger={() => {}}
+            onUploadVideoTrigger={() => {}}
+            isAiVjMode={false}
+            onToggleAiVj={() => {}}
+            aiVjStatus={'idle'}
+        />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /gen orb/i }));
+    expect(screen.getAllByText('Gen Orb').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Paint Flow')).not.toBeInTheDocument();
 });

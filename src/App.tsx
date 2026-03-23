@@ -8,6 +8,8 @@ import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
+// @ts-ignore
+import shaderCoordinates from './shader_coordinates.json';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -194,7 +196,7 @@ function MainApp() {
     // --- EFFECT: Auto-Switch Generative Mode ---
     // This fixes the issue where generative mode wouldn't replace image/video input
     useEffect(() => {
-        if (shaderCategory === 'shader') {
+        if (shaderCategory === 'generative') {
             // When user selects "Procedural Generation", force input source to generative
             setInputSource('generative');
             setStatus('Switched to Generative Input');
@@ -288,6 +290,27 @@ function MainApp() {
             }
         };
         fetchImageManifest();
+    }, []);
+
+    // --- Load Available Shaders ---
+    useEffect(() => {
+        try {
+            // Build shader list from shader_coordinates.json
+            const coordMap = shaderCoordinates as Record<string, any>;
+            const entries: ShaderEntry[] = Object.entries(coordMap).map(([id, data]) => ({
+                id,
+                name: data.name || id,
+                url: `/shaders/${id}.wgsl`,
+                category: (data.category || (id.includes('gen') ? 'generative' : 'image')) as ShaderCategory,
+                description: data.reason || '',
+                tags: data.tags || [],
+            }));
+            setAvailableModes(entries);
+            console.log(`✅ Loaded ${entries.length} shaders from shader_coordinates.json`);
+        } catch (error) {
+            console.warn('Failed to load shaders:', error);
+            // Silently fail - shader list will be empty but app won't crash
+        }
     }, []);
 
     // --- Image Loading ---

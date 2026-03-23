@@ -333,6 +333,54 @@ async def get_sample(sample_id: str):
         headers={"Content-Disposition": f"attachment; filename={entry['name']}"}
     )
 
+@app.get("/api/shaders")
+async def list_shaders():
+    """
+    Walks the local shader_definitions directory, parses each JSON file,
+    and returns a flat array of all valid shader objects.
+    Invalid or malformed JSON files are skipped with a logged warning.
+    """
+    cache_key = "local:shaders:list"
+    cached = await cache.get(cache_key)
+    if cached:
+        return cached
+
+    shader_definitions_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "shader_definitions"
+    )
+
+    required_fields = {"id", "name", "url", "category"}
+    shaders = []
+    for root, _dirs, files in os.walk(shader_definitions_dir):
+        for filename in files:
+            if not filename.endswith(".json"):
+                continue
+            filepath = os.path.join(root, filename)
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict) and required_fields.issubset(item):
+                            shaders.append(item)
+                        else:
+                            logging.warning("Skipping shader entry missing required fields in %s", filepath)
+                elif isinstance(data, dict):
+                    if required_fields.issubset(data):
+                        shaders.append(data)
+                    else:
+                        logging.warning("Skipping shader missing required fields in %s", filepath)
+                else:
+                    logging.warning("Skipping unexpected JSON structure in %s", filepath)
+            except json.JSONDecodeError as e:
+                logging.warning("Skipping invalid JSON file %s: %s", filepath, e)
+            except Exception as e:
+                logging.warning("Skipping unreadable file %s: %s", filepath, e)
+
+    await cache.set(cache_key, shaders, ttl=300)
+    return shaders
+
+
 @app.get("/image_suggestions.md")
 async def get_suggestions():
     try:

@@ -120,7 +120,7 @@ fn calculateGelatinousAlpha(thickness: f32, n: vec3<f32>, l: vec3<f32>,
     var alpha = 0.25 + absorption * 0.7;
     
     // Tips are very translucent
-    if (isTip {
+    if (isTip) {
         alpha = mix(alpha, 0.35, 0.6);
     }
     
