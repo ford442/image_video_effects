@@ -37,11 +37,8 @@ export class JSRenderer implements Renderer {
       return false;
     }
 
-    // Set canvas size
-    canvas.width = this.config.width;
-    canvas.height = this.config.height;
-
-    console.log('✅ JS Renderer initialized');
+    // Canvas size already set by WebGPUCanvas, don't override it
+    console.log(`✅ JS Renderer initialized with canvas size: ${canvas.width}x${canvas.height}`);
     this.startRenderLoop();
     return true;
   }
