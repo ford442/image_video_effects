@@ -77,8 +77,8 @@ export class JSRenderer implements Renderer {
       return;
     }
 
-    // Clear
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    // Clear - use solid black to ensure we see rendering
+    this.ctx.fillStyle = '#000000';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Draw video if available
@@ -100,12 +100,14 @@ export class JSRenderer implements Renderer {
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
-    // Status text
+    // Status text - ALWAYS draw this to verify rendering is working
     this.ctx.fillStyle = '#00ff00';
+    this.ctx.font = '16px monospace';
+    this.ctx.fillText(`✓ Rendering (${this.canvas.width}x${this.canvas.height})`, 10, 30);
     this.ctx.font = '14px monospace';
-    this.ctx.fillText(`Audio: ${(audioIntensity * 100).toFixed(1)}%`, 10, 20);
-    this.ctx.fillText(`Agents: ${this.config.agentCount}`, 10, 40);
-    this.ctx.fillText(`Mouse: ${this.params.mouseX.toFixed(2)}, ${this.params.mouseY.toFixed(2)}`, 10, 60);
+    this.ctx.fillText(`Audio: ${(audioIntensity * 100).toFixed(1)}%`, 10, 60);
+    this.ctx.fillText(`Agents: ${this.config.agentCount}`, 10, 80);
+    this.ctx.fillText(`Mouse: ${this.params.mouseX.toFixed(2)}, ${this.params.mouseY.toFixed(2)}`, 10, 100);
   };
 
   private startRenderLoop(): void {
