@@ -5,6 +5,7 @@ import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
@@ -105,6 +106,20 @@ async def lifespan(app: FastAPI):
         gcs_client = get_gcs_client()
         bucket = gcs_client.bucket(BUCKET_NAME)
         print(f"--- GCS CONNECTED: {BUCKET_NAME} ---")
+
+        # Seed shaders if index is empty
+        shader_config = STORAGE_MAP["shader"]
+        try:
+            shader_index = await run_io(_read_json_sync, shader_config["index"])
+            if not isinstance(shader_index, list) or len(shader_index) == 0:
+                seed_file = Path(__file__).parent / "seed_shaders.json"
+                if seed_file.exists():
+                    with open(seed_file) as f:
+                        seed_data = json.load(f)
+                    await run_io(_write_json_sync, shader_config["index"], seed_data)
+                    print(f"--- SEEDED {len(seed_data)} SHADERS ---")
+        except Exception as e:
+            print(f"!!! SHADER SEEDING FAILED: {e}")
     except Exception as e:
         print(f"!!! GCS CONNECTION FAILED: {e}")
     yield
