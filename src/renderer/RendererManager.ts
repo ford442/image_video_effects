@@ -29,7 +29,13 @@ export class RendererManager {
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.canvas = canvas;
-    // Default to JS renderer
+    // Try WASM renderer first (required for shaders), fall back to JS
+    const wasmSuccess = await this.switchRenderer(true);
+    if (wasmSuccess) {
+      console.log('✅ Using WASM renderer with shader support');
+      return true;
+    }
+    console.warn('⚠️ WASM renderer failed, falling back to JS renderer (shaders unavailable)');
     return this.switchRenderer(false);
   }
 
