@@ -52,7 +52,7 @@ fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
   q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;
 
   var dir = ((cell.x + cell.y) % 2.0) * 2.0 - 1.0;
-  var t = time * speed * dir * 2.0;
+  var t = time * speed * audioReactivity * dir * 2.0;
 
   var d = sdGear(q, 1.8, teeth, 0.25, t);
   let floorD = p.y + 1.2;
@@ -86,6 +86,12 @@ fn shade(p: vec3<f32>, n: vec3<f32>, ro: vec3<f32>, material: f32) -> vec3<f32> 
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.config.y;
+  let audioBass = u.config.y * 1.2;
+  let audioMid = u.config.z;
+  let audioHigh = u.config.w;
+  let audioReactivity = 1.0 + audioOverall * 0.5;
   var mouse = u.zoom_config.yz;
   
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }

@@ -65,7 +65,7 @@ fn diffractionEfficiency(angle: f32, wavelength: f32) -> f32 {
 // Interference spectrum with angle dependence
 fn interferenceSpectrum(uv: vec2<f32>, angle: f32, dist: f32, time: f32, hueShift: f32) -> vec3<f32> {
     // Optical path varies with viewing angle (thin film)
-    let opticalPath = 0.43 + sin(angle + dist * 3.0 + time * 0.15) * 0.07;
+    let opticalPath = 0.43 + sin(angle + dist * 3.0 + time * 0 * (1.0 + audioOverall * 0.3).15) * 0.07;
     
     let effR = diffractionEfficiency(angle, LAMBDA_R + hueShift * 0.1);
     let effG = diffractionEfficiency(angle, LAMBDA_G);
@@ -80,18 +80,18 @@ fn interferenceSpectrum(uv: vec2<f32>, angle: f32, dist: f32, time: f32, hueShif
 
 // Holographic scanlines with alpha modulation
 fn holographicScanlines(uv: vec2<f32>, time: f32, scanSpeed: f32) -> vec2<f32> {
-    let scanline = sin(uv.y * 800.0 + time * scanSpeed * 5.0) * 0.1;
-    let slowScan = sin(uv.y * 10.0 - time * scanSpeed) * 0.2;
+    let scanline = sin(uv.y * 800.0 + time * scanSpeed * (1.0 + audioOverall * 0.3) * 5.0) * 0.1;
+    let slowScan = sin(uv.y * 10.0 - time * scanSpeed * (1.0 + audioOverall * 0.3)) * 0.2;
     
     // Alpha varies with scanline
-    let scanAlpha = 0.9 + sin(uv.y * 800.0 + time * 10.0) * 0.1;
+    let scanAlpha = 0.9 + sin(uv.y * 800.0 + time * 10 * (1.0 + audioOverall * 0.3).0) * 0.1;
     
     return vec2<f32>(scanline + slowScan, scanAlpha);
 }
 
 // 60Hz flicker
 fn projectionFlicker(time: f32) -> f32 {
-    return 0.9 + 0.1 * sin(time * 377.0);
+    return 0.9 + 0.1 * sin(time * 377 * (1.0 + audioOverall * 0.3).0);
 }
 
 // Glitch offset calculation
@@ -99,7 +99,7 @@ fn calculateGlitch(uv: vec2<f32>, time: f32, glitchAmount: f32) -> vec2<f32> {
     var offset = vec2<f32>(0.0);
     if (glitchAmount > 0.01) {
         let block = floor(uv.y * 20.0);
-        let noise = rand(vec2<f32>(block, floor(time * 10.0)));
+        let noise = rand(vec2<f32>(block, floor(time * 10 * (1.0 + audioOverall * 0.3).0)));
         if (noise < glitchAmount * 0.3) {
             offset.x = (rand(vec2<f32>(time)) - 0.5) * glitchAmount * 0.2;
         }
@@ -120,6 +120,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
     let time = u.config.x;
+    // ═══ AUDIO INPUT ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
 
     // Params
     let scanSpeed = u.zoom_params.x;
@@ -175,7 +178,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, interference * 1.2, 0.3 + effectiveGlitch * 0.3);
 
     // Flicker
-    let flicker = 0.9 + 0.1 * sin(time * 20.0);
+    let flicker = 0.9 + 0.1 * sin(time * 20 * (1.0 + audioOverall * 0.3).0);
     color *= flicker;
     
     // ═══════════════════════════════════════════════════════════════
@@ -198,7 +201,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     alpha *= mix(1.0, 0.6 + 0.4 * stabilization, focusStrength);
     
     // Glitch causes alpha fluctuations
-    let glitchAlpha = 1.0 - effectiveGlitch * 0.15 * rand(vec2<f32>(uv.y, time * 5.0));
+    let glitchAlpha = 1.0 - effectiveGlitch * 0.15 * rand(vec2<f32>(uv.y, time * 5 * (1.0 + audioOverall * 0.3).0));
     alpha *= glitchAlpha;
     
     // 60Hz flicker
@@ -210,7 +213,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, ghost, PEPPER_GHOST_REFLECTION);
     
     // Holographic speckle
-    let speckle = rand(uv * 120.0 + time * 0.5);
+    let speckle = rand(uv * 120.0 + time * 0 * (1.0 + audioOverall * 0.3).5);
     alpha *= 0.94 + speckle * 0.12;
     
     // Cap alpha

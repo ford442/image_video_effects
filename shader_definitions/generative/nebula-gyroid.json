@@ -14,11 +14,16 @@
     "sdf",
     "fluid",
     "geometry",
-    "procedural"
+    "procedural",
+    "audio",
+    "music",
+    "reactive"
   ],
   "features": [
     "raymarched",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "author": "minimax.ai",
   "params": [

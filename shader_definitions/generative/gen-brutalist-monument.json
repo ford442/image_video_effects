@@ -4,8 +4,20 @@
   "url": "shaders/gen-brutalist-monument.wgsl",
   "category": "generative",
   "description": "Massive concrete architecture in an atmospheric void.",
-  "features": ["mouse-driven"],
-  "tags": ["brutalism", "architecture", "atmospheric", "3d", "raymarching"],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "tags": [
+    "brutalism",
+    "architecture",
+    "atmospheric",
+    "3d",
+    "raymarching",
+    "audio",
+    "music"
+  ],
   "params": [
     {
       "id": "sun_angle",

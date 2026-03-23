@@ -1,0 +1,57 @@
+{
+  "id": "hybrid-particle-fluid",
+  "name": "Hybrid Particle Fluid",
+  "url": "shaders/hybrid-particle-fluid.wgsl",
+  "category": "simulation",
+  "description": "Particles that move like fluid with glowing trails, combining particle advection with curl noise velocity field",
+  "features": ["hybrid", "particle-system", "fluid-advection", "glow", "curl-noise", "randomization-safe"],
+  "params": [
+    {
+      "id": "particle_count",
+      "name": "Particle Density",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Number of particles in simulation"
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Fluid velocity magnitude"
+    },
+    {
+      "id": "trails",
+      "name": "Trail Decay",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How long trails persist (higher = longer)"
+    },
+    {
+      "id": "glow_size",
+      "name": "Glow Size",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Size of particle glow effect"
+    }
+  ],
+  "chunks_used": [
+    "curl noise velocity field",
+    "fbm2 (gen_grid.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)"
+  ],
+  "created_by": "Agent 2A - Shader Surgeon",
+  "created_date": "2026-03-22"
+}

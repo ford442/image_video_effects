@@ -118,7 +118,7 @@ fn chitinSSS(n: vec3<f32>, l: vec3<f32>, v: vec3<f32>, thickness: f32,
     var scatter = baseColor * (rimScatter + iridescence * 0.3);
     
     // Core has internal glow
-    if (isCore {
+    if (isCore) {
         scatter += baseColor * 0.8 * (1.0 - thickness * 2.0);
     }
     

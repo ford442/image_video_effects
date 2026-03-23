@@ -11,11 +11,15 @@
     "plasma",
     "kaleidoscope",
     "audio-reactive",
-    "liquid"
+    "liquid",
+    "audio",
+    "music",
+    "reactive"
   ],
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

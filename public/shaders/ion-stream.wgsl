@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════════
+//  ion-stream - Turbulent displacement effect with mouse interaction
+//  Category: distortion
+//  Features: upgraded-rgba, depth-aware, displacement, turbulence
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,6 +30,8 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
@@ -50,17 +59,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let sampleUV = uv - offset; // Look back to see where pixel came from
-    var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
 
     // Color tint based on displacement
     let displacementLen = length(offset);
     if (displacementLen > 0.001) {
         let tint = vec3<f32>(1.0 + colorShift, 0.8, 0.5);
-        color = mix(color, color * vec4<f32>(tint, 1.0), min(displacementLen * 10.0, 1.0));
+        color = mix(color, color * tint, min(displacementLen * 10.0, 1.0));
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-     // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
+    // Calculate alpha based on displacement and luminance
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let dispAlpha = mix(0.85, 1.0, min(displacementLen * 5.0, 1.0));
+    let alpha = mix(dispAlpha * 0.8, dispAlpha, luma);
+    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+
+    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

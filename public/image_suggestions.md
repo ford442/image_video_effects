@@ -224,7 +224,7 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the interaction of extreme light sources with highly scattering, low-density translucent materials like aerogel.
 
-### Suggestion: Biopunk Bioluminescent Fungi Swamp
+### Suggestion: Bioluminescent Fungi Swamp
 - **Date:** 2026-03-09
 - **Prompt:** "A macro, photorealistic shot deep within a murky, overgrown swamp teeming with gigantic, pulsating bioluminescent fungi. The fungi subjects are engineered with complex biopunk aesthetics, featuring semi-translucent, vein-covered caps that drip viscous, glowing green slime. The lighting is exclusively from the fungi's eerie bioluminescence, casting sickly green and vibrant magenta hues onto the wet, dark surroundings. The mood is toxic, alien, and darkly beautiful. Captured with a macro lens, incredibly shallow depth of field, focusing on a single dripping slime droplet."
 - **Negative prompt:** "sunlight, daylight, dry, pleasant, clean, low-res"
@@ -344,10 +344,10 @@ To help organize prompts, please use tags from the following categories:
 
 ### Suggestion: Italian Futurism Metropolis Speed
 - **Date:** 2026-03-10
-- **Prompt:** "A chaotic, dynamic metropolis depicted in the style of Italian Futurism, emphasizing speed, technology, and violent movement. Abstract, jagged geometric shapes in vibrant reds, yellows, and blacks interlock to form towering skyscrapers and speeding locomotives. The composition is fragmented and kaleidoscopic, capturing the blur of motion. Stark, high-contrast directional lighting highlights the aggressive, mechanical forms. The mood is energetic, overwhelming, and hyper-modern. Shot with a wide-angle perspective to distort scale and enhance the feeling of speed."
+- **Prompt:** "A chaotic, dynamic metropolis depicted in the style of emphasizing speed, technology, and violent movement. Abstract, jagged geometric shapes in vibrant reds, yellows, and blacks interlock to form towering skyscrapers and speeding locomotives. The composition is fragmented and kaleidoscopic, capturing the blur of motion. Stark, high-contrast directional lighting highlights the aggressive, mechanical forms. The mood is energetic, overwhelming, and hyper-modern. Shot with a wide-angle perspective to distort scale and enhance the feeling of speed."
 - **Negative prompt:** "calm, peaceful, traditional, realistic, soft, blurry, organic, nature"
 - **Tags:** art, italian futurism, abstract, city, speed
-- **Style / Reference:** Italian Futurism, Umberto Boccioni, Giacomo Balla
+- **Style / Reference:** Umberto Boccioni, Giacomo Balla
 - **Composition:** dynamic diagonals, fragmented and intersecting planes
 - **Color palette:** vibrant reds, yellows, blacks, steel greys
 - **Aspect ratio:** 16:9
@@ -995,6 +995,396 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating the model's ability to deconstruct complex organic environments (coral reef) into the multi-perspective geometry of Cubism.
 
+### Suggestion: Bioluminescent Reef
+- **Date:** 2026-10-27
+- **Prompt:** "An ultra-detailed, macro underwater shot of a sprawling biopunk bioluminescent reef. The organic subject is fused with glowing, fleshy cybernetic tubes and pulsating neon sacs. The lighting is exclusively from the deep-sea bioluminescence, casting sickly toxic greens and vibrant magentas against the pitch-black ocean depths. The mood is alien, toxic, and dangerously beautiful. Captured with a macro 100mm lens, razor-thin depth of field focusing on a single dripping, glowing polyp."
+- **Negative prompt:** "daylight, sun, bright, dry, smooth plastic, clean metal, realistic fish"
+- **Tags:** macro, underwater, biopunk, glowing, reef
+- **Style / Reference:** biopunk concept art, photorealistic dark macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** toxic neon green, vibrant magenta, deep ocean black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_biopunk-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of extreme macro underwater details (coral, polyps) with fleshy cybernetic biopunk elements and intense neon emission.
+
+### Suggestion: Tweed Spacesuit
+- **Date:** 2026-10-27
+- **Prompt:** "A highly detailed, surreal fashion portrait of an astronaut wearing a fully functional spacesuit tailored entirely from classic, brown herringbone tweed fabric. The subject stands on the dusty, cratered surface of the moon. The lighting is harsh, unattenuated solar glare creating sharp, deep black shadows across the lunar surface, juxtaposed with the soft, fibrous texture of the tweed catching the bright sunlight. The mood is absurd, humorous, and highly fashionable. Captured with a 50mm portrait lens, eye-level perspective."
+- **Negative prompt:** "shiny plastic, white spacesuit, soft lighting, earth, atmospheric haze"
+- **Tags:** surreal, fashion, space, tweed, portrait
+- **Style / Reference:** surreal fashion photography, hyper-detailed material swap
+- **Composition:** centered portrait, rule of thirds, stark lunar background
+- **Color palette:** earthy brown tweed, lunar greys, stark white highlights, pure black sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_tweed-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of complex, soft, woven micro-textures (tweed) placed in an environment with harsh, directional, hard-shadow lighting (lunar surface).
+
+### Suggestion: Aerogel Geometric City
+- **Date:** 2026-10-27
+- **Prompt:** "A breathtaking, wide-angle view of a futuristic, geometric city constructed entirely from massive, floating blocks of weightless, translucent blue aerogel. The central subject, the city, is suspended high above a dense layer of white clouds. The lighting is brilliant midday sunlight, piercing through the porous aerogel structures, creating millions of soft, internal refractions and a glowing, ghostly blue aura around the buildings. The mood is utopian, silent, and airy. Captured with a wide 24mm lens to emphasize the massive, floating scale."
+- **Negative prompt:** "solid glass, concrete, metal, dark, gritty, cyberpunk, night"
+- **Tags:** sci-fi, architecture, aerogel, city, floating
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** ghostly aerogel blue, blinding white sunlight, pure white clouds
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_aerogel-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under direct sunlight.
+
+### Suggestion: Damascus Steel Chess Set
+- **Date:** 2026-10-27
+- **Prompt:** "A hyper-detailed, dramatic macro still life of a chessboard where the intricately carved pieces are forged entirely from beautiful, rippled Damascus steel. The heavy metallic subjects are incredibly detailed with flowing, dark and light grey wave patterns. The lighting is moody and cinematic, featuring a single, warm overhead spotlight that casts sharp specular highlights on the polished metal ridges and deep, rich shadows between the pieces. The mood is intellectual, tense, and masterful. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the White King."
+- **Negative prompt:** "wood, plastic, flat lighting, blurry, wide angle, messy room"
+- **Tags:** still-life, macro, metal, damascus steel, chess
+- **Style / Reference:** photorealistic product photography, highly detailed macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** dark metallic greys, warm golden highlight, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_damascus-chess.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the complex, flowing texture generation of Damascus steel under intense, focused macro lighting.
+
+### Suggestion: Italian Futurism Speedboat
+- **Date:** 2026-10-27
+- **Prompt:** "A chaotic, dynamic scene of a speedboat tearing across a stylized lake, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water"
+- **Tags:** abstract, art, italian futurism, speed, dynamic
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold aquatic blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_futurism-speedboat.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed.
+
+### Suggestion: Biopunk Bioluminescent Reef
+- **Date:** 2026-10-27
+- **Prompt:** "An ultra-detailed, macro underwater shot of a sprawling biopunk bioluminescent reef. The organic subject is fused with glowing, fleshy cybernetic tubes and pulsating neon sacs. The lighting is exclusively from the deep-sea bioluminescence, casting sickly toxic greens and vibrant magentas against the pitch-black ocean depths. The mood is alien, toxic, and dangerously beautiful. Captured with a macro 100mm lens, razor-thin depth of field focusing on a single dripping, glowing polyp."
+- **Negative prompt:** "daylight, sun, bright, dry, smooth plastic, clean metal, realistic fish"
+- **Tags:** macro, underwater, biopunk, glowing, reef
+- **Style / Reference:** biopunk concept art, photorealistic dark macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** toxic neon green, vibrant magenta, deep ocean black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_biopunk-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of extreme macro underwater details (coral, polyps) with fleshy cybernetic biopunk elements and intense neon emission.
+
+### Suggestion: Tweed Spacesuit
+- **Date:** 2026-10-27
+- **Prompt:** "A highly detailed, surreal fashion portrait of an astronaut wearing a fully functional spacesuit tailored entirely from classic, brown herringbone tweed fabric. The subject stands on the dusty, cratered surface of the moon. The lighting is harsh, unattenuated solar glare creating sharp, deep black shadows across the lunar surface, juxtaposed with the soft, fibrous texture of the tweed catching the bright sunlight. The mood is absurd, humorous, and highly fashionable. Captured with a 50mm portrait lens, eye-level perspective."
+- **Negative prompt:** "shiny plastic, white spacesuit, soft lighting, earth, atmospheric haze"
+- **Tags:** surreal, fashion, space, tweed, portrait
+- **Style / Reference:** surreal fashion photography, hyper-detailed material swap
+- **Composition:** centered portrait, rule of thirds, stark lunar background
+- **Color palette:** earthy brown tweed, lunar greys, stark white highlights, pure black sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_tweed-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of complex, soft, woven micro-textures (tweed) placed in an environment with harsh, directional, hard-shadow lighting (lunar surface).
+
+### Suggestion: Aerogel Geometric City
+- **Date:** 2026-10-27
+- **Prompt:** "A breathtaking, wide-angle view of a futuristic, geometric city constructed entirely from massive, floating blocks of weightless, translucent blue aerogel. The central subject, the city, is suspended high above a dense layer of white clouds. The lighting is brilliant midday sunlight, piercing through the porous aerogel structures, creating millions of soft, internal refractions and a glowing, ghostly blue aura around the buildings. The mood is utopian, silent, and airy. Captured with a wide 24mm lens to emphasize the massive, floating scale."
+- **Negative prompt:** "solid glass, concrete, metal, dark, gritty, cyberpunk, night"
+- **Tags:** sci-fi, architecture, aerogel, city, floating
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** ghostly aerogel blue, blinding white sunlight, pure white clouds
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_aerogel-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under direct sunlight.
+
+### Suggestion: Damascus Steel Chess Set
+- **Date:** 2026-10-27
+- **Prompt:** "A hyper-detailed, dramatic macro still life of a chessboard where the intricately carved pieces are forged entirely from beautiful, rippled Damascus steel. The heavy metallic subjects are incredibly detailed with flowing, dark and light grey wave patterns. The lighting is moody and cinematic, featuring a single, warm overhead spotlight that casts sharp specular highlights on the polished metal ridges and deep, rich shadows between the pieces. The mood is intellectual, tense, and masterful. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the White King."
+- **Negative prompt:** "wood, plastic, flat lighting, blurry, wide angle, messy room"
+- **Tags:** still-life, macro, metal, damascus steel, chess
+- **Style / Reference:** photorealistic product photography, highly detailed macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** dark metallic greys, warm golden highlight, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_damascus-chess.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the complex, flowing texture generation of Damascus steel under intense, focused macro lighting.
+
+### Suggestion: Italian Futurism Speedboat
+- **Date:** 2026-10-27
+- **Prompt:** "A chaotic, dynamic scene of a speedboat tearing across a stylized lake, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water"
+- **Tags:** abstract, art, italian futurism, speed, dynamic
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold aquatic blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_futurism-speedboat.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed.
+
+### Suggestion: Biopunk Bioluminescent Reef
+- **Date:** 2026-10-27
+- **Prompt:** "An ultra-detailed, macro underwater shot of a sprawling biopunk bioluminescent reef. The organic subject is fused with glowing, fleshy cybernetic tubes and pulsating neon sacs. The lighting is exclusively from the deep-sea bioluminescence, casting sickly toxic greens and vibrant magentas against the pitch-black ocean depths. The mood is alien, toxic, and dangerously beautiful. Captured with a macro 100mm lens, razor-thin depth of field focusing on a single dripping, glowing polyp."
+- **Negative prompt:** "daylight, sun, bright, dry, smooth plastic, clean metal, realistic fish"
+- **Tags:** macro, underwater, biopunk, glowing, reef
+- **Style / Reference:** biopunk concept art, photorealistic dark macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** toxic neon green, vibrant magenta, deep ocean black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_biopunk-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of extreme macro underwater details (coral, polyps) with fleshy cybernetic biopunk elements and intense neon emission.
+
+### Suggestion: Tweed Spacesuit
+- **Date:** 2026-10-27
+- **Prompt:** "A highly detailed, surreal fashion portrait of an astronaut wearing a fully functional spacesuit tailored entirely from classic, brown herringbone tweed fabric. The subject stands on the dusty, cratered surface of the moon. The lighting is harsh, unattenuated solar glare creating sharp, deep black shadows across the lunar surface, juxtaposed with the soft, fibrous texture of the tweed catching the bright sunlight. The mood is absurd, humorous, and highly fashionable. Captured with a 50mm portrait lens, eye-level perspective."
+- **Negative prompt:** "shiny plastic, white spacesuit, soft lighting, earth, atmospheric haze"
+- **Tags:** surreal, fashion, space, tweed, portrait
+- **Style / Reference:** surreal fashion photography, hyper-detailed material swap
+- **Composition:** centered portrait, rule of thirds, stark lunar background
+- **Color palette:** earthy brown tweed, lunar greys, stark white highlights, pure black sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_tweed-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of complex, soft, woven micro-textures (tweed) placed in an environment with harsh, directional, hard-shadow lighting (lunar surface).
+
+### Suggestion: Aerogel Geometric City
+- **Date:** 2026-10-27
+- **Prompt:** "A breathtaking, wide-angle view of a futuristic, geometric city constructed entirely from massive, floating blocks of weightless, translucent blue aerogel. The central subject, the city, is suspended high above a dense layer of white clouds. The lighting is brilliant midday sunlight, piercing through the porous aerogel structures, creating millions of soft, internal refractions and a glowing, ghostly blue aura around the buildings. The mood is utopian, silent, and airy. Captured with a wide 24mm lens to emphasize the massive, floating scale."
+- **Negative prompt:** "solid glass, concrete, metal, dark, gritty, cyberpunk, night"
+- **Tags:** sci-fi, architecture, aerogel, city, floating
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** ghostly aerogel blue, blinding white sunlight, pure white clouds
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_aerogel-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under direct sunlight.
+
+### Suggestion: Damascus Steel Chess Set
+- **Date:** 2026-10-27
+- **Prompt:** "A hyper-detailed, dramatic macro still life of a chessboard where the intricately carved pieces are forged entirely from beautiful, rippled Damascus steel. The heavy metallic subjects are incredibly detailed with flowing, dark and light grey wave patterns. The lighting is moody and cinematic, featuring a single, warm overhead spotlight that casts sharp specular highlights on the polished metal ridges and deep, rich shadows between the pieces. The mood is intellectual, tense, and masterful. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the White King."
+- **Negative prompt:** "wood, plastic, flat lighting, blurry, wide angle, messy room"
+- **Tags:** still-life, macro, metal, damascus steel, chess
+- **Style / Reference:** photorealistic product photography, highly detailed macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** dark metallic greys, warm golden highlight, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_damascus-chess.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the complex, flowing texture generation of Damascus steel under intense, focused macro lighting.
+
+### Suggestion: Italian Futurism Speedboat
+- **Date:** 2026-10-27
+- **Prompt:** "A chaotic, dynamic scene of a speedboat tearing across a stylized lake, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water"
+- **Tags:** abstract, art, italian futurism, speed, dynamic
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold aquatic blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_futurism-speedboat.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed.
+
+### Suggestion: Biopunk Bioluminescent Reef
+- **Date:** 2026-10-27
+- **Prompt:** "An ultra-detailed, macro underwater shot of a sprawling biopunk bioluminescent reef. The organic subject is fused with glowing, fleshy cybernetic tubes and pulsating neon sacs. The lighting is exclusively from the deep-sea bioluminescence, casting sickly toxic greens and vibrant magentas against the pitch-black ocean depths. The mood is alien, toxic, and dangerously beautiful. Captured with a macro 100mm lens, razor-thin depth of field focusing on a single dripping, glowing polyp."
+- **Negative prompt:** "daylight, sun, bright, dry, smooth plastic, clean metal, realistic fish"
+- **Tags:** macro, underwater, biopunk, glowing, reef
+- **Style / Reference:** biopunk concept art, photorealistic dark macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** toxic neon green, vibrant magenta, deep ocean black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_biopunk-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of extreme macro underwater details (coral, polyps) with fleshy cybernetic biopunk elements and intense neon emission.
+
+### Suggestion: Tweed Spacesuit
+- **Date:** 2026-10-27
+- **Prompt:** "A highly detailed, surreal fashion portrait of an astronaut wearing a fully functional spacesuit tailored entirely from classic, brown herringbone tweed fabric. The subject stands on the dusty, cratered surface of the moon. The lighting is harsh, unattenuated solar glare creating sharp, deep black shadows across the lunar surface, juxtaposed with the soft, fibrous texture of the tweed catching the bright sunlight. The mood is absurd, humorous, and highly fashionable. Captured with a 50mm portrait lens, eye-level perspective."
+- **Negative prompt:** "shiny plastic, white spacesuit, soft lighting, earth, atmospheric haze"
+- **Tags:** surreal, fashion, space, tweed, portrait
+- **Style / Reference:** surreal fashion photography, hyper-detailed material swap
+- **Composition:** centered portrait, rule of thirds, stark lunar background
+- **Color palette:** earthy brown tweed, lunar greys, stark white highlights, pure black sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_tweed-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of complex, soft, woven micro-textures (tweed) placed in an environment with harsh, directional, hard-shadow lighting (lunar surface).
+
+### Suggestion: Aerogel Geometric City
+- **Date:** 2026-10-27
+- **Prompt:** "A breathtaking, wide-angle view of a futuristic, geometric city constructed entirely from massive, floating blocks of weightless, translucent blue aerogel. The central subject, the city, is suspended high above a dense layer of white clouds. The lighting is brilliant midday sunlight, piercing through the porous aerogel structures, creating millions of soft, internal refractions and a glowing, ghostly blue aura around the buildings. The mood is utopian, silent, and airy. Captured with a wide 24mm lens to emphasize the massive, floating scale."
+- **Negative prompt:** "solid glass, concrete, metal, dark, gritty, cyberpunk, night"
+- **Tags:** sci-fi, architecture, aerogel, city, floating
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** ghostly aerogel blue, blinding white sunlight, pure white clouds
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_aerogel-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under direct sunlight.
+
+### Suggestion: Damascus Steel Chess Set
+- **Date:** 2026-10-27
+- **Prompt:** "A hyper-detailed, dramatic macro still life of a chessboard where the intricately carved pieces are forged entirely from beautiful, rippled Damascus steel. The heavy metallic subjects are incredibly detailed with flowing, dark and light grey wave patterns. The lighting is moody and cinematic, featuring a single, warm overhead spotlight that casts sharp specular highlights on the polished metal ridges and deep, rich shadows between the pieces. The mood is intellectual, tense, and masterful. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the White King."
+- **Negative prompt:** "wood, plastic, flat lighting, blurry, wide angle, messy room"
+- **Tags:** still-life, macro, metal, damascus steel, chess
+- **Style / Reference:** photorealistic product photography, highly detailed macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** dark metallic greys, warm golden highlight, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_damascus-chess.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the complex, flowing texture generation of Damascus steel under intense, focused macro lighting.
+
+### Suggestion: Italian Futurism Speedboat
+- **Date:** 2026-10-27
+- **Prompt:** "A chaotic, dynamic scene of a speedboat tearing across a stylized lake, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water"
+- **Tags:** abstract, art, italian futurism, speed, dynamic
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold aquatic blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_futurism-speedboat.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed.
+
+### Suggestion: Biopunk Bioluminescent Reef
+- **Date:** 2026-10-27
+- **Prompt:** "An ultra-detailed, macro underwater shot of a sprawling biopunk bioluminescent reef. The organic subject is fused with glowing, fleshy cybernetic tubes and pulsating neon sacs. The lighting is exclusively from the deep-sea bioluminescence, casting sickly toxic greens and vibrant magentas against the pitch-black ocean depths. The mood is alien, toxic, and dangerously beautiful. Captured with a macro 100mm lens, razor-thin depth of field focusing on a single dripping, glowing polyp."
+- **Negative prompt:** "daylight, sun, bright, dry, smooth plastic, clean metal, realistic fish"
+- **Tags:** macro, underwater, biopunk, glowing, reef
+- **Style / Reference:** biopunk concept art, photorealistic dark macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** toxic neon green, vibrant magenta, deep ocean black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_biopunk-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of extreme macro underwater details (coral, polyps) with fleshy cybernetic biopunk elements and intense neon emission.
+
+### Suggestion: Tweed Spacesuit
+- **Date:** 2026-10-27
+- **Prompt:** "A highly detailed, surreal fashion portrait of an astronaut wearing a fully functional spacesuit tailored entirely from classic, brown herringbone tweed fabric. The subject stands on the dusty, cratered surface of the moon. The lighting is harsh, unattenuated solar glare creating sharp, deep black shadows across the lunar surface, juxtaposed with the soft, fibrous texture of the tweed catching the bright sunlight. The mood is absurd, humorous, and highly fashionable. Captured with a 50mm portrait lens, eye-level perspective."
+- **Negative prompt:** "shiny plastic, white spacesuit, soft lighting, earth, atmospheric haze"
+- **Tags:** surreal, fashion, space, tweed, portrait
+- **Style / Reference:** surreal fashion photography, hyper-detailed material swap
+- **Composition:** centered portrait, rule of thirds, stark lunar background
+- **Color palette:** earthy brown tweed, lunar greys, stark white highlights, pure black sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261027_tweed-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of complex, soft, woven micro-textures (tweed) placed in an environment with harsh, directional, hard-shadow lighting (lunar surface).
+
+### Suggestion: Aerogel Geometric City
+- **Date:** 2026-10-27
+- **Prompt:** "A breathtaking, wide-angle view of a futuristic, geometric city constructed entirely from massive, floating blocks of weightless, translucent blue aerogel. The central subject, the city, is suspended high above a dense layer of white clouds. The lighting is brilliant midday sunlight, piercing through the porous aerogel structures, creating millions of soft, internal refractions and a glowing, ghostly blue aura around the buildings. The mood is utopian, silent, and airy. Captured with a wide 24mm lens to emphasize the massive, floating scale."
+- **Negative prompt:** "solid glass, concrete, metal, dark, gritty, cyberpunk, night"
+- **Tags:** sci-fi, architecture, aerogel, city, floating
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** ghostly aerogel blue, blinding white sunlight, pure white clouds
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_aerogel-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under direct sunlight.
+
+### Suggestion: Damascus Steel Chess Set
+- **Date:** 2026-10-27
+- **Prompt:** "A hyper-detailed, dramatic macro still life of a chessboard where the intricately carved pieces are forged entirely from beautiful, rippled Damascus steel. The heavy metallic subjects are incredibly detailed with flowing, dark and light grey wave patterns. The lighting is moody and cinematic, featuring a single, warm overhead spotlight that casts sharp specular highlights on the polished metal ridges and deep, rich shadows between the pieces. The mood is intellectual, tense, and masterful. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the White King."
+- **Negative prompt:** "wood, plastic, flat lighting, blurry, wide angle, messy room"
+- **Tags:** still-life, macro, metal, damascus steel, chess
+- **Style / Reference:** photorealistic product photography, highly detailed macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** dark metallic greys, warm golden highlight, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_damascus-chess.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the complex, flowing texture generation of Damascus steel under intense, focused macro lighting.
+
+### Suggestion: Italian Futurism Speedboat
+- **Date:** 2026-10-27
+- **Prompt:** "A chaotic, dynamic scene of a speedboat tearing across a stylized lake, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water"
+- **Tags:** abstract, art, italian futurism, speed, dynamic
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold aquatic blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261027_futurism-speedboat.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed.
+
+### Suggestion: Ashcan School City Street
+- **Date:** 2026-10-31
+- **Prompt:** "A bustling, gritty early 20th-century city street scene depicted in the Ashcan School art style. The subject features working-class pedestrians, horse-drawn carts, and dense tenement buildings. The lighting is overcast and realistic, casting soft, murky shadows that highlight the dirt and texture of the urban environment. The mood is authentic, raw, and full of everyday life. Captured with an eye-level, documentary-style perspective, emphasizing the unglamorous reality of the city."
+- **Negative prompt:** "modern, bright, cheerful, clean, sci-fi, surreal, highly saturated"
+- **Tags:** art, city, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, crowded street, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull reds, ochre
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261031_ashcan-school-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing gritty, unidealized urban scenes and historical art styles.
+
+### Suggestion: Exoplanet Core Liquid Diamond
+- **Date:** 2026-10-31
+- **Prompt:** "An ultra-macro, theoretical visualization deep within the core of a massive exoplanet. The subject is an ocean of liquid diamond and super-compressed carbon structures churning under unimaginable pressure. The lighting is completely internal, glowing with an intense, blinding white and electric blue heat that refracts wildly through the crystalline facets. The mood is extreme, alien, and awe-inspiring. Captured with a microscopic camera perspective, freezing the chaotic, crystalline fluid dynamics in sharp focus."
+- **Negative prompt:** "surface, sky, life, dark, muddy, soft, blurry"
+- **Tags:** sci-fi, space, macro, exoplanet, core, diamond
+- **Style / Reference:** hyper-realistic scientific visualization, 3D render
+- **Composition:** chaotic, dense, sharp macro focus
+- **Color palette:** blinding white, electric blue, intense cyan, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing extreme internal lighting, refraction, and complex crystal fluid simulations.
+
+### Suggestion: Magnetar Plasma Storm
+- **Date:** 2026-10-31
+- **Prompt:** "A breathtaking, epic space scene featuring a terrifying magnetar star violently erupting. The subject is a hyper-dense neutron star surrounded by fiercely glowing, twisted magnetic field lines trapping superheated plasma. The lighting is blindingly bright and high-contrast, dominated by the extreme, raw energy radiating from the star against the pitch-black void of space. The mood is apocalyptic, powerful, and majestic. Captured with a wide-angle cinematic lens, showcasing the vast, twisted magnetic flares arching into deep space."
+- **Negative prompt:** "calm, planets, earth-like, soft lighting, simple, low contrast"
+- **Tags:** sci-fi, space, magnetar, cosmic, epic, plasma
+- **Style / Reference:** cinematic space art, astrophotography, JWST style
+- **Composition:** centered subject, dynamic curved flares, wide perspective
+- **Color palette:** blinding white, intense violet, fiery orange, pitch black void
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_magnetar-storm.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing twisted, glowing emission lines (magnetic fields) and extreme high-contrast cosmic phenomena.
+
+### Suggestion: Giant Hexagonal Beehive
+- **Date:** 2026-10-31
+- **Prompt:** "An ultra-macro view deep inside a giant, complex beehive. The subject consists of perfectly repeating, translucent amber-colored hexagonal wax cells filled with glowing golden honey. The lighting is warm and directional, filtering through the semi-transparent wax walls to create a mesmerizing sub-surface scattering effect and a rich, golden ambiance. The mood is industrious, organic, and mathematically perfect. Captured with a 100mm macro lens, deep depth of field to emphasize the endless geometric repetition of the honeycomb structure."
+- **Negative prompt:** "messy, chaotic, dark, dull, artificial, plastic, people"
+- **Tags:** macro, nature, beehive, hexagonal, golden
+- **Style / Reference:** macro nature photography, hyper-detailed structure
+- **Composition:** full frame repeating pattern, deep perspective
+- **Color palette:** warm gold, rich amber, deep translucent orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_giant-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating sub-surface scattering on organic materials and the generation of perfect, repeating geometric patterns (hexagons).
+
+### Suggestion: Photorealistic Beaver Dam
+- **Date:** 2026-10-31
+- **Prompt:** "A photorealistic, highly detailed landscape photograph of an intricate beaver dam blocking a tranquil forest stream. The subject is a massive construction of chewed logs, thick mud, and woven branches holding back a deep pool of clear water. The lighting is crisp, early morning sunlight piercing through the dense forest canopy, casting dappled light and reflections on the still water. The mood is peaceful, natural, and harmonious. Captured with a 35mm lens from the edge of the water, showing both the complex texture of the dam and the calm ecosystem it creates."
+- **Negative prompt:** "urban, modern, stylized, painted, blurry, low resolution, people"
+- **Tags:** nature, landscape, photorealism, forest, beaver dam
+- **Style / Reference:** National Geographic style nature photography, hyper-detailed
+- **Composition:** wide shot, low angle near water surface, leading lines of the stream
+- **Color palette:** rich earthy browns, lush forest greens, clear blue water reflections, golden sunlight
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing complex organic structures (woven branches and mud), clear water reflections, and dappled forest lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1017,12 +1407,17 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Ashcan School, Rayonism, De Stijl, Italian Futurism, Low Key Photography, Tenebrism, Biopunk.
+- **Styles:** Ashcan School, Rayonism, De Stijl, Low Key Photography, Tenebrism, - **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Organza, Onyx. Graphene.
+- **Subjects:** Tsunami, Exoplanet Core, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring
+- **Styles:** Ashcan School, Rayonism, De Stijl, Low Key Photography.
+- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Organza, Onyx.
+- **Subjects:** Supernova, Exoplanet Core, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring
+- **Styles:** Rayonism, De Stijl, Italian Futurism, Low Key Photography, Tenebrism, Biopunk.
 - **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Aerogel, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Tsunami, Exoplanet Core, Bioluminescent Reef, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring,
-- **Styles:** Ashcan School, Rayonism, De Stijl, Italian Futurism, Low Key Photography.
+- **Subjects:** Tsunami, Bioluminescent Reef, Tide Pool, Supervolcano, Origami, Orbital Ring,
+- **Styles:** Rayonism, De Stijl, Italian Futurism, Low Key Photography.
 - **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Onyx.
-- **Subjects:** Supernova, Exoplanet Core, Bioluminescent Reef, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring,
+- **Subjects:** Supernova, Bioluminescent Reef, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Tide Pool, Supervolcano, Origami, Orbital Ring,
 
 ---
 

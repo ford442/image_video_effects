@@ -1,0 +1,72 @@
+{
+  "id": "neural-raymarcher",
+  "name": "Neural Raymarcher",
+  "url": "shaders/neural-raymarcher.wgsl",
+  "category": "generative",
+  "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness.",
+  "features": [
+    "advanced-hybrid",
+    "sdf-raymarching",
+    "neural-patterns",
+    "volumetric",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "network_depth",
+      "name": "Network Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Number of neural network layers"
+    },
+    {
+      "id": "activation_vis",
+      "name": "Activation Visualization",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Visibility of activation patterns"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Volumetric glow intensity"
+    },
+    {
+      "id": "camera_rotation",
+      "name": "Camera Rotation",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Camera orbit position"
+    }
+  ],
+  "chunks_used": [
+    "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
+    "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)",
+    "Activation functions (tanh, ReLU, sigmoid)"
+  ],
+  "performance_target": "30-45 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22",
+  "tags": [
+    "audio",
+    "music",
+    "reactive"
+  ]
+}

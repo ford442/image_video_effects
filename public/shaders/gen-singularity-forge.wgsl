@@ -87,12 +87,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera setup
     let time = u.config.x * timeDilation * 0.5;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.config.y;
+    let audioBass = u.config.y * 1.2;
+    let audioMid = u.config.z;
+    let audioHigh = u.config.w;
+    let audioReactivity = 1.0 + audioOverall * 0.5;
     var ro = vec3<f32>(0.0, 1.5, -4.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Camera rotation
     let camRotX = rotate2D(0.3);
-    let camRotY = rotate2D(time * 0.1);
+    let camRotY = rotate2D(time * 0.1 * audioReactivity);
     let temp_ro_yz = camRotX * ro.yz;
     ro.y = temp_ro_yz.x;
     ro.z = temp_ro_yz.y;
@@ -143,7 +149,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         var dDisk = sdTorus(pDisk, vec2<f32>(2.0, 0.4 * diskDensity));
 
         // Plasma turbulence noise + Spaghettification (Audio Reactive)
-        let n = fbm(pDisk * 2.0 + vec3<f32>(time * 2.0, spaghettification * 5.0, time * 2.0));
+        let n = fbm(pDisk * 2.0 + vec3<f32>(time * 2.0 * audioReactivity, spaghettification * 5.0, time * 2.0 * audioReactivity));
         dDisk += n * 0.5;
 
         // Hawking Radiation Jets

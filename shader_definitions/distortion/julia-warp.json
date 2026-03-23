@@ -5,11 +5,16 @@
   "category": "distortion",
   "description": "Julia fractal-based warping with orbit traps for psychedelic coloring.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "transform",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

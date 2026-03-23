@@ -1,0 +1,59 @@
+{
+  "id": "sim-volumetric-fake",
+  "name": "Volumetric Fake (God Rays)",
+  "url": "shaders/sim-volumetric-fake.wgsl",
+  "category": "lighting-effects",
+  "description": "Fast approximation of volumetric lighting. Radial blur from light source with depth-based scattering.",
+  "features": ["simulation", "fake-volumetrics", "radial-blur", "god-rays", "randomization-safe"],
+  "params": [
+    {
+      "id": "light_intensity",
+      "name": "Light Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Light source intensity"
+    },
+    {
+      "id": "dust",
+      "name": "Dust Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Dust particle density"
+    },
+    {
+      "id": "scattering",
+      "name": "Scattering",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Scattering amount"
+    },
+    {
+      "id": "noise_speed",
+      "name": "Noise Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Dust movement speed"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "noise",
+    "Radial blur",
+    "Depth-based occlusion"
+  ],
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22"
+}

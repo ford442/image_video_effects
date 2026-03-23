@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Lorenz Strange Attractor - Chaotic particle system visualization
 //  Category: generative
-//  Features: procedural, mathematical-art, particles
+//  Features: upgraded-rgba, depth-aware, procedural, mathematical-art, particles
 //  Scientific: Lorenz system - classic chaotic attractor
-// ═══════════════════════════════════════════════════════════════
+//  Upgraded: 2026-03-22
+//  By: Agent 1A - Alpha Channel Specialist
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -57,6 +59,7 @@ fn rk4Step(pos: vec3<f32>, dt: f32, sigma: f32, rho: f32, beta: f32) -> vec3<f32
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
+    let coord = vec2<i32>(global_id.xy);
     let time = u.config.x;
     
     // Aspect ratio correction
@@ -218,9 +221,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - length(uv - 0.5) * 0.5;
     color *= vignette;
     
-    // Output final color
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Calculate alpha based on luminance and depth
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let presence = smoothstep(0.02, 0.1, luma);
+    let alpha = mix(0.0, 1.0, presence);
+    
+    // Output final RGBA color
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
     
     // Output depth for potential post-processing
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(maxDepth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(maxDepth, 0.0, 0.0, 0.0));
 }

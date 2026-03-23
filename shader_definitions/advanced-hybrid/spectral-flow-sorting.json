@@ -1,0 +1,71 @@
+{
+  "id": "spectral-flow-sorting",
+  "name": "Spectral Flow Sorting",
+  "url": "shaders/spectral-flow-sorting.wgsl",
+  "category": "distortion",
+  "description": "Optical flow-based pixel sorting with spectral analysis. Pixels flow and sort along motion vectors.",
+  "features": [
+    "advanced-hybrid",
+    "pixel-sorting",
+    "optical-flow",
+    "fft",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "flow_sensitivity",
+      "name": "Flow Sensitivity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Sensitivity to motion"
+    },
+    {
+      "id": "sort_threshold",
+      "name": "Sort Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Pixel sorting threshold"
+    },
+    {
+      "id": "freq_influence",
+      "name": "Frequency Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Influence of frequency analysis"
+    },
+    {
+      "id": "smoothing",
+      "name": "Temporal Smoothing",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Temporal smoothing amount"
+    }
+  ],
+  "chunks_used": [
+    "Optical flow calculation",
+    "Local frequency analysis",
+    "Pixel sorting along lines"
+  ],
+  "performance_target": "45-60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22",
+  "tags": [
+    "audio",
+    "music",
+    "reactive"
+  ]
+}

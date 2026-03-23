@@ -106,6 +106,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
     let texel = 1.0 / resolution;
 
     // Parameters
@@ -126,18 +130,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // First warp layer
     let q = vec2<f32>(
-        fbm(p + vec2<f32>(0.0, 0.0) + time * speed, 4u),
-        fbm(p + vec2<f32>(5.2, 1.3) + time * speed, 4u)
+        fbm(p + vec2<f32>(0.0, 0.0) + time * speed * audioReactivity, 4u),
+        fbm(p + vec2<f32>(5.2, 1.3) + time * speed * audioReactivity, 4u)
     );
     
     // Second warp layer (more turbulent)
     var r = vec2<f32>(
-        fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2) + time * speed * 0.7, 3u),
-        fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8) + time * speed * 0.7, 3u)
+        fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2) + time * speed * audioReactivity * 0.7, 3u),
+        fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8) + time * speed * audioReactivity * 0.7, 3u)
     );
     
     // Final noise value
-    var f = fbm(p + 4.0 * r + time * speed * 0.3, 5u);
+    var f = fbm(p + 4.0 * r + time * speed * audioReactivity * 0.3, 5u);
     
     // --- Depth Interaction ---
     var depth_mask = 1.0;
@@ -166,7 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flow_color = palette_color(color_t, color_mode, color_shift);
     
     // Pulsing glow
-    let pulse_beat = sin(time * 2.0 * (pulse + 0.1)) * 0.5 + 0.5;
+    let pulse_beat = sin(time * 2.0 * audioReactivity * (pulse + 0.1)) * 0.5 + 0.5;
     let glow = pow(f * 3.0, 2.5) * intensity * (0.7 + pulse_beat * 0.3);
     let final_flow = flow_color * glow * depth_mask;
     

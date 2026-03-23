@@ -14,11 +14,16 @@
     "stalactites",
     "procedural",
     "generative",
-    "alpha-transmission"
+    "alpha-transmission",
+    "audio",
+    "music",
+    "reactive"
   ],
   "features": [
     "mouse-driven",
-    "physical-transmission"
+    "physical-transmission",
+    "audio-reactive",
+    "audio-driven"
   ],
   "author": "ford442",
   "params": [

@@ -45,11 +45,11 @@ fn noise(p: vec2<f32>) -> f32 {
 
 // Calculate fabric alpha with weave pattern
 fn calculateFabricAlpha(uv: vec2<f32>, isSeam: bool, isTeeth: bool) -> f32 {
-    if (isTeeth {
+    if (isTeeth) {
         return METAL_ALPHA;
     }
     
-    if (isSeam {
+    if (isSeam) {
         // Seams have tighter weave = more opaque
         return SEAM_ALPHA;
     }

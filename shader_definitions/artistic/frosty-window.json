@@ -35,8 +35,11 @@
     }
   ],
   "features": [
+    "upgraded-rgba",
+    "depth-aware",
     "animated",
     "crystalline",
+    "interactive",
     "mouse-driven"
   ],
   "tags": [

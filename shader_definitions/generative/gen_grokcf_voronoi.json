@@ -1,14 +1,19 @@
 {
   "id": "gen-grokcf-voronoi",
-  "name": "Grokcf Animated Voronoi",
+  "name": "Worley Noise Cellular",
   "url": "shaders/gen_grokcf_voronoi.wgsl",
   "category": "generative",
-  "description": "Procedural Voronoi diagram with animated cells and mouse-influenced positioning.",
+  "description": "Organic cellular patterns using Worley noise with FBM layering and RGBA depth-aware rendering.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "animated"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "voronoi",
+    "cellular"
   ]
 }

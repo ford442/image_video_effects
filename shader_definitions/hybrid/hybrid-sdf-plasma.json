@@ -1,0 +1,58 @@
+{
+  "id": "hybrid-sdf-plasma",
+  "name": "Hybrid SDF Plasma Field",
+  "url": "shaders/hybrid-sdf-plasma.wgsl",
+  "category": "generative",
+  "description": "Raymarched SDF scene with plasma noise displacement and dynamic palette-based coloring",
+  "features": ["hybrid", "raymarching", "sdf", "plasma-noise", "palette-cycling", "randomization-safe"],
+  "params": [
+    {
+      "id": "plasma_detail",
+      "name": "Plasma Detail",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Detail level of plasma noise displacement"
+    },
+    {
+      "id": "color_speed",
+      "name": "Color Cycle Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Speed of palette color cycling"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Plasma glow strength"
+    },
+    {
+      "id": "quality",
+      "name": "Raymarch Quality",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Raymarching step count (affects performance)"
+    }
+  ],
+  "chunks_used": [
+    "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
+    "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
+    "fbm3 (gen-xeno-botanical-synth-flora.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)"
+  ],
+  "created_by": "Agent 2A - Shader Surgeon",
+  "created_date": "2026-03-22"
+}

@@ -1,0 +1,71 @@
+{
+  "id": "gravitational-lensing",
+  "name": "Gravitational Lensing",
+  "url": "shaders/gravitational-lensing.wgsl",
+  "category": "distortion",
+  "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
+  "features": [
+    "advanced-hybrid",
+    "schwarzschild-metric",
+    "geodesic-raytracing",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "black_hole_mass",
+      "name": "Black Hole Mass",
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Mass of the black hole"
+    },
+    {
+      "id": "disk_brightness",
+      "name": "Accretion Disk Brightness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Brightness of accretion disk"
+    },
+    {
+      "id": "camera_orbit",
+      "name": "Camera Orbit",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Camera orbit position"
+    },
+    {
+      "id": "redshift",
+      "name": "Gravitational Redshift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Intensity of gravitational redshift"
+    }
+  ],
+  "chunks_used": [
+    "Schwarzschild metric",
+    "Geodesic raytracing",
+    "Accretion disk rendering",
+    "Doppler beaming"
+  ],
+  "performance_target": "30-45 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22",
+  "tags": [
+    "audio",
+    "music",
+    "reactive"
+  ]
+}

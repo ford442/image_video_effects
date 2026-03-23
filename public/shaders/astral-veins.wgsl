@@ -1,8 +1,10 @@
-// ---------------------------------------------------------------
-//  Astral Veins – flowing luminous veins that wrap around depth.
-//  ---------------------------------------------------------------
-//  Binding layout (identical to all of your other shaders):
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  astral-veins
+//  Category: atmospheric
+//  Features: upgraded-rgba, depth-aware
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
@@ -19,7 +21,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var compSampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------------------
 
 struct Uniforms {
   // x = time, y = frameCount, z = resolution.x, w = resolution.y
@@ -28,7 +29,7 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   // x = veinThickness, y = depthInfluence, z = pulseSpeed, w = unused
   zoom_config: vec4<f32>,
-  // ripples – used for interactive “spores” (click to seed a vein)
+  // ripples – used for interactive "spores" (click to seed a vein)
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -145,13 +146,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         fbm(p + 4.0 * q + vec2<f32>(8.3,2.8) + time * speed * 0.7)
     );
 
-    // Final noise – the raw “vein density”
+    // Final noise – the raw "vein density"
     var f = fbm(p + 4.0 * r + time * speed * 0.3);
 
     // ---------------------------------------------------------------
     //  5️⃣  Convert the scalar field into thin veins
     // ---------------------------------------------------------------
-    // Gradient magnitude gives us “edges” of the noise – those become veins
+    // Gradient magnitude gives us "edges" of the noise – those become veins
     let grad = vec2<f32>(
         fbm(p + vec2<f32>(0.01,0.0) + time * speed) - fbm(p - vec2<f32>(0.01,0.0) + time * speed),
         fbm(p + vec2<f32>(0.0,0.01) + time * speed) - fbm(p - vec2<f32>(0.0,0.01) + time * speed)
@@ -159,7 +160,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gradMag = length(grad);
 
     // Thin‑line mask: the higher the gradient, the brighter the vein
-    // “veinThickness” pushes the threshold – larger values make thicker veins
+    // "veinThickness" pushes the threshold – larger values make thicker veins
     let veinMask = smoothstep(veinThickness, veinThickness + 0.02, gradMag);
 
     // ---------------------------------------------------------------
@@ -176,7 +177,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hue = fract(hueShift + time * 0.1);
     let baseCol = hsv2rgb(hue, 0.8, 1.0);
 
-    // Add a subtle pulse that makes the veins “breathe”
+    // Add a subtle pulse that makes the veins "breathe"
     let pulse = 0.5 + 0.5 * sin(time * pulseSpeed * 6.2831);
     let glow = pow(veinMask, 1.5) * intensity * pulse;
 
@@ -186,8 +187,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ---------------------------------------------------------------
     //  8️⃣  Temporal persistence (trailing glow)
     // ---------------------------------------------------------------
-    // Read previous frame’s growth buffer (stores a single‑channel “glow”)
-    // MODIFIED: Use dataTextureC (read-only) instead of growthBuf (write-only)
+    // Read previous frame's growth buffer (stores a single‑channel "glow")
+    // MODIFIED: Use dataTexC (read-only) instead of growthBuf (write-only)
     var prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).r;
     // Fade out old glow and add the new one
     prev = prev * 0.94 + glow * 0.06;
@@ -205,9 +206,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var outCol = videoCol + veinCol;
     outCol = 1.0 - (1.0 - outCol) * (1.0 - vec3<f32>(halo));
 
+    // Calculate luminance-based alpha
+    let luma = dot(outCol, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = mix(0.7, 1.0, luma);
+    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+
     // ---------------------------------------------------------------
     //  🔟  Write final colour & depth
     // ---------------------------------------------------------------
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol,1.0));
+    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, finalAlpha));
     textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
 }

@@ -42,7 +42,9 @@
     "mouse-driven",
     "alpha-transmission",
     "chromatic-aberration",
-    "physical-refraction"
+    "physical-refraction",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "crystal",
@@ -50,6 +52,9 @@
     "refraction",
     "dispersion",
     "transmission",
-    "fresnel"
+    "fresnel",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

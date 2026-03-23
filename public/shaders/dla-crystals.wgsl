@@ -86,6 +86,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
+  // ═══ AUDIO REACTIVITY ═══
+  let audioOverall = u.zoom_config.x;
+  let audioBass = audioOverall * 1.5;
+  let audioReactivity = 1.0 + audioOverall * 0.3;
   let frame = u.config.y;
   
   // Parameters
@@ -136,7 +140,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // If not frozen, simulate walker behavior
   if (frozen < 0.5) {
     // Generate random walk direction based on position and time
-    let randSeed = uv * 1000.0 + vec2<f32>(time * 100.0);
+    let randSeed = uv * 1000.0 + vec2<f32>(time * 100.0 * audioReactivity);
     let randDir = hash22(randSeed);
     
     // Bias towards nearby frozen crystals (attraction)
@@ -223,7 +227,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalColor = crystalColor * glow + edgeGlow;
     
     // Add sparkle
-    let sparkle = pow(hash21(uv * 1000.0 + vec2<f32>(time * 10.0)), 8.0) * 0.5;
+    let sparkle = pow(hash21(uv * 1000.0 + vec2<f32>(time * 10.0 * audioReactivity)), 8.0) * 0.5;
     finalColor = finalColor + vec3<f32>(sparkle);
   } else {
     // Non-frozen areas show source with slight darkening

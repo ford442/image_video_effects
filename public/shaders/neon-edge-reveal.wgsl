@@ -42,6 +42,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
 
     // Params
     // x: revealRadius, y: edgeBoost, z: glowIntensity, w: occlusionBalance
@@ -85,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Neon color cycling
     let neonColor1 = vec3<f32>(1.0, 0.0, 0.8);
     let neonColor2 = vec3<f32>(0.0, 1.0, 1.0);
-    let mixFactor = 0.5 + 0.5 * sin(time * 2.0 + uv.x * 3.0);
+    let mixFactor = 0.5 + 0.5 * sin(time * 2.0 * audioReactivity + uv.x * 3.0);
     let neonColor = mix(neonColor1, neonColor2, mixFactor);
 
     // Emission calculation

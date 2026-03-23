@@ -1,0 +1,75 @@
+{
+  "id": "multi-fractal-compositor",
+  "name": "Multi-Fractal Compositor",
+  "url": "shaders/multi-fractal-compositor.wgsl",
+  "category": "generative",
+  "description": "Smoothly blend between multiple fractal types. Mandelbrot, Julia, Burning Ship, and Newton fractals.",
+  "features": [
+    "advanced-hybrid",
+    "mandelbrot",
+    "julia",
+    "burning-ship",
+    "smooth-blend",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Zoom Level",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Zoom level into fractal"
+    },
+    {
+      "id": "iterations",
+      "name": "Iteration Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Maximum iterations"
+    },
+    {
+      "id": "domain_warp",
+      "name": "Domain Warp",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Amount of domain warping"
+    },
+    {
+      "id": "fractal_blend",
+      "name": "Fractal Blend",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend between fractal types"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)",
+    "Mandelbrot iteration",
+    "Julia iteration",
+    "Burning Ship iteration",
+    "Newton fractal"
+  ],
+  "performance_target": "45-60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22",
+  "tags": [
+    "audio",
+    "music",
+    "reactive"
+  ]
+}

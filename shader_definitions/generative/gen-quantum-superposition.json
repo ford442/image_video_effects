@@ -3,9 +3,25 @@
   "name": "Quantum Superposition Lattice",
   "url": "shaders/gen-quantum-superposition.wgsl",
   "category": "generative",
-  "description": "Particles exist in quantum superposition — visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
-  "tags": ["quantum", "superposition", "particles", "wavefunction", "probability", "physics", "generative", "abstract"],
-  "features": ["mouse-driven"],
+  "description": "Particles exist in quantum superposition \u2014 visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
+  "tags": [
+    "quantum",
+    "superposition",
+    "particles",
+    "wavefunction",
+    "probability",
+    "physics",
+    "generative",
+    "abstract",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
   "author": "AI",
   "params": [
     {
@@ -15,7 +31,7 @@
       "max": 1.0,
       "default": 0.4,
       "step": 0.01,
-      "description": "Number of quantum particles (maps to 1–8)."
+      "description": "Number of quantum particles (maps to 1\u20138)."
     },
     {
       "id": "param2",

@@ -35,10 +35,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

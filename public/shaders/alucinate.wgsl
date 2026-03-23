@@ -1,44 +1,45 @@
-/// Alucinate - Psychedelic interactive warping and color shifting.
-/// Warps texture coordinates with flowing sine waves and introduces
-/// chromatic aberration that intensifies with mouse interaction.
+// ═══════════════════════════════════════════════════════════════════
+//  alucinate - Psychedelic interactive warping and color shifting
+//  Category: distortion
+//  Features: upgraded-rgba, depth-aware, chromatic-aberration, warping
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var s: sampler;
-@group(0) @binding(1) var inputTexture: texture_2d<f32>;
-@group(0) @binding(2) var outputTexture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    time: f32,
-    ripple_count: f32,
-    mouse: vec4<f32>,
-    config: vec4<f32>, // x: zoom, y: unused, z: width, w: height
-    audio: vec4<f32>, // x: bass, y: mid, z: treble, w: volume
+  config: vec4<f32>,      // x=time, y=ripple_count, z=width, w=height
+  zoom_config: vec4<f32>, // x=zoom, y=mouseX, z=mouseY, w=mouseDown
+  zoom_params: vec4<f32>, // distortion params
+  ripples: array<vec4<f32>, 50>,
 };
-@group(0) @binding(3) var<uniform> u: Uniforms;
-
-@group(0) @binding(4) var depthTexture: texture_2d<f32>;
-@group(0) @binding(5) var linearSampler: sampler;
-@group(0) @binding(6) var depthOutputTexture: texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba16float, read_write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba16float, read_write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extra: array<f32>;
-@group(0) @binding(11) var comparisonSampler: sampler_comparison;
-@group(0) @binding(12) var plasmaTexture: texture_2d<f32>;
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = textureDimensions(outputTexture);
-    if (global_id.x >= dims.x || global_id.y >= dims.y) {
+    let resolution = u.config.zw;
+    let coord = vec2<i32>(global_id.xy);
+    
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
 
-    var uv = vec2<f32>(f32(global_id.x) / f32(dims.x), f32(global_id.y) / f32(dims.y));
-    let time = u.time * 0.5;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x * 0.5;
 
-    let mouse_uv = u.mouse.xy / u.config.zw;
-    let mouse_active = u.mouse.z > 0.0;
+    let mouse_uv = u.zoom_config.yz;
+    let mouse_active = u.zoom_config.w > 0.0;
     let dist_to_mouse = distance(uv, mouse_uv);
     let mouse_effect = smoothstep(0.3, 0.0, dist_to_mouse) * f32(mouse_active);
 
@@ -51,13 +52,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warped_uv = uv + vec2(warp_offset_x, warp_offset_y);
 
     let shift_amount = mix(0.005, 0.02, mouse_effect) * sin(time * 2.0);
-    let r = textureSample(inputTexture, s, warped_uv + vec2(shift_amount, shift_amount)).r;
-    let g = textureSample(inputTexture, s, warped_uv).g;
-    let b = textureSample(inputTexture, s, warped_uv - vec2(shift_amount, shift_amount)).b;
-
-    textureStore(outputTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
+    let r = textureSample(readTexture, u_sampler, warped_uv + vec2(shift_amount, shift_amount)).r;
+    let g = textureSample(readTexture, u_sampler, warped_uv).g;
+    let b = textureSample(readTexture, u_sampler, warped_uv - vec2(shift_amount, shift_amount)).b;
     
-    // Pass through depth
-    let depth = textureSampleLevel(depthTexture, linearSampler, uv, 0.0).r;
-    textureStore(depthOutputTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let color = vec3<f32>(r, g, b);
+    
+    // Calculate alpha based on color luminance and warp intensity
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let warpAlpha = mix(0.8, 1.0, mouse_effect + warp_amp * 10.0);
+    let alpha = mix(warpAlpha * 0.85, warpAlpha, luma);
+    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+    
+    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

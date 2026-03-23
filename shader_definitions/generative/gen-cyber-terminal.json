@@ -9,11 +9,15 @@
     "terminal",
     "retro",
     "procedural",
-    "decoder"
+    "decoder",
+    "audio",
+    "music"
   ],
   "features": [
     "mouse-driven",
-    "procedural-glyphs"
+    "procedural-glyphs",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {

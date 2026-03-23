@@ -5,10 +5,15 @@
   "category": "simulation",
   "description": "Agent-based slime mold texture feeder that creates trails and networks.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "simulation",
-    "physics"
+    "physics",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

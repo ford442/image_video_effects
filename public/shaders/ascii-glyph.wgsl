@@ -1,4 +1,10 @@
-// ASCII / Glyph Morphing - compute skeleton
+// ═══════════════════════════════════════════════════════════════════
+//  ascii-glyph
+//  Category: stylize
+//  Features: upgraded-rgba, depth-aware
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -62,5 +68,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hue = atan2(src.g - src.b, src.r - src.g);
   let glyph_color = vec3<f32>(abs(hue), 1.0, 1.0);
   let final_color = mix(vec3<f32>(0.0), glyph_color, smoothstep(0.0, 0.1, morphed_sdf));
-  textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(final_color, 1.0));
+  
+  // Sample depth for alpha calculation
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  
+  // Calculate luminance-based alpha
+  let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = mix(0.7, 1.0, luma);
+  let finalAlpha = mix(alpha * 0.8, alpha, depth);
+  
+  textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(final_color, finalAlpha));
+  
+  // Pass depth
+  textureStore(writeDepthTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

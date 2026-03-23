@@ -5,7 +5,9 @@
   "url": "shaders/neon-pulse-stream.wgsl",
   "description": "Video luminance directs a fluid flow of neon trails injected by the mouse.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -43,6 +45,9 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

@@ -1,9 +1,9 @@
-// ═══════════════════════════════════════════════════════════════
-//  Neon Edges - Sobel Edge Detection with Alpha Emission
-//  Category: lighting-effects
-//  Physics: Emissive edge glow with alpha occlusion
-//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Neon Edges - Advanced Alpha with Edge-Preserve
+//  Category: edge-detection
+//  Alpha Mode: Edge-Preserve Alpha
+//  Features: advanced-alpha, edge-detection, neon-glow
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,69 +26,129 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn luminance(c: vec3<f32>) -> f32 {
-    return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 2: Edge-Preserve Alpha
+fn edgePreserveAlpha(
+    uv: vec2<f32>,
+    pixelSize: vec2<f32>,
+    edgeThreshold: f32,
+    colorSensitivity: f32
+) -> f32 {
+    // Depth edge detection
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    
+    let depthEdge = length(vec2<f32>(dR - dL, dU - dD));
+    
+    // Color edge detection
+    let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let cR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
+    let cL = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
+    let colorEdge = length(cR - cL) + length(c - cR) + length(c - cL);
+    
+    // Combine edges
+    let totalEdge = depthEdge * 2.0 + colorEdge * colorSensitivity;
+    
+    // Edge = opaque, smooth = transparent
+    let edgeMask = smoothstep(edgeThreshold * 0.5, edgeThreshold, totalEdge);
+    return mix(0.2, 1.0, edgeMask);
 }
 
-fn neonPalette(v: f32, time: f32) -> vec3<f32> {
-    // Map value (0..1) to neon cyan-magenta gradient
-    let a = clamp(v, 0.0, 1.0);
-    let c = mix(vec3<f32>(0.0, 1.0, 0.9), vec3<f32>(1.0, 0.0, 0.8), a);
-    // Slight pulsation
-    let pulse = 0.5 + 0.5 * sin(time * 2.0 + a * 6.2831);
-    return mix(c * 0.6, c, pulse * 0.8);
+// Mode 6: Luminance Key Alpha for glow
+fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    return smoothstep(threshold - softness, threshold + softness, luma);
 }
 
-// Alpha calculation for emissive materials
-fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
-    let coreAlpha = 0.3 * glowIntensity;
-    let glowAlpha = 0.0;
-    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+// Combined alpha for neon edges
+fn calculateNeonAlpha(
+    color: vec3<f32>,
+    uv: vec2<f32>,
+    pixelSize: vec2<f32>,
+    params: vec4<f32>
+) -> f32 {
+    // params.x = edge threshold
+    // params.y = luminance threshold
+    // params.z = softness
+    
+    let edgeAlpha = edgePreserveAlpha(uv, pixelSize, params.x, 2.0);
+    let lumaAlpha = luminanceKeyAlpha(color, params.y, params.z);
+    
+    // Combine: edges are always visible, but luminance controls intensity
+    return clamp(edgeAlpha * (0.5 + 0.5 * lumaAlpha), 0.0, 1.0);
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let texel = 1.0 / vec2<f32>(resolution);
-    let time = u.config.x;
-
-    // Simple Sobel kernel
-    let c00 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(-1.0, -1.0), 0.0).rgb;
-    let c10 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(0.0, -1.0), 0.0).rgb;
-    let c20 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(1.0, -1.0), 0.0).rgb;
-    let c01 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(-1.0, 0.0), 0.0).rgb;
-    let c11 = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let c21 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(1.0, 0.0), 0.0).rgb;
-    let c02 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(-1.0, 1.0), 0.0).rgb;
-    let c12 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(0.0, 1.0), 0.0).rgb;
-    let c22 = textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(1.0, 1.0), 0.0).rgb;
-
-    let gx = -luminance(c00) - 2.0 * luminance(c01) - luminance(c02) + luminance(c20) + 2.0 * luminance(c21) + luminance(c22);
-    let gy = -luminance(c00) - 2.0 * luminance(c10) - luminance(c20) + luminance(c02) + 2.0 * luminance(c12) + luminance(c22);
-
-    let mag = length(vec2<f32>(gx, gy));
-
-    // Edge threshold and neon intensity
-    // x: threshold, y: intensity, z: unused, w: occlusion balance
-    let threshold = mix(0.05, 0.6, u.zoom_params.x);
-    let intensity = mix(0.4, 2.0, u.zoom_params.y);
-    let occlusionBalance = u.zoom_params.w;
-
-    let edge = smoothstep(threshold * 0.5, threshold, mag) * intensity;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
     
-    // Neon emission - can exceed 1.0 for HDR
-    let neonColor = neonPalette(edge, time);
-    let emission = neonColor * edge * 2.0; // Boost for HDR
-
-    // Calculate alpha based on emission intensity
-    let glowIntensity = length(emission);
-    let finalAlpha = calculateEmissiveAlpha(glowIntensity, occlusionBalance);
-
-    // Output RGBA: RGB = emission (HDR), A = physical occlusion
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
-
-    // Pass through original depth
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let pixelSize = 1.0 / resolution;
+    let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
+    
+    // Parameters
+    let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
+    let glowIntensity = u.zoom_params.y * 3.0;
+    let lumaThreshold = u.zoom_params.z;
+    let softness = u.zoom_params.w * 0.1;
+    
+    // Sobel edge detection
+    let stepX = pixelSize.x;
+    let stepY = pixelSize.y;
+    
+    let t_l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, -stepY), 0.0).rgb;
+    let t_c = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -stepY), 0.0).rgb;
+    let t_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, -stepY), 0.0).rgb;
+    let m_l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, 0.0), 0.0).rgb;
+    let m_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, 0.0), 0.0).rgb;
+    let b_l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, stepY), 0.0).rgb;
+    let b_c = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, stepY), 0.0).rgb;
+    let b_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, stepY), 0.0).rgb;
+    
+    // Calculate luminance
+    fn luma(c: vec3<f32>) -> f32 {
+        return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+    }
+    
+    let gx = -1.0 * luma(t_l) - 2.0 * luma(m_l) - 1.0 * luma(b_l) +
+              1.0 * luma(t_r) + 2.0 * luma(m_r) + 1.0 * luma(b_r);
+    
+    let gy = -1.0 * luma(t_l) - 2.0 * luma(t_c) - 1.0 * luma(t_r) +
+              1.0 * luma(b_l) + 2.0 * luma(b_c) + 1.0 * luma(b_r);
+    
+    let edgeStrength = sqrt(gx * gx + gy * gy);
+    
+    // Neon color with time variation
+    let neonColor = vec3<f32>(
+        0.5 + 0.5 * sin(time + 0.0),
+        0.5 + 0.5 * sin(time + 2.09),
+        0.5 + 0.5 * sin(time + 4.18)
+    );
+    
+    // Apply edge strength to neon
+    var emission = vec3<f32>(0.0);
+    if (edgeStrength > 0.02) {
+        let edge = smoothstep(0.02, 0.2, edgeStrength);
+        emission = neonColor * edge * glowIntensity;
+    }
+    
+    // ═══ ADVANCED ALPHA CALCULATION ═══
+    let alpha = calculateNeonAlpha(emission, uv, pixelSize, u.zoom_params);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
+    
+    // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

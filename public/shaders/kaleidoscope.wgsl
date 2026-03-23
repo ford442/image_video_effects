@@ -26,6 +26,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.zoom_config.x;
+    let audioBass = audioOverall * 1.5;
+    let audioReactivity = 1.0 + audioOverall * 0.3;
 
     // Parameters mapped to sliders
     // Default to 6.0 segments if param is 0
@@ -41,7 +45,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var angle = atan2(centered.y, centered.x);
 
     // Animate rotation
-    angle += time * speed;
+    angle += time * speed * audioReactivity;
 
     // Kaleidoscope Logic
     // Divide the circle into segments and mirror them
@@ -50,7 +54,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Convert back to Cartesian
     // Add rotation back to keep it spinning or static
-    // angle -= time * speed; // Uncomment to counter-rotate image inside segment
+    // angle -= time * speed * audioReactivity; // Uncomment to counter-rotate image inside segment
 
     let new_pos = vec2<f32>(cos(angle), sin(angle)) * radius / zoom_input;
     let final_uv = new_pos + 0.5;

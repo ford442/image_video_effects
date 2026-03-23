@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Light Leaks - Advanced Alpha with Luminance Key
+//  Category: glow/light-effects
+//  Alpha Mode: Luminance Key Alpha + Physical Transmittance
+//  Features: advanced-alpha, film-light-leaks, analog-effect
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,14 +18,63 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 6: Luminance Key Alpha
+fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    return smoothstep(threshold - softness, threshold + softness, luma);
+}
+
+// Mode 4: Physical Transmittance for light leak bloom
+fn physicalTransmittance(
+    baseColor: vec3<f32>,
+    opticalDepth: f32,
+    absorptionCoeff: vec3<f32>
+) -> vec3<f32> {
+    let transmittance = exp(-absorptionCoeff * opticalDepth);
+    return baseColor * transmittance;
+}
+
+// Combined alpha for light leaks
+fn calculateLightLeakAlpha(
+    leakColor: vec3<f32>,
+    intensity: f32,
+    params: vec4<f32>
+) -> f32 {
+    // params.y = threshold
+    // params.z = softness
+    // params.w = bloom amount
+    
+    let lumaAlpha = luminanceKeyAlpha(leakColor, params.y, params.z);
+    return clamp(lumaAlpha * intensity, 0.0, 1.0);
+}
+
+// Noise function for organic light leak shapes
+fn noise(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn smoothNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    
+    let a = noise(i);
+    let b = noise(i + vec2<f32>(1.0, 0.0));
+    let c = noise(i + vec2<f32>(0.0, 1.0));
+    let d = noise(i + vec2<f32>(1.0, 1.0));
+    
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -27,53 +82,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    var mouse = u.zoom_config.yz;
-
-    // Params
-    let intensity = u.zoom_params.x; // Leak Intensity
-    let warmth = u.zoom_params.y;    // Warmth (Red/Orange vs Blue/White)
-    let size = u.zoom_params.z;      // Blob Size
-    let speed = u.zoom_params.w;     // Movement Speed
-
-    var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-
-    // Generate Light Leaks
-    // We create a few "blobs" moving around
-    let safeSize = max(0.001, size);
-
-    // Blob 1: Controlled by mouse
-    let distMouse = distance(uv, mouse);
-    let blob1 = smoothstep(safeSize, 0.0, distMouse); // 1.0 at center
-
-    // Blob 2: Moving autonomously
-    let move2 = vec2<f32>(sin(time * speed * 0.5), cos(time * speed * 0.3)) * 0.5 + 0.5;
-    let dist2 = distance(uv, move2);
-    let blob2 = smoothstep(safeSize * 1.5, 0.0, dist2);
-
-    // Blob 3: Another one
-    let move3 = vec2<f32>(cos(time * speed * 0.7), sin(time * speed * 0.4)) * 0.5 + 0.5;
-    let dist3 = distance(uv, move3);
-    let blob3 = smoothstep(safeSize * 1.2, 0.0, dist3);
-
-    // Combine blobs
-    let totalLeak = (blob1 + blob2 * 0.7 + blob3 * 0.5) * intensity;
-
-    // Determine Color
-    // Warm: Red/Orange. Cold: Blue/Cyan.
-    let warmColor = vec3<f32>(1.0, 0.5, 0.2);
-    let coldColor = vec3<f32>(0.2, 0.5, 1.0);
-
-    // Mix based on warmth param
-    let leakColor = mix(coldColor, warmColor, warmth);
-
-    // Add extra white hot core
-    let core = smoothstep(0.8, 1.0, totalLeak);
-    let finalLeakColor = mix(leakColor, vec3<f32>(1.0), core);
-
-    // Apply Screen Blending
-    color = 1.0 - (1.0 - color) * (1.0 - finalLeakColor * totalLeak);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    
+    // Parameters
+    let intensity = u.zoom_params.x;
+    let threshold = u.zoom_params.y;
+    let softness = u.zoom_params.z * 0.3;
+    let colorShift = u.zoom_params.w;
+    
+    // Sample base image
+    let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    
+    // Generate organic light leak shape
+    let leakUV = uv * vec2<f32>(1.0, 3.0) + vec2<f32>(time * 0.05, 0.0);
+    let noiseVal = smoothNoise(leakUV * 3.0);
+    
+    // Light leak appears from edges
+    let edgeDist = min(uv.x, 1.0 - uv.x);
+    let edgeFactor = smoothstep(0.3, 0.0, edgeDist);
+    
+    // Animated light leak position
+    let leakPhase = sin(time * 0.3) * 0.5 + 0.5;
+    let leakY = mix(0.2, 0.8, leakPhase);
+    let leakDist = abs(uv.y - leakY);
+    let leakShape = smoothstep(0.3, 0.0, leakDist) * edgeFactor;
+    
+    // Light leak color (warm film leak)
+    let leakColor = vec3<f32>(
+        1.0,
+        0.7 + 0.3 * sin(colorShift * 6.28),
+        0.4 + 0.2 * cos(colorShift * 6.28)
+    ) * noiseVal * intensity;
+    
+    // Composite leak over base
+    let finalColor = baseSample.rgb + leakColor * leakShape;
+    
+    // ═══ ADVANCED ALPHA CALCULATION ═══
+    let alpha = calculateLightLeakAlpha(leakColor * leakShape, intensity, u.zoom_params);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, max(baseSample.a, alpha)));
+    
+    // Pass through depth with slight modulation
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

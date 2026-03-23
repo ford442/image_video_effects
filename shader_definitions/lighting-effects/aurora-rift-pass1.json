@@ -1,0 +1,14 @@
+{
+  "id": "aurora-rift-pass1",
+  "name": "Aurora Rift (Pass 1: Volumetric)",
+  "url": "shaders/aurora-rift-pass1.wgsl",
+  "category": "lighting-effects",
+  "description": "Raymarches volumetric aurora with curl-driven flow. First pass of 2-pass system.",
+  "features": ["multi-pass-1", "compute-shader", "volumetric", "raymarch"],
+  "multipass": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "aurora-rift-pass2"
+  },
+  "tags": ["aurora", "volumetric", "lighting", "atmospheric"]
+}

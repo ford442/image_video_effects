@@ -1,19 +1,22 @@
 {
-    "id": "gen-raptor-mini",
-    "name": "Raptor Mini",
-    "url": "shaders/gen-raptor-mini.wgsl",
-    "category": "generative",
-    "description": "Fast predatory mini raptor agents chase the mouse and strike with claws. Audio rage mode boosts speed and attacks.",
-    "features": [
-        "mouse-driven",
-        "audio-reactive",
-        "stateful"
-    ],
-    "tags": [
-        "agent",
-        "chase",
-        "audio",
-        "procedural",
-        "generative"
-    ]
+  "id": "gen-raptor-mini",
+  "name": "Raptor Mini",
+  "url": "shaders/gen-raptor-mini.wgsl",
+  "category": "generative",
+  "description": "Fast predatory mini raptor agents chase the mouse and strike with claws. Audio rage mode boosts speed and attacks.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "stateful",
+    "audio-driven"
+  ],
+  "tags": [
+    "agent",
+    "chase",
+    "audio",
+    "procedural",
+    "generative",
+    "music",
+    "reactive"
+  ]
 }

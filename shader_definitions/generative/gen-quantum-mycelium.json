@@ -9,11 +9,15 @@
     "microscopic",
     "fungal",
     "network",
-    "audio-reactive"
+    "audio-reactive",
+    "audio",
+    "music",
+    "reactive"
   ],
   "features": [
     "mouse-driven",
-    "audio-driven"
+    "audio-driven",
+    "audio-reactive"
   ],
   "params": [
     {

@@ -1,0 +1,58 @@
+{
+  "id": "sim-sand-dunes",
+  "name": "Sand Dunes",
+  "url": "shaders/sim-sand-dunes.wgsl",
+  "category": "simulation",
+  "description": "Falling sand physics with wind erosion. Sand falls, piles at angle of repose, wind moves loose sand.",
+  "features": ["simulation", "cellular-automata", "falling-sand", "wind-erosion", "randomization-safe"],
+  "params": [
+    {
+      "id": "gravity",
+      "name": "Gravity Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Gravity strength"
+    },
+    {
+      "id": "wind",
+      "name": "Wind Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Wind direction and speed"
+    },
+    {
+      "id": "viscosity",
+      "name": "Sand Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Sand viscosity"
+    },
+    {
+      "id": "erosion",
+      "name": "Erosion Rate",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Wind erosion rate"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "Sand physics rules",
+    "Wind simulation"
+  ],
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22"
+}

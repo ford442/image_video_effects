@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════════
+//  ascii-lens
+//  Category: distortion
+//  Features: upgraded-rgba, depth-aware
+//  Upgraded: 2026-03-22
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -42,6 +49,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate distance to mouse for lens effect
     let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
 
+    // Sample depth for alpha calculation
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    var finalColor: vec3<f32>;
+    var finalAlpha: f32;
+
     if (dist < lensRadius) {
         // Inside Lens: ASCII Effect
 
@@ -85,13 +98,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (distCenter < 0.15) { charVal = 1.0; }
         }
 
-        let finalColor = col * charVal;
+        finalColor = col * charVal;
 
-        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+        // Calculate luminance-based alpha
+        let lumaFinal = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+        let alpha = mix(0.7, 1.0, lumaFinal);
+        finalAlpha = mix(alpha * 0.8, alpha, depth);
 
     } else {
         // Outside Lens: Normal
         var col = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-        textureStore(writeTexture, vec2<i32>(global_id.xy), col);
+        finalColor = col.rgb;
+        finalAlpha = col.a;
     }
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    
+    // Pass depth
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

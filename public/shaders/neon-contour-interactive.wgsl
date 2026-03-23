@@ -58,6 +58,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var uv = vec2<f32>(gid.xy) / dims;
     let texelSize = 1.0 / dims;
     let time = u.config.x;
+    // ═══ AUDIO REACTIVITY ═══
+    let audioOverall = u.config.y;
+    let audioBass = u.config.y * 1.2;
+    let audioMid = u.config.z;
+    let audioHigh = u.config.w;
+    let audioReactivity = 1.0 + audioOverall * 0.5;
 
     // Params
     // x: Threshold, y: Glow, z: CycleSpeed, w: OcclusionBalance
@@ -97,9 +103,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let isEdge = smoothstep(localThreshold, localThreshold + 0.05, edge);
 
     // Neon Color Calculation
-    let baseHue = fract(time * cycleSpeed * 0.1);
+    let baseHue = fract(time * cycleSpeed * audioReactivity * 0.1);
     let hue = fract(baseHue + edge * 2.0 + dist * 0.5);
-    let pulse = sin(time * pulseSpeed * 5.0) * 0.5 + 0.5;
+    let pulse = sin(time * pulseSpeed * audioReactivity * 5.0) * 0.5 + 0.5;
     let neonColor = hsv2rgb(vec3<f32>(hue, 1.0, 1.0));
 
     // Emission calculation (HDR capable)

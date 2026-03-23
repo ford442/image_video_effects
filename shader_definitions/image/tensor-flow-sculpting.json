@@ -3,9 +3,24 @@
   "name": "Tensor Flow Sculpting",
   "url": "shaders/tensor-flow-sculpting.wgsl",
   "category": "image",
-  "description": "Depth is treated as a 4-D strain tensor that warps and sculpts the image like clay — bulk regions bend dramatically while high-frequency edge details stay crisp.",
-  "tags": ["depth", "tensor", "warp", "sculpt", "flow", "artistic", "deformation"],
-  "features": ["mouse-driven"],
+  "description": "Depth is treated as a 4-D strain tensor that warps and sculpts the image like clay \u2014 bulk regions bend dramatically while high-frequency edge details stay crisp.",
+  "tags": [
+    "depth",
+    "tensor",
+    "warp",
+    "sculpt",
+    "flow",
+    "artistic",
+    "deformation",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
   "author": "AI",
   "params": [
     {

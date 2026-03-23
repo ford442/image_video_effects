@@ -4,7 +4,9 @@
   "url": "shaders/holographic-contour.wgsl",
   "category": "artistic",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -38,6 +40,9 @@
   ],
   "tags": [
     "stylized",
-    "artistic"
+    "artistic",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

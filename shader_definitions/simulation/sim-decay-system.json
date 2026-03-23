@@ -1,0 +1,59 @@
+{
+  "id": "sim-decay-system",
+  "name": "Decay System",
+  "url": "shaders/sim-decay-system.wgsl",
+  "category": "artistic",
+  "description": "Multi-layer decay and corrosion simulation. Image corrodes from edges inward with different materials.",
+  "features": ["simulation", "cellular-automata", "corrosion", "layered-materials", "randomization-safe"],
+  "params": [
+    {
+      "id": "decay_rate",
+      "name": "Decay Rate",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Speed of decay"
+    },
+    {
+      "id": "edge_vulnerability",
+      "name": "Edge Vulnerability",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How much edges decay faster"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Amount of color shifting"
+    },
+    {
+      "id": "recovery",
+      "name": "Recovery Rate",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Recovery/regeneration rate (paint protection)"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "Edge detection",
+    "Cellular automata decay",
+    "Multi-material system"
+  ],
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent 3B - Advanced Hybrid Creator",
+  "created_date": "2026-03-22"
+}
