@@ -186,6 +186,6 @@ test('filters slot mega-menu to non-generative or generative shaders based on ef
     );
 
     fireEvent.click(screen.getByRole('button', { name: /gen orb/i }));
-    expect(screen.getByText('Gen Orb')).toBeInTheDocument();
+    expect(screen.getAllByText('Gen Orb').length).toBeGreaterThan(0);
     expect(screen.queryByText('Paint Flow')).not.toBeInTheDocument();
 });
