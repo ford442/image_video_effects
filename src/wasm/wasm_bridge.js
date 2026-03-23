@@ -52,10 +52,18 @@ export async function initWasmRenderer(canvasElement) {
     // Dynamically import the WASM module using absolute URL
     // This avoids path resolution issues when bundled
     // @ts-ignore
-    const wasm = await import(/* webpackIgnore: true */ wasmJsPath);
+    const wasmModuleFactory = await import(/* webpackIgnore: true */ wasmJsPath);
+    
+    // Emscripten exports either as default or as PixelocityWASM property
+    const factory = wasmModuleFactory.default || wasmModuleFactory.PixelocityWASM || wasmModuleFactory;
+    
+    if (typeof factory !== 'function') {
+      console.error('[WASM] Module factory is not a function:', factory);
+      return false;
+    }
     
     // Initialize with locateFile to help Emscripten find the .wasm binary
-    wasmModule = await wasm.default({
+    wasmModule = await factory({
       locateFile: (path) => {
         if (path.endsWith('.wasm')) {
           return wasmBinaryPath;
