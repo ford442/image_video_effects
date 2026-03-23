@@ -415,21 +415,26 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     };
 
-    // Calculate canvas style to be a square that fits within the container (CSS Contain)
+    // Calculate canvas style to be a square that fits within the container
     const canvasSize = Math.min(displaySize.width, displaySize.height);
+    const finalCanvasSize = Math.max(canvasSize, 100); // Ensure minimum visible size
+
     if (displaySize.width !== 1 || displaySize.height !== 1) {
-        console.log(`📐 Canvas size calculated: ${canvasSize}px (from ${displaySize.width}x${displaySize.height})`);
+        console.log(`📐 Canvas size calculated: ${finalCanvasSize}px (from ${displaySize.width}x${displaySize.height})`);
+    } else {
+        console.warn(`⚠️ Canvas size is still using default (1x1), using fallback display size`);
     }
+
     const canvasStyle: React.CSSProperties = {
         position: 'absolute',
-        width: `${canvasSize}px`,
-        height: `${canvasSize}px`,
+        width: `${finalCanvasSize}px`,
+        height: `${finalCanvasSize}px`,
         left: '50%',
         top: '50%',
         transform: 'translate(-50%, -50%)',
         display: 'block',
         touchAction: 'none',
-        // Optional: Ensure it doesn't overflow if something goes wrong with calculation
+        // Ensure it doesn't overflow
         maxWidth: '100%',
         maxHeight: '100%'
     };
