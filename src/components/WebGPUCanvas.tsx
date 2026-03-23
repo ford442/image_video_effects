@@ -132,6 +132,16 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const container = containerRef.current;
         if (!container) return;
 
+        // Try to get initial size from container
+        const rect = container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0 && displaySize.width === 1) {
+            console.log(`📦 Initial container size from getBoundingClientRect: ${rect.width}x${rect.height}`);
+            setDisplaySize({ width: rect.width, height: rect.height });
+            if (!canvasReady) {
+                setCanvasReady(true);
+            }
+        }
+
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 // Get the displayed size (CSS pixels)
@@ -155,7 +165,16 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, [canvasReady]); // Add canvasReady to prevent duplicate triggers
+    }, [canvasReady, displaySize.width]); // Add displaySize.width to re-run if needed
+
+    // Sync video element to renderer
+    useEffect(() => {
+        if (rendererRef.current && videoRef.current) {
+            if ('setVideo' in rendererRef.current) {
+                (rendererRef.current as any).setVideo(videoRef.current);
+            }
+        }
+    }, [rendererRef]);
 
     // Sync inputSource to renderer
     useEffect(() => {
