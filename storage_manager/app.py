@@ -13,7 +13,7 @@ from ftplib import FTP
 import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, PlainTextResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse, HTMLResponse
 from pydantic import BaseModel, Field
 from aiocache import Cache
 # Google Cloud Imports
@@ -342,7 +342,6 @@ async def health_check():
             status[item_type] = {"count": 0, "status": "error", "error": str(e)}
     return {"status": "online", "storage": status}
 # --- 1. LISTING (Cached) ---
-from enum import Enum
 class SortBy(str, Enum):
     date = "date"
     rating = "rating"
@@ -845,8 +844,6 @@ async def update_music_metadata(music_id: str, payload: SampleMetaUpdatePayload)
             logging.error(f"Failed to update music metadata: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to update: {str(e)}")
 # --- 5. SMART SYNC (The "Magic" Button) ---
-from pydantic import Field
-from typing import Optional, List
 class MetaPatch(BaseModel):
     name: Optional[str] = None
     rating: Optional[int] = Field(None, ge=0, le=10)
