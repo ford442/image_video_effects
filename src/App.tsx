@@ -27,6 +27,7 @@ env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
+const SHADER_WGSL_URL = `${API_BASE_URL}/api/shaders`;
 const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
 const LOCAL_MANIFEST_URL = `./image_manifest.json`;
 
@@ -176,6 +177,10 @@ function MainApp() {
             (rendererRef.current as any).loadShader(shaderEntry.id, shaderEntry.url)
                 .then((ok: boolean) => {
                     setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
+                    // Record play event (fire-and-forget)
+                    if (ok && shaderEntry) {
+                        fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, { method: 'POST' }).catch(() => {});
+                    }
                 })
                 .catch(() => {
                     setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
@@ -302,7 +307,7 @@ function MainApp() {
                 const entries: ShaderEntry[] = Object.entries(coordMap).map(([id, data]) => ({
                     id,
                     name: data.name || id,
-                    url: `/shaders/${id}.wgsl`,
+                    url: `${SHADER_WGSL_URL}/${id}/wgsl`,
                     category: (data.category?.includes('gen') || id.includes('gen') ? 'generative' : 'image') as ShaderCategory,
                     description: data.reason || '',
                     tags: data.tags || [],
