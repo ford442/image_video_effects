@@ -39,10 +39,24 @@ export async function initWasmRenderer(canvasElement) {
   state.canvasHeight = canvas.height || 2048;
 
   try {
+    // Determine the correct base path for WASM files
+    const basePath = window.location.pathname.replace(/\/[^/]*$/, '');
+    const wasmBinaryPath = basePath + '/wasm/pixelocity_wasm.wasm';
+    console.log('[WASM] Binary path:', wasmBinaryPath);
+    
     // Dynamically import the WASM module
     // @ts-ignore
     const wasm = await import(/* webpackIgnore: true */ './wasm/pixelocity_wasm.js');
-    wasmModule = await wasm.default();
+    
+    // Initialize with locateFile to help Emscripten find the .wasm binary
+    wasmModule = await wasm.default({
+      locateFile: (path) => {
+        if (path.endsWith('.wasm')) {
+          return wasmBinaryPath;
+        }
+        return path;
+      }
+    });
 
     // Initialize the C++ renderer
     const result = wasmModule.ccall(
