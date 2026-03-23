@@ -2548,6 +2548,58 @@
     ]
   },
   {
+    "id": "gen-quantum-aether-origami",
+    "name": "Quantum Aether-Origami",
+    "url": "shaders/gen-quantum-aether-origami.wgsl",
+    "category": "generative",
+    "description": "A hyper-dimensional expanse of iridescent, self-folding light-sheets that crease, snap, and unfold like cosmic origami, collapsing into singularities to the beat of sound.",
+    "tags": [
+      "origami",
+      "quantum",
+      "geometry",
+      "interference",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "foldComplexity",
+        "name": "Fold Complexity",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "id": "creaseGlow",
+        "name": "Crease Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "interferenceShift",
+        "name": "Interference Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "id": "gen-quantum-mycelium",
     "name": "Quantum Mycelium",
     "url": "shaders/gen-quantum-mycelium.wgsl",
