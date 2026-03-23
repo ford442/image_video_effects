@@ -208,6 +208,7 @@ function MainApp() {
     }, [shaderCategory]); // Only depend on shaderCategory, not inputSource
 
     // --- Effects & Initializers ---
+    
     useEffect(() => {
         // Fetch the dynamic image manifest from the backend on startup
         const fetchImageManifest = async () => {
@@ -272,6 +273,9 @@ function MainApp() {
                     tags: ['fallback', 'unsplash', 'demo'],
                     description: 'Demo Image'
                 }));
+                setStatus('Using fallback images - manifest unavailable');
+            } else {
+                setStatus(`Loaded ${manifest.length} images, ${videos.length} videos`);
             }
             
             // Video fallback
@@ -362,15 +366,33 @@ function MainApp() {
     }, [depthEstimator, runDepthAnalysis]);
 
     const handleNewRandomImage = useCallback(async () => {
-        if (imageManifest.length === 0) {
-            setStatus("Image manifest not loaded yet.");
-            return;
-        };
-        const randomImage = imageManifest[Math.floor(Math.random() * imageManifest.length)];
+        // If manifest is empty, try to use fallback images directly
+        let sourceList = imageManifest;
+        if (sourceList.length === 0) {
+            console.warn('Manifest empty, using fallback images directly');
+            sourceList = FALLBACK_IMAGES.map(url => ({
+                url,
+                tags: ['fallback', 'unsplash', 'demo'],
+                description: 'Demo Image'
+            }));
+        }
+        
+        const randomImage = sourceList[Math.floor(Math.random() * sourceList.length)];
         if (randomImage) {
+            setStatus('Loading image...');
             await handleLoadImage(randomImage.url);
+            setStatus('Image loaded');
         }
     }, [imageManifest, handleLoadImage]);
+
+    // Auto-load first image when manifest becomes available
+    // This handles the race condition where canvas initializes before manifest
+    useEffect(() => {
+        if (imageManifest.length > 0 && !currentImageUrl && inputSource === 'image') {
+            console.log('Manifest loaded, auto-loading first image...');
+            handleNewRandomImage();
+        }
+    }, [imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
     const loadDepthModel = useCallback(async () => {
         if (depthEstimator) { setStatus('Depth model already loaded.'); return; }
