@@ -1385,6 +1385,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Great for testing complex organic structures (woven branches and mud), clear water reflections, and dappled forest lighting.
 
+### Suggestion: Rayonism Onyx Supervolcano
+- **Date:** 2026-11-05
+- **Prompt:** "A cataclysmic eruption of a supervolcano depicted in the abstract, dynamic style of Rayonism. The towering volcanic cone and surrounding landscape are composed of jagged, intersecting rays of light and sharp planes of dark, polished onyx. The lighting is harsh and fractured, representing the explosive energy through stark intersecting beams of fiery orange and blinding white. The mood is energetic, destructive, and deeply abstract. Captured with a dynamic, tilted perspective, emphasizing the explosive upward thrust of the intersecting rays."
+- **Negative prompt:** "photorealistic, smooth, soft curves, realistic lava, calm, photography"
+- **Tags:** abstract, landscape, rayonism, supervolcano, onyx
+- **Style / Reference:** Rayonism art movement, Natalia Goncharova inspired
+- **Composition:** dynamic intersecting lines, upward thrust, explosive center
+- **Color palette:** fiery orange, deep onyx black, blinding white, vibrant red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261105_rayonism-onyx-supervolcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the intersection of abstract, ray-based art movements with massive geological events and polished stone textures.
+
+### Suggestion: De Stijl Sandpaper Origami
+- **Date:** 2026-11-05
+- **Prompt:** "A minimalist still-life composition of an intricately folded origami crane, constructed entirely from rough, coarse-grit sandpaper, designed strictly in the De Stijl art movement style. The subject relies entirely on pure abstraction and universality by a reduction to the essentials of form and colour. The lighting is completely flat and even, casting no shadows to maintain the pure two-dimensional graphic aesthetic of the geometric planes. The mood is structured, rigid, and philosophical. Captured with an orthographic camera perspective to completely eliminate depth and perspective distortion."
+- **Negative prompt:** "depth, 3d, realistic, shadows, gradients, curves, soft textures"
+- **Tags:** abstract, de stijl, still-life, origami, sandpaper
+- **Style / Reference:** De Stijl art movement, Piet Mondrian inspired, minimalist graphic art
+- **Composition:** strictly rectilinear, flat orthographic, balanced asymmetry
+- **Color palette:** primary red, blue, yellow, pure white, stark black, rough beige sandpaper texture
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261105_destijl-sandpaper-origami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates the generation of rough, granular textures (sandpaper) constrained entirely within the strict, flat rectilinear rules of De Stijl.
+
+### Suggestion: Tenebrism Organza Bioluminescent Forest
+- **Date:** 2026-11-05
+- **Prompt:** "A dramatic, macro photograph of a sprawling bioluminescent forest floor, reimagined where the organic fungi structures are delicately woven from sheer, translucent organza fabric. The lighting employs extreme Tenebrism, with the scene enveloped in pitch-black darkness, pierced only by a single, intense beam of warm light from above that dramatically highlights the intricate folds and delicate transparency of the organza. The mood is highly dramatic, mysterious, and theatrical. Captured with a 100mm macro lens, sharp focus on the central fabric structure, allowing the edges to fall off into deep, crushing shadows."
+- **Negative prompt:** "bright, even lighting, flat, daylight, real coral, muddy water"
+- **Tags:** macro, forest, tenebrism, organza, dramatic
+- **Style / Reference:** Tenebrism painting style, Caravaggio inspired, macro photography
+- **Composition:** highly dramatic spotlight, deep shadows, tight framing
+- **Color palette:** pitch black, warm golden spotlight, ethereal glowing cyan, translucent white
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261105_tenebrism-organza-forest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing extreme high-contrast lighting (Tenebrism) combined with delicate, layered transparent fabrics (organza).
+
+### Suggestion: Biopunk Chiffon Magnetar
+- **Date:** 2026-11-05
+- **Prompt:** "An incredibly surreal, cosmic visualization of a hyper-dense magnetar star, reinterpreted through a Biopunk aesthetic where the magnetic field lines are composed of miles of flowing, bio-luminescent chiffon fabric. The central subject is a pulsating, fleshy core emitting extreme radiation. The lighting is blindingly bright at the core, fading into deep, organic shadows within the twisted layers of chiffon, creating a sickly, toxic glow. The mood is alien, terrifying, and strangely beautiful. Captured with a wide-angle cinematic lens, capturing the vast, twisting organic flares arching into the dark cosmic void."
+- **Negative prompt:** "realistic space, clean, geometric, hard surface, daylight"
+- **Tags:** sci-fi, space, biopunk, magnetar, chiffon
+- **Style / Reference:** biopunk concept art, surreal cosmic visualization
+- **Composition:** centered core, dynamic flowing layers, expansive void
+- **Color palette:** toxic neon green, deep fleshy magenta, blinding white core, dark void
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261105_biopunk-chiffon-magnetar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of massive cosmic phenomena with fleshy biopunk elements and flowing, sheer fabric textures.
+
+### Suggestion: Low Key Photography Velcro Tide Pool
+- **Date:** 2026-11-05
+- **Prompt:** "A highly detailed, macro still-life of a miniature tide pool ecosystem, where the rocks and anemones are entirely constructed from the hook-and-loop textures of industrial Velcro. The lighting utilizes Low Key Photography techniques, predominantly dark with only selective, rim-lighting catching the thousands of tiny plastic hooks and soft loops of the Velcro surface. The mood is moody, textured, and abstract. Captured with an extreme macro 100mm lens, very shallow depth of field, emphasizing the harsh, synthetic micro-textures emerging from the deep shadows."
+- **Negative prompt:** "bright, high key, real water, organic rocks, flat lighting"
+- **Tags:** macro, abstract, low key, tide pool, velcro
+- **Style / Reference:** low key studio photography, macro texture study
+- **Composition:** tight close-up, dramatic rim lighting, dark background
+- **Color palette:** pure black shadows, subtle grey highlights, deep oceanic blue accents
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261105_lowkey-velcro-tidepool.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating the generation of complex, repetitive micro-textures (Velcro) under highly controlled, shadow-dominant lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
@@ -1407,17 +1472,18 @@ To help organize prompts, please use tags from the following categories:
 
 ### Future Suggestion Ideas (Wishlist)
 To keep the collection diverse, consider adding prompts for:
-- **Styles:** Ashcan School, Rayonism, De Stijl, Low Key Photography, Tenebrism, - **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Organza, Onyx. Graphene.
-- **Subjects:** Tsunami, Exoplanet Core, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring
-- **Styles:** Ashcan School, Rayonism, De Stijl, Low Key Photography.
-- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Organza, Onyx.
-- **Subjects:** Supernova, Exoplanet Core, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Beehive, Beaver Dam, Tide Pool, Supervolcano, Magnetar, Origami, Orbital Ring
-- **Styles:** Rayonism, De Stijl, Italian Futurism, Low Key Photography, Tenebrism, Biopunk.
-- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Aerogel, Damascus Steel, Onyx. Graphene.
-- **Subjects:** Tsunami, Bioluminescent Reef, Tide Pool, Supervolcano, Origami, Orbital Ring,
-- **Styles:** Rayonism, De Stijl, Italian Futurism, Low Key Photography.
-- **Materials:** Brass, Bismuth, Mother of Pearl, Velcro, Sandpaper, Chiffon, Tweed, Organza, Onyx.
-- **Subjects:** Supernova, Bioluminescent Reef, Fireworks, Volcanic Eruption, Bioluminescent Forest, Tsunami, Tide Pool, Supervolcano, Origami, Orbital Ring,
+- **Styles:** Ashcan School
+- **Materials:** Brass, Bismuth, Mother of Pearl. Graphene.
+- **Subjects:** Tsunami, Exoplanet Core, Beehive, Beaver Dam, Orbital Ring
+- **Styles:** Ashcan School.
+- **Materials:** Brass, Bismuth, Mother of Pearl.
+- **Subjects:** Supernova, Exoplanet Core, Fireworks, Volcanic Eruption, Tsunami, Beehive, Beaver Dam, Orbital Ring
+- **Styles:** Italian Futurism.
+- **Materials:** Brass, Bismuth, Mother of Pearl, Tweed, Aerogel, Damascus Steel. Graphene.
+- **Subjects:** Tsunami, Bioluminescent Reef, Orbital Ring,
+- **Styles:** Italian Futurism.
+- **Materials:** Brass, Bismuth, Mother of Pearl, Tweed.
+- **Subjects:** Supernova, Bioluminescent Reef, Fireworks, Volcanic Eruption, Tsunami, Orbital Ring,
 
 ---
 
