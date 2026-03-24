@@ -99,7 +99,13 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
         return path;
       }
     });
-    
+
+    if (typeof wasmModule.ccall !== 'function') {
+      console.warn('[WASM] Module loaded but ccall unavailable (stub build — upload real emcc binary to public/wasm/)');
+      resolve(false);
+      return;
+    }
+
     console.log('[WASM] Module initialized, calling C++ init...');
 
     // Initialize the C++ renderer
