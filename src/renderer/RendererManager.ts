@@ -150,6 +150,14 @@ export class RendererManager {
     }
   }
 
+
+  getAvailableModes(): any[] {
+    if (this.currentRenderer && 'getAvailableModes' in this.currentRenderer) {
+      return (this.currentRenderer as any).getAvailableModes();
+    }
+    return [];
+  }
+
   getMetrics(): RendererMetrics {
     return this.metrics;
   }
