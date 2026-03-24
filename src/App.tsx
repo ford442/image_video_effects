@@ -467,13 +467,14 @@ function MainApp() {
     }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl]);
     
     const onInitCanvas = useCallback(() => {
-        if(rendererRef.current) {
+        if (rendererRef.current) {
             if (rendererRef.current.getAvailableModes) {
                 setAvailableModes(rendererRef.current.getAvailableModes());
             }
-            handleNewRandomImage();
+            // Image auto-load is handled by the useEffect below (line ~390)
+            // which fires once imageManifest is populated, avoiding the race condition
         }
-    }, [handleNewRandomImage]);
+    }, []);
 
     // --- Webcam Handlers ---
     const startWebcam = useCallback(async () => {
