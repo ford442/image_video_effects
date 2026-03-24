@@ -1,1 +1,1 @@
-var Module = function() { return Promise.resolve({}); }; Module.default = Module; export default Module;
+window.PixelocityWASM = function() { return Promise.resolve({}); };

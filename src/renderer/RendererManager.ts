@@ -150,6 +150,18 @@ export class RendererManager {
     }
   }
 
+  /** Load an image by URL, delegating to whichever renderer is active. */
+  async loadImage(url: string): Promise<string> {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      await this.currentRenderer.loadImageFromURL(url);
+      return url;
+    }
+    if (this.currentRenderer && 'loadImage' in this.currentRenderer) {
+      return (this.currentRenderer as any).loadImage(url);
+    }
+    return url;
+  }
+
 
   getAvailableModes(): any[] {
     if (this.currentRenderer && 'getAvailableModes' in this.currentRenderer) {
