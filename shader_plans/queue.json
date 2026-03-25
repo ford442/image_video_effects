@@ -108,6 +108,12 @@
       "title": "Abyssal Leviathan-Scales",
       "added": "2026-03-23T16:03:21.686103",
       "completed": "2026-03-24T08:00:07.312231"
+    },
+    {
+      "filename": "2026-03-24_celestial-prism-orchid.md",
+      "title": "Celestial Prism-Orchid",
+      "added": "2026-03-24T15:26:48.566026",
+      "completed": "2026-03-25T07:43:11.594675"
     }
   ],
   "rejected": [],
@@ -172,11 +178,6 @@
       "filename": "2026-03-23_abyssal-leviathan-scales.md",
       "title": "Abyssal Leviathan-Scales",
       "added": "2026-03-23T16:03:21.686103"
-    },
-    {
-      "filename": "2026-03-24_celestial-prism-orchid.md",
-      "title": "Celestial Prism-Orchid",
-      "added": "2026-03-24T15:26:48.566026"
     }
   ],
   "in_progress": null
