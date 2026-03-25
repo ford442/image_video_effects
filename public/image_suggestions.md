@@ -1450,6 +1450,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating the generation of complex, repetitive micro-textures (Velcro) under highly controlled, shadow-dominant lighting.
 
+### Suggestion: Quantum Singularity Reactor
+- **Date:** 2026-04-10
+- **Prompt:** "A sprawling underground quantum singularity reactor. The core subject is a suspended, violently swirling sphere of hyper-dense, gravity-bending black plasma. The lighting is harsh and contrasting, radiating from glowing azure cooling rings that struggle to contain the intense energy, casting sharp blue highlights against dark, brushed steel containment walls. The mood is tense, highly advanced, and claustrophobic. Captured with a wide 24mm lens to emphasize the colossal scale of the machinery and the intense glow of the core."
+- **Negative prompt:** "sunlight, natural, bright, soft, organic, plants, low-res"
+- **Tags:** sci-fi, reactor, energy, quantum, dark
+- **Style / Reference:** hard sci-fi concept art, photorealistic 3D render
+- **Composition:** wide angle, symmetrical, centered core
+- **Color palette:** azure blue, pitch black, brushed steel grey, stark white
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260410_quantum-reactor.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the interaction between intense, singular light sources and brushed metallic surfaces in a dark environment.
+
+### Suggestion: Ethereal Coral Chandelier
+- **Date:** 2026-04-10
+- **Prompt:** "An opulent ballroom interior dominated by a gigantic, intricate chandelier made entirely of living, bioluminescent coral. The coral subject hangs from a vaulted ceiling, dripping with delicate, glowing tentacles. The lighting is soft and magical, emanating entirely from the warm pink and cyan bioluminescence of the coral, casting gentle, colorful shadows across the marble floor. The mood is romantic, surreal, and deeply peaceful. Captured with a 35mm lens, balancing the sheer size of the chandelier with the elegant architectural details."
+- **Negative prompt:** "underwater, fish, ocean, harsh daylight, modern, simple"
+- **Tags:** fantasy, interior, coral, bioluminescent, surreal
+- **Style / Reference:** surreal interior design visualization, ethereal fantasy
+- **Composition:** low angle looking up, rule of thirds
+- **Color palette:** warm pink, cyan glow, polished white marble, deep shadows
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260410_coral-chandelier.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing soft ambient bioluminescent lighting acting as the primary light source in an interior setting.
+
+### Suggestion: Holographic Silk Kimono
+- **Date:** 2026-04-10
+- **Prompt:** "A stunning fashion portrait of a cyber-geisha wearing an exquisite kimono woven from translucent, holographic silk. The fabric subject shimmers with iridescent digital patterns that float slightly above the material. The lighting features a moody, neon-lit rainy street at night, where the vibrant reflections of pink and cyan signs catch the holographic silk, creating brilliant specular highlights. The mood is elegant, melancholic, and deeply cyberpunk. Captured with an 85mm portrait lens, featuring a very shallow depth of field to turn the background neon lights into soft bokeh."
+- **Negative prompt:** "traditional, matte fabric, daylight, sunny, cluttered background"
+- **Tags:** cyberpunk, fashion, portrait, holographic, neon
+- **Style / Reference:** high fashion photography, cyberpunk aesthetic
+- **Composition:** medium close-up, shallow depth of field, dramatic angles
+- **Color palette:** neon pink, cyan, deep street blacks, iridescent silk
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260410_holographic-kimono.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex translucent fabrics interacting with multiple bright, colored neon light sources.
+
+### Suggestion: Volcanic Glass Monoliths
+- **Date:** 2026-04-10
+- **Prompt:** "A sweeping landscape of towering, jagged monoliths formed from flawless, dark volcanic glass (obsidian), thrusting out of a barren ash wasteland. The monolithic subjects are perfectly smooth, reflecting the surrounding environment like dark mirrors. The lighting is dramatic, capturing a blood-red eclipse in the sky that casts an eerie, crimson ambient light, highlighting the sharp edges of the obsidian. The mood is desolate, apocalyptic, and monumental. Captured with an ultra-wide 14mm lens, emphasizing the harsh, angular geometry against the vast, empty horizon."
+- **Negative prompt:** "greenery, water, blue sky, soft edges, blurry, people"
+- **Tags:** landscape, sci-fi, obsidian, monolith, eclipse
+- **Style / Reference:** cinematic dark fantasy landscape, photorealistic
+- **Composition:** extreme wide angle, low horizon line, imposing scale
+- **Color palette:** deep obsidian black, blood red, dark grey ash
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260410_volcanic-monoliths.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating perfect mirror reflections on massive, dark, sharp geometric forms.
+
+### Suggestion: Steampunk Chronosphere
+- **Date:** 2026-04-10
+- **Prompt:** "A macro, highly detailed shot of a glowing Chronosphere device resting on an old, mahogany workbench. The spherical subject is constructed of intricately layered, polished brass gears, crystal lenses, and a swirling core of golden temporal energy. The lighting is warm, highly directional lamplight casting deep, rich shadows and creating sharp, brilliant glints on the metallic edges and glass lenses. The mood is mysterious, antique, and intellectual. Captured with a 100mm macro lens, utilizing a shallow depth of field to isolate the central crystal and glowing core."
+- **Negative prompt:** "modern, sleek, plastic, bright daylight, wide angle"
+- **Tags:** steampunk, macro, mechanism, brass, glowing
+- **Style / Reference:** macro product photography, hyper-detailed steampunk
+- **Composition:** tight close-up, center focus, beautiful background blur
+- **Color palette:** polished brass, warm gold, rich mahogany brown, bright white glints
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260410_steampunk-chronosphere.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of intricate brass mechanics, glass refraction, and warm, directional macro lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
