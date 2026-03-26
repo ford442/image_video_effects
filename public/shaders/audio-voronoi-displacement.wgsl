@@ -50,7 +50,7 @@ fn getAudioBands(uv: vec2<f32>, time: f32) -> vec3<f32> {
     // Sample from extra buffer for audio-like data
     let bufSize = 256;
     let idx = i32(uv.x * 10.0) % bufSize;
-    if (idx < arrayLength(&extraBuffer) / 4) {
+    if (u32(idx) < arrayLength(&extraBuffer) / 4) {
         bass = extraBuffer[idx * 4] * 2.0;
         mid = extraBuffer[idx * 4 + 1] * 2.0;
         treble = extraBuffer[idx * 4 + 2] * 2.0;

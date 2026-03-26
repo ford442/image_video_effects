@@ -44,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tilt = (mouse - vec2<f32>(0.5, 0.5)) * 2.0; // -1 to 1 range
 
     // Identify grid cell
-    let cellCoord = floor(global_id.xy / gridSize);
+    let cellCoord = floor(vec2<f32>(vec2<f32>(global_id.xy)) / gridSize);
     let cellCenter = (cellCoord * gridSize) + (gridSize * 0.5);
     let cellUV = cellCenter / resolution;
 

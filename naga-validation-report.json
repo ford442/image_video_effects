@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-03-26T06:10:10.333Z",
+  "timestamp": "2026-03-26T06:22:16.795Z",
   "total": 691,
-  "valid": 600,
-  "invalid": 91,
+  "valid": 603,
+  "invalid": 88,
   "shaders": [
     {
       "file": "public/shaders/_hash_library.wgsl",
@@ -111,13 +111,8 @@
     },
     {
       "file": "public/shaders/audio-voronoi-displacement.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "F",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/audio_geometric_pulse.wgsl",
@@ -336,13 +331,8 @@
     },
     {
       "file": "public/shaders/chromatic-folds-gemini.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "n",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/chromatic-folds.wgsl",
@@ -3866,13 +3856,8 @@
     },
     {
       "file": "public/shaders/voxel-depth-sort.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "w",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/voxel-grid.wgsl",

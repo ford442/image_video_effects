@@ -78,6 +78,8 @@ fn applyVortex(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> ve
 // ───────────────────────────────────────────────────────────────────────────────
 //  Main compute entry point
 // ───────────────────────────────────────────────────────────────────────────────
+const PI = 3.14159265359;
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
