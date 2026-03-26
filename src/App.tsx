@@ -124,6 +124,7 @@ function MainApp() {
     const [showSidebar, setShowSidebar] = useState(true);
     const [showShaderScanner, setShowShaderScanner] = useState(false);
     const [showStorageBrowser, setShowStorageBrowser] = useState(false);
+    const [storageBrowserTab, setStorageBrowserTab] = useState<'shaders' | 'images' | 'videos'>('shaders');
 
     // --- State: Webcam ---
     const [isWebcamActive, setIsWebcamActive] = useState(false);
