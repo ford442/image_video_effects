@@ -10,7 +10,6 @@ import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 import { 
-    API_BASE_URL, 
     STORAGE_API_URL,
     IMAGE_MANIFEST_URL as VPS_IMAGE_MANIFEST_URL 
 } from './config/appConfig';

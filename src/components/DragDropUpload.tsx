@@ -27,7 +27,6 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
-  const [dragCounter, setDragCounter] = useState(0);
 
   // Determine accepted file types based on upload type
   const getAcceptTypes = (): string => {
@@ -62,7 +61,6 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragCounter(prev => prev + 1);
     setIsDragging(true);
   }, []);
 
@@ -70,14 +68,7 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragCounter(prev => {
-      const newCount = prev - 1;
-      if (newCount <= 0) {
-        setIsDragging(false);
-        return 0;
-      }
-      return newCount;
-    });
+    setIsDragging(false);
   }, []);
 
   // Handle drag over
@@ -91,7 +82,6 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    setDragCounter(0);
 
     if (disabled || isUploading) return;
 
@@ -106,7 +96,8 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
     }
 
     await uploadFiles(acceptedFiles);
-  }, [disabled, isUploading, type, onUpload]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled, isUploading, type, getTypeLabel]);
 
   // Handle file input change
   const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,10 +108,11 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
     
     // Reset input
     e.target.value = '';
-  }, [onUpload, type]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Filter files by type
-  const filterFilesByType = (files: File[], uploadType: UploadType): File[] => {
+  const filterFilesByType = useCallback((files: File[], uploadType: UploadType): File[] => {
     const typeMap: Record<UploadType, string[]> = {
       image: ['image/'],
       video: ['video/'],
@@ -145,10 +137,10 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
       
       return mimeMatch;
     });
-  };
+  }, []);
 
   // Upload files
-  const uploadFiles = async (files: File[]) => {
+  const uploadFiles = useCallback(async (files: File[]) => {
     setIsUploading(true);
     setUploadProgress({ completed: 0, total: files.length });
 
@@ -162,7 +154,7 @@ export const DragDropUpload: React.FC<DragDropUploadProps> = ({
       setIsUploading(false);
       setUploadProgress({ completed: 0, total: 0 });
     }
-  };
+  }, [onUpload, type]);
 
   return (
     <div

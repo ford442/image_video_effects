@@ -516,7 +516,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
       });
       throw error;
     }
-  }, [refreshImages, refreshVideos, refreshShaders]);
+  }, [refreshImages, refreshVideos, refreshShaders, addToast]);
 
   // Upload multiple files
   const uploadFiles = useCallback(async (
@@ -555,7 +555,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     }
     
     return results;
-  }, [refreshImages, refreshVideos, refreshShaders]);
+  }, [refreshImages, refreshVideos, refreshShaders, addToast]);
 
   // Clear error
   const clearError = useCallback(() => {
