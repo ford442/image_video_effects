@@ -1857,6 +1857,59 @@
     ]
   },
   {
+    "id": "gen-holographic-plasma-geode",
+    "name": "Holographic Plasma-Geode",
+    "url": "shaders/gen-holographic-plasma-geode.wgsl",
+    "category": "generative",
+    "description": "A hyper-dimensional geode cracked open to reveal a swirling, audio-reactive core of liquid plasma and holographic fractal crystals.",
+    "tags": [
+      "crystal",
+      "plasma",
+      "audio-reactive",
+      "holographic",
+      "raymarching"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "plasmaIntensity",
+        "name": "Plasma Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "crystalDensity",
+        "name": "Crystal Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "holographicHue",
+        "name": "Holographic Hue",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "coreRotationSpeed",
+        "name": "Core Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-hyper-labyrinth",
     "name": "Hyper Labyrinth",
     "url": "shaders/gen-hyper-labyrinth.wgsl",
