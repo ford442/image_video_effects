@@ -624,6 +624,474 @@ let beat = step(0.7, bass);
 
 ---
 
+## UI/UX Design System: Gold & Dark Tinted Glass
+
+This section defines the **official design system** for Pixelocity's user interface. All UI components must follow these specifications to maintain visual consistency.
+
+### Overview
+
+The **Gold & Dark Tinted Glass** theme combines luxurious gold accents with deep dark backgrounds and modern glassmorphism effects. This creates an elegant, premium aesthetic suitable for a creative visual effects application.
+
+**Design Philosophy:**
+- **Luxury**: Rich gold tones convey premium quality
+- **Depth**: Layered glassmorphism creates visual hierarchy
+- **Clarity**: High contrast text ensures readability
+- **Atmosphere**: Dark backgrounds make visual effects pop
+
+---
+
+### Design Tokens
+
+#### Color Palette
+
+| Token | Hex Value | Usage |
+|-------|-----------|-------|
+| `--color-primary-gold` | `#FFD700` | Primary accent, icons, highlights |
+| `--color-gold-light` | `#D4AF37` | Gradient stops, secondary accents |
+| `--color-gold-dark` | `#B8860B` | Gradient stops, pressed states |
+| `--color-gold-dim` | `#DAA520` | Subtle gold elements |
+| `--color-bg-dark` | `#0a0a0f` | Main background |
+| `--color-bg-dark-elevated` | `#141418` | Elevated surfaces |
+| `--color-glass-bg` | `rgba(20, 20, 30, 0.6)` | Glass card backgrounds |
+| `--color-glass-bg-hover` | `rgba(30, 30, 45, 0.7)` | Glass hover state |
+| `--color-glass-border` | `rgba(255, 215, 0, 0.2)` | Glass borders |
+| `--color-glass-border-subtle` | `rgba(255, 215, 0, 0.1)` | Subtle borders |
+| `--color-text-primary` | `#FFFFFF` | Primary text |
+| `--color-text-secondary` | `rgba(255, 255, 255, 0.7)` | Secondary text |
+| `--color-text-muted` | `rgba(255, 255, 255, 0.5)` | Muted/disabled text |
+| `--color-accent-glow` | `rgba(255, 215, 0, 0.3)` | Gold glow effects |
+| `--color-shadow-dark` | `rgba(0, 0, 0, 0.4)` | Drop shadows |
+| `--color-highlight` | `rgba(255, 255, 255, 0.1)` | Inner highlights |
+
+#### Gradients
+
+```css
+/* Primary Gold Gradient - Buttons, accents */
+--gradient-gold: linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%);
+
+/* Subtle Gold Gradient - Cards, headers */
+--gradient-gold-subtle: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.02) 100%);
+
+/* Dark Gradient - Background overlays */
+--gradient-dark: linear-gradient(180deg, rgba(10, 10, 15, 0.95) 0%, rgba(10, 10, 15, 0.8) 100%);
+
+/* Glass Gradient - Card backgrounds */
+--gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+```
+
+#### Typography
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--font-family` | `'Inter', system-ui, -apple-system, sans-serif` | Primary font |
+| `--font-family-mono` | `'JetBrains Mono', 'Fira Code', monospace` | Code, technical text |
+| `--font-weight-regular` | `400` | Body text |
+| `--font-weight-medium` | `500` | Emphasized text |
+| `--font-weight-semibold` | `600` | Headers, buttons |
+| `--font-weight-bold` | `700` | Titles, strong emphasis |
+| `--letter-spacing-header` | `0.5px` | Headers, labels |
+| `--letter-spacing-wide` | `1px` | Uppercase labels |
+| `--line-height-tight` | `1.25` | Headlines |
+| `--line-height-normal` | `1.5` | Body text |
+| `--line-height-relaxed` | `1.75` | Large paragraphs |
+
+#### Font Sizes
+
+```css
+--font-size-xs: 0.75rem;      /* 12px - Captions, badges */
+--font-size-sm: 0.875rem;     /* 14px - Secondary text */
+--font-size-base: 1rem;       /* 16px - Body text */
+--font-size-md: 1.125rem;     /* 18px - Lead text */
+--font-size-lg: 1.25rem;      /* 20px - Section headers */
+--font-size-xl: 1.5rem;       /* 24px - Card titles */
+--font-size-2xl: 2rem;        /* 32px - Page titles */
+--font-size-3xl: 2.5rem;      /* 40px - Hero titles */
+```
+
+#### Spacing Scale
+
+| Token | Value | Pixels | Usage |
+|-------|-------|--------|-------|
+| `--space-0` | `0` | 0px | No space |
+| `--space-1` | `0.5rem` | 4px | Inline elements |
+| `--space-2` | `0.5rem` | 8px | Base unit, tight spacing |
+| `--space-3` | `0.75rem` | 12px | Small gaps |
+| `--space-4` | `1rem` | 16px | Standard gaps |
+| `--space-5` | `1.25rem` | 20px | Medium padding |
+| `--space-6` | `1.5rem` | 24px | Card padding |
+| `--space-8` | `2rem` | 32px | Large gaps |
+| `--space-10` | `2.5rem` | 40px | Section padding |
+| `--space-12` | `3rem` | 48px | Major sections |
+
+#### Border Radius
+
+```css
+--radius-none: 0;             /* Sharp corners */
+--radius-sm: 4px;             /* Small elements */
+--radius-md: 8px;             /* Buttons, inputs */
+--radius-lg: 12px;            /* Cards, panels */
+--radius-xl: 16px;            /* Large cards */
+--radius-2xl: 24px;           /* Modals, containers */
+--radius-full: 9999px;        /* Pills, circles */
+```
+
+---
+
+### Glassmorphism Effects
+
+#### Standard Glass Card
+
+```css
+.glass-card {
+  /* Background */
+  background: rgba(20, 20, 30, 0.6);
+  
+  /* Backdrop blur for the frosted glass effect */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  
+  /* Border */
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 12px;
+  
+  /* Shadow */
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  /* Padding */
+  padding: 24px;
+}
+```
+
+#### Elevated Glass Card (Hover/Active State)
+
+```css
+.glass-card-elevated {
+  background: rgba(30, 30, 45, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(255, 215, 0, 0.25);
+  box-shadow: 
+    0 12px 48px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 215, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+```
+
+#### Glass Button (Primary)
+
+```css
+.glass-button-primary {
+  background: linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%);
+  border: none;
+  border-radius: 8px;
+  color: #0a0a0f;
+  font-weight: 600;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 
+    0 4px 16px rgba(255, 215, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.glass-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 6px 24px rgba(255, 215, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glass-button-primary:active {
+  transform: translateY(1px);
+  box-shadow: 
+    0 2px 8px rgba(255, 215, 0, 0.2),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+```
+
+#### Glass Button (Secondary)
+
+```css
+.glass-button-secondary {
+  background: rgba(20, 20, 30, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 8px;
+  color: #FFD700;
+  font-weight: 500;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.glass-button-secondary:hover {
+  background: rgba(30, 30, 45, 0.8);
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
+}
+```
+
+#### Glass Input Field
+
+```css
+.glass-input {
+  background: rgba(10, 10, 15, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 8px;
+  color: #FFFFFF;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+}
+```
+
+---
+
+### CSS Variables (Root Declaration)
+
+```css
+:root {
+  /* Primary Colors */
+  --color-primary-gold: #FFD700;
+  --color-gold-light: #D4AF37;
+  --color-gold-dark: #B8860B;
+  --color-gold-dim: #DAA520;
+  
+  /* Background Colors */
+  --color-bg-dark: #0a0a0f;
+  --color-bg-dark-elevated: #141418;
+  --color-glass-bg: rgba(20, 20, 30, 0.6);
+  --color-glass-bg-hover: rgba(30, 30, 45, 0.7);
+  
+  /* Border Colors */
+  --color-glass-border: rgba(255, 215, 0, 0.2);
+  --color-glass-border-subtle: rgba(255, 215, 0, 0.1);
+  --color-glass-border-strong: rgba(255, 215, 0, 0.3);
+  
+  /* Text Colors */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-text-muted: rgba(255, 255, 255, 0.5);
+  
+  /* Effect Colors */
+  --color-accent-glow: rgba(255, 215, 0, 0.3);
+  --color-shadow-dark: rgba(0, 0, 0, 0.4);
+  --color-highlight: rgba(255, 255, 255, 0.1);
+  
+  /* Gradients */
+  --gradient-gold: linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%);
+  --gradient-gold-subtle: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.02) 100%);
+  --gradient-dark: linear-gradient(180deg, rgba(10, 10, 15, 0.95) 0%, rgba(10, 10, 15, 0.8) 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+  
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --letter-spacing-header: 0.5px;
+  --letter-spacing-wide: 1px;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1.125rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-size-3xl: 2.5rem;
+  
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  
+  /* Border Radius */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  
+  /* Glassmorphism */
+  --glass-blur: blur(12px);
+  --glass-blur-heavy: blur(16px);
+  --glass-blur-light: blur(8px);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --glass-shadow-elevated: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --glass-border: 1px solid rgba(255, 215, 0, 0.15);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+```
+
+---
+
+### Component Patterns
+
+#### Card Component
+
+```tsx
+// Example: Control Panel Card
+<div className="glass-card">
+  <h3 className="card-title">Shader Controls</h3>
+  <div className="card-content">
+    {/* Control content */}
+  </div>
+</div>
+
+/* CSS */
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-gold);
+  letter-spacing: var(--letter-spacing-header);
+  margin-bottom: var(--space-4);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+```
+
+#### Slider Component
+
+```css
+.glass-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  outline: none;
+}
+
+.glass-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--gradient-gold);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  transition: transform var(--transition-fast);
+}
+
+.glass-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+```
+
+#### Dropdown/Select Component
+
+```css
+.glass-select {
+  background: var(--color-glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23FFD700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.glass-select:hover {
+  background-color: var(--color-glass-bg-hover);
+  border-color: var(--color-glass-border);
+}
+```
+
+---
+
+### Accessibility Guidelines
+
+1. **Contrast Ratios**
+   - Primary text (#FFFFFF) on dark backgrounds: 16:1 ✓
+   - Secondary text (70% white) on dark backgrounds: 10:1 ✓
+   - Gold text (#FFD700) on dark backgrounds: 12:1 ✓
+
+2. **Focus States**
+   - All interactive elements must have visible focus indicators
+   - Use gold glow (`box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3)`) for focus rings
+
+3. **Touch Targets**
+   - Minimum 44x44px for buttons
+   - Minimum 24px height for inputs
+
+4. **Reduced Motion**
+   - Respect `prefers-reduced-motion` media query
+   - Provide instant state changes when motion is disabled
+
+---
+
+### Responsive Considerations
+
+```css
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .glass-card {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+  }
+  
+  :root {
+    --font-size-2xl: 1.75rem;
+    --font-size-xl: 1.25rem;
+  }
+}
+
+/* Reduced glass effect on devices that struggle with blur */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-card {
+    background: var(--color-bg-dark-elevated);
+    backdrop-filter: none;
+  }
+}
+```
+
+---
+
 ## Testing
 
 ### Running Tests

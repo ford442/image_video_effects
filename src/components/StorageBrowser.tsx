@@ -2,12 +2,14 @@
 //  StorageBrowser.tsx
 //  Visual readout page for the VPS Storage API
 //  Browse shaders, images, videos with ratings and management features
+//  GOLD AND DARK GLASS THEME
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStorage } from '../hooks/useStorage';
 import { ShaderItem, ImageItem, VideoItem } from '../services/StorageService';
 import { STORAGE_VPS_HOST, STORAGE_VPS_PORT, STATIC_NGINX_URL } from '../config/appConfig';
+import { DragDropUpload } from './DragDropUpload';
 import './StorageBrowser.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -27,7 +29,23 @@ interface StorageBrowserProps {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Star Rating Component
+//  Gold Spinner Component
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const GoldSpinner: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({ size = 'medium' }) => {
+  const sizeMap = { small: 30, medium: 50, large: 70 };
+  const spinnerSize = sizeMap[size];
+  
+  return (
+    <div 
+      className="loading-spinner"
+      style={{ width: spinnerSize, height: spinnerSize }}
+    />
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Star Rating Component - Gold Filled Stars
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface StarRatingProps {
@@ -51,11 +69,36 @@ const StarRating: React.FC<StarRatingProps> = ({
   const fullStars = Math.floor(displayRating);
   const hasHalfStar = displayRating % 1 >= 0.5;
   
-  const sizeMap = { small: 14, medium: 18, large: 24 };
+  const sizeMap = { small: 16, medium: 22, large: 28 };
   const starSize = sizeMap[size];
+  
+  // Gold gradient for filled stars
+  const goldGradient = 'url(#goldGradient)';
+  const emptyColor = 'rgba(100, 100, 110, 0.5)';
   
   return (
     <div className={`star-rating ${interactive ? 'interactive' : ''}`}>
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffd700" />
+            <stop offset="50%" stopColor="#ffec8b" />
+            <stop offset="100%" stopColor="#b8860b" />
+          </linearGradient>
+          <linearGradient id="goldHalfGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="50%" stopColor="url(#goldGradient)" />
+            <stop offset="50%" stopColor={emptyColor} />
+          </linearGradient>
+          <filter id="goldGlow">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+      </svg>
+      
       {Array.from({ length: maxStars }, (_, i) => {
         const starValue = i + 1;
         const filled = starValue <= fullStars;
@@ -75,9 +118,9 @@ const StarRating: React.FC<StarRatingProps> = ({
               {half ? (
                 <>
                   <defs>
-                    <linearGradient id={`half-grad-${i}`}>
+                    <linearGradient id={`half-grad-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="50%" stopColor="#ffd700" />
-                      <stop offset="50%" stopColor="#444" />
+                      <stop offset="50%" stopColor="rgba(100, 100, 110, 0.5)" />
                     </linearGradient>
                   </defs>
                   <path
@@ -88,7 +131,8 @@ const StarRating: React.FC<StarRatingProps> = ({
               ) : (
                 <path
                   d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                  fill={filled ? '#ffd700' : '#444'}
+                  fill={filled ? goldGradient : emptyColor}
+                  filter={filled ? 'url(#goldGlow)' : undefined}
                 />
               )}
             </svg>
@@ -103,7 +147,7 @@ const StarRating: React.FC<StarRatingProps> = ({
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Connection Status Component
+//  Connection Status Component - Gold for Connected, Red for Error
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const ConnectionStatus: React.FC<{
@@ -115,7 +159,7 @@ const ConnectionStatus: React.FC<{
   if (isChecking) {
     return (
       <div className="connection-status checking">
-        <span className="status-icon">⏳</span>
+        <span className="status-icon">⟳</span>
         <span>Checking connection...</span>
       </div>
     );
@@ -124,7 +168,7 @@ const ConnectionStatus: React.FC<{
   if (!isConnected) {
     return (
       <div className="connection-status error">
-        <span className="status-icon">❌</span>
+        <span className="status-icon">✕</span>
         <span>Not connected to VPS</span>
         {error && <span className="error-detail">{error}</span>}
         <button onClick={onRetry} className="retry-btn">Retry</button>
@@ -134,14 +178,14 @@ const ConnectionStatus: React.FC<{
   
   return (
     <div className="connection-status connected">
-      <span className="status-icon">✅</span>
+      <span className="status-icon">◉</span>
       <span>Connected to VPS Storage</span>
     </div>
   );
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Shader Card Component
+//  Shader Card Component - Glass Card with Gold Border on Hover
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface ShaderCardProps {
@@ -170,13 +214,13 @@ const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, o
     >
       <div className="card-header">
         <h4 className="card-title">{shader.name}</h4>
-        {shader.has_errors && <span className="error-badge" title="Has errors">⚠️</span>}
+        {shader.has_errors && <span className="error-badge" title="Has errors">⚠</span>}
       </div>
       
       <div className="card-meta">
-        <span className="meta-item">📁 {shader.format}</span>
-        <span className="meta-item">👤 {shader.author || 'Unknown'}</span>
-        <span className="meta-item">📅 {formatDate(shader.date)}</span>
+        <span className="meta-item">{shader.format}</span>
+        <span className="meta-item">{shader.author || 'Unknown'}</span>
+        <span className="meta-item">{formatDate(shader.date)}</span>
       </div>
       
       <p className="card-description">{shader.description || 'No description'}</p>
@@ -259,8 +303,17 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, isSelected, onSelect }) =>
       onClick={onSelect}
     >
       <div className="image-preview">
-        {!loaded && !error && <div className="image-placeholder">Loading...</div>}
-        {error && <div className="image-placeholder error">Failed to load</div>}
+        {!loaded && !error && (
+          <div className="image-placeholder">
+            <div className="spinner" />
+            <span>Loading...</span>
+          </div>
+        )}
+        {error && (
+          <div className="image-placeholder error">
+            <span>⚠ Failed to load</span>
+          </div>
+        )}
         <img
           src={image.url}
           alt={image.description || 'Storage image'}
@@ -317,7 +370,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isSelected, onSelect }) =>
       onClick={onSelect}
     >
       <div className="video-preview">
-        <div className="video-icon">🎬</div>
+        <div className="video-icon">▶</div>
         <span className="video-duration">{formatDuration(video.duration)}</span>
       </div>
       
@@ -349,11 +402,11 @@ const OperationsPanel: React.FC<{
 }> = ({ operations, onClearCompleted }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return '⏳';
-      case 'in_progress': return '🔄';
-      case 'completed': return '✅';
-      case 'error': return '❌';
-      default: return '❓';
+      case 'pending': return '◷';
+      case 'in_progress': return '↻';
+      case 'completed': return '✓';
+      case 'error': return '✕';
+      default: return '?';
     }
   };
   
@@ -424,6 +477,7 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
     if (storage.isConnected) {
       storage.refreshAll();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storage.isConnected]);
   
   // Filter and sort shaders
@@ -514,6 +568,11 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
     await storage.rateShader(shaderId, rating);
   };
   
+  // Handle file upload
+  const handleUpload = async (files: File[], type: 'image' | 'video' | 'audio' | 'shader') => {
+    return storage.uploadFiles(files, type);
+  };
+  
   // Render tab content
   const renderTabContent = () => {
     switch (activeTab) {
@@ -545,11 +604,22 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
               </div>
             </div>
             
+            {/* Drag & Drop Upload */}
+            <DragDropUpload
+              type="shader"
+              onUpload={handleUpload}
+              disabled={!storage.isConnected}
+            />
+            
             {storage.isLoadingShaders ? (
-              <div className="loading-state">Loading shaders...</div>
+              <div className="loading-state">
+                <GoldSpinner size="medium" />
+                <span>Loading shaders...</span>
+              </div>
             ) : filteredShaders.length === 0 ? (
               <div className="empty-state">
-                {searchQuery ? 'No shaders match your search' : 'No shaders available'}
+                <div className="empty-state-icon">⚆</div>
+                <span>{searchQuery ? 'No shaders match your search' : 'No shaders available'}</span>
               </div>
             ) : (
               <div className="cards-grid">
@@ -574,11 +644,22 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
               <span className="item-count">{filteredImages.length} images</span>
             </div>
             
+            {/* Drag & Drop Upload */}
+            <DragDropUpload
+              type="image"
+              onUpload={handleUpload}
+              disabled={!storage.isConnected}
+            />
+            
             {storage.isLoadingImages ? (
-              <div className="loading-state">Loading images...</div>
+              <div className="loading-state">
+                <GoldSpinner size="medium" />
+                <span>Loading images...</span>
+              </div>
             ) : filteredImages.length === 0 ? (
               <div className="empty-state">
-                {searchQuery ? 'No images match your search' : 'No images available'}
+                <div className="empty-state-icon">⚆</div>
+                <span>{searchQuery ? 'No images match your search' : 'No images available'}</span>
               </div>
             ) : (
               <div className="cards-grid images">
@@ -605,11 +686,22 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
               <span className="item-count">{filteredVideos.length} videos</span>
             </div>
             
+            {/* Drag & Drop Upload */}
+            <DragDropUpload
+              type="video"
+              onUpload={handleUpload}
+              disabled={!storage.isConnected}
+            />
+            
             {storage.isLoadingVideos ? (
-              <div className="loading-state">Loading videos...</div>
+              <div className="loading-state">
+                <GoldSpinner size="medium" />
+                <span>Loading videos...</span>
+              </div>
             ) : filteredVideos.length === 0 ? (
               <div className="empty-state">
-                {searchQuery ? 'No videos match your search' : 'No videos available'}
+                <div className="empty-state-icon">⚆</div>
+                <span>{searchQuery ? 'No videos match your search' : 'No videos available'}</span>
               </div>
             ) : (
               <div className="cards-grid">
@@ -636,11 +728,22 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
               <span className="item-count">{filteredAudio.length} audio files</span>
             </div>
             
+            {/* Drag & Drop Upload */}
+            <DragDropUpload
+              type="audio"
+              onUpload={handleUpload}
+              disabled={!storage.isConnected}
+            />
+            
             {storage.isLoadingVideos ? (
-              <div className="loading-state">Loading audio...</div>
+              <div className="loading-state">
+                <GoldSpinner size="medium" />
+                <span>Loading audio...</span>
+              </div>
             ) : filteredAudio.length === 0 ? (
               <div className="empty-state">
-                {searchQuery ? 'No audio files match your search' : 'No audio files available'}
+                <div className="empty-state-icon">⚆</div>
+                <span>{searchQuery ? 'No audio files match your search' : 'No audio files available'}</span>
               </div>
             ) : (
               <div className="cards-grid">
@@ -677,7 +780,7 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
     <div className="storage-browser">
       {/* Header */}
       <div className="browser-header">
-        <h2>📦 VPS Storage Manager</h2>
+        <h2>◈ VPS Storage Manager</h2>
         <ConnectionStatus
           isConnected={storage.isConnected}
           isChecking={storage.isCheckingConnection}
@@ -708,31 +811,31 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
             className={activeTab === 'shaders' ? 'active' : ''}
             onClick={() => setActiveTab('shaders')}
           >
-            🎨 Shaders ({storage.shaders.length})
+            Shaders ({storage.shaders.length})
           </button>
           <button 
             className={activeTab === 'images' ? 'active' : ''}
             onClick={() => setActiveTab('images')}
           >
-            🖼️ Images ({storage.images.length})
+            Images ({storage.images.length})
           </button>
           <button 
             className={activeTab === 'videos' ? 'active' : ''}
             onClick={() => setActiveTab('videos')}
           >
-            🎬 Videos ({storage.videos.length})
+            Videos ({storage.videos.length})
           </button>
           <button 
             className={activeTab === 'audio' ? 'active' : ''}
             onClick={() => setActiveTab('audio')}
           >
-            🎵 Audio ({storage.audio.length})
+            Audio ({storage.audio.length})
           </button>
           <button 
             className={activeTab === 'operations' ? 'active' : ''}
             onClick={() => setActiveTab('operations')}
           >
-            🔄 Operations
+            Operations
             {storage.activeOperations.length > 0 && (
               <span className="badge">{storage.activeOperations.length}</span>
             )}
@@ -759,7 +862,7 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
           disabled={!storage.isConnected}
           title="Refresh all data"
         >
-          🔄 Refresh
+          ↻ Refresh
         </button>
       </div>
       

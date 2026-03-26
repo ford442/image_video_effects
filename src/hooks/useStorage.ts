@@ -7,15 +7,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   StorageService,
-  StorageSaveOptions,
   StorageSaveResponse,
   ShaderItem,
   ImageItem,
   VideoItem,
   StorageOperation,
-  StorageStatus,
   getStorageService,
-  createStorageService,
 } from '../services/StorageService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -65,6 +62,10 @@ export interface UseStorageReturn extends StorageState {
   saveShader: (name: string, wgslCode: string, metadata?: Partial<ShaderItem>) => Promise<StorageSaveResponse>;
   saveEffectConfig: (name: string, config: any) => Promise<StorageSaveResponse>;
   saveOutput: (name: string, imageData: string, metadata?: Record<string, any>) => Promise<StorageSaveResponse>;
+  
+  // Upload operations
+  uploadFile: (file: File, type: 'image' | 'video' | 'audio' | 'shader') => Promise<StorageSaveResponse>;
+  uploadFiles: (files: File[], type: 'image' | 'video' | 'audio' | 'shader', onProgress?: (completed: number, total: number) => void) => Promise<StorageSaveResponse[]>;
   
   // Load operations
   loadShader: (filename: string) => Promise<any>;
@@ -133,11 +134,13 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     });
     
     return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toasts]);
 
   // Check connection on mount
   useEffect(() => {
     checkConnection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Toast helper
@@ -150,10 +153,12 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
         dismissToast(toast.id);
       }, toast.duration);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Check connection
@@ -175,6 +180,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     } finally {
       setIsCheckingConnection(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh shaders
@@ -203,6 +209,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     } finally {
       setIsLoadingShaders(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh images
@@ -231,6 +238,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     } finally {
       setIsLoadingImages(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh videos
@@ -265,6 +273,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     } finally {
       setIsLoadingVideos(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh all
@@ -309,6 +318,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
       });
       throw error;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshShaders]);
 
   // Save effect config
@@ -340,6 +350,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
       });
       throw error;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save output
@@ -372,6 +383,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
       });
       throw error;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load shader
@@ -400,6 +412,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
       });
       throw error;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load effect config
@@ -428,6 +441,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
       });
       throw error;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Rate shader
@@ -465,7 +479,83 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
       });
       throw error;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Upload file
+  const uploadFile = useCallback(async (
+    file: File,
+    type: 'image' | 'video' | 'audio' | 'shader'
+  ): Promise<StorageSaveResponse> => {
+    setLastError(undefined);
+    
+    try {
+      const result = await serviceRef.current.uploadFile(file, type);
+      
+      // Refresh appropriate list after upload
+      if (type === 'image') await refreshImages();
+      if (type === 'video') await refreshVideos();
+      if (type === 'shader') await refreshShaders();
+      
+      addToast({
+        id: `upload-${Date.now()}`,
+        type: 'success',
+        message: `Uploaded "${file.name}" successfully`,
+        duration: 5000,
+      });
+      
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to upload ${file.name}`;
+      setLastError(errorMessage);
+      addToast({
+        id: `upload-error-${Date.now()}`,
+        type: 'error',
+        message: errorMessage,
+        duration: 5000,
+      });
+      throw error;
+    }
+  }, [refreshImages, refreshVideos, refreshShaders, addToast]);
+
+  // Upload multiple files
+  const uploadFiles = useCallback(async (
+    files: File[],
+    type: 'image' | 'video' | 'audio' | 'shader',
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<StorageSaveResponse[]> => {
+    setLastError(undefined);
+    
+    const results = await serviceRef.current.uploadFiles(files, type, onProgress);
+    
+    // Count successes
+    const successCount = results.length;
+    
+    if (successCount > 0) {
+      // Refresh appropriate list
+      if (type === 'image') await refreshImages();
+      if (type === 'video') await refreshVideos();
+      if (type === 'shader') await refreshShaders();
+      
+      addToast({
+        id: `upload-batch-${Date.now()}`,
+        type: 'success',
+        message: `Uploaded ${successCount} of ${files.length} files`,
+        duration: 5000,
+      });
+    }
+    
+    if (successCount < files.length) {
+      addToast({
+        id: `upload-batch-warning-${Date.now()}`,
+        type: 'warning',
+        message: `${files.length - successCount} files failed to upload`,
+        duration: 5000,
+      });
+    }
+    
+    return results;
+  }, [refreshImages, refreshVideos, refreshShaders, addToast]);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -508,6 +598,8 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     saveShader,
     saveEffectConfig,
     saveOutput,
+    uploadFile,
+    uploadFiles,
     loadShader,
     loadEffectConfig,
     rateShader,

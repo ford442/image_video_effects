@@ -1,26 +1,38 @@
 {
-  "static/js/main.46968d9c.js": {
-    "hash": "c06c67c62c60c46f4043ce6581038c81",
-    "size": 7778343
+  "index.html": {
+    "hash": "dd4af195a33fd632ee1913d59fabc47d",
+    "size": 445
   },
-  "static/js/main.46968d9c.js.map": {
-    "hash": "33a5f168dd62150c52301e420ac36912",
-    "size": 13882272
+  "shaders/wolfram-data-demo.wgsl": {
+    "hash": "910fede511b1452680cd95e366e01af2",
+    "size": 11566
   },
-  "static/js/main.46968d9c.js.LICENSE.txt": {
+  "shader-lists/generative.json": {
+    "hash": "fa1978b31aa4551fa37ad6da3bc87adf",
+    "size": 110522
+  },
+  "asset-manifest.json": {
+    "hash": "e9e93d47e7e7d43662461b3947be6e45",
+    "size": 374
+  },
+  "static/css/main.b1072d5f.css.map": {
+    "hash": "80c456137f3ab4cf296152e33adda1a4",
+    "size": 116206
+  },
+  "static/css/main.b1072d5f.css": {
+    "hash": "c9d0dbc96ad1dafb64c5ea78b2d56133",
+    "size": 54124
+  },
+  "static/js/main.7a484adc.js": {
+    "hash": "c626d8e3a58f67f7d0f8deb3d9657a88",
+    "size": 7785804
+  },
+  "static/js/main.7a484adc.js.map": {
+    "hash": "14f21145f759cd3faa43f68f175e8408",
+    "size": 13907993
+  },
+  "static/js/main.7a484adc.js.LICENSE.txt": {
     "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
     "size": 1210
-  },
-  "index.html": {
-    "hash": "d90962b44ea122f5000a7af5fe3781c9",
-    "size": 442
-  },
-  "wasm/pixelocity_wasm.wasm": {
-    "hash": "e4e10e7601e225b9909e8d2ab77095bf",
-    "size": 51183
-  },
-  "wasm/pixelocity_wasm.js": {
-    "hash": "1648c5ac1db361e940ddf786bd38b87a",
-    "size": 60460
   }
 }

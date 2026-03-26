@@ -114,6 +114,12 @@
       "title": "Celestial Prism-Orchid",
       "added": "2026-03-24T15:26:48.566026",
       "completed": "2026-03-25T07:43:11.594675"
+    },
+    {
+      "filename": "2026-03-25_holographic-plasma-geode.md",
+      "title": "Holographic Plasma-Geode",
+      "added": "2026-03-25T15:19:07.269083",
+      "completed": "2026-03-26T08:23:03.337386"
     }
   ],
   "rejected": [],
@@ -180,9 +186,9 @@
       "added": "2026-03-23T16:03:21.686103"
     },
     {
-      "filename": "2026-03-25_holographic-plasma-geode.md",
-      "title": "Holographic Plasma-Geode",
-      "added": "2026-03-25T15:19:07.269083"
+      "filename": "2026-03-26_kinetic-neo-brutalist-megastructure.md",
+      "title": "Kinetic Neo-Brutalist Megastructure",
+      "added": "2026-03-26T15:39:40.056097"
     }
   ],
   "in_progress": null

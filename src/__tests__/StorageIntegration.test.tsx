@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
+import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../App';
 import { StorageBrowser } from '../components/StorageBrowser';
@@ -50,10 +51,10 @@ describe('Storage Integration', () => {
     it('has tab buttons for different content types', () => {
       render(<StorageBrowser />);
       
-      expect(screen.getByText(/Shaders/i)).toBeInTheDocument();
-      expect(screen.getByText(/Images/i)).toBeInTheDocument();
-      expect(screen.getByText(/Videos/i)).toBeInTheDocument();
-      expect(screen.getByText(/Audio/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Shaders/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Images/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Videos/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Audio/i })).toBeInTheDocument();
     });
   });
 
@@ -73,8 +74,8 @@ describe('Storage Integration', () => {
 
       render(<TestComponent />);
       
-      expect(screen.getByTestId('connected')).toHaveTextContent('no');
-      expect(screen.getByTestId('shaders')).toHaveTextContent('0');
+      expect(screen.getByTestId('connected').textContent).toBe('no');
+      expect(screen.getByTestId('shaders').textContent).toBe('0');
     });
   });
 

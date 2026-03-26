@@ -17,19 +17,32 @@ export const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 //  API Endpoints
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// HuggingFace Space API (legacy/fallback)
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://ford442-storage-manager.hf.space';
-export const SHADER_WGSL_URL = `${API_BASE_URL}/api/shaders`;
-export const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
-
 // VPS Storage Manager (Contabo) - PRIMARY STORAGE
-export const STORAGE_VPS_HOST = process.env.REACT_APP_STORAGE_VPS_HOST || '173.249.14.134';
-export const STORAGE_VPS_PORT = process.env.REACT_APP_STORAGE_VPS_PORT || '8000';
-export const STORAGE_VPS_URL = process.env.REACT_APP_STORAGE_VPS_URL || `http://${STORAGE_VPS_HOST}:${STORAGE_VPS_PORT}/webhook`;
-export const STORAGE_API_URL = process.env.REACT_APP_STORAGE_API_URL || `http://${STORAGE_VPS_HOST}:${STORAGE_VPS_PORT}`;
+// Using HTTPS domain: storage.noahcohn.com
+// NOTE: API backend runs on port 8000, nginx should proxy 443→8000
+export const STORAGE_VPS_HOST = process.env.REACT_APP_STORAGE_VPS_HOST || 'storage.noahcohn.com';
+export const STORAGE_VPS_PORT = process.env.REACT_APP_STORAGE_VPS_PORT || '443';
+export const STORAGE_VPS_URL = process.env.REACT_APP_STORAGE_VPS_URL || `https://${STORAGE_VPS_HOST}/webhook`;
+export const STORAGE_API_URL = process.env.REACT_APP_STORAGE_API_URL || `https://${STORAGE_VPS_HOST}`;
+
+// API_BASE_URL now points to VPS (was HuggingFace)
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || `https://${STORAGE_VPS_HOST}`;
+
+// API endpoints now use VPS - All endpoints operational!
+export const SHADER_WGSL_URL = `${STORAGE_API_URL}/api/shaders`;
+export const IMAGE_MANIFEST_URL = `${STORAGE_API_URL}/api/images`;  // Clean endpoint
+export const AUDIO_MANIFEST_URL = `${STORAGE_API_URL}/api/songs?type=audio`;
+export const VIDEO_MANIFEST_URL = `${STORAGE_API_URL}/api/songs?type=video`;
+export const MEDIA_MANIFEST_URL = `${STORAGE_API_URL}/api/songs`;
+
+// Shader ratings API
+export const SHADER_RATINGS_URL = `${STORAGE_API_URL}/api/shaders`;
+
+// Legacy endpoints (backward compatible)
+export const LEGACY_IMAGE_URL = `${STORAGE_API_URL}/api/songs?type=image`;
 
 // Static Nginx file server (for retrieving saved files)
-export const STATIC_NGINX_URL = process.env.REACT_APP_STATIC_NGINX_URL || 'https://storage.1ink.us';
+export const STATIC_NGINX_URL = process.env.REACT_APP_STATIC_NGINX_URL || 'https://storage.noahcohn.com';
 
 // Webhook Secret for HMAC SHA256 signatures
 // In production, this should be set via environment variable

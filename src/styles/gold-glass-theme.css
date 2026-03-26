@@ -1,0 +1,683 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GOLD & DARK GLASS THEME
+   Premium glassmorphism with gold accents
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── CSS Variables ─── */
+:root {
+  /* Gold Palette */
+  --gold-primary: #FFD700;
+  --gold-light: #FFE55C;
+  --gold-dark: #B8860B;
+  --gold-muted: #D4AF37;
+  --gold-pale: rgba(255, 215, 0, 0.1);
+  --gold-glow: rgba(255, 215, 0, 0.4);
+  
+  /* Dark Glass Palette */
+  --glass-bg: rgba(20, 20, 25, 0.85);
+  --glass-bg-light: rgba(35, 35, 45, 0.7);
+  --glass-border: rgba(255, 215, 0, 0.15);
+  --glass-border-hover: rgba(255, 215, 0, 0.3);
+  
+  /* Background Colors */
+  --bg-dark: #0f0f12;
+  --bg-darker: #0a0a0c;
+  --bg-panel: rgba(15, 15, 18, 0.95);
+  
+  /* Text Colors */
+  --text-primary: #f0f0f5;
+  --text-secondary: #a0a0b0;
+  --text-muted: #606070;
+  --text-gold: #FFD700;
+  
+  /* Status Colors */
+  --success: #2ed573;
+  --error: #ff4757;
+  --warning: #ffa502;
+  --info: #4a9eff;
+}
+
+/* ─── Glass Panel Base ─── */
+.glass-panel {
+  background: linear-gradient(
+    145deg,
+    rgba(25, 25, 30, 0.9) 0%,
+    rgba(15, 15, 20, 0.95) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Gold Gradient Buttons ─── */
+.gold-btn {
+  background: linear-gradient(145deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%);
+  border: none;
+  color: #0f0f12;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 13px;
+  box-shadow: 
+    0 4px 15px rgba(255, 215, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.gold-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 25px rgba(255, 215, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.gold-btn:hover::before {
+  left: 100%;
+}
+
+.gold-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+}
+
+.gold-btn:disabled {
+  background: linear-gradient(145deg, #4a4a50 0%, #2a2a30 100%);
+  color: #666;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ─── Secondary Button (Transparent with Gold Border) ─── */
+.gold-outline-btn {
+  background: transparent;
+  border: 1px solid var(--gold-dark);
+  color: var(--gold-primary);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.gold-outline-btn:hover {
+  background: var(--gold-pale);
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 20px var(--gold-glow);
+  color: var(--gold-light);
+}
+
+/* ─── Glass Input/Select Styling ─── */
+.glass-input,
+.glass-select {
+  width: 100%;
+  background: rgba(25, 25, 30, 0.8);
+  border: 1px solid rgba(255, 215, 0, 0.1);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.glass-input:focus,
+.glass-select:focus {
+  outline: none;
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+  background: rgba(30, 30, 38, 0.9);
+}
+
+.glass-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ─── Section Headers ─── */
+.gold-section-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gold-section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.3), transparent);
+  margin-left: 8px;
+}
+
+/* ─── Active States with Gold Glow ─── */
+.gold-active {
+  border: 1px solid var(--gold-primary) !important;
+  box-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.3),
+    inset 0 0 20px rgba(255, 215, 0, 0.05);
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.gold-active-indicator {
+  position: relative;
+}
+
+.gold-active-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--gold-primary), var(--gold-dark));
+  border-radius: 3px 0 0 3px;
+}
+
+/* ─── Range Slider Gold Styling ─── */
+.glass-range {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.glass-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(145deg, var(--gold-primary), var(--gold-dark));
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(255, 215, 0, 0.4);
+  transition: all 0.2s ease;
+  border: 2px solid #fff;
+}
+
+.glass-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.6);
+}
+
+.glass-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(145deg, var(--gold-primary), var(--gold-dark));
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 10px rgba(255, 215, 0, 0.4);
+}
+
+/* ─── Checkbox Gold Styling ─── */
+.gold-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold-primary);
+  cursor: pointer;
+}
+
+/* ─── Radio Group Gold Styling ─── */
+.gold-radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.gold-radio-group label:hover {
+  background: rgba(255, 215, 0, 0.05);
+  color: var(--text-primary);
+}
+
+.gold-radio-group input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold-primary);
+}
+
+/* ─── Card/Slot Styling ─── */
+.glass-card {
+  background: linear-gradient(145deg, rgba(30, 30, 38, 0.8), rgba(20, 20, 25, 0.9));
+  border: 1px solid rgba(255, 215, 0, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 215, 0, 0.2);
+  background: linear-gradient(145deg, rgba(35, 35, 45, 0.8), rgba(25, 25, 32, 0.9));
+  transform: translateY(-1px);
+}
+
+.glass-card.gold-active {
+  border-color: var(--gold-primary);
+  background: rgba(255, 215, 0, 0.08);
+}
+
+/* ─── Status Indicators ─── */
+.status-gold {
+  color: var(--gold-primary);
+}
+
+.status-success-gold {
+  color: var(--success);
+}
+
+.status-error-gold {
+  color: var(--error);
+}
+
+/* ─── Gold Glow Effects ─── */
+.gold-glow-sm {
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.gold-glow-md {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.gold-glow-lg {
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
+}
+
+.gold-text-glow {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* ─── Gold Divider ─── */
+.gold-divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+  margin: 16px 0;
+}
+
+/* ─── Tooltip Gold Styling ─── */
+.gold-tooltip {
+  background: rgba(20, 20, 25, 0.95);
+  border: 1px solid var(--gold-dark);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Scrollbar Gold Styling ─── */
+.gold-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gold-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 15, 20, 0.8);
+  border-radius: 4px;
+}
+
+.gold-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold-dark), var(--gold-primary));
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.gold-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--gold-primary), var(--gold-light));
+  background-clip: content-box;
+}
+
+/* ─── Gold Badge/Pill ─── */
+.gold-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(184, 134, 11, 0.1));
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--gold-primary);
+  font-weight: 500;
+}
+
+/* ─── Glass Modal/Overlay ─── */
+.glass-overlay {
+  background: rgba(10, 10, 12, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.glass-modal {
+  background: linear-gradient(145deg, rgba(25, 25, 32, 0.95), rgba(15, 15, 20, 0.98));
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(255, 215, 0, 0.05);
+}
+
+/* ─── Loading Animation ─── */
+.gold-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 215, 0, 0.2);
+  border-top-color: var(--gold-primary);
+  border-radius: 50%;
+  animation: gold-spin 0.8s linear infinite;
+}
+
+@keyframes gold-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Shimmer Effect ─── */
+.gold-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 215, 0, 0.1),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ─── Hover Transitions ─── */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.hover-gold {
+  transition: all 0.3s ease;
+}
+
+.hover-gold:hover {
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+}
+
+/* ─── Focus States ─── */
+.focus-gold:focus {
+  outline: none;
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.15);
+}
+
+/* ─── Coordinate Display ─── */
+.coordinate-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--gold-primary);
+  font-weight: 600;
+}
+
+/* ─── Zone Colors (for shader browser) ─── */
+.zone-ambient { color: #5dade2; }
+.zone-organic { color: #58d68d; }
+.zone-interactive { color: #4a9eff; }
+.zone-artistic { color: #af7ac5; }
+.zone-visual { color: #ec7063; }
+.zone-retro { color: #f39c12; }
+.zone-extreme { color: #9b59b6; }
+
+/* ─── Recording Button ─── */
+.record-btn-gold {
+  background: linear-gradient(145deg, #e94560, #7b2cbf);
+  border: none;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.record-btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+}
+
+.record-btn-gold.recording {
+  background: linear-gradient(145deg, #ff4757, #c0392b);
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+  50% { box-shadow: 0 0 20px 5px rgba(255, 71, 87, 0.3); }
+}
+
+/* ─── Webcam Button ─── */
+.webcam-btn-gold {
+  background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(238, 90, 90, 0.3);
+}
+
+.webcam-btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(238, 90, 90, 0.4);
+}
+
+.webcam-btn-gold.active {
+  background: linear-gradient(145deg, #2ed573, #27ae60);
+  box-shadow: 0 4px 15px rgba(46, 213, 115, 0.3);
+}
+
+/* ─── AI VJ Button ─── */
+.ai-vj-btn {
+  background: linear-gradient(145deg, #8b5cf6, #7c3aed);
+  border: none;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  width: 100%;
+}
+
+.ai-vj-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.ai-vj-btn:disabled {
+  background: linear-gradient(145deg, #4a4a50, #2a2a30);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ─── Storage Browser Button ─── */
+.storage-btn {
+  background: linear-gradient(135deg, #1a3a2e, #0f2a1e);
+  border: 1px solid rgba(46, 213, 115, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  padding: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.storage-btn:hover {
+  border-color: rgba(46, 213, 115, 0.6);
+  box-shadow: 0 0 20px rgba(46, 213, 115, 0.2);
+  background: linear-gradient(135deg, #1f4a38, #143a28);
+}
+
+/* ─── Coordinate Browser Button ─── */
+.coord-browser-btn {
+  background: linear-gradient(135deg, rgba(40, 40, 60, 0.9), rgba(25, 25, 40, 0.95));
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  padding: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.coord-browser-btn:hover {
+  border-color: rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  background: linear-gradient(135deg, rgba(50, 50, 70, 0.9), rgba(35, 35, 50, 0.95));
+}
+
+/* ─── Shader Chip ─── */
+.shader-chip-gold {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 215, 0, 0.1);
+  border-radius: 20px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shader-chip-gold:hover {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.3);
+  color: var(--gold-primary);
+  transform: scale(1.02);
+}
+
+.shader-chip-gold.active {
+  background: linear-gradient(145deg, var(--gold-primary), var(--gold-dark));
+  color: #0f0f12;
+  border-color: var(--gold-primary);
+  font-weight: 600;
+}
+
+/* ─── Dev Tools Section ─── */
+.dev-tools-gold {
+  margin-top: 20px;
+  padding: 12px;
+  background: rgba(255, 215, 0, 0.05);
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 215, 0, 0.3);
+}
+
+.dev-tools-gold h4 {
+  color: var(--gold-primary);
+  font-size: 12px;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dev-tools-gold button {
+  background: transparent;
+  border: 1px solid var(--gold-dark);
+  color: var(--gold-primary);
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.dev-tools-gold button:hover {
+  background: rgba(255, 215, 0, 0.1);
+}

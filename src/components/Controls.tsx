@@ -5,6 +5,7 @@ import { AIStatus } from '../AutoDJ';
 import shaderCoordinates from '../shader_coordinates.json';
 import { ShaderMegaMenu } from './ShaderMegaMenu';
 import type { ShaderMegaMenuOption } from './ShaderMegaMenu';
+import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
 interface ShaderCoordData {
@@ -319,35 +320,32 @@ const Controls: React.FC<ControlsProps> = ({
     }, [coordMap]);
 
     return (
-        <div className="controls">
+        <div className="controls gold-scroll">
             {/* Number Jump Overlay */}
             {showNumberOverlay && (
-                <div style={{
+                <div className="glass-overlay" style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.85)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     zIndex: 1000,
                 }}>
-                    <div style={{
+                    <div className="glass-modal" style={{
                         padding: '48px 64px',
-                        background: '#0f0f1a',
-                        border: '2px solid #4a9eff',
-                        borderRadius: '16px',
                         textAlign: 'center',
+                        minWidth: '300px',
                     }}>
-                        <div style={{
+                        <div className="gold-text-glow" style={{
                             fontSize: '72px',
                             fontWeight: 700,
-                            color: '#4a9eff',
+                            color: '#FFD700',
                             fontFamily: 'monospace',
                             letterSpacing: '8px',
                         }}>
                             {typedNumber}
                         </div>
-                        <div style={{ color: '#666', marginTop: '16px', fontSize: '14px' }}>
+                        <div style={{ color: '#a0a0b0', marginTop: '16px', fontSize: '14px' }}>
                             Type 0-1000, ESC to cancel
                         </div>
                         {typedNumber && (() => {
@@ -358,9 +356,9 @@ const Controls: React.FC<ControlsProps> = ({
                                 <div style={{
                                     marginTop: '16px',
                                     padding: '12px 24px',
-                                    background: 'rgba(74,158,255,0.1)',
+                                    background: 'rgba(255,215,0,0.1)',
                                     borderRadius: '8px',
-                                    color: '#888',
+                                    color: '#FFD700',
                                 }}>
                                     → #{shaderData.coordinate} {shaderData.name}
                                 </div>
@@ -372,19 +370,16 @@ const Controls: React.FC<ControlsProps> = ({
 
             {/* Coordinate Browser Modal */}
             {showCoordinateBrowser && (
-                <div style={{
+                <div className="glass-overlay" style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.9)',
                     zIndex: 999,
                     overflow: 'auto',
                     padding: '24px',
                 }} onClick={() => setShowCoordinateBrowser(false)}>
-                    <div style={{
+                    <div className="glass-modal" style={{
                         maxWidth: '1200px',
                         margin: '0 auto',
-                        background: '#0f0f1a',
-                        borderRadius: '16px',
                         padding: '24px',
                     }} onClick={e => e.stopPropagation()}>
                         <div style={{
@@ -393,17 +388,10 @@ const Controls: React.FC<ControlsProps> = ({
                             alignItems: 'center',
                             marginBottom: '24px',
                         }}>
-                            <h2 style={{ margin: 0 }}>Shader Browser (593 shaders)</h2>
+                            <h2 style={{ margin: 0, color: '#FFD700' }}>Shader Browser (593 shaders)</h2>
                             <button 
                                 onClick={() => setShowCoordinateBrowser(false)}
-                                style={{
-                                    padding: '8px 16px',
-                                    background: '#333',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#fff',
-                                    cursor: 'pointer',
-                                }}
+                                className="gold-outline-btn"
                             >
                                 Close (ESC)
                             </button>
@@ -465,25 +453,22 @@ const Controls: React.FC<ControlsProps> = ({
                                                         }
                                                     }}
                                                     disabled={!isAvailable}
+                                                    className={`glass-card ${isSelected ? 'gold-active' : ''}`}
                                                     style={{
                                                         padding: '12px',
-                                                        background: isSelected ? 'rgba(74,158,255,0.3)' : '#1a1a2e',
-                                                        border: `1px solid ${isSelected ? '#4a9eff' : '#333'}`,
-                                                        borderRadius: '8px',
-                                                        color: isAvailable ? '#fff' : '#666',
                                                         textAlign: 'left',
                                                         cursor: isAvailable ? 'pointer' : 'not-allowed',
                                                         opacity: isAvailable ? 1 : 0.5,
                                                     }}
                                                 >
-                                                    <div style={{ fontSize: '10px', color: '#4a9eff', fontFamily: 'monospace' }}>
+                                                    <div style={{ fontSize: '10px', color: '#FFD700', fontFamily: 'monospace' }}>
                                                         #{data.coordinate}
                                                     </div>
-                                                    <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#f0f0f5' }}>
                                                         {data.name}
                                                     </div>
                                                     {!isAvailable && (
-                                                        <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                                                        <div style={{ fontSize: '10px', color: '#606070', marginTop: '4px' }}>
                                                             (not in current category)
                                                         </div>
                                                     )}
@@ -500,8 +485,8 @@ const Controls: React.FC<ControlsProps> = ({
 
             {/* --- Input Source Selection --- */}
             <div className="control-group">
-                <label>Input Source</label>
-                <div className="radio-group">
+                <label className="gold-section-header">Input Source</label>
+                <div className="gold-radio-group">
                     <label>
                         <input
                             type="radio"
@@ -559,8 +544,8 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
 
             <div className="control-group">
-                <label htmlFor="category-select">Effect Filter</label>
-                <select id="category-select" value={shaderCategory} onChange={(e) => setShaderCategory(e.target.value as ShaderCategory)}>
+                <label htmlFor="category-select" className="gold-section-header" style={{fontSize: '13px'}}>Effect Filter</label>
+                <select id="category-select" className="glass-select" value={shaderCategory} onChange={(e) => setShaderCategory(e.target.value as ShaderCategory)}>
                     <option value="image">Effects / Filters</option>
                     <option value="generative">Procedural Generation</option>
                 </select>
@@ -570,25 +555,12 @@ const Controls: React.FC<ControlsProps> = ({
             <div className="control-group">
                 <button 
                     onClick={() => setShowCoordinateBrowser(true)}
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'linear-gradient(135deg, #2a2a4e, #1a1a3e)',
-                        border: '1px solid #4a9eff',
-                        borderRadius: '8px',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                    }}
+                    className="coord-browser-btn"
                 >
                     <span>🗂️</span>
                     <span>Browse by Coordinate (B)</span>
                 </button>
-                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#a0a0b0', marginTop: '6px', textAlign: 'center' }}>
                     Tip: Type any number to jump to that shader
                 </div>
             </div>
@@ -598,50 +570,38 @@ const Controls: React.FC<ControlsProps> = ({
                 <div className="control-group">
                     <button 
                         onClick={onOpenStorageBrowser}
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            background: 'linear-gradient(135deg, #1a3a2e, #0f2a1e)',
-                            border: '1px solid #2ed573',
-                            borderRadius: '8px',
-                            color: '#fff',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                        }}
+                        className="storage-btn"
                     >
                         <span>📦</span>
                         <span>VPS Storage Browser</span>
                     </button>
-                    <div style={{ fontSize: '11px', color: '#666', marginTop: '6px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#a0a0b0', marginTop: '6px', textAlign: 'center' }}>
                         Browse shaders, images & videos from VPS
                     </div>
                 </div>
             )}
 
             {/* --- 🎰 Roulette Section --- */}
-            <div className="roulette-section">
+            <div className="glass-panel" style={{margin: '15px 0', padding: '15px'}}>
                 <div style={{ position: 'relative', zIndex: 1 }}>
                     <button
                         onClick={onRoulette}
-                        className={`roulette-btn ${isRouletteActive ? 'spinning' : ''}`}
+                        className={`gold-btn ${isRouletteActive ? 'spinning' : ''}`}
                         title="Randomize active slot shader + sliders (R)"
+                        style={{width: '100%', marginBottom: '8px'}}
                     >
-                        <span className="roulette-icon">🎰</span>
-                        <span className="roulette-text">Randomize Slot {activeSlot + 1}</span>
+                        <span>🎰</span>
+                        <span>Randomize Slot {activeSlot + 1}</span>
                     </button>
 
                     <button
                         onClick={onRandomizeAllSlots}
-                        className={`roulette-btn ${isRouletteActive ? 'spinning' : ''}`}
+                        className={`gold-outline-btn ${isRouletteActive ? 'spinning' : ''}`}
                         title="Randomize all 3 shader slots + sliders"
-                        style={{ marginTop: '8px', background: 'linear-gradient(145deg, #a855f7, #7c3aed)' }}
+                        style={{ width: '100%', marginTop: '8px' }}
                     >
-                        <span className="roulette-icon">🎲</span>
-                        <span className="roulette-text">Randomize All Slots</span>
+                        <span>🎲</span>
+                        <span>Randomize All Slots</span>
                     </button>
 
                     <div className="chaos-mode-toggle">
@@ -658,78 +618,86 @@ const Controls: React.FC<ControlsProps> = ({
                         </label>
                     </div>
 
-                    <div className="roulette-shortcut-hint">
-                        Press <kbd>R</kbd> to spin
+                    <div className="roulette-shortcut-hint" style={{color: '#a0a0b0'}}>
+                        Press <kbd style={{background: 'rgba(255,215,0,0.15)', borderColor: 'rgba(255,215,0,0.3)', color: '#FFD700'}}>R</kbd> to spin
                     </div>
                 </div>
             </div>
 
             {/* --- ⏺️ Record & Share Section --- */}
-            <div className="record-section">
+            <div className="glass-panel" style={{padding: '15px', marginBottom: '15px'}}>
                 <button 
                     onClick={isRecording ? onStopRecording : onStartRecording}
-                    className={`record-btn ${isRecording ? 'recording' : ''}`}
+                    className={`record-btn-gold ${isRecording ? 'recording' : ''}`}
                     disabled={isRecording && recordingCountdown <= 0}
                 >
                     {isRecording ? (
                         <>
-                            <span className="record-icon">⏹️</span>
-                            <span className="record-text">
+                            <span>⏹️</span>
+                            <span>
                                 Recording {recordingCountdown}s
                             </span>
-                            <span className="record-pulse"></span>
+                            <span className="gold-spinner"></span>
                         </>
                     ) : (
                         <>
-                            <span className="record-icon">⏺️</span>
-                            <span className="record-text">Record 8s Clip</span>
+                            <span>⏺️</span>
+                            <span>Record 8s Clip</span>
                         </>
                     )}
                 </button>
                 
                 {isRecording && (
-                    <div className="recording-progress">
+                    <div style={{marginTop: '10px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden'}}>
                         <div 
-                            className="recording-bar" 
-                            style={{ width: `${((8 - recordingCountdown) / 8) * 100}%` }}
+                            style={{ 
+                                height: '100%', 
+                                background: 'linear-gradient(90deg, #FFD700, #D4AF37)',
+                                transition: 'width 0.3s ease',
+                                width: `${((8 - recordingCountdown) / 8) * 100}%` 
+                            }}
                         />
                     </div>
                 )}
                 
-                <div className="record-hint">
+                <div style={{fontSize: '11px', color: '#a0a0b0', textAlign: 'center', marginTop: '8px'}}>
                     Capture & share your creation
                 </div>
             </div>
 
             {/* --- Stack / Slot Selection --- */}
-            <div className="stack-controls">
+            <div className="glass-panel" style={{padding: '12px'}}>
+                <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Shader Slots</div>
                 {[0, 1, 2].map(i => {
                     const slotStatus = slotShaderStatus[i] || 'idle';
-                    const borderColor = slotStatus === 'error' ? '#ff4444'
-                        : slotStatus === 'loading' ? '#f59e0b'
-                        : activeSlot === i ? '#61dafb' : '#333';
+                    const borderColor = slotStatus === 'error' ? '#ff4757'
+                        : slotStatus === 'loading' ? '#ffa502'
+                        : activeSlot === i ? '#FFD700' : 'rgba(255,215,0,0.08)';
+                    const glowStyle = activeSlot === i ? 
+                        {boxShadow: '0 0 20px rgba(255, 215, 0, 0.2)'} : {};
                     return (
                     <div
                         key={i}
-                        className={`stack-slot ${activeSlot === i ? 'active' : ''}`}
+                        className={`glass-card ${activeSlot === i ? 'gold-active' : ''}`}
                         onClick={() => setActiveSlot(i)}
                         style={{
-                            padding: '8px',
-                            border: `1px solid ${borderColor}`,
-                            marginBottom: '5px',
-                            background: activeSlot === i ? 'rgba(97, 218, 251, 0.1)' : 'transparent',
-                            cursor: 'pointer'
+                            padding: '10px',
+                            marginBottom: '8px',
+                            cursor: 'pointer',
+                            borderColor: borderColor,
+                            ...glowStyle
                         }}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: activeSlot === i ? '#61dafb' : '#888' }}>Slot {i + 1}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '12px', color: activeSlot === i ? '#FFD700' : '#a0a0b0', fontWeight: 600 }}>Slot {i + 1}</span>
                             {slotStatus === 'loading' && (
-                                <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                                    ⏳ COMPILING…
+                                <span className="gold-badge" style={{color: '#ffa502', borderColor: 'rgba(255,165,2,0.3)', background: 'rgba(255,165,2,0.1)'}}>
+                                    <span className="gold-spinner" style={{width: '12px', height: '12px'}}></span>
+                                    COMPILING
                                 </span>
                             )}
                             {slotStatus === 'error' && (
-                                <span style={{ fontSize: '10px', color: '#ff4444', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                                <span className="gold-badge" style={{color: '#ff4757', borderColor: 'rgba(255,71,87,0.3)', background: 'rgba(255,71,87,0.1)'}}>
                                     ✕ FAILED
                                 </span>
                             )}
@@ -748,25 +716,18 @@ const Controls: React.FC<ControlsProps> = ({
 
             {/* --- Current Shader Coordinate Display --- */}
             {currentCoordinate !== null && (
-                <div style={{
-                    padding: '12px',
-                    background: 'rgba(74,158,255,0.1)',
-                    borderRadius: '8px',
-                    border: `1px solid ${getZoneColor(currentCoordinate)}`,
+                <div className="glass-card" style={{
+                    borderColor: getZoneColor(currentCoordinate),
+                    background: `${getZoneColor(currentCoordinate)}15`,
                     marginBottom: '12px',
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', color: '#888' }}>Current Shader</span>
-                        <span style={{
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            color: getZoneColor(currentCoordinate),
-                            fontFamily: 'monospace',
-                        }}>
+                        <span style={{ fontSize: '12px', color: '#a0a0b0' }}>Current Shader</span>
+                        <span className="coordinate-badge" style={{color: getZoneColor(currentCoordinate), borderColor: `${getZoneColor(currentCoordinate)}40`, background: `${getZoneColor(currentCoordinate)}15`}}>
                             #{currentCoordinate}
                         </span>
                     </div>
-                    <div style={{ fontSize: '13px', color: '#fff', marginTop: '4px' }}>
+                    <div style={{ fontSize: '13px', color: '#f0f0f5', marginTop: '6px', fontWeight: 500 }}>
                         {currentShaderEntry?.name}
                     </div>
                 </div>
@@ -777,60 +738,60 @@ const Controls: React.FC<ControlsProps> = ({
                 <>
                     <div className="control-group" style={{ marginTop: '10px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-                            <button onClick={onUploadImageTrigger}>📁 Upload Img</button>
-                            <button onClick={onNewImage}>🎲 Random Img</button>
+                            <button className="gold-outline-btn" onClick={onUploadImageTrigger}>📁 Upload Img</button>
+                            <button className="gold-outline-btn" onClick={onNewImage}>🎲 Random Img</button>
                         </div>
                         <button 
                             onClick={isWebcamActive ? onStopWebcam : onStartWebcam}
-                            className={`webcam-btn ${isWebcamActive ? 'active' : ''}`}
+                            className={`webcam-btn-gold ${isWebcamActive ? 'active' : ''}`}
                         >
                             {isWebcamActive ? '⏹️ Stop Webcam' : '📹 Use Webcam'}
                         </button>
                         {webcamError && (
-                            <div className="webcam-error">
+                            <div className="webcam-error" style={{borderColor: 'rgba(255,71,87,0.3)', background: 'rgba(255,71,87,0.1)', color: '#ff6b6b'}}>
                                 ⚠️ {webcamError}
                             </div>
                         )}
                     </div>
-                     <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
+                     <hr className="gold-divider" />
                     <div className="control-group">
-                        <div style={{fontWeight: 'bold', marginBottom: '8px', color: '#61dafb', fontSize: '13px'}}>Automation</div>
-                         <button onClick={onLoadModel} disabled={isModelLoaded}>
-                            {isModelLoaded ? 'Depth Model Loaded' : 'Load Depth Model'}
+                        <div className="gold-section-header" style={{fontSize: '12px'}}>Automation</div>
+                         <button className="ai-vj-btn" onClick={onLoadModel} disabled={isModelLoaded}>
+                            {isModelLoaded ? '✓ Depth Model Loaded' : 'Load Depth Model'}
                         </button>
                     </div>
 
                     <div className="control-group">
-                        <button onClick={onToggleAiVj} disabled={aiVjStatus === 'loading-models' || aiVjStatus === 'generating'}>
+                        <button className="ai-vj-btn" onClick={onToggleAiVj} disabled={aiVjStatus === 'loading-models' || aiVjStatus === 'generating'}>
                             {getAiVjButtonText()}
                         </button>
                     </div>
 
                     <div className="control-group" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                        <label htmlFor="auto-change-toggle" style={{marginBottom: 0, color: isAiVjMode ? '#666' : '#ccc' }} title={isAiVjMode ? 'Disabled while AI VJ is active' : ''}>Manual Auto-Switch</label>
-                        <input type="checkbox" id="auto-change-toggle" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} disabled={isAiVjMode} style={{width: 'auto'}} />
+                        <label htmlFor="auto-change-toggle" style={{marginBottom: 0, color: isAiVjMode ? '#606070' : '#a0a0b0' }} title={isAiVjMode ? 'Disabled while AI VJ is active' : ''}>Manual Auto-Switch</label>
+                        <input type="checkbox" id="auto-change-toggle" className="gold-checkbox" checked={autoChangeEnabled} onChange={(e) => setAutoChangeEnabled(e.target.checked)} disabled={isAiVjMode} style={{width: 'auto'}} />
                     </div>
 
                     {autoChangeEnabled && !isAiVjMode && (
                         <div className="control-group">
-                            <label htmlFor="delay-slider">Switch Delay: {autoChangeDelay}s</label>
-                            <input type="range" id="delay-slider" min="1" max="10" step="1" value={autoChangeDelay} onChange={(e) => setAutoChangeDelay(Number(e.target.value))} />
+                            <label htmlFor="delay-slider" style={{color: '#a0a0b0'}}>Switch Delay: <span style={{color: '#FFD700'}}>{autoChangeDelay}s</span></label>
+                            <input type="range" id="delay-slider" className="glass-range" min="1" max="10" step="1" value={autoChangeDelay} onChange={(e) => setAutoChangeDelay(Number(e.target.value))} />
                         </div>
                     )}
                 </>
             )}
             
             {inputSource === 'video' && (
-                <div className="control-group" style={{marginTop: '10px'}}>
-                     <div style={{marginBottom: '5px'}}>Select Video:</div>
+                <div className="control-group glass-panel" style={{marginTop: '10px', padding: '12px'}}>
+                     <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Select Video</div>
                      <select
                         value={selectedVideo}
                         onChange={(e) => {
                             setSelectedVideo(e.target.value);
                             setInputSource('video');
                         }}
-                        className="control-select"
-                        style={{width: '100%', marginBottom: '8px'}}
+                        className="glass-select"
+                        style={{marginBottom: '10px'}}
                      >
                         <option value="" disabled>Select a Video...</option>
                         {videoList.map((v) => {
@@ -842,27 +803,27 @@ const Controls: React.FC<ControlsProps> = ({
                             );
                         })}
                      </select>
-                     <button onClick={onUploadVideoTrigger} style={{width: '100%', marginBottom: '8px'}}>Upload Video</button>
-                     <label style={{display: 'flex', alignItems: 'center'}}>
-                        <input type="checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{marginRight: '5px'}}/> Mute Audio
+                     <button className="gold-outline-btn" onClick={onUploadVideoTrigger} style={{width: '100%', marginBottom: '10px'}}>Upload Video</button>
+                     <label style={{display: 'flex', alignItems: 'center', color: '#a0a0b0', fontSize: '13px'}}>
+                        <input type="checkbox" className="gold-checkbox" checked={isMuted} onChange={(e) => setIsMuted(e.target.checked)} style={{marginRight: '8px'}}/> Mute Audio
                      </label>
                 </div>
             )}
 
             {/* --- Webcam Shader Suggestions --- */}
             {showWebcamShaderSuggestions && isWebcamActive && (
-                <div className="webcam-shaders-section">
-                    <div className="webcam-shaders-header">
+                <div className="glass-panel" style={{padding: '15px', marginTop: '15px'}}>
+                    <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>
                         <span>✨ Fun Effects for Webcam</span>
                     </div>
-                    <div className="webcam-shaders-grid">
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px'}}>
                         {availableModes
                             .filter(m => webcamFunShaders?.includes(m.id))
                             .slice(0, 12)
                             .map(shader => (
                                 <button
                                     key={shader.id}
-                                    className={`webcam-shader-chip ${modes[0] === shader.id ? 'active' : ''}`}
+                                    className={`shader-chip-gold ${modes[0] === shader.id ? 'active' : ''}`}
                                     onClick={() => onApplyWebcamShader?.(shader.id)}
                                     title={shader.description || shader.name}
                                 >
@@ -874,15 +835,15 @@ const Controls: React.FC<ControlsProps> = ({
             )}
 
             {inputSource === 'generative' && activeGenerativeShader && setActiveGenerativeShader && (
-                <div className="control-group" style={{marginTop: '10px'}}>
-                     <div style={{marginBottom: '5px'}}>Input Source:</div>
+                <div className="control-group glass-panel" style={{marginTop: '10px', padding: '12px'}}>
+                     <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Generative Shader</div>
                      <ShaderMegaMenu
                         options={generativeMenuOptions}
                         value={activeGenerativeShader}
                         onChange={setActiveGenerativeShader}
                         includeNone={false}
                      />
-                     <div style={{fontSize: '11px', color: '#888', fontStyle: 'italic', padding: '5px 0'}}>
+                     <div style={{fontSize: '11px', color: '#a0a0b0', fontStyle: 'italic', padding: '8px 0 0 0'}}>
                          Move mouse to interact. Click/Drag for more effects.
                      </div>
                 </div>
@@ -899,31 +860,31 @@ const Controls: React.FC<ControlsProps> = ({
             )}
 
 
-            <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
+            <hr className="gold-divider" />
 
             {/* --- View Controls (Zoom/Pan) --- */}
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#61dafb', fontSize: '14px' }}>
+            <div className="gold-section-header">
                 View Controls
             </div>
             <div className="control-group view-controls-grid">
-                <label>Zoom: {zoom.toFixed(2)}x</label>
-                <input type="range" min="0.1" max="5.0" step="0.01" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} />
+                <label style={{color: '#a0a0b0'}}>Zoom: <span style={{color: '#FFD700'}}>{zoom.toFixed(2)}x</span></label>
+                <input type="range" className="glass-range" min="0.1" max="5.0" step="0.01" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} />
             </div>
             <div className="control-group view-controls-grid">
-                <label>Pan X: {panX.toFixed(2)}</label>
-                <input type="range" min="-2.0" max="2.0" step="0.01" value={panX} onChange={(e) => setPanX(parseFloat(e.target.value))} />
+                <label style={{color: '#a0a0b0'}}>Pan X: <span style={{color: '#FFD700'}}>{panX.toFixed(2)}</span></label>
+                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panX} onChange={(e) => setPanX(parseFloat(e.target.value))} />
             </div>
             <div className="control-group view-controls-grid">
-                <label>Pan Y: {panY.toFixed(2)}</label>
-                <input type="range" min="-2.0" max="2.0" step="0.01" value={panY} onChange={(e) => setPanY(parseFloat(e.target.value))} />
+                <label style={{color: '#a0a0b0'}}>Pan Y: <span style={{color: '#FFD700'}}>{panY.toFixed(2)}</span></label>
+                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panY} onChange={(e) => setPanY(parseFloat(e.target.value))} />
             </div>
 
-            <hr style={{borderColor: 'rgba(255, 255, 255, 0.1)', margin: '15px 0'}}/>
+            <hr className="gold-divider" />
 
             {/* --- Slot Parameter Controls --- */}
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#61dafb', fontSize: '14px' }}>
+            <div className="gold-section-header">
                 Shader Parameters
-                <span style={{fontWeight: 'normal', color: '#888', marginLeft: '8px', fontSize: '12px'}}>
+                <span style={{fontWeight: 'normal', color: '#a0a0b0', marginLeft: '8px', fontSize: '12px'}}>
                     {currentShaderEntry?.name || 'None'}
                 </span>
             </div>
@@ -940,13 +901,14 @@ const Controls: React.FC<ControlsProps> = ({
 
                 return (
                     <div key={param.id} className="control-group">
-                        <label htmlFor={`param-${param.id}`} style={{display: 'flex', justifyContent: 'space-between'}}>
+                        <label htmlFor={`param-${param.id}`} style={{display: 'flex', justifyContent: 'space-between', color: '#a0a0b0'}}>
                             <span>{param.name}</span>
-                            <span style={{opacity: 0.7, fontSize: '11px'}}>{val.toFixed(2)}</span>
+                            <span style={{color: '#FFD700', fontSize: '11px', fontWeight: 500}}>{val.toFixed(2)}</span>
                         </label>
                         <input
                             id={`param-${param.id}`}
                             type="range"
+                            className="glass-range"
                             min={param.min}
                             max={param.max}
                             step={param.step || 0.01}
@@ -967,62 +929,32 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
 
             {currentShaderEntry?.params && currentShaderEntry.params.length > 6 && (
-                <div style={{color: '#888', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
-                    +{currentShaderEntry.params.length - 6} more params available in shader file
+                <div style={{color: '#a0a0b0', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
+                    +<span style={{color: '#FFD700'}}>{currentShaderEntry.params.length - 6}</span> more params available in shader file
                 </div>
             )}
             
             {!currentShaderEntry && (
-                <div style={{color: '#888', fontStyle: 'italic', padding: '10px'}}>
+                <div className="glass-card" style={{textAlign: 'center', padding: '15px', color: '#a0a0b0', fontStyle: 'italic'}}>
                     Select an effect for this slot to see parameters.
                 </div>
             )}
 
             {/* --- 🔧 Dev Tools Section --- */}
             {onOpenShaderScanner && (
-                <div style={{
-                    marginTop: '20px',
-                    padding: '12px',
-                    background: 'rgba(255, 193, 7, 0.05)',
-                    borderRadius: '8px',
-                    border: '1px dashed #ffc107'
-                }}>
-                    <h4 style={{
-                        color: '#ffc107',
-                        fontSize: '12px',
-                        margin: '0 0 8px 0',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                    }}>
+                <div className="dev-tools-gold">
+                    <h4>
                         🔧 Dev Tools
                     </h4>
                     <button
                         onClick={onOpenShaderScanner}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            background: 'transparent',
-                            border: '1px solid #ffc107',
-                            borderRadius: '6px',
-                            color: '#ffc107',
-                            fontSize: '12px',
-                            fontFamily: 'monospace',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(255, 193, 7, 0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                        }}
                     >
                         🔍 Scan Shaders for Errors
                     </button>
                     <div style={{
                         marginTop: '6px',
                         fontSize: '10px',
-                        color: '#888',
+                        color: '#a0a0b0',
                         textAlign: 'center'
                     }}>
                         Tests WGSL compilation on all shaders
@@ -1073,15 +1005,13 @@ const LiveStreamPanel: React.FC<LiveStreamPanelProps> = ({
 
     if (liveStreamUrl) {
         return (
-            <div className="control-group live-stream-panel" style={{
+            <div className="glass-panel" style={{
                 marginTop: '10px',
                 padding: '16px',
-                background: 'rgba(233, 69, 96, 0.1)',
-                borderRadius: '12px',
-                border: '1px solid rgba(233, 69, 96, 0.3)'
+                borderColor: 'rgba(46, 213, 115, 0.3)',
             }}>
                 <h3 style={{ 
-                    color: '#e94560', 
+                    color: '#2ed573', 
                     fontWeight: 'bold', 
                     marginBottom: '12px',
                     fontSize: '14px'
@@ -1089,15 +1019,12 @@ const LiveStreamPanel: React.FC<LiveStreamPanelProps> = ({
                     🎥 Live Stream Active
                 </h3>
                 
-                <div style={{ 
-                    padding: '10px 12px', 
-                    background: 'rgba(0,0,0,0.3)', 
-                    borderRadius: '8px',
+                <div className="glass-card" style={{ 
                     marginBottom: '12px',
                     fontSize: '12px'
                 }}>
                     <span style={{ color: '#2ed573' }}>● Connected</span>
-                    <span style={{ color: '#888', marginLeft: '8px', wordBreak: 'break-all' }}>
+                    <span style={{ color: '#a0a0b0', marginLeft: '8px', wordBreak: 'break-all' }}>
                         {liveStreamUrl.length > 35 ? liveStreamUrl.substring(0, 35) + '...' : liveStreamUrl}
                     </span>
                 </div>
@@ -1107,17 +1034,7 @@ const LiveStreamPanel: React.FC<LiveStreamPanelProps> = ({
                         onExitLiveStream?.();
                         setLiveInput('');
                     }}
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'linear-gradient(135deg, #e94560, #7b2cbf)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: 600
-                    }}
+                    className="record-btn-gold"
                 >
                     ⏹ Disconnect
                 </button>
@@ -1126,12 +1043,9 @@ const LiveStreamPanel: React.FC<LiveStreamPanelProps> = ({
     }
 
     return (
-        <div className="control-group live-stream-panel" style={{
+        <div className="glass-panel" style={{
             marginTop: '10px',
             padding: '16px',
-            background: '#16213e',
-            borderRadius: '12px',
-            border: '1px solid #334155'
         }}>
             <h3 style={{ 
                 color: '#e94560', 
@@ -1144,30 +1058,21 @@ const LiveStreamPanel: React.FC<LiveStreamPanelProps> = ({
             
             <input
                 type="text"
+                className="glass-input"
                 placeholder="Bilibili Room ID or direct .m3u8 URL"
                 value={liveInput}
                 onChange={(e) => setLiveInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleStartStream()}
                 style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: 'rgba(0,0,0,0.4)',
-                    border: '1px solid #334155',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    fontSize: '13px',
                     marginBottom: '12px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
                 }}
             />
 
             {error && (
-                <div style={{
-                    padding: '8px 12px',
-                    background: 'rgba(255, 71, 87, 0.2)',
-                    borderRadius: '6px',
-                    color: '#ff4757',
+                <div className="glass-card" style={{
+                    borderColor: 'rgba(255, 71, 87, 0.3)',
+                    background: 'rgba(255, 71, 87, 0.1)',
+                    color: '#ff6b6b',
                     fontSize: '12px',
                     marginBottom: '12px'
                 }}>
@@ -1178,34 +1083,20 @@ const LiveStreamPanel: React.FC<LiveStreamPanelProps> = ({
             <button
                 onClick={handleStartStream}
                 disabled={isLoading || !liveInput.trim()}
+                className="record-btn-gold"
                 style={{
-                    width: '100%',
-                    padding: '14px',
-                    background: isLoading 
-                        ? '#334155' 
-                        : 'linear-gradient(135deg, #e94560, #7b2cbf)',
-                    border: 'none',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
                     opacity: isLoading || !liveInput.trim() ? 0.7 : 1,
-                    transition: 'all 0.2s'
                 }}
             >
                 {isLoading ? '⏳ Loading...' : '▶️ Start Live Stream'}
             </button>
             
-            <div style={{
+            <div className="glass-card" style={{
                 marginTop: '12px',
-                padding: '10px',
-                background: 'rgba(0,0,0,0.2)',
-                borderRadius: '8px',
                 fontSize: '11px',
-                color: '#8b8ba7'
+                color: '#a0a0b0'
             }}>
-                <strong style={{ color: '#61dafb' }}>Tip:</strong> Try room IDs like <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>21495945</code> or paste a direct HLS URL
+                <strong style={{ color: '#FFD700' }}>Tip:</strong> Try room IDs like <code style={{ background: 'rgba(255,215,0,0.1)', color: '#FFD700', padding: '2px 6px', borderRadius: '4px' }}>21495945</code> or paste a direct HLS URL
             </div>
         </div>
     );
