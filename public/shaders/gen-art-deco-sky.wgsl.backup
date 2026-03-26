@@ -327,11 +327,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Fake reflections for metallic/smooth surfaces (mat 1 and 2)
         if (metallic > 0.1 || rough < 0.2) {
-            let refl = reflect(-v, n);
+            let ref = reflect(-v, n);
             // Sample a fake env map (just use directional light and sky color)
-            let env_spec = pow(max(dot(refl, l1_dir), 0.0), 32.0);
+            let env_spec = pow(max(dot(ref, l1_dir), 0.0), 32.0);
             // Add vertical gradient to reflection for sky/city
-            let env_color = mix(fogColor, lightColor1 * 0.5, refl.y * 0.5 + 0.5);
+            let env_color = mix(fogColor, lightColor1 * 0.5, ref.y * 0.5 + 0.5);
             specular += (env_spec * lightColor1 + env_color * 0.2) * (1.0 - rough) * metallic;
 
             // If it's gold, tint reflection

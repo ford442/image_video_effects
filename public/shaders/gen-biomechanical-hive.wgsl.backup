@@ -290,8 +290,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             thickness = calculateChitinThickness(p, local_p, cell_size);
             
             // Shiny, slimy
-            let refl = reflect(-rd, n);
-            let spec = pow(max(dot(refl, lightDir), 0.0), 16.0);
+            let ref = reflect(-rd, n);
+            let spec = pow(max(dot(ref, lightDir), 0.0), 16.0);
             baseColor += vec3<f32>(1.0) * spec * 0.5;
 
             // Rim

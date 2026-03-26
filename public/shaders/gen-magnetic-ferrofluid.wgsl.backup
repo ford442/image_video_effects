@@ -158,8 +158,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = matCol * dif * 2.0 + vec3<f32>(1.0) * spec * 2.0 + matCol * fre * 1.0;
 
         // Add fake environment reflection (simple gradient mapping)
-        let refl = reflect(rd, n);
-        let envCol = mix(vec3<f32>(0.1, 0.2, 0.3), vec3<f32>(0.8, 0.9, 1.0), refl.y * 0.5 + 0.5);
+        let ref = reflect(rd, n);
+        let envCol = mix(vec3<f32>(0.1, 0.2, 0.3), vec3<f32>(0.8, 0.9, 1.0), ref.y * 0.5 + 0.5);
         col += envCol * matCol * 0.8;
     }
 

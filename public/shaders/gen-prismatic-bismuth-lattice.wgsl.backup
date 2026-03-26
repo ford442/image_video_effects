@@ -181,9 +181,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Camera setup
     let camZ = time * 2.0;
     let ro = vec3<f32>(0.0, 0.0, camZ);
-    let targetPos = vec3<f32>(0.0, 0.0, camZ + 1.0);
+    let target = vec3<f32>(0.0, 0.0, camZ + 1.0);
 
-    let forward = normalize(targetPos - ro);
+    let forward = normalize(target - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
     let rd = normalize(forward + right * vec3<f32>(uv.x) + up * vec3<f32>(uv.y));

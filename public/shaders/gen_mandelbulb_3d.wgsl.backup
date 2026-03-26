@@ -166,8 +166,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sin(theta) * cos(phi) * zoom
     );
     
-    let targetPos = vec3<f32>(0.0);
-    let camForward = normalize(targetPos - camPos);
+    let target = vec3<f32>(0.0);
+    let camForward = normalize(target - camPos);
     let camRight = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), camForward));
     let camUp = cross(camForward, camRight);
     

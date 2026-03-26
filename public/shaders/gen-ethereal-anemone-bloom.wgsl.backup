@@ -260,13 +260,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     let time = u.config.x * 0.2;
-    let audioReactivity = 1.0 + u.config.y * 0.5;
 
     // 1. Ray setup and camera matrix
     let ro = vec3<f32>(time * 2.0 * audioReactivity, -1.0, time * 2.0 * audioReactivity);
-    let targetPos = ro + vec3<f32>(cos(time*0.5 * audioReactivity), -0.2, sin(time*0.5 * audioReactivity));
+    let target = ro + vec3<f32>(cos(time*0.5 * audioReactivity), -0.2, sin(time*0.5 * audioReactivity));
 
-    let forward = normalize(targetPos - ro);
+    let forward = normalize(target - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
     let rd = normalize(forward + right * uv.x + up * uv.y);

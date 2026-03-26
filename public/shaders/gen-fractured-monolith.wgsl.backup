@@ -215,9 +215,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         if (m == 1.0) {
             // Liquid Floor
-            let refl = reflect(rd, n);
+            let ref = reflect(rd, n);
             // Fake reflections by stepping once into the reflection direction
-            let refRes = map(p + refl * 2.0);
+            let refRes = map(p + ref * 2.0);
             var refCol = vec3<f32>(0.02, 0.03, 0.05);
             if (refRes.y == 2.0) {
                 refCol = vec3<f32>(0.1, 0.1, 0.12);

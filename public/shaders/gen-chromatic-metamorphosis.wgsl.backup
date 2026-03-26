@@ -194,8 +194,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         cos(t * 0.06 + mouse.y * 1.5) * 0.8,
         cos(t * 0.08 + mouse.x * 3.14) * 2.2
     );
-    let targetPos = vec3<f32>(0.0, 0.0, 0.0);
-    let fwd    = normalize(targetPos - camPos);
+    let target = vec3<f32>(0.0, 0.0, 0.0);
+    let fwd    = normalize(target - camPos);
     let right  = normalize(cross(fwd, vec3<f32>(0.0, 1.0, 0.0)));
     let up     = cross(right, fwd);
 

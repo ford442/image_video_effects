@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-03-26T06:54:18.737Z",
+  "timestamp": "2026-03-26T08:40:11.597Z",
   "total": 691,
-  "valid": 621,
-  "invalid": 70,
+  "valid": 625,
+  "invalid": 66,
   "shaders": [
     {
       "file": "public/shaders/_hash_library.wgsl",
@@ -151,13 +151,8 @@
     },
     {
       "file": "public/shaders/aurora_borealis.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "i",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/bayer-dither-interactive.wgsl",
@@ -236,23 +231,13 @@
     },
     {
       "file": "public/shaders/byte-mosh.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "i",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/cellular-automata-3d.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "n",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/charcoal-rub.wgsl",
@@ -451,13 +436,8 @@
     },
     {
       "file": "public/shaders/crt-tv.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "e",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/crumpled-paper.wgsl",

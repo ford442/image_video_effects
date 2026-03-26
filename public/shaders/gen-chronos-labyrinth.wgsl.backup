@@ -350,8 +350,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Specular for obsidian mode
         var spec = 0.0;
         if (u.zoom_params.w > 0.1 && mat < 1.5) {
-            let refl = reflect(-light_dir, n);
-            spec = pow(max(dot(refl, -rd), 0.0), 32.0) * u.zoom_params.w;
+            let ref = reflect(-light_dir, n);
+            spec = pow(max(dot(ref, -rd), 0.0), 32.0) * u.zoom_params.w;
         }
         
         // Fresnel rim lighting for neon effect
