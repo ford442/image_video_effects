@@ -4,8 +4,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import shaderCoordinates from '../shader_coordinates.json';
+import { STORAGE_API_URL } from '../config/appConfig';
 
-const STORAGE_MANAGER_URL = 'https://ford442-storage-manager.hf.space';
+const STORAGE_MANAGER_URL = STORAGE_API_URL;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Types

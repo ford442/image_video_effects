@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DragDropUpload.css
+   Gold glass styling for drag-and-drop upload component
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.drag-drop-zone {
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  border: 2px dashed rgba(255, 215, 0, 0.3);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(30, 30, 40, 0.6) 0%, rgba(20, 20, 30, 0.4) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.drag-drop-zone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(255, 215, 0, 0.05) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.drag-drop-zone:hover {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: linear-gradient(135deg, rgba(40, 40, 50, 0.7) 0%, rgba(25, 25, 35, 0.5) 100%);
+}
+
+.drag-drop-zone:hover::before {
+  opacity: 1;
+}
+
+.drag-drop-zone.dragging {
+  border-color: #ffd700;
+  border-style: solid;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(30, 30, 40, 0.6) 100%);
+  transform: scale(1.02);
+}
+
+.drag-drop-zone.dragging::before {
+  opacity: 1;
+  background: radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+}
+
+.drag-drop-zone.uploading {
+  cursor: wait;
+  border-color: rgba(100, 100, 110, 0.3);
+}
+
+.drag-drop-zone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* File Input - Hidden */
+.file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Upload Label */
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+}
+
+.drag-drop-zone.uploading .upload-label,
+.drag-drop-zone.disabled .upload-label {
+  cursor: default;
+}
+
+/* Upload Icon */
+.upload-icon {
+  font-size: 32px;
+  color: #ffd700;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.drag-drop-zone.dragging .upload-icon {
+  transform: scale(1.2);
+  opacity: 1;
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+/* Upload Text */
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.primary-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd700;
+  letter-spacing: 0.5px;
+}
+
+.secondary-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Upload Formats */
+.upload-formats {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Upload Progress */
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: #ffd700;
+  font-weight: 500;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ffec8b);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 215, 0, 0.2);
+  border-top-color: #ffd700;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Shimmer Effect on Drag */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.drag-drop-zone.dragging::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 215, 0, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .drag-drop-zone {
+    min-height: 120px;
+  }
+  
+  .upload-label {
+    padding: 16px;
+    gap: 8px;
+  }
+  
+  .upload-icon {
+    font-size: 24px;
+  }
+  
+  .primary-text {
+    font-size: 13px;
+  }
+  
+  .secondary-text {
+    font-size: 11px;
+  }
+}

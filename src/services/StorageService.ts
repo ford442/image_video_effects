@@ -733,6 +733,151 @@ export class StorageService {
       };
     }
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  //  File Upload Methods
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Upload a file (image, video, audio) to the VPS via webhook
+   */
+  async uploadFile(
+    file: File,
+    type: 'image' | 'video' | 'audio' | 'shader',
+    onProgress?: (progress: number) => void
+  ): Promise<StorageSaveResponse> {
+    const opId = this.addOperation({
+      type: 'save',
+      status: 'in_progress',
+      itemName: file.name,
+      message: `Uploading ${file.name}...`,
+    });
+
+    try {
+      // Determine action based on file type
+      let action: string;
+      let folder: string;
+      
+      switch (type) {
+        case 'image':
+          action = 'upload_texture';
+          folder = 'image-effects/outputs/' + new Date().toISOString().split('T')[0];
+          break;
+        case 'video':
+          action = 'save_video_config';
+          folder = 'videos';
+          break;
+        case 'audio':
+          action = 'upload_audio';
+          folder = 'audio/flac';
+          break;
+        case 'shader':
+          action = 'save_shader';
+          folder = 'image-effects/shaders';
+          break;
+        default:
+          throw new Error(`Unsupported file type: ${type}`);
+      }
+
+      // Read file as base64
+      const base64Data = await this.readFileAsBase64(file);
+      
+      // Prepare payload
+      const payload = JSON.stringify({
+        action,
+        name: file.name,
+        data: {
+          file_data: base64Data,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          upload_type: type,
+          saved_at: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+      const signature = await generateSignature(payload, this.secret);
+
+      const response = await fetch(`${this.webhookUrl}/image-effects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Hub-Signature-256': signature,
+        },
+        body: payload,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result: StorageSaveResponse = await response.json();
+
+      // Construct the static URL
+      if (result.files && result.files.length > 0) {
+        result.url = `${this.staticUrl}/${result.files[0]}`;
+      }
+
+      this.updateOperation(opId, {
+        status: 'completed',
+        message: `Uploaded ${file.name} successfully`,
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      this.updateOperation(opId, {
+        status: 'error',
+        message: `Failed to upload ${file.name}: ${errorMessage}`,
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Upload multiple files
+   */
+  async uploadFiles(
+    files: File[],
+    type: 'image' | 'video' | 'audio' | 'shader',
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<StorageSaveResponse[]> {
+    const results: StorageSaveResponse[] = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const result = await this.uploadFile(files[i], type);
+        results.push(result);
+        onProgress?.(i + 1, files.length);
+      } catch (error) {
+        // Continue with other files even if one fails
+        console.error(`Failed to upload ${files[i].name}:`, error);
+      }
+    }
+    
+    return results;
+  }
+
+  /**
+   * Read file as base64 string
+   */
+  private readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix (e.g., "data:image/png;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

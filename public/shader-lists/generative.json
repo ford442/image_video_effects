@@ -4237,6 +4237,67 @@
     ]
   },
   {
+    "id": "wolfram-data-demo",
+    "name": "Wolfram Data Demo",
+    "url": "shaders/wolfram-data-demo.wgsl",
+    "category": "generative",
+    "description": "Demonstrates scientific constants and mathematical functions from Wolfram Alpha. Features phyllotaxis patterns, Airy disk diffraction, Fibonacci spirals, and atmospheric scattering using real physical data.",
+    "tags": [
+      "wolfram",
+      "scientific",
+      "mathematical",
+      "procedural",
+      "physics",
+      "golden-ratio",
+      "atmospheric",
+      "diffraction"
+    ],
+    "features": [
+      "procedural"
+    ],
+    "complexity": "high",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.25,
+        "labels": [
+          "Phyllotaxis",
+          "Airy Disk",
+          "Fibonacci",
+          "Atmosphere"
+        ]
+      },
+      {
+        "id": "param2",
+        "name": "Scale / Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Density / Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Temperature / Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "hybrid-cyber-organic",
     "name": "Hybrid Cyber-Organic",
     "url": "shaders/hybrid-cyber-organic.wgsl",

@@ -9,6 +9,11 @@ import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
+import { 
+    API_BASE_URL, 
+    STORAGE_API_URL,
+    IMAGE_MANIFEST_URL as VPS_IMAGE_MANIFEST_URL 
+} from './config/appConfig';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -27,9 +32,9 @@ const WEBCAM_FUN_SHADERS = [
 env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
-const API_BASE_URL = 'https://ford442-storage-manager.hf.space';
-const SHADER_WGSL_URL = `${API_BASE_URL}/api/shaders`;
-const IMAGE_MANIFEST_URL = `${API_BASE_URL}/api/songs?type=image`;
+// Use VPS Storage API instead of HuggingFace
+const SHADER_WGSL_URL = `${STORAGE_API_URL}/api/shaders`;
+const IMAGE_MANIFEST_URL = VPS_IMAGE_MANIFEST_URL;
 const LOCAL_MANIFEST_URL = `./image_manifest.json`;
 
 // UPDATED: Pointing directly to your bucket
@@ -1101,7 +1106,7 @@ function MainApp() {
                         isMuted={isMuted} setInputSource={setInputSource}
                         activeGenerativeShader={activeGenerativeShader}
                         selectedVideo={selectedVideo}
-                        apiBaseUrl={API_BASE_URL}
+                        apiBaseUrl={STORAGE_API_URL}
                         isWebcamActive={isWebcamActive}
                         webcamVideoElement={videoElementRef.current}
                     />

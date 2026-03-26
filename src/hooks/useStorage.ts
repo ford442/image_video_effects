@@ -63,6 +63,10 @@ export interface UseStorageReturn extends StorageState {
   saveEffectConfig: (name: string, config: any) => Promise<StorageSaveResponse>;
   saveOutput: (name: string, imageData: string, metadata?: Record<string, any>) => Promise<StorageSaveResponse>;
   
+  // Upload operations
+  uploadFile: (file: File, type: 'image' | 'video' | 'audio' | 'shader') => Promise<StorageSaveResponse>;
+  uploadFiles: (files: File[], type: 'image' | 'video' | 'audio' | 'shader', onProgress?: (completed: number, total: number) => void) => Promise<StorageSaveResponse[]>;
+  
   // Load operations
   loadShader: (filename: string) => Promise<any>;
   loadEffectConfig: (filename: string) => Promise<any>;
@@ -478,6 +482,81 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Upload file
+  const uploadFile = useCallback(async (
+    file: File,
+    type: 'image' | 'video' | 'audio' | 'shader'
+  ): Promise<StorageSaveResponse> => {
+    setLastError(undefined);
+    
+    try {
+      const result = await serviceRef.current.uploadFile(file, type);
+      
+      // Refresh appropriate list after upload
+      if (type === 'image') await refreshImages();
+      if (type === 'video') await refreshVideos();
+      if (type === 'shader') await refreshShaders();
+      
+      addToast({
+        id: `upload-${Date.now()}`,
+        type: 'success',
+        message: `Uploaded "${file.name}" successfully`,
+        duration: 5000,
+      });
+      
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to upload ${file.name}`;
+      setLastError(errorMessage);
+      addToast({
+        id: `upload-error-${Date.now()}`,
+        type: 'error',
+        message: errorMessage,
+        duration: 5000,
+      });
+      throw error;
+    }
+  }, [refreshImages, refreshVideos, refreshShaders]);
+
+  // Upload multiple files
+  const uploadFiles = useCallback(async (
+    files: File[],
+    type: 'image' | 'video' | 'audio' | 'shader',
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<StorageSaveResponse[]> => {
+    setLastError(undefined);
+    
+    const results = await serviceRef.current.uploadFiles(files, type, onProgress);
+    
+    // Count successes
+    const successCount = results.length;
+    
+    if (successCount > 0) {
+      // Refresh appropriate list
+      if (type === 'image') await refreshImages();
+      if (type === 'video') await refreshVideos();
+      if (type === 'shader') await refreshShaders();
+      
+      addToast({
+        id: `upload-batch-${Date.now()}`,
+        type: 'success',
+        message: `Uploaded ${successCount} of ${files.length} files`,
+        duration: 5000,
+      });
+    }
+    
+    if (successCount < files.length) {
+      addToast({
+        id: `upload-batch-warning-${Date.now()}`,
+        type: 'warning',
+        message: `${files.length - successCount} files failed to upload`,
+        duration: 5000,
+      });
+    }
+    
+    return results;
+  }, [refreshImages, refreshVideos, refreshShaders]);
+
   // Clear error
   const clearError = useCallback(() => {
     setLastError(undefined);
@@ -519,6 +598,8 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     saveShader,
     saveEffectConfig,
     saveOutput,
+    uploadFile,
+    uploadFiles,
     loadShader,
     loadEffectConfig,
     rateShader,

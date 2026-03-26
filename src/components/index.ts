@@ -14,6 +14,7 @@ export { default as LiveStreamBridge } from './LiveStreamBridge';
 // Storage Components
 export { StorageBrowser } from './StorageBrowser';
 export { StorageControls } from './StorageControls';
+export { DragDropUpload } from './DragDropUpload';
 
 // Shader Components
 export { ShaderMegaMenu } from './ShaderMegaMenu';
