@@ -29,7 +29,7 @@ interface ShaderRating {
   date?: string;
 }
 
-interface EnrichedShader {
+export interface EnrichedShader {
   id: string;
   coordinate: number;
   name: string;

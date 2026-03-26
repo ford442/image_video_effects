@@ -259,7 +259,7 @@ export class StorageService {
   async saveShader(
     name: string,
     wgslCode: string,
-    metadata: Partial<ShaderItem>
+    metadata: Partial<ShaderItem> = {}
   ): Promise<StorageSaveResponse> {
     return this.save({
       action: 'save_shader',

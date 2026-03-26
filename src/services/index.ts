@@ -61,9 +61,7 @@ export type {
 
 // Content Loader
 export {
-  loadContentManifest,
-  getContentById,
-  searchContent,
+  fetchContentManifest,
 } from './contentLoader';
 
-export type { ContentManifest, ContentItem } from './contentLoader';
+export type { LoadedContent } from './contentLoader';
