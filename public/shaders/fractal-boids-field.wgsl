@@ -64,7 +64,7 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
 }
 
 // ═══ DOMAIN WARP FBM ═══
-fn domainWarpFBM(p: vec2<f32>, time: f32) -> vec2<f32> {
+fn domainWarpFBM(p: vec2<f32>, time: f32, audioReactivity: f32) -> vec2<f32> {
     let q = vec2<f32>(
         fbm2(p + vec2<f32>(0.0, time * 0.1 * audioReactivity), 4),
         fbm2(p + vec2<f32>(5.2, 1.3 + time * 0.1 * audioReactivity), 4)
@@ -77,14 +77,14 @@ fn domainWarpFBM(p: vec2<f32>, time: f32) -> vec2<f32> {
 }
 
 // ═══ FLOW FIELD SAMPLE ═══
-fn sampleFlowField(uv: vec2<f32>, time: f32, flowStrength: f32) -> vec2<f32> {
-    let warped = domainWarpFBM(uv * 5.0, time * 0.1 * audioReactivity);
+fn sampleFlowField(uv: vec2<f32>, time: f32, flowStrength: f32, audioReactivity: f32) -> vec2<f32> {
+    let warped = domainWarpFBM(uv * 5.0, time * 0.1 * audioReactivity, audioReactivity);
     let angle = warped.x * 6.28 * flowStrength;
     return vec2<f32>(cos(angle), sin(angle));
 }
 
 // ═══ BOID SIMULATION ═══
-fn simulateBoids(uv: vec2<f32>, time: f32, boidCount: f32, flowStrength: f32, separationDist: f32) -> vec3<f32> {
+fn simulateBoids(uv: vec2<f32>, time: f32, boidCount: f32, flowStrength: f32, separationDist: f32, audioReactivity: f32) -> vec3<f32> {
     var boidColor = vec3<f32>(0.0);
     let hashUV = floor(uv * boidCount) / boidCount;
     let boidId = hash12(hashUV);
@@ -96,7 +96,7 @@ fn simulateBoids(uv: vec2<f32>, time: f32, boidCount: f32, flowStrength: f32, se
     ) * 0.5 / boidCount;
     
     // Get flow field at boid position
-    let flow = sampleFlowField(boidPos, time, flowStrength);
+    let flow = sampleFlowField(boidPos, time, flowStrength, audioReactivity);
     
     // Boid rules (simplified for performance)
     var separation = vec2<f32>(0.0);
@@ -184,13 +184,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     
     // Calculate boid field
-    let boidColor = simulateBoids(uv, time, boidCount, flowStrength, separation);
+    let boidColor = simulateBoids(uv, time, boidCount, flowStrength, separation, audioReactivity);
     
     // Blend with background
     color = mix(color, boidColor, length(boidColor) * (0.5 + trailPersist * 0.5));
     
     // Add flow field visualization
-    let flow = sampleFlowField(uv, time, flowStrength * 0.5);
+    let flow = sampleFlowField(uv, time, flowStrength * 0.5, audioReactivity);
     let flowMag = length(flow);
     color += vec3<f32>(flowMag * 0.1, flowMag * 0.05, flowMag * 0.15) * flowStrength;
     

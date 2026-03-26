@@ -77,13 +77,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flora = smoothstep(0.0, 0.5 + organic * organicNoise, branchPattern * growth);
     
     // Color
-    let floraColor = vec3<f32>(
+    let floraColorBase = vec3<f32>(
         0.2 + flora * 0.5,
         0.5 + flora * 0.3,
         0.3 + flora * 0.4
-    ) * depthLayeredAlpha(floraColor, uv, depthWeight);
+    );
+    let floraColor = floraColorBase * depthLayeredAlpha(floraColorBase, uv, depthWeight);
     
-    let alpha = volumetricAlpha(flora, 1.0) * depthLayeredAlpha(floraColor, uv, depthWeight);
+    let alpha = volumetricAlpha(flora, 1.0) * depthLayeredAlpha(floraColorBase, uv, depthWeight);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(floraColor, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

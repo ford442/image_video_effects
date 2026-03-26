@@ -35,7 +35,7 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
   var q = abs(p) - b; return length(max(q, vec3<f32>(0.0))) + min(max(q.x,max(q.y,q.z)), 0.0);
 }
 
-fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32) -> vec2<f32> {
+fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f32) -> vec2<f32> {
   let ps = p * scale;
   var d = ps.y + 1.5;
   d = min(d, length(ps.xz) - 12.0 + sin(ps.y * 2.0) * 0.8);
@@ -82,7 +82,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var mat = 0.0;
   for (var i: i32 = 0; i < 100; i++) {
     var p = ro + rd * t;
-    let r = map(p, scale, pulse, time);
+    let r = map(p, scale, pulse, time, audioReactivity);
     if (r.x < 0.001) { mat = r.y; break; }
     t += r.x * 0.9;
     if (t > 80.0) { break; }

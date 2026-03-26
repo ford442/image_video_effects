@@ -44,7 +44,7 @@ fn sdGear(p: vec3<f32>, radius: f32, teeth: f32, thickness: f32, time: f32) -> f
   return max(gear, -d_axle);
 }
 
-fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
+fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioReactivity: f32) -> f32 {
   let spacing = 5.0 * gearScale;
   var q = p;
   let cell = floor((p.xz + spacing * 0.5) / spacing);
@@ -59,11 +59,11 @@ fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
   return min(d, floorD);
 }
 
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32) -> f32 {
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioReactivity: f32) -> f32 {
   var t = 0.0;
   for (var i: i32 = 0; i < 120; i++) {
     var p = ro + rd * t;
-    var d = map(p, gearScale, teeth, speed, time);
+    var d = map(p, gearScale, teeth, speed, time, audioReactivity);
     if (d < 0.001 || t > 200.0) { break; }
     t += d * 0.8;
   }
@@ -116,16 +116,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let up = cross(fwd, right);
   let rd = normalize(fwd + uv.x * right + uv.y * up);
 
-  var t = raymarch(ro, rd, gearScale, teeth, speed, time);
+  var t = raymarch(ro, rd, gearScale, teeth, speed, time, audioReactivity);
   var col = vec3<f32>(0.02, 0.01, 0.005);
 
   if (t < 199.0) {
     var p = ro + rd * t;
     let eps = 0.001;
     let n = normalize(vec3<f32>(
-      map(p + vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time) - map(p - vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time),
-      map(p + vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time) - map(p - vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time),
-      map(p + vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time) - map(p - vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time)
+      map(p + vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(eps,0.0,0.0), gearScale, teeth, speed, time, audioReactivity),
+      map(p + vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(0.0,eps,0.0), gearScale, teeth, speed, time, audioReactivity),
+      map(p + vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity)
     ));
     col = shade(p, n, ro, material);
   }

@@ -42,7 +42,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 
 fn noise(p: vec3<f32>) -> f32 {
     let i = floor(p);
-    let f = fract(p);
+    var f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     
     let n = i.x + i.y * 157.0 + 113.0 * i.z;

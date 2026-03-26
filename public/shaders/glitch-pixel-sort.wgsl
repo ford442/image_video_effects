@@ -33,13 +33,13 @@ struct Uniforms {
 
 // Hash function for pseudo-random numbers
 fn hash2(p: vec2<f32>) -> f32 {
-    let p2 = fract(p * vec2<f32>(5.3983, 5.4427));
+    var p2 = fract(p * vec2<f32>(5.3983, 5.4427));
     p2 = p2 + dot(p2.yx, p2.xy + vec2<f32>(21.5351, 14.3137));
     return fract(p2.x * p2.y * 95.4337);
 }
 
 fn hash3(p: vec3<f32>) -> f32 {
-    let p2 = fract(p * vec3<f32>(5.3983, 5.4427, 5.3987));
+    var p2 = fract(p * vec3<f32>(5.3983, 5.4427, 5.3987));
     p2 = p2 + dot(p2.yzx, p2.xyz + vec3<f32>(21.5351, 14.3137, 23.5123));
     return fract(p2.x * p2.y * p2.z * 95.4337);
 }
@@ -122,7 +122,8 @@ fn pixelSortSample(
     // Sample along sort direction
     // Brighter pixels get pulled further in the sort direction
     let pullFactor = pow(luma, 2.0) * sortDist;
-    let sampleUV = uv - sortDir * pullFactor;
+    
+var sampleUV = uv - sortDir * pullFactor;
     
     // Add some perpendicular jitter for organic feel
     let perpDir = vec2<f32>(-sortDir.y, sortDir.x);

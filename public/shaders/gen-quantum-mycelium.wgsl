@@ -135,7 +135,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -g_time * 2.0); // Move forward through the network
-    ro.xy += g_mouse * 2.0;
+    ro = vec3<f32>(ro.xy + g_mouse * 2.0, ro.z);
 
     let rd = normalize(vec3<f32>(uv, 1.0));
 

@@ -37,7 +37,7 @@ const PHI: f32 = 1.61803398875;
 
 // Hash functions
 fn hash3(p: vec3<f32>) -> f32 {
-    let q = fract(p * 0.1031);
+    var q = fract(p * 0.1031);
     q += dot(q, q.yzx + 33.33);
     return fract((q.x + q.y) * q.z);
 }
@@ -49,7 +49,7 @@ fn hash2(p: vec2<f32>) -> f32 {
 // Smooth noise
 fn noise(p: vec3<f32>) -> f32 {
     let i = floor(p);
-    let f = fract(p);
+    var f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     
     let n = i.x + i.y * 57.0 + i.z * 113.0;

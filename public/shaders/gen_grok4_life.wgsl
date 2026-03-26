@@ -35,6 +35,13 @@ struct Uniforms {
 @group(0) @binding(7) var dataTextureA : texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC : texture_2d<f32>;
 
+// Smooth interval function: 1 when a < x < b, 0 otherwise
+fn smooth_interval(x: f32, a: f32, b: f32, sharp: f32) -> f32 {
+    let left = smoothstep(a - sharp, a + sharp, x);
+    let right = 1.0 - smoothstep(b - sharp, b + sharp, x);
+    return left * right;
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -117,14 +124,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Adjusted sharpness based on parameter
     let sharp = max(0.01, sharpness * 2.0);
-    
-    // Smooth interval function: 1 when a < x < b, 0 otherwise
-    // Using smoothstep for smooth transitions
-    fn smooth_interval(x: f32, a: f32, b: f32, sharp: f32) -> f32 {
-        let left = smoothstep(a - sharp, a + sharp, x);
-        let right = 1.0 - smoothstep(b - sharp, b + sharp, x);
-        return left * right;
-    }
     
     // SmoothLife transition function
     // s' = σ(n, b1, b2) * (1 - s) + σ(n, d1, d2) * s
