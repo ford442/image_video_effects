@@ -424,6 +424,7 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
     if (storage.isConnected) {
       storage.refreshAll();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storage.isConnected]);
   
   // Filter and sort shaders
