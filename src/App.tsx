@@ -4,7 +4,6 @@ import Controls from './components/Controls';
 import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
-import { ShaderItem, ImageItem, VideoItem } from './services/StorageService';
 import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
@@ -124,6 +123,7 @@ function MainApp() {
     const [showSidebar, setShowSidebar] = useState(true);
     const [showShaderScanner, setShowShaderScanner] = useState(false);
     const [showStorageBrowser, setShowStorageBrowser] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [storageBrowserTab, setStorageBrowserTab] = useState<'shaders' | 'images' | 'videos'>('shaders');
 
     // --- State: Webcam ---
