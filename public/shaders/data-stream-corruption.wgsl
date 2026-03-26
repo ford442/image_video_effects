@@ -133,9 +133,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Brighten characters, darken background with alpha modulation
         let streamBlend = streamIntensity * 0.8;
-        finalColor.rgb = mix(finalColor.rgb, streamColor, streamBlend);
+        let newRGB = mix(finalColor.rgb, streamColor, streamBlend);
         // Stream effect increases alpha for digital look
-        finalColor.a = mix(finalColor.a, 0.9 + streamIntensity * 0.1, streamBlend);
+        let newA = mix(finalColor.a, 0.9 + streamIntensity * 0.1, streamBlend);
+        finalColor = vec4<f32>(newRGB, newA);
 
         // Darken non-character areas heavily if corrupted
         if (isChar < 0.5) {
@@ -144,7 +145,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     // Ensure alpha is valid
-    finalColor.a = clamp(finalColor.a, 0.0, 1.0);
+    finalColor = vec4<f32>(finalColor.rgb, clamp(finalColor.a, 0.0, 1.0));
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
