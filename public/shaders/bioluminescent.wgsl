@@ -65,7 +65,7 @@ fn calculate_normal(uv: vec2<f32>, depth: f32, texel: vec2<f32>) -> vec3<f32> {
 
 // Reaction-diffusion growth step
 fn growth_step(uv: vec2<f32>, current: f32, normal: vec3<f32>, time: f32, 
-               spread_speed: f32, density: f32, depth_influence: f32, depth: f32, res: vec2<f32>) -> f32 {
+               spread_speed: f32, density: f32, depth_influence: f32, depth: f32, res: vec2<f32>, audioReactivity: f32) -> f32 {
     var texel = 1.0 / res;
     
     let noise_val = noise3d(vec3<f32>(uv * 5.0, time * 0.1 * audioReactivity)); 
@@ -195,7 +195,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Growth Simulation
     if (growth_rate > 0.01) {
-        growth = growth_step(uv, growth, normal, time, spread_mult, branch_density, depth_influence, depth, resolution);
+        growth = growth_step(uv, growth, normal, time, spread_mult, branch_density, depth_influence, depth, resolution, audioReactivity);
     }
 
     // Store growth for next frame

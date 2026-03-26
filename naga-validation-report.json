@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-03-26T06:46:21.238Z",
+  "timestamp": "2026-03-26T06:54:18.737Z",
   "total": 691,
-  "valid": 616,
-  "invalid": 75,
+  "valid": 621,
+  "invalid": 70,
   "shaders": [
     {
       "file": "public/shaders/_hash_library.wgsl",
@@ -176,13 +176,8 @@
     },
     {
       "file": "public/shaders/bioluminescent.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "n",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/biomimetic-scales.wgsl",
@@ -546,13 +541,8 @@
     },
     {
       "file": "public/shaders/cyber-rain-interactive.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "n",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/cyber-rain.wgsl",
@@ -571,13 +561,8 @@
     },
     {
       "file": "public/shaders/cyber-slit-scan.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "i",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/cyber-terminal-ascii.wgsl",
@@ -611,13 +596,8 @@
     },
     {
       "file": "public/shaders/data-slicer.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "n",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/data-stream-corruption.wgsl",
@@ -3466,13 +3446,8 @@
     },
     {
       "file": "public/shaders/split-flap-display.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/static-reveal.wgsl",

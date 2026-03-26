@@ -56,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var noiseVal = hash21(vec2<f32>(sliceId, floor(time * 2.0))); // Step noise every 0.5s
 
     // Animate the noise
-    let move = sin(time * slideSpeed + sliceId * 13.52) * chaos;
+    let moveAmt = sin(time * slideSpeed + sliceId * 13.52) * chaos;
 
     // Mouse influence: Slices near mouse Y move more intensely
     let mouseDistY = abs(uv.y - mouseY);
@@ -66,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Actually, let's make the mouse X control the OFFSET direction/magnitude too
     let mouseOffset = (mouseX - 0.5) * 2.0 * influence;
 
-    var xOffset = move * 0.1;
+    var xOffset = moveAmt * 0.1;
 
     if (isMouseDown > 0.5) {
         xOffset = xOffset + mouseOffset + (hash21(vec2<f32>(sliceId, time)) - 0.5) * 0.5 * influence;

@@ -6,7 +6,7 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Angle, Velocity
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, read_write>; // Angle, Velocity
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Read previous state (Angle, Velocity)
     // We sample from dataTextureA which stores the previous frame's state
-    let prev_state = textureSampleLevel(dataTextureA, u_sampler, cell_center_uv, 0.0);
+    let prev_state = textureLoad(dataTextureA, vec2<i32>(cell_id));
     var angle = prev_state.r;
     var velocity = prev_state.g;
 

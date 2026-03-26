@@ -123,9 +123,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     rainColor += vec3<f32>(mouseRepel, mouseRepel * 0.5, 1.0) * mouseRepel * 2.0;
 
     // Final composite
-    let final = mix(imgColor * 0.1, rainColor, brightness);
+    let finalColor = mix(imgColor * 0.1, rainColor, brightness);
 
-    textureStore(outTex, gid.xy, vec4<f32>(final, 1.0));
+    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
     
     // Pass through depth
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
