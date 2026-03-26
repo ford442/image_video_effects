@@ -285,7 +285,7 @@ export function useStorage(customService?: StorageService): UseStorageReturn {
     setLastError(undefined);
     
     try {
-      const result = await serviceRef.current.saveShader(name, wgslCode, metadata);
+      const result = await serviceRef.current.saveShader(name, wgslCode, metadata ?? {});
       
       // Refresh shader list after save
       await refreshShaders();
