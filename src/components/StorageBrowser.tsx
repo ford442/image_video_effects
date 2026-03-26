@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStorage } from '../hooks/useStorage';
 import { ShaderItem, ImageItem, VideoItem } from '../services/StorageService';
+import { STORAGE_VPS_HOST, STORAGE_VPS_PORT, STATIC_NGINX_URL } from '../config/appConfig';
 import './StorageBrowser.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -779,8 +780,5 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
     </div>
   );
 };
-
-// Import for footer display
-import { STORAGE_VPS_HOST, STORAGE_VPS_PORT, STATIC_NGINX_URL } from '../config/appConfig';
 
 export default StorageBrowser;
