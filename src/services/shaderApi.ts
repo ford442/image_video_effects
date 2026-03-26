@@ -3,6 +3,8 @@
  * Handles shader CRUD operations and Shadertoy imports
  */
 
+import { STORAGE_API_URL } from '../config/appConfig';
+
 const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:7860';
 
 // --- Types ---
@@ -270,3 +272,131 @@ export async function convertShader(shaderId: string, targetFormat: string = 'wg
   if (!res.ok) throw new Error('Conversion request failed');
   return res.json();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  NEW: VPS Storage API Integration (Added for Contabo backend)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  VPS Storage API Types
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface ApiShaderEntry {
+  id: string;
+  name: string;
+  filename: string;
+  type: string;
+  format: string;
+  description?: string;
+  author?: string;
+  date?: string;
+  coordinate?: number;
+  rating?: number | null;
+  has_errors?: boolean;
+  tags: string[];
+  url?: string;
+}
+
+export interface ShaderCoordinateData {
+  coordinate: number;
+  reason: string;
+  name: string;
+  category: string;
+  features: string[];
+  tags: string[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  VPS Storage API Service Class
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class ShaderApiService {
+  private baseUrl: string;
+  private cache: Map<string, any>;
+  private cacheExpiry: number;
+  private lastFetch: number;
+
+  constructor(baseUrl: string = STORAGE_API_URL) {
+    this.baseUrl = baseUrl;
+    this.cache = new Map();
+    this.cacheExpiry = 5 * 60 * 1000; // 5 minutes
+    this.lastFetch = 0;
+  }
+
+  /**
+   * Get shader list from API (API-first with local fallback)
+   */
+  async getShaderList(): Promise<ApiShaderEntry[]> {
+    const cached = this.cache.get('shaderList');
+    if (cached && Date.now() - this.lastFetch < this.cacheExpiry) {
+      return cached;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/shaders`);
+      if (!response.ok) throw new Error(`API ${response.status}`);
+      const data: ApiShaderEntry[] = await response.json();
+      data.forEach(s => s.url = `${this.baseUrl}/files/image-effects/shaders/${s.filename}`);
+      this.cache.set('shaderList', data);
+      this.lastFetch = Date.now();
+      return data;
+    } catch (error) {
+      // Fallback to local
+      const response = await fetch('./shader_coordinates.json');
+      const coordMap = await response.json();
+      const entries = Object.entries(coordMap).map(([id, data]: [string, any]) => ({
+        id, name: data.name || id, filename: `${id}.json`, type: 'shader', format: 'wgsl',
+        description: data.reason, coordinate: data.coordinate, tags: data.tags || [],
+        url: `./shaders/${id}.wgsl`,
+      }));
+      return entries;
+    }
+  }
+
+  /**
+   * Get shader code from API or local
+   */
+  async getShaderCode(shaderId: string): Promise<string> {
+    const cached = this.cache.get(`code:${shaderId}`);
+    if (cached) return cached;
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/shaders/${shaderId}`);
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+      const code = data.data?.wgsl_code || data.content || '';
+      this.cache.set(`code:${shaderId}`, code);
+      return code;
+    } catch (error) {
+      const response = await fetch(`./shaders/${shaderId}.wgsl`);
+      return await response.text();
+    }
+  }
+
+  clearCache() {
+    this.cache.clear();
+    this.lastFetch = 0;
+  }
+}
+
+// Singleton
+let defaultService: ShaderApiService | null = null;
+function getService(): ShaderApiService {
+  if (!defaultService) defaultService = new ShaderApiService();
+  return defaultService;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  NEW API Exports
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const ShaderApi = {
+  getShaderList: () => getService().getShaderList(),
+  getShaderCode: (id: string) => getService().getShaderCode(id),
+  clearCache: () => getService().clearCache(),
+};
+
+// Type aliases for backward compatibility
+export type ShaderEntry = ApiShaderEntry;
+
+export default ShaderApi;

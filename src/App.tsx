@@ -9,6 +9,7 @@ import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
+import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
 import { 
     API_BASE_URL, 
     STORAGE_API_URL,
@@ -167,7 +168,7 @@ function MainApp() {
     const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
 
     // --- Helpers ---
-    const setMode = useCallback((index: number, mode: RenderMode) => {
+    const setMode = useCallback(async (index: number, mode: RenderMode) => {
         setModes(prev => {
             const next = [...prev];
             next[index] = mode;
@@ -181,19 +182,39 @@ function MainApp() {
 
         // Attempt to load & compile the shader, tracking status
         const shaderEntry = availableModes.find(s => s.id === mode);
-        if (shaderEntry?.url && rendererRef.current && 'loadShader' in rendererRef.current) {
+        if (shaderEntry && rendererRef.current && 'loadShader' in rendererRef.current) {
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
-            (rendererRef.current as any).loadShader(shaderEntry.id, shaderEntry.url)
-                .then((ok: boolean) => {
-                    setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
-                    // Record play event (fire-and-forget)
-                    if (ok && shaderEntry) {
-                        fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, { method: 'POST' }).catch(() => {});
+            
+            try {
+                // Determine if we need to fetch code from API or use local file
+                let shaderUrl = shaderEntry.url;
+                
+                // If URL points to VPS API, fetch the code first
+                if (shaderUrl?.includes('storage.noahcohn.com')) {
+                    console.log(`📡 Fetching shader code from API: ${shaderEntry.id}`);
+                    try {
+                        const code = await ShaderApi.getShaderCode(shaderEntry.id);
+                        // Create a blob URL for the code
+                        const blob = new Blob([code], { type: 'text/wgsl' });
+                        shaderUrl = URL.createObjectURL(blob);
+                    } catch (apiError) {
+                        console.warn(`⚠️ API fetch failed, using local file: ${shaderEntry.id}`);
+                        shaderUrl = `./shaders/${shaderEntry.id}.wgsl`;
                     }
-                })
-                .catch(() => {
-                    setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
-                });
+                }
+                
+                // Load the shader
+                const ok = await (rendererRef.current as any).loadShader(shaderEntry.id, shaderUrl);
+                setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
+                
+                // Record play event (fire-and-forget)
+                if (ok) {
+                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, { method: 'POST' }).catch(() => {});
+                }
+            } catch (error) {
+                console.error(`❌ Failed to load shader ${shaderEntry.id}:`, error);
+                setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
+            }
         }
     }, [availableModes, rendererRef]);
 
@@ -308,31 +329,47 @@ function MainApp() {
         fetchImageManifest();
     }, []);
 
-    // --- Load Available Shaders ---
+    // --- Load Available Shaders (API-First with Local Fallback) ---
     useEffect(() => {
         const loadShaders = async () => {
             try {
-                // Fetch shader_coordinates.json dynamically at runtime
-                const response = await fetch('./shader_coordinates.json');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const coordMap = await response.json() as Record<string, any>;
-                const entries: ShaderEntry[] = Object.entries(coordMap).map(([id, data]) => ({
-                    id,
-                    name: data.name || id,
-                    // Use local shader files directly - more reliable than API
-                    url: `./shaders/${id}.wgsl`,
-                    category: (data.category?.includes('gen') || id.includes('gen') ? 'generative' : 'image') as ShaderCategory,
-                    description: data.reason || '',
-                    tags: data.tags || [],
+                // Try API first, fallback to local shader_coordinates.json
+                const apiShaders = await ShaderApi.getShaderList();
+                
+                // Transform API shaders to match expected format
+                const entries: ShaderEntry[] = apiShaders.map(shader => ({
+                    id: shader.id,
+                    name: shader.name || shader.id,
+                    // Use API URL if available, otherwise local fallback
+                    url: shader.url?.includes('/files/') 
+                        ? `${STORAGE_API_URL}/files/image-effects/shaders/${shader.filename}`
+                        : `./shaders/${shader.id}.wgsl`,
+                    category: determineCategory(shader),
+                    description: shader.description || '',
+                    tags: shader.tags || [],
+                    rating: shader.rating,
+                    hasErrors: shader.has_errors,
                 }));
+                
                 setAvailableModes(entries);
-                console.log(`✅ Loaded ${entries.length} shaders from shader_coordinates.json`);
+                console.log(`✅ Loaded ${entries.length} shaders (API-first with fallback)`);
             } catch (error) {
                 console.warn('Failed to load shaders:', error);
                 // Silently fail - shader list will be empty but app won't crash
             }
         };
+        
+        // Helper to determine category
+        function determineCategory(shader: ApiShaderEntry): ShaderCategory {
+            if (shader.tags?.includes('generative') || shader.id.includes('gen')) {
+                return 'generative';
+            }
+            if (shader.tags?.includes('simulation')) return 'simulation';
+            if (shader.tags?.includes('distortion')) return 'distortion';
+            if (shader.tags?.includes('artistic')) return 'artistic';
+            return 'image';
+        }
+        
         loadShaders();
     }, []);
 
