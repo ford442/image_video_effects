@@ -52,9 +52,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warped_uv = uv + vec2(warp_offset_x, warp_offset_y);
 
     let shift_amount = mix(0.005, 0.02, mouse_effect) * sin(time * 2.0);
-    let r = textureSample(readTexture, u_sampler, warped_uv + vec2(shift_amount, shift_amount)).r;
-    let g = textureSample(readTexture, u_sampler, warped_uv).g;
-    let b = textureSample(readTexture, u_sampler, warped_uv - vec2(shift_amount, shift_amount)).b;
+    let r = textureSampleLevel(readTexture, u_sampler, warped_uv + vec2(shift_amount, shift_amount), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, warped_uv, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, warped_uv - vec2(shift_amount, shift_amount), 0.0).b;
     
     let color = vec3<f32>(r, g, b);
     

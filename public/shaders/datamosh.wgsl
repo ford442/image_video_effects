@@ -209,7 +209,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let jitter = (noise - 0.5) * motion_strength * 0.1;
     
     // Calculate displaced coordinate
-    let displaced_coord_f = vec2<f32>(coord) - displacement * block_size + jitter;
+    let displaced_coord_f = vec2<f32>(coord) - displacement * f32(block_size) + jitter;
     let displaced_coord = vec2<i32>(displaced_coord_f);
     
     // Wrap around for continuous smearing

@@ -314,7 +314,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Vignette
-    let uv2 = coord / res;
+    let uv2 = vec2<f32>(coord) / res;
     col *= 0.5 + 0.5 * pow(16.0 * uv2.x * uv2.y * (1.0 - uv2.x) * (1.0 - uv2.y), 0.25);
 
     // Tone mapping

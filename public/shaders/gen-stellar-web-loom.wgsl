@@ -151,7 +151,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let star_uv = uv + g_mouse * 0.1;
     for (var i = 1; i <= 3; i++) {
         let fi = f32(i);
-        let s = hash31(vec3<f32>(floor(star_uv * 100.0 / fi), fi, 0.0));
+        let s = hash31(vec3<f32>(floor(star_uv * 100.0 / fi), fi));
         if (s > 0.98) { starCol += vec3<f32>(s) * (1.0 - fi * 0.2); }
     }
 

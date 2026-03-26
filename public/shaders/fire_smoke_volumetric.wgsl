@@ -69,7 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Fire/Smoke noise
     let noiseUV = vec3<f32>(uv * 5.0, time * 0.5);
-    let n = hash(vec3<i32>(noiseUV * 10.0));
+    let n = hash(vec3<f32>(noiseUV * 10.0));
     
     let fireShape = smoothstep(0.3, 0.7, 1.0 - uv.y + n * turbulence);
     let density = fireShape * smokeDensity;

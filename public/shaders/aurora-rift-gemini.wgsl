@@ -182,7 +182,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fbmVal = fbm(uv * scale * 4.0 + curl, time, fbmOctaves);
     let foamPattern = smoothstep(0.0, 0.1, cellDist) * 0.7 + smoothstep(0.2, 0.4, fbmVal) * 0.3;
 
-    let hyper = noise4d(vec4<f32>(uv * scale * 1.5, time * 0.4, depth * 2.0, sin(time)));
+    let hyper = noise4d(vec4<f32>(uv * scale * 1.5, time * 0.4, sin(time)));
     let hyperMod = (hyper + 1.0) * 0.5;
     
     let waveA = sin(length(uv - 0.5) * 28.0 - time * 3.2);

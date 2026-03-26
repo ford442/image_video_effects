@@ -94,10 +94,10 @@ fn hue2rgb(p: f32, q: f32, t: f32) -> f32 {
 
 fn hsl2rgb(c: vec3<f32>) -> vec3<f32> {
     var h = c.x;
-    var s = c.y;
+    var sat = c.y;
     var l = c.z;
-    if (s == 0.0) { return vec3<f32>(l); }
-    let q = select(l * (1.0 + s), l + s - l * s, l < 0.5);
+    if (sat == 0.0) { return vec3<f32>(l); }
+    let q = select(l * (1.0 + sat), l + sat - l * sat, l < 0.5);
     var p = 2.0 * l - q;
     return vec3<f32>(
         hue2rgb(p, q, h + 1.0/3.0),
@@ -186,7 +186,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ✨ GEMINI UPGRADE: Time-driven hue evolution + radius shift
     let timeHue = sin(time * 0.05) * 0.5;
     hsl.x = fract(hsl.x + timeHue + r * hueShift);
-    hsl.s = min(hsl.s * 1.3, 1.0); // Slightly more saturation boost
+    hsl.y = min(hsl.y * 1.3, 1.0); // Slightly more saturation boost
     color = hsl2rgb(hsl);
     
     // -----------------------------------------------------------------

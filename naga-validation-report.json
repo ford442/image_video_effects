@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-03-26T06:22:16.795Z",
+  "timestamp": "2026-03-26T06:46:21.238Z",
   "total": 691,
-  "valid": 603,
-  "invalid": 88,
+  "valid": 616,
+  "invalid": 75,
   "shaders": [
     {
       "file": "public/shaders/_hash_library.wgsl",
@@ -26,13 +26,8 @@
     },
     {
       "file": "public/shaders/alucinate.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/ambient-liquid.wgsl",
@@ -81,13 +76,8 @@
     },
     {
       "file": "public/shaders/astral-kaleidoscope-gemini.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "i",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/astral-kaleidoscope-grokcf1.wgsl",
@@ -141,13 +131,8 @@
     },
     {
       "file": "public/shaders/aurora-rift-gemini.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/aurora-rift-pass1.wgsl",
@@ -656,13 +641,8 @@
     },
     {
       "file": "public/shaders/datamosh.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/digital-compression.wgsl",
@@ -821,13 +801,8 @@
     },
     {
       "file": "public/shaders/entropy-grid.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/ethereal-swirl.wgsl",
@@ -861,13 +836,8 @@
     },
     {
       "file": "public/shaders/fire_smoke_volumetric.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/flip-matrix.wgsl",
@@ -941,13 +911,8 @@
     },
     {
       "file": "public/shaders/frosted-glass-lens.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/frosty-window.wgsl",
@@ -1166,13 +1131,8 @@
     },
     {
       "file": "public/shaders/gen-liquid-crystal-hive-mind.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen-magnetic-ferrofluid.wgsl",
@@ -1281,13 +1241,8 @@
     },
     {
       "file": "public/shaders/gen-stellar-web-loom.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen-string-theory.wgsl",
@@ -1401,23 +1356,13 @@
     },
     {
       "file": "public/shaders/gen_kimi_crystal.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen_kimi_nebula.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen_mandelbulb_3d.wgsl",
@@ -3286,13 +3231,8 @@
     },
     {
       "file": "public/shaders/sim-decay-system.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/sim-fluid-feedback-field-pass1.wgsl",
@@ -3351,13 +3291,8 @@
     },
     {
       "file": "public/shaders/sim-slime-mold-growth.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "message": "E",
-          "line": null
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/sim-smoke-trails.wgsl",

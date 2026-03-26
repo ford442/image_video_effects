@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var sum = 0.0;
     for (var y: i32 = -1; y <= 1; y++) {
         for (var x: i32 = -1; x <= 1; x++) {
-            sum += textureLoad(dataTextureC, gid.xy + vec2<i32>(x, y), 0).r;
+            sum += textureLoad(dataTextureC, vec2<i32>(gid.xy) + vec2<i32>(x, y), 0).r;
         }
     }
     let diffused = sum / 9.0;

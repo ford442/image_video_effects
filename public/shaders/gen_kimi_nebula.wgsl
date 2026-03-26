@@ -115,5 +115,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Store for feedback
     textureStore(writeTexture, px, vec4<f32>(color, 1.0));
-    textureStore(dataTextureA, px, vec4<f32>(color, nebulaDensity, 0.0, 1.0));
+    textureStore(dataTextureA, px, vec4<f32>(color, nebulaDensity));
 }

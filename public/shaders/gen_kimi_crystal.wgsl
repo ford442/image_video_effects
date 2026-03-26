@@ -189,7 +189,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = mix(1.0, transmission, crystalMask);
     
     textureStore(writeTexture, px, vec4<f32>(color, alpha));
-    textureStore(dataTextureA, px, vec4<f32>(color, crystalMask * transmission, 0.0, 1.0));
+    textureStore(dataTextureA, px, vec4<f32>(color, crystalMask * transmission));
     
     // Depth based on crystal presence
     let depth = crystalMask * 0.5 + 0.5;

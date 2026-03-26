@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     for (var y: i32 = -1; y <= 1; y++) {
         for (var x: i32 = -1; x <= 1; x++) {
             if (x == 0 && y == 0) { continue; }
-            let neighborDecay = textureLoad(dataTextureC, gid.xy + vec2<i32>(x, y), 0).r;
+            let neighborDecay = textureLoad(dataTextureC, vec2<i32>(gid.xy) + vec2<i32>(x, y), 0).r;
             decayedNeighbors += step(0.5, neighborDecay);
         }
     }

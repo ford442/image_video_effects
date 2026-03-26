@@ -61,7 +61,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let frost_offset = (noise_val - 0.5) * 0.05 * frost_amt * lens_mask;
 
     // Calculate normal for fresnel (rougher in frost areas)
-    let roughNormal = normalize(vec3<f32>(frost_offset * 20.0, 1.0 - frost_amt * 0.5));
+    let roughNormal = normalize(vec3<f32>(frost_offset * 20.0, 0.0, 1.0 - frost_amt * 0.5));
     let viewDir = vec3<f32>(0.0, 0.0, 1.0);
     
     // Fresnel effect (more reflection at edges of lens and in frost)
