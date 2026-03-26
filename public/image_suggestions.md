@@ -1515,6 +1515,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the rendering of intricate brass mechanics, glass refraction, and warm, directional macro lighting.
 
+
+### Suggestion: Ashcan School Industrial Port
+- **Date:** 2026-11-10
+- **Prompt:** "A bustling, gritty early 20th-century industrial port depicted in the Ashcan School art style. The subject features massive steam-powered cranes and thick, dark smoke billowing into an overcast sky. The lighting is murky and realistic, casting soft, indistinct shadows that highlight the dirt and texture of the harbor. The mood is authentic, raw, and full of everyday working-class life. Captured with an eye-level, documentary-style perspective, emphasizing the unglamorous reality of the industrial waterfront."
+- **Negative prompt:** "modern, bright, cheerful, clean, sci-fi, surreal, highly saturated, 3d render"
+- **Tags:** art, port, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, crowded docks, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull reds, ochre, murky water
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261110_ashcan-school-port.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing gritty, unidealized industrial scenes and historical art styles, fulfilling wishlist.
+
+### Suggestion: Graphene Orbital Ring Megastructure
+- **Date:** 2026-11-10
+- **Prompt:** "An epic, sweeping view of a massive Orbital Ring megastructure encircling a lush, green Earth-like planet. The ring itself is constructed from sleek, dark, ultra-strong graphene woven into an impossibly thin yet immense structure. The subject is dotted with glowing city lights and sprawling spaceports. The lighting features a dramatic sunrise cresting over the planet's horizon, casting a blinding white glare and long shadows across the graphene surface. The mood is utopian, vast, and technologically supreme. Captured with a wide-angle cinematic lens from low Earth orbit, emphasizing planetary scale."
+- **Negative prompt:** "dystopian, broken, rusty, small, low-res, cartoon"
+- **Tags:** sci-fi, megastructure, space, orbital ring, epic
+- **Style / Reference:** hard sci-fi environment design, cinematic space art
+- **Composition:** curved horizon, extreme wide angle, dynamic lighting
+- **Color palette:** dark matte graphene grey, vibrant earth greens and blues, blinding solar white
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261110_orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive scale, planetary curvature, and the matte, light-absorbing properties of a massive graphene structure, fulfilling wishlist.
+
+### Suggestion: Mother of Pearl Tsunami Wave
+- **Date:** 2026-11-10
+- **Prompt:** "A massive, towering tsunami wave caught frozen in time just before it crashes down. The water is entirely composed of shimmering, iridescent nacre (mother-of-pearl), reflecting a spectacular array of pearlescent pastels. Within the translucent wall of the wave, silhouetted shapes of giant marine life can be seen swirling. The sky above is dark and stormy with dramatic lightning illuminating the crest of the wave. The mood is terrifying yet awe-inspiring and beautiful. Captured with a low camera angle, wide lens, and high shutter speed to freeze the water droplets."
+- **Negative prompt:** "daylight, calm water, small wave, shore, people, boats, sunny"
+- **Tags:** nature, ocean, tsunami, iridescent, nacre, dramatic
+- **Style / Reference:** photorealistic, surreal nature photography
+- **Composition:** imposing, low angle, wave dominating the frame
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, bright white lightning flashes
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261110_mother-of-pearl-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing thin-film iridescent interference on organic shapes and chaotic fluid dynamics, fulfilling wishlist.
+
+### Suggestion: Brass Supernova Explosion
+- **Date:** 2026-11-10
+- **Prompt:** "A breathtaking, wide-angle shot of a cataclysmic supernova remnant expanding through deep space, reinterpreted entirely as an intricate mechanical explosion of polished brass. The subject is a chaotic, swirling cloud of golden brass gears, springs, and plates bursting outward. The lighting is extremely bright and dynamic, emanating from a blindingly white temporal core at the center, casting dramatic light through the mechanical debris. The mood is awe-inspiring and destructive yet ordered. Captured as if by a cosmic clockmaker, high dynamic range, cosmic scale."
+- **Negative prompt:** "earth, planets, spaceships, cartoon, simple colors, soft shapes, organic, plasma"
+- **Tags:** sci-fi, steampunk, space, supernova, mechanical, brass
+- **Style / Reference:** steampunk space art, hyper-detailed, JWST style
+- **Composition:** wide angle, expansive, centered explosion
+- **Color palette:** polished brass, warm gold, blinding whites, deep cosmic blacks
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261110_brass-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex volumetric lighting, particle dispersion, and intricate metallic structures (brass), fulfilling wishlist.
+
+### Suggestion: Italian Futurism Beaver Dam
+- **Date:** 2026-11-10
+- **Prompt:** "A chaotic, dynamic scene of a complex beaver dam blocking a turbulent forest stream, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense energy of the flowing water and the busy, mechanical-like construction of the dam. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water, peaceful forest"
+- **Tags:** abstract, art, italian futurism, landscape, dynamic, beaver dam
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold aquatic blue, ochre
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261110_futurism-beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an organic landscape subject, fulfilling wishlist.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
