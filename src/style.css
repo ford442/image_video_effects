@@ -807,3 +807,63 @@ hr {
         box-shadow: 0 6px 25px rgba(255, 71, 87, 0.6);
     }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Storage Browser Modal Styles
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.storage-browser-modal-overlay {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.storage-browser-modal-overlay > div {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* VPS Storage Button in Controls */
+.control-group button[onClick*="onOpenStorageBrowser"],
+.control-group button:has(span:contains("📦")) {
+    position: relative;
+    overflow: hidden;
+}
+
+.control-group button:has(span:contains("📦"))::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(46, 213, 115, 0.2),
+        transparent
+    );
+    transition: left 0.5s;
+}
+
+.control-group button:has(span:contains("📦")):hover::before {
+    left: 100%;
+}

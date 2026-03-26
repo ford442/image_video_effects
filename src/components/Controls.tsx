@@ -80,6 +80,8 @@ interface ControlsProps {
     onExitLiveStream?: () => void;
     // Dev Tools Props
     onOpenShaderScanner?: () => void;
+    // Storage Browser Props
+    onOpenStorageBrowser?: () => void;
 }
 
 // Helper function to fetch Bilibili live stream URL
@@ -145,7 +147,8 @@ const Controls: React.FC<ControlsProps> = ({
     liveStreamUrl,
     onLiveStreamLoaded,
     onExitLiveStream,
-    onOpenShaderScanner
+    onOpenShaderScanner,
+    onOpenStorageBrowser
 }) => {
     // --- Coordinate System State ---
     const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
@@ -589,6 +592,35 @@ const Controls: React.FC<ControlsProps> = ({
                     Tip: Type any number to jump to that shader
                 </div>
             </div>
+
+            {/* --- VPS Storage Browser Button --- */}
+            {onOpenStorageBrowser && (
+                <div className="control-group">
+                    <button 
+                        onClick={onOpenStorageBrowser}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'linear-gradient(135deg, #1a3a2e, #0f2a1e)',
+                            border: '1px solid #2ed573',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                        }}
+                    >
+                        <span>📦</span>
+                        <span>VPS Storage Browser</span>
+                    </button>
+                    <div style={{ fontSize: '11px', color: '#666', marginTop: '6px', textAlign: 'center' }}>
+                        Browse shaders, images & videos from VPS
+                    </div>
+                </div>
+            )}
 
             {/* --- 🎰 Roulette Section --- */}
             <div className="roulette-section">

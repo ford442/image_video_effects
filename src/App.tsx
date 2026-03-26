@@ -3,6 +3,8 @@ import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
 import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
+import { StorageBrowser } from './components/StorageBrowser';
+import { ShaderItem, ImageItem, VideoItem } from './services/StorageService';
 import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
@@ -121,6 +123,7 @@ function MainApp() {
     // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
     const [showShaderScanner, setShowShaderScanner] = useState(false);
+    const [showStorageBrowser, setShowStorageBrowser] = useState(false);
 
     // --- State: Webcam ---
     const [isWebcamActive, setIsWebcamActive] = useState(false);
@@ -1083,6 +1086,8 @@ function MainApp() {
                         onStopRecording={stopRecording}
                         // Dev Tools props
                         onOpenShaderScanner={() => setShowShaderScanner(true)}
+                        // Storage Browser props
+                        onOpenStorageBrowser={() => setShowStorageBrowser(true)}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -1224,6 +1229,95 @@ function MainApp() {
                 isOpen={showShaderScanner}
                 onClose={() => setShowShaderScanner(false)}
             />
+
+            {/* Storage Browser Modal */}
+            {showStorageBrowser && (
+                <div 
+                    className="storage-browser-modal-overlay"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0, 0, 0, 0.85)',
+                        backdropFilter: 'blur(8px)',
+                        zIndex: 2000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px',
+                    }}
+                    onClick={() => setShowStorageBrowser(false)}
+                >
+                    <div 
+                        style={{
+                            width: '100%',
+                            maxWidth: '1200px',
+                            height: '85vh',
+                            background: '#1a1a2e',
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            boxShadow: '0 25px 80px rgba(0, 0, 0, 0.6)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <StorageBrowser
+                            onSelectShader={async (shader) => {
+                                // Load shader from VPS
+                                try {
+                                    if (shader.url) {
+                                        const response = await fetch(shader.url);
+                                        if (response.ok) {
+                                            const data = await response.json();
+                                            // Apply shader data if it contains WGSL
+                                            if (data.wgsl_code || data.data?.wgsl_code) {
+                                                setStatus(`Loaded shader: ${shader.name} (WGSL code available)`);
+                                            } else {
+                                                // Try to set as mode if it exists
+                                                const existingMode = availableModes.find(m => m.id === shader.id);
+                                                if (existingMode) {
+                                                    setMode(activeSlot, shader.id as RenderMode);
+                                                    setStatus(`Applied shader: ${shader.name}`);
+                                                } else {
+                                                    setStatus(`Shader ${shader.name} not found in local modes`);
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (err) {
+                                    setStatus(`Failed to load shader: ${shader.name}`);
+                                }
+                                setShowStorageBrowser(false);
+                            }}
+                            onSelectImage={async (image) => {
+                                await handleLoadImage(image.url);
+                                setStatus(`Loaded image from VPS: ${image.description || 'Untitled'}`);
+                                setShowStorageBrowser(false);
+                            }}
+                            onSelectVideo={(video) => {
+                                setSelectedVideo(video.url);
+                                setInputSource('video');
+                                setStatus(`Selected video: ${video.title}`);
+                                setShowStorageBrowser(false);
+                            }}
+                            onLoadEffectConfig={(config) => {
+                                // Apply saved configuration
+                                if (config.modes) {
+                                    config.modes.forEach((mode: string, idx: number) => {
+                                        if (idx < 3) setMode(idx, mode as RenderMode);
+                                    });
+                                }
+                                if (config.slotParams) {
+                                    setSlotParams(config.slotParams);
+                                }
+                                if (config.inputSource) setInputSource(config.inputSource);
+                                if (config.currentImageUrl) handleLoadImage(config.currentImageUrl);
+                                setStatus('Loaded effect configuration from VPS');
+                                setShowStorageBrowser(false);
+                            }}
+                            initialTab={storageBrowserTab}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

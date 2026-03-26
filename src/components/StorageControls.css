@@ -1,0 +1,464 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   StorageControls.css
+   Styles for the Storage Controls component
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.storage-controls {
+  background: #16213e;
+  border: 1px solid #2d2d44;
+  border-radius: 10px;
+  padding: 14px;
+  color: #e0e0e0;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Header
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.storage-controls-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.storage-controls-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.status-indicator {
+  font-size: 0.9rem;
+}
+
+.status-indicator.connected {
+  color: #2ed573;
+}
+
+.status-indicator.error {
+  color: #ff4757;
+}
+
+.status-indicator.checking {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Connection Warning
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.connection-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid rgba(255, 71, 87, 0.3);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  color: #ff4757;
+}
+
+.connection-warning button {
+  padding: 4px 10px;
+  background: #ff4757;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.connection-warning button:hover {
+  background: #ff3344;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Storage Buttons
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.storage-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.storage-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #1a1a2e;
+  border: 1px solid #2d2d44;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.storage-btn:hover:not(:disabled) {
+  background: #0f3460;
+  border-color: #0f3460;
+}
+
+.storage-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.storage-btn.primary {
+  background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+  border-color: #e94560;
+  color: white;
+}
+
+.storage-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f0506a 0%, #d8455c 100%);
+  border-color: #f0506a;
+}
+
+.storage-btn span {
+  font-size: 1rem;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Storage Stats
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.storage-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  background: #1a1a2e;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Active Operations
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.active-operations {
+  border-top: 1px solid #2d2d44;
+  padding-top: 10px;
+}
+
+.active-operations h5 {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.operation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #1a1a2e;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.operation + .operation {
+  margin-top: 4px;
+}
+
+.operation-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.operation-text {
+  color: #a0a0b0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Browser Modal
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.browser-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.browser-modal {
+  position: relative;
+  width: 90%;
+  max-width: 1000px;
+  height: 80vh;
+  background: #1a1a2e;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.close-modal {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.close-modal:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Save Dialog
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.save-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.save-dialog {
+  background: #16213e;
+  border: 1px solid #2d2d44;
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.save-dialog h3 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.save-dialog input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #1a1a2e;
+  border: 1px solid #2d2d44;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.save-dialog input:focus {
+  outline: none;
+  border-color: #e94560;
+}
+
+.save-dialog input::placeholder {
+  color: #666;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.dialog-buttons button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dialog-buttons button[type="button"] {
+  background: transparent;
+  border: 1px solid #2d2d44;
+  color: #888;
+}
+
+.dialog-buttons button[type="button"]:hover:not(:disabled) {
+  border-color: #666;
+  color: #e0e0e0;
+}
+
+.dialog-buttons button[type="submit"] {
+  background: #e94560;
+  border: 1px solid #e94560;
+  color: white;
+}
+
+.dialog-buttons button[type="submit"]:hover:not(:disabled) {
+  background: #f0506a;
+  border-color: #f0506a;
+}
+
+.dialog-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Toast Notifications
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+.storage-toasts {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storage-toasts .toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  min-width: 280px;
+  max-width: 400px;
+  animation: slideIn 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.storage-toasts .toast.success {
+  background: linear-gradient(135deg, #2ed573 0%, #26af61 100%);
+  color: white;
+}
+
+.storage-toasts .toast.error {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3344 100%);
+  color: white;
+}
+
+.storage-toasts .toast span {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.storage-toasts .toast button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storage-toasts .toast button:hover {
+  opacity: 1;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Responsive
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .browser-modal {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+  
+  .storage-stats {
+    flex-wrap: wrap;
+  }
+  
+  .stat {
+    min-width: calc(50% - 4px);
+  }
+  
+  .storage-toasts {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+  }
+  
+  .storage-toasts .toast {
+    min-width: auto;
+    max-width: none;
+  }
+}
