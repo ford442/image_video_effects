@@ -186,7 +186,7 @@ fn crt_vignette(uv: vec2<f32>, strength: f32) -> f32 {
 }
 
 // Noise/grain for analog signal feel
-fn film_grain(uv: vec2<f32>, time: f32>) -> f32 {
+fn film_grain(uv: vec2<f32>, time: f32) -> f32 {
     let noise = fract(sin(dot(uv * time, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     return 0.95 + noise * 0.05; // Subtle 5% variation
 }

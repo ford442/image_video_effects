@@ -49,7 +49,7 @@ fn hash3(p: vec3<f32>) -> f32 {
 }
 
 // ═══ 3D CA STATE ═══
-fn getCellState(pos: vec3<f32>, time: f32, density: f32) -> f32 {
+fn getCellState(pos: vec3<f32>, time: f32, density: f32, audioReactivity: f32) -> f32 {
     // Pseudo-random but deterministic based on position and time
     let seed = floor(pos * VOLUME_SIZE);
     let h = hash3(seed + vec3<f32>(time * 0.1 * audioReactivity));
@@ -111,11 +111,12 @@ fn transferFunction(age: f32) -> vec3<f32> {
 }
 
 // ═══ VOLUME RAYMARCHING ═══
-fn raymarchCA(ro: vec3<f32>, rd: vec3<f32>, time: f32, density: f32) -> vec4<f32> {
+fn raymarchCA(ro: vec3<f32>, rd: vec3<f32>, time: f32, density: f32, audioOverall: f32) -> vec4<f32> {
     var t = 0.0;
     var color = vec3<f32>(0.0);
     var transmittance = 1.0;
     var hitDepth = 1.0;
+    let audioReactivity = 1.0 + audioOverall * 0.5;
     
     for (var i = 0; i < MAX_STEPS; i++) {
         let pos = ro + rd * t;
@@ -129,7 +130,7 @@ fn raymarchCA(ro: vec3<f32>, rd: vec3<f32>, time: f32, density: f32) -> vec4<f32
             continue;
         }
         
-        let cell = getCellState(volumePos, time, density);
+        let cell = getCellState(volumePos, time, density, audioReactivity);
         
         if (cell > 0.5) {
             let age = getCellAge(volumePos, time);
@@ -167,7 +168,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioBass = u.config.y * 1.2;
     let audioMid = u.config.z;
     let audioHigh = u.config.w;
-    let audioReactivity = 1.0 + audioOverall * 0.5;
     let id = vec2<i32>(global_id.xy);
     
     // Parameters
@@ -175,6 +175,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let initialDensity = mix(0.1, 0.5, u.zoom_params.y); // y: Initial density
     let colorCycling = u.zoom_params.z;                   // z: Color cycling
     let cameraRotation = u.zoom_params.w * 6.28;         // w: Camera rotation
+    let audioReactivity = 1.0 + audioOverall * 0.5;
     
     // Camera setup
     let camDist = 4.0;
@@ -189,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Raymarch through CA volume
     let caTime = time * evolutionSpeed * audioReactivity;
-    let caResult = raymarchCA(ro, rd, caTime, initialDensity);
+    let caResult = raymarchCA(ro, rd, caTime, initialDensity, audioOverall);
     let caColor = caResult.rgb;
     let caAlpha = caResult.a;
     

@@ -214,9 +214,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Add temporal flicker in glitched areas
   if (blockNoise < errorRate) {
     let flicker = hash11(time * 100.0 + f32(coord.x)) * 0.2 + 0.8;
-    finalColor.rgb = finalColor.rgb * flicker * scanline;
-    // Alpha flicker for digital corruption effect
-    finalColor.a = finalColor.a * (0.7 + flicker * 0.3);
+    let newRGB = finalColor.rgb * flicker * scanline;
+    let newA = finalColor.a * (0.7 + flicker * 0.3);
+    finalColor = vec4<f32>(newRGB, newA);
   }
   
   // Chromatic aberration in glitched blocks

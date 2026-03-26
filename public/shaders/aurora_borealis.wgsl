@@ -137,7 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Apply curl noise for turbulence
         let curl = curlNoise(vec2<f32>(uv.x * 2.0, time * 0.2), time);
-        let ribbonPos = ribbonBase + curl * 0.1 * (1.0 + audioPulse);
+        var ribbonPos = ribbonBase + curl * 0.1 * (1.0 + audioPulse);
         
         // Mouse attraction
         let toMouse = mousePos - ribbonPos;
