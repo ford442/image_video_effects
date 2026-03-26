@@ -6,7 +6,7 @@
 // Main Components
 export { default as Controls } from './Controls';
 export { default as WebGPUCanvas } from './WebGPUCanvas';
-export { default as ShaderBrowser } from './ShaderBrowser';
+export { ShaderBrowser } from './ShaderBrowser';
 export { default as ShaderBrowserWithRatings } from './ShaderBrowserWithRatings';
 export { default as LiveStudioTab } from './LiveStudioTab';
 export { default as LiveStreamBridge } from './LiveStreamBridge';
@@ -16,7 +16,7 @@ export { StorageBrowser } from './StorageBrowser';
 export { StorageControls } from './StorageControls';
 
 // Shader Components
-export { default as ShaderMegaMenu } from './ShaderMegaMenu';
+export { ShaderMegaMenu } from './ShaderMegaMenu';
 export { default as ShaderCoordinateMenu } from './ShaderCoordinateMenu';
 export { default as ShaderStarRating } from './ShaderStarRating';
 export { default as ShaderScanner } from './ShaderScanner';
