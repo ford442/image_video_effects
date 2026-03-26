@@ -1,0 +1,26 @@
+{
+  "static/js/main.46968d9c.js": {
+    "hash": "c06c67c62c60c46f4043ce6581038c81",
+    "size": 7778343
+  },
+  "static/js/main.46968d9c.js.map": {
+    "hash": "33a5f168dd62150c52301e420ac36912",
+    "size": 13882272
+  },
+  "static/js/main.46968d9c.js.LICENSE.txt": {
+    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
+    "size": 1210
+  },
+  "index.html": {
+    "hash": "d90962b44ea122f5000a7af5fe3781c9",
+    "size": 442
+  },
+  "wasm/pixelocity_wasm.wasm": {
+    "hash": "e4e10e7601e225b9909e8d2ab77095bf",
+    "size": 51183
+  },
+  "wasm/pixelocity_wasm.js": {
+    "hash": "1648c5ac1db361e940ddf786bd38b87a",
+    "size": 60460
+  }
+}
