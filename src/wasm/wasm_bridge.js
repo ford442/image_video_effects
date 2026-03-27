@@ -108,7 +108,8 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
 
     console.log('[WASM] Module initialized, calling C++ init...');
 
-    // Initialize the C++ renderer
+    // Initialize the C++ renderer.
+    // Returns 1 on success, 0 on failure (matches loadShader convention).
     const result = wasmModule.ccall(
       'initWasmRenderer',
       'number',
@@ -116,8 +117,8 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
       [state.canvasWidth, state.canvasHeight]
     );
 
-    if (result !== 0) {
-      console.error('Failed to initialize WASM renderer');
+    if (!result) {
+      console.error('Failed to initialize WASM renderer (C++ returned 0)');
       resolve(false);
       return;
     }
@@ -293,6 +294,29 @@ export function uploadVideoFrame(rgbaPixels, width, height) {
 }
 
 /**
+ * Update mouse position (normalized 0-1 coordinates).
+ * @param {number} x
+ * @param {number} y
+ */
+export function updateMousePos(x, y) {
+  if (!state.initialized || !wasmModule) return;
+  state.mouseX = x;
+  state.mouseY = y;
+  wasmModule.ccall('updateMousePos', null, ['number', 'number'], [x, y]);
+}
+
+/**
+ * Update audio frequency bands (0-1 normalized).
+ * @param {number} bass
+ * @param {number} mid
+ * @param {number} treble
+ */
+export function updateAudioData(bass, mid, treble) {
+  if (!state.initialized || !wasmModule) return;
+  wasmModule.ccall('updateAudioData', null, ['number', 'number', 'number'], [bass, mid, treble]);
+}
+
+/**
  * Update uniform values
  * @param {Object} uniforms - Object with time, mouseX, mouseY, mouseDown, zoom_params
  */
@@ -318,6 +342,8 @@ const wasmBridge = {
   loadShaderFromURL,
   setActiveShader,
   updateUniforms,
+  updateMousePos,
+  updateAudioData,
   addRipple,
   clearRipples,
   getFPS,

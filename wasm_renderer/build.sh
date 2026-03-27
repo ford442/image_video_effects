@@ -60,6 +60,8 @@ _shutdownWasmRenderer,\
 _loadShader,\
 _setActiveShader,\
 _updateUniforms,\
+_updateMousePos,\
+_updateAudioData,\
 _addRipple,\
 _clearRipples,\
 _getFPS,\
@@ -90,10 +92,11 @@ emcc -std=c++20 -O2 \
     -sNO_EXIT_RUNTIME=1 \
     -sMODULARIZE=1 \
     -sEXPORT_NAME=PixelocityWASM \
+    -sASYNCIFY \
     -o "$BUILD_DIR/pixelocity_wasm.js"
 
 # Copy output to public folder (repo-relative path)
-PUBLIC_WASM="$SCRIPT_DIR/../../public/wasm"
+PUBLIC_WASM="$SCRIPT_DIR/../public/wasm"
 mkdir -p "$PUBLIC_WASM"
 cp "$BUILD_DIR/pixelocity_wasm.js" "$BUILD_DIR/pixelocity_wasm.wasm" "$PUBLIC_WASM/"
 cp "$SCRIPT_DIR/wasm_bridge.js" "$PUBLIC_WASM/"

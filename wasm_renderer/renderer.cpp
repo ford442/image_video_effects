@@ -193,10 +193,18 @@ bool WebGPURenderer::CreateDevice() {
         }
     };
     
-    wgpuInstanceRequestAdapter(instance_, &adapterOpts, 
+    // Capture the future so we can block on it via wgpuInstanceWaitAny.
+    // WGPUCallbackMode_WaitAnyOnly is required for wgpuInstanceWaitAny.
+    // Build must include -sASYNCIFY so that wgpuInstanceWaitAny can yield
+    // to the browser event loop while the Promise resolves.
+    WGPUFuture adapterFuture = wgpuInstanceRequestAdapter(instance_, &adapterOpts,
         WGPURequestAdapterCallbackInfo{
-            nullptr, WGPUCallbackMode_AllowProcessEvents, adapterCallback, &adapter_, nullptr
+            nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, &adapter_, nullptr
         });
+
+    WGPUFutureWaitInfo adapterWait = {};
+    adapterWait.future = adapterFuture;
+    wgpuInstanceWaitAny(instance_, 1, &adapterWait, UINT64_MAX);
 
     if (!adapter_) {
         printf("❌ Failed to get WebGPU adapter\n");
@@ -222,10 +230,14 @@ bool WebGPURenderer::CreateDevice() {
         }
     };
     
-    wgpuAdapterRequestDevice(adapter_, &deviceDesc,
+    WGPUFuture deviceFuture = wgpuAdapterRequestDevice(adapter_, &deviceDesc,
         WGPURequestDeviceCallbackInfo{
-            nullptr, WGPUCallbackMode_AllowProcessEvents, deviceCallback, &device_, nullptr
+            nullptr, WGPUCallbackMode_WaitAnyOnly, deviceCallback, &device_, nullptr
         });
+
+    WGPUFutureWaitInfo deviceWait = {};
+    deviceWait.future = deviceFuture;
+    wgpuInstanceWaitAny(instance_, 1, &deviceWait, UINT64_MAX);
 
     if (!device_) {
         printf("❌ Failed to get WebGPU device\n");
@@ -828,6 +840,12 @@ void WebGPURenderer::ClearRipples() {
     ripples_.clear();
 }
 
+void WebGPURenderer::SetAudioData(float bass, float mid, float treble) {
+    audioBass_   = bass;
+    audioMid_    = mid;
+    audioTreble_ = treble;
+}
+
 void WebGPURenderer::UpdateUniformBuffer() {
     if (!uniformBuffer_) return;
 
@@ -870,6 +888,13 @@ void WebGPURenderer::UpdateUniformBuffer() {
     }
 
     wgpuQueueWriteBuffer(queue_, uniformBuffer_, 0, uniformData, sizeof(uniformData));
+
+    // Upload audio data to extraBuffer_ (first 3 floats: bass, mid, treble).
+    // Shaders can read this via the extraBuffer binding.
+    if (extraBuffer_) {
+        float audioData[3] = { audioBass_, audioMid_, audioTreble_ };
+        wgpuQueueWriteBuffer(queue_, extraBuffer_, 0, audioData, sizeof(audioData));
+    }
 }
 
 // MISSING: Multi-slot render pipeline

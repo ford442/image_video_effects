@@ -119,14 +119,14 @@ export class WASMRenderer implements Renderer {
     WasmBridge.uploadImageData(imageData.data, w, h);
   }
 
-  updateAudioData(_bass: number, _mid: number, _treble: number): void {
-    // No C++ audio export yet.
+  updateAudioData(bass: number, mid: number, treble: number): void {
+    WasmBridge.updateAudioData(bass, mid, treble);
   }
 
   updateMouse(x: number, y: number): void {
     this.mouseX = x;
     this.mouseY = y;
-    WasmBridge.updateUniforms({ mouseX: x, mouseY: y, mouseDown: this.mouseDown });
+    WasmBridge.updateMousePos(x, y);
   }
 
   setParam(name: string, value: number): void {
