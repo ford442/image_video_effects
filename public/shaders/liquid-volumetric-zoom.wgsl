@@ -119,7 +119,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let zoom_center = u.zoom_config.yz;
 
     var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
-    let clickIntensity = if (arrayLength(&extraBuffer) > 10u) { extraBuffer[10] } else { 0.0 };
+    var clickIntensity: f32;
+    if (arrayLength(&extraBuffer) > 10u) {
+        clickIntensity = extraBuffer[10];
+    } else {
+        clickIntensity = 0.0;
+    }
 
     var accumulatedColor = vec3<f32>(0.0);
     var accumulatedDepth = 0.0;
@@ -164,7 +169,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let baseDepth = accumulatedDepth / max(totalWeight, 0.0001);
 
     // Chromatic separation
-    let chroma = if (arrayLength(&extraBuffer) > 0u) { extraBuffer[0] } else { 0.02 };
+    var chroma: f32;
+    if (arrayLength(&extraBuffer) > 0u) {
+        chroma = extraBuffer[0];
+    } else {
+        chroma = 0.02;
+    }
     let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chroma * baseDepth, 0.0), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(chroma * baseDepth, 0.0), 0.0).b;
@@ -177,7 +187,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthGrad = length(vec2<f32>(depthX - baseDepth, depthY - baseDepth));
     let edgeGlow = exp(-depthGrad * 30.0) * baseDepth * 2.0;
 
-    let final = chromaticColor + vec3<f32>(edgeGlow, edgeGlow * 0.8, edgeGlow * 0.6);
+    let finalColor = chromaticColor + vec3<f32>(edgeGlow, edgeGlow * 0.8, edgeGlow * 0.6);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // ALPHA CALCULATION
@@ -198,7 +208,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Fog
     let fog = exp(-baseDepth * fogDensity * 3.0);
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
-    let outColor = mix(final, fogColor, 1.0 - fog);
+    let outColor = mix(finalColor, fogColor, 1.0 - fog);
 
     textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, alpha));
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
