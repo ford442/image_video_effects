@@ -569,6 +569,14 @@ export class WebGPURenderer implements Renderer {
     }
   }
 
+  /** Update all zoom params from SlotParams (called when UI changes) */
+  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }): void {
+    if (params.zoomParam1 !== undefined) this.zoomParams[0] = params.zoomParam1;
+    if (params.zoomParam2 !== undefined) this.zoomParams[1] = params.zoomParam2;
+    if (params.zoomParam3 !== undefined) this.zoomParams[2] = params.zoomParam3;
+    if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
+  }
+
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */
   render(): void {}
 
