@@ -123,7 +123,7 @@ fn pixelSortSample(
     // Brighter pixels get pulled further in the sort direction
     let pullFactor = pow(luma, 2.0) * sortDist;
     
-var sampleUV = uv - sortDir * pullFactor;
+    var sampleUV = uv - sortDir * pullFactor;
     
     // Add some perpendicular jitter for organic feel
     let perpDir = vec2<f32>(-sortDir.y, sortDir.x);
@@ -138,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let coord = vec2<i32>(global_id.xy);
+    let coord = vec2<u32>(global_id.xy);
     
     // Parameters
     let threshold = clamp(u.zoom_params.x, 0.0, 1.0);

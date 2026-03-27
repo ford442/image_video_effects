@@ -115,7 +115,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Store trail
     textureStore(dataTextureA, global_id.xy, vec4<f32>(newTrail, 0.0, 0.0, 1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(vec2<f32>(global_id.xy)), vec4<f32>(finalColor, 1.0));
 }
 
 fn modulo(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {

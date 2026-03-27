@@ -274,7 +274,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let star_uv = uv + g_mouse * 0.05;
     for (var i = 1; i <= 3; i++) {
         let fi = f32(i);
-        let s = hash31(vec3<f32>(floor(star_uv * 150.0 / fi), fi, 0.0));
+        let s = hash31(vec3<f32>(floor(star_uv * (150.0 / fi)), fi, 0.0));
         if (s > 0.99) { starCol += vec3<f32>(s) * (1.0 - fi * 0.2); }
     }
 
@@ -341,5 +341,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = col / (col + vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
 }

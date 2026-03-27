@@ -143,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let tooth_vis = step(0.4, fract(uv.y * teeth_size));
   let isTeeth = abs(edge_dist) < 0.015 && tooth_vis > 0.5;
 
-  if (isTeeth {
+  if (isTeeth) {
       final_col = tooth_col;
   }
 

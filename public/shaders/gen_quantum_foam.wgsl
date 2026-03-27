@@ -148,9 +148,9 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let coord = vec2<i32>(global_id.xy);
+    let coord = vec2<u32>(global_id.xy);
     
-    if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
+    if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) {
         return;
     }
     

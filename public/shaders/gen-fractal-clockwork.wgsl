@@ -51,7 +51,7 @@ fn map(p: vec3<f32>, gearScale: f32, teeth: f32, speed: f32, time: f32, audioRea
   q.x = (fract((p.x + spacing * 0.5) / spacing) - 0.5) * spacing;
   q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;
 
-  var dir = ((cell.x + cell.y) % 2.0) * 2.0 - 1.0;
+  var dir = (fract((cell.x + cell.y) * 0.5) * 2.0 - 1.0) * -1.0;
   var t = time * speed * audioReactivity * dir * 2.0;
 
   var d = sdGear(q, 1.8, teeth, 0.25, t);

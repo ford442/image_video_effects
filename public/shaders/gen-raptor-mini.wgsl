@@ -67,5 +67,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(readTexture, vec2<i32>(global_id.xy), 0).rgb;
     col = mix(prev * 0.96, col, 0.5);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
 }

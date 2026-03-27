@@ -103,11 +103,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let mouseLight = max(0.0, 1.0 - length(uv - mouse) * 3.0);
   col += vec3<f32>(0.8, 0.6, 1.0) * mouseLight * 0.8;
 
-  textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
   
   var depth = 0.5;
   if (t < 79.0) {
     depth = 1.0 - (t / 80.0);
   }
-  textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

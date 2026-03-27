@@ -87,14 +87,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Matrix Rain Columns
     let numColumns = 80.0;
-    let colIndex = floor(uv.x * numColumns);
+    let colIndex = floor(uv.x * numColumns + 0.5);
     let colRandom = hash12(vec2<f32>(colIndex, 42.0));
     let rainSpeed = streamSpeed * (0.5 + 0.5 * colRandom);
     let rainY = uv.y + time * rainSpeed * 0.1;
 
     // Generate characters/blocks
     let numRows = 40.0 * (resolution.y / resolution.x); // Maintain aspect roughly
-    let rowIndex = floor(rainY * numRows);
+    let rowIndex = floor(rainY * numRows + 0.5);
     let charRandom = hash12(vec2<f32>(colIndex, rowIndex));
     let isChar = step(0.4, charRandom); // 60% density
 
@@ -146,7 +146,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ensure alpha is valid
     finalColor.a = clamp(finalColor.a, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    textureStore(writeTexture, global_id.xy, finalColor);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

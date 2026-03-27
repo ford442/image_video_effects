@@ -139,7 +139,7 @@ fn softShadow(ro: vec3<f32>, rd: vec3<f32>, mint: f32, maxt: f32, power: f32) ->
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let coord = vec2<i32>(global_id.xy);
+    let coord = vec2<u32>(global_id.xy);
     
     if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
         return;

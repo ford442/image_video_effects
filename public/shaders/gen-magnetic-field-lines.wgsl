@@ -107,6 +107,13 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return min(a, b) - h * h * k * (1.0 / 4.0);
 }
 
+
+// Hash function for randomness
+fn hash21(p: vec2<f32>) -> f32 {
+    let k = vec3<f32>(0.3183099, 0.3678794, 0.1031);
+    let x = p.x * k.x + p.y * k.y;
+    return fract(sin(x) * 43758.5453);
+}
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -219,14 +226,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col + bgCol * (1.0 - saturate(length(col)));
     
     // Trails from previous frame
-    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+    let prev = textureLoad(dataTextureC, global_id.xy, 0).rgb;
     col = max(col, prev * trailLength);
     
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.5;
     col *= vignette;
     
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col * 0.95, 1.0));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(fieldMag * 0.1, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(col * 0.95, 1.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(fieldMag * 0.1, 0.0, 0.0, 0.0));
 }

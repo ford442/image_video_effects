@@ -105,6 +105,7 @@ fn audioColor(band: f32, audioPulse: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);
+    let coord_u = vec2<u32>(global_id.xy);
     
     if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
         return;
@@ -202,9 +203,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = mix(0.7, 1.0, luma);
     let finalAlpha = mix(alpha * 0.8, alpha, depth);
     
-    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(length(color), 0.0, 0.0, finalAlpha));
+    textureStore(writeTexture, coord_u, vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, coord_u, vec4<f32>(length(color), 0.0, 0.0, finalAlpha));
     
     // Store for feedback
-    textureStore(dataTextureA, coord, vec4<f32>(color, finalAlpha));
+    textureStore(dataTextureA, coord_u, vec4<f32>(color, finalAlpha));
 }

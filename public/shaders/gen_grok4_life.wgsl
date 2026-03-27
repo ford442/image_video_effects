@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var dy = -4; dy <= 4; dy++) {
         for (var dx = -4; dx <= 4; dx++) {
             let offset = vec2<i32>(dx, dy);
-            let npx = (px + offset + vec2<i32>(resolution)) % vec2<i32>(resolution);
+            let npx = (px + offset + vec2<i32>(resolution)) & vec2<i32>(2047, 2047);
             let neighbor_state = textureLoad(dataTextureC, npx, 0).r;
             
             // Distance from center (in pixel units)
@@ -237,6 +237,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color *= 1.0 - center_dist * center_dist * 0.3;
     
     // Output to textures
-    textureStore(writeTexture, px, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<u32>(px), vec4<f32>(color, 1.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(new_state, new_age, new_activity, 1.0));
 }

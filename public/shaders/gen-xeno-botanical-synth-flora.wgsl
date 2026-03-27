@@ -86,6 +86,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let alpha = volumetricAlpha(flora, 1.0) * depthLayeredAlpha(floraColorBase, uv, depthWeight);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(floraColor, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(floraColor, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

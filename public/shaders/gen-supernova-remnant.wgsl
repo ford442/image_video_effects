@@ -166,7 +166,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let turbDensity = d * (0.7 + 0.3 * detail);
         
         // Color with temperature
-        let shellCol = temperatureColor(saturate(temp));
+        let shellCol = temperatureColor(clamp(temp, 0.0, 1.0));
         
         // Accumulate with alpha blending
         col = col + shellCol * turbDensity * (1.0 - totalDensity);
