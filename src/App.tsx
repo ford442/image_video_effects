@@ -326,10 +326,8 @@ function MainApp() {
                 const entries: ShaderEntry[] = apiShaders.map(shader => ({
                     id: shader.id,
                     name: shader.name || shader.id,
-                    // Use API URL if available, otherwise local fallback
-                    url: shader.url?.includes('/files/') 
-                        ? `${STORAGE_API_URL}/files/image-effects/shaders/${shader.filename}`
-                        : `./shaders/${shader.id}.wgsl`,
+                    // Use API URL (already points to .wgsl file) or local fallback
+                    url: shader.url || `./shaders/${shader.id}.wgsl`,
                     category: determineCategory(shader),
                     description: shader.description || '',
                     tags: shader.tags || [],
