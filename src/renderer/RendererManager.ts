@@ -1,6 +1,7 @@
 import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
+import { WebGPURenderer } from './WebGPURenderer';
 import { ShaderEntry } from './types';
 
 export interface RendererMetrics {
@@ -29,41 +30,50 @@ export class RendererManager {
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.canvas = canvas;
-    // Try WASM renderer first (required for shaders), fall back to JS
-    const wasmSuccess = await this.switchRenderer(true);
+
+    // 1. Try native TypeScript WebGPU renderer (no WASM / Emscripten required)
+    const gpuSuccess = await this.switchRenderer('webgpu');
+    if (gpuSuccess) {
+      console.log('✅ Using TypeScript WebGPU renderer (native navigator.gpu)');
+      return true;
+    }
+
+    // 2. Try compiled WASM renderer (requires a real Emscripten binary)
+    const wasmSuccess = await this.switchRenderer('wasm');
     if (wasmSuccess) {
       console.log('✅ Using WASM renderer with shader support');
       return true;
     }
-    console.warn('⚠️ WASM renderer failed, falling back to JS renderer (shaders unavailable)');
-    return this.switchRenderer(false);
+
+    // 3. Canvas2D fallback — no shader effects, but app stays functional
+    console.warn('⚠️ WebGPU and WASM unavailable — falling back to Canvas2D (shaders disabled)');
+    return this.switchRenderer('js');
   }
 
-  async switchRenderer(useWasm: boolean): Promise<boolean> {
+  async switchRenderer(type: 'webgpu' | 'wasm' | 'js'): Promise<boolean> {
     if (!this.canvas) return false;
 
-    // Store video reference if exists
+    // Preserve video reference across renderer switches
     const video = (this.currentRenderer as any)?.['video'] as HTMLVideoElement | undefined;
 
-    // Destroy old renderer
     this.currentRenderer?.destroy();
 
-    // Create new renderer
-    const RendererClass = useWasm ? WASMRenderer : JSRenderer;
-    const renderer = new RendererClass(this.config);
+    let renderer: Renderer;
+    if (type === 'webgpu') {
+      renderer = new WebGPURenderer(this.config);
+    } else if (type === 'wasm') {
+      renderer = new WASMRenderer(this.config);
+    } else {
+      renderer = new JSRenderer(this.config);
+    }
 
     const success = await renderer.init(this.canvas);
 
     if (success) {
       this.currentRenderer = renderer;
-      this.metrics.isWASM = useWasm;
+      this.metrics.isWASM  = type === 'wasm';
 
-      // Restore video if was playing
-      if (video) {
-        renderer.setVideo(video);
-      }
-
-      // Start metrics collection
+      if (video) renderer.setVideo(video);
       this.startMetricsCollection();
     }
 
@@ -106,10 +116,14 @@ export class RendererManager {
   }
 
   /**
-   * Load a shader into the WASM renderer by fetching its WGSL from the given URL.
-   * No-op when the JS renderer is active.
+   * Load a shader by fetching its WGSL from the given URL.
+   * Works with both the TypeScript WebGPU renderer and the WASM renderer.
+   * No-op when the Canvas2D fallback is active.
    */
   async loadShader(id: string, url: string): Promise<boolean> {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      return this.currentRenderer.loadShader(id, url);
+    }
     if (this.currentRenderer instanceof WASMRenderer) {
       return this.currentRenderer.loadShader(id, url);
     }
@@ -124,34 +138,36 @@ export class RendererManager {
     await Promise.all(shaders.map(s => this.loadShader(s.id, s.url)));
   }
 
-  /** Switch to a previously loaded shader. No-op when the JS renderer is active. */
+  /** Switch to a previously loaded shader. No-op with Canvas2D fallback. */
   setActiveShader(id: string): void {
-    if (this.currentRenderer instanceof WASMRenderer) {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.setActiveShader(id);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
       this.currentRenderer.setActiveShader(id);
     }
   }
 
   addRipple(x: number, y: number): void {
-    if (this.currentRenderer instanceof WASMRenderer) {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.addRipple(x, y);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
       this.currentRenderer.addRipple(x, y);
     }
   }
 
   clearRipples(): void {
-    if (this.currentRenderer instanceof WASMRenderer) {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.clearRipples();
+    } else if (this.currentRenderer instanceof WASMRenderer) {
       this.currentRenderer.clearRipples();
     }
   }
 
-  /** Load an image from URL into the WASM renderer's read texture. */
-  async loadImageFromURL(url: string): Promise<void> {
-    if (this.currentRenderer instanceof WASMRenderer) {
-      return this.currentRenderer.loadImageFromURL(url);
-    }
-  }
-
-  /** Load an image by URL, delegating to whichever renderer is active. */
+  /** Load an image by URL into the active renderer's read texture. */
   async loadImage(url: string): Promise<string> {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      return this.currentRenderer.loadImage(url);
+    }
     if (this.currentRenderer instanceof WASMRenderer) {
       await this.currentRenderer.loadImageFromURL(url);
       return url;
@@ -160,6 +176,11 @@ export class RendererManager {
       return (this.currentRenderer as any).loadImage(url);
     }
     return url;
+  }
+
+  /** @deprecated Use loadImage() */
+  async loadImageFromURL(url: string): Promise<void> {
+    await this.loadImage(url);
   }
 
 
