@@ -95,6 +95,7 @@ export class WebGPURenderer implements Renderer {
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
 
   // Compute textures
+  private sourceTex!: GPUTexture;  // original image/video source (rgba32float) - never modified by shaders
   private readTex!: GPUTexture;    // current input  (rgba32float)
   private writeTex!: GPUTexture;   // current output (rgba32float)
   private dataTexA!: GPUTexture;   // per-frame scratch A (rgba32float)
@@ -257,6 +258,7 @@ export class WebGPURenderer implements Renderer {
     const mkF32  = (label: string) => d.createTexture({ label, size: [w, h], format: 'rgba32float', usage: ALL });
     const mkR32  = (label: string) => d.createTexture({ label, size: [w, h], format: 'r32float',    usage: ALL });
 
+    this.sourceTex = mkF32('sourceTex');  // Original image/video source (never modified)
     this.readTex   = mkF32('readTex');
     this.writeTex  = mkF32('writeTex');
     this.dataTexA  = mkF32('dataTexA');
@@ -531,7 +533,7 @@ export class WebGPURenderer implements Renderer {
     const dstW = this.canvasW, dstH = this.canvasH;
     const cW = Math.min(srcW, dstW), cH = Math.min(srcH, dstH);
 
-    // Convert RGBA8 → RGBA32Float in JS, then upload to readTex
+    // Convert RGBA8 → RGBA32Float in JS
     const floats = new Float32Array(cW * cH * 4);
     for (let y = 0; y < cH; y++) {
       for (let x = 0; x < cW; x++) {
@@ -543,6 +545,13 @@ export class WebGPURenderer implements Renderer {
         floats[di + 3] = data[si + 3] / 255;
       }
     }
+    // Upload to both sourceTex (preserved) and readTex (working copy)
+    this.device.queue.writeTexture(
+      { texture: this.sourceTex },
+      floats,
+      { bytesPerRow: cW * 16, rowsPerImage: cH },
+      [cW, cH],
+    );
     this.device.queue.writeTexture(
       { texture: this.readTex },
       floats,
@@ -628,6 +637,13 @@ export class WebGPURenderer implements Renderer {
     this.writeUniforms();
 
     const encoder = this.device.createCommandEncoder({ label: 'frame' });
+
+    // Restore source image to readTex before processing (prevents feedback fade-to-black)
+    encoder.copyTextureToTexture(
+      { texture: this.sourceTex },
+      { texture: this.readTex },
+      [this.canvasW, this.canvasH, 1],
+    );
     const wgX = Math.ceil(this.canvasW / 8);
     const wgY = Math.ceil(this.canvasH / 8);
 
