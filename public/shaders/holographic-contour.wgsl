@@ -1,239 +1,218 @@
-// ═══════════════════════════════════════════════════════════════
-//  Holographic Contour - Edge-based hologram with interference physics
-//  Category: artistic
-//  Features: mouse-driven, depth-aware, alpha transparency
-//  Physics: Thin-film interference, diffraction efficiency, 60Hz flicker
-// ═══════════════════════════════════════════════════════════════
-
 struct Uniforms {
     config: vec4<f32>,
     zoom_config: vec4<f32>,
     zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-// ═══════════════════════════════════════════════════════════════
-// Thin-Film Interference Physics
-// ═══════════════════════════════════════════════════════════════
-
-// Refractive indices for common holographic materials
-const N_AIR: f32 = 1.0;
-const N_EMULSION: f32 = 1.52;  // Typical photographic emulsion
-const N_GLASS: f32 = 1.5;
-const N_FILM_BASE: f32 = 1.49; // Polyester film base
-
-// Wavelengths for RGB channels (in nanometers, normalized to 0-1 range)
-const LAMBDA_R: f32 = 650.0 / 750.0;  // Red ~650nm
-const LAMBDA_G: f32 = 530.0 / 750.0;  // Green ~530nm
-const LAMBDA_B: f32 = 460.0 / 750.0;  // Blue ~460nm
-
-// Pepper's ghost reflection coefficient
-const REFLECTION_COEFF: f32 = 0.1;
-
-// ═══════════════════════════════════════════════════════════════
-// Interference Functions
-// ═══════════════════════════════════════════════════════════════
-
-// Calculate thin-film interference intensity
-// Uses: 2nd = (m + 0.5)λ/n for constructive interference
-fn thinFilmInterference(opticalPath: f32, wavelength: f32, order: f32) -> f32 {
-    // Phase difference: δ = (2π/λ) * 2nd
-    let phase = 6.28318 * opticalPath / wavelength;
-    
-    // Constructive when phase ≈ (m + 0.5) * 2π
-    // Destructive when phase ≈ m * 2π
-    let targetPhase = (order + 0.5) * 6.28318;
-    let phaseDiff = phase - targetPhase;
-    
-    // Interference intensity (cosine squared response)
-    return cos(phaseDiff) * cos(phaseDiff);
 }
 
-// Calculate diffraction efficiency based on wavelength and angle
-// Simulates how holographic gratings diffract different wavelengths
-fn diffractionEfficiency(uv: vec2<f32>, viewAngle: f32, wavelength: f32) -> f32 {
-    // Grating equation: d*sin(θ) = mλ
-    // Efficiency varies with angle and wavelength
-    let gratingSpacing = 0.001; // 1 micron spacing
-    let sinTheta = sin(viewAngle);
-    
-    // Phase matching condition
-    let phaseMatch = abs(sinTheta - wavelength * gratingSpacing * 1000.0);
-    
-    // Efficiency peaks when phase matches (Bragg condition)
-    let efficiency = exp(-phaseMatch * phaseMatch * 100.0);
-    
-    return efficiency;
+@group(0) @binding(0) 
+var u_sampler: sampler;
+@group(0) @binding(1) 
+var readTexture: texture_2d<f32>;
+@group(0) @binding(2) 
+var writeTexture: texture_storage_2d<rgba32float,write>;
+@group(0) @binding(3) 
+var<uniform> u: Uniforms;
+@group(0) @binding(4) 
+var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) 
+var non_filtering_sampler: sampler;
+@group(0) @binding(6) 
+var writeDepthTexture: texture_storage_2d<r32float,write>;
+@group(0) @binding(7) 
+var dataTextureA: texture_storage_2d<rgba32float,write>;
+@group(0) @binding(8) 
+var dataTextureB: texture_storage_2d<rgba32float,write>;
+@group(0) @binding(9) 
+var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) 
+var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) 
+var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) 
+var<storage> plasmaBuffer: array<vec4<f32>>;
+
+fn getLuma(color_1: vec3<f32>) -> f32 {
+    return dot(color_1, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-// Calculate rainbow color from interference pattern
-fn interferenceColor(uv: vec2<f32>, mousePos: vec2<f32>, time: f32) -> vec3<f32> {
-    let toMouse = uv - mousePos;
-    let angle = atan2(toMouse.y, toMouse.x);
-    let dist = length(toMouse);
-    
-    // Viewing angle affects interference
-    let viewAngle = angle + time * 0.1 * (1.0 + audioOverall * 0.3);
-    
-    // Optical path difference (varies with angle for thin film)
-    let opticalPath = 320.0 / 750.0 + dist * 0.1; // ~320nm film thickness
-    
-    // Calculate interference for each channel
-    let intR = thinFilmInterference(opticalPath, LAMBDA_R, 1.0);
-    let intG = thinFilmInterference(opticalPath, LAMBDA_G, 1.0);
-    let intB = thinFilmInterference(opticalPath, LAMBDA_B, 1.0);
-    
-    // Add some angle-dependent variation
-    let angleMod = sin(angle * 3.0 + time) * 0.3;
-    
-    return vec3<f32>(
-        intR * (0.8 + angleMod),
-        intG * (0.9 + angleMod * 0.5),
-        intB * (1.0 - angleMod * 0.3)
-    );
+fn hash12_(p: vec2<f32>) -> f32 {
+    var p3_: vec3<f32>;
+
+    p3_ = fract((vec3<f32>(p.xyx) * 0.1031));
+    let _e7 = p3_;
+    let _e8 = p3_;
+    let _e14 = p3_;
+    p3_ = (_e14 + vec3(dot(_e7, (_e8.yzx + vec3(33.33)))));
+    let _e18 = p3_.x;
+    let _e20 = p3_.y;
+    let _e23 = p3_.z;
+    return fract(((_e18 + _e20) * _e23));
 }
 
-// Calculate scanline alpha modulation
-fn scanlineAlpha(uv: vec2<f32>, time: f32, intensity: f32) -> f32 {
-    // Horizontal scanlines at ~600 lines
-    let scanPos = uv.y * 600.0;
-    let scanline = sin(scanPos + time * 10.0 * (1.0 + audioOverall * 0.3)) * 0.5 + 0.5;
-    
-    // Vertical retrace effect
-    let retrace = sin(uv.x * 200.0 - time * 30.0 * (1.0 + audioOverall * 0.3)) * 0.5 + 0.5;
-    
-    return 1.0 - scanline * retrace * intensity * 0.3;
-}
+@compute @workgroup_size(8, 8, 1) 
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    var uv: vec2<f32>;
+    var mousePos: vec2<f32>;
+    var gx: vec3<f32> = vec3(0.0);
+    var gy: vec3<f32> = vec3(0.0);
+    var i: i32 = -1;
+    var j: i32;
+    var wx: f32;
+    var wy: f32;
+    var color: vec3<f32>;
+    var finalColor: vec3<f32>;
+    var ink_alpha: f32 = 0.0;
+    var d: f32;
 
-// ═══════════════════════════════════════════════════════════════
-// Main Shader
-// ═══════════════════════════════════════════════════════════════
-
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dim = textureDimensions(readTexture);
-    let coord = vec2<i32>(i32(gid.x), i32(gid.y));
-
-    if (coord.x >= i32(dim.x) || coord.y >= i32(dim.y)) {
+    let _e3 = u.config;
+    let resolution = _e3.zw;
+    if ((global_id.x >= u32(resolution.x)) || (global_id.y >= u32(resolution.y))) {
         return;
     }
-
-    var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
-
-    // Parameters
-    let threshold = u.zoom_params.x;     // Edge Threshold
-    let glow_strength = u.zoom_params.y; // Glow Strength
-    let shift_amount = u.zoom_params.z;  // Hologram Shift
-    let dim_bg = u.zoom_params.w;        // Darken Background
-
-    // Mouse Position
-    let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    uv = (vec2<f32>(global_id.xy) / resolution);
+    let _e20 = u.zoom_config;
+    mousePos = _e20.yz;
     let time = u.config.x;
-    // ═══ AUDIO INPUT ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-
-    // Sobel Edge Detection
-    let dx = vec2<i32>(1, 0);
-    let dy = vec2<i32>(0, 1);
-
-    let c = textureLoad(readTexture, coord, 0).rgb;
-    let l = textureLoad(readTexture, coord - dx, 0).rgb;
-    let r = textureLoad(readTexture, coord + dx, 0).rgb;
-    let t = textureLoad(readTexture, coord - dy, 0).rgb;
-    let b = textureLoad(readTexture, coord + dy, 0).rgb;
-
-    let edge_x = length(r - l);
-    let edge_y = length(b - t);
-    let edge = sqrt(edge_x * edge_x + edge_y * edge_y);
-
-    // ═══════════════════════════════════════════════════════════════
-    // Holographic Transparency & Interference Physics
-    // ═══════════════════════════════════════════════════════════════
-    
-    // Base transparency: holograms are mostly invisible
-    let base_alpha = 0.03;
-    
-    // Calculate interference color (rainbow effect from diffraction)
-    let interference = interferenceColor(uv, mouse_pos, time);
-    
-    // Diffraction efficiency at edges (where hologram fringes are visible)
-    var diffraction_efficiency = 0.0;
-    
-    var final_color = c * (1.0 - dim_bg * 0.5);
-    var alpha = base_alpha;
-
-    if (edge > threshold) {
-        // Edge represents interference fringes in hologram
-        let to_mouse = uv - mouse_pos;
-        let angle = atan2(to_mouse.y, to_mouse.x);
-        
-        // Calculate diffraction efficiency based on angle
-        let viewAngle = angle + time * 0.2 * (1.0 + audioOverall * 0.3);
-        diffraction_efficiency = diffractionEfficiency(uv, viewAngle, 0.5);
-        
-        // Enhanced edge intensity from interference
-        let edge_intensity = (edge - threshold) * 3.0;
-        
-        // Interference creates rainbow colors at edges
-        let hue = fract(angle / 6.28 + time * 0.1 * (1.0 + audioOverall * 0.3));
-        
-        // Spectral colors from thin-film interference
-        let r_val = 0.5 + 0.5 * cos(6.28 * (hue + 0.0));
-        let g_val = 0.5 + 0.5 * cos(6.28 * (hue + 0.33));
-        let b_val = 0.5 + 0.5 * cos(6.28 * (hue + 0.67));
-        
-        // Combine with physics-based interference
-        let edge_color = vec3<f32>(r_val, g_val, b_val) * interference * glow_strength;
-        
-        // Boost alpha where light is diffracted (interference fringes)
-        let fringe_alpha = base_alpha + diffraction_efficiency * 0.35 * edge_intensity;
-        
-        // Additive blend for holographic glow
-        final_color += edge_color * edge_intensity;
-        alpha = min(fringe_alpha, 0.5); // Cap max alpha for transparency
+    let _e30 = u.zoom_params.x;
+    let dotSize = ((_e30 * 20.0) + 2.0);
+    let _e40 = u.zoom_params.y;
+    let edgeThresh = max(0.01, ((1.0 - _e40) * 0.5));
+    let _e48 = u.zoom_params.z;
+    let levels = (floor((_e48 * 10.0)) + 2.0);
+    let inkDensity = u.zoom_params.w;
+    let pixelSize = (vec2(1.0) / resolution);
+    loop {
+        let _e69 = i;
+        if (_e69 <= 1) {
+        } else {
+            break;
+        }
+        {
+            j = -1;
+            loop {
+                let _e74 = j;
+                if (_e74 <= 1) {
+                } else {
+                    break;
+                }
+                {
+                    let _e77 = i;
+                    let _e79 = j;
+                    let offset = (vec2<f32>(f32(_e77), f32(_e79)) * pixelSize);
+                    let _e85 = uv;
+                    let _e88 = textureSampleLevel(readTexture, u_sampler, (_e85 + offset), 0.0);
+                    let s = _e88.xyz;
+                    let _e90 = getLuma(s);
+                    wx = 0.0;
+                    wy = 0.0;
+                    let _e95 = i;
+                    if (_e95 == -1) {
+                        wx = -1.0;
+                    }
+                    let _e99 = i;
+                    if (_e99 == 1) {
+                        wx = 1.0;
+                    }
+                    let _e103 = j;
+                    if (_e103 == -1) {
+                        wy = -1.0;
+                    }
+                    let _e107 = j;
+                    if (_e107 == 1) {
+                        wy = 1.0;
+                    }
+                    let _e111 = j;
+                    if (_e111 == 0) {
+                        let _e115 = wx;
+                        wx = (_e115 * 2.0);
+                    }
+                    let _e117 = i;
+                    if (_e117 == 0) {
+                        let _e121 = wy;
+                        wy = (_e121 * 2.0);
+                    }
+                    let _e123 = wx;
+                    let _e126 = gx;
+                    gx = (_e126 + vec3((_e90 * _e123)));
+                    let _e128 = wy;
+                    let _e131 = gy;
+                    gy = (_e131 + vec3((_e90 * _e128)));
+                }
+                continuing {
+                    let _e134 = j;
+                    j = (_e134 + 1);
+                }
+            }
+        }
+        continuing {
+            let _e137 = i;
+            i = (_e137 + 1);
+        }
     }
-    
-    // ═══════════════════════════════════════════════════════════════
-    // Projection Effects
-    // ═══════════════════════════════════════════════════════════════
-    
-    // 60Hz flicker typical of holographic projectors
-    let flicker = 0.92 + 0.08 * sin(time * 377.0 * (1.0 + audioOverall * 0.3)); // 60Hz = 377 rad/s
-    alpha *= flicker;
-    
-    // Scanline alpha modulation
-    let scanAlpha = scanlineAlpha(uv, time, 0.5);
-    alpha *= scanAlpha;
-    
-    // Pepper's ghost reflection (subtle double image)
-    let ghost_offset = 0.003;
-    let ghost_uv = uv + vec2<f32>(ghost_offset);
-    let ghost_color = textureSampleLevel(readTexture, u_sampler, ghost_uv, 0.0).rgb;
-    final_color = mix(final_color, ghost_color * interference, REFLECTION_COEFF * 0.3);
-    
-    // Temporal noise (holographic speckle)
-    let speckle = fract(sin(dot(uv + time * 0.1 * (1.0 + audioOverall * 0.3), vec2<f32>(12.9898, 78.233))) * 43758.5453);
-    alpha *= 0.95 + speckle * 0.1;
-
-    // Output with calculated alpha
-    textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
-    
-    // Pass depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let _e139 = gx;
+    let _e140 = gy;
+    let edge = length((_e139 + _e140));
+    let isEdge = select(0.0, 1.0, (edge > edgeThresh));
+    let _e149 = uv;
+    let _e151 = textureSampleLevel(readTexture, u_sampler, _e149, 0.0);
+    color = _e151.xyz;
+    let _e154 = color;
+    let _e155 = getLuma(_e154);
+    let gridPos = (vec2<f32>(global_id.xy) / vec2(dotSize));
+    let gridCenter = (floor(gridPos) + vec2(0.5));
+    let dist = length((gridPos - gridCenter));
+    let radius = (sqrt(_e155) * 0.5);
+    let _e169 = color;
+    color = (floor((_e169 * levels)) / vec3(levels));
+    let dotRadius = ((1.0 - _e155) * 0.7);
+    let isDot = select(0.0, 1.0, (dist < dotRadius));
+    let _e182 = color;
+    finalColor = _e182;
+    if (isEdge > 0.5) {
+        let line_density = ((inkDensity * 0.9) + 0.05);
+        ink_alpha = line_density;
+        let _e192 = finalColor;
+        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (isEdge * inkDensity));
+    }
+    if (isDot > 0.5) {
+        let dot_coverage = smoothstep(0.0, 0.7, (1.0 - _e155));
+        let dot_alpha = ((dot_coverage * inkDensity) * 0.85);
+        let inkColor = vec3<f32>(0.08, 0.07, 0.09);
+        let _e213 = finalColor;
+        let _e214 = finalColor;
+        finalColor = mix(_e213, (_e214 * 0.7), (isDot * 0.8));
+        let _e220 = ink_alpha;
+        ink_alpha = max(_e220, dot_alpha);
+    }
+    let _e222 = ink_alpha;
+    if (_e222 < 0.01) {
+        ink_alpha = mix(0.15, 0.45, (_e155 * inkDensity));
+    }
+    let _e229 = uv;
+    let _e236 = hash12_((((_e229 * time) * 0.001) + vec2(100.0)));
+    let paper_tex = (0.95 + (0.05 * _e236));
+    let _e241 = ink_alpha;
+    ink_alpha = (_e241 * paper_tex);
+    let _e244 = mousePos.x;
+    if (_e244 >= 0.0) {
+        let _e247 = uv;
+        let _e248 = mousePos;
+        let dVec = (_e247 - _e248);
+        d = length(dVec);
+        let _e254 = d;
+        let vignette = smoothstep(0.8, 0.2, (_e254 * 0.5));
+        let _e258 = finalColor;
+        finalColor = (_e258 * vignette);
+        let _e260 = ink_alpha;
+        let _e262 = ink_alpha;
+        ink_alpha = mix(_e260, min(1.0, (_e262 * 1.2)), (vignette * 0.5));
+    }
+    let _e272 = finalColor;
+    let _e273 = ink_alpha;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(_e272, _e273));
+    let _e277 = ink_alpha;
+    let _e280 = ink_alpha;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(_e277, 0.0, 0.0, _e280));
+    return;
 }

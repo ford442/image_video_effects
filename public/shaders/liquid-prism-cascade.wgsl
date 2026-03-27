@@ -1,250 +1,218 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  Liquid Prism Cascade
-//  Category: EFFECT
-//  Complexity: HIGH
-//  Visual concept: Colors separate along curved planes like light through prisms,
-//    creating a layered 3-D depth illusion where each channel drifts independently.
-//  Mathematical approach: Per-channel UV warping with curved dispersion vectors
-//    derived from local luminance gradient + depth curvature; ripple-modulated
-//    prismatic offset; HSV twist layer composited additively.
-// ─────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
 struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
-    zoom_params: vec4<f32>, // x=DispersionStrength, y=CurvatureScale,
-                             // z=PrismTwist, w=DepthWeight
+    config: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Luminance
-// ─────────────────────────────────────────────────────────────────────────────
-fn luma(c: vec3<f32>) -> f32 {
-    return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  2-D hash for micro-noise
-// ─────────────────────────────────────────────────────────────────────────────
-fn hash2f(p: vec2<f32>) -> f32 {
-    var q = fract(p * vec2<f32>(127.1, 311.7));
-    q += dot(q, q + 19.19);
-    return fract(q.x * q.y);
+@group(0) @binding(0) 
+var u_sampler: sampler;
+@group(0) @binding(1) 
+var readTexture: texture_2d<f32>;
+@group(0) @binding(2) 
+var writeTexture: texture_storage_2d<rgba32float,write>;
+@group(0) @binding(3) 
+var<uniform> u: Uniforms;
+@group(0) @binding(4) 
+var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) 
+var non_filtering_sampler: sampler;
+@group(0) @binding(6) 
+var writeDepthTexture: texture_storage_2d<r32float,write>;
+@group(0) @binding(7) 
+var dataTextureA: texture_storage_2d<rgba32float,write>;
+@group(0) @binding(8) 
+var dataTextureB: texture_storage_2d<rgba32float,write>;
+@group(0) @binding(9) 
+var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) 
+var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) 
+var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) 
+var<storage> plasmaBuffer: array<vec4<f32>>;
+
+fn getLuma(color_1: vec3<f32>) -> f32 {
+    return dot(color_1, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Smooth value noise (2-D)
-// ─────────────────────────────────────────────────────────────────────────────
-fn vnoise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash2f(i + vec2<f32>(0.0, 0.0)), hash2f(i + vec2<f32>(1.0, 0.0)), u.x),
-        mix(hash2f(i + vec2<f32>(0.0, 1.0)), hash2f(i + vec2<f32>(1.0, 1.0)), u.x),
-        u.y
-    );
+fn hash12_(p: vec2<f32>) -> f32 {
+    var p3_: vec3<f32>;
+
+    p3_ = fract((vec3<f32>(p.xyx) * 0.1031));
+    let _e7 = p3_;
+    let _e8 = p3_;
+    let _e14 = p3_;
+    p3_ = (_e14 + vec3(dot(_e7, (_e8.yzx + vec3(33.33)))));
+    let _e18 = p3_.x;
+    let _e20 = p3_.y;
+    let _e23 = p3_.z;
+    return fract(((_e18 + _e20) * _e23));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Prismatic dispersion offset for a given channel index (0=R, 1=G, 2=B)
-//  Simulates Cauchy dispersion: shorter wavelengths bend more.
-// ─────────────────────────────────────────────────────────────────────────────
-fn prismOffset(channel: i32, grad: vec2<f32>, strength: f32, twist: f32, t: f32) -> vec2<f32> {
-    // Wavelength weights: red bends least, blue most
-    let wl = array<f32, 3>(0.6, 1.0, 1.5);
-    let w = wl[channel];
-    // Rotate gradient slightly per channel + time
-    let angle = (f32(channel) - 1.0) * twist + t * 0.1;
-    let cs = cos(angle);
-    let sn = sin(angle);
-    let rotGrad = vec2<f32>(cs * grad.x - sn * grad.y, sn * grad.x + cs * grad.y);
-    return rotGrad * strength * w * 0.018;
-}
+@compute @workgroup_size(8, 8, 1) 
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    var uv: vec2<f32>;
+    var mousePos: vec2<f32>;
+    var gx: vec3<f32> = vec3(0.0);
+    var gy: vec3<f32> = vec3(0.0);
+    var i: i32 = -1;
+    var j: i32;
+    var wx: f32;
+    var wy: f32;
+    var color: vec3<f32>;
+    var finalColor: vec3<f32>;
+    var ink_alpha: f32 = 0.0;
+    var d: f32;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Accumulate ripple displacement
-// ─────────────────────────────────────────────────────────────────────────────
-fn rippleDisp(uv: vec2<f32>, t: f32, rippleCount: u32) -> vec2<f32> {
-    var disp = vec2<f32>(0.0);
-    for (var i: u32 = 0u; i < rippleCount; i++) {
-        let r = u.ripples[i];
-        let age = t - r.z;
-        if (age < 0.0 || age > 4.0) { continue; }
-        let d = distance(uv, r.xy);
-        let wave = sin(d * 40.0 - age * 6.0) * exp(-d * 5.0) * exp(-age * 1.2);
-        let env = (1.0 - age / 4.0);
-        if (d > 0.001) {
-            disp += normalize(uv - r.xy) * wave * env * 0.012;
+    let _e3 = u.config;
+    let resolution = _e3.zw;
+    if ((global_id.x >= u32(resolution.x)) || (global_id.y >= u32(resolution.y))) {
+        return;
+    }
+    uv = (vec2<f32>(global_id.xy) / resolution);
+    let _e20 = u.zoom_config;
+    mousePos = _e20.yz;
+    let time = u.config.x;
+    let _e30 = u.zoom_params.x;
+    let dotSize = ((_e30 * 20.0) + 2.0);
+    let _e40 = u.zoom_params.y;
+    let edgeThresh = max(0.01, ((1.0 - _e40) * 0.5));
+    let _e48 = u.zoom_params.z;
+    let levels = (floor((_e48 * 10.0)) + 2.0);
+    let inkDensity = u.zoom_params.w;
+    let pixelSize = (vec2(1.0) / resolution);
+    loop {
+        let _e69 = i;
+        if (_e69 <= 1) {
+        } else {
+            break;
+        }
+        {
+            j = -1;
+            loop {
+                let _e74 = j;
+                if (_e74 <= 1) {
+                } else {
+                    break;
+                }
+                {
+                    let _e77 = i;
+                    let _e79 = j;
+                    let offset = (vec2<f32>(f32(_e77), f32(_e79)) * pixelSize);
+                    let _e85 = uv;
+                    let _e88 = textureSampleLevel(readTexture, u_sampler, (_e85 + offset), 0.0);
+                    let s = _e88.xyz;
+                    let _e90 = getLuma(s);
+                    wx = 0.0;
+                    wy = 0.0;
+                    let _e95 = i;
+                    if (_e95 == -1) {
+                        wx = -1.0;
+                    }
+                    let _e99 = i;
+                    if (_e99 == 1) {
+                        wx = 1.0;
+                    }
+                    let _e103 = j;
+                    if (_e103 == -1) {
+                        wy = -1.0;
+                    }
+                    let _e107 = j;
+                    if (_e107 == 1) {
+                        wy = 1.0;
+                    }
+                    let _e111 = j;
+                    if (_e111 == 0) {
+                        let _e115 = wx;
+                        wx = (_e115 * 2.0);
+                    }
+                    let _e117 = i;
+                    if (_e117 == 0) {
+                        let _e121 = wy;
+                        wy = (_e121 * 2.0);
+                    }
+                    let _e123 = wx;
+                    let _e126 = gx;
+                    gx = (_e126 + vec3((_e90 * _e123)));
+                    let _e128 = wy;
+                    let _e131 = gy;
+                    gy = (_e131 + vec3((_e90 * _e128)));
+                }
+                continuing {
+                    let _e134 = j;
+                    j = (_e134 + 1);
+                }
+            }
+        }
+        continuing {
+            let _e137 = i;
+            i = (_e137 + 1);
         }
     }
-    return disp;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Fractional Brownian Motion (4 octaves)
-// ─────────────────────────────────────────────────────────────────────────────
-fn fbm(p: vec2<f32>) -> f32 {
-    var v = 0.0; var a = 0.5; var pp = p;
-    for (var i = 0; i < 4; i++) {
-        v += a * vnoise(pp);
-        pp = pp * 2.1 + vec2<f32>(1.7, 9.2);
-        a *= 0.5;
+    let _e139 = gx;
+    let _e140 = gy;
+    let edge = length((_e139 + _e140));
+    let isEdge = select(0.0, 1.0, (edge > edgeThresh));
+    let _e149 = uv;
+    let _e151 = textureSampleLevel(readTexture, u_sampler, _e149, 0.0);
+    color = _e151.xyz;
+    let _e154 = color;
+    let _e155 = getLuma(_e154);
+    let gridPos = (vec2<f32>(global_id.xy) / vec2(dotSize));
+    let gridCenter = (floor(gridPos) + vec2(0.5));
+    let dist = length((gridPos - gridCenter));
+    let radius = (sqrt(_e155) * 0.5);
+    let _e169 = color;
+    color = (floor((_e169 * levels)) / vec3(levels));
+    let dotRadius = ((1.0 - _e155) * 0.7);
+    let isDot = select(0.0, 1.0, (dist < dotRadius));
+    let _e182 = color;
+    finalColor = _e182;
+    if (isEdge > 0.5) {
+        let line_density = ((inkDensity * 0.9) + 0.05);
+        ink_alpha = line_density;
+        let _e192 = finalColor;
+        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (isEdge * inkDensity));
     }
-    return v;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Spectral Cauchy dispersion coefficient for wavelength λ (nm, normalized)
-//  Cauchy: n(λ) = A + B/λ²
-// ─────────────────────────────────────────────────────────────────────────────
-fn cauchyN(lambda: f32, A: f32, B: f32) -> f32 {
-    return A + B / (lambda * lambda + 0.01);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Chromatic aberration angle from index of refraction difference
-// ─────────────────────────────────────────────────────────────────────────────
-fn chromaticAngle(nDiff: f32, incidence: f32) -> f32 {
-    return asin(clamp(sin(incidence) / (nDiff + 1.0), -1.0, 1.0));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hue-preserving tone mapping
-// ─────────────────────────────────────────────────────────────────────────────
-fn toneMap(c: vec3<f32>) -> vec3<f32> {
-    let lum = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let mapped = lum / (lum + 1.0);
-    return c * (mapped / max(lum, 0.001));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Soft-light blend mode
-// ─────────────────────────────────────────────────────────────────────────────
-fn softLight(base: vec3<f32>, blend: vec3<f32>) -> vec3<f32> {
-    return mix(
-        2.0 * base * blend + base * base * (1.0 - 2.0 * blend),
-        2.0 * base * (1.0 - blend) + sqrt(base) * (2.0 * blend - 1.0),
-        step(0.5, blend)
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Main
-// ─────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res   = u.config.zw;
-    let uv    = vec2<f32>(gid.xy) / res;
-    let t     = u.config.x;
-    let tx    = 1.0 / res;
-
-    // Parameters
-    let dispStrength = u.zoom_params.x * 2.0 + 0.3;    // 0.3 – 2.3
-    let curvScale    = u.zoom_params.y * 3.0 + 0.5;    // 0.5 – 3.5
-    let prismTwist   = u.zoom_params.z * 3.14159;       // 0 – π
-    let depthWeight  = u.zoom_params.w;                  // 0 – 1
-
-    // ── Luminance gradient (finite differences) ───────────────────────────
-    let lumC  = luma(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb);
-    let lumR  = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(tx.x, 0.0), 0.0).rgb);
-    let lumL  = luma(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(tx.x, 0.0), 0.0).rgb);
-    let lumU  = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, tx.y), 0.0).rgb);
-    let lumD  = luma(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, tx.y), 0.0).rgb);
-    let lumGrad = vec2<f32>(lumR - lumL, lumU - lumD);
-
-    // ── Depth curvature ───────────────────────────────────────────────────
-    let depth  = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(tx.x * 2.0, 0.0), 0.0).r;
-    let depthL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(tx.x * 2.0, 0.0), 0.0).r;
-    let depthU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, tx.y * 2.0), 0.0).r;
-    let depthD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, tx.y * 2.0), 0.0).r;
-    let depthCurv = vec2<f32>(depthR - depthL, depthU - depthD) * curvScale;
-
-    // Combined gradient (luminance + depth curvature)
-    let grad = lumGrad + depthCurv * depthWeight;
-
-    // ── Slow curved warp via noise ─────────────────────────────────────────
-    let noiseUV   = uv * 3.5 + vec2<f32>(t * 0.04, t * 0.03);
-    let noiseBend = (vnoise(noiseUV) - 0.5) * 0.007;
-    let bentGrad  = grad + vec2<f32>(noiseBend, noiseBend * 0.7);
-
-    // ── Ripple displacement ───────────────────────────────────────────────
-    let ripples = rippleDisp(uv, t, u32(u.config.y));
-
-    // ── Per-channel prismatic sampling ────────────────────────────────────
-    var rgb: array<f32, 3>;
-    for (var ch = 0; ch < 3; ch++) {
-        let off  = prismOffset(ch, bentGrad, dispStrength, prismTwist, t);
-        let sUV  = clamp(uv + off + ripples, vec2<f32>(0.0), vec2<f32>(1.0));
-        let col  = textureSampleLevel(readTexture, u_sampler, sUV, 0.0);
-        if (ch == 0) { rgb[0] = col.r; }
-        else if (ch == 1) { rgb[1] = col.g; }
-        else { rgb[2] = col.b; }
+    if (isDot > 0.5) {
+        let dot_coverage = smoothstep(0.0, 0.7, (1.0 - _e155));
+        let dot_alpha = ((dot_coverage * inkDensity) * 0.85);
+        let inkColor = vec3<f32>(0.08, 0.07, 0.09);
+        let _e213 = finalColor;
+        let _e214 = finalColor;
+        finalColor = mix(_e213, (_e214 * 0.7), (isDot * 0.8));
+        let _e220 = ink_alpha;
+        ink_alpha = max(_e220, dot_alpha);
     }
-
-    // ── Prismatic glow: add a faint additive halo in the dispersion direction
-    let glowAmt = length(bentGrad) * 0.6;
-    let glowR = textureSampleLevel(readTexture, u_sampler,
-        clamp(uv + bentGrad * 0.03 + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let glowB = textureSampleLevel(readTexture, u_sampler,
-        clamp(uv - bentGrad * 0.03 + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-
-    var outColor = vec4<f32>(
-        clamp(rgb[0] + glowR * glowAmt * 0.15, 0.0, 1.0),
-        clamp(rgb[1], 0.0, 1.0),
-        clamp(rgb[2] + glowB * glowAmt * 0.15, 0.0, 1.0),
-        1.0
-    );
-
-    // ── FBM-modulated prismatic shimmer ───────────────────────────────────
-    let fbmVal  = fbm(uv * 6.0 + vec2<f32>(t * 0.02, -t * 0.015));
-    let shimmer = fbmVal * 0.04 * dispStrength;
-    let shimmerColor = vec3<f32>(
-        shimmer * sin(t + 0.0) * 0.5 + 0.5,
-        shimmer * sin(t + 2.094) * 0.5 + 0.5,
-        shimmer * sin(t + 4.189) * 0.5 + 0.5
-    );
-
-    // ── Cauchy dispersion enhancement ─────────────────────────────────────
-    let nR = cauchyN(0.65, 1.45, 0.01);
-    let nB = cauchyN(0.45, 1.45, 0.01);
-    let cauchyDisp = (nB - nR) * length(bentGrad) * dispStrength * 0.02;
-    let cauchyShift = vec2<f32>(cos(t * 0.1), sin(t * 0.1)) * cauchyDisp;
-    let extraR = textureSampleLevel(readTexture, u_sampler,
-        clamp(uv + cauchyShift + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let extraB = textureSampleLevel(readTexture, u_sampler,
-        clamp(uv - cauchyShift + ripples, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-
-    // ── Tone-mapped composite with shimmer ────────────────────────────────
-    let prismFinal = toneMap(vec3<f32>(
-        clamp(outColor.r * 0.85 + extraR * 0.15 + shimmerColor.r, 0.0, 1.0),
-        clamp(outColor.g + shimmerColor.g, 0.0, 1.0),
-        clamp(outColor.b * 0.85 + extraB * 0.15 + shimmerColor.b, 0.0, 1.0)
-    ));
-    outColor = vec4<f32>(softLight(outColor.rgb, prismFinal) * 0.6 + prismFinal * 0.4, 1.0);
-
-    // ── Edge vignette darkening for depth of field feel ───────────────────
-    // Smooth radial falloff keeps focal center bright while darkening corners.
-    // Combined with prismatic shimmer this creates a focused-lens aesthetic.
-    let edgeDist = length(uv - vec2<f32>(0.5));
-    let vignette = 1.0 - smoothstep(0.35, 0.85, edgeDist) * 0.4;
-    outColor = vec4<f32>(outColor.rgb * vignette, 1.0);
-
-    textureStore(writeTexture, gid.xy, vec4<f32>(clamp(outColor.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    let _e222 = ink_alpha;
+    if (_e222 < 0.01) {
+        ink_alpha = mix(0.15, 0.45, (_e155 * inkDensity));
+    }
+    let _e229 = uv;
+    let _e236 = hash12_((((_e229 * time) * 0.001) + vec2(100.0)));
+    let paper_tex = (0.95 + (0.05 * _e236));
+    let _e241 = ink_alpha;
+    ink_alpha = (_e241 * paper_tex);
+    let _e244 = mousePos.x;
+    if (_e244 >= 0.0) {
+        let _e247 = uv;
+        let _e248 = mousePos;
+        let dVec = (_e247 - _e248);
+        d = length(dVec);
+        let _e254 = d;
+        let vignette = smoothstep(0.8, 0.2, (_e254 * 0.5));
+        let _e258 = finalColor;
+        finalColor = (_e258 * vignette);
+        let _e260 = ink_alpha;
+        let _e262 = ink_alpha;
+        ink_alpha = mix(_e260, min(1.0, (_e262 * 1.2)), (vignette * 0.5));
+    }
+    let _e272 = finalColor;
+    let _e273 = ink_alpha;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(_e272, _e273));
+    let _e277 = ink_alpha;
+    let _e280 = ink_alpha;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(_e277, 0.0, 0.0, _e280));
+    return;
 }
