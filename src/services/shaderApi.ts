@@ -449,10 +449,9 @@ class ShaderApiService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/shaders/${shaderId}`);
+      const response = await fetch(`${this.baseUrl}/api/shaders/${shaderId}/wgsl`);
       if (!response.ok) throw new Error('API error');
-      const data = await response.json();
-      const code = data.data?.wgsl_code || data.content || '';
+      const code = await response.text();
       this.cache.set(`code:${shaderId}`, code);
       return code;
     } catch (error) {

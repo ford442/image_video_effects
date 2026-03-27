@@ -433,7 +433,17 @@ export class StorageService {
       if (!response.ok) {
         // Fallback to static URL
         const data = await this.loadJson(`image-effects/shaders/${filename}`);
-        
+
+        // Fetch actual WGSL content instead of returning stringified metadata
+        let content = '';
+        if (data.filename) {
+          try {
+            const wgslFilename = data.filename.replace(/\.json$/, '.wgsl');
+            const wgslRes = await fetch(`${this.apiUrl}/files/image-effects/shaders/${wgslFilename}`);
+            if (wgslRes.ok) content = await wgslRes.text();
+          } catch { /* content stays empty, handled by caller */ }
+        }
+
         this.updateOperation(opId, {
           status: 'completed',
           message: `Loaded shader ${filename}`,
@@ -441,7 +451,7 @@ export class StorageService {
 
         return {
           id: filename.replace('.json', ''),
-          content: JSON.stringify(data),
+          content,
           type: data.format || 'wgsl',
           data,
         };

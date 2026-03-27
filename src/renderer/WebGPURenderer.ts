@@ -391,6 +391,7 @@ export class WebGPURenderer implements Renderer {
 
   // Shader pipeline cache: shader-id → GPUComputePipeline
   private pipelines = new Map<string, GPUComputePipeline>();
+  private pipelineHashes = new Map<string, string>(); // shader-id → content hash
 
   // Multi-slot state with parallelization support
   // Slot 0: Usually chained (background/base effect)
@@ -853,11 +854,20 @@ export class WebGPURenderer implements Renderer {
     }
   }
 
+  private hashWgsl(code: string): string {
+    let hash = 5381;
+    for (let i = 0; i < code.length; i++) {
+      hash = ((hash << 5) + hash + code.charCodeAt(i)) | 0;
+    }
+    return hash.toString(36) + ':' + code.length;
+  }
+
   private compileShader(id: string, wgsl: string): boolean {
     if (!this.device) return false;
-    
-    // Fast path: shader already cached (hot-swap optimization)
-    if (this.pipelines.has(id)) {
+
+    // Fast path: shader already cached AND content unchanged
+    const contentHash = this.hashWgsl(wgsl);
+    if (this.pipelines.has(id) && this.pipelineHashes.get(id) === contentHash) {
       return true;
     }
     
@@ -880,6 +890,7 @@ export class WebGPURenderer implements Renderer {
       });
       
       this.pipelines.set(id, pipeline);
+      this.pipelineHashes.set(id, contentHash);
       return true;
     } catch (e) {
       console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
@@ -997,7 +1008,6 @@ export class WebGPURenderer implements Renderer {
 
   /** Pre-compile a shader for faster hot-swapping later */
   async preloadShader(id: string, url: string): Promise<boolean> {
-    if (this.pipelines.has(id)) return true; // Already cached
     return this.loadShader(id, url);
   }
 
