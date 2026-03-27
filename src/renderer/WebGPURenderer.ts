@@ -411,9 +411,9 @@ export class WebGPURenderer implements Renderer {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return this.compileShader(id, await res.text());
     } catch {
-      // Fallback to local /shaders/<id>.wgsl
+      // Fallback to local shaders/<id>.wgsl (relative path works for subdirectory deployments)
       try {
-        const res = await fetch(`/shaders/${id}.wgsl`);
+        const res = await fetch(`./shaders/${id}.wgsl`);
         if (!res.ok) return false;
         return this.compileShader(id, await res.text());
       } catch {
@@ -477,33 +477,18 @@ export class WebGPURenderer implements Renderer {
     const vw = this.video.videoWidth, vh = this.video.videoHeight;
     if (!vw || !vh) return;
 
-    const canvasW = this.canvasW, canvasH = this.canvasH;
+    const dstW = this.canvasW, dstH = this.canvasH;
 
-    // Create offscreen canvas at the target size (2048x2048)
-    if (!this.offscreen || this.offscreen.width !== canvasW || this.offscreen.height !== canvasH) {
+    if (!this.offscreen || this.offscreen.width !== dstW || this.offscreen.height !== dstH) {
       this.offscreen = document.createElement('canvas');
-      this.offscreen.width = canvasW;
-      this.offscreen.height = canvasH;
+      this.offscreen.width = dstW;
+      this.offscreen.height = dstH;
       this.offCtx = this.offscreen.getContext('2d', { willReadFrequently: true });
     }
     if (!this.offCtx) return;
 
-    // Calculate scale to fit video within canvas while preserving aspect ratio
-    const scaleX = canvasW / vw;
-    const scaleY = canvasH / vh;
-    const scale = Math.min(scaleX, scaleY);
-
-    const drawW = vw * scale;
-    const drawH = vh * scale;
-    const offsetX = (canvasW - drawW) / 2;
-    const offsetY = (canvasH - drawH) / 2;
-
-    // Clear and draw centered
-    this.offCtx.fillStyle = 'black';
-    this.offCtx.fillRect(0, 0, canvasW, canvasH);
-    this.offCtx.drawImage(this.video, offsetX, offsetY, drawW, drawH);
-
-    this.uploadRGBA8(this.offCtx.getImageData(0, 0, canvasW, canvasH).data, canvasW, canvasH);
+    this.offCtx.drawImage(this.video, 0, 0, dstW, dstH);
+    this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
   }
 
   async loadImage(url: string): Promise<string> {
@@ -512,83 +497,57 @@ export class WebGPURenderer implements Renderer {
     img.src = url;
     await img.decode();
 
-    const { naturalWidth: w, naturalHeight: h } = img;
-    const canvasW = this.canvasW, canvasH = this.canvasH;
+    // Scale image to fill the full canvas texture (letterbox to preserve aspect ratio)
+    const dstW = this.canvasW, dstH = this.canvasH;
+    const srcAspect = img.naturalWidth / img.naturalHeight;
+    const dstAspect = dstW / dstH;
+    let drawW = dstW, drawH = dstH, drawX = 0, drawY = 0;
+    if (srcAspect > dstAspect) {
+      // Image wider than canvas — fit to width, letterbox top/bottom
+      drawH = dstW / srcAspect;
+      drawY = (dstH - drawH) / 2;
+    } else {
+      // Image taller than canvas — fit to height, pillarbox left/right
+      drawW = dstH * srcAspect;
+      drawX = (dstW - drawW) / 2;
+    }
 
-    // Create offscreen canvas at the target size (2048x2048)
-    if (!this.offscreen || this.offscreen.width !== canvasW || this.offscreen.height !== canvasH) {
+    if (!this.offscreen || this.offscreen.width !== dstW || this.offscreen.height !== dstH) {
       this.offscreen = document.createElement('canvas');
-      this.offscreen.width  = canvasW;
-      this.offscreen.height = canvasH;
+      this.offscreen.width  = dstW;
+      this.offscreen.height = dstH;
       this.offCtx = this.offscreen.getContext('2d', { willReadFrequently: true });
     }
     if (!this.offCtx) return url;
 
-    // Calculate scale to fit image within canvas while preserving aspect ratio
-    const scaleX = canvasW / w;
-    const scaleY = canvasH / h;
-    const scale = Math.min(scaleX, scaleY);
-
-    const drawW = w * scale;
-    const drawH = h * scale;
-    const offsetX = (canvasW - drawW) / 2;
-    const offsetY = (canvasH - drawH) / 2;
-
-    // Clear and draw centered
-    this.offCtx.fillStyle = 'black';
-    this.offCtx.fillRect(0, 0, canvasW, canvasH);
-    this.offCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
-
-    this.uploadRGBA8(this.offCtx.getImageData(0, 0, canvasW, canvasH).data, canvasW, canvasH);
+    this.offCtx.clearRect(0, 0, dstW, dstH);
+    this.offCtx.drawImage(img, drawX, drawY, drawW, drawH);
+    this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
     return url;
   }
 
   private uploadRGBA8(data: Uint8ClampedArray, srcW: number, srcH: number): void {
     if (!this.device) return;
     const dstW = this.canvasW, dstH = this.canvasH;
+    const cW = Math.min(srcW, dstW), cH = Math.min(srcH, dstH);
 
-    // Calculate scale to fit image within canvas while preserving aspect ratio
-    const scaleX = dstW / srcW;
-    const scaleY = dstH / srcH;
-    const scale = Math.min(scaleX, scaleY); // Fit inside (letterbox)
-
-    const drawW = Math.floor(srcW * scale);
-    const drawH = Math.floor(srcH * scale);
-    const offsetX = Math.floor((dstW - drawW) / 2);
-    const offsetY = Math.floor((dstH - drawH) / 2);
-
-    // Create full-size buffer with black background (letterbox)
-    const floats = new Float32Array(dstW * dstH * 4);
-    // Fill with black
-    for (let i = 0; i < floats.length; i++) {
-      floats[i] = 0.0;
-    }
-
-    // Scale and center the image
-    for (let y = 0; y < drawH; y++) {
-      for (let x = 0; x < drawW; x++) {
-        // Source coordinates (with scaling)
-        const srcX = Math.floor(x / scale);
-        const srcY = Math.floor(y / scale);
-        const si = (srcY * srcW + srcX) * 4;
-
-        // Destination coordinates (with offset)
-        const dstX = offsetX + x;
-        const dstY = offsetY + y;
-        const di = (dstY * dstW + dstX) * 4;
-
+    // Convert RGBA8 → RGBA32Float in JS, then upload to readTex
+    const floats = new Float32Array(cW * cH * 4);
+    for (let y = 0; y < cH; y++) {
+      for (let x = 0; x < cW; x++) {
+        const si = (y * srcW + x) * 4;
+        const di = (y * cW  + x) * 4;
         floats[di]     = data[si]     / 255;
         floats[di + 1] = data[si + 1] / 255;
         floats[di + 2] = data[si + 2] / 255;
         floats[di + 3] = data[si + 3] / 255;
       }
     }
-
     this.device.queue.writeTexture(
       { texture: this.readTex },
       floats,
-      { bytesPerRow: dstW * 16, rowsPerImage: dstH },
-      [dstW, dstH],
+      { bytesPerRow: cW * 16, rowsPerImage: cH },
+      [cW, cH],
     );
   }
 

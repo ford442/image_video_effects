@@ -1581,6 +1581,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an organic landscape subject, fulfilling wishlist.
 
+### Suggestion: Bismuth Clockwork Observatory
+- **Date:** 2026-11-20
+- **Prompt:** "A hyper-detailed, sweeping interior view of a colossal clockwork observatory, where all the gears, armillary spheres, and structural supports are forged from naturally iridescent bismuth crystals. The subject features massive stepped geometric formations that interlock as functional mechanical parts. The lighting is mystical and astronomical, with a glowing azure starlight filtering through a massive open dome, casting deep shadows and causing the bismuth to shine brilliantly in a rainbow of thin-film interference colors. The mood is ancient, scholarly, and magical. Captured with a wide-angle 16mm lens to encompass the vast complexity of the mechanical ceiling."
+- **Negative prompt:** "modern, dull, plastic, blurry, organic wood, flat lighting, simple"
+- **Tags:** fantasy, steampunk, interior, bismuth, observatory
+- **Style / Reference:** steampunk concept art, hyper-realistic fantasy interior
+- **Composition:** wide angle, low angle looking up, symmetrical complexity
+- **Color palette:** iridescent rainbow, glowing azure, deep shadowy blacks
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261120_bismuth-observatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating complex mechanical geometry intersecting with iridescent hopper crystal materials.
+
+### Suggestion: Aerogel Deep Sea Jellyfish
+- **Date:** 2026-11-20
+- **Prompt:** "A stunning, macro underwater photograph of a gigantic jellyfish whose bell and trailing tentacles appear to be constructed entirely of ultra-light, translucent blue aerogel. The subject floats elegantly in the pitch-black abyss of the ocean. The lighting is entirely bioluminescent, emanating softly from within the aerogel structure itself, creating thousands of internal refractions and a ghostly, ethereal glow that barely illuminates the surrounding dark water. The mood is silent, alien, and deeply serene. Captured with a 50mm lens, sharp focus on the internal structure of the bell while the tentacles fade into the soft, dark bokeh of the deep sea."
+- **Negative prompt:** "bright sunlight, surface, corals, messy, opaque, muddy water"
+- **Tags:** nature, underwater, macro, aerogel, jellyfish
+- **Style / Reference:** deep sea nature photography, surreal material swap
+- **Composition:** centered subject, flowing lines, dark negative space
+- **Color palette:** ghostly aerogel blue, bioluminescent cyan, pitch black water
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261120_aerogel-jellyfish.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing the interaction of self-illuminating light sources within highly scattering, low-density translucent materials.
+
+### Suggestion: Damascus Steel Dragon Scales
+- **Date:** 2026-11-20
+- **Prompt:** "An extreme macro, hyper-textured study of dragon scales, where each overlapping scale is perfectly forged from dark, rippled Damascus steel. The subject shows the intricate, flowing light and dark grey wave patterns characteristic of folded metal, complete with tiny scratches and battle scars. The lighting is harsh, directional, and cinematic, grazing the surface to cast sharp, deep black shadows under each scale and bright, glinting specular highlights on the polished ridges. The mood is formidable, heavy, and battle-hardened. Captured with a 100mm macro lens, incredibly shallow depth of field focusing strictly on a central scarred scale."
+- **Negative prompt:** "organic, reptilian, colorful, soft, flat lighting, blurry"
+- **Tags:** macro, fantasy, metal, damascus steel, dragon
+- **Style / Reference:** photorealistic texture study, macro product photography
+- **Composition:** extreme close-up, diagonal flow of scales, shallow depth of field
+- **Color palette:** dark metallic greys, bright silver highlights, pure black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261120_damascus-dragon-scales.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing repeating, overlapping geometry and the complex, flowing texture generation of Damascus steel.
+
+### Suggestion: Tweed Cyberpunk Hacker Den
+- **Date:** 2026-11-20
+- **Prompt:** "A claustrophobic, chaotic cyberpunk hacker den where all the high-tech computer monitors, server racks, and glowing keyboards are bizarrely upholstered in classic, earthy brown herringbone tweed fabric. The subject is a cramped desk overflowing with glowing, soft-textured tech. The lighting is a moody mix of harsh neon pink and electric blue emanating from the tweed-covered screens, casting colorful, soft rim lights against the fibrous material and deep, murky shadows in the corners. The mood is absurd, cozy yet dystopian. Captured with a 35mm lens, eye-level perspective, focusing on the contrast between the glowing data streams and the woolen texture."
+- **Negative prompt:** "clean, sleek, metallic, plastic, minimalist, bright daylight"
+- **Tags:** cyberpunk, interior, surreal, tweed, hacker
+- **Style / Reference:** surreal cyberpunk interior, humorous material swap
+- **Composition:** cluttered desk, deep perspective, messy framing
+- **Color palette:** earthy browns, neon pink, electric blue, murky shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261120_tweed-hacker-den.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's ability to apply soft, woven micro-textures (tweed) to traditionally hard-surface, tech-oriented objects under colorful neon lighting.
+
+### Suggestion: Mother of Pearl Desert Oasis
+- **Date:** 2026-11-20
+- **Prompt:** "A sweeping, surreal landscape of a vast desert where the towering sand dunes are composed entirely of smooth, solid layers of shimmering, iridescent mother of pearl (nacre). The subject features sweeping, wind-carved curves that reflect a spectacular array of pearlescent pastels. The lighting is a brilliant, golden-hour sunset, catching the ridges of the nacre to reveal intense rainbow interference patterns against a vibrant, purple twilight sky. The mood is dreamlike, luxurious, and completely otherworldly. Captured with an ultra-wide 14mm lens, emphasizing the massive scale of the dunes and the smooth, flowing curves."
+- **Negative prompt:** "sand, granular, rough, dull, green plants, cloudy, realistic desert"
+- **Tags:** landscape, surreal, desert, mother of pearl, iridescent
+- **Style / Reference:** surreal landscape photography, hyper-detailed environment
+- **Composition:** sweeping curves, low horizon, wide expansive view
+- **Color palette:** pearlescent pinks, soft blues, golden sunlight, rich purple sky
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261120_mother-of-pearl-oasis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale thin-film iridescent interference mapped to smooth, sweeping organic landscape geometry.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
