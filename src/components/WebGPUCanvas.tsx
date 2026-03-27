@@ -293,6 +293,13 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [isMuted]);
 
+    // Sync mouseDown state to renderer
+    useEffect(() => {
+        if (rendererRef.current?.setParam) {
+            rendererRef.current.setParam('mouseDown', isMouseDown ? 1 : 0);
+        }
+    }, [isMouseDown, rendererRef]);
+
     // Animation Loop
     useEffect(() => {
         let active = true;
@@ -328,6 +335,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const x = (event.clientX - rect.left) / rect.width;
         const y = (event.clientY - rect.top) / rect.height;
         setMousePosition({ x, y });
+        
+        // Sync to renderer
+        if (rendererRef.current?.updateMouse) {
+            rendererRef.current.updateMouse(x, y);
+        }
     };
 
     const handleMouseLeave = () => {
