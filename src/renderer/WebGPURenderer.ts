@@ -609,6 +609,19 @@ export class WebGPURenderer implements Renderer {
 
   getFPS(): number { return this.fps; }
 
+  /** Get video pipeline status for debugging */
+  getVideoStatus(): { hasVideo: boolean; playing: boolean; readyState: number; currentTime: number; videoWidth: number; videoHeight: number } | null {
+    if (!this.video) return null;
+    return {
+      hasVideo: true,
+      playing: !this.video.paused,
+      readyState: this.video.readyState,
+      currentTime: this.video.currentTime,
+      videoWidth: this.video.videoWidth,
+      videoHeight: this.video.videoHeight,
+    };
+  }
+
   // ── BaseRenderer interface ─────────────────────────────────────────────────
 
   setVideo(video: HTMLVideoElement | undefined): void {
@@ -830,6 +843,11 @@ export class WebGPURenderer implements Renderer {
 
   private renderFrame(): void {
     if (!this.device || !this.context) return;
+
+    // Update video frame if video is playing (called every frame for smooth playback)
+    if (this.video && !this.video.paused && this.video.readyState >= 2) {
+      this.updateVideoFrame();
+    }
 
     const enabled = this.slots.filter(
       s => s.enabled && s.shaderId && this.pipelines.has(s.shaderId)
