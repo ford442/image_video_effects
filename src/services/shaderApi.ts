@@ -336,7 +336,11 @@ class ShaderApiService {
       const response = await fetch(`${this.baseUrl}/api/shaders`);
       if (!response.ok) throw new Error(`API ${response.status}`);
       const data: ApiShaderEntry[] = await response.json();
-      data.forEach(s => s.url = `${this.baseUrl}/files/image-effects/shaders/${s.filename}`);
+      // Build URL pointing to the static .wgsl file (nginx serves /files/ with CORS headers)
+      data.forEach(s => {
+        const wgslFilename = s.filename.replace(/\.json$/, '.wgsl');
+        s.url = `${this.baseUrl}/files/image-effects/shaders/${wgslFilename}`;
+      });
       this.cache.set('shaderList', data);
       this.lastFetch = Date.now();
       return data;

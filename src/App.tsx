@@ -185,22 +185,9 @@ function MainApp() {
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
             
             try {
-                // Determine if we need to fetch code from API or use local file
+                // Determine shader URL — API shaders now point directly to the .wgsl static file
+                // served by nginx with CORS headers, so pass the URL straight to loadShader.
                 let shaderUrl = shaderEntry.url;
-                
-                // If URL points to VPS API, fetch the code first
-                if (shaderUrl?.includes('storage.noahcohn.com')) {
-                    console.log(`📡 Fetching shader code from API: ${shaderEntry.id}`);
-                    try {
-                        const code = await ShaderApi.getShaderCode(shaderEntry.id);
-                        // Create a blob URL for the code
-                        const blob = new Blob([code], { type: 'text/wgsl' });
-                        shaderUrl = URL.createObjectURL(blob);
-                    } catch (apiError) {
-                        console.warn(`⚠️ API fetch failed, using local file: ${shaderEntry.id}`);
-                        shaderUrl = `./shaders/${shaderEntry.id}.wgsl`;
-                    }
-                }
                 
                 // Load the shader
                 const ok = await (rendererRef.current as any).loadShader(shaderEntry.id, shaderUrl);
