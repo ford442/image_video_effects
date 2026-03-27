@@ -33,6 +33,83 @@ const UNIFORM_FLOATS     = 12 + MAX_RIPPLES * 4;   // 212 floats = 848 bytes
 const EXTRA_FLOATS       = 256;                     // 1024 bytes
 const PLASMA_BYTES       = MAX_PLASMA_BALLS * 48;   // 2400 bytes
 
+// ── Error handling utilities ────────────────────────────────────────────────
+
+export interface RendererError {
+  type: 'webgpu-unavailable' | 'shader-compile' | 'media-load' | 'device-lost';
+  message: string;
+  recoverable: boolean;
+}
+
+export type ErrorHandler = (error: RendererError) => void;
+
+// Default error handler that logs to console
+let globalErrorHandler: ErrorHandler = (error) => {
+  console.error(`[WebGPU Renderer] ${error.type}: ${error.message}`);
+};
+
+export function setRendererErrorHandler(handler: ErrorHandler) {
+  globalErrorHandler = handler;
+}
+
+// Browser detection for WebGPU warnings
+function getBrowserWarning(): string | null {
+  const ua = navigator.userAgent.toLowerCase();
+  
+  // Safari check (all versions as of 2026)
+  if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('chromium')) {
+    return 'Safari does not support WebGPU. Please use Chrome, Edge, or Firefox Nightly.';
+  }
+  
+  // iOS check
+  if (/iphone|ipad|ipod/.test(ua)) {
+    return 'WebGPU is not available on iOS. Please use a desktop browser.';
+  }
+  
+  // Older browser check
+  if (!navigator.gpu) {
+    return 'Your browser does not support WebGPU. Please update to the latest Chrome, Edge, or Firefox.';
+  }
+  
+  return null;
+}
+
+// ── Fallback compute shader ──────────────────────────────────────────────────
+// Simple pass-through shader used when the requested shader fails to compile
+
+const FALLBACK_WGSL = /* wgsl */`
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+
+struct Uniforms {
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let resolution = vec2<f32>(textureDimensions(readTexture));
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    
+    // Simple pass-through with slight color boost to indicate fallback
+    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    
+    // Add a subtle red tint to indicate fallback mode
+    let fallbackColor = vec4<f32>(
+        min(color.r * 1.1, 1.0),
+        color.g * 0.9,
+        color.b * 0.9,
+        color.a
+    );
+    
+    textureStore(writeTexture, global_id.xy, fallbackColor);
+}
+`;
+
 // ── Full-screen blit shader ──────────────────────────────────────────────────
 // Renders the final rgba32float compute output to the canvas.
 // Uses textureLoad (no sampler) to avoid float32-filterable requirement at blit.
@@ -173,13 +250,29 @@ export class WebGPURenderer implements Renderer {
   // ── Initialisation ─────────────────────────────────────────────────────────
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
+    // Check WebGPU availability with user-friendly warnings
     if (!navigator.gpu) {
+      const warning = getBrowserWarning();
+      const message = warning || 'WebGPU is not available in this browser';
+      
+      globalErrorHandler({
+        type: 'webgpu-unavailable',
+        message,
+        recoverable: false
+      });
+      
       console.warn('[WebGPU] navigator.gpu is unavailable in this browser');
       return false;
     }
 
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) {
+      globalErrorHandler({
+        type: 'webgpu-unavailable',
+        message: 'No suitable GPU adapter found. Your device may not support WebGPU.',
+        recoverable: false
+      });
+      
       console.warn('[WebGPU] No GPU adapter found');
       return false;
     }
@@ -204,6 +297,17 @@ export class WebGPURenderer implements Renderer {
     // Forward uncaptured GPU errors to console during development
     this.device.addEventListener('uncapturederror', (ev) => {
       console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
+    });
+
+    // Handle device lost (GPU crash, driver reset, etc.)
+    this.device.lost.then((info) => {
+      globalErrorHandler({
+        type: 'device-lost',
+        message: `GPU device lost: ${info.reason}. Try reloading the page.`,
+        recoverable: false
+      });
+      console.error('[WebGPU] Device lost:', info.reason, info.message);
+      this.initialized = false;
     });
 
     this.canvasW = canvas.width  || this.config.width;
@@ -426,18 +530,55 @@ export class WebGPURenderer implements Renderer {
 
   private compileShader(id: string, wgsl: string): boolean {
     if (!this.device) return false;
+    
+    // Try to compile the requested shader
     try {
       const module = this.device.createShaderModule({ label: id, code: wgsl });
+      
+      // Check for compilation errors using compilationInfo
+      module.getCompilationInfo().then(info => {
+        const errors = info.messages.filter(m => m.type === 'error');
+        if (errors.length > 0) {
+          console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
+        }
+      });
+      
       const pipeline = this.device.createComputePipeline({
         label: id,
         layout: this.pipelineLayout,
         compute: { module, entryPoint: 'main' },
       });
+      
       this.pipelines.set(id, pipeline);
       return true;
     } catch (e) {
       console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
-      return false;
+      
+      // Report error through handler
+      globalErrorHandler({
+        type: 'shader-compile',
+        message: `Shader "${id}" failed to compile. Using fallback pass-through shader.`,
+        recoverable: true
+      });
+      
+      // Try to use fallback shader
+      try {
+        const fallbackModule = this.device.createShaderModule({ 
+          label: `${id}-fallback`, 
+          code: FALLBACK_WGSL 
+        });
+        const fallbackPipeline = this.device.createComputePipeline({
+          label: `${id}-fallback`,
+          layout: this.pipelineLayout,
+          compute: { module: fallbackModule, entryPoint: 'main' },
+        });
+        this.pipelines.set(id, fallbackPipeline);
+        console.log(`[WebGPU] Using fallback shader for '${id}'`);
+        return true;
+      } catch (fallbackError) {
+        console.error(`[WebGPU] Fallback shader also failed:`, fallbackError);
+        return false;
+      }
     }
   }
 
@@ -489,43 +630,109 @@ export class WebGPURenderer implements Renderer {
     }
     if (!this.offCtx) return;
 
-    this.offCtx.drawImage(this.video, 0, 0, dstW, dstH);
-    this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+    try {
+      // Check if video is corrupted or errored
+      if (this.video.error) {
+        const errorCode = this.video.error.code;
+        const errorMessages: Record<number, string> = {
+          1: 'Video loading aborted',
+          2: 'Network error while loading video',
+          3: 'Video decoding error (corrupt file?)',
+          4: 'Video format not supported'
+        };
+        
+        globalErrorHandler({
+          type: 'media-load',
+          message: `Video error: ${errorMessages[errorCode] || 'Unknown video error'}`,
+          recoverable: true
+        });
+        
+        // Show black frame on error
+        this.offCtx.fillStyle = 'black';
+        this.offCtx.fillRect(0, 0, dstW, dstH);
+        this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+        return;
+      }
+
+      this.offCtx.drawImage(this.video, 0, 0, dstW, dstH);
+      this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+    } catch (e) {
+      console.warn('[WebGPU] Video frame upload failed:', e);
+      
+      // Gracefully handle by showing black frame
+      this.offCtx.fillStyle = 'black';
+      this.offCtx.fillRect(0, 0, dstW, dstH);
+      
+      try {
+        this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+      } catch (uploadError) {
+        // Silent fail - don't crash the render loop
+      }
+    }
   }
 
   async loadImage(url: string): Promise<string> {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = url;
-    await img.decode();
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      // Set up error handling before setting src
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+        img.src = url;
+      });
 
-    // Scale image to fill the full canvas texture (letterbox to preserve aspect ratio)
-    const dstW = this.canvasW, dstH = this.canvasH;
-    const srcAspect = img.naturalWidth / img.naturalHeight;
-    const dstAspect = dstW / dstH;
-    let drawW = dstW, drawH = dstH, drawX = 0, drawY = 0;
-    if (srcAspect > dstAspect) {
-      // Image wider than canvas — fit to width, letterbox top/bottom
-      drawH = dstW / srcAspect;
-      drawY = (dstH - drawH) / 2;
-    } else {
-      // Image taller than canvas — fit to height, pillarbox left/right
-      drawW = dstH * srcAspect;
-      drawX = (dstW - drawW) / 2;
+      // Scale image to fill the full canvas texture (letterbox to preserve aspect ratio)
+      const dstW = this.canvasW, dstH = this.canvasH;
+      const srcAspect = img.naturalWidth / img.naturalHeight;
+      const dstAspect = dstW / dstH;
+      let drawW = dstW, drawH = dstH, drawX = 0, drawY = 0;
+      if (srcAspect > dstAspect) {
+        // Image wider than canvas — fit to width, letterbox top/bottom
+        drawH = dstW / srcAspect;
+        drawY = (dstH - drawH) / 2;
+      } else {
+        // Image taller than canvas — fit to height, pillarbox left/right
+        drawW = dstH * srcAspect;
+        drawX = (dstW - drawW) / 2;
+      }
+
+      if (!this.offscreen || this.offscreen.width !== dstW || this.offscreen.height !== dstH) {
+        this.offscreen = document.createElement('canvas');
+        this.offscreen.width  = dstW;
+        this.offscreen.height = dstH;
+        this.offCtx = this.offscreen.getContext('2d', { willReadFrequently: true });
+      }
+      if (!this.offCtx) return url;
+
+      this.offCtx.fillStyle = 'black';
+      this.offCtx.fillRect(0, 0, dstW, dstH);
+      this.offCtx.drawImage(img, drawX, drawY, drawW, drawH);
+
+      this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+      return url;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      globalErrorHandler({
+        type: 'media-load',
+        message: `Failed to load image "${url}": ${errorMessage}`,
+        recoverable: true
+      });
+      
+      console.warn(`[WebGPU] Image load failed:`, error);
+      
+      // Upload a black frame as fallback
+      if (this.offscreen && this.offCtx) {
+        const dstW = this.canvasW, dstH = this.canvasH;
+        this.offCtx.fillStyle = 'black';
+        this.offCtx.fillRect(0, 0, dstW, dstH);
+        this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+      }
+      
+      throw error;
     }
-
-    if (!this.offscreen || this.offscreen.width !== dstW || this.offscreen.height !== dstH) {
-      this.offscreen = document.createElement('canvas');
-      this.offscreen.width  = dstW;
-      this.offscreen.height = dstH;
-      this.offCtx = this.offscreen.getContext('2d', { willReadFrequently: true });
-    }
-    if (!this.offCtx) return url;
-
-    this.offCtx.clearRect(0, 0, dstW, dstH);
-    this.offCtx.drawImage(img, drawX, drawY, drawW, drawH);
-    this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
-    return url;
   }
 
   private uploadRGBA8(data: Uint8ClampedArray, srcW: number, srcH: number): void {
