@@ -25,10 +25,23 @@
       "default": 1.0,
       "min": 0.0,
       "max": 1.0
+    },
+    {
+      "id": "grid_rotation",
+      "name": "Grid Rotation",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Rotation angle of halftone grid"
     }
   ],
   "tags": [
     "filter",
     "image-processing"
+  ],
+  "features": [
+    "mouse-driven"
   ]
 }

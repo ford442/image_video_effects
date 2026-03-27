@@ -13,6 +13,7 @@
   ],
   "features": [
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "mouse-driven"
   ]
 }

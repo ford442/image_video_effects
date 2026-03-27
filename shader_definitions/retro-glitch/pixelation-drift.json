@@ -37,7 +37,8 @@
   "features": [
     "depth-aware",
     "temporal-persistence",
-    "organic-motion"
+    "organic-motion",
+    "mouse-driven"
   ],
   "tags": [
     "filter",
