@@ -756,24 +756,19 @@ export class StorageService {
     try {
       // Determine action based on file type
       let action: string;
-      let folder: string;
       
       switch (type) {
         case 'image':
           action = 'upload_texture';
-          folder = 'image-effects/outputs/' + new Date().toISOString().split('T')[0];
           break;
         case 'video':
           action = 'save_video_config';
-          folder = 'videos';
           break;
         case 'audio':
           action = 'upload_audio';
-          folder = 'audio/flac';
           break;
         case 'shader':
           action = 'save_shader';
-          folder = 'image-effects/shaders';
           break;
         default:
           throw new Error(`Unsupported file type: ${type}`);

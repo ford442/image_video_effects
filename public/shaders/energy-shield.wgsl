@@ -48,18 +48,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let h = r * 0.5;
 
     // Scale UV
-    let scaledUV = uv * hexScale;
+    var scaledUV = uv * hexScale;
     scaledUV.x = scaledUV.x * aspect; // Correct aspect for grid
 
     let a = modulo(scaledUV, r) - h;
     let b = modulo(scaledUV - h, r) - h;
 
-    let gv = dot(a, a) < dot(b, b) ? a : b;
+    let gv = select(b, a, dot(a, a) < dot(b, b));
 
     // Hex ID (approximate center)
     let hexCenter = scaledUV - gv;
     // Normalize back to 0-1 range for distance check
-    let hexCenterUV = hexCenter / hexScale;
+    var hexCenterUV = hexCenter / hexScale;
     hexCenterUV.x = hexCenterUV.x / aspect;
 
     // Mouse Interaction

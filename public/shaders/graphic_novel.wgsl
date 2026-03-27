@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let isEdge = select(0.0, 1.0, edge > edgeThresh);
 
   // 2. Color Quantization & Halftone
-  var color = textureSampleLevel(readTexture, u_sampler, uv).rgb;
+  var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   let luma = getLuma(color);
 
   // Halftone pattern
