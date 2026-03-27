@@ -28,7 +28,7 @@ const EXTINCTION_CLOUD: f32 = 2.5;      // Cloud scattering/absorption
 const EXTINCTION_RAIN: f32 = 0.8;       // Rain droplet extinction
 const STEP_SIZE: f32 = 0.02;            // Ray step through medium
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;

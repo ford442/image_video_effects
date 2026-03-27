@@ -21,7 +21,7 @@ struct Uniforms {
 };
 
 const DT: f32 = 0.016;
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn advect_velocity(@builtin(global_invocation_id) gid: vec3<u32>) {
   var coord = vec2<i32>(i32(gid.x), i32(gid.y));
   var vel = textureLoad(dataTextureC, coord, 0).rg;
@@ -82,7 +82,7 @@ fn inject_dye_impl(gid: vec3<u32>) {
 }
 
 // Main entrypoint runs the dye injection pass
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   inject_dye_impl(gid);
 }

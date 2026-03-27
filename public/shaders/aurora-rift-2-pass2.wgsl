@@ -147,7 +147,7 @@ fn applyVignette(color: vec3<f32>, uv: vec2<f32>, intensity: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 //  Main compute shader - PASS 2: Enhanced Atmospheric Scattering & Grading
 // ═══════════════════════════════════════════════════════════════════════════
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     let uv = (vec2<f32>(gid.xy) + 0.5) / dims;

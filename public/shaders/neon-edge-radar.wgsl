@@ -45,7 +45,7 @@ fn effectIntensityAlpha(intensity: f32, falloff: f32) -> f32 {
     return mix(0.3, 1.0, intensity * falloff);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;

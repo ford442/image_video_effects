@@ -1,3 +1,6 @@
+// Slot execution mode for inter-shader parallelization
+type SlotMode = 'chained' | 'parallel';
+
 // Base renderer interface
 export interface Renderer {
   init(canvas: HTMLCanvasElement): Promise<boolean>;
@@ -16,6 +19,12 @@ export interface Renderer {
 
   // Parameters
   setParam(name: string, value: number): void;
+
+  // Slot management with parallelization support
+  setSlotMode?: (index: number, mode: SlotMode) => void;
+  getSlotMode?: (index: number) => SlotMode | null;
+  getSlotState?: (index: number) => { shaderId: string | null; enabled: boolean; mode: SlotMode } | null;
+  getGPUTimings?: () => { parallelTime: number; chainedTime: number; totalTime: number; available: boolean };
 
   // Added optionally implemented methods used by app
   setImageList?: (urls: string[]) => void;

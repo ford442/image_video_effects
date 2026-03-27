@@ -159,7 +159,7 @@ fn temporalColorMod(color: vec3<f32>, uv: vec2<f32>, time: f32, speed: f32) -> v
 // ───────────────────────────────────────────────────────────────────────────────
 //  Main compute shader
 // ───────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 

@@ -39,7 +39,7 @@ struct Uniforms {
 // u.zoom_params.x..w -> comp_params: glowRadius, glowIntensity, parallaxAmount, aberration
 // u.ripples[0].x may be used for blend_params.x (videoBlend) if needed
 
-@compute @workgroup_size(8,8,1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     var uv = vec2<f32>(gid.xy) / dims;

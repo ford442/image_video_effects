@@ -76,7 +76,7 @@ fn extractBright(color: vec3<f32>, threshold: f32) -> vec3<f32> {
     return color * (contribution + softContribution) / max(luminance, 0.001f);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);

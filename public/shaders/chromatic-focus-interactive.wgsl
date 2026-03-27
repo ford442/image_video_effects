@@ -50,7 +50,7 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
     return exp(-thickness * absorption);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }

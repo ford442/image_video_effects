@@ -170,7 +170,7 @@ fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     extraBuffer[base + 5u] = energy;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(textureDimensions(readTexture));

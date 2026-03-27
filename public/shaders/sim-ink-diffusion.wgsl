@@ -73,7 +73,7 @@ fn reactDiffuse(u_val: f32, v_val: f32, lapU: f32, lapV: f32, F: f32, k: f32, di
     return vec2<f32>(clamp(newU, 0.0, 1.0), clamp(newV, 0.0, 1.0));
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }

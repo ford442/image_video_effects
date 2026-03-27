@@ -76,7 +76,7 @@ fn colorGrade(color: vec3<f32>, lift: f32, gamma: f32, gain: f32) -> vec3<f32> {
     return c;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);

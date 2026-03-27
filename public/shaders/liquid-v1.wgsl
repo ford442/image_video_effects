@@ -32,7 +32,7 @@ fn antialias_depth_sample(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>, te
  return (s0 + s1 + s2 + s3) * 0.25;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;

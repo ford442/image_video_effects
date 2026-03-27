@@ -60,7 +60,7 @@ fn motionBlurKernel(vel: vec2<f32>, sample_pos: vec2<f32>, pixel_pos: vec2<f32>)
     return along_factor * perp_factor;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let aspect = resolution.x / resolution.y;

@@ -173,7 +173,7 @@ fn spectralPower(col: vec3<f32>, pattern: f32) -> vec3<f32> {
     return mix(low, high, pattern) + band * pattern * 0.12;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
 

@@ -65,7 +65,7 @@ fn turing_pattern(uv: vec2<f32>, time: f32, scale: f32, feed: f32) -> vec2<f32> 
     return vec2(activator + diffusion_a + reaction * 0.1, inhibitor + diffusion_i - reaction * 0.05);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;

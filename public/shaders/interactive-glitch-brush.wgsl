@@ -31,7 +31,7 @@ fn random(st: vec2<f32>) -> f32 {
     return fract(sin(dot(st.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453123);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {

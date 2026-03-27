@@ -64,7 +64,7 @@ fn hash(p: vec2<f32>) -> f32 {
 // ---------------------------------------------------------------
 //  Main
 // ---------------------------------------------------------------
-@compute @workgroup_size(8,8,1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     let uv  = vec2<f32>(gid.xy) / resolution;
