@@ -191,6 +191,16 @@ function MainApp() {
                 
                 // Load the shader
                 const ok = await (rendererRef.current as any).loadShader(shaderEntry.id, shaderUrl);
+                
+                // Activate the shader on the specified slot
+                if (ok && rendererRef.current) {
+                    if (typeof (rendererRef.current as any).setSlotShader === 'function') {
+                        (rendererRef.current as any).setSlotShader(index, shaderEntry.id);
+                    } else if (typeof (rendererRef.current as any).setActiveShader === 'function') {
+                        (rendererRef.current as any).setActiveShader(shaderEntry.id);
+                    }
+                }
+                
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
                 
                 // Record play event (fire-and-forget)
