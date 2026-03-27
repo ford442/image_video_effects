@@ -186,15 +186,8 @@ public:
     void AddRipple(float x, float y);
     void ClearRipples();
     
-    // TODO(Phase 4): Audio data integration
-    // 
-    // Audio frequency data from Web Audio API needs to reach shaders.
-    // This enables audio-reactive visual effects that pulse to the beat.
-    //
-    // void SetAudioData(float bass, float mid, float treble);
-    // TypeScript: updateAudioData(bass, mid, treble) -> extraBuffer/uniforms
-    //
-    // Status: NOT IMPLEMENTED | Priority: HIGH | Est. Effort: 1 week
+    // Audio frequency data from Web Audio API (bass/mid/treble → extraBuffer_)
+    void SetAudioData(float bass, float mid, float treble);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // RENDERING
@@ -318,8 +311,10 @@ private:
     // WGPUBuffer stagingBuffer_ = nullptr;   // Persistent staging memory
     // size_t stagingBufferSize_ = 0;
     
-    // TODO(Phase 4): Audio buffer
-    // WGPUBuffer audioBuffer_ = nullptr;     // Audio uniforms for shaders
+    // Audio frequency data (written by SetAudioData, uploaded in UpdateUniformBuffer)
+    float audioBass_ = 0.0f;
+    float audioMid_ = 0.0f;
+    float audioTreble_ = 0.0f;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // SHADER STORAGE
