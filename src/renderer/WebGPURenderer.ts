@@ -411,9 +411,9 @@ export class WebGPURenderer implements Renderer {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return this.compileShader(id, await res.text());
     } catch {
-      // Fallback to local /shaders/<id>.wgsl
+      // Fallback to local shaders/<id>.wgsl (relative path works for subdirectory deployments)
       try {
-        const res = await fetch(`/shaders/${id}.wgsl`);
+        const res = await fetch(`./shaders/${id}.wgsl`);
         if (!res.ok) return false;
         return this.compileShader(id, await res.text());
       } catch {
@@ -477,16 +477,18 @@ export class WebGPURenderer implements Renderer {
     const vw = this.video.videoWidth, vh = this.video.videoHeight;
     if (!vw || !vh) return;
 
-    if (!this.offscreen || this.offscreen.width !== vw || this.offscreen.height !== vh) {
+    const dstW = this.canvasW, dstH = this.canvasH;
+
+    if (!this.offscreen || this.offscreen.width !== dstW || this.offscreen.height !== dstH) {
       this.offscreen = document.createElement('canvas');
-      this.offscreen.width = vw;
-      this.offscreen.height = vh;
+      this.offscreen.width = dstW;
+      this.offscreen.height = dstH;
       this.offCtx = this.offscreen.getContext('2d', { willReadFrequently: true });
     }
     if (!this.offCtx) return;
 
-    this.offCtx.drawImage(this.video, 0, 0, vw, vh);
-    this.uploadRGBA8(this.offCtx.getImageData(0, 0, vw, vh).data, vw, vh);
+    this.offCtx.drawImage(this.video, 0, 0, dstW, dstH);
+    this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
   }
 
   async loadImage(url: string): Promise<string> {
@@ -495,17 +497,32 @@ export class WebGPURenderer implements Renderer {
     img.src = url;
     await img.decode();
 
-    const { naturalWidth: w, naturalHeight: h } = img;
-    if (!this.offscreen || this.offscreen.width !== w || this.offscreen.height !== h) {
+    // Scale image to fill the full canvas texture (letterbox to preserve aspect ratio)
+    const dstW = this.canvasW, dstH = this.canvasH;
+    const srcAspect = img.naturalWidth / img.naturalHeight;
+    const dstAspect = dstW / dstH;
+    let drawW = dstW, drawH = dstH, drawX = 0, drawY = 0;
+    if (srcAspect > dstAspect) {
+      // Image wider than canvas — fit to width, letterbox top/bottom
+      drawH = dstW / srcAspect;
+      drawY = (dstH - drawH) / 2;
+    } else {
+      // Image taller than canvas — fit to height, pillarbox left/right
+      drawW = dstH * srcAspect;
+      drawX = (dstW - drawW) / 2;
+    }
+
+    if (!this.offscreen || this.offscreen.width !== dstW || this.offscreen.height !== dstH) {
       this.offscreen = document.createElement('canvas');
-      this.offscreen.width  = w;
-      this.offscreen.height = h;
+      this.offscreen.width  = dstW;
+      this.offscreen.height = dstH;
       this.offCtx = this.offscreen.getContext('2d', { willReadFrequently: true });
     }
     if (!this.offCtx) return url;
 
-    this.offCtx.drawImage(img, 0, 0, w, h);
-    this.uploadRGBA8(this.offCtx.getImageData(0, 0, w, h).data, w, h);
+    this.offCtx.clearRect(0, 0, dstW, dstH);
+    this.offCtx.drawImage(img, drawX, drawY, drawW, drawH);
+    this.uploadRGBA8(this.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
     return url;
   }
 
