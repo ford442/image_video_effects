@@ -343,6 +343,7 @@ function MainApp() {
                     tags: shader.tags || [],
                     rating: shader.rating,
                     hasErrors: shader.has_errors,
+                    params: shader.params || [],  // Pass through shader parameters for UI sliders
                 }));
                 
                 setAvailableModes(entries);

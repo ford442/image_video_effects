@@ -281,6 +281,16 @@ export async function convertShader(shaderId: string, targetFormat: string = 'wg
 //  VPS Storage API Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
+export interface ShaderParam {
+  id: string;
+  name: string;
+  default: number;
+  min: number;
+  max: number;
+  step?: number;
+  labels?: string[];
+}
+
 export interface ApiShaderEntry {
   id: string;
   name: string;
@@ -295,6 +305,7 @@ export interface ApiShaderEntry {
   has_errors?: boolean;
   tags: string[];
   url?: string;
+  params?: ShaderParam[];  // Shader parameter definitions for UI sliders
 }
 
 export interface ShaderCoordinateData {
@@ -325,6 +336,7 @@ class ShaderApiService {
 
   /**
    * Get shader list from API (API-first with local fallback)
+   * Enhanced to fetch individual shader metadata (params) if not in list
    */
   async getShaderList(): Promise<ApiShaderEntry[]> {
     const cached = this.cache.get('shaderList');
@@ -336,24 +348,96 @@ class ShaderApiService {
       const response = await fetch(`${this.baseUrl}/api/shaders`);
       if (!response.ok) throw new Error(`API ${response.status}`);
       const data: ApiShaderEntry[] = await response.json();
+      
       // Build URL pointing to the static .wgsl file (nginx serves /files/ with CORS headers)
       data.forEach(s => {
         const wgslFilename = s.filename.replace(/\.json$/, '.wgsl');
         s.url = `${this.baseUrl}/files/image-effects/shaders/${wgslFilename}`;
       });
+      
+      // Fetch individual shader metadata (params) if not present in list
+      // This runs in parallel and populates params for the UI sliders
+      await this.enrichShaderParams(data);
+      
       this.cache.set('shaderList', data);
       this.lastFetch = Date.now();
       return data;
     } catch (error) {
-      // Fallback to local
+      // Fallback to local shader_coordinates.json + individual JSON definitions
+      return this.loadLocalShadersWithParams();
+    }
+  }
+
+  /**
+   * Enrich shader list with params from individual JSON definitions
+   * Fetches params in parallel for shaders that don't have them
+   */
+  private async enrichShaderParams(shaders: ApiShaderEntry[]): Promise<void> {
+    const shadersNeedingParams = shaders.filter(s => !s.params || s.params.length === 0);
+    
+    // Fetch in batches to avoid overwhelming the server
+    const batchSize = 10;
+    for (let i = 0; i < shadersNeedingParams.length; i += batchSize) {
+      const batch = shadersNeedingParams.slice(i, i + batchSize);
+      await Promise.all(batch.map(async shader => {
+        try {
+          const jsonUrl = `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
+          const response = await fetch(jsonUrl);
+          if (response.ok) {
+            const definition = await response.json();
+            if (definition.params) {
+              shader.params = definition.params;
+            }
+          }
+        } catch (e) {
+          // Silent fail - shader will work but won't have parameter sliders
+        }
+      }));
+    }
+  }
+
+  /**
+   * Load local shaders with params from individual JSON definitions
+   */
+  private async loadLocalShadersWithParams(): Promise<ApiShaderEntry[]> {
+    try {
       const response = await fetch('./shader_coordinates.json');
       const coordMap = await response.json();
-      const entries = Object.entries(coordMap).map(([id, data]: [string, any]) => ({
-        id, name: data.name || id, filename: `${id}.json`, type: 'shader', format: 'wgsl',
-        description: data.reason, coordinate: data.coordinate, tags: data.tags || [],
-        url: `./shaders/${id}.wgsl`,
-      }));
+      
+      const entries: ApiShaderEntry[] = await Promise.all(
+        Object.entries(coordMap).map(async ([id, data]: [string, any]) => {
+          const entry: ApiShaderEntry = {
+            id, 
+            name: data.name || id, 
+            filename: `${id}.json`, 
+            type: 'shader', 
+            format: 'wgsl',
+            description: data.reason, 
+            coordinate: data.coordinate, 
+            tags: data.tags || [],
+            url: `./shaders/${id}.wgsl`,
+          };
+          
+          // Try to load individual JSON definition for params
+          try {
+            const defResponse = await fetch(`./shader_definitions/${data.category || 'image'}/${id}.json`);
+            if (defResponse.ok) {
+              const definition = await defResponse.json();
+              entry.params = definition.params;
+              entry.description = definition.description || entry.description;
+            }
+          } catch (e) {
+            // Silent fail
+          }
+          
+          return entry;
+        })
+      );
+      
       return entries;
+    } catch (error) {
+      console.error('Failed to load local shaders:', error);
+      return [];
     }
   }
 

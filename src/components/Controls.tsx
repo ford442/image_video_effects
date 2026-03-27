@@ -934,6 +934,16 @@ const Controls: React.FC<ControlsProps> = ({
                 </div>
             )}
             
+            {currentShaderEntry && (!currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
+                <div className="glass-card" style={{textAlign: 'center', padding: '15px', color: '#a0a0b0', fontStyle: 'italic'}}>
+                    <div style={{marginBottom: '8px'}}>🔧</div>
+                    <div>No adjustable parameters for this effect.</div>
+                    <div style={{fontSize: '11px', marginTop: '5px', opacity: 0.7}}>
+                        Shader: <code style={{color: '#FFD700'}}>{currentShaderEntry.id}</code>
+                    </div>
+                </div>
+            )}
+            
             {!currentShaderEntry && (
                 <div className="glass-card" style={{textAlign: 'center', padding: '15px', color: '#a0a0b0', fontStyle: 'italic'}}>
                     Select an effect for this slot to see parameters.
