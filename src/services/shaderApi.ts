@@ -371,6 +371,7 @@ class ShaderApiService {
   /**
    * Enrich shader list with params from individual JSON definitions
    * Fetches params in parallel for shaders that don't have them
+   * 404 errors are expected and silently ignored
    */
   private async enrichShaderParams(shaders: ApiShaderEntry[]): Promise<void> {
     const shadersNeedingParams = shaders.filter(s => !s.params || s.params.length === 0);
@@ -380,8 +381,8 @@ class ShaderApiService {
     for (let i = 0; i < shadersNeedingParams.length; i += batchSize) {
       const batch = shadersNeedingParams.slice(i, i + batchSize);
       await Promise.all(batch.map(async shader => {
+        const jsonUrl = `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
         try {
-          const jsonUrl = `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
           const response = await fetch(jsonUrl);
           if (response.ok) {
             const definition = await response.json();
@@ -399,6 +400,7 @@ class ShaderApiService {
           }
         } catch (e) {
           // Silent fail - shader will work but won't have parameter sliders
+          // 404s are expected for shaders without individual JSON definitions
         }
       }));
     }
