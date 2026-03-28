@@ -1,35 +1,11 @@
 {
   "asset-manifest.json": {
-    "hash": "e5701ceb4f0c7f70abe7cb3e9727f895",
+    "hash": "13b0cd63eb3b922abca37ab36c87a616",
     "size": 374
   },
   "index.html": {
-    "hash": "3953be37e02adafdb7c24b92c179ddb7",
+    "hash": "bb21ffcf966a979adff3f64f62d3790a",
     "size": 445
-  },
-  "shaders/gen-prismatic-bismuth-lattice.wgsl.backup": {
-    "hash": "6e5ad521454bbfc3c291a423b6994653",
-    "size": 8862
-  },
-  "shaders/gen-ethereal-anemone-bloom.wgsl.backup": {
-    "hash": "5984a4a917c7c578eddb84e5b738bcd3",
-    "size": 12548
-  },
-  "shaders/gen-art-deco-sky.wgsl.backup": {
-    "hash": "92d46f0abd7cf584b82d8466f3940525",
-    "size": 13728
-  },
-  "shaders/gen-chronos-labyrinth.wgsl.backup": {
-    "hash": "dcc9cefdd6380b39670974282bd1faf6",
-    "size": 14080
-  },
-  "shaders/gen_mandelbulb_3d.wgsl.backup": {
-    "hash": "5745eb22bf507c60b2d6ea36d2938fdb",
-    "size": 8118
-  },
-  "shaders/gen-magnetic-ferrofluid.wgsl.backup": {
-    "hash": "22de64e5ddc9b4b202294015d4490f6c",
-    "size": 5830
   },
   ".htaccess": {
     "hash": "a92d478bcdd0a1b4c13a7925a19ad554",
