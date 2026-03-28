@@ -73,6 +73,8 @@ const defaultSlotParams: SlotParams = {
     zoomParam2: 1.01,
     zoomParam3: 0.5,
     zoomParam4: 0.5,
+    zoomParam5: 0.5,
+    zoomParam6: 0.5,
     lightStrength: 1.0,
     ambient: 0.2,
     normalStrength: 0.1,
@@ -203,6 +205,24 @@ function MainApp() {
                 
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
                 
+                // Initialize slider values to shader's declared param defaults
+                if (ok && shaderEntry.params && shaderEntry.params.length > 0) {
+                    const paramDefaults: Partial<SlotParams> = {};
+                    shaderEntry.params.forEach((p, i) => {
+                        if (i === 0) paramDefaults.zoomParam1 = p.default ?? 0.5;
+                        else if (i === 1) paramDefaults.zoomParam2 = p.default ?? 0.5;
+                        else if (i === 2) paramDefaults.zoomParam3 = p.default ?? 0.5;
+                        else if (i === 3) paramDefaults.zoomParam4 = p.default ?? 0.5;
+                        else if (i === 4) paramDefaults.zoomParam5 = p.default ?? 0.5;
+                        else if (i === 5) paramDefaults.zoomParam6 = p.default ?? 0.5;
+                    });
+                    setSlotParams(prev => {
+                        const next = [...prev];
+                        next[index] = { ...next[index], ...paramDefaults };
+                        return next;
+                    });
+                }
+
                 // Record play event (fire-and-forget)
                 if (ok) {
                     fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, { method: 'POST' }).catch(() => {});
@@ -343,7 +363,15 @@ function MainApp() {
                     tags: shader.tags || [],
                     rating: shader.rating,
                     hasErrors: shader.has_errors,
-                    params: shader.params || [],  // Pass through shader parameters for UI sliders
+                    params: (shader.params || []).map((p: any, idx: number) => ({
+                        id: p.id || p.name || `param${idx + 1}`,
+                        name: p.label || p.name || `Parameter ${idx + 1}`,
+                        default: p.default ?? 0.5,
+                        min: p.min ?? 0,
+                        max: p.max ?? 1,
+                        step: p.step ?? 0.01,
+                        labels: p.labels,
+                    })),
                 }));
                 
                 setAvailableModes(entries);
@@ -615,6 +643,8 @@ function MainApp() {
             zoomParam2: 0.5 + Math.random() * 0.5,      // 0.5 - 1.0
             zoomParam3: Math.random() * 1.0,            // 0.0 - 1.0
             zoomParam4: Math.random() * 1.0,            // 0.0 - 1.0
+            zoomParam5: Math.random() * 1.0,            // 0.0 - 1.0
+            zoomParam6: Math.random() * 1.0,            // 0.0 - 1.0
             lightStrength: 0.5 + Math.random() * 1.5,   // 0.5 - 2.0
             ambient: 0.1 + Math.random() * 0.4,         // 0.1 - 0.5
             normalStrength: 0.05 + Math.random() * 0.25,// 0.05 - 0.3

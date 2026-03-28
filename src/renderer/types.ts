@@ -55,6 +55,8 @@ export interface SlotParams {
     zoomParam2: number;
     zoomParam3: number;
     zoomParam4: number;
+    zoomParam5: number;
+    zoomParam6: number;
     lightStrength: number;
     ambient: number;
     normalStrength: number;

@@ -898,6 +898,8 @@ const Controls: React.FC<ControlsProps> = ({
                 else if (index === 1) val = currentParams.zoomParam2;
                 else if (index === 2) val = currentParams.zoomParam3;
                 else if (index === 3) val = currentParams.zoomParam4;
+                else if (index === 4) val = currentParams.zoomParam5;
+                else if (index === 5) val = currentParams.zoomParam6;
 
                 return (
                     <div key={param.id} className="control-group">
@@ -920,6 +922,8 @@ const Controls: React.FC<ControlsProps> = ({
                                 else if (index === 1) update.zoomParam2 = v;
                                 else if (index === 2) update.zoomParam3 = v;
                                 else if (index === 3) update.zoomParam4 = v;
+                                else if (index === 4) update.zoomParam5 = v;
+                                else if (index === 5) update.zoomParam6 = v;
                                 updateSlotParam(activeSlot, update);
                             }}
                         />
