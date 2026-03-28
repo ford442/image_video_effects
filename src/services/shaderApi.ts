@@ -381,6 +381,12 @@ class ShaderApiService {
     for (let i = 0; i < shadersNeedingParams.length; i += batchSize) {
       const batch = shadersNeedingParams.slice(i, i + batchSize);
       await Promise.all(batch.map(async shader => {
+        // Skip shaders with timestamp IDs (test uploads without JSON definitions)
+        // Format: 20260325T105421904032_name - these don't have individual JSON files
+        if (/^\d{8}T\d{9}_/.test(shader.id)) {
+          return;
+        }
+        
         const jsonUrl = `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
         try {
           const response = await fetch(jsonUrl);

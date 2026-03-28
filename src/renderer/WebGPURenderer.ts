@@ -562,10 +562,11 @@ export class WebGPURenderer implements Renderer {
                          GPUTextureUsage.COPY_DST |
                          GPUTextureUsage.COPY_SRC;
     
-    // Standard compute texture: sampled and written as storage
+    // Standard compute texture: sampled, written as storage, copied to/from
     const USAGE_STANDARD = GPUTextureUsage.TEXTURE_BINDING |
                            GPUTextureUsage.STORAGE_BINDING |
-                           GPUTextureUsage.COPY_DST;
+                           GPUTextureUsage.COPY_DST |
+                           GPUTextureUsage.COPY_SRC;
 
     // Full resolution (source input)
     this.sourceTex = d.createTexture({
