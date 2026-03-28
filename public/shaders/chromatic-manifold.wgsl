@@ -57,7 +57,7 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     return vec3<f32>(h, d, q.x);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var dims = u.config.zw;
     let gid = global_id.xy;

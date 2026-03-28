@@ -293,6 +293,28 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [isMuted]);
 
+    // Sync mouseDown state to renderer
+    useEffect(() => {
+        if (rendererRef.current?.setParam) {
+            rendererRef.current.setParam('mouseDown', isMouseDown ? 1 : 0);
+        }
+    }, [isMouseDown, rendererRef]);
+
+    // Sync slotParams to renderer (zoomParam1-6) - use first slot's params
+    useEffect(() => {
+        if (rendererRef.current?.updateSlotParams && slotParams.length > 0) {
+            const params = slotParams[0]; // Use first slot's params
+            rendererRef.current.updateSlotParams({
+                zoomParam1: params.zoomParam1,
+                zoomParam2: params.zoomParam2,
+                zoomParam3: params.zoomParam3,
+                zoomParam4: params.zoomParam4,
+                zoomParam5: params.zoomParam5,
+                zoomParam6: params.zoomParam6,
+            });
+        }
+    }, [slotParams, rendererRef]);
+
     // Animation Loop
     useEffect(() => {
         let active = true;
@@ -328,6 +350,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const x = (event.clientX - rect.left) / rect.width;
         const y = (event.clientY - rect.top) / rect.height;
         setMousePosition({ x, y });
+        
+        // Sync to renderer
+        if (rendererRef.current?.updateMouse) {
+            rendererRef.current.updateMouse(x, y);
+        }
     };
 
     const handleMouseLeave = () => {

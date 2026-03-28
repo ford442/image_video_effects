@@ -42,7 +42,7 @@ fn complex_pow(z: vec2<f32>, w: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(mag * cos(exponent.y), mag * sin(exponent.y));
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {

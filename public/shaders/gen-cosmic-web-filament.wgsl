@@ -65,7 +65,7 @@ fn fbm(p: vec3<f32>) -> f32 {
   return v;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var res = u.config.zw;
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }

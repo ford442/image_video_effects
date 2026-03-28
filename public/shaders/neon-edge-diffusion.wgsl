@@ -103,7 +103,7 @@ fn diffuse_light_impl(gid: vec3<u32>) {
 }
 
 // Main entrypoint for Neon Edge Diffusion
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   diffuse_light_impl(gid);
 }

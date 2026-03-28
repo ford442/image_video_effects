@@ -351,7 +351,7 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
 }
 
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     // 1. Guard check removed, assuming dispatch covers canvas.
     // Ensure we don't access garbage.

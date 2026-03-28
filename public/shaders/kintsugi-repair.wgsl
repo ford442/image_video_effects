@@ -97,7 +97,7 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     return vec4<f32>(min_dist, id_point.x, id_point.y, min_edge_dist);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {

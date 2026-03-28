@@ -107,7 +107,7 @@ fn calculateFabricAlpha(strain: f32, isTorn: bool, threadDensity: f32) -> f32 {
     return clamp(alpha, 0.2, 0.88);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
   let coord = gid.xy;

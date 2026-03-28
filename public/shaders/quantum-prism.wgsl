@@ -26,7 +26,7 @@ fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
     if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }

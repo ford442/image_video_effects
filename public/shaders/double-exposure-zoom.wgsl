@@ -23,7 +23,7 @@ struct Uniforms {
 // Param 1: Rotation (Input 0..1 maps to -PI..PI)
 // Param 2: Zoom Level (Input 0..1 maps to 0.25x .. 4.0x)
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {

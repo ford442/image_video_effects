@@ -7,5 +7,20 @@
   "tags": [
     "filter",
     "image-processing"
+  ],
+  "params": [
+    {
+      "id": "color_dispersion",
+      "name": "Color Dispersion",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Spectral color separation"
+    }
+  ],
+  "features": [
+    "mouse-driven"
   ]
 }

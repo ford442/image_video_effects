@@ -36,7 +36,7 @@ fn get_bayer_8x8(x: u32, y: u32) -> f32 {
     return f32(m[idx]) / 64.0;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {

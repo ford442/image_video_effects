@@ -898,6 +898,8 @@ const Controls: React.FC<ControlsProps> = ({
                 else if (index === 1) val = currentParams.zoomParam2;
                 else if (index === 2) val = currentParams.zoomParam3;
                 else if (index === 3) val = currentParams.zoomParam4;
+                else if (index === 4) val = currentParams.zoomParam5;
+                else if (index === 5) val = currentParams.zoomParam6;
 
                 return (
                     <div key={param.id} className="control-group">
@@ -920,6 +922,8 @@ const Controls: React.FC<ControlsProps> = ({
                                 else if (index === 1) update.zoomParam2 = v;
                                 else if (index === 2) update.zoomParam3 = v;
                                 else if (index === 3) update.zoomParam4 = v;
+                                else if (index === 4) update.zoomParam5 = v;
+                                else if (index === 5) update.zoomParam6 = v;
                                 updateSlotParam(activeSlot, update);
                             }}
                         />
@@ -931,6 +935,16 @@ const Controls: React.FC<ControlsProps> = ({
             {currentShaderEntry?.params && currentShaderEntry.params.length > 6 && (
                 <div style={{color: '#a0a0b0', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
                     +<span style={{color: '#FFD700'}}>{currentShaderEntry.params.length - 6}</span> more params available in shader file
+                </div>
+            )}
+            
+            {currentShaderEntry && (!currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
+                <div className="glass-card" style={{textAlign: 'center', padding: '15px', color: '#a0a0b0', fontStyle: 'italic'}}>
+                    <div style={{marginBottom: '8px'}}>🔧</div>
+                    <div>No adjustable parameters for this effect.</div>
+                    <div style={{fontSize: '11px', marginTop: '5px', opacity: 0.7}}>
+                        Shader: <code style={{color: '#FFD700'}}>{currentShaderEntry.id}</code>
+                    </div>
                 </div>
             )}
             

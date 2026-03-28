@@ -68,7 +68,7 @@ fn ironFilingSprite(localUV: vec2<f32>, angle: f32, intensity: f32) -> f32 {
   return shape * intensity;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
   let coord = gid.xy;

@@ -63,7 +63,7 @@ fn paperGrain(uv: vec2<f32>, scale: f32) -> f32 {
     return 0.85 + 0.15 * grain;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;

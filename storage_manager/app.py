@@ -1981,6 +1981,7 @@ async def upload_shader(
    
 # ========================= FTP BRIDGE ENDPOINTS =========================
 
+@app.head("/api/shaders/{shader_id}/wgsl")
 @app.get("/api/shaders/{shader_id}/wgsl", response_class=PlainTextResponse)
 async def get_shader_wgsl(shader_id: str):
     """Returns raw WGSL text for direct consumption by WebGPU renderer.

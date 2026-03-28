@@ -120,7 +120,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 }
 
 // --- Main Render Loop ---
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let texSize = textureDimensions(writeTexture);
     if (id.x >= texSize.x || id.y >= texSize.y) { return; }

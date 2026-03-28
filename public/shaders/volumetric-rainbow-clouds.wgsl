@@ -73,7 +73,7 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return rgb + vec3<f32>(v - c);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     var uv = vec2<f32>(gid.xy) / dims;

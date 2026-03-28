@@ -131,7 +131,7 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(d * 0.6, mat_id);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(id.xy);

@@ -52,7 +52,7 @@ fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
     return mix(1.0, depthAlpha, depthWeight);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv_raw = vec2<f32>(global_id.xy);

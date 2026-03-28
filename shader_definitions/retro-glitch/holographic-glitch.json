@@ -40,7 +40,8 @@
     "chromatic-aberration",
     "sci-fi",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "mouse-driven"
   ],
   "tags": [
     "filter",

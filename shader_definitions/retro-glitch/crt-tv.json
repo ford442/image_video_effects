@@ -47,5 +47,8 @@
       "max": 1.0,
       "step": 0.01
     }
+  ],
+  "features": [
+    "mouse-driven"
   ]
 }

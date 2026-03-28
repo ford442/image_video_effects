@@ -56,7 +56,7 @@ fn lensVignette(uv: vec2<f32>, intensity: f32) -> f32 {
     return 1.0f - pow(dist * 1.5f, intensity * 2.0f);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);

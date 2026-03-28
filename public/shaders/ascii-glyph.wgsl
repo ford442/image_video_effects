@@ -29,7 +29,7 @@ struct Uniforms {
 const GLYPH_GRID: vec2<u32> = vec2<u32>(80u, 45u);
 const GLYPH_SIZE: u32 = 16u;
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = vec2<f32>(u.config.z, u.config.w);
   var uv = vec2<f32>(gid.xy) / resolution;

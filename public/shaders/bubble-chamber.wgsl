@@ -19,7 +19,7 @@ fn random(uv: vec2<f32>, seed: f32) -> f32 {
     return fract(sin(dot(uv + vec2(seed, seed), vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
 

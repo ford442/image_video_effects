@@ -94,7 +94,7 @@ fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -
     return vec4<f32>(f1, f2, cellId.x + cellId.y * 0.1, hash21(cellId));
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;

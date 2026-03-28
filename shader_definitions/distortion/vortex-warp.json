@@ -30,6 +30,16 @@
       "default": 0.2,
       "min": 0.0,
       "max": 1.0
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Vortex turbulence amount"
     }
   ],
   "tags": [

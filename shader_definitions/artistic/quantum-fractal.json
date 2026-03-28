@@ -13,6 +13,19 @@
   ],
   "features": [
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "edge_glow",
+      "name": "Edge Glow",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Glow on fractal edges"
+    }
   ]
 }

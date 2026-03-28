@@ -82,7 +82,7 @@ fn shade(p: vec3<f32>, n: vec3<f32>, ro: vec3<f32>, material: f32) -> vec3<f32> 
   return col * (0.25 + diff * 0.7 + spec * 1.8);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   let time = u.config.x;

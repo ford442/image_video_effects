@@ -97,7 +97,7 @@ fn sample_layer(uv: vec2<f32>, zoom_center: vec2<f32>, layer_depth: f32) -> vec4
     return vec4<f32>(color.rgb, depth);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     var uv = vec2<f32>(global_id.xy) / resolution;

@@ -28,7 +28,7 @@ fn cell_index(x: u32, y: u32) -> u32 {
   return y * GRID_WIDTH + x;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let x = gid.x;
   let y = gid.y;
