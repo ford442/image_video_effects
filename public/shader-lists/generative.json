@@ -2646,6 +2646,60 @@
     ]
   },
   {
+    "id": "gen-neuro-kinetic-bloom",
+    "name": "Neuro-Kinetic Bloom",
+    "url": "shaders/gen-neuro-kinetic-bloom.wgsl",
+    "category": "generative",
+    "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound.",
+    "tags": [
+      "organic",
+      "biomechanical",
+      "audio-reactive",
+      "flora",
+      "raymarching",
+      "volumetric"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "bloomExtension",
+        "name": "Bloom Extension",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "repulsionRadius",
+        "name": "Repulsion Radius",
+        "default": 3,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "veinGlow",
+        "name": "Vein Glow",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "cameraZoom",
+        "name": "Camera Zoom",
+        "default": 0,
+        "min": -10,
+        "max": 10,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-prismatic-bismuth-lattice",
     "name": "Prismatic Bismuth Lattice",
     "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
