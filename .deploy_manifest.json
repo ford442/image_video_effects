@@ -1,119 +1,15 @@
 {
-  "index.html": {
-    "hash": "343ab507d1ce78d650f48aee4a21c37b",
-    "size": 445
-  },
-  "shaders/wolfram-data-demo.wgsl": {
-    "hash": "910fede511b1452680cd95e366e01af2",
-    "size": 11566
-  },
-  "shader-lists/generative.json": {
-    "hash": "467701fcb1cad4bcb35dd9916c1311a7",
-    "size": 111752
-  },
   "asset-manifest.json": {
-    "hash": "3db967bbf18066d186d2949c461930df",
+    "hash": "e5701ceb4f0c7f70abe7cb3e9727f895",
     "size": 374
   },
-  "static/css/main.b1072d5f.css.map": {
-    "hash": "80c456137f3ab4cf296152e33adda1a4",
-    "size": 116206
-  },
-  "static/css/main.b1072d5f.css": {
-    "hash": "c9d0dbc96ad1dafb64c5ea78b2d56133",
-    "size": 54124
-  },
-  "static/js/main.258327f0.js.LICENSE.txt": {
-    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
-    "size": 1210
-  },
-  "static/js/main.258327f0.js.map": {
-    "hash": "cfcf05152b64d10f1c851745b80e6b68",
-    "size": 13926380
-  },
-  "static/js/main.258327f0.js": {
-    "hash": "eddb2aca9739efdfe878c2b4bbc04a33",
-    "size": 7788118
-  },
-  "shaders/gen-chronos-labyrinth.wgsl": {
-    "hash": "fc2afdaa9e0e146a6b19081e088dfd06",
-    "size": 14082
-  },
-  "shaders/gen-quantum-mycelium.wgsl": {
-    "hash": "de3a421b317f7ecf834f5f0aebeb814b",
-    "size": 6551
-  },
-  "shaders/gen-fractured-monolith.wgsl.backup": {
-    "hash": "a95d42b9f1c91378e9da56443743fc12",
-    "size": 8134
-  },
-  "shaders/gen-chromatic-metamorphosis.wgsl.backup": {
-    "hash": "18d169fe08bf036b6253cae69bcbee9a",
-    "size": 15764
-  },
-  "shaders/gen-fractal-clockwork.wgsl": {
-    "hash": "db51cdce502ce5fd0070c78a81306f4f",
-    "size": 5677
-  },
-  "shaders/cellular-automata-3d.wgsl": {
-    "hash": "aac4ee8f57f24740beb5330df7672e91",
-    "size": 8409
-  },
-  "shaders/byte-mosh.wgsl": {
-    "hash": "e7e05642733a3f97314a02d38c524393",
-    "size": 9690
-  },
-  "shaders/gen-crystal-caverns.wgsl": {
-    "hash": "6b9b768152e55b2ea47990fd22267e6c",
-    "size": 4355
-  },
-  "shaders/glitch-pixel-sort.wgsl": {
-    "hash": "092720880ca22540aa163b77a65c551d",
-    "size": 10768
-  },
-  "shaders/gen-magnetic-ferrofluid.wgsl": {
-    "hash": "95192baf7f211e523c565dcf022761e7",
-    "size": 5832
-  },
-  "shaders/gen-holographic-plasma-geode.wgsl": {
-    "hash": "31762665d8231e61f53ded2c0c1e7712",
-    "size": 7774
-  },
-  "shaders/gen-ethereal-anemone-bloom.wgsl": {
-    "hash": "cc861c28f76e1eaac19a13860b804890",
-    "size": 12604
-  },
-  "shaders/gen-fractured-monolith.wgsl": {
-    "hash": "9e4958c373739242ba0639ea7d04b5b2",
-    "size": 8136
-  },
-  "shaders/gen-art-deco-sky.wgsl": {
-    "hash": "bd9d3c988db65100bf6cdcf2f47d2573",
-    "size": 13731
-  },
-  "shaders/gen-biomechanical-hive.wgsl.backup": {
-    "hash": "94bc5772910157457ecadc79eb1ab1cd",
-    "size": 11490
-  },
-  "shaders/gen-prismatic-bismuth-lattice.wgsl": {
-    "hash": "7b05594048882f3185184f8966409737",
-    "size": 8868
+  "index.html": {
+    "hash": "3953be37e02adafdb7c24b92c179ddb7",
+    "size": 445
   },
   "shaders/gen-prismatic-bismuth-lattice.wgsl.backup": {
     "hash": "6e5ad521454bbfc3c291a423b6994653",
     "size": 8862
-  },
-  "shaders/fractal-boids-field.wgsl": {
-    "hash": "cad8364cf1191ba0191131734d906093",
-    "size": 8304
-  },
-  "shaders/gen-chromatic-metamorphosis.wgsl": {
-    "hash": "1490768e798b6641183e9db1546fa407",
-    "size": 15770
-  },
-  "shaders/crt-tv.wgsl": {
-    "hash": "f95f9b733246dbf688e3e58e38343d9d",
-    "size": 14078
   },
   "shaders/gen-ethereal-anemone-bloom.wgsl.backup": {
     "hash": "5984a4a917c7c578eddb84e5b738bcd3",
@@ -131,40 +27,12 @@
     "hash": "5745eb22bf507c60b2d6ea36d2938fdb",
     "size": 8118
   },
-  "shaders/gen_grok4_life.wgsl": {
-    "hash": "1f54f74929c8a317a0d6a6775c25b50a",
-    "size": 12463
-  },
   "shaders/gen-magnetic-ferrofluid.wgsl.backup": {
     "hash": "22de64e5ddc9b4b202294015d4490f6c",
     "size": 5830
   },
-  "shaders/gen-biomechanical-hive.wgsl": {
-    "hash": "72b1f8e6e7985b5ef32d3b04d01ce633",
-    "size": 11492
-  },
-  "shaders/gen-xeno-botanical-synth-flora.wgsl": {
-    "hash": "1a41a0134fb64e74c6d1c22d8dcd6384",
-    "size": 4046
-  },
-  "shaders/gen_mandelbulb_3d.wgsl": {
-    "hash": "3197af3d4bde86ab6ebb0e48cc06658b",
-    "size": 8124
-  },
-  "wasm/pixelocity_wasm.js": {
-    "hash": "c7f5c21a4e6075c834ff5139ef574c64",
-    "size": 68
-  },
-  "static/js/main.a403874a.js.map": {
-    "hash": "46b961a914790e068fe4cdf6bc72c607",
-    "size": 14027558
-  },
-  "static/js/main.a403874a.js": {
-    "hash": "7c97af91c72e6844ae11926e457686e8",
-    "size": 7817302
-  },
-  "static/js/main.a403874a.js.LICENSE.txt": {
-    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
-    "size": 1210
+  ".htaccess": {
+    "hash": "a92d478bcdd0a1b4c13a7925a19ad554",
+    "size": 1152
   }
 }

@@ -72,7 +72,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         
         // Log for debugging - should NOT be 0x0
         if (width <= 1 || height <= 1) {
-            console.warn(`Canvas has near-zero dimensions: ${width}x${height}, delaying WebGPU init`);
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`Canvas has near-zero dimensions: ${width}x${height}, delaying WebGPU init`);
+            }
             return false;
         }
         
@@ -86,14 +88,18 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         // Guard: Ensure canvas has actual dimensions before creating textures
         if (!ensureCanvasSize(canvas)) {
-            console.warn('Canvas not ready for WebGPU initialization, skipping...');
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Canvas not ready for WebGPU initialization, skipping...');
+            }
             return;
         }
 
         // Enforce the high-res buffer size
         canvas.width = INTERNAL_RES;
         canvas.height = INTERNAL_RES;
-        console.log(`Initializing WebGPU with canvas: ${canvas.width}x${canvas.height}`);
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`Initializing WebGPU with canvas: ${canvas.width}x${canvas.height}`);
+        }
 
         const renderer = new RendererManager({ width: 1920, height: 1080, agentCount: 50000 });
 
@@ -135,7 +141,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         // Try to get initial size from container
         const rect = container.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0 && displaySize.width === 1) {
-            console.log(`📦 Initial container size from getBoundingClientRect: ${rect.width}x${rect.height}`);
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`📦 Initial container size from getBoundingClientRect: ${rect.width}x${rect.height}`);
+            }
             setDisplaySize({ width: rect.width, height: rect.height });
             if (!canvasReady) {
                 setCanvasReady(true);
@@ -148,17 +156,23 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 const width = entry.contentRect.width;
                 const height = entry.contentRect.height;
 
-                console.log(`🔍 ResizeObserver fired: ${width}x${height}`);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`🔍 ResizeObserver fired: ${width}x${height}`);
+                }
 
                 if (width > 0 && height > 0) {
                     setDisplaySize({ width, height });
                     // Mark canvas as ready for WebGPU initialization
                     if (!canvasReady) {
-                        console.log(`✅ Canvas ready: ${width}x${height}`);
+                        if (process.env.NODE_ENV === 'development') {
+                            console.log(`✅ Canvas ready: ${width}x${height}`);
+                        }
                         setCanvasReady(true);
                     }
                 } else {
-                    console.warn(`⚠️ Container has zero dimensions: ${width}x${height}`);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn(`⚠️ Container has zero dimensions: ${width}x${height}`);
+                    }
                 }
             }
         });
@@ -209,7 +223,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Handle Live Stream Video Ready
     const handleLiveVideoReady = (video: HTMLVideoElement) => {
-        console.log('🔴 WebGPUCanvas: Live video ready');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔴 WebGPUCanvas: Live video ready');
+        }
         hlsVideoRef.current = video;
         // If we're in live mode, sync the video element
         if (inputSource === 'live' && videoRef.current) {
@@ -446,10 +462,13 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const canvasSize = Math.min(displaySize.width, displaySize.height);
     const finalCanvasSize = Math.max(canvasSize, 100); // Ensure minimum visible size
 
-    if (displaySize.width !== 1 || displaySize.height !== 1) {
-        console.log(`📐 Canvas size calculated: ${finalCanvasSize}px (from ${displaySize.width}x${displaySize.height})`);
-    } else {
-        console.warn(`⚠️ Canvas size is still using default (1x1), using fallback display size`);
+    // Debug logging only in development
+    if (process.env.NODE_ENV === 'development') {
+        if (displaySize.width !== 1 || displaySize.height !== 1) {
+            console.log(`📐 Canvas size calculated: ${finalCanvasSize}px (from ${displaySize.width}x${displaySize.height})`);
+        } else {
+            console.warn(`⚠️ Canvas size is still using default (1x1), using fallback display size`);
+        }
     }
 
     const canvasStyle: React.CSSProperties = {

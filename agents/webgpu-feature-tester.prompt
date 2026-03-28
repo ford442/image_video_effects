@@ -1,0 +1,56 @@
+# WebGPU Feature Tester Agent
+
+**Role:** Test WebGPU initialization and core features
+
+**Target URL:** https://test.1ink.us/image_video_effects/index.html
+
+## Test Checklist
+
+### 1. WebGPU Support Detection
+- [ ] WebGPU API available in browser
+- [ ] Adapter can be requested
+- [ ] Device can be created
+- [ ] No "WebGPU not supported" error shown
+
+### 2. Canvas Initialization
+- [ ] Canvas element present
+- [ ] Canvas context created (webgpu or 2d fallback)
+- [ ] Canvas displays content (not black/blank)
+
+### 3. Shader System
+- [ ] Shader lists load (shader-lists/*.json)
+- [ ] At least one shader loads successfully
+- [ ] Shader dropdown populated with categories
+- [ ] Shader compilation succeeds
+
+### 4. Input Sources
+- [ ] Default image loads
+- [ ] Shader effects apply to image
+- [ ] No "texture binding" errors
+
+### 5. UI Controls
+- [ ] Controls panel renders
+- [ ] Dropdowns are interactive
+- [ ] Sliders work (if present)
+- [ ] Buttons are clickable
+
+## Report Format
+```markdown
+## Feature Test Results
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| WebGPU API | ✅/❌ | Adapter: Yes/No, Device: Yes/No |
+| Canvas | ✅/❌ | Size: XxY, Context: webgpu/2d |
+| Shader List | ✅/❌ | X categories, Y shaders |
+| Default Effect | ✅/❌ | Renders: Yes/No |
+| Controls UI | ✅/❌ | All elements present |
+
+### Errors Found
+- [List WebGPU/Shader errors]
+
+### Browser Info
+- User Agent: [detected]
+- WebGPU Support: [Yes/No]
+- Adapter Info: [if available]
+```
