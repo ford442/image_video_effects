@@ -214,7 +214,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(${WG_SIZE_X}, ${WG_SIZE_Y}, 1)  // 16x16 = 256 invocations for max occupancy
+@compute @workgroup_size(8, 8, 1)  // Match all real shaders' workgroup size
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(textureDimensions(readTexture));
     let uv = vec2<f32>(global_id.xy) / resolution;
@@ -373,6 +373,7 @@ export class WebGPURenderer implements Renderer {
   // Shader pipeline cache: shader-id → GPUComputePipeline
   private pipelines = new Map<string, GPUComputePipeline>();
   private pipelineHashes = new Map<string, string>(); // shader-id → content hash
+  private workgroupSizes = new Map<string, { x: number; y: number }>(); // shader-id → parsed workgroup size
 
   // Multi-slot state with parallelization support
   // Slot 0: Usually chained (background/base effect)
@@ -864,6 +865,16 @@ export class WebGPURenderer implements Renderer {
     return hash.toString(36) + ':' + code.length;
   }
 
+  /** Parse @workgroup_size(x, y) from WGSL source to determine dispatch dimensions */
+  private parseWorkgroupSize(wgslSource: string): { x: number; y: number } {
+    const match = wgslSource.match(/@compute\s+@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
+    if (match) {
+      return { x: parseInt(match[1], 10), y: parseInt(match[2], 10) };
+    }
+    console.warn('[WebGPU] Could not parse workgroup_size from shader, defaulting to 8x8');
+    return { x: 8, y: 8 };
+  }
+
   private compileShader(id: string, wgsl: string): boolean {
     if (!this.device) return false;
 
@@ -873,10 +884,13 @@ export class WebGPURenderer implements Renderer {
       return true;
     }
     
+    // Parse workgroup size from shader source
+    const wgSize = this.parseWorkgroupSize(wgsl);
+
     // Try to compile the requested shader
     try {
       const module = this.device.createShaderModule({ label: id, code: wgsl });
-      
+
       // Check for compilation errors using compilationInfo
       module.getCompilationInfo().then(info => {
         const errors = info.messages.filter(m => m.type === 'error');
@@ -884,31 +898,32 @@ export class WebGPURenderer implements Renderer {
           console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
         }
       });
-      
+
       const pipeline = this.device.createComputePipeline({
         label: id,
         layout: this.pipelineLayout,
         compute: { module, entryPoint: 'main' },
       });
-      
+
       this.pipelines.set(id, pipeline);
       this.pipelineHashes.set(id, contentHash);
+      this.workgroupSizes.set(id, wgSize);
       return true;
     } catch (e) {
       console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
-      
+
       // Report error through handler
       globalErrorHandler({
         type: 'shader-compile',
         message: `Shader "${id}" failed to compile. Using fallback pass-through shader.`,
         recoverable: true
       });
-      
+
       // Try to use fallback shader
       try {
-        const fallbackModule = this.device.createShaderModule({ 
-          label: `${id}-fallback`, 
-          code: FALLBACK_WGSL 
+        const fallbackModule = this.device.createShaderModule({
+          label: `${id}-fallback`,
+          code: FALLBACK_WGSL
         });
         const fallbackPipeline = this.device.createComputePipeline({
           label: `${id}-fallback`,
@@ -916,6 +931,7 @@ export class WebGPURenderer implements Renderer {
           compute: { module: fallbackModule, entryPoint: 'main' },
         });
         this.pipelines.set(id, fallbackPipeline);
+        this.workgroupSizes.set(id, this.parseWorkgroupSize(FALLBACK_WGSL));
         console.log(`[WebGPU] Using fallback shader for '${id}'`);
         return true;
       } catch (fallbackError) {
@@ -1361,6 +1377,7 @@ export class WebGPURenderer implements Renderer {
     }
     this.initialized = false;
     this.pipelines.clear();
+    this.workgroupSizes.clear();
 
     for (const t of [this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
                      this.dataTexC, this.depthRead, this.depthWrite, this.emptyTex]) {
@@ -1439,19 +1456,17 @@ export class WebGPURenderer implements Renderer {
       );
     }
 
-    // Dispatch at scaled resolution
-    const wgX = Math.ceil(this.scaledW / WG_SIZE_X);
-    const wgY = Math.ceil(this.scaledH / WG_SIZE_Y);
-
     // ═══════════════════════════════════════════════════════════════════════════════
     // PARALLEL SLOT GROUPS
-    // 
-    // Parallel slots: All read from readTex, output to writeTex. The driver can 
+    //
+    // Parallel slots: All read from readTex, output to writeTex. The driver can
     // overlap their execution since they're independent compute passes.
-    // 
+    //
     // Chained slots: Output of slot N feeds into slot N+1. Must stay sequential.
+    //
+    // Dispatch sizes are per-shader based on parsed @workgroup_size from WGSL.
     // ═══════════════════════════════════════════════════════════════════════════════
-    
+
     const parallelSlots = enabled.filter(s => s.mode === 'parallel');
     const chainedSlots = enabled.filter(s => s.mode === 'chained');
 
@@ -1459,12 +1474,17 @@ export class WebGPURenderer implements Renderer {
     // All parallel slots read from the same readTex (base image)
     for (const slot of parallelSlots) {
       const pipeline = this.pipelines.get(slot.shaderId!)!;
+      const wg = this.workgroupSizes.get(slot.shaderId!) || { x: 8, y: 8 };
       const pass = encoder.beginComputePass({ label: `parallel-${slot.shaderId}` });
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, this.computeBindGroup);
-      pass.dispatchWorkgroups(wgX, wgY, 1);
+      pass.dispatchWorkgroups(
+        Math.ceil(this.scaledW / wg.x),
+        Math.ceil(this.scaledH / wg.y),
+        1
+      );
       pass.end();
-      
+
       // Note: We don't copy between parallel slots - they all read from readTex.
       // The last parallel slot's output ends up in writeTex.
     }
@@ -1482,11 +1502,16 @@ export class WebGPURenderer implements Renderer {
     for (let i = 0; i < chainedSlots.length; i++) {
       const slot = chainedSlots[i];
       const pipeline = this.pipelines.get(slot.shaderId!)!;
+      const wg = this.workgroupSizes.get(slot.shaderId!) || { x: 8, y: 8 };
 
       const pass = encoder.beginComputePass({ label: `chained-${slot.shaderId}` });
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, this.computeBindGroup);
-      pass.dispatchWorkgroups(wgX, wgY, 1);
+      pass.dispatchWorkgroups(
+        Math.ceil(this.scaledW / wg.x),
+        Math.ceil(this.scaledH / wg.y),
+        1
+      );
       pass.end();
 
       // Copy output to input for next chained slot (except for last one)
@@ -1558,7 +1583,8 @@ export class WebGPURenderer implements Renderer {
     const u = this.uniformView;
     
     // config: time, rippleCount, resW, resH
-    u.setConfig(this.currentTime, this.ripples.length, this.canvasW, this.canvasH);
+    // Use scaledW/scaledH so shaders get the actual working texture dimensions
+    u.setConfig(this.currentTime, this.ripples.length, this.scaledW, this.scaledH);
     
     // zoom_config: time, mouseX, mouseY, mouseDown
     u.setZoomConfig(this.currentTime, this.mouseX, this.mouseY, this.mouseDown ? 1 : 0);
