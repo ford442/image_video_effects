@@ -408,6 +408,8 @@ export class WebGPURenderer implements Renderer {
   private mouseY      = 0.5;
   private mouseDown   = false;
   private zoomParams  = [0.5, 0.5, 0.5, 0.5];
+  private zoomParam5  = 0.5;  // UI-only (not in GPU vec4 yet)
+  private zoomParam6  = 0.5;  // UI-only (not in GPU vec4 yet)
   private ripples: Ripple[] = [];
   private audioBass   = 0;
   private audioMid    = 0;
@@ -1334,15 +1336,19 @@ export class WebGPURenderer implements Renderer {
       case 'zoomParam2': this.zoomParams[1]  = value;     break;
       case 'zoomParam3': this.zoomParams[2]  = value;     break;
       case 'zoomParam4': this.zoomParams[3]  = value;     break;
+      case 'zoomParam5': this.zoomParam5     = value;     break;
+      case 'zoomParam6': this.zoomParam6     = value;     break;
     }
   }
 
   /** Update all zoom params from SlotParams (called when UI changes) */
-  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }): void {
+  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number; zoomParam5?: number; zoomParam6?: number }): void {
     if (params.zoomParam1 !== undefined) this.zoomParams[0] = params.zoomParam1;
     if (params.zoomParam2 !== undefined) this.zoomParams[1] = params.zoomParam2;
     if (params.zoomParam3 !== undefined) this.zoomParams[2] = params.zoomParam3;
     if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
+    if (params.zoomParam5 !== undefined) this.zoomParam5 = params.zoomParam5;
+    if (params.zoomParam6 !== undefined) this.zoomParam6 = params.zoomParam6;
   }
 
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */

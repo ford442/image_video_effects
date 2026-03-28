@@ -122,12 +122,19 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
     const rect = triggerRef.current.getBoundingClientRect();
     const overlayWidth = Math.min(window.innerWidth * 0.95, 1200);
     let left = rect.left;
-    // Keep within viewport
+    // Keep within viewport horizontally
     if (left + overlayWidth > window.innerWidth - 8) {
       left = window.innerWidth - overlayWidth - 8;
     }
     if (left < 8) left = 8;
-    setOverlayPos({ top: rect.bottom + 4, left, width: overlayWidth });
+    // Keep within viewport vertically
+    let top = rect.bottom + 4;
+    const spaceBelow = window.innerHeight - top - 8;
+    if (spaceBelow < 300) {
+      // Not enough room below — position above the trigger instead
+      top = Math.max(8, rect.top - Math.min(window.innerHeight * 0.7, rect.top - 8));
+    }
+    setOverlayPos({ top, left, width: overlayWidth });
   }, [isOpen]);
 
   // Auto-focus search on open
@@ -235,7 +242,7 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
     <div
       ref={overlayRef}
       className="smm-overlay"
-      style={{ top: overlayPos.top, left: overlayPos.left, width: overlayPos.width }}
+      style={{ top: overlayPos.top, left: overlayPos.left, width: overlayPos.width, maxHeight: `calc(100vh - ${overlayPos.top}px - 8px)` }}
       onKeyDown={handleKeyDown}
     >
       {/* Search */}

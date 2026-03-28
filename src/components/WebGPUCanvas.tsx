@@ -300,7 +300,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [isMouseDown, rendererRef]);
 
-    // Sync slotParams to renderer (zoomParam1-4) - use first slot's params
+    // Sync slotParams to renderer (zoomParam1-6) - use first slot's params
     useEffect(() => {
         if (rendererRef.current?.updateSlotParams && slotParams.length > 0) {
             const params = slotParams[0]; // Use first slot's params
@@ -309,6 +309,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 zoomParam2: params.zoomParam2,
                 zoomParam3: params.zoomParam3,
                 zoomParam4: params.zoomParam4,
+                zoomParam5: params.zoomParam5,
+                zoomParam6: params.zoomParam6,
             });
         }
     }, [slotParams, rendererRef]);

@@ -386,7 +386,15 @@ class ShaderApiService {
           if (response.ok) {
             const definition = await response.json();
             if (definition.params) {
-              shader.params = definition.params;
+              shader.params = definition.params.map((p: any, idx: number) => ({
+                id: p.id || p.name || `param${idx + 1}`,
+                name: p.label || p.name || `Parameter ${idx + 1}`,
+                default: p.default ?? 0.5,
+                min: p.min ?? 0,
+                max: p.max ?? 1,
+                step: p.step ?? 0.01,
+                labels: p.labels,
+              }));
             }
           }
         } catch (e) {
