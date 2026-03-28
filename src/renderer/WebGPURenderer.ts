@@ -54,7 +54,6 @@ const PLASMA_BYTES       = MAX_PLASMA_BALLS * 48;   // 2400 bytes
 const WG_SIZE_X          = 16;  // Workgroup X dimension (was 8)
 const WG_SIZE_Y          = 16;  // Workgroup Y dimension (was 8)
 const WG_SIZE_1D         = 256; // Workgroup size for 1D dispatch (particles, was 64)
-const WG_INVOCATIONS     = 256; // Total invocations per workgroup
 
 // Note: TRANSIENT_ATTACHMENT (Chrome 146+) requires RENDER_ATTACHMENT usage.
 // Since we use compute shaders exclusively (not render passes), we cannot use
