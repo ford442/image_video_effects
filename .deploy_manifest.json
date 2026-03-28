@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "hash": "dd4af195a33fd632ee1913d59fabc47d",
+    "hash": "ce0292e98627bffcd5313ce81699e46a",
     "size": 445
   },
   "shaders/wolfram-data-demo.wgsl": {
@@ -12,7 +12,7 @@
     "size": 111752
   },
   "asset-manifest.json": {
-    "hash": "e9e93d47e7e7d43662461b3947be6e45",
+    "hash": "3db967bbf18066d186d2949c461930df",
     "size": 374
   },
   "static/css/main.b1072d5f.css.map": {
@@ -154,5 +154,17 @@
   "wasm/pixelocity_wasm.js": {
     "hash": "c7f5c21a4e6075c834ff5139ef574c64",
     "size": 68
+  },
+  "static/js/main.a403874a.js.map": {
+    "hash": "46b961a914790e068fe4cdf6bc72c607",
+    "size": 14027558
+  },
+  "static/js/main.a403874a.js": {
+    "hash": "7c97af91c72e6844ae11926e457686e8",
+    "size": 7817302
+  },
+  "static/js/main.a403874a.js.LICENSE.txt": {
+    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
+    "size": 1210
   }
 }

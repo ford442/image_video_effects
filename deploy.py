@@ -26,6 +26,9 @@ SKIP_PATTERNS = [
     # '*.map',  # Uncomment to skip source maps
 ]
 
+# Critical files that should never be removed from remote
+PROTECTED_FILES = ['index.html']
+
 
 def get_file_hash(filepath: str) -> str:
     """Calculate MD5 hash of a file."""
@@ -140,6 +143,7 @@ def upload_directory(sftp_client, local_path: str, remote_path: str, manifest: d
 def clean_remote(sftp_client, remote_path: str, manifest: dict):
     """
     Remove files from remote that no longer exist locally.
+    Protected files (like index.html) are never removed.
     """
     removed = []
     local_files = set()
@@ -153,6 +157,10 @@ def clean_remote(sftp_client, remote_path: str, manifest: dict):
     to_remove = []
     for rel_path in manifest.keys():
         if rel_path not in local_files:
+            # Skip protected files
+            if rel_path in PROTECTED_FILES:
+                print(f"  🛡️  Protected: {rel_path} (skipping removal)")
+                continue
             to_remove.append(rel_path)
 
     for rel_path in to_remove:

@@ -56,28 +56,10 @@ const WG_SIZE_Y          = 16;  // Workgroup Y dimension (was 8)
 const WG_SIZE_1D         = 256; // Workgroup size for 1D dispatch (particles, was 64)
 const WG_INVOCATIONS     = 256; // Total invocations per workgroup
 
-// ── Texture Memory Optimization ──────────────────────────────────────────────
-// TRANSIENT_ATTACHMENT (Chrome 146+, Feb 2026): Keeps intermediate textures
-// in tile memory instead of VRAM, reducing bandwidth for ping-pong operations.
-// This is safe for readTex/writeTex/dataTex* which are only used inside compute passes.
-
-const SUPPORTS_TRANSIENT = typeof GPUTextureUsage !== 'undefined' && 
-                           'TRANSIENT_ATTACHMENT' in GPUTextureUsage;
-
-/** Build texture usage flags based on role and hardware support */
-function getTextureUsage(isIntermediate: boolean): GPUTextureUsageFlags {
-  const base = GPUTextureUsage.TEXTURE_BINDING | 
-               GPUTextureUsage.STORAGE_BINDING |
-               GPUTextureUsage.COPY_SRC | 
-               GPUTextureUsage.COPY_DST;
-  
-  // Intermediate textures (read/write/data) benefit from TRANSIENT_ATTACHMENT
-  // Source/depth textures don't since they're sampled across frames
-  if (isIntermediate && SUPPORTS_TRANSIENT) {
-    return base | (GPUTextureUsage as unknown as { TRANSIENT_ATTACHMENT: number }).TRANSIENT_ATTACHMENT;
-  }
-  return base;
-}
+// Note: TRANSIENT_ATTACHMENT (Chrome 146+) requires RENDER_ATTACHMENT usage.
+// Since we use compute shaders exclusively (not render passes), we cannot use
+// TRANSIENT_ATTACHMENT. The standard TEXTURE_BINDING | STORAGE_BINDING is
+// optimal for compute-only workflows.
 
 // ── Typed Uniform Buffer Layout ─────────────────────────────────────────────
 // Provides type-safe access to the uniform buffer structure matching WGSL
@@ -570,71 +552,88 @@ export class WebGPURenderer implements Renderer {
     const scaledH = this.scaledH || fullH;
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // OPTIMIZED TEXTURE USAGE FLAGS
+    // TEXTURE USAGE FLAGS
     // 
-    // PERSISTENT_FULL: Source and output textures that persist across frames
-    //   - TEXTURE_BINDING: Sampled by shaders
-    //   - COPY_DST: Receive initial image/video upload
-    //   - COPY_SRC: Blit to canvas (sourceTex may be blitted)
-    //
-    // INTERMEDIATE: Ping-pong textures only used inside compute passes
-    //   - STORAGE_BINDING: Written as storage textures (writeTexture binding)
-    //   - TEXTURE_BINDING: Sampled as readTexture in next pass
-    //   - TRANSIENT_ATTACHMENT: Tile memory hint (Chrome 146+, 2026)
-    //   - No RENDER_ATTACHMENT needed (compute only)
-    //   - No COPY_SRC needed (ping-pong via dispatch, not copy)
+    // Standard compute workflow uses TEXTURE_BINDING | STORAGE_BINDING | COPY_DST
+    // COPY_SRC is only needed for textures that will be copied from (like source)
     // ═══════════════════════════════════════════════════════════════════════════════
     
+    // Source texture: uploaded from CPU, sampled by shaders
     const USAGE_SOURCE = GPUTextureUsage.TEXTURE_BINDING |
-                         GPUTextureUsage.COPY_DST |
-                         GPUTextureUsage.COPY_SRC;  // May be blitted to canvas
+                         GPUTextureUsage.COPY_DST;
     
-    const USAGE_DEPTH = GPUTextureUsage.TEXTURE_BINDING |
-                        GPUTextureUsage.COPY_DST;   // Depth uploaded from CPU
+    // Standard compute texture: sampled and written as storage
+    const USAGE_STANDARD = GPUTextureUsage.TEXTURE_BINDING |
+                           GPUTextureUsage.STORAGE_BINDING |
+                           GPUTextureUsage.COPY_DST;
+
+    // Full resolution (source input)
+    this.sourceTex = d.createTexture({
+      label: 'sourceTex',
+      size: [fullW, fullH],
+      format: 'rgba32float',
+      usage: USAGE_SOURCE
+    });
+
+    // Scaled resolution (intermediate processing)
+    this.readTex = d.createTexture({
+      label: 'readTex',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
+    });
     
-    // Intermediate: compute-only, minimal flags + TRANSIENT if available
-    const baseIntermediate = GPUTextureUsage.TEXTURE_BINDING |
-                             GPUTextureUsage.STORAGE_BINDING;
-    const USAGE_INTERMEDIATE = SUPPORTS_TRANSIENT 
-      ? baseIntermediate | (GPUTextureUsage as unknown as { TRANSIENT_ATTACHMENT: number }).TRANSIENT_ATTACHMENT
-      : baseIntermediate;
-
-    // Full resolution (source input, depth - persistent)
-    const mkF32Source = (label: string) => d.createTexture({ 
-      label, size: [fullW, fullH], format: 'rgba32float', 
-      usage: USAGE_SOURCE 
+    this.writeTex = d.createTexture({
+      label: 'writeTex',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
     });
-    const mkR32Depth = (label: string) => d.createTexture({ 
-      label, size: [fullW, fullH], format: 'r32float',    
-      usage: USAGE_DEPTH 
+    
+    this.dataTexA = d.createTexture({
+      label: 'dataTexA',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
+    });
+    
+    this.dataTexB = d.createTexture({
+      label: 'dataTexB',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
+    });
+    
+    this.dataTexC = d.createTexture({
+      label: 'dataTexC',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
     });
 
-    // Scaled resolution (intermediate processing - compute only)
-    const mkF32Intermediate = (label: string) => d.createTexture({ 
-      label, size: [scaledW, scaledH], format: 'rgba32float', 
-      usage: USAGE_INTERMEDIATE 
+    // Depth textures
+    this.depthRead = d.createTexture({
+      label: 'depthRead',
+      size: [fullW, fullH],
+      format: 'r32float',
+      usage: USAGE_SOURCE
     });
-    const mkR32Intermediate = (label: string) => d.createTexture({ 
-      label, size: [scaledW, scaledH], format: 'r32float',    
-      usage: USAGE_INTERMEDIATE 
+    
+    this.depthWrite = d.createTexture({
+      label: 'depthWrite',
+      size: [scaledW, scaledH],
+      format: 'r32float',
+      usage: USAGE_STANDARD
     });
 
-    this.sourceTex = mkF32Source('sourceTex');           // Full: original image/video source
-    this.readTex   = mkF32Intermediate('readTex');       // Scaled: ping-pong intermediate
-    this.writeTex  = mkF32Intermediate('writeTex');      // Scaled: ping-pong intermediate
-    this.dataTexA  = mkF32Intermediate('dataTexA');      // Scaled: scratch buffer
-    this.dataTexB  = mkF32Intermediate('dataTexB');      // Scaled: scratch buffer
-    this.dataTexC  = mkF32Intermediate('dataTexC');      // Scaled: previous frame copy
-    this.depthRead  = mkR32Depth('depthRead');           // Full: depth sampled across frames
-    this.depthWrite = mkR32Intermediate('depthWrite');   // Scaled: depth output intermediate
-
-    // 1×1 black placeholder (r32float) - minimal usage
+    // 1×1 black placeholder - needs COPY_DST for writeTexture
     this.emptyTex = d.createTexture({
       label: 'emptyTex',
       size: [1, 1],
       format: 'r32float',
-      usage: GPUTextureUsage.TEXTURE_BINDING,  // Only sampled, never copied
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
+    
     d.queue.writeTexture(
       { texture: this.emptyTex },
       new Float32Array([0]),
