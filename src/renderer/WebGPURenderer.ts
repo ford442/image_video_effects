@@ -557,9 +557,10 @@ export class WebGPURenderer implements Renderer {
     // COPY_SRC is only needed for textures that will be copied from (like source)
     // ═══════════════════════════════════════════════════════════════════════════════
     
-    // Source texture: uploaded from CPU, sampled by shaders
+    // Source texture: uploaded from CPU, sampled by shaders, copied from
     const USAGE_SOURCE = GPUTextureUsage.TEXTURE_BINDING |
-                         GPUTextureUsage.COPY_DST;
+                         GPUTextureUsage.COPY_DST |
+                         GPUTextureUsage.COPY_SRC;
     
     // Standard compute texture: sampled and written as storage
     const USAGE_STANDARD = GPUTextureUsage.TEXTURE_BINDING |
