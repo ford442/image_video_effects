@@ -2646,6 +2646,60 @@
     ]
   },
   {
+    "id": "gen-neuro-kinetic-bloom",
+    "name": "Neuro-Kinetic Bloom",
+    "url": "shaders/gen-neuro-kinetic-bloom.wgsl",
+    "category": "generative",
+    "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound.",
+    "tags": [
+      "organic",
+      "biomechanical",
+      "audio-reactive",
+      "flora",
+      "raymarching",
+      "volumetric"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "bloomExtension",
+        "name": "Bloom Extension",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "repulsionRadius",
+        "name": "Repulsion Radius",
+        "default": 3,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "veinGlow",
+        "name": "Vein Glow",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "cameraZoom",
+        "name": "Camera Zoom",
+        "default": 0,
+        "min": -10,
+        "max": 10,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-prismatic-bismuth-lattice",
     "name": "Prismatic Bismuth Lattice",
     "url": "shaders/gen-prismatic-bismuth-lattice.wgsl",
@@ -2996,9 +3050,7 @@
     "description": "Fast predatory mini raptor agents chase the mouse and strike with claws. Audio rage mode boosts speed and attacks.",
     "features": [
       "mouse-driven",
-      "audio-reactive",
-      "stateful",
-      "audio-driven"
+      "audio-reactive"
     ],
     "tags": [
       "agent",
@@ -3006,8 +3058,41 @@
       "audio",
       "procedural",
       "generative",
-      "music",
       "reactive"
+    ],
+    "params": [
+      {
+        "id": "turnSpeed",
+        "name": "Turn Speed",
+        "default": 0.8,
+        "min": 0.2,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "maxSpeed",
+        "name": "Max Speed",
+        "default": 3,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "rageDuration",
+        "name": "Rage Duration",
+        "default": 1.2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "rageSpeedBoost",
+        "name": "Rage Speed Boost",
+        "default": 2,
+        "min": 1,
+        "max": 3,
+        "step": 0.1
+      }
     ]
   },
   {

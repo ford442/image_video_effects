@@ -120,6 +120,18 @@
       "title": "Holographic Plasma-Geode",
       "added": "2026-03-25T15:19:07.269083",
       "completed": "2026-03-26T08:23:03.337386"
+    },
+    {
+      "filename": "2026-03-08_raptor-mini.md",
+      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
+      "added": "2026-03-07T09:06:05.264901",
+      "completed": "2026-03-27T18:17:59.800656"
+    },
+    {
+      "filename": "2026-03-27_neuro-kinetic-bloom.md",
+      "title": "Neuro-Kinetic Bloom",
+      "added": "2026-03-27T15:37:45.737133",
+      "completed": "2026-03-28T08:13:31.787716"
     }
   ],
   "rejected": [],
@@ -135,11 +147,6 @@
     ]
   },
   "pending": [
-    {
-      "filename": "2026-03-08_raptor-mini.md",
-      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
-      "added": "2026-03-07T09:06:05.264901"
-    },
     {
       "filename": "2026-03-08_silica-tsunami.md",
       "title": "Silica Tsunami",
@@ -189,6 +196,11 @@
       "filename": "2026-03-26_kinetic-neo-brutalist-megastructure.md",
       "title": "Kinetic Neo-Brutalist Megastructure",
       "added": "2026-03-26T15:39:40.056097"
+    },
+    {
+      "filename": "2026-03-28_superfluid-quantum-foam.md",
+      "title": "Superfluid Quantum-Foam",
+      "added": "2026-03-28T15:11:35.996556"
     }
   ],
   "in_progress": null

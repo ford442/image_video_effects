@@ -1646,6 +1646,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for testing large-scale thin-film iridescent interference mapped to smooth, sweeping organic landscape geometry.
 
+### Suggestion: Bioluminescent Quartz Cave
+- **Date:** 2026-12-01
+- **Prompt:** "A breathtaking wide-angle view deep inside a subterranean cavern made entirely of colossal, translucent pink quartz crystals. The crystalline subjects are naturally bioluminescent, glowing with a soft, ethereal cyan and magenta light that gently illuminates the dark, wet cave floor. The lighting is completely internal, casting complex, refracted shadows and bouncing a myriad of colors off the faceted walls. The mood is silent, magical, and untouched by time. Captured with a wide 16mm lens, focusing on the sheer scale and internal refractions of the crystals."
+- **Negative prompt:** "daylight, sun, organic plants, wood, people, messy, blurry, low resolution"
+- **Tags:** fantasy, nature, underground, quartz, glowing
+- **Style / Reference:** photorealistic fantasy landscape, hyper-detailed 3D render
+- **Composition:** wide angle, deep perspective, rule of thirds
+- **Color palette:** translucent pink, ethereal cyan, deep magenta, pitch black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_bioluminescent-quartz.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing complex refractions and sub-surface scattering of light inside large translucent geometry.
+
+### Suggestion: Cyberpunk Bonsai Garden
+- **Date:** 2026-12-01
+- **Prompt:** "A highly detailed, macro shot of an ancient bonsai tree grafted with complex cybernetic implants and glowing neon tubing, resting on a sleek metallic pedestal. The subject sits in a traditional Japanese garden courtyard that has been overtaken by futuristic technology. The lighting is dramatic, with soft moonlight from above contrasting with the harsh, saturated neon pink and electric blue glow emanating from the cyber-bonsai itself. The mood is contemplative, melancholic, and deeply cyberpunk. Captured with a 50mm lens, utilizing a shallow depth of field to isolate the intricate cyber-foliage against the moody, blurred background."
+- **Negative prompt:** "bright sunlight, cartoon, simple, plain, messy, modern daylight, lowres"
+- **Tags:** cyberpunk, nature, bonsai, glowing, macro
+- **Style / Reference:** cyberpunk concept art, photorealistic macro photography
+- **Composition:** centered subject, shallow depth of field, dramatic contrast
+- **Color palette:** vibrant neon pink, electric blue, cool moonlight grey, organic green
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261201_cyber-bonsai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing the blending of delicate organic shapes (leaves, bark) with rigid, glowing technological elements.
+
+### Suggestion: Clockwork Celestial Astrolabe
+- **Date:** 2026-12-01
+- **Prompt:** "An incredibly intricate, room-sized mechanical astrolabe functioning as a planetarium, constructed from polished brass, copper, and dark mahogany. The mechanical subject features hundreds of interlocking gears and rings perfectly aligned to track the stars. The lighting is provided by a single, warm, intense spotlight from the center of the device, simulating a miniature sun and casting long, complex, shifting shadows of the gears against the dark, domed ceiling of the room. The mood is intellectual, antique, and mysterious. Captured with a 24mm wide lens from a low angle, emphasizing the towering, complex structure."
+- **Negative prompt:** "modern, plastic, bright daylight, simple, messy, out of focus, exterior"
+- **Tags:** steampunk, interior, mechanism, brass, complex
+- **Style / Reference:** steampunk architectural visualization, hyper-detailed product photography
+- **Composition:** low angle looking up, symmetrical, deep shadows
+- **Color palette:** warm polished brass, rich mahogany brown, bright golden light, deep shadow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_clockwork-astrolabe.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing the generation of highly intricate, interlocking mechanical geometry and complex shadow casting.
+
+### Suggestion: Ethereal Silk Desert
+- **Date:** 2026-12-01
+- **Prompt:** "A surreal, sweeping landscape where the rolling dunes of a vast desert are composed entirely of soft, flowing folds of golden silk fabric instead of sand. The subject ripples and catches the wind like liquid gold. The lighting is a dramatic golden hour sunset, grazing the surface of the fabric to highlight its delicate, woven texture and casting deep, soft shadows in the valleys between the folds. The mood is dreamlike, luxurious, and peaceful. Captured with a wide-angle 14mm lens, utilizing leading lines to draw the eye across the endless, silky horizon."
+- **Negative prompt:** "granular sand, rough texture, water, plants, harsh lighting, dull colors"
+- **Tags:** surreal, landscape, desert, silk, golden hour
+- **Style / Reference:** surreal landscape photography, hyper-detailed fabric simulation
+- **Composition:** sweeping curves, leading lines, expansive horizon
+- **Color palette:** rich golden yellow, warm amber, deep shadow brown, pale sunset sky
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261201_silk-desert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's ability to seamlessly map the soft, woven micro-textures of silk onto the macro geometry of a sweeping desert landscape.
+
+### Suggestion: Bioluminescent Deep Sea Train
+- **Date:** 2026-12-01
+- **Prompt:** "An epic, underwater scene of a massive, barnacle-encrusted steam locomotive driving along tracks laid on the ocean floor. The industrial subject is heavily modified to survive the deep sea, emitting thick clouds of glowing, bioluminescent green exhaust instead of smoke. The lighting is extremely dark and murky, illuminated only by the train's piercing, volumetric headlights cutting through the particulate-filled water and the eerie glow of its own exhaust. The mood is imposing, mysterious, and awe-inspiring. Captured with a wide 35mm lens, tracking alongside the train to emphasize its raw power against the crushing depths."
+- **Negative prompt:** "surface, sunlight, sky, dry, clean metal, realistic fish, modern train"
+- **Tags:** steampunk, underwater, train, bioluminescent, deep sea
+- **Style / Reference:** dark fantasy concept art, cinematic underwater photography
+- **Composition:** dynamic tracking shot, dramatic lighting, volumetric fog
+- **Color palette:** toxic glowing green, piercing white headlights, deep ocean blue-black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_deep-sea-train.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating underwater volumetric lighting, thick atmospheric fog (murky water), and glowing particle simulations.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

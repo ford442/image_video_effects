@@ -54,30 +54,11 @@ const PLASMA_BYTES       = MAX_PLASMA_BALLS * 48;   // 2400 bytes
 const WG_SIZE_X          = 16;  // Workgroup X dimension (was 8)
 const WG_SIZE_Y          = 16;  // Workgroup Y dimension (was 8)
 const WG_SIZE_1D         = 256; // Workgroup size for 1D dispatch (particles, was 64)
-const WG_INVOCATIONS     = 256; // Total invocations per workgroup
 
-// ── Texture Memory Optimization ──────────────────────────────────────────────
-// TRANSIENT_ATTACHMENT (Chrome 146+, Feb 2026): Keeps intermediate textures
-// in tile memory instead of VRAM, reducing bandwidth for ping-pong operations.
-// This is safe for readTex/writeTex/dataTex* which are only used inside compute passes.
-
-const SUPPORTS_TRANSIENT = typeof GPUTextureUsage !== 'undefined' && 
-                           'TRANSIENT_ATTACHMENT' in GPUTextureUsage;
-
-/** Build texture usage flags based on role and hardware support */
-function getTextureUsage(isIntermediate: boolean): GPUTextureUsageFlags {
-  const base = GPUTextureUsage.TEXTURE_BINDING | 
-               GPUTextureUsage.STORAGE_BINDING |
-               GPUTextureUsage.COPY_SRC | 
-               GPUTextureUsage.COPY_DST;
-  
-  // Intermediate textures (read/write/data) benefit from TRANSIENT_ATTACHMENT
-  // Source/depth textures don't since they're sampled across frames
-  if (isIntermediate && SUPPORTS_TRANSIENT) {
-    return base | (GPUTextureUsage as unknown as { TRANSIENT_ATTACHMENT: number }).TRANSIENT_ATTACHMENT;
-  }
-  return base;
-}
+// Note: TRANSIENT_ATTACHMENT (Chrome 146+) requires RENDER_ATTACHMENT usage.
+// Since we use compute shaders exclusively (not render passes), we cannot use
+// TRANSIENT_ATTACHMENT. The standard TEXTURE_BINDING | STORAGE_BINDING is
+// optimal for compute-only workflows.
 
 // ── Typed Uniform Buffer Layout ─────────────────────────────────────────────
 // Provides type-safe access to the uniform buffer structure matching WGSL
@@ -233,7 +214,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(${WG_SIZE_X}, ${WG_SIZE_Y}, 1)  // 16x16 = 256 invocations for max occupancy
+@compute @workgroup_size(8, 8, 1)  // Match all real shaders' workgroup size
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(textureDimensions(readTexture));
     let uv = vec2<f32>(global_id.xy) / resolution;
@@ -392,6 +373,7 @@ export class WebGPURenderer implements Renderer {
   // Shader pipeline cache: shader-id → GPUComputePipeline
   private pipelines = new Map<string, GPUComputePipeline>();
   private pipelineHashes = new Map<string, string>(); // shader-id → content hash
+  private workgroupSizes = new Map<string, { x: number; y: number }>(); // shader-id → parsed workgroup size
 
   // Multi-slot state with parallelization support
   // Slot 0: Usually chained (background/base effect)
@@ -570,71 +552,90 @@ export class WebGPURenderer implements Renderer {
     const scaledH = this.scaledH || fullH;
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // OPTIMIZED TEXTURE USAGE FLAGS
+    // TEXTURE USAGE FLAGS
     // 
-    // PERSISTENT_FULL: Source and output textures that persist across frames
-    //   - TEXTURE_BINDING: Sampled by shaders
-    //   - COPY_DST: Receive initial image/video upload
-    //   - COPY_SRC: Blit to canvas (sourceTex may be blitted)
-    //
-    // INTERMEDIATE: Ping-pong textures only used inside compute passes
-    //   - STORAGE_BINDING: Written as storage textures (writeTexture binding)
-    //   - TEXTURE_BINDING: Sampled as readTexture in next pass
-    //   - TRANSIENT_ATTACHMENT: Tile memory hint (Chrome 146+, 2026)
-    //   - No RENDER_ATTACHMENT needed (compute only)
-    //   - No COPY_SRC needed (ping-pong via dispatch, not copy)
+    // Standard compute workflow uses TEXTURE_BINDING | STORAGE_BINDING | COPY_DST
+    // COPY_SRC is only needed for textures that will be copied from (like source)
     // ═══════════════════════════════════════════════════════════════════════════════
     
+    // Source texture: uploaded from CPU, sampled by shaders, copied from
     const USAGE_SOURCE = GPUTextureUsage.TEXTURE_BINDING |
                          GPUTextureUsage.COPY_DST |
-                         GPUTextureUsage.COPY_SRC;  // May be blitted to canvas
+                         GPUTextureUsage.COPY_SRC;
     
-    const USAGE_DEPTH = GPUTextureUsage.TEXTURE_BINDING |
-                        GPUTextureUsage.COPY_DST;   // Depth uploaded from CPU
+    // Standard compute texture: sampled, written as storage, copied to/from
+    const USAGE_STANDARD = GPUTextureUsage.TEXTURE_BINDING |
+                           GPUTextureUsage.STORAGE_BINDING |
+                           GPUTextureUsage.COPY_DST |
+                           GPUTextureUsage.COPY_SRC;
+
+    // Full resolution (source input)
+    this.sourceTex = d.createTexture({
+      label: 'sourceTex',
+      size: [fullW, fullH],
+      format: 'rgba32float',
+      usage: USAGE_SOURCE
+    });
+
+    // Scaled resolution (intermediate processing)
+    this.readTex = d.createTexture({
+      label: 'readTex',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
+    });
     
-    // Intermediate: compute-only, minimal flags + TRANSIENT if available
-    const baseIntermediate = GPUTextureUsage.TEXTURE_BINDING |
-                             GPUTextureUsage.STORAGE_BINDING;
-    const USAGE_INTERMEDIATE = SUPPORTS_TRANSIENT 
-      ? baseIntermediate | (GPUTextureUsage as unknown as { TRANSIENT_ATTACHMENT: number }).TRANSIENT_ATTACHMENT
-      : baseIntermediate;
-
-    // Full resolution (source input, depth - persistent)
-    const mkF32Source = (label: string) => d.createTexture({ 
-      label, size: [fullW, fullH], format: 'rgba32float', 
-      usage: USAGE_SOURCE 
+    this.writeTex = d.createTexture({
+      label: 'writeTex',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
     });
-    const mkR32Depth = (label: string) => d.createTexture({ 
-      label, size: [fullW, fullH], format: 'r32float',    
-      usage: USAGE_DEPTH 
+    
+    this.dataTexA = d.createTexture({
+      label: 'dataTexA',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
+    });
+    
+    this.dataTexB = d.createTexture({
+      label: 'dataTexB',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
+    });
+    
+    this.dataTexC = d.createTexture({
+      label: 'dataTexC',
+      size: [scaledW, scaledH],
+      format: 'rgba32float',
+      usage: USAGE_STANDARD
     });
 
-    // Scaled resolution (intermediate processing - compute only)
-    const mkF32Intermediate = (label: string) => d.createTexture({ 
-      label, size: [scaledW, scaledH], format: 'rgba32float', 
-      usage: USAGE_INTERMEDIATE 
+    // Depth textures
+    this.depthRead = d.createTexture({
+      label: 'depthRead',
+      size: [fullW, fullH],
+      format: 'r32float',
+      usage: USAGE_SOURCE
     });
-    const mkR32Intermediate = (label: string) => d.createTexture({ 
-      label, size: [scaledW, scaledH], format: 'r32float',    
-      usage: USAGE_INTERMEDIATE 
+    
+    this.depthWrite = d.createTexture({
+      label: 'depthWrite',
+      size: [scaledW, scaledH],
+      format: 'r32float',
+      usage: USAGE_STANDARD
     });
 
-    this.sourceTex = mkF32Source('sourceTex');           // Full: original image/video source
-    this.readTex   = mkF32Intermediate('readTex');       // Scaled: ping-pong intermediate
-    this.writeTex  = mkF32Intermediate('writeTex');      // Scaled: ping-pong intermediate
-    this.dataTexA  = mkF32Intermediate('dataTexA');      // Scaled: scratch buffer
-    this.dataTexB  = mkF32Intermediate('dataTexB');      // Scaled: scratch buffer
-    this.dataTexC  = mkF32Intermediate('dataTexC');      // Scaled: previous frame copy
-    this.depthRead  = mkR32Depth('depthRead');           // Full: depth sampled across frames
-    this.depthWrite = mkR32Intermediate('depthWrite');   // Scaled: depth output intermediate
-
-    // 1×1 black placeholder (r32float) - minimal usage
+    // 1×1 black placeholder - needs COPY_DST for writeTexture
     this.emptyTex = d.createTexture({
       label: 'emptyTex',
       size: [1, 1],
       format: 'r32float',
-      usage: GPUTextureUsage.TEXTURE_BINDING,  // Only sampled, never copied
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
+    
     d.queue.writeTexture(
       { texture: this.emptyTex },
       new Float32Array([0]),
@@ -864,6 +865,16 @@ export class WebGPURenderer implements Renderer {
     return hash.toString(36) + ':' + code.length;
   }
 
+  /** Parse @workgroup_size(x, y) from WGSL source to determine dispatch dimensions */
+  private parseWorkgroupSize(wgslSource: string): { x: number; y: number } {
+    const match = wgslSource.match(/@compute\s+@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
+    if (match) {
+      return { x: parseInt(match[1], 10), y: parseInt(match[2], 10) };
+    }
+    console.warn('[WebGPU] Could not parse workgroup_size from shader, defaulting to 8x8');
+    return { x: 8, y: 8 };
+  }
+
   private compileShader(id: string, wgsl: string): boolean {
     if (!this.device) return false;
 
@@ -873,10 +884,13 @@ export class WebGPURenderer implements Renderer {
       return true;
     }
     
+    // Parse workgroup size from shader source
+    const wgSize = this.parseWorkgroupSize(wgsl);
+
     // Try to compile the requested shader
     try {
       const module = this.device.createShaderModule({ label: id, code: wgsl });
-      
+
       // Check for compilation errors using compilationInfo
       module.getCompilationInfo().then(info => {
         const errors = info.messages.filter(m => m.type === 'error');
@@ -884,31 +898,32 @@ export class WebGPURenderer implements Renderer {
           console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
         }
       });
-      
+
       const pipeline = this.device.createComputePipeline({
         label: id,
         layout: this.pipelineLayout,
         compute: { module, entryPoint: 'main' },
       });
-      
+
       this.pipelines.set(id, pipeline);
       this.pipelineHashes.set(id, contentHash);
+      this.workgroupSizes.set(id, wgSize);
       return true;
     } catch (e) {
       console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
-      
+
       // Report error through handler
       globalErrorHandler({
         type: 'shader-compile',
         message: `Shader "${id}" failed to compile. Using fallback pass-through shader.`,
         recoverable: true
       });
-      
+
       // Try to use fallback shader
       try {
-        const fallbackModule = this.device.createShaderModule({ 
-          label: `${id}-fallback`, 
-          code: FALLBACK_WGSL 
+        const fallbackModule = this.device.createShaderModule({
+          label: `${id}-fallback`,
+          code: FALLBACK_WGSL
         });
         const fallbackPipeline = this.device.createComputePipeline({
           label: `${id}-fallback`,
@@ -916,6 +931,7 @@ export class WebGPURenderer implements Renderer {
           compute: { module: fallbackModule, entryPoint: 'main' },
         });
         this.pipelines.set(id, fallbackPipeline);
+        this.workgroupSizes.set(id, this.parseWorkgroupSize(FALLBACK_WGSL));
         console.log(`[WebGPU] Using fallback shader for '${id}'`);
         return true;
       } catch (fallbackError) {
@@ -1361,6 +1377,7 @@ export class WebGPURenderer implements Renderer {
     }
     this.initialized = false;
     this.pipelines.clear();
+    this.workgroupSizes.clear();
 
     for (const t of [this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
                      this.dataTexC, this.depthRead, this.depthWrite, this.emptyTex]) {
@@ -1439,19 +1456,17 @@ export class WebGPURenderer implements Renderer {
       );
     }
 
-    // Dispatch at scaled resolution
-    const wgX = Math.ceil(this.scaledW / WG_SIZE_X);
-    const wgY = Math.ceil(this.scaledH / WG_SIZE_Y);
-
     // ═══════════════════════════════════════════════════════════════════════════════
     // PARALLEL SLOT GROUPS
-    // 
-    // Parallel slots: All read from readTex, output to writeTex. The driver can 
+    //
+    // Parallel slots: All read from readTex, output to writeTex. The driver can
     // overlap their execution since they're independent compute passes.
-    // 
+    //
     // Chained slots: Output of slot N feeds into slot N+1. Must stay sequential.
+    //
+    // Dispatch sizes are per-shader based on parsed @workgroup_size from WGSL.
     // ═══════════════════════════════════════════════════════════════════════════════
-    
+
     const parallelSlots = enabled.filter(s => s.mode === 'parallel');
     const chainedSlots = enabled.filter(s => s.mode === 'chained');
 
@@ -1459,12 +1474,17 @@ export class WebGPURenderer implements Renderer {
     // All parallel slots read from the same readTex (base image)
     for (const slot of parallelSlots) {
       const pipeline = this.pipelines.get(slot.shaderId!)!;
+      const wg = this.workgroupSizes.get(slot.shaderId!) || { x: 8, y: 8 };
       const pass = encoder.beginComputePass({ label: `parallel-${slot.shaderId}` });
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, this.computeBindGroup);
-      pass.dispatchWorkgroups(wgX, wgY, 1);
+      pass.dispatchWorkgroups(
+        Math.ceil(this.scaledW / wg.x),
+        Math.ceil(this.scaledH / wg.y),
+        1
+      );
       pass.end();
-      
+
       // Note: We don't copy between parallel slots - they all read from readTex.
       // The last parallel slot's output ends up in writeTex.
     }
@@ -1482,11 +1502,16 @@ export class WebGPURenderer implements Renderer {
     for (let i = 0; i < chainedSlots.length; i++) {
       const slot = chainedSlots[i];
       const pipeline = this.pipelines.get(slot.shaderId!)!;
+      const wg = this.workgroupSizes.get(slot.shaderId!) || { x: 8, y: 8 };
 
       const pass = encoder.beginComputePass({ label: `chained-${slot.shaderId}` });
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, this.computeBindGroup);
-      pass.dispatchWorkgroups(wgX, wgY, 1);
+      pass.dispatchWorkgroups(
+        Math.ceil(this.scaledW / wg.x),
+        Math.ceil(this.scaledH / wg.y),
+        1
+      );
       pass.end();
 
       // Copy output to input for next chained slot (except for last one)
@@ -1558,7 +1583,8 @@ export class WebGPURenderer implements Renderer {
     const u = this.uniformView;
     
     // config: time, rippleCount, resW, resH
-    u.setConfig(this.currentTime, this.ripples.length, this.canvasW, this.canvasH);
+    // Use scaledW/scaledH so shaders get the actual working texture dimensions
+    u.setConfig(this.currentTime, this.ripples.length, this.scaledW, this.scaledH);
     
     // zoom_config: time, mouseX, mouseY, mouseDown
     u.setZoomConfig(this.currentTime, this.mouseX, this.mouseY, this.mouseDown ? 1 : 0);
