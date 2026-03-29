@@ -1711,6 +1711,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating underwater volumetric lighting, thick atmospheric fog (murky water), and glowing particle simulations.
 
+### Suggestion: Vaporwave Marble Plaza
+- **Date:** 2026-12-15
+- **Prompt:** "A surreal, retro-futuristic Vaporwave plaza. The subject features classical marble busts and Roman columns resting on a perfectly reflective, endless grid floor. The lighting is extremely stylized, with a low-hanging neon pink and cyan sun casting long, dramatic, colorful shadows. The mood is nostalgic, liminal, and dreamlike. Captured with a wide-angle lens, emphasizing the vast, empty space and strict geometric perspective."
+- **Negative prompt:** "realistic, natural lighting, modern, messy, organic, people"
+- **Tags:** vaporwave, surreal, retro, architecture, liminal
+- **Style / Reference:** Vaporwave aesthetic, 1980s retro CGI
+- **Composition:** wide angle, symmetrical, vanishing point perspective
+- **Color palette:** neon pink, electric cyan, pure white marble, dark grid
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261215_vaporwave-plaza.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing strict geometric grids and highly saturated, limited neon color palettes.
+
+### Suggestion: Steampunk Bioluminescent Airship
+- **Date:** 2026-12-15
+- **Prompt:** "A massive, intricately detailed steampunk airship floating through a dense, glowing nebula. The subject is constructed of riveted copper and brass, powered by large glass tanks filled with swirling, bioluminescent green plasma. The lighting is moody and cinematic, with warm gas lamps on the deck contrasting against the cold, ethereal glow of the surrounding cosmic dust. The mood is adventurous and majestic. Captured with a telephoto lens from a distance to compress the scale of the ship against the vast nebula."
+- **Negative prompt:** "modern, sleek, plastic, daylight, blue sky, airplane"
+- **Tags:** steampunk, sci-fi, space, vehicle, nebula
+- **Style / Reference:** steampunk concept art, cinematic space visualization
+- **Composition:** rule of thirds, compressed perspective
+- **Color palette:** warm copper, glowing green plasma, deep space purple
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261215_steampunk-airship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating metallic reflections (copper/brass) amidst complex volumetric background lighting.
+
+### Suggestion: Art Deco Cybernetic Cityscape
+- **Date:** 2026-12-15
+- **Prompt:** "A sprawling, retro-futuristic city blending classic Art Deco architecture with advanced cybernetic technology. The towering skyscrapers feature geometric, gold-leaf embellishments and glowing, holographic marquees. The lighting is dramatic and moody, simulating a film noir night scene with heavy rain, where the bright gold and neon lights reflect off the wet, slick pavement. The mood is glamorous yet gritty. Captured from a low angle with a 35mm lens to emphasize the towering, symmetrical geometry of the buildings."
+- **Negative prompt:** "daylight, bright, sunny, ruins, messy, dull, organic"
+- **Tags:** cyberpunk, art deco, city, architecture, rain
+- **Style / Reference:** film noir, retro-futuristic architectural render
+- **Composition:** low angle looking up, strong vertical lines, symmetrical
+- **Color palette:** gold, neon blue, stark black, reflective grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261215_art-deco-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing complex reflections on wet surfaces and the blending of historical architecture with neon elements.
+
+### Suggestion: Glassmorphism Quantum Flora
+- **Date:** 2026-12-15
+- **Prompt:** "An ultra-macro view of an alien flower blooming, constructed entirely using a glassmorphism aesthetic. The subject's petals are made of frosted, semi-translucent glass that slightly blurs the vibrant, pulsing quantum energy core within. The lighting is soft, diffuse, and incredibly colorful, refracting through the frosted glass to create a glowing, ethereal aura of soft pastels. The mood is delicate, futuristic, and serene. Captured with an extreme macro 100mm lens, utilizing a shallow depth of field to create a soft, dreamy bokeh background."
+- **Negative prompt:** "opaque, natural, mud, dull, sharp shadows, wide angle"
+- **Tags:** macro, abstract, flora, glassmorphism, ethereal
+- **Style / Reference:** Glassmorphism UI aesthetic, 3D abstract render
+- **Composition:** extreme close-up, centered, shallow depth of field
+- **Color palette:** frosted white, iridescent pastels, glowing pink, soft cyan
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261215_glassmorphism-flora.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating sub-surface scattering, frosted glass materials, and soft lighting refractions.
+
+### Suggestion: Brutalist Concrete Monolith
+- **Date:** 2026-12-15
+- **Prompt:** "A towering, oppressive Brutalist concrete monolith standing isolated in a vast, snow-covered tundra. The architectural subject features harsh, intersecting geometric planes and deep, dark recesses without any windows. The lighting is overcast and bleak, creating flat, low-contrast shadows that emphasize the raw, rough texture of the poured concrete against the pure white snow. The mood is desolate, dystopian, and silent. Captured with a wide 24mm lens to emphasize the stark isolation and massive scale of the structure."
+- **Negative prompt:** "bright, sunny, cheerful, glass, colorful, busy, people"
+- **Tags:** architecture, brutalism, landscape, snow, desolate
+- **Style / Reference:** brutalist architecture photography, minimalist landscape
+- **Composition:** wide expansive view, stark contrast, rule of thirds
+- **Color palette:** concrete grey, pure white snow, overcast pale sky, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261215_brutalist-monolith.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of rough, porous concrete textures under flat, overcast ambient lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
