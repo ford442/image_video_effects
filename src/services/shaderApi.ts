@@ -344,12 +344,6 @@ class ShaderApiService {
       return cached;
     }
 
-    // TEMPORARY: Use local shader definitions instead of API
-    // The backend API is not running, so we load from local JSON files
-    console.log(`[ShaderApi] Using local shader definitions (API backend not available)`);
-    return this.loadLocalShadersWithParams();
-
-    /* API disabled - backend not running
     try {
       console.log(`[ShaderApi] Fetching from ${this.baseUrl}/api/shaders`);
       const response = await fetch(`${this.baseUrl}/api/shaders`);
@@ -382,7 +376,11 @@ class ShaderApiService {
       this.cache.set('shaderList', data);
       this.lastFetch = Date.now();
       return data;
-    */
+    } catch (error) {
+      console.warn('[ShaderApi] API failed, falling back to local shader definitions:', error);
+      // Fallback to local shader_coordinates.json + individual JSON definitions
+      return this.loadLocalShadersWithParams();
+    }
   }
 
   /**
@@ -412,7 +410,7 @@ class ShaderApiService {
             if (definition.params) {
               shader.params = definition.params.map((p: any, idx: number) => ({
                 id: p.id || p.name || `param${idx + 1}`,
-                name: p.name || p.label || `Parameter ${idx + 1}`,
+                name: p.label || p.name || `Parameter ${idx + 1}`,
                 default: p.default ?? 0.5,
                 min: p.min ?? 0,
                 max: p.max ?? 1,
@@ -458,7 +456,7 @@ class ShaderApiService {
               const definition = await defResponse.json();
               entry.params = (definition.params || []).map((p: any, idx: number) => ({
                 id: p.id || p.name || `param${idx + 1}`,
-                name: p.name || p.label || `Parameter ${idx + 1}`,
+                name: p.label || p.name || `Parameter ${idx + 1}`,
                 default: p.default ?? 0.5,
                 min: p.min ?? 0,
                 max: p.max ?? 1,
