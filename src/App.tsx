@@ -380,7 +380,13 @@ function MainApp() {
                 }));
                 
                 setAvailableModes(entries);
+                // Debug: Check params
+                const withParams = entries.filter(e => e.params && e.params.length > 0);
                 console.log(`✅ Loaded ${entries.length} shaders (API-first with fallback)`);
+                console.log(`   ${withParams.length} shaders have params`);
+                if (withParams.length > 0) {
+                    console.log(`   Example: ${withParams[0].id} has params:`, withParams[0].params);
+                }
             } catch (error) {
                 console.warn('Failed to load shaders:', error);
                 // Silently fail - shader list will be empty but app won't crash

@@ -344,10 +344,27 @@ class ShaderApiService {
       return cached;
     }
 
+    // TEMPORARY: Use local shader definitions instead of API
+    // The backend API is not running, so we load from local JSON files
+    console.log(`[ShaderApi] Using local shader definitions (API backend not available)`);
+    return this.loadLocalShadersWithParams();
+
+    /* API disabled - backend not running
     try {
+      console.log(`[ShaderApi] Fetching from ${this.baseUrl}/api/shaders`);
       const response = await fetch(`${this.baseUrl}/api/shaders`);
       if (!response.ok) throw new Error(`API ${response.status}`);
       const data: ApiShaderEntry[] = await response.json();
+      
+      console.log(`[ShaderApi] Received ${data.length} shaders from API`);
+      
+      // Debug: Check first few shaders for params
+      data.slice(0, 3).forEach(s => {
+        console.log(`[ShaderApi] Shader ${s.id}: params=${s.params ? s.params.length : 'undefined'}, has params array: ${Array.isArray(s.params)}`);
+        if (s.params && s.params.length > 0) {
+          console.log(`[ShaderApi]   First param:`, s.params[0]);
+        }
+      });
       
       // Build URL pointing to the static .wgsl file (nginx serves /files/ with CORS headers)
       data.forEach(s => {
@@ -357,15 +374,15 @@ class ShaderApiService {
       
       // Fetch individual shader metadata (params) if not present in list
       // This runs in parallel and populates params for the UI sliders
+      const beforeEnrich = data.filter(s => s.params && s.params.length > 0).length;
       await this.enrichShaderParams(data);
+      const afterEnrich = data.filter(s => s.params && s.params.length > 0).length;
+      console.log(`[ShaderApi] Shaders with params: ${beforeEnrich} before enrich, ${afterEnrich} after enrich`);
       
       this.cache.set('shaderList', data);
       this.lastFetch = Date.now();
       return data;
-    } catch (error) {
-      // Fallback to local shader_coordinates.json + individual JSON definitions
-      return this.loadLocalShadersWithParams();
-    }
+    */
   }
 
   /**
