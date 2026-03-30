@@ -447,7 +447,7 @@ class ShaderApiService {
                 max: p.max ?? 1,
                 step: p.step ?? 0.01,
                 labels: p.labels,
-              });
+              }));
               entry.description = definition.description || entry.description;
             }
           } catch (e) {
