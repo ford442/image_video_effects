@@ -132,6 +132,12 @@
       "title": "Neuro-Kinetic Bloom",
       "added": "2026-03-27T15:37:45.737133",
       "completed": "2026-03-28T08:13:31.787716"
+    },
+    {
+      "filename": "2026-03-28_superfluid-quantum-foam.md",
+      "title": "Superfluid Quantum-Foam",
+      "added": "2026-03-28T15:11:35.996556",
+      "completed": "2026-03-29T07:49:53.914696"
     }
   ],
   "rejected": [],
@@ -201,6 +207,11 @@
       "filename": "2026-03-28_superfluid-quantum-foam.md",
       "title": "Superfluid Quantum-Foam",
       "added": "2026-03-28T15:11:35.996556"
+    },
+    {
+      "filename": "2026-03-29_hyper-bismuth-clockwork.md",
+      "title": "Hyper-Bismuth Clockwork",
+      "added": "2026-03-29T15:19:48.492218"
     }
   ],
   "in_progress": null
