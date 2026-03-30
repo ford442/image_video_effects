@@ -1711,6 +1711,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating underwater volumetric lighting, thick atmospheric fog (murky water), and glowing particle simulations.
 
+### Suggestion: Graphene Space Elevator
+- **Date:** 2027-01-15
+- **Prompt:** "A breathtaking, wide-angle shot of a towering space elevator tether anchored in a futuristic ocean spaceport. The primary subject is the colossal tether constructed from sleek, dark, ultra-strong graphene, stretching infinitely upwards into a starry night sky. The lighting features bright, dramatic spotlights from the ocean base illuminating the matte surface of the graphene, while the upper atmosphere is dark, capturing the glowing city below. The mood is awe-inspiring, highly advanced, and monumental. Captured with a wide 14mm lens pointing sharply upwards to emphasize the dizzying vertical perspective."
+- **Negative prompt:** "broken, rusty, dystopian, daylight, short, flimsy, organic"
+- **Tags:** sci-fi, megastructure, space elevator, graphene, night
+- **Style / Reference:** hard sci-fi environment design, cinematic architectural visualization
+- **Composition:** extreme low angle, vertical leading lines
+- **Color palette:** matte dark grey, glowing neon blue spotlights, deep starry black
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20270115_graphene-space-elevator.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the representation of extreme vertical scale and the interaction of intense artificial spotlights with a matte, light-absorbing material (graphene).
+
+### Suggestion: Mother of Pearl Cloudscape
+- **Date:** 2027-01-15
+- **Prompt:** "An ethereal, sweeping aerial view of a surreal cloudscape where the clouds are formed entirely from solid, shimmering layers of Mother of Pearl. The subject features massive, billowing, smooth formations that reflect a spectacular array of pearlescent pastels. The lighting is a brilliant, omnidirectional ambient glow, catching the smooth ridges of the nacre to reveal intense rainbow interference patterns across the entire sky. The mood is dreamlike, luxurious, and completely otherworldly. Captured with an ultra-wide 16mm lens, highlighting the vast, smooth, sweeping curves."
+- **Negative prompt:** "fluffy clouds, realistic sky, dull colors, dark shadows, rain, storm"
+- **Tags:** surreal, landscape, clouds, mother of pearl, iridescent
+- **Style / Reference:** surreal digital art, hyper-detailed environment
+- **Composition:** expansive view, sweeping curves, rule of thirds
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, pastel yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_mother-of-pearl-cloudscape.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating large-scale thin-film iridescent interference mapped to smooth, massive, sweeping organic formations.
+
+### Suggestion: Ashcan School Subway Station
+- **Date:** 2027-01-15
+- **Prompt:** "A bustling, gritty early 20th-century subway station depicted in the Ashcan School art style. The subject features working-class commuters in winter coats waiting on a dirty, tile-lined platform as a steam-powered train approaches. The lighting is dim, moody, and flickering, casting soft, indistinct shadows from harsh overhead bulbs that highlight the grime and texture of the underground environment. The mood is authentic, melancholic, and full of everyday urban life. Captured with an eye-level, documentary-style perspective, emphasizing the crowded and unglamorous reality of the city."
+- **Negative prompt:** "modern, clean, bright, neon, cheerful, sci-fi, empty"
+- **Tags:** art, urban, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, John Sloan inspired, thick brushstrokes
+- **Composition:** eye-level, crowded platform, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull yellows, murky green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_ashcan-school-subway.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing gritty, unidealized subterranean scenes and authentic historical art styles.
+
+### Suggestion: Italian Futurism Race Car
+- **Date:** 2027-01-15
+- **Prompt:** "A chaotic, dynamic scene of an early 20th-century race car tearing down a city street, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed, noise, and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion and blur."
+- **Negative prompt:** "calm, stationary, photorealistic, soft curves, gentle, realistic car"
+- **Tags:** abstract, art, italian futurism, speed, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, vivid yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_futurism-racecar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed and urban noise.
+
+### Suggestion: Bismuth Crystal Space Station
+- **Date:** 2027-01-15
+- **Prompt:** "A sweeping exterior view of a massive, geometric space station constructed entirely of naturally iridescent bismuth crystals, floating in deep space. The subject features giant, stepped, hopper-like formations that interlock to form an alien, functional megastructure. The lighting is harsh and direct from a nearby blue giant star, casting deep black shadows in the vacuum of space, causing the metallic bismuth surfaces to shine brilliantly in a rainbow of thin-film interference colors. The mood is majestic, alien, and highly advanced. Captured with a wide-angle 16mm lens to encompass the vast scale of the crystalline structure against the starfield."
+- **Negative prompt:** "organic, smooth curves, dull, plastic, atmospheric haze, blurry"
+- **Tags:** sci-fi, space, space station, bismuth, iridescent
+- **Style / Reference:** hard sci-fi environment design, hyper-realistic space art
+- **Composition:** wide angle, dramatic lighting, sharp geometric framing
+- **Color palette:** iridescent rainbow, glaring white starlight, deep cosmic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_bismuth-spacestation.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating complex stepped geometric structures interacting with highly saturated iridescent thin-film materials under harsh vacuum lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
