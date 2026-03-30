@@ -208,7 +208,9 @@ function MainApp() {
                 // Initialize slider values to shader's declared param defaults
                 if (ok && shaderEntry.params && shaderEntry.params.length > 0) {
                     const paramDefaults: Partial<SlotParams> = {};
+                    console.log(`[setMode] Applying defaults for ${shaderEntry.id}:`, shaderEntry.params);
                     shaderEntry.params.forEach((p, i) => {
+                        console.log(`[setMode] Param ${i}: ${p.id} = ${p.default}`);
                         if (i === 0) paramDefaults.zoomParam1 = p.default ?? 0.5;
                         else if (i === 1) paramDefaults.zoomParam2 = p.default ?? 0.5;
                         else if (i === 2) paramDefaults.zoomParam3 = p.default ?? 0.5;
@@ -216,11 +218,14 @@ function MainApp() {
                         else if (i === 4) paramDefaults.zoomParam5 = p.default ?? 0.5;
                         else if (i === 5) paramDefaults.zoomParam6 = p.default ?? 0.5;
                     });
+                    console.log(`[setMode] Setting slot ${index} defaults:`, paramDefaults);
                     setSlotParams(prev => {
                         const next = [...prev];
                         next[index] = { ...next[index], ...paramDefaults };
                         return next;
                     });
+                } else {
+                    console.log(`[setMode] No params for ${shaderEntry.id}:`, { ok, params: shaderEntry.params });
                 }
 
                 // Record play event (fire-and-forget)
@@ -540,10 +545,14 @@ function MainApp() {
             if (rendererRef.current.getAvailableModes) {
                 setAvailableModes(rendererRef.current.getAvailableModes());
             }
-            // Image auto-load is handled by the useEffect below (line ~390)
-            // which fires once imageManifest is populated, avoiding the race condition
+            // Load initial shader for slot 0 if not already loaded
+            const initialMode = modes[0];
+            if (initialMode && initialMode !== 'none') {
+                console.log(`[onInitCanvas] Loading initial shader: ${initialMode}`);
+                setMode(0, initialMode);
+            }
         }
-    }, []);
+    }, [modes, setMode]);
 
     // --- Webcam Handlers ---
     const startWebcam = useCallback(async () => {

@@ -1,38 +1,26 @@
 {
   "asset-manifest.json": {
-    "hash": "c3d927d298f9125b16305236078d3886",
+    "hash": "940f89cef0ecec47489dcff49ed42c71",
     "size": 374
   },
   "index.html": {
-    "hash": "1a3a4c2386d0c63f4444b6338c886480",
+    "hash": "0b396eb46acdaa21e773ed284ee24b71",
     "size": 445
   },
-  "static/js/main.58154647.js.LICENSE.txt": {
+  "static/js/main.c6af2779.js.map": {
+    "hash": "36c45489c485d255ab2e01c4b2f38d15",
+    "size": 14032097
+  },
+  "static/js/main.c6af2779.js.LICENSE.txt": {
     "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
     "size": 1210
   },
-  "static/js/main.58154647.js": {
-    "hash": "695465dd54b0f37b3fedb47de7cd2d93",
-    "size": 7817484
-  },
-  "static/js/main.58154647.js.map": {
-    "hash": "ee368661c13bb9693701f5c2b4c4f346",
-    "size": 14031124
-  },
-  "shaders/gen-superfluid-quantum-foam.wgsl": {
-    "hash": "8a1153825269ac7df2bbd942e6c0e816",
-    "size": 4922
-  },
-  "image_suggestions.md": {
-    "hash": "d969c95c58a6ed12bddc438f852deefc",
-    "size": 190111
+  "static/js/main.c6af2779.js": {
+    "hash": "ebe3d62090e27829cb51bb468490ccd2",
+    "size": 7817845
   },
   ".htaccess": {
     "hash": "a92d478bcdd0a1b4c13a7925a19ad554",
     "size": 1152
-  },
-  "shader-lists/generative.json": {
-    "hash": "f8065b46c78b5328ba10fd0629367ac8",
-    "size": 114910
   }
 }
