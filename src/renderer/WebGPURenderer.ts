@@ -389,9 +389,7 @@ export class WebGPURenderer implements Renderer {
   private mouseX      = 0.5;
   private mouseY      = 0.5;
   private mouseDown   = false;
-  private zoomParams  = [0.5, 0.5, 0.5, 0.5];
-  private zoomParam5  = 0.5;  // UI-only (not in GPU vec4 yet)
-  private zoomParam6  = 0.5;  // UI-only (not in GPU vec4 yet)
+  private zoomParams  = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
   private ripples: Ripple[] = [];
   private audioBass   = 0;
   private audioMid    = 0;
@@ -1352,8 +1350,8 @@ export class WebGPURenderer implements Renderer {
       case 'zoomParam2': this.zoomParams[1]  = value;     break;
       case 'zoomParam3': this.zoomParams[2]  = value;     break;
       case 'zoomParam4': this.zoomParams[3]  = value;     break;
-      case 'zoomParam5': this.zoomParam5     = value;     break;
-      case 'zoomParam6': this.zoomParam6     = value;     break;
+      case 'zoomParam5': this.zoomParams[4]  = value;     break;
+      case 'zoomParam6': this.zoomParams[5]  = value;     break;
     }
   }
 
@@ -1363,8 +1361,8 @@ export class WebGPURenderer implements Renderer {
     if (params.zoomParam2 !== undefined) this.zoomParams[1] = params.zoomParam2;
     if (params.zoomParam3 !== undefined) this.zoomParams[2] = params.zoomParam3;
     if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
-    if (params.zoomParam5 !== undefined) this.zoomParam5 = params.zoomParam5;
-    if (params.zoomParam6 !== undefined) this.zoomParam6 = params.zoomParam6;
+    if (params.zoomParam5 !== undefined) this.zoomParams[4] = params.zoomParam5;
+    if (params.zoomParam6 !== undefined) this.zoomParams[5] = params.zoomParam6;
   }
 
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */
@@ -1605,9 +1603,10 @@ export class WebGPURenderer implements Renderer {
     this.device.queue.writeBuffer(this.uniformBuf, 0, u.data);
 
     // First 3 floats of extraBuf carry audio (bass, mid, treble)
+    // We add zoomParam5 and zoomParam6 at indices 3 and 4
     this.device.queue.writeBuffer(
       this.extraBuf, 0,
-      new Float32Array([this.audioBass, this.audioMid, this.audioTreble]),
+      new Float32Array([this.audioBass, this.audioMid, this.audioTreble, this.zoomParams[4], this.zoomParams[5]]),
     );
   }
 }
