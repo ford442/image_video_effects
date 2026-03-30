@@ -394,12 +394,12 @@ class ShaderApiService {
             const definition = await response.json();
             if (definition.params) {
               shader.params = definition.params.map((p: any, idx: number) => ({
-                id: p.name || `param${idx + 1}`,
-                name: p.label || p.name || `Parameter ${idx + 1}`,
+                id: p.id || p.name || `param${idx + 1}`,
+                name: p.name || p.label || `Parameter ${idx + 1}`,
                 default: p.default ?? 0.5,
                 min: p.min ?? 0,
                 max: p.max ?? 1,
-                step: 0.01,
+                step: p.step ?? 0.01,
                 labels: p.labels,
               }));
             }
@@ -440,14 +440,14 @@ class ShaderApiService {
             if (defResponse.ok) {
               const definition = await defResponse.json();
               entry.params = (definition.params || []).map((p: any, idx: number) => ({
-                id: p.name || `param${idx + 1}`,
-                name: p.label || p.name || `Parameter ${idx + 1}`,
+                id: p.id || p.name || `param${idx + 1}`,
+                name: p.name || p.label || `Parameter ${idx + 1}`,
                 default: p.default ?? 0.5,
                 min: p.min ?? 0,
                 max: p.max ?? 1,
-                step: 0.01,
+                step: p.step ?? 0.01,
                 labels: p.labels,
-              }));
+              });
               entry.description = definition.description || entry.description;
             }
           } catch (e) {
