@@ -389,89 +389,10 @@ class ShaderApiService {
    * Uses shader_coordinates.json to resolve category subdirectory paths
    */
   private async enrichShaderParams(shaders: ApiShaderEntry[]): Promise<void> {
-    // Enrich shaders that have empty/default params (all 0.5) from API
-    const shadersNeedingParams = shaders.filter(s => !s.params || s.params.length === 0 || 
-      (s.params.length > 0 && s.params.every(p => p.default === 0.5)));
-    if (shadersNeedingParams.length === 0) return;
-
-    // Fetch the coordinates map to get category directory for each shader
-    let categoryMap: Record<string, string> = {};
-    try {
-      const coordResponse = await fetch(`${this.baseUrl}/files/image-effects/shader_coordinates.json`);
-      if (coordResponse.ok) {
-        const coordData = await coordResponse.json();
-        for (const [id, data] of Object.entries(coordData as Record<string, any>)) {
-          if (data.category) {
-            categoryMap[id] = data.category;
-          }
-        }
-      }
-    } catch (e) {
-      // Fall back to flat path if coordinates unavailable
-    }
-
-    // Common category directories to try
-    const commonCategories = ['image', 'generative', 'artistic', 'distortion', 'simulation', 
-                              'liquid-effects', 'lighting-effects', 'visual-effects', 
-                              'interactive-mouse', 'geometric', 'retro-glitch'];
-
-    // Fetch in batches to avoid overwhelming the server
-    const batchSize = 10;
-    for (let i = 0; i < shadersNeedingParams.length; i += batchSize) {
-      const batch = shadersNeedingParams.slice(i, i + batchSize);
-      await Promise.all(batch.map(async shader => {
-        // Skip shaders with timestamp IDs (test uploads without JSON definitions)
-        // Format: 20260325T105421904032_name - these don't have individual JSON files
-        if (/^\d{8}T\d{9}_/.test(shader.id)) {
-          return;
-        }
-
-        // Try to fetch params from individual JSON definition
-        let definition = null;
-        
-        // First try category from coordinates map
-        const category = categoryMap[shader.id];
-        if (category) {
-          try {
-            const response = await fetch(`${this.baseUrl}/files/image-effects/shader_definitions/${category}/${shader.id}.json`);
-            if (response.ok) definition = await response.json();
-          } catch (e) { /* ignore */ }
-        }
-        
-        // If not found, try common categories
-        if (!definition) {
-          for (const cat of commonCategories) {
-            try {
-              const response = await fetch(`${this.baseUrl}/files/image-effects/shader_definitions/${cat}/${shader.id}.json`);
-              if (response.ok) {
-                definition = await response.json();
-                break;
-              }
-            } catch (e) { /* ignore */ }
-          }
-        }
-        
-        // Last resort: try flat path
-        if (!definition) {
-          try {
-            const response = await fetch(`${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`);
-            if (response.ok) definition = await response.json();
-          } catch (e) { /* ignore */ }
-        }
-        
-        if (definition?.params) {
-          shader.params = definition.params.map((p: any, idx: number) => ({
-            id: p.id || p.name || `param${idx + 1}`,
-            name: p.label || p.name || `Parameter ${idx + 1}`,
-            default: p.default ?? 0.5,
-            min: p.min ?? 0,
-            max: p.max ?? 1,
-            step: p.step ?? 0.01,
-            labels: p.labels,
-          }));
-        }
-      }));
-    }
+    // Simplified: Skip enrichment - rely on API params or hardcoded defaults in App.tsx
+    // The backend API now returns params, and App.tsx has SHADER_DEFAULTS for fine-tuning
+    console.log(`[ShaderApi] Skipping enrichment - using API params + hardcoded defaults`);
+    return;
   }
 
   /**
