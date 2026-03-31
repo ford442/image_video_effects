@@ -229,7 +229,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             videoRef.current.srcObject = webcamVideoElement.srcObject;
             videoRef.current.play().catch(console.error);
         }
-    }, [isWebcamActive, webcamVideoElement]);
+    }, [isWebcamActive, webcamVideoElement, videoRef]);
 
     // Handle Live Stream Video Ready
     const handleLiveVideoReady = (video: HTMLVideoElement) => {
