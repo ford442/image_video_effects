@@ -138,6 +138,8 @@
       "title": "Kinetic Neo-Brutalist Megastructure",
       "added": "2026-03-26T15:39:40.056097",
       "completed": "2026-03-30T09:38:28.194104"
+    },
+    {
       "filename": "2026-03-28_superfluid-quantum-foam.md",
       "title": "Superfluid Quantum-Foam",
       "added": "2026-03-28T15:11:35.996556",
@@ -216,6 +218,11 @@
       "filename": "2026-03-30_vitreous-chrono-chandelier.md",
       "title": "Vitreous Chrono-Chandelier",
       "added": "2026-03-30T15:31:13.516101"
+    },
+    {
+      "filename": "2026-03-31_crystalline-chrono-dyson.md",
+      "title": "Crystalline Chrono-Dyson",
+      "added": "2026-03-31T15:50:46.809370"
     }
   ],
   "in_progress": null
