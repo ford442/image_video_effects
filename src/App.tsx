@@ -28,6 +28,75 @@ const WEBCAM_FUN_SHADERS = [
     'magnetic-field', 'magnetic-pixels', 'magnetic-rgb'
 ];
 
+// --- Shader Parameter Defaults ---
+// Hardcoded defaults for shaders where API returns generic 0.5 values
+// Format: shader_id -> [param1, param2, param3, param4, param5, param6]
+const SHADER_DEFAULTS: Record<string, number[]> = {
+    // Liquid shaders - tuned for fluid dynamics
+    'liquid': [0.35, 0.50, 0.30, 0.50],           // surfaceTension, gravityScale, damping, turbidity
+    'liquid-chrome-ripple': [0.40, 0.60, 0.25, 0.45],
+    'liquid-rainbow': [0.50, 0.40, 0.35, 0.60],
+    'liquid-swirl': [0.45, 0.55, 0.30, 0.40],
+    'liquid-viscous': [0.60, 0.30, 0.50, 0.35],
+    
+    // Distortion shaders
+    'distortion': [0.40, 0.50, 0.30, 0.45],
+    'vortex': [0.50, 0.40, 0.60, 0.35],
+    'vortex-distortion': [0.45, 0.45, 0.55, 0.40],
+    'vortex-warp': [0.40, 0.50, 0.50, 0.45],
+    'chroma-vortex': [0.35, 0.55, 0.45, 0.50],
+    
+    // Chromatic/Color shaders
+    'chromatic-folds': [0.45, 0.40, 0.50, 0.35],
+    'chromatic-aberration': [0.30, 0.50, 0.40, 0.45],
+    'rgb-fluid': [0.40, 0.35, 0.55, 0.45],
+    'rgb-ripple-distortion': [0.35, 0.45, 0.50, 0.40],
+    'rgb-shift-brush': [0.50, 0.30, 0.45, 0.55],
+    
+    // Neon/Glow shaders
+    'neon-pulse': [0.60, 0.40, 0.50, 0.35],
+    'neon-edge-pulse': [0.55, 0.45, 0.40, 0.50],
+    'neon-fluid-warp': [0.45, 0.55, 0.35, 0.45],
+    'neon-warp': [0.50, 0.50, 0.40, 0.40],
+    
+    // Kaleidoscope/Geometric
+    'kaleidoscope': [0.40, 0.50, 0.45, 0.35],
+    'kaleido-scope': [0.45, 0.40, 0.50, 0.40],
+    'fractal-kaleidoscope': [0.35, 0.55, 0.40, 0.45],
+    'astral-kaleidoscope': [0.50, 0.35, 0.45, 0.50],
+    
+    // Glitch/Effects
+    'pixel-sorter': [0.40, 0.45, 0.55, 0.35],
+    'pixel-sort-glitch': [0.35, 0.50, 0.45, 0.40],
+    'ascii-shockwave': [0.45, 0.40, 0.50, 0.45],
+    'cyber-glitch-hologram': [0.50, 0.35, 0.40, 0.55],
+    
+    // Magnetic/Field shaders
+    'magnetic-field': [0.40, 0.50, 0.35, 0.50],
+    'magnetic-pixels': [0.45, 0.40, 0.50, 0.40],
+    'magnetic-rgb': [0.35, 0.55, 0.45, 0.35],
+    
+    // Projection/3D effects
+    'holographic-projection': [0.45, 0.45, 0.40, 0.50],
+    
+    // Generative shaders (common defaults)
+    'gen-orb': [0.50, 0.40, 0.60, 0.35],
+    'gen-grid': [0.40, 0.50, 0.45, 0.40],
+    'gen-neuro-kinetic-bloom': [0.50, 0.35, 0.55, 0.40],
+    'gen-quantum-foam': [0.45, 0.45, 0.40, 0.50],
+    'gen-crystal-caverns': [0.35, 0.55, 0.45, 0.35],
+    'gen-fractal-clockwork': [0.50, 0.40, 0.50, 0.40],
+};
+
+// Helper to get shader defaults - returns hardcoded values or falls back to 0.5
+function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
+    const defaults = SHADER_DEFAULTS[shaderId];
+    if (defaults) {
+        return [...defaults, ...Array(6 - defaults.length).fill(0.5)].slice(0, numParams);
+    }
+    return Array(numParams).fill(0.5);
+}
+
 // --- Configuration ---
 env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
@@ -211,18 +280,29 @@ function MainApp() {
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
                 
                 // Initialize slider values to shader's declared param defaults
-                if (ok && shaderEntry.params && shaderEntry.params.length > 0) {
+                // Use hardcoded defaults first (API returns generic 0.5 values)
+                const hardcodedDefaults = getShaderDefaults(shaderEntry.id, shaderEntry.params?.length || 4);
+                const hasHardcoded = hardcodedDefaults.some(v => v !== 0.5);
+                
+                if (ok && (shaderEntry.params?.length || hasHardcoded)) {
                     const paramDefaults: Partial<SlotParams> = {};
-                    console.log(`[setMode] Applying defaults for ${shaderEntry.id}:`, shaderEntry.params);
-                    shaderEntry.params.forEach((p, i) => {
-                        console.log(`[setMode] Param ${i}: ${p.id} = ${p.default}`);
-                        if (i === 0) paramDefaults.zoomParam1 = p.default ?? 0.5;
-                        else if (i === 1) paramDefaults.zoomParam2 = p.default ?? 0.5;
-                        else if (i === 2) paramDefaults.zoomParam3 = p.default ?? 0.5;
-                        else if (i === 3) paramDefaults.zoomParam4 = p.default ?? 0.5;
-                        else if (i === 4) paramDefaults.zoomParam5 = p.default ?? 0.5;
-                        else if (i === 5) paramDefaults.zoomParam6 = p.default ?? 0.5;
-                    });
+                    const numParams = shaderEntry.params?.length || hardcodedDefaults.length;
+                    
+                    console.log(`[setMode] Applying defaults for ${shaderEntry.id}:`, 
+                        hasHardcoded ? 'using hardcoded defaults' : 'using API defaults');
+                    
+                    for (let i = 0; i < numParams; i++) {
+                        // Use hardcoded default if available, otherwise fall back to API default
+                        const defaultValue = hasHardcoded ? hardcodedDefaults[i] : (shaderEntry.params?.[i]?.default ?? 0.5);
+                        console.log(`[setMode] Param ${i}: default = ${defaultValue}`);
+                        if (i === 0) paramDefaults.zoomParam1 = defaultValue;
+                        else if (i === 1) paramDefaults.zoomParam2 = defaultValue;
+                        else if (i === 2) paramDefaults.zoomParam3 = defaultValue;
+                        else if (i === 3) paramDefaults.zoomParam4 = defaultValue;
+                        else if (i === 4) paramDefaults.zoomParam5 = defaultValue;
+                        else if (i === 5) paramDefaults.zoomParam6 = defaultValue;
+                    }
+                    
                     console.log(`[setMode] Setting slot ${index} defaults:`, paramDefaults);
                     setSlotParams(prev => {
                         const next = [...prev];

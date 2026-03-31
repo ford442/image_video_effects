@@ -1,23 +1,23 @@
 {
   "asset-manifest.json": {
-    "hash": "eba3fd528ce462c6a8be938fcce23f0d",
+    "hash": "eac8539beb21a11435b98f7541abc4f7",
     "size": 374
   },
   "index.html": {
-    "hash": "d7d67a69589691eb4905ef4d5ae84dd7",
+    "hash": "408f08c24b0de235967070d53950a8a2",
     "size": 445
   },
-  "static/js/main.afa25250.js": {
-    "hash": "1cc0da3eb5b38f79c510c45b5387740a",
-    "size": 7820047
+  "static/js/main.eadebcde.js.map": {
+    "hash": "fe2bd2168b3c3e2769bba2d577aebe7c",
+    "size": 14045904
   },
-  "static/js/main.afa25250.js.LICENSE.txt": {
+  "static/js/main.eadebcde.js": {
+    "hash": "2620f959db7ec6a24729423eb8705ef3",
+    "size": 7821552
+  },
+  "static/js/main.eadebcde.js.LICENSE.txt": {
     "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
     "size": 1210
-  },
-  "static/js/main.afa25250.js.map": {
-    "hash": "d979d019367e26e092a9d2783677767b",
-    "size": 14040572
   },
   ".htaccess": {
     "hash": "a92d478bcdd0a1b4c13a7925a19ad554",
