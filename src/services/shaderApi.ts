@@ -3,9 +3,9 @@
  * Handles shader CRUD operations and Shadertoy imports
  */
 
-import { STORAGE_API_URL } from '../config/appConfig';
+import { STORAGE_API_URL, API_BASE_URL } from '../config/appConfig';
 
-const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:7860';
+const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
 // --- Types ---
 

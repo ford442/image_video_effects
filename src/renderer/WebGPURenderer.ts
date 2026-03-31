@@ -441,6 +441,9 @@ export class WebGPURenderer implements Renderer {
   // ── Initialisation ─────────────────────────────────────────────────────────
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
+    // Idempotency guard: prevent double-init (e.g. React StrictMode)
+    if (this.initialized) return true;
+
     // Check WebGPU availability with user-friendly warnings
     if (!navigator.gpu) {
       const warning = getBrowserWarning();
@@ -1391,7 +1394,7 @@ export class WebGPURenderer implements Renderer {
     this.pipelines.clear();
     this.workgroupSizes.clear();
 
-    for (const t of [this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
+    for (const t of [this.sourceTex, this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
                      this.dataTexC, this.depthRead, this.depthWrite, this.emptyTex]) {
       t?.destroy();
     }
