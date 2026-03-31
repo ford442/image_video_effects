@@ -229,7 +229,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             videoRef.current.srcObject = webcamVideoElement.srcObject;
             videoRef.current.play().catch(console.error);
         }
-    }, [isWebcamActive, webcamVideoElement]);
+    }, [isWebcamActive, webcamVideoElement, videoRef]);
 
     // Handle Live Stream Video Ready
     const handleLiveVideoReady = (video: HTMLVideoElement) => {
@@ -303,7 +303,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         handleVideoSource();
 
-    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource]);
+    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement]);
 
     // Handle Mute
     useEffect(() => {

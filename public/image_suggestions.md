@@ -1840,6 +1840,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the rendering of rough, porous concrete textures under flat, overcast ambient lighting.
 
+
+### Suggestion: Graphene Solar Sail
+- **Date:** 2027-02-15
+- **Prompt:** "A majestic, deep-space scene of an enormous solar sail spacecraft deployed around a bright blue giant star. The sail is constructed of ultra-thin, dark graphene that perfectly absorbs the star's energy, while the intricate support struts emit a faint, pulsing bioluminescent blue light. The lighting is harsh and highly directional from the massive star, creating stark contrast and deep space shadows. The mood is silent, awe-inspiring, and technologically supreme. Captured with a wide-angle 24mm lens, deep depth of field to keep both the vast sail and the glowing star in sharp focus."
+- **Negative prompt:** "earth, planets, soft lighting, daylight, blurry, low resolution, organic"
+- **Tags:** sci-fi, space, vehicle, graphene, megastructure
+- **Style / Reference:** hard sci-fi visualization, cinematic space art
+- **Composition:** wide angle, dramatic scale, centered blue giant
+- **Color palette:** dark matte graphene grey, blinding electric blue, pitch cosmic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270215_graphene-solar-sail.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive, dark, matte materials against intense cosmic lighting.
+
+### Suggestion: Mother of Pearl Coral Reef
+- **Date:** 2027-02-15
+- **Prompt:** "A mesmerizing underwater macro photograph of a surreal coral reef where the coral branches are completely formed from shimmering, iridescent mother of pearl. The underwater subject is teeming with tiny, glowing bioluminescent sea life. The lighting consists of dappled, ethereal sunlight filtering down through the clear blue water, refracting off the nacreous surfaces to create a breathtaking display of pearlescent pinks, blues, and golds. The mood is peaceful, magical, and pristine. Captured with a 50mm macro lens, utilizing a shallow depth of field to isolate the central mother of pearl coral formation."
+- **Negative prompt:** "murky water, pollution, dark, dull, scary, cartoon, 3d render"
+- **Tags:** underwater, nature, macro, coral, mother of pearl
+- **Style / Reference:** photorealistic underwater nature photography
+- **Composition:** macro close-up, rule of thirds, beautiful soft bokeh
+- **Color palette:** pearlescent pinks, iridescent golds, clear ocean blues, soft cyan
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270215_mother-of-pearl-coral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating thin-film iridescence on complex organic underwater structures.
+
+### Suggestion: Italian Futurism Fireworks
+- **Date:** 2027-02-15
+- **Prompt:** "A chaotic and energetic nighttime cityscape experiencing a massive fireworks display, depicted entirely in the aggressive, fragmented style of Italian Futurism. The exploding fireworks are rendered as sharp, intersecting diagonal lines and overlapping planes of vibrant color that convey explosive sound and violent motion. The lighting is highly contrasted and artificial, simulating the sudden, blinding flashes of the explosions tearing through the dark urban sky. The mood is deafening, modern, and exhilarating. Captured with a dynamic, tilted perspective, emphasizing the shattered geometry of the exploding light."
+- **Negative prompt:** "calm, realistic, photography, smooth gradients, soft clouds, peaceful"
+- **Tags:** abstract, art, italian futurism, fireworks, city
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** bright explosive yellow, vivid crimson, harsh stark white, deep night blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270215_futurism-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates the model's ability to interpret explosive light and sound through the hard-edged abstraction of Italian Futurism.
+
+### Suggestion: Brass Volcanic Eruption
+- **Date:** 2027-02-15
+- **Prompt:** "An epic, surreal landscape where a massive volcano violently erupts, but the mountain and the flying debris are constructed entirely from polished brass clockwork and gears. The subject features thousands of interconnected brass cogs bursting apart under immense pressure. The lighting is intensely bright and dramatic, emanating from a blinding white-hot core of molten energy at the center of the eruption, casting sharp glints and deep shadows across the flying metallic debris. The mood is apocalyptic, mechanical, and awe-inspiring. Captured with an ultra-wide 14mm lens to emphasize the massive scale of the mechanical destruction."
+- **Negative prompt:** "organic, lava, rock, earth, soft, calm, realistic nature"
+- **Tags:** steampunk, landscape, volcano, brass, mechanical
+- **Style / Reference:** surreal steampunk environment, cinematic 3D render
+- **Composition:** expansive wide angle, explosive center, flying debris
+- **Color palette:** polished warm brass, blinding white heat, deep metallic shadows
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270215_brass-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex flying mechanical debris and intense central light sources reflecting off polished metal.
+
+### Suggestion: Biopunk Tsunami
+- **Date:** 2027-02-15
+- **Prompt:** "A terrifying, colossal tsunami wave made entirely of glowing, toxic biopunk sludge, towering over a dark, dystopian shoreline. The viscous, semi-translucent liquid subject is filled with glowing green and magenta cybernetic veins and pulsating biological sacs. The lighting is extremely dark and moody, illuminated solely by the sickly, bioluminescent glow of the toxic wave itself against a pitch-black, stormy sky. The mood is apocalyptic, alien, and deeply unsettling. Captured with a low-angle, wide perspective to make the glowing wall of sludge feel overwhelmingly massive and inevitable."
+- **Negative prompt:** "clean water, daylight, sunny, beautiful, realistic ocean, blue sky"
+- **Tags:** biopunk, landscape, tsunami, glowing, toxic
+- **Style / Reference:** biopunk concept art, dark sci-fi, cinematic horror
+- **Composition:** low angle, imposing wave filling the frame, rule of thirds
+- **Color palette:** toxic neon green, glowing magenta, pitch black sky, dark murky sludge
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270215_biopunk-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing thick, viscous fluid dynamics combined with intense internal bioluminescent emission.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
