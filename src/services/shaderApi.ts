@@ -386,11 +386,28 @@ class ShaderApiService {
   /**
    * Enrich shader list with params from individual JSON definitions
    * Fetches params in parallel for shaders that don't have them
-   * 404 errors are expected and silently ignored
+   * Uses shader_coordinates.json to resolve category subdirectory paths
    */
   private async enrichShaderParams(shaders: ApiShaderEntry[]): Promise<void> {
     const shadersNeedingParams = shaders.filter(s => !s.params || s.params.length === 0);
-    
+    if (shadersNeedingParams.length === 0) return;
+
+    // Fetch the coordinates map to get category directory for each shader
+    let categoryMap: Record<string, string> = {};
+    try {
+      const coordResponse = await fetch(`${this.baseUrl}/files/image-effects/shader_coordinates.json`);
+      if (coordResponse.ok) {
+        const coordData = await coordResponse.json();
+        for (const [id, data] of Object.entries(coordData as Record<string, any>)) {
+          if (data.category) {
+            categoryMap[id] = data.category;
+          }
+        }
+      }
+    } catch (e) {
+      // Fall back to flat path if coordinates unavailable
+    }
+
     // Fetch in batches to avoid overwhelming the server
     const batchSize = 10;
     for (let i = 0; i < shadersNeedingParams.length; i += batchSize) {
@@ -401,8 +418,12 @@ class ShaderApiService {
         if (/^\d{8}T\d{9}_/.test(shader.id)) {
           return;
         }
-        
-        const jsonUrl = `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
+
+        // Use category subdirectory from coordinates map, fall back to flat path
+        const category = categoryMap[shader.id];
+        const jsonUrl = category
+          ? `${this.baseUrl}/files/image-effects/shader_definitions/${category}/${shader.id}.json`
+          : `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
         try {
           const response = await fetch(jsonUrl);
           if (response.ok) {
