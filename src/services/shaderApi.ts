@@ -338,27 +338,27 @@ class ShaderApiService {
    * Get shader list from API (API-first with local fallback)
    * Enhanced to fetch individual shader metadata (params) if not in list
    */
-  async getShaderList(): Promise<ApiShaderEntry[]> {
-    const cached = this.cache.get('shaderList');
+  async getShaderList(includeParams: boolean = true): Promise<ApiShaderEntry[]> {
+    const cacheKey = includeParams ? 'shaderListWithParams' : 'shaderList';
+    const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - this.lastFetch < this.cacheExpiry) {
       return cached;
     }
 
     try {
-      console.log(`[ShaderApi] Fetching from ${this.baseUrl}/api/shaders`);
-      const response = await fetch(`${this.baseUrl}/api/shaders`);
+      const url = `${this.baseUrl}/api/shaders${includeParams ? '?include_params=true' : ''}`;
+      console.log(`[ShaderApi] Fetching from ${url}`);
+      const response = await fetch(url);
       if (!response.ok) throw new Error(`API ${response.status}`);
       const data: ApiShaderEntry[] = await response.json();
       
       console.log(`[ShaderApi] Received ${data.length} shaders from API`);
       
-      // Debug: Check first few shaders for params
-      data.slice(0, 3).forEach(s => {
-        console.log(`[ShaderApi] Shader ${s.id}: params=${s.params ? s.params.length : 'undefined'}, has params array: ${Array.isArray(s.params)}`);
-        if (s.params && s.params.length > 0) {
-          console.log(`[ShaderApi]   First param:`, s.params[0]);
-        }
-      });
+      // Count shaders with real (non-0.5) params
+      const withRealParams = data.filter(s => 
+        s.params && s.params.length > 0 && s.params.some(p => p.default !== 0.5)
+      ).length;
+      console.log(`[ShaderApi] Shaders with real defaults: ${withRealParams}`);
       
       // Build URL pointing to the static .wgsl file (nginx serves /files/ with CORS headers)
       data.forEach(s => {
@@ -366,14 +366,7 @@ class ShaderApiService {
         s.url = `${this.baseUrl}/files/image-effects/shaders/${wgslFilename}`;
       });
       
-      // Fetch individual shader metadata (params) if not present in list
-      // This runs in parallel and populates params for the UI sliders
-      const beforeEnrich = data.filter(s => s.params && s.params.length > 0).length;
-      await this.enrichShaderParams(data);
-      const afterEnrich = data.filter(s => s.params && s.params.length > 0).length;
-      console.log(`[ShaderApi] Shaders with params: ${beforeEnrich} before enrich, ${afterEnrich} after enrich`);
-      
-      this.cache.set('shaderList', data);
+      this.cache.set(cacheKey, data);
       this.lastFetch = Date.now();
       return data;
     } catch (error) {

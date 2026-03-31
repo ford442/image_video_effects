@@ -1,0 +1,39 @@
+# Local JSON Reader Agent
+
+**Role:** Read local shader definition JSON files as fallback source
+
+**Source:** `/root/image_video_effects/shader_definitions/*/*.json`
+
+## Task
+
+1. **Find all JSON definition files**
+   - Walk `shader_definitions/` directory
+   - Categories: image, generative, artistic, distortion, simulation, liquid-effects, etc.
+
+2. **Extract params from each file**
+   - Read `id` and `params` array
+   - Capture real default values
+
+3. **Output consolidated JSON**
+   ```json
+   {
+     "shader_id": {
+       "category": "liquid-effects",
+       "params": [...]
+     }
+   }
+   ```
+
+## Commands
+```bash
+find shader_definitions -name "*.json" -exec cat {} \; | ...
+# Or process individually
+```
+
+## Report Format
+```markdown
+## Local JSON Scan
+- Files found: X
+- Shaders with params: Y
+- Categories covered: [list]
+```
