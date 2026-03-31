@@ -81,7 +81,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         return true;
     };
 
-    // Initialize Renderer
+    // Initialize Renderer (with StrictMode guard)
     useEffect(() => {
         if (!canvasRef.current || !canvasReady) return;
         const canvas = canvasRef.current;
@@ -102,6 +102,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
 
         const renderer = new RendererManager({ width: 1920, height: 1080, agentCount: 50000 });
+        let mounted = true;
 
         // Hook up dimensions listener - kept for potential future use or informational purposes,
         // but we are locking buffer size now.
@@ -114,6 +115,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         (async () => {
             const success = await renderer.init(canvasRef.current!);
+            // StrictMode guard: if unmounted during async init, discard the result
+            if (!mounted) {
+                renderer.destroy();
+                return;
+            }
             if (success) {
                 if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<any>).current = renderer;
@@ -126,6 +132,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
         })();
         return () => {
+            mounted = false;
             cancelAnimationFrame(animationFrameId.current);
             renderer.destroy();
             // Stop webcam stream if active
@@ -250,18 +257,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
 
             if (inputSource === 'webcam') {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    streamRef.current = stream;
-                    videoRef.current!.srcObject = stream;
+                // Use the webcam stream already acquired by App.tsx (via startWebcam)
+                // to avoid duplicate getUserMedia calls and leaked MediaStreams.
+                if (webcamVideoElement && webcamVideoElement.srcObject) {
+                    videoRef.current!.srcObject = webcamVideoElement.srcObject;
                     videoRef.current!.play().catch(console.error);
-                } catch (e) {
-                    console.error("Error accessing webcam:", e);
-                    alert("Could not access webcam.");
-                    // Revert to image if webcam fails
-                    if (setInputSource) {
-                        setInputSource('image');
-                    }
                 }
             } else if (inputSource === 'live') {
                 // Live stream mode - use the HLS video element

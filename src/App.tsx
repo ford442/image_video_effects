@@ -160,6 +160,11 @@ function MainApp() {
     const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
     const [isMouseDown, setIsMouseDown] = useState(false);
 
+    // --- State: Boot Gate ---
+    const [rendererReady, setRendererReady] = useState(false);
+    const [shadersReady, setShadersReady] = useState(false);
+    const initialBootAppliedRef = useRef(false);
+
     // --- Refs ---
     const rendererRef = useRef<Renderer | null>(null);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
@@ -380,6 +385,7 @@ function MainApp() {
                 }));
                 
                 setAvailableModes(entries);
+                setShadersReady(true);
                 // Debug: Check params
                 const withParams = entries.filter(e => e.params && e.params.length > 0);
                 console.log(`✅ Loaded ${entries.length} shaders (API-first with fallback)`);
@@ -389,7 +395,7 @@ function MainApp() {
                 }
             } catch (error) {
                 console.warn('Failed to load shaders:', error);
-                // Silently fail - shader list will be empty but app won't crash
+                setShadersReady(true); // Mark ready even on failure so boot gate doesn't block forever
             }
         };
         
@@ -465,14 +471,27 @@ function MainApp() {
         }
     }, [imageManifest, handleLoadImage]);
 
-    // Auto-load first image when manifest becomes available
-    // This handles the race condition where canvas initializes before manifest
+    // --- Coordinated Boot Gate ---
+    // Wait for both renderer and shader list to be ready before loading initial shader + image.
+    // This fixes the race where onInitCanvas fired before availableModes was populated.
     useEffect(() => {
+        if (!rendererReady || !shadersReady) return;
+        if (initialBootAppliedRef.current) return;
+        initialBootAppliedRef.current = true;
+
+        // Load initial shader
+        const initialMode = modes[0];
+        if (initialMode && initialMode !== 'none') {
+            console.log(`[boot] Loading initial shader: ${initialMode}`);
+            setMode(0, initialMode);
+        }
+
+        // Auto-load first image if manifest is ready
         if (imageManifest.length > 0 && !currentImageUrl && inputSource === 'image') {
-            console.log('Manifest loaded, auto-loading first image...');
+            console.log('[boot] Auto-loading first image...');
             handleNewRandomImage();
         }
-    }, [imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
+    }, [rendererReady, shadersReady, modes, setMode, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
     const loadDepthModel = useCallback(async () => {
         if (depthEstimator) { setStatus('Depth model already loaded.'); return; }
@@ -551,14 +570,9 @@ function MainApp() {
             if (rendererRef.current.getAvailableModes) {
                 setAvailableModes(rendererRef.current.getAvailableModes());
             }
-            // Load initial shader for slot 0 if not already loaded
-            const initialMode = modes[0];
-            if (initialMode && initialMode !== 'none') {
-                console.log(`[onInitCanvas] Loading initial shader: ${initialMode}`);
-                setMode(0, initialMode);
-            }
+            setRendererReady(true);
         }
-    }, [modes, setMode]);
+    }, []);
 
     // --- Webcam Handlers ---
     const startWebcam = useCallback(async () => {
