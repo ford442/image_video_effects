@@ -358,6 +358,15 @@ class SampleMetaUpdatePayload(BaseModel):
     genre: Optional[str] = None
     last_played: Optional[str] = None
 
+class ShaderParam(BaseModel):
+    name: str
+    label: Optional[str] = None
+    default: float = 0.5
+    min: float = 0.0
+    max: float = 1.0
+    step: Optional[float] = 0.01
+    description: Optional[str] = ""
+
 class MetaPatch(BaseModel):
     name: Optional[str] = None
     rating: Optional[int] = Field(None, ge=0, le=10)
@@ -365,6 +374,7 @@ class MetaPatch(BaseModel):
     tags: Optional[List[str]] = None
     last_played: Optional[str] = None
     coordinate: Optional[int] = None  # NEW
+    params: Optional[List[ShaderParam]] = None  # Shader parameter definitions
 
 class CoordinateSyncPayload(BaseModel):
     coordinates: dict
@@ -1041,6 +1051,10 @@ async def update_shader_metadata(shader_id: str, payload: MetaPatch):
             if payload.tags is not None:
                 entry["tags"] = payload.tags
                 updated["tags"] = payload.tags
+            if payload.params is not None:
+                # Convert Pydantic models to dicts
+                entry["params"] = [p.dict() for p in payload.params]
+                updated["params"] = f"{len(payload.params)} parameters"
             
             if updated:
                 await run_io(_write_json_sync, index_path, index)
