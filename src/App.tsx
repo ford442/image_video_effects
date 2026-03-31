@@ -86,16 +86,60 @@ const SHADER_DEFAULTS: Record<string, number[]> = {
     'gen-quantum-foam': [0.45, 0.45, 0.40, 0.50],
     'gen-crystal-caverns': [0.35, 0.55, 0.45, 0.35],
     'gen-fractal-clockwork': [0.50, 0.40, 0.50, 0.40],
+    'galaxy': [0.50, 0.40, 0.60, 0.35],
+    'plasma': [0.45, 0.55, 0.40, 0.45],
+    
+    // Interactive/Mouse shaders
+    'cmyk-halftone-interactive': [0.40, 0.50, 0.35, 0.45],
+    'interactive-rgb-split': [0.35, 0.45, 0.50, 0.40],
+    'interactive-zoom-blur': [0.50, 0.40, 0.45, 0.35],
+    'mouse-pixel-sort': [0.40, 0.35, 0.55, 0.45],
+    'magnetic-interference': [0.45, 0.50, 0.40, 0.35],
+    
+    // Artistic/Painterly
+    'artistic_painterly_oil': [0.50, 0.40, 0.45, 0.50],
+    'double-exposure-zoom': [0.40, 0.50, 0.35, 0.45],
+    'halftone-reveal': [0.45, 0.40, 0.50, 0.35],
+    'rorschach-inkblot': [0.50, 0.45, 0.40, 0.50],
+    
+    // Simulation/Physics
+    'reaction-diffusion': [0.40, 0.50, 0.45, 0.35],
+    'physarum': [0.50, 0.40, 0.60, 0.45],
+    'lenia': [0.45, 0.45, 0.50, 0.40],
+    'navier-stokes-dye': [0.40, 0.50, 0.35, 0.50],
+    
+    // Lighting/Glow
+    'bloom': [0.50, 0.40, 0.55, 0.35],
+    'dynamic-lens-flares': [0.45, 0.50, 0.40, 0.45],
+    'chromatic-crawler': [0.40, 0.45, 0.50, 0.35],
 };
 
-// Helper to get shader defaults - returns hardcoded values or falls back to 0.5
+// Helper to get shader defaults - tries multiple ID variations for matching
 function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
-    const defaults = SHADER_DEFAULTS[shaderId];
-    if (defaults) {
-        return [...defaults, ...Array(6 - defaults.length).fill(0.5)].slice(0, numParams);
+    // Try multiple variations of the shader ID
+    const variations = [
+        shaderId,                                    // exact match
+        shaderId.replace('.wgsl', ''),              // without .wgsl
+        `${shaderId}.wgsl`,                         // with .wgsl
+        shaderId.replace(/-/g, '_'),                // snake_case
+        shaderId.replace(/_/g, '-'),                // kebab-case
+        shaderId.replace(/^gen[-_]/, 'gen-'),       // normalize gen prefix
+    ];
+    
+    for (const key of variations) {
+        const defaults = SHADER_DEFAULTS[key];
+        if (defaults) {
+            console.log(`[getShaderDefaults] Found defaults for "${shaderId}" (matched as "${key}")`);
+            return [...defaults, ...Array(6 - defaults.length).fill(0.5)].slice(0, numParams);
+        }
     }
+    
+    console.log(`[getShaderDefaults] No defaults found for "${shaderId}" (tried: ${variations.join(', ')})`);
     return Array(numParams).fill(0.5);
 }
+
+// Debug: Log available shader default keys
+console.log('[SHADER_DEFAULTS] Available keys:', Object.keys(SHADER_DEFAULTS));
 
 // --- Configuration ---
 env.allowLocalModels = false;
@@ -281,8 +325,10 @@ function MainApp() {
                 
                 // Initialize slider values to shader's declared param defaults
                 // Use hardcoded defaults first (API returns generic 0.5 values)
+                console.log(`[setMode] Setting defaults for shader: "${shaderEntry.id}"`);
                 const hardcodedDefaults = getShaderDefaults(shaderEntry.id, shaderEntry.params?.length || 4);
                 const hasHardcoded = hardcodedDefaults.some(v => v !== 0.5);
+                console.log(`[setMode] Has hardcoded defaults: ${hasHardcoded}`, hardcodedDefaults);
                 
                 if (ok && (shaderEntry.params?.length || hasHardcoded)) {
                     const paramDefaults: Partial<SlotParams> = {};
