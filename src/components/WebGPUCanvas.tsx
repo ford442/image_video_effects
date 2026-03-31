@@ -120,6 +120,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 }
 
                 if (onInit) onInit();
+            } else {
+                // Init failed - clean up the renderer
+                renderer.destroy();
             }
         })();
         return () => {

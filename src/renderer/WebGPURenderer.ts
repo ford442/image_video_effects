@@ -498,6 +498,12 @@ export class WebGPURenderer implements Renderer {
         recoverable: false
       });
       console.error('[WebGPU] Device lost:', info.reason, info.message);
+      // Unconfigure context to release the old device reference
+      try {
+        this.context?.unconfigure();
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
       this.initialized = false;
     });
 
@@ -512,6 +518,14 @@ export class WebGPURenderer implements Renderer {
     }
 
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    
+    // Unconfigure first to clear any previous device association
+    try {
+      this.context.unconfigure();
+    } catch (e) {
+      // Context might not have been configured yet
+    }
+    
     this.context.configure({
       device: this.device,
       format: this.canvasFormat,
@@ -1402,7 +1416,7 @@ export class WebGPURenderer implements Renderer {
   }
 
   private renderFrame(): void {
-    if (!this.device || !this.context) return;
+    if (!this.device || !this.context || !this.initialized) return;
 
     // Update video frame if video is playing (called every frame for smooth playback)
     if (this.video && !this.video.paused && this.video.readyState >= 2) {
@@ -1545,7 +1559,16 @@ export class WebGPURenderer implements Renderer {
   }
 
   private blitToCanvas(): void {
-    if (!this.device || !this.context) return;
+    if (!this.device || !this.context || !this.initialized) return;
+    
+    // Ensure context is still valid (not lost)
+    try {
+      const currentTexture = this.context.getCurrentTexture();
+      if (!currentTexture) return;
+    } catch (e) {
+      // Context lost or invalid
+      return;
+    }
 
     const encoder = this.device.createCommandEncoder({ label: 'blit' });
     const pass = encoder.beginRenderPass({
