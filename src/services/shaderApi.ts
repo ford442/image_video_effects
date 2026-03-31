@@ -389,7 +389,9 @@ class ShaderApiService {
    * Uses shader_coordinates.json to resolve category subdirectory paths
    */
   private async enrichShaderParams(shaders: ApiShaderEntry[]): Promise<void> {
-    const shadersNeedingParams = shaders.filter(s => !s.params || s.params.length === 0);
+    // Enrich shaders that have empty/default params (all 0.5) from API
+    const shadersNeedingParams = shaders.filter(s => !s.params || s.params.length === 0 || 
+      (s.params.length > 0 && s.params.every(p => p.default === 0.5)));
     if (shadersNeedingParams.length === 0) return;
 
     // Fetch the coordinates map to get category directory for each shader
@@ -408,6 +410,11 @@ class ShaderApiService {
       // Fall back to flat path if coordinates unavailable
     }
 
+    // Common category directories to try
+    const commonCategories = ['image', 'generative', 'artistic', 'distortion', 'simulation', 
+                              'liquid-effects', 'lighting-effects', 'visual-effects', 
+                              'interactive-mouse', 'geometric', 'retro-glitch'];
+
     // Fetch in batches to avoid overwhelming the server
     const batchSize = 10;
     for (let i = 0; i < shadersNeedingParams.length; i += batchSize) {
@@ -419,30 +426,49 @@ class ShaderApiService {
           return;
         }
 
-        // Use category subdirectory from coordinates map, fall back to flat path
+        // Try to fetch params from individual JSON definition
+        let definition = null;
+        
+        // First try category from coordinates map
         const category = categoryMap[shader.id];
-        const jsonUrl = category
-          ? `${this.baseUrl}/files/image-effects/shader_definitions/${category}/${shader.id}.json`
-          : `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
-        try {
-          const response = await fetch(jsonUrl);
-          if (response.ok) {
-            const definition = await response.json();
-            if (definition.params) {
-              shader.params = definition.params.map((p: any, idx: number) => ({
-                id: p.id || p.name || `param${idx + 1}`,
-                name: p.label || p.name || `Parameter ${idx + 1}`,
-                default: p.default ?? 0.5,
-                min: p.min ?? 0,
-                max: p.max ?? 1,
-                step: p.step ?? 0.01,
-                labels: p.labels,
-              }));
-            }
+        if (category) {
+          try {
+            const response = await fetch(`${this.baseUrl}/files/image-effects/shader_definitions/${category}/${shader.id}.json`);
+            if (response.ok) definition = await response.json();
+          } catch (e) { /* ignore */ }
+        }
+        
+        // If not found, try common categories
+        if (!definition) {
+          for (const cat of commonCategories) {
+            try {
+              const response = await fetch(`${this.baseUrl}/files/image-effects/shader_definitions/${cat}/${shader.id}.json`);
+              if (response.ok) {
+                definition = await response.json();
+                break;
+              }
+            } catch (e) { /* ignore */ }
           }
-        } catch (e) {
-          // Silent fail - shader will work but won't have parameter sliders
-          // 404s are expected for shaders without individual JSON definitions
+        }
+        
+        // Last resort: try flat path
+        if (!definition) {
+          try {
+            const response = await fetch(`${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`);
+            if (response.ok) definition = await response.json();
+          } catch (e) { /* ignore */ }
+        }
+        
+        if (definition?.params) {
+          shader.params = definition.params.map((p: any, idx: number) => ({
+            id: p.id || p.name || `param${idx + 1}`,
+            name: p.label || p.name || `Parameter ${idx + 1}`,
+            default: p.default ?? 0.5,
+            min: p.min ?? 0,
+            max: p.max ?? 1,
+            step: p.step ?? 0.01,
+            labels: p.labels,
+          }));
         }
       }));
     }
