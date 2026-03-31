@@ -303,7 +303,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         handleVideoSource();
 
-    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource]);
+    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement]);
 
     // Handle Mute
     useEffect(() => {
