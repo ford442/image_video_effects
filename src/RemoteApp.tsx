@@ -34,6 +34,8 @@ const RemoteApp: React.FC = () => {
 
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const helloRetryRef = useRef<NodeJS.Timeout | null>(null);
+    const gotStateRef = useRef(false);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +64,11 @@ const RemoteApp: React.FC = () => {
             if (msg.type === 'HEARTBEAT') {
                 resetHeartbeat();
             } else if (msg.type === 'STATE_FULL') {
+                gotStateRef.current = true;
+                if (helloRetryRef.current) {
+                    clearInterval(helloRetryRef.current);
+                    helloRetryRef.current = null;
+                }
                 const state = msg.payload as FullState;
                 setModes(state.modes);
                 setActiveSlot(state.activeSlot);
@@ -84,12 +91,26 @@ const RemoteApp: React.FC = () => {
             }
         };
 
-        // Send Hello
+        // Send Hello with retry (up to 3 retries at 1s intervals)
+        gotStateRef.current = false;
         sendMessage('HELLO');
+        let retryCount = 0;
+        helloRetryRef.current = setInterval(() => {
+            if (gotStateRef.current || retryCount >= 3) {
+                if (helloRetryRef.current) {
+                    clearInterval(helloRetryRef.current);
+                    helloRetryRef.current = null;
+                }
+                return;
+            }
+            retryCount++;
+            sendMessage('HELLO');
+        }, 1000);
 
         return () => {
             channel.close();
             if (heartbeatTimeoutRef.current) clearTimeout(heartbeatTimeoutRef.current);
+            if (helloRetryRef.current) clearInterval(helloRetryRef.current);
         };
     }, [resetHeartbeat, sendMessage]);
 

@@ -28,6 +28,119 @@ const WEBCAM_FUN_SHADERS = [
     'magnetic-field', 'magnetic-pixels', 'magnetic-rgb'
 ];
 
+// --- Shader Parameter Defaults ---
+// Hardcoded defaults for shaders where API returns generic 0.5 values
+// Format: shader_id -> [param1, param2, param3, param4, param5, param6]
+const SHADER_DEFAULTS: Record<string, number[]> = {
+    // Liquid shaders - tuned for fluid dynamics
+    'liquid': [0.35, 0.50, 0.30, 0.50],           // surfaceTension, gravityScale, damping, turbidity
+    'liquid-chrome-ripple': [0.40, 0.60, 0.25, 0.45],
+    'liquid-rainbow': [0.50, 0.40, 0.35, 0.60],
+    'liquid-swirl': [0.45, 0.55, 0.30, 0.40],
+    'liquid-viscous': [0.60, 0.30, 0.50, 0.35],
+    
+    // Distortion shaders
+    'distortion': [0.40, 0.50, 0.30, 0.45],
+    'vortex': [0.50, 0.40, 0.60, 0.35],
+    'vortex-distortion': [0.45, 0.45, 0.55, 0.40],
+    'vortex-warp': [0.40, 0.50, 0.50, 0.45],
+    'chroma-vortex': [0.35, 0.55, 0.45, 0.50],
+    
+    // Chromatic/Color shaders
+    'chromatic-folds': [0.45, 0.40, 0.50, 0.35],
+    'chromatic-aberration': [0.30, 0.50, 0.40, 0.45],
+    'rgb-fluid': [0.40, 0.35, 0.55, 0.45],
+    'rgb-ripple-distortion': [0.35, 0.45, 0.50, 0.40],
+    'rgb-shift-brush': [0.50, 0.30, 0.45, 0.55],
+    
+    // Neon/Glow shaders
+    'neon-pulse': [0.60, 0.40, 0.50, 0.35],
+    'neon-edge-pulse': [0.55, 0.45, 0.40, 0.50],
+    'neon-fluid-warp': [0.45, 0.55, 0.35, 0.45],
+    'neon-warp': [0.50, 0.50, 0.40, 0.40],
+    
+    // Kaleidoscope/Geometric
+    'kaleidoscope': [0.40, 0.50, 0.45, 0.35],
+    'kaleido-scope': [0.45, 0.40, 0.50, 0.40],
+    'fractal-kaleidoscope': [0.35, 0.55, 0.40, 0.45],
+    'astral-kaleidoscope': [0.50, 0.35, 0.45, 0.50],
+    
+    // Glitch/Effects
+    'pixel-sorter': [0.40, 0.45, 0.55, 0.35],
+    'pixel-sort-glitch': [0.35, 0.50, 0.45, 0.40],
+    'ascii-shockwave': [0.45, 0.40, 0.50, 0.45],
+    'cyber-glitch-hologram': [0.50, 0.35, 0.40, 0.55],
+    
+    // Magnetic/Field shaders
+    'magnetic-field': [0.40, 0.50, 0.35, 0.50],
+    'magnetic-pixels': [0.45, 0.40, 0.50, 0.40],
+    'magnetic-rgb': [0.35, 0.55, 0.45, 0.35],
+    
+    // Projection/3D effects
+    'holographic-projection': [0.45, 0.45, 0.40, 0.50],
+    
+    // Generative shaders (common defaults)
+    'gen-orb': [0.50, 0.40, 0.60, 0.35],
+    'gen-grid': [0.40, 0.50, 0.45, 0.40],
+    'gen-neuro-kinetic-bloom': [0.50, 0.35, 0.55, 0.40],
+    'gen-quantum-foam': [0.45, 0.45, 0.40, 0.50],
+    'gen-crystal-caverns': [0.35, 0.55, 0.45, 0.35],
+    'gen-fractal-clockwork': [0.50, 0.40, 0.50, 0.40],
+    'galaxy': [0.50, 0.40, 0.60, 0.35],
+    'plasma': [0.45, 0.55, 0.40, 0.45],
+    
+    // Interactive/Mouse shaders
+    'cmyk-halftone-interactive': [0.40, 0.50, 0.35, 0.45],
+    'interactive-rgb-split': [0.35, 0.45, 0.50, 0.40],
+    'interactive-zoom-blur': [0.50, 0.40, 0.45, 0.35],
+    'mouse-pixel-sort': [0.40, 0.35, 0.55, 0.45],
+    'magnetic-interference': [0.45, 0.50, 0.40, 0.35],
+    
+    // Artistic/Painterly
+    'artistic_painterly_oil': [0.50, 0.40, 0.45, 0.50],
+    'double-exposure-zoom': [0.40, 0.50, 0.35, 0.45],
+    'halftone-reveal': [0.45, 0.40, 0.50, 0.35],
+    'rorschach-inkblot': [0.50, 0.45, 0.40, 0.50],
+    
+    // Simulation/Physics
+    'reaction-diffusion': [0.40, 0.50, 0.45, 0.35],
+    'physarum': [0.50, 0.40, 0.60, 0.45],
+    'lenia': [0.45, 0.45, 0.50, 0.40],
+    'navier-stokes-dye': [0.40, 0.50, 0.35, 0.50],
+    
+    // Lighting/Glow
+    'bloom': [0.50, 0.40, 0.55, 0.35],
+    'dynamic-lens-flares': [0.45, 0.50, 0.40, 0.45],
+    'chromatic-crawler': [0.40, 0.45, 0.50, 0.35],
+};
+
+// Helper to get shader defaults - tries multiple ID variations for matching
+function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
+    // Try multiple variations of the shader ID
+    const variations = [
+        shaderId,                                    // exact match
+        shaderId.replace('.wgsl', ''),              // without .wgsl
+        `${shaderId}.wgsl`,                         // with .wgsl
+        shaderId.replace(/-/g, '_'),                // snake_case
+        shaderId.replace(/_/g, '-'),                // kebab-case
+        shaderId.replace(/^gen[-_]/, 'gen-'),       // normalize gen prefix
+    ];
+    
+    for (const key of variations) {
+        const defaults = SHADER_DEFAULTS[key];
+        if (defaults) {
+            console.log(`[getShaderDefaults] Found defaults for "${shaderId}" (matched as "${key}")`);
+            return [...defaults, ...Array(6 - defaults.length).fill(0.5)].slice(0, numParams);
+        }
+    }
+    
+    console.log(`[getShaderDefaults] No defaults found for "${shaderId}" (tried: ${variations.join(', ')})`);
+    return Array(numParams).fill(0.5);
+}
+
+// Debug: Log available shader default keys
+console.log('[SHADER_DEFAULTS] Available keys:', Object.keys(SHADER_DEFAULTS));
+
 // --- Configuration ---
 env.allowLocalModels = false;
 env.backends.onnx.logLevel = 'warning';
@@ -160,6 +273,11 @@ function MainApp() {
     const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
     const [isMouseDown, setIsMouseDown] = useState(false);
 
+    // --- State: Boot Gate ---
+    const [rendererReady, setRendererReady] = useState(false);
+    const [shadersReady, setShadersReady] = useState(false);
+    const initialBootAppliedRef = useRef(false);
+
     // --- Refs ---
     const rendererRef = useRef<Renderer | null>(null);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
@@ -206,21 +324,39 @@ function MainApp() {
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
                 
                 // Initialize slider values to shader's declared param defaults
-                if (ok && shaderEntry.params && shaderEntry.params.length > 0) {
+                // Use hardcoded defaults first (API returns generic 0.5 values)
+                console.log(`[setMode] Setting defaults for shader: "${shaderEntry.id}"`);
+                const hardcodedDefaults = getShaderDefaults(shaderEntry.id, shaderEntry.params?.length || 4);
+                const hasHardcoded = hardcodedDefaults.some(v => v !== 0.5);
+                console.log(`[setMode] Has hardcoded defaults: ${hasHardcoded}`, hardcodedDefaults);
+                
+                if (ok && (shaderEntry.params?.length || hasHardcoded)) {
                     const paramDefaults: Partial<SlotParams> = {};
-                    shaderEntry.params.forEach((p, i) => {
-                        if (i === 0) paramDefaults.zoomParam1 = p.default ?? 0.5;
-                        else if (i === 1) paramDefaults.zoomParam2 = p.default ?? 0.5;
-                        else if (i === 2) paramDefaults.zoomParam3 = p.default ?? 0.5;
-                        else if (i === 3) paramDefaults.zoomParam4 = p.default ?? 0.5;
-                        else if (i === 4) paramDefaults.zoomParam5 = p.default ?? 0.5;
-                        else if (i === 5) paramDefaults.zoomParam6 = p.default ?? 0.5;
-                    });
+                    const numParams = shaderEntry.params?.length || hardcodedDefaults.length;
+                    
+                    console.log(`[setMode] Applying defaults for ${shaderEntry.id}:`, 
+                        hasHardcoded ? 'using hardcoded defaults' : 'using API defaults');
+                    
+                    for (let i = 0; i < numParams; i++) {
+                        // Use hardcoded default if available, otherwise fall back to API default
+                        const defaultValue = hasHardcoded ? hardcodedDefaults[i] : (shaderEntry.params?.[i]?.default ?? 0.5);
+                        console.log(`[setMode] Param ${i}: default = ${defaultValue}`);
+                        if (i === 0) paramDefaults.zoomParam1 = defaultValue;
+                        else if (i === 1) paramDefaults.zoomParam2 = defaultValue;
+                        else if (i === 2) paramDefaults.zoomParam3 = defaultValue;
+                        else if (i === 3) paramDefaults.zoomParam4 = defaultValue;
+                        else if (i === 4) paramDefaults.zoomParam5 = defaultValue;
+                        else if (i === 5) paramDefaults.zoomParam6 = defaultValue;
+                    }
+                    
+                    console.log(`[setMode] Setting slot ${index} defaults:`, paramDefaults);
                     setSlotParams(prev => {
                         const next = [...prev];
                         next[index] = { ...next[index], ...paramDefaults };
                         return next;
                     });
+                } else {
+                    console.log(`[setMode] No params for ${shaderEntry.id}:`, { ok, params: shaderEntry.params });
                 }
 
                 // Record play event (fire-and-forget)
@@ -364,21 +500,28 @@ function MainApp() {
                     rating: shader.rating,
                     hasErrors: shader.has_errors,
                     params: (shader.params || []).map((p: any, idx: number) => ({
-                        id: p.name || `param${idx + 1}`,
+                        id: p.id || p.name || `param${idx + 1}`,
                         name: p.label || p.name || `Parameter ${idx + 1}`,
                         default: p.default ?? 0.5,
                         min: p.min ?? 0,
                         max: p.max ?? 1,
-                        step: 0.01,
+                        step: p.step ?? 0.01,
                         labels: p.labels,
                     })),
                 }));
                 
                 setAvailableModes(entries);
+                setShadersReady(true);
+                // Debug: Check params
+                const withParams = entries.filter(e => e.params && e.params.length > 0);
                 console.log(`✅ Loaded ${entries.length} shaders (API-first with fallback)`);
+                console.log(`   ${withParams.length} shaders have params`);
+                if (withParams.length > 0) {
+                    console.log(`   Example: ${withParams[0].id} has params:`, withParams[0].params);
+                }
             } catch (error) {
                 console.warn('Failed to load shaders:', error);
-                // Silently fail - shader list will be empty but app won't crash
+                setShadersReady(true); // Mark ready even on failure so boot gate doesn't block forever
             }
         };
         
@@ -454,14 +597,27 @@ function MainApp() {
         }
     }, [imageManifest, handleLoadImage]);
 
-    // Auto-load first image when manifest becomes available
-    // This handles the race condition where canvas initializes before manifest
+    // --- Coordinated Boot Gate ---
+    // Wait for both renderer and shader list to be ready before loading initial shader + image.
+    // This fixes the race where onInitCanvas fired before availableModes was populated.
     useEffect(() => {
+        if (!rendererReady || !shadersReady) return;
+        if (initialBootAppliedRef.current) return;
+        initialBootAppliedRef.current = true;
+
+        // Load initial shader
+        const initialMode = modes[0];
+        if (initialMode && initialMode !== 'none') {
+            console.log(`[boot] Loading initial shader: ${initialMode}`);
+            setMode(0, initialMode);
+        }
+
+        // Auto-load first image if manifest is ready
         if (imageManifest.length > 0 && !currentImageUrl && inputSource === 'image') {
-            console.log('Manifest loaded, auto-loading first image...');
+            console.log('[boot] Auto-loading first image...');
             handleNewRandomImage();
         }
-    }, [imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
+    }, [rendererReady, shadersReady, modes, setMode, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
     const loadDepthModel = useCallback(async () => {
         if (depthEstimator) { setStatus('Depth model already loaded.'); return; }
@@ -540,8 +696,7 @@ function MainApp() {
             if (rendererRef.current.getAvailableModes) {
                 setAvailableModes(rendererRef.current.getAvailableModes());
             }
-            // Image auto-load is handled by the useEffect below (line ~390)
-            // which fires once imageManifest is populated, avoiding the race condition
+            setRendererReady(true);
         }
     }, []);
 

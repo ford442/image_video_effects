@@ -3,9 +3,9 @@
  * Handles shader CRUD operations and Shadertoy imports
  */
 
-import { STORAGE_API_URL } from '../config/appConfig';
+import { STORAGE_API_URL, API_BASE_URL } from '../config/appConfig';
 
-const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:7860';
+const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
 // --- Types ---
 
@@ -345,9 +345,20 @@ class ShaderApiService {
     }
 
     try {
+      console.log(`[ShaderApi] Fetching from ${this.baseUrl}/api/shaders`);
       const response = await fetch(`${this.baseUrl}/api/shaders`);
       if (!response.ok) throw new Error(`API ${response.status}`);
       const data: ApiShaderEntry[] = await response.json();
+      
+      console.log(`[ShaderApi] Received ${data.length} shaders from API`);
+      
+      // Debug: Check first few shaders for params
+      data.slice(0, 3).forEach(s => {
+        console.log(`[ShaderApi] Shader ${s.id}: params=${s.params ? s.params.length : 'undefined'}, has params array: ${Array.isArray(s.params)}`);
+        if (s.params && s.params.length > 0) {
+          console.log(`[ShaderApi]   First param:`, s.params[0]);
+        }
+      });
       
       // Build URL pointing to the static .wgsl file (nginx serves /files/ with CORS headers)
       data.forEach(s => {
@@ -357,12 +368,16 @@ class ShaderApiService {
       
       // Fetch individual shader metadata (params) if not present in list
       // This runs in parallel and populates params for the UI sliders
+      const beforeEnrich = data.filter(s => s.params && s.params.length > 0).length;
       await this.enrichShaderParams(data);
+      const afterEnrich = data.filter(s => s.params && s.params.length > 0).length;
+      console.log(`[ShaderApi] Shaders with params: ${beforeEnrich} before enrich, ${afterEnrich} after enrich`);
       
       this.cache.set('shaderList', data);
       this.lastFetch = Date.now();
       return data;
     } catch (error) {
+      console.warn('[ShaderApi] API failed, falling back to local shader definitions:', error);
       // Fallback to local shader_coordinates.json + individual JSON definitions
       return this.loadLocalShadersWithParams();
     }
@@ -371,45 +386,13 @@ class ShaderApiService {
   /**
    * Enrich shader list with params from individual JSON definitions
    * Fetches params in parallel for shaders that don't have them
-   * 404 errors are expected and silently ignored
+   * Uses shader_coordinates.json to resolve category subdirectory paths
    */
   private async enrichShaderParams(shaders: ApiShaderEntry[]): Promise<void> {
-    const shadersNeedingParams = shaders.filter(s => !s.params || s.params.length === 0);
-    
-    // Fetch in batches to avoid overwhelming the server
-    const batchSize = 10;
-    for (let i = 0; i < shadersNeedingParams.length; i += batchSize) {
-      const batch = shadersNeedingParams.slice(i, i + batchSize);
-      await Promise.all(batch.map(async shader => {
-        // Skip shaders with timestamp IDs (test uploads without JSON definitions)
-        // Format: 20260325T105421904032_name - these don't have individual JSON files
-        if (/^\d{8}T\d{9}_/.test(shader.id)) {
-          return;
-        }
-        
-        const jsonUrl = `${this.baseUrl}/files/image-effects/shader_definitions/${shader.id}.json`;
-        try {
-          const response = await fetch(jsonUrl);
-          if (response.ok) {
-            const definition = await response.json();
-            if (definition.params) {
-              shader.params = definition.params.map((p: any, idx: number) => ({
-                id: p.name || `param${idx + 1}`,
-                name: p.label || p.name || `Parameter ${idx + 1}`,
-                default: p.default ?? 0.5,
-                min: p.min ?? 0,
-                max: p.max ?? 1,
-                step: 0.01,
-                labels: p.labels,
-              }));
-            }
-          }
-        } catch (e) {
-          // Silent fail - shader will work but won't have parameter sliders
-          // 404s are expected for shaders without individual JSON definitions
-        }
-      }));
-    }
+    // Simplified: Skip enrichment - rely on API params or hardcoded defaults in App.tsx
+    // The backend API now returns params, and App.tsx has SHADER_DEFAULTS for fine-tuning
+    console.log(`[ShaderApi] Skipping enrichment - using API params + hardcoded defaults`);
+    return;
   }
 
   /**
@@ -440,12 +423,12 @@ class ShaderApiService {
             if (defResponse.ok) {
               const definition = await defResponse.json();
               entry.params = (definition.params || []).map((p: any, idx: number) => ({
-                id: p.name || `param${idx + 1}`,
+                id: p.id || p.name || `param${idx + 1}`,
                 name: p.label || p.name || `Parameter ${idx + 1}`,
                 default: p.default ?? 0.5,
                 min: p.min ?? 0,
                 max: p.max ?? 1,
-                step: 0.01,
+                step: p.step ?? 0.01,
                 labels: p.labels,
               }));
               entry.description = definition.description || entry.description;

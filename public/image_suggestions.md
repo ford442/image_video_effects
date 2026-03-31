@@ -1711,6 +1711,135 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating underwater volumetric lighting, thick atmospheric fog (murky water), and glowing particle simulations.
 
+### Suggestion: Graphene Space Elevator
+- **Date:** 2027-01-15
+- **Prompt:** "A breathtaking, wide-angle shot of a towering space elevator tether anchored in a futuristic ocean spaceport. The primary subject is the colossal tether constructed from sleek, dark, ultra-strong graphene, stretching infinitely upwards into a starry night sky. The lighting features bright, dramatic spotlights from the ocean base illuminating the matte surface of the graphene, while the upper atmosphere is dark, capturing the glowing city below. The mood is awe-inspiring, highly advanced, and monumental. Captured with a wide 14mm lens pointing sharply upwards to emphasize the dizzying vertical perspective."
+- **Negative prompt:** "broken, rusty, dystopian, daylight, short, flimsy, organic"
+- **Tags:** sci-fi, megastructure, space elevator, graphene, night
+- **Style / Reference:** hard sci-fi environment design, cinematic architectural visualization
+- **Composition:** extreme low angle, vertical leading lines
+- **Color palette:** matte dark grey, glowing neon blue spotlights, deep starry black
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20270115_graphene-space-elevator.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the representation of extreme vertical scale and the interaction of intense artificial spotlights with a matte, light-absorbing material (graphene).
+
+### Suggestion: Mother of Pearl Cloudscape
+- **Date:** 2027-01-15
+- **Prompt:** "An ethereal, sweeping aerial view of a surreal cloudscape where the clouds are formed entirely from solid, shimmering layers of Mother of Pearl. The subject features massive, billowing, smooth formations that reflect a spectacular array of pearlescent pastels. The lighting is a brilliant, omnidirectional ambient glow, catching the smooth ridges of the nacre to reveal intense rainbow interference patterns across the entire sky. The mood is dreamlike, luxurious, and completely otherworldly. Captured with an ultra-wide 16mm lens, highlighting the vast, smooth, sweeping curves."
+- **Negative prompt:** "fluffy clouds, realistic sky, dull colors, dark shadows, rain, storm"
+- **Tags:** surreal, landscape, clouds, mother of pearl, iridescent
+- **Style / Reference:** surreal digital art, hyper-detailed environment
+- **Composition:** expansive view, sweeping curves, rule of thirds
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, pastel yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_mother-of-pearl-cloudscape.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating large-scale thin-film iridescent interference mapped to smooth, massive, sweeping organic formations.
+
+### Suggestion: Ashcan School Subway Station
+- **Date:** 2027-01-15
+- **Prompt:** "A bustling, gritty early 20th-century subway station depicted in the Ashcan School art style. The subject features working-class commuters in winter coats waiting on a dirty, tile-lined platform as a steam-powered train approaches. The lighting is dim, moody, and flickering, casting soft, indistinct shadows from harsh overhead bulbs that highlight the grime and texture of the underground environment. The mood is authentic, melancholic, and full of everyday urban life. Captured with an eye-level, documentary-style perspective, emphasizing the crowded and unglamorous reality of the city."
+- **Negative prompt:** "modern, clean, bright, neon, cheerful, sci-fi, empty"
+- **Tags:** art, urban, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, John Sloan inspired, thick brushstrokes
+- **Composition:** eye-level, crowded platform, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull yellows, murky green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_ashcan-school-subway.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing gritty, unidealized subterranean scenes and authentic historical art styles.
+
+### Suggestion: Italian Futurism Race Car
+- **Date:** 2027-01-15
+- **Prompt:** "A chaotic, dynamic scene of an early 20th-century race car tearing down a city street, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed, noise, and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion and blur."
+- **Negative prompt:** "calm, stationary, photorealistic, soft curves, gentle, realistic car"
+- **Tags:** abstract, art, italian futurism, speed, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, vivid yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_futurism-racecar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical speed and urban noise.
+
+### Suggestion: Bismuth Crystal Space Station
+- **Date:** 2027-01-15
+- **Prompt:** "A sweeping exterior view of a massive, geometric space station constructed entirely of naturally iridescent bismuth crystals, floating in deep space. The subject features giant, stepped, hopper-like formations that interlock to form an alien, functional megastructure. The lighting is harsh and direct from a nearby blue giant star, casting deep black shadows in the vacuum of space, causing the metallic bismuth surfaces to shine brilliantly in a rainbow of thin-film interference colors. The mood is majestic, alien, and highly advanced. Captured with a wide-angle 16mm lens to encompass the vast scale of the crystalline structure against the starfield."
+- **Negative prompt:** "organic, smooth curves, dull, plastic, atmospheric haze, blurry"
+- **Tags:** sci-fi, space, space station, bismuth, iridescent
+- **Style / Reference:** hard sci-fi environment design, hyper-realistic space art
+- **Composition:** wide angle, dramatic lighting, sharp geometric framing
+- **Color palette:** iridescent rainbow, glaring white starlight, deep cosmic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270115_bismuth-spacestation.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating complex stepped geometric structures interacting with highly saturated iridescent thin-film materials under harsh vacuum lighting.
+### Suggestion: Vaporwave Marble Plaza
+- **Date:** 2026-12-15
+- **Prompt:** "A surreal, retro-futuristic Vaporwave plaza. The subject features classical marble busts and Roman columns resting on a perfectly reflective, endless grid floor. The lighting is extremely stylized, with a low-hanging neon pink and cyan sun casting long, dramatic, colorful shadows. The mood is nostalgic, liminal, and dreamlike. Captured with a wide-angle lens, emphasizing the vast, empty space and strict geometric perspective."
+- **Negative prompt:** "realistic, natural lighting, modern, messy, organic, people"
+- **Tags:** vaporwave, surreal, retro, architecture, liminal
+- **Style / Reference:** Vaporwave aesthetic, 1980s retro CGI
+- **Composition:** wide angle, symmetrical, vanishing point perspective
+- **Color palette:** neon pink, electric cyan, pure white marble, dark grid
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261215_vaporwave-plaza.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing strict geometric grids and highly saturated, limited neon color palettes.
+
+### Suggestion: Steampunk Bioluminescent Airship
+- **Date:** 2026-12-15
+- **Prompt:** "A massive, intricately detailed steampunk airship floating through a dense, glowing nebula. The subject is constructed of riveted copper and brass, powered by large glass tanks filled with swirling, bioluminescent green plasma. The lighting is moody and cinematic, with warm gas lamps on the deck contrasting against the cold, ethereal glow of the surrounding cosmic dust. The mood is adventurous and majestic. Captured with a telephoto lens from a distance to compress the scale of the ship against the vast nebula."
+- **Negative prompt:** "modern, sleek, plastic, daylight, blue sky, airplane"
+- **Tags:** steampunk, sci-fi, space, vehicle, nebula
+- **Style / Reference:** steampunk concept art, cinematic space visualization
+- **Composition:** rule of thirds, compressed perspective
+- **Color palette:** warm copper, glowing green plasma, deep space purple
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261215_steampunk-airship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating metallic reflections (copper/brass) amidst complex volumetric background lighting.
+
+### Suggestion: Art Deco Cybernetic Cityscape
+- **Date:** 2026-12-15
+- **Prompt:** "A sprawling, retro-futuristic city blending classic Art Deco architecture with advanced cybernetic technology. The towering skyscrapers feature geometric, gold-leaf embellishments and glowing, holographic marquees. The lighting is dramatic and moody, simulating a film noir night scene with heavy rain, where the bright gold and neon lights reflect off the wet, slick pavement. The mood is glamorous yet gritty. Captured from a low angle with a 35mm lens to emphasize the towering, symmetrical geometry of the buildings."
+- **Negative prompt:** "daylight, bright, sunny, ruins, messy, dull, organic"
+- **Tags:** cyberpunk, art deco, city, architecture, rain
+- **Style / Reference:** film noir, retro-futuristic architectural render
+- **Composition:** low angle looking up, strong vertical lines, symmetrical
+- **Color palette:** gold, neon blue, stark black, reflective grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261215_art-deco-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing complex reflections on wet surfaces and the blending of historical architecture with neon elements.
+
+### Suggestion: Glassmorphism Quantum Flora
+- **Date:** 2026-12-15
+- **Prompt:** "An ultra-macro view of an alien flower blooming, constructed entirely using a glassmorphism aesthetic. The subject's petals are made of frosted, semi-translucent glass that slightly blurs the vibrant, pulsing quantum energy core within. The lighting is soft, diffuse, and incredibly colorful, refracting through the frosted glass to create a glowing, ethereal aura of soft pastels. The mood is delicate, futuristic, and serene. Captured with an extreme macro 100mm lens, utilizing a shallow depth of field to create a soft, dreamy bokeh background."
+- **Negative prompt:** "opaque, natural, mud, dull, sharp shadows, wide angle"
+- **Tags:** macro, abstract, flora, glassmorphism, ethereal
+- **Style / Reference:** Glassmorphism UI aesthetic, 3D abstract render
+- **Composition:** extreme close-up, centered, shallow depth of field
+- **Color palette:** frosted white, iridescent pastels, glowing pink, soft cyan
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261215_glassmorphism-flora.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating sub-surface scattering, frosted glass materials, and soft lighting refractions.
+
+### Suggestion: Brutalist Concrete Monolith
+- **Date:** 2026-12-15
+- **Prompt:** "A towering, oppressive Brutalist concrete monolith standing isolated in a vast, snow-covered tundra. The architectural subject features harsh, intersecting geometric planes and deep, dark recesses without any windows. The lighting is overcast and bleak, creating flat, low-contrast shadows that emphasize the raw, rough texture of the poured concrete against the pure white snow. The mood is desolate, dystopian, and silent. Captured with a wide 24mm lens to emphasize the stark isolation and massive scale of the structure."
+- **Negative prompt:** "bright, sunny, cheerful, glass, colorful, busy, people"
+- **Tags:** architecture, brutalism, landscape, snow, desolate
+- **Style / Reference:** brutalist architecture photography, minimalist landscape
+- **Composition:** wide expansive view, stark contrast, rule of thirds
+- **Color palette:** concrete grey, pure white snow, overcast pale sky, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261215_brutalist-monolith.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of rough, porous concrete textures under flat, overcast ambient lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

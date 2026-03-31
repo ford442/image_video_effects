@@ -362,11 +362,17 @@ async def list_shaders():
                 if isinstance(data, list):
                     for item in data:
                         if isinstance(item, dict) and required_fields.issubset(item):
+                            # Ensure params is explicitly included if present
+                            if "params" in item and item["params"]:
+                                logging.info(f"Shader {item['id']} has {len(item['params'])} params")
                             shaders.append(item)
                         else:
                             logging.warning("Skipping shader entry missing required fields in %s", filepath)
                 elif isinstance(data, dict):
                     if required_fields.issubset(data):
+                        # Ensure params is explicitly included if present
+                        if "params" in data and data["params"]:
+                            logging.info(f"Shader {data['id']} has {len(data['params'])} params")
                         shaders.append(data)
                     else:
                         logging.warning("Skipping shader missing required fields in %s", filepath)
@@ -377,6 +383,7 @@ async def list_shaders():
             except Exception as e:
                 logging.warning("Skipping unreadable file %s: %s", filepath, e)
 
+    logging.info(f"Returning {len(shaders)} shaders from API")
     await cache.set(cache_key, shaders, ttl=300)
     return shaders
 

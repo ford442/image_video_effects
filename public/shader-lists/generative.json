@@ -3370,6 +3370,60 @@
     ]
   },
   {
+    "id": "gen-superfluid-quantum-foam",
+    "name": "Superfluid Quantum-Foam",
+    "url": "shaders/gen-superfluid-quantum-foam.wgsl",
+    "category": "generative",
+    "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
+    "tags": [
+      "organic",
+      "quantum",
+      "fluid",
+      "audio-reactive",
+      "raymarching",
+      "volumetric"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "boilingVolatility",
+        "name": "Boiling Volatility",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "vortexRadius",
+        "name": "Vortex Radius",
+        "default": 4,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "radiationGlow",
+        "name": "Radiation Glow",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "currentSpeed",
+        "name": "Current Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-supernova-remnant",
     "name": "Supernova Remnant",
     "url": "shaders/gen-supernova-remnant.wgsl",

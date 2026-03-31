@@ -441,6 +441,9 @@ export class WebGPURenderer implements Renderer {
   // ── Initialisation ─────────────────────────────────────────────────────────
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
+    // Idempotency guard: prevent double-init (e.g. React StrictMode)
+    if (this.initialized) return true;
+
     // Check WebGPU availability with user-friendly warnings
     if (!navigator.gpu) {
       const warning = getBrowserWarning();
@@ -498,6 +501,12 @@ export class WebGPURenderer implements Renderer {
         recoverable: false
       });
       console.error('[WebGPU] Device lost:', info.reason, info.message);
+      // Unconfigure context to release the old device reference
+      try {
+        this.context?.unconfigure();
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
       this.initialized = false;
     });
 
@@ -512,6 +521,14 @@ export class WebGPURenderer implements Renderer {
     }
 
     this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    
+    // Unconfigure first to clear any previous device association
+    try {
+      this.context.unconfigure();
+    } catch (e) {
+      // Context might not have been configured yet
+    }
+    
     this.context.configure({
       device: this.device,
       format: this.canvasFormat,
@@ -694,7 +711,7 @@ export class WebGPURenderer implements Renderer {
         { binding:  1, visibility: V, texture:        { sampleType: fST } },
         { binding:  2, visibility: V, storageTexture: { access: 'write-only', format: 'rgba32float' } },
         { binding:  3, visibility: V, buffer:         { type: 'uniform' } },
-        { binding:  4, visibility: V, texture:        { sampleType: 'unfilterable-float' } },
+        { binding:  4, visibility: V, texture:        { sampleType: 'depth' } },
         { binding:  5, visibility: V, sampler:        { type: 'non-filtering' } },
         { binding:  6, visibility: V, storageTexture: { access: 'write-only', format: 'r32float' } },
         { binding:  7, visibility: V, storageTexture: { access: 'write-only', format: 'rgba32float' } },
@@ -1377,7 +1394,7 @@ export class WebGPURenderer implements Renderer {
     this.pipelines.clear();
     this.workgroupSizes.clear();
 
-    for (const t of [this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
+    for (const t of [this.sourceTex, this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
                      this.dataTexC, this.depthRead, this.depthWrite, this.emptyTex]) {
       t?.destroy();
     }
@@ -1402,7 +1419,7 @@ export class WebGPURenderer implements Renderer {
   }
 
   private renderFrame(): void {
-    if (!this.device || !this.context) return;
+    if (!this.device || !this.context || !this.initialized) return;
 
     // Update video frame if video is playing (called every frame for smooth playback)
     if (this.video && !this.video.paused && this.video.readyState >= 2) {
@@ -1545,7 +1562,16 @@ export class WebGPURenderer implements Renderer {
   }
 
   private blitToCanvas(): void {
-    if (!this.device || !this.context) return;
+    if (!this.device || !this.context || !this.initialized) return;
+    
+    // Ensure context is still valid (not lost)
+    try {
+      const currentTexture = this.context.getCurrentTexture();
+      if (!currentTexture) return;
+    } catch (e) {
+      // Context lost or invalid
+      return;
+    }
 
     const encoder = this.device.createCommandEncoder({ label: 'blit' });
     const pass = encoder.beginRenderPass({
