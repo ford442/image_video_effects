@@ -968,6 +968,8 @@ export class WebGPURenderer implements Renderer {
     if (index >= 0 && index < 3) {
       const mode = this.slots[index]?.mode ?? 'chained';
       this.slots[index] = { shaderId: id, enabled: !!id, mode };
+      console.log(`[WebGPURenderer] Slot ${index} set to "${id}" (enabled: ${!!id}, mode: ${mode})`);
+      console.log(`[WebGPURenderer] Current slots:`, this.slots.map(s => ({ id: s.shaderId, enabled: s.enabled, mode: s.mode })));
     }
   }
 
@@ -1430,6 +1432,16 @@ export class WebGPURenderer implements Renderer {
       s => s.enabled && s.shaderId && this.pipelines.has(s.shaderId)
     );
 
+    // Debug logging for slot chain
+    if (this.frameCount % 60 === 0) {
+      console.log(`[WebGPURenderer] Frame ${this.frameCount}: ${enabled.length} enabled slots`);
+      console.log(`[WebGPURenderer] Slots:`, this.slots.map(s => ({ 
+        id: s.shaderId, 
+        enabled: s.enabled, 
+        hasPipeline: s.shaderId ? this.pipelines.has(s.shaderId) : false 
+      })));
+    }
+
     if (enabled.length === 0) {
       // No active shader — show whatever is in readTex (black initially)
       this.blitToCanvas();
@@ -1485,6 +1497,13 @@ export class WebGPURenderer implements Renderer {
     const parallelSlots = enabled.filter(s => s.mode === 'parallel');
     const chainedSlots = enabled.filter(s => s.mode === 'chained');
 
+    if (this.frameCount % 60 === 0) {
+      console.log(`[WebGPURenderer] Parallel slots: ${parallelSlots.length}, Chained slots: ${chainedSlots.length}`);
+      if (chainedSlots.length > 0) {
+        console.log(`[WebGPURenderer] Chained slot order:`, chainedSlots.map(s => s.shaderId));
+      }
+    }
+
     // ── 1. Run ALL parallel slots first (driver can overlap these) ───────────────
     // All parallel slots read from the same readTex (base image)
     for (const slot of parallelSlots) {
@@ -1516,6 +1535,9 @@ export class WebGPURenderer implements Renderer {
     // ── 2. Run chained slots sequentially ────────────────────────────────────────
     for (let i = 0; i < chainedSlots.length; i++) {
       const slot = chainedSlots[i];
+      if (this.frameCount % 60 === 0) {
+        console.log(`[WebGPURenderer] Processing chained slot ${i}: ${slot.shaderId}`);
+      }
       const pipeline = this.pipelines.get(slot.shaderId!)!;
       const wg = this.workgroupSizes.get(slot.shaderId!) || { x: 8, y: 8 };
 
