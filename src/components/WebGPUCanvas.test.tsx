@@ -89,6 +89,9 @@ test('mouse down emits ripple for mouse-driven shader', () => {
             inputSource={'image'}
             selectedVideo={''}
             apiBaseUrl={''}
+            activeSlot={0}
+            activeGenerativeShader={undefined}
+            setInputSource={() => {}}
         />
     );
 
