@@ -13,16 +13,13 @@
 @group(0) @binding(5) var depthSampler: sampler;
 @group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-// Input from Pass 1
-@group(0) @binding(13) var dataTextureA: texture_2d<f32>;
 
 struct Uniforms {
     config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
@@ -164,8 +161,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
     
-    // Read volumetric data from Pass 1
-    let volumetric = textureLoad(dataTextureA, gid.xy, 0);
+    // Read volumetric data from Pass 1 (via dataTextureC)
+    let volumetric = textureLoad(dataTextureC, gid.xy, 0);
     let auroraColor = volumetric.rgb;
     let density = volumetric.a;
     
@@ -205,7 +202,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Anisotropic diffusion (temporal blur)
     let historyUV = clamp(uv + warp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(historyTex, videoSampler, historyUV, 0.0).rgb;
+    let history = textureSampleLevel(dataTextureC, videoSampler, historyUV, 0.0).rgb;
     let flowDir = normalize(warp + curl + vec2<f32>(0.001));
     let anisotropy = 1.0 - abs(dot(flowDir, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
     let diffused = mix(blended, history, diffusionRate * anisotropy);
@@ -228,8 +225,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Final intensity blend
     let finalCol = mix(srcCol, toneMapped, globalIntensity);
     
-    // Update history buffer
-    textureStore(historyBuf, gid.xy, vec4<f32>(diffused, 1.0));
+    // Update history buffer (via dataTextureA)
+    textureStore(dataTextureA, gid.xy, vec4<f32>(diffused, 1.0));
     
     // Output final color with luminance-based alpha
     let finalLuma = dot(finalCol, vec3<f32>(0.299, 0.587, 0.114));

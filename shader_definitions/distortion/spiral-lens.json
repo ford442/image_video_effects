@@ -1,6 +1,5 @@
 {
   "id": "spiral-lens",
-  "label": "Spiral Lens",
   "category": "image",
   "url": "shaders/spiral-lens.wgsl",
   "features": [
@@ -39,5 +38,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "name": "Spiral Lens"
 }

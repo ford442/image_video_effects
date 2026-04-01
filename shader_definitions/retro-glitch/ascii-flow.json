@@ -1,6 +1,5 @@
 {
   "id": "ascii-flow",
-  "label": "ASCII Flow",
   "category": "retro-glitch",
   "url": "shaders/ascii-flow.wgsl",
   "features": [
@@ -11,5 +10,6 @@
     "glitch",
     "retro",
     "vintage"
-  ]
+  ],
+  "name": "ASCII Flow"
 }

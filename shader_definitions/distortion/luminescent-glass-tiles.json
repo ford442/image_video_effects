@@ -1,6 +1,5 @@
 {
   "id": "luminescent-glass-tiles",
-  "label": "Luminescent Glass",
   "url": "shaders/luminescent-glass-tiles.wgsl",
   "category": "distortion",
   "features": [
@@ -45,5 +44,6 @@
     "warp",
     "distort",
     "transform"
-  ]
+  ],
+  "name": "Luminescent Glass"
 }

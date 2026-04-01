@@ -1,6 +1,5 @@
 {
   "id": "spectral-slit-scan",
-  "label": "Spectral Slit Scan",
   "category": "image",
   "url": "shaders/spectral-slit-scan.wgsl",
   "description": "RGB trails that decay at different rates, distorted by sine waves and mouse gravity.",
@@ -44,5 +43,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "name": "Spectral Slit Scan"
 }

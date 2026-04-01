@@ -2,7 +2,7 @@
   "id": "mirror-drag",
   "name": "Mirror Drag",
   "url": "shaders/mirror-drag.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],

@@ -1,6 +1,5 @@
 {
   "id": "luma-pixel-sort",
-  "label": "Luma Pixel Sort",
   "category": "artistic",
   "features": [
     "mouse-driven"
@@ -40,5 +39,6 @@
   "tags": [
     "stylized",
     "artistic"
-  ]
+  ],
+  "name": "Luma Pixel Sort"
 }

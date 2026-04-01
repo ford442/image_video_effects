@@ -2,7 +2,7 @@
   "id": "paper-burn",
   "name": "Paper Burn",
   "url": "shaders/paper-burn.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "Interactive paper burn effect that spreads from mouse cursor with realistic charring and ash.",
   "features": [
     "mouse-driven",

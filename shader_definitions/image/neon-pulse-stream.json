@@ -1,6 +1,5 @@
 {
   "id": "neon-pulse-stream",
-  "label": "Neon Pulse Stream",
   "category": "image",
   "url": "shaders/neon-pulse-stream.wgsl",
   "description": "Video luminance directs a fluid flow of neon trails injected by the mouse.",
@@ -49,5 +48,6 @@
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "name": "Neon Pulse Stream"
 }

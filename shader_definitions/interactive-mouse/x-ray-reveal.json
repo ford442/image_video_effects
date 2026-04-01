@@ -11,7 +11,8 @@
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.x"
+      "target": "zoom_params.x",
+      "id": "lens_size"
     },
     {
       "name": "Edge Strength",
@@ -19,7 +20,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.y"
+      "target": "zoom_params.y",
+      "id": "edge_strength"
     },
     {
       "name": "Contrast",
@@ -27,7 +29,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.z"
+      "target": "zoom_params.z",
+      "id": "contrast"
     }
   ],
   "features": [

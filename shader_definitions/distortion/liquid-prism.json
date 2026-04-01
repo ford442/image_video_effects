@@ -1,6 +1,5 @@
 {
   "id": "liquid-prism",
-  "label": "Liquid Prism",
   "url": "shaders/liquid-prism.wgsl",
   "category": "distortion",
   "features": [
@@ -45,5 +44,6 @@
     "warp",
     "distort",
     "transform"
-  ]
+  ],
+  "name": "Liquid Prism"
 }

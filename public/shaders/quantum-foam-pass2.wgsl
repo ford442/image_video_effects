@@ -13,17 +13,13 @@
 @group(0) @binding(5) var depthSampler: sampler;
 @group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-// Data textures for inter-pass communication
-@group(0) @binding(13) var dataTextureA: texture_2d<f32>;  // Input from Pass 1
-@group(0) @binding(14) var dataTextureB: texture_storage_2d<rgba32float, write>;  // Output to Pass 3
 
 struct Uniforms {
     config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
@@ -147,8 +143,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
     let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     
-    // Read field from Pass 1
-    let field = textureLoad(dataTextureA, gid.xy, 0);
+    // Read field from Pass 1 (via dataTextureC)
+    let field = textureLoad(dataTextureC, gid.xy, 0);
     let warp = field.xy;
     let pattern = field.z;
     let cellBoundary = field.w;
@@ -190,7 +186,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Temporal anisotropic diffusion
     let historyUV = clamp(uv + warp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(historyTex, videoSampler, historyUV, 0.0).rgb;
+    let history = textureSampleLevel(dataTextureC, videoSampler, historyUV, 0.0).rgb;
     let flowDirection = normalize(warp + curl + vec2<f32>(0.001));
     let anisotropicFactor = 1.0 - abs(dot(flowDirection, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
     let anisotropicBlend = mix(emissiveColor, history, diffusionRate * anisotropicFactor);
@@ -208,8 +204,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Store for Pass 3
     textureStore(dataTextureB, gid.xy, particles);
     
-    // Update history buffer
-    textureStore(historyBuf, gid.xy, vec4<f32>(anisotropicBlend, 1.0));
+    // Update history buffer (via dataTextureA)
+    textureStore(dataTextureA, gid.xy, vec4<f32>(anisotropicBlend, 1.0));
     
     // Pass-through color (Pass 3 will do final compositing)
     textureStore(writeTexture, gid.xy, vec4<f32>(0.0));

@@ -1,6 +1,5 @@
 {
   "id": "quantum-prism",
-  "label": "Quantum Prism",
   "url": "shaders/quantum-prism.wgsl",
   "category": "image",
   "features": [
@@ -9,5 +8,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "name": "Quantum Prism"
 }

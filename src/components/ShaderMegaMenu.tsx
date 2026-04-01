@@ -57,7 +57,7 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [focusedId, setFocusedId] = useState<string | null>(null);
-  const [overlayPos, setOverlayPos] = useState({ top: 0, left: 0, width: 0 });
+  const [overlayPos, setOverlayPos] = useState({ top: 0, left: 0, width: 0, bottom: 0 });
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -127,14 +127,10 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
       left = window.innerWidth - overlayWidth - 8;
     }
     if (left < 8) left = 8;
-    // Keep within viewport vertically
-    let top = rect.bottom + 4;
-    const spaceBelow = window.innerHeight - top - 8;
-    if (spaceBelow < 300) {
-      // Not enough room below — position above the trigger instead
-      top = Math.max(8, rect.top - Math.min(window.innerHeight * 0.7, rect.top - 8));
-    }
-    setOverlayPos({ top, left, width: overlayWidth });
+    // Position dropdown with bottom touching bottom of viewport
+    const bottomMargin = 8;
+    const top = 8; // Small top margin when expanding upward
+    setOverlayPos({ top, left, width: overlayWidth, bottom: bottomMargin });
   }, [isOpen]);
 
   // Auto-focus search on open
@@ -242,7 +238,7 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
     <div
       ref={overlayRef}
       className="smm-overlay"
-      style={{ top: overlayPos.top, left: overlayPos.left, width: overlayPos.width, maxHeight: `calc(100vh - ${overlayPos.top}px - 8px)` }}
+      style={{ top: overlayPos.top, left: overlayPos.left, width: overlayPos.width, bottom: overlayPos.bottom, maxHeight: `calc(100vh - ${overlayPos.top}px - ${overlayPos.bottom}px)` }}
       onKeyDown={handleKeyDown}
     >
       {/* Search */}

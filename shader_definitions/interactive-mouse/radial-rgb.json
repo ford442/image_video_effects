@@ -2,7 +2,7 @@
   "id": "radial-rgb",
   "name": "Radial RGB",
   "url": "shaders/radial-rgb.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven",
     "chromatic-aberration"

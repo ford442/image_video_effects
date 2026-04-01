@@ -1,6 +1,5 @@
 {
   "id": "holographic-sticker",
-  "label": "Holographic Sticker",
   "category": "visual-effects",
   "url": "shaders/holographic-sticker.wgsl",
   "features": [
@@ -15,5 +14,6 @@
     "glow",
     "audio",
     "music"
-  ]
+  ],
+  "name": "Holographic Sticker"
 }

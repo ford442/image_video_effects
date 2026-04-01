@@ -1,0 +1,27 @@
+{
+  "agent": "Fix Agent 5: Sampler Fixer",
+  "timestamp": "2026-04-01T07:57:25+02:00",
+  "fixed_count": 2,
+  "skipped_count": 1,
+  "fixed_shaders": [
+    {
+      "shader": "spectral-bleed-confine.wgsl",
+      "line": 155,
+      "old": "textureSampleLevel(readDepthTexture, u_sampler, uv, 0.0).r",
+      "new": "textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r"
+    },
+    {
+      "shader": "tensor-flow-sculpt.wgsl",
+      "line": 48,
+      "old": "textureSampleLevel(readDepthTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r",
+      "new": "textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r"
+    }
+  ],
+  "skipped_shaders": [
+    {
+      "shader": "spectral-bleed-confinement.wgsl",
+      "reason": "Already correct - uses non_filtering_sampler with readDepthTexture"
+    }
+  ],
+  "summary": "Fixed 2 shaders with sampler/texture mismatches. Changed from u_sampler (filterable) to non_filtering_sampler (non-filtering) for readDepthTexture sampling, as depth textures require non-filtering samplers."
+}

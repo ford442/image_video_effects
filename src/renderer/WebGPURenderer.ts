@@ -711,7 +711,7 @@ export class WebGPURenderer implements Renderer {
         { binding:  1, visibility: V, texture:        { sampleType: fST } },
         { binding:  2, visibility: V, storageTexture: { access: 'write-only', format: 'rgba32float' } },
         { binding:  3, visibility: V, buffer:         { type: 'uniform' } },
-        { binding:  4, visibility: V, texture:        { sampleType: 'depth' } },
+        { binding:  4, visibility: V, texture:        { sampleType: 'unfilterable-float' } },
         { binding:  5, visibility: V, sampler:        { type: 'non-filtering' } },
         { binding:  6, visibility: V, storageTexture: { access: 'write-only', format: 'r32float' } },
         { binding:  7, visibility: V, storageTexture: { access: 'write-only', format: 'rgba32float' } },

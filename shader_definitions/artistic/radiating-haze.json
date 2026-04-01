@@ -32,39 +32,6 @@
       "default": 0.5,
       "min": 0,
       "max": 1
-    },
-    {
-      "id": "pulseSpd",
-      "name": "Pulse Speed",
-      "default": 0.4,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "depthInf",
-      "name": "Depth Influence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "hueBias",
-      "name": "Hue Bias / Fixed Hue",
-      "default": 0,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "colourMode",
-      "name": "Colour Mode",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "labels": [
-        "Shifted",
-        "Original",
-        "Fixed"
-      ]
     }
   ],
   "features": [

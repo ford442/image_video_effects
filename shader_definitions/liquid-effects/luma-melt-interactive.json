@@ -1,8 +1,7 @@
 {
   "id": "luma-melt-interactive",
-  "label": "Luma Melt",
   "url": "shaders/luma-melt-interactive.wgsl",
-  "category": "liquid",
+  "category": "liquid-effects",
   "features": [
     "mouse-driven"
   ],
@@ -45,5 +44,6 @@
     "fluid",
     "liquid",
     "water"
-  ]
+  ],
+  "name": "Luma Melt"
 }

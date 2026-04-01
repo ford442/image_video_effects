@@ -1,6 +1,5 @@
 {
   "id": "glass-brick-distortion",
-  "label": "Glass Brick Wall",
   "category": "image",
   "url": "shaders/glass-brick-distortion.wgsl",
   "features": [
@@ -39,5 +38,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "name": "Glass Brick Wall"
 }

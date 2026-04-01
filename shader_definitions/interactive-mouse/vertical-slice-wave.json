@@ -2,7 +2,7 @@
   "id": "vertical-slice-wave",
   "name": "Vertical Slice Wave",
   "url": "shaders/vertical-slice-wave.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "Splits the image into vertical strips that oscillate. Mouse X controls frequency, Mouse Y controls amplitude.",
   "params": [
     {

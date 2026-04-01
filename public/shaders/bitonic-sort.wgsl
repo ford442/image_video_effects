@@ -22,7 +22,7 @@ struct Uniforms {
 
 // bitonic sort per workgroup skeleton: use dataTextureA as pixel buffer
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(local_invocation_id) local_id: vec3<u32>, @builtin(workgroup_id) group_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let idx = local_id.x;
   let pixel_idx = group_id.x * 256u + idx;
   // Load: for simplicity, read from readTexture

@@ -2,7 +2,7 @@
   "id": "ascii-decode",
   "name": "ASCII Decode",
   "url": "shaders/ascii-decode.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],

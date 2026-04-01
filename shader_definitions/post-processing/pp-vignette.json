@@ -1,0 +1,44 @@
+{
+  "id": "pp-vignette",
+  "name": "PP Vignette",
+  "url": "shaders/pp-vignette.wgsl",
+  "category": "post-processing",
+  "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
+  "tags": [
+    "post-process",
+    "vignette",
+    "grain",
+    "film",
+    "vintage"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Vignette",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param2",
+      "name": "Grain",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param3",
+      "name": "Color Style",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param4",
+      "name": "Effect",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

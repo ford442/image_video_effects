@@ -2,7 +2,7 @@
   "id": "focal-pixelate",
   "name": "Focal Pixelate",
   "url": "shaders/focal-pixelate.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],

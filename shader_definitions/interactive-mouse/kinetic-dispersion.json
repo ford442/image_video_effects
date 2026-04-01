@@ -1,7 +1,6 @@
 {
   "id": "kinetic-dispersion",
-  "label": "Kinetic Dispersion",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "url": "shaders/kinetic-dispersion.wgsl",
   "features": [
     "mouse-driven"
@@ -39,5 +38,6 @@
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "name": "Kinetic Dispersion"
 }

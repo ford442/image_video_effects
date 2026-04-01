@@ -2,7 +2,7 @@
   "id": "kimi-chromatic-warp",
   "name": "Kimi Chromatic Warp",
   "url": "shaders/kimi_chromatic_warp.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "RGB channel separation and prismatic distortion effects that intensify near the cursor with swirling motion.",
   "features": [
     "mouse-driven",

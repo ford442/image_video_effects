@@ -2,7 +2,7 @@
   "id": "crystal-illuminator",
   "name": "Crystal Illuminator",
   "url": "shaders/crystal-illuminator.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "Faceted glass/gemstone surface with physical light transmission. Features Voronoi-based facets with mouse-controlled lighting, Fresnel reflection, and purity-based scattering for realistic crystal appearance.",
   "features": [
     "mouse-driven",

@@ -1,7 +1,6 @@
 {
   "id": "codebreaker-reveal",
-  "label": "Codebreaker Reveal",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "url": "shaders/codebreaker-reveal.wgsl",
   "features": [
     "mouse-driven"
@@ -39,5 +38,6 @@
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "name": "Codebreaker Reveal"
 }

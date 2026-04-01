@@ -81,7 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Apply scale (zoom in/out of cell)
     // If we want gaps, we clamp
-    let scaled = rotated / currentScale; // divide by scale to zoom in (if scale < 1, we zoom in? No, we want to shrink content?
+    let scaled = rotated / currentScale; // divide by scale to zoom in (if scale < 1, we zoom in? No, we want to shrink content?)
     // Actually, usually "scale" means size of content.
     // If currentScale is 0.8 (smaller), we want to see more? Or do we want gaps?
     // Let's treat 'scale' as the size of the valid image area.

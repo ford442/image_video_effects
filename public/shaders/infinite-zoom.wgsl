@@ -22,13 +22,19 @@
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 
 struct Uniforms {
-  config: vec4<f32>,        // time, unused, resolutionX, resolutionY
-  zoom_config: vec4<f32>,  // zoomTime, zoomCenterX, zoomCenterY, depth_threshold
-  zoom_params: vec4<f32>,  // zoom_speed, param_a, rotation, iteration_depth
-  lighting_params: vec4<f32>, // light_strength, ambient, normal_strength, color_cycling
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // ═══════════════════════════════════════════════════════════════
 // Complex Number Operations

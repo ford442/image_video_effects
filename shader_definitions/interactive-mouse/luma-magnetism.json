@@ -1,8 +1,7 @@
 {
   "id": "luma-magnetism",
-  "label": "Luma Magnetism",
   "url": "shaders/luma-magnetism.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],
@@ -44,5 +43,6 @@
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "name": "Luma Magnetism"
 }

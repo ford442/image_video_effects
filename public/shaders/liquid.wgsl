@@ -29,6 +29,9 @@ struct Uniforms {
 };
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // Sample height field from dataTextureC (persistent storage)
 fn sampleHeight(uv: vec2<f32>) -> f32 {

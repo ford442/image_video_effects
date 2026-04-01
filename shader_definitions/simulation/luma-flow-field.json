@@ -1,6 +1,5 @@
 {
   "id": "luma-flow-field",
-  "label": "Luma Flow Field",
   "category": "simulation",
   "url": "shaders/luma-flow-field.wgsl",
   "features": [
@@ -39,5 +38,6 @@
   "tags": [
     "simulation",
     "physics"
-  ]
+  ],
+  "name": "Luma Flow Field"
 }

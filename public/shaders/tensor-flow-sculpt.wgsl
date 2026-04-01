@@ -45,7 +45,7 @@ fn hash21(p: vec2<f32>) -> f32 {
 //  Sample depth at offset
 // ─────────────────────────────────────────────────────────────────────────────
 fn sampleDepth(uv: vec2<f32>) -> f32 {
-    return textureSampleLevel(readDepthTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    return textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

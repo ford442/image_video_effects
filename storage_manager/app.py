@@ -827,14 +827,14 @@ async def list_shaders(
             index = [s for s in index if s.get("stars", 0) >= min_stars]
         
         # Sort
-        reverse = sort_by in ["rating", "date", "last_played"]
-        if sort_by == "rating":
+        reverse = sort_by in [SortBy.rating, SortBy.date, SortBy.last_played]
+        if sort_by is SortBy.rating:
             index.sort(key=lambda s: s.get("stars", 0), reverse=reverse)
-        elif sort_by == "date":
+        elif sort_by is SortBy.date:
             index.sort(key=lambda s: s.get("date", ""), reverse=reverse)
-        elif sort_by == "name":
+        elif sort_by is SortBy.name:
             index.sort(key=lambda s: s.get("name", "").lower())
-        elif sort_by == "coordinate":
+        elif sort_by is SortBy.coordinate:
             index.sort(key=lambda s: s.get("coordinate", 9999))
 
         # Ensure all shaders have rating defaults
@@ -1185,7 +1185,7 @@ async def upload_item(payload: ItemPayload):
                 _write_json_sync(config["index"], current)
             
             await run_io(_update_index)
-            await cache.clear()
+            await cache.delete(f"{item_type}:list")
             return {"success": True, "id": item_id}
         except Exception as e:
             raise HTTPException(500, f"Upload failed: {str(e)}")
@@ -1977,21 +1977,28 @@ async def upload_shader(
         "rating_count": 0
     }
     
-    async with INDEX_LOCK:
-        try:
-            # 1. Upload the .wgsl file
-            blob = bucket.blob(full_path)
-            await run_io(blob.upload_from_file, file.file, content_type="text/plain")
-            
-            # 2. Save metadata.json
-            await save_metadata(shader_id, meta)
-            
-            # Clear list cache
+    try:
+        # 1. Upload the .wgsl file (outside lock to minimize contention)
+        blob = bucket.blob(full_path)
+        await run_io(blob.upload_from_file, file.file, content_type="text/plain")
+        
+        # 2. Save metadata.json to GCS (separate from index, no lock needed)
+        meta_path = f"{config['folder']}{shader_id}/metadata.json"
+        meta_blob = bucket.blob(meta_path)
+        await run_io(meta_blob.upload_from_string, json.dumps(meta), content_type="application/json")
+        
+        # 3. Update index (inside lock)
+        async with INDEX_LOCK:
+            index = await run_io(_read_json_sync, config["index"])
+            if not isinstance(index, list):
+                index = []
+            index.insert(0, meta)
+            await run_io(_write_json_sync, config["index"], index)
             await cache.delete("shaders:list")
-            
-            return {"success": True, "id": shader_id, "meta": meta}
-        except Exception as e:
-            raise HTTPException(500, f"Shader upload failed: {str(e)}")
+        
+        return {"success": True, "id": shader_id, "meta": meta}
+    except Exception as e:
+        raise HTTPException(500, f"Shader upload failed: {str(e)}")
    
 # ========================= FTP BRIDGE ENDPOINTS =========================
 

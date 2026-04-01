@@ -2,7 +2,7 @@
   "id": "viscous-drag",
   "name": "Viscous Drag",
   "url": "shaders/viscous-drag.wgsl",
-  "category": "liquid",
+  "category": "liquid-effects",
   "description": "The screen becomes a thick, viscous fluid that ripples and deforms under your touch.",
   "features": [
     "mouse-driven"

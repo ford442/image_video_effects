@@ -2,7 +2,7 @@
   "id": "scanline-wave",
   "name": "Scanline Wave",
   "url": "shaders/scanline-wave.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],

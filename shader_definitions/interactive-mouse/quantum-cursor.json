@@ -2,7 +2,7 @@
   "id": "quantum-cursor",
   "name": "Quantum Cursor",
   "url": "shaders/quantum-cursor.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "Quantized reality field around the cursor with chromatic distortion.",
   "params": [
     {

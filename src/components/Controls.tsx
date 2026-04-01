@@ -551,36 +551,6 @@ const Controls: React.FC<ControlsProps> = ({
                 </select>
             </div>
 
-            {/* --- Coordinate Browser Button --- */}
-            <div className="control-group">
-                <button 
-                    onClick={() => setShowCoordinateBrowser(true)}
-                    className="coord-browser-btn"
-                >
-                    <span>🗂️</span>
-                    <span>Browse by Coordinate (B)</span>
-                </button>
-                <div style={{ fontSize: '11px', color: '#a0a0b0', marginTop: '6px', textAlign: 'center' }}>
-                    Tip: Type any number to jump to that shader
-                </div>
-            </div>
-
-            {/* --- VPS Storage Browser Button --- */}
-            {onOpenStorageBrowser && (
-                <div className="control-group">
-                    <button 
-                        onClick={onOpenStorageBrowser}
-                        className="storage-btn"
-                    >
-                        <span>📦</span>
-                        <span>VPS Storage Browser</span>
-                    </button>
-                    <div style={{ fontSize: '11px', color: '#a0a0b0', marginTop: '6px', textAlign: 'center' }}>
-                        Browse shaders, images & videos from VPS
-                    </div>
-                </div>
-            )}
-
             {/* --- 🎰 Roulette Section --- */}
             <div className="glass-panel" style={{margin: '15px 0', padding: '15px'}}>
                 <div style={{ position: 'relative', zIndex: 1 }}>
@@ -860,26 +830,7 @@ const Controls: React.FC<ControlsProps> = ({
             )}
 
 
-            <hr className="gold-divider" />
 
-            {/* --- View Controls (Zoom/Pan) --- */}
-            <div className="gold-section-header">
-                View Controls
-            </div>
-            <div className="control-group view-controls-grid">
-                <label style={{color: '#a0a0b0'}}>Zoom: <span style={{color: '#FFD700'}}>{zoom.toFixed(2)}x</span></label>
-                <input type="range" className="glass-range" min="0.1" max="5.0" step="0.01" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} />
-            </div>
-            <div className="control-group view-controls-grid">
-                <label style={{color: '#a0a0b0'}}>Pan X: <span style={{color: '#FFD700'}}>{panX.toFixed(2)}</span></label>
-                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panX} onChange={(e) => setPanX(parseFloat(e.target.value))} />
-            </div>
-            <div className="control-group view-controls-grid">
-                <label style={{color: '#a0a0b0'}}>Pan Y: <span style={{color: '#FFD700'}}>{panY.toFixed(2)}</span></label>
-                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panY} onChange={(e) => setPanY(parseFloat(e.target.value))} />
-            </div>
-
-            <hr className="gold-divider" />
 
             {/* --- Slot Parameter Controls --- */}
             <div className="gold-section-header">
@@ -972,6 +923,57 @@ const Controls: React.FC<ControlsProps> = ({
                         textAlign: 'center'
                     }}>
                         Tests WGSL compilation on all shaders
+                    </div>
+                </div>
+            )}
+
+            <hr className="gold-divider" />
+
+            {/* --- View Controls (Zoom/Pan) --- */}
+            <div className="gold-section-header">
+                View Controls
+            </div>
+            <div className="control-group view-controls-grid">
+                <label style={{color: '#a0a0b0'}}>Zoom: <span style={{color: '#FFD700'}}>{zoom.toFixed(2)}x</span></label>
+                <input type="range" className="glass-range" min="0.1" max="5.0" step="0.01" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} />
+            </div>
+            <div className="control-group view-controls-grid">
+                <label style={{color: '#a0a0b0'}}>Pan X: <span style={{color: '#FFD700'}}>{panX.toFixed(2)}</span></label>
+                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panX} onChange={(e) => setPanX(parseFloat(e.target.value))} />
+            </div>
+            <div className="control-group view-controls-grid">
+                <label style={{color: '#a0a0b0'}}>Pan Y: <span style={{color: '#FFD700'}}>{panY.toFixed(2)}</span></label>
+                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panY} onChange={(e) => setPanY(parseFloat(e.target.value))} />
+            </div>
+
+            <hr className="gold-divider" />
+
+            {/* --- Coordinate Browser Button --- */}
+            <div className="control-group">
+                <button 
+                    onClick={() => setShowCoordinateBrowser(true)}
+                    className="coord-browser-btn"
+                >
+                    <span>🗂️</span>
+                    <span>Browse by Coordinate (B)</span>
+                </button>
+                <div style={{ fontSize: '11px', color: '#a0a0b0', marginTop: '6px', textAlign: 'center' }}>
+                    Tip: Type any number to jump to that shader
+                </div>
+            </div>
+
+            {/* --- VPS Storage Browser Button --- */}
+            {onOpenStorageBrowser && (
+                <div className="control-group">
+                    <button 
+                        onClick={onOpenStorageBrowser}
+                        className="storage-btn"
+                    >
+                        <span>📦</span>
+                        <span>VPS Storage Browser</span>
+                    </button>
+                    <div style={{ fontSize: '11px', color: '#a0a0b0', marginTop: '6px', textAlign: 'center' }}>
+                        Browse shaders, images & videos from VPS
                     </div>
                 </div>
             )}

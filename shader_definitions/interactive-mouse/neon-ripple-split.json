@@ -2,7 +2,7 @@
   "id": "neon-ripple-split",
   "name": "Neon Ripple Split",
   "url": "shaders/neon-ripple-split.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "A reactive ripple effect that separates RGB channels and adds a neon glow based on mouse movement and clicks.",
   "params": [
     {
@@ -10,28 +10,32 @@
       "type": "float",
       "min": 0,
       "max": 1,
-      "default": 0.5
+      "default": 0.5,
+      "id": "ripple_speed"
     },
     {
       "name": "Color Split",
       "type": "float",
       "min": 0,
       "max": 1,
-      "default": 0.5
+      "default": 0.5,
+      "id": "color_split"
     },
     {
       "name": "Glow Intensity",
       "type": "float",
       "min": 0,
       "max": 1,
-      "default": 0.5
+      "default": 0.5,
+      "id": "glow_intensity"
     },
     {
       "name": "Frequency",
       "type": "float",
       "min": 0,
       "max": 1,
-      "default": 0.5
+      "default": 0.5,
+      "id": "frequency"
     }
   ],
   "features": [

@@ -1,6 +1,5 @@
 {
   "id": "glitch-ripple-drag",
-  "label": "Glitch Ripple Drag",
   "category": "image",
   "url": "shaders/glitch-ripple-drag.wgsl",
   "description": "Mouse emits expanding ripples that permanently drag and glitch the video pixels.",
@@ -44,5 +43,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "name": "Glitch Ripple Drag"
 }

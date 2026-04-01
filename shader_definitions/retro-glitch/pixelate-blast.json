@@ -1,42 +1,46 @@
 {
   "id": "pixelate-blast",
-  "label": "Pixelate Blast",
   "url": "shaders/pixelate-blast.wgsl",
   "icon": "blur_on",
   "features": [
     "mouse-driven"
   ],
-  "params": {
-    "zoomParam1": {
-      "label": "Max Pixel Size",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Max Pixel Size",
+      "default": 0.5,
       "min": 0,
-      "max": 1,
-      "default": 0.5
+      "max": 1
     },
-    "zoomParam2": {
-      "label": "Radius",
+    {
+      "id": "param2",
+      "name": "Radius",
+      "default": 0.5,
       "min": 0,
-      "max": 1,
-      "default": 0.5
+      "max": 1
     },
-    "zoomParam3": {
-      "label": "Invert Area",
-      "min": 0,
-      "max": 1,
+    {
+      "id": "param3",
+      "name": "Invert Area",
       "default": 0.0,
+      "min": 0,
+      "max": 1,
       "step": 1.0
     },
-    "zoomParam4": {
-      "label": "Color Crunch",
+    {
+      "id": "param4",
+      "name": "Color Crunch",
+      "default": 0.0,
       "min": 0,
-      "max": 1,
-      "default": 0.0
+      "max": 1
     }
-  },
+  ],
   "category": "retro-glitch",
   "tags": [
     "glitch",
     "retro",
     "vintage"
-  ]
+  ],
+  "name": "Pixelate Blast"
 }

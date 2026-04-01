@@ -2,7 +2,7 @@
   "id": "reality-tear",
   "name": "Reality Tear",
   "url": "shaders/reality-tear.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "Rips a hole in the image to reveal a static void underneath.",
   "features": [
     "mouse-driven"

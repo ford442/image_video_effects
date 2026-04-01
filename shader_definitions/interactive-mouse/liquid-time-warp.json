@@ -1,8 +1,7 @@
 {
   "id": "liquid-time-warp",
-  "label": "Liquid Time Warp",
   "url": "shaders/liquid-time-warp.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven",
     "webcam"
@@ -14,32 +13,37 @@
       "type": "float",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "id": "distortion"
     },
     {
       "name": "Flow Speed",
       "type": "float",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "id": "flow_speed"
     },
     {
       "name": "Scale",
       "type": "float",
       "default": 0.4,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "id": "scale"
     },
     {
       "name": "Decay",
       "type": "float",
       "default": 0.8,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "id": "decay"
     }
   ],
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "name": "Liquid Time Warp"
 }

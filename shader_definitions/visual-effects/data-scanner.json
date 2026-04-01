@@ -1,6 +1,5 @@
 {
   "id": "data-scanner",
-  "label": "Data Scanner",
   "category": "visual-effects",
   "url": "shaders/data-scanner.wgsl",
   "features": [
@@ -11,5 +10,6 @@
     "vfx",
     "particles",
     "glow"
-  ]
+  ],
+  "name": "Data Scanner"
 }

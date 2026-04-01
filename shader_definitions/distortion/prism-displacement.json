@@ -1,6 +1,5 @@
 {
   "id": "prism-displacement",
-  "label": "Prism Lens",
   "category": "distortion",
   "url": "shaders/prism-displacement.wgsl",
   "features": [
@@ -40,5 +39,6 @@
     "warp",
     "distort",
     "transform"
-  ]
+  ],
+  "name": "Prism Lens"
 }

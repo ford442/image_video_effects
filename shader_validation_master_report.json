@@ -1,0 +1,3421 @@
+{
+  "timestamp": "2026-04-01T08:13:08.888799",
+  "summary": {
+    "total_shaders": 704,
+    "fully_valid": 1,
+    "with_warnings": 566,
+    "with_errors": 137,
+    "critical_issues": 88,
+    "high_priority": 49,
+    "medium_priority": 566,
+    "low_priority": 0
+  },
+  "reports": {
+    "wgsl_syntax": {
+      "valid": 7,
+      "errors": 8,
+      "warnings": 684
+    },
+    "bindgroup_compat": {
+      "compatible": 607,
+      "incompatible": 88
+    },
+    "runtime_errors": {
+      "clean": 647,
+      "with_warnings": 387,
+      "with_errors": 98
+    },
+    "param_validation": {
+      "valid": 4,
+      "invalid": 0
+    }
+  },
+  "shaders_needing_fixes": {
+    "critical": [
+      {
+        "shader_id": "quantum-foam-pass3",
+        "file": "public/shaders/quantum-foam-pass3.wgsl",
+        "issues": [
+          "line 98: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'",
+          "Potential division by zero: dividing by 'gamma' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen_rainbow_smoke",
+        "file": "public/shaders/gen_rainbow_smoke.wgsl",
+        "issues": [
+          "line 32: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Missing binding 4",
+          "Missing binding 5",
+          "Missing binding 6",
+          "Missing binding 8"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "spectral-vortex",
+        "file": "public/shaders/spectral-vortex.wgsl",
+        "issues": [
+          "line 59: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "quantum-wormhole",
+        "file": "public/shaders/quantum-wormhole.wgsl",
+        "issues": [
+          "line 87: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-time-warp",
+        "file": "public/shaders/liquid-time-warp.wgsl",
+        "issues": [
+          "line 98: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "Missing binding 8",
+          "Missing binding 10",
+          "Missing binding 11",
+          "Missing binding 12"
+        ],
+        "agents_flagged": [
+          "runtime",
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "cosmic-flow",
+        "file": "public/shaders/cosmic-flow.wgsl",
+        "issues": [
+          "line 0: [CRITICAL] Missing required binding @group(0) @binding(3)",
+          "line 104: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "syntax"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "kimi_chromatic_warp",
+        "file": "public/shaders/kimi_chromatic_warp.wgsl",
+        "issues": [
+          "line 20: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(4) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(5) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(6) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "chromatic-folds",
+        "file": "public/shaders/chromatic-folds.wgsl",
+        "issues": [
+          "line 90: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Potential division by zero: dividing by 'y' without explicit zero check",
+          "Accessing u.ripples[i]. Ensure loop bound is <= 50 to prevent out-of-bounds access.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "green-tracer",
+        "file": "public/shaders/green-tracer.wgsl",
+        "issues": [
+          "line 62: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "aurora-rift-gemini",
+        "file": "public/shaders/aurora-rift-gemini.wgsl",
+        "issues": [
+          "line 149: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen_kimi_nebula",
+        "file": "public/shaders/gen_kimi_nebula.wgsl",
+        "issues": [
+          "line 49: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Missing binding 4",
+          "Missing binding 5",
+          "Missing binding 6",
+          "Missing binding 8"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen_reaction_diffusion",
+        "file": "public/shaders/gen_reaction_diffusion.wgsl",
+        "issues": [
+          "line 15: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Missing binding 4",
+          "Missing binding 5",
+          "Missing binding 6",
+          "Missing binding 8"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "quantum-foam-pass2",
+        "file": "public/shaders/quantum-foam-pass2.wgsl",
+        "issues": [
+          "line 140: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'",
+          "CRITICAL: Binding 14 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pixel-rain",
+        "file": "public/shaders/pixel-rain.wgsl",
+        "issues": [
+          "line 0: [CRITICAL] Unmatched parentheses: 70 opening, 69 closing",
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "Param 'trail_fade' (zoom_params.w) defined in JSON but not used in WGSL"
+        ],
+        "agents_flagged": [
+          "syntax"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-perspective",
+        "file": "public/shaders/liquid-perspective.wgsl",
+        "issues": [
+          "line 46: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-optimized",
+        "file": "public/shaders/liquid-optimized.wgsl",
+        "issues": [
+          "line 278: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "Missing binding 10",
+          "Missing binding 11",
+          "Missing binding 12",
+          "Missing bindings: [10, 11, 12]"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "bubble-chamber",
+        "file": "public/shaders/bubble-chamber.wgsl",
+        "issues": [
+          "line 22: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(4) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(5) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(6) - may cause issues",
+          "Missing binding 4"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "nebulous-dream",
+        "file": "public/shaders/nebulous-dream.wgsl",
+        "issues": [
+          "line 81: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "neon-contour-interactive",
+        "file": "public/shaders/neon-contour-interactive.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen_wave_equation",
+        "file": "public/shaders/gen_wave_equation.wgsl",
+        "issues": [
+          "line 15: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Missing binding 4",
+          "Missing binding 5",
+          "Missing binding 6",
+          "Missing binding 8"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "neural-dreamscape",
+        "file": "public/shaders/neural-dreamscape.wgsl",
+        "issues": [
+          "line 102: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "imageVideo",
+        "file": "public/shaders/imageVideo.wgsl",
+        "issues": [
+          "line 0: [CRITICAL] Vertex shader missing main function",
+          "line 0: [CRITICAL] Fragment shader missing main function"
+        ],
+        "agents_flagged": [
+          "syntax"
+        ],
+        "recommended_fix": "Review warnings"
+      },
+      {
+        "shader_id": "digital-haze",
+        "file": "public/shaders/digital-haze.wgsl",
+        "issues": [
+          "line 43: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-viscous",
+        "file": "public/shaders/liquid-viscous.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "chromatic-folds-2",
+        "file": "public/shaders/chromatic-folds-2.wgsl",
+        "issues": [
+          "line 132: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "quantum-foam",
+        "file": "public/shaders/quantum-foam.wgsl",
+        "issues": [
+          "line 193: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "chromatic-crawler",
+        "file": "public/shaders/chromatic-crawler.wgsl",
+        "issues": [
+          "line 162: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Potential division by zero: dividing by 'grid' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "kimi_fractal_dreams",
+        "file": "public/shaders/kimi_fractal_dreams.wgsl",
+        "issues": [
+          "line 29: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(4) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(5) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(6) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "stella-orbit",
+        "file": "public/shaders/stella-orbit.wgsl",
+        "issues": [
+          "line 354: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Potential division by zero: dividing by 'c' without explicit zero check",
+          "Potential division by zero: dividing by 'c' without explicit zero check",
+          "Potential division by zero: dividing by 'c_1' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen-liquid-crystal-hive-mind",
+        "file": "public/shaders/gen-liquid-crystal-hive-mind.wgsl",
+        "issues": [
+          "line 231: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Missing binding 12",
+          "Missing bindings: [12]",
+          "Potential division by zero: dividing by 'y' without explicit zero check",
+          "Potential division by zero: dividing by 'y' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "radiating-displacement",
+        "file": "public/shaders/radiating-displacement.wgsl",
+        "issues": [
+          "line 0: [CRITICAL] Unmatched parentheses: 97 opening, 100 closing",
+          "line 58: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Accessing u.ripples[i]. Ensure loop bound is <= 50 to prevent out-of-bounds access.",
+          "Potential division by zero: dividing by 'd' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "runtime",
+          "syntax"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen_hyper_warp",
+        "file": "public/shaders/gen_hyper_warp.wgsl",
+        "issues": [
+          "line 57: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Missing binding 4",
+          "Missing binding 5",
+          "Missing binding 6",
+          "Missing binding 8"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-oil",
+        "file": "public/shaders/liquid-oil.wgsl",
+        "issues": [
+          "line 117: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-rainbow",
+        "file": "public/shaders/liquid-rainbow.wgsl",
+        "issues": [
+          "line 80: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "cyber-slit-scan",
+        "file": "public/shaders/cyber-slit-scan.wgsl",
+        "issues": [
+          "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(4) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(5) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(6) - may cause issues",
+          "Missing binding 4"
+        ],
+        "agents_flagged": [
+          "runtime",
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-viscous-simple",
+        "file": "public/shaders/liquid-viscous-simple.wgsl",
+        "issues": [
+          "line 22: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-displacement",
+        "file": "public/shaders/liquid-displacement.wgsl",
+        "issues": [
+          "line 99: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "Missing binding 8",
+          "Missing binding 10",
+          "Missing binding 11",
+          "Missing binding 12"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "interactive-glitch",
+        "file": "public/shaders/interactive-glitch.wgsl",
+        "issues": [
+          "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-fast",
+        "file": "public/shaders/liquid-fast.wgsl",
+        "issues": [
+          "line 79: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "chromatic-folds-gemini",
+        "file": "public/shaders/chromatic-folds-gemini.wgsl",
+        "issues": [
+          "line 83: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Potential division by zero: dividing by 'y' without explicit zero check",
+          "Potential division by zero: dividing by 'scale' without explicit zero check",
+          "Accessing u.ripples[i]. Ensure loop bound is <= 50 to prevent out-of-bounds access."
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "plasma",
+        "file": "public/shaders/plasma.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "magnetic-ring",
+        "file": "public/shaders/magnetic-ring.wgsl",
+        "issues": [
+          "line 29: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "infinite-zoom",
+        "file": "public/shaders/infinite-zoom.wgsl",
+        "issues": [
+          "line 281: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "chromatic-infection",
+        "file": "public/shaders/chromatic-infection.wgsl",
+        "issues": [
+          "line 106: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "kimi_quantum_field",
+        "file": "public/shaders/kimi_quantum_field.wgsl",
+        "issues": [
+          "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(4) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(5) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(6) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "quantum-smear",
+        "file": "public/shaders/quantum-smear.wgsl",
+        "issues": [
+          "line 74: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Compute shader does not call textureStore(writeTexture, ...). All compute shaders must write to writeTexture or the pipeline will fail.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.z used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "fractal-kaleidoscope",
+        "file": "public/shaders/fractal-kaleidoscope.wgsl",
+        "issues": [
+          "line 68: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues",
+          "Missing binding 7",
+          "Missing binding 8",
+          "Missing binding 9"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "kimi_ripple_touch",
+        "file": "public/shaders/kimi_ripple_touch.wgsl",
+        "issues": [
+          "line 20: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "line 0: [WARNING] Missing binding @group(0) @binding(4) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(5) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(6) - may cause issues",
+          "line 0: [WARNING] Missing binding @group(0) @binding(7) - may cause issues"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen_grok4_life",
+        "file": "public/shaders/gen_grok4_life.wgsl",
+        "issues": [
+          "line 45: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Missing binding 4",
+          "Missing binding 5",
+          "Missing binding 6",
+          "Missing binding 8"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "aurora-rift-pass1",
+        "file": "public/shaders/aurora-rift-pass1.wgsl",
+        "issues": [
+          "line 143: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.w used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)",
+          "zoom_params.x used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "runtime"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      }
+    ],
+    "high": [
+      {
+        "shader_id": "nano-assembler",
+        "file": "public/shaders/nano-assembler.wgsl",
+        "issues": [
+          "line 57: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'radius' without explicit zero check",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "strip-scan-glitch",
+        "file": "public/shaders/strip-scan-glitch.wgsl",
+        "issues": [
+          "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pixel-depth-sort",
+        "file": "public/shaders/pixel-depth-sort.wgsl",
+        "issues": [
+          "line 26: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'num_layers' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "swirling-void",
+        "file": "public/shaders/swirling-void.wgsl",
+        "issues": [
+          "line 22: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "multi-fractal-compositor",
+        "file": "public/shaders/multi-fractal-compositor.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "hybrid-chromatic-liquid",
+        "file": "public/shaders/hybrid-chromatic-liquid.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "rgb-delay-brush",
+        "file": "public/shaders/rgb-delay-brush.wgsl",
+        "issues": [
+          "line 50: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "kimi_nebula_depth",
+        "file": "public/shaders/kimi_nebula_depth.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "voxel-grid",
+        "file": "public/shaders/voxel-grid.wgsl",
+        "issues": [
+          "line 22: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'grid_density' without explicit zero check",
+          "Potential division by zero: dividing by 'grid_density' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "sonic-boom",
+        "file": "public/shaders/sonic-boom.wgsl",
+        "issues": [
+          "line 23: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-warp",
+        "file": "public/shaders/liquid-warp.wgsl",
+        "issues": [
+          "line 123: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "Uniforms struct missing fields: ['ripples']",
+          "Potential division by zero: dividing by 'radius' without explicit zero check",
+          "Potential division by zero: dividing by 'radius' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-swirl",
+        "file": "public/shaders/liquid-swirl.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "light-leaks",
+        "file": "public/shaders/light-leaks.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "signal-tuner",
+        "file": "public/shaders/signal-tuner.wgsl",
+        "issues": [
+          "line 26: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "quantum-field-visualizer",
+        "file": "public/shaders/quantum-field-visualizer.wgsl",
+        "issues": [
+          "line 29: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "flux-core",
+        "file": "public/shaders/flux-core.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "neural-raymarcher",
+        "file": "public/shaders/neural-raymarcher.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "hybrid-sdf-plasma",
+        "file": "public/shaders/hybrid-sdf-plasma.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "particle_dreams_alpha",
+        "file": "public/shaders/particle_dreams_alpha.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "ink_dispersion_alpha",
+        "file": "public/shaders/ink_dispersion_alpha.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "neon-edge-pulse",
+        "file": "public/shaders/neon-edge-pulse.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "interactive-voronoi-lens",
+        "file": "public/shaders/interactive-voronoi-lens.wgsl",
+        "issues": [
+          "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'density' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "holographic-projection",
+        "file": "public/shaders/holographic-projection.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "nebula-gyroid",
+        "file": "public/shaders/nebula-gyroid.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "matrix_digital_rain",
+        "file": "public/shaders/matrix_digital_rain.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "prismatic-mosaic",
+        "file": "public/shaders/prismatic-mosaic.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "rgb-iso-lines",
+        "file": "public/shaders/rgb-iso-lines.wgsl",
+        "issues": [
+          "line 50: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "neon-edges",
+        "file": "public/shaders/neon-edges.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "holographic-contour",
+        "file": "public/shaders/holographic-contour.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gravity-lens",
+        "file": "public/shaders/gravity-lens.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "_hash_library",
+        "file": "public/shaders/_hash_library.wgsl",
+        "issues": [
+          "No @compute, @vertex, or @fragment entry points found"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Review warnings"
+      },
+      {
+        "shader_id": "scanline-tear",
+        "file": "public/shaders/scanline-tear.wgsl",
+        "issues": [
+          "line 93: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "parallax_depth_layers",
+        "file": "public/shaders/parallax_depth_layers.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "engraving-stipple",
+        "file": "public/shaders/engraving-stipple.wgsl",
+        "issues": [
+          "line 38: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.w used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "digital-moss",
+        "file": "public/shaders/digital-moss.wgsl",
+        "issues": [
+          "line 93: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen-superfluid-quantum-foam",
+        "file": "public/shaders/gen-superfluid-quantum-foam.wgsl",
+        "issues": [
+          "Uniforms struct missing fields: ['ripples']",
+          "Potential division by zero: dividing by 'k' without explicit zero check",
+          "Potential division by zero: dividing by 'spacing' without explicit zero check",
+          "Potential division by zero: dividing by 'spacing' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Review warnings"
+      },
+      {
+        "shader_id": "ink-bleed",
+        "file": "public/shaders/ink-bleed.wgsl",
+        "issues": [
+          "line 65: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "echo-trace",
+        "file": "public/shaders/echo-trace.wgsl",
+        "issues": [
+          "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "phase-shift",
+        "file": "public/shaders/phase-shift.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "temporal-distortion-field",
+        "file": "public/shaders/temporal-distortion-field.wgsl",
+        "issues": [
+          "line 22: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "paper-cutout",
+        "file": "public/shaders/paper-cutout.wgsl",
+        "issues": [
+          "line 26: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'num_layers' without explicit zero check",
+          "Potential division by zero: dividing by 'num_layers' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "entropy-grid",
+        "file": "public/shaders/entropy-grid.wgsl",
+        "issues": [
+          "line 27: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "sequin-flip",
+        "file": "public/shaders/sequin-flip.wgsl",
+        "issues": [
+          "line 26: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'y' without explicit zero check",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "fabric-zipper",
+        "file": "public/shaders/fabric-zipper.wgsl",
+        "issues": [
+          "line 76: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "impasto-swirl",
+        "file": "public/shaders/impasto-swirl.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "fractal-glass-distort",
+        "file": "public/shaders/fractal-glass-distort.wgsl",
+        "issues": [
+          "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "parallax-glow-compositor",
+        "file": "public/shaders/parallax-glow-compositor.wgsl",
+        "issues": [
+          "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by '_e14' without explicit zero check",
+          "Potential division by zero: dividing by '_e13' without explicit zero check",
+          "Potential division by zero: dividing by '_e33' without explicit zero check"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "foil-impression",
+        "file": "public/shaders/foil-impression.wgsl",
+        "issues": [
+          "line 55: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "liquid-prism-cascade",
+        "file": "public/shaders/liquid-prism-cascade.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders",
+          "Binding 12 (plasmaBuffer) has incompatible type: 'array<vec4<f32>>'",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Potential division by zero: dividing by 'vec3' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [
+          "bindgroup"
+        ],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      }
+    ],
+    "medium": [
+      {
+        "shader_id": "dimension-slicer",
+        "file": "public/shaders/dimension-slicer.wgsl",
+        "issues": [
+          "line 35: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'zoom' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "flip-matrix",
+        "file": "public/shaders/flip-matrix.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'density' without explicit zero check",
+          "Potential division by zero: dividing by 'density' without explicit zero check",
+          "Potential division by zero: dividing by 'density' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "rorschach-inkblot",
+        "file": "public/shaders/rorschach-inkblot.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "x-ray-reveal",
+        "file": "public/shaders/x-ray-reveal.wgsl",
+        "issues": [
+          "line 27: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pixel-sand",
+        "file": "public/shaders/pixel-sand.wgsl",
+        "issues": [
+          "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Accessing u.ripples[i]. Ensure loop bound is <= 50 to prevent out-of-bounds access.",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "biomimetic-scales",
+        "file": "public/shaders/biomimetic-scales.wgsl",
+        "issues": [
+          "line 27: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "digital-reveal",
+        "file": "public/shaders/digital-reveal.wgsl",
+        "issues": [
+          "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "crumpled-paper",
+        "file": "public/shaders/crumpled-paper.wgsl",
+        "issues": [
+          "line 64: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'maxAmp' without explicit zero check",
+          "Potential division by zero: dividing by 'eps' without explicit zero check",
+          "Potential division by zero: dividing by 'eps' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pixel-sorter",
+        "file": "public/shaders/pixel-sorter.wgsl",
+        "issues": [
+          "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "Param 'length' (zoom_params.z) defined in JSON but not used in WGSL",
+          "Param 'chaos' (zoom_params.w) defined in JSON but not used in WGSL"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen-cosmic-web-filament",
+        "file": "public/shaders/gen-cosmic-web-filament.wgsl",
+        "issues": [
+          "line 68: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'res' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "vortex-warp",
+        "file": "public/shaders/vortex-warp.wgsl",
+        "issues": [
+          "line 65: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'radius' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "Param 'turbulence' (zoom_params.w) defined in JSON but not used in WGSL"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "glass-shatter",
+        "file": "public/shaders/glass-shatter.wgsl",
+        "issues": [
+          "line 65: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'scale' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "cyber-physical-portal",
+        "file": "public/shaders/cyber-physical-portal.wgsl",
+        "issues": [
+          "line 59: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'res.x' without explicit zero check",
+          "Potential division by zero: dividing by 'res.y' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "temporal_echo",
+        "file": "public/shaders/temporal_echo.wgsl",
+        "issues": [
+          "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pp-bloom",
+        "file": "public/shaders/pp-bloom.wgsl",
+        "issues": [
+          "line 79: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "plastic-bricks",
+        "file": "public/shaders/plastic-bricks.wgsl",
+        "issues": [
+          "line 23: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'scaleFactor' without explicit zero check",
+          "Potential division by zero: dividing by 'density' without explicit zero check",
+          "Potential division by zero: dividing by 'studR' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "luma-echo-warp",
+        "file": "public/shaders/luma-echo-warp.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "rgb-glitch-displacement",
+        "file": "public/shaders/rgb-glitch-displacement.wgsl",
+        "issues": [
+          "line 290: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'bands' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "zoom_params.w used in WGSL but no corresponding param defined in JSON (may be intentional for internal use)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "reality-tear",
+        "file": "public/shaders/reality-tear.wgsl",
+        "issues": [
+          "line 46: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "quantum-cursor",
+        "file": "public/shaders/quantum-cursor.wgsl",
+        "issues": [
+          "line 30: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'mosaic_scale' without explicit zero check",
+          "Potential division by zero: dividing by 'blocks' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "block-distort-interactive",
+        "file": "public/shaders/block-distort-interactive.wgsl",
+        "issues": [
+          "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "gen-fractured-monolith",
+        "file": "public/shaders/gen-fractured-monolith.wgsl",
+        "issues": [
+          "line 154: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "reactive-glass-grid",
+        "file": "public/shaders/reactive-glass-grid.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'density' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pixel-explode",
+        "file": "public/shaders/pixel-explode.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "glass-wipes",
+        "file": "public/shaders/glass-wipes.wgsl",
+        "issues": [
+          "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "rgb-distance-split",
+        "file": "public/shaders/rgb-distance-split.wgsl",
+        "issues": [
+          "line 50: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "interactive-glitch-brush",
+        "file": "public/shaders/interactive-glitch-brush.wgsl",
+        "issues": [
+          "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'blockScale' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "hex-pulse",
+        "file": "public/shaders/hex-pulse.wgsl",
+        "issues": [
+          "line 23: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'r' without explicit zero check",
+          "Potential division by zero: dividing by 'r' without explicit zero check",
+          "Potential division by zero: dividing by 'currentScale' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "origami-fold",
+        "file": "public/shaders/origami-fold.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "infinite-zoom-lens",
+        "file": "public/shaders/infinite-zoom-lens.wgsl",
+        "issues": [
+          "line 84: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'scale' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "voronoi-chaos",
+        "file": "public/shaders/voronoi-chaos.wgsl",
+        "issues": [
+          "line 38: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'cellsScale' without explicit zero check",
+          "Potential division by zero: dividing by 'cellsScale' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "interactive-glitch-cubes",
+        "file": "public/shaders/interactive-glitch-cubes.wgsl",
+        "issues": [
+          "line 30: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'scale' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "scan-distort-gpt52",
+        "file": "public/shaders/scan-distort-gpt52.wgsl",
+        "issues": [
+          "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "hybrid-fractal-feedback",
+        "file": "public/shaders/hybrid-fractal-feedback.wgsl",
+        "issues": [
+          "line 51: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "luma-topography",
+        "file": "public/shaders/luma-topography.wgsl",
+        "issues": [
+          "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "vinyl-scratch",
+        "file": "public/shaders/vinyl-scratch.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "spectral-flow-sorting",
+        "file": "public/shaders/spectral-flow-sorting.wgsl",
+        "issues": [
+          "line 113: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "holographic-projection-gpt52",
+        "file": "public/shaders/holographic-projection-gpt52.wgsl",
+        "issues": [
+          "line 123: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pixel-storm",
+        "file": "public/shaders/pixel-storm.wgsl",
+        "issues": [
+          "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'radiusParam' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "rgb-glitch-trail",
+        "file": "public/shaders/rgb-glitch-trail.wgsl",
+        "issues": [
+          "line 22: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "phosphor-decay",
+        "file": "public/shaders/phosphor-decay.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "concentric-spin",
+        "file": "public/shaders/concentric-spin.wgsl",
+        "issues": [
+          "line 23: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'vec2' without explicit zero check",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)",
+          "Param 'param4' (zoom_params.w) defined in JSON but not used in WGSL"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "pixelate-blast",
+        "file": "public/shaders/pixelate-blast.wgsl",
+        "issues": [
+          "line 27: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'blocks' without explicit zero check",
+          "Potential division by zero: dividing by 'blocks' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "holographic-glitch",
+        "file": "public/shaders/holographic-glitch.wgsl",
+        "issues": [
+          "line 51: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "vaporwave-horizon",
+        "file": "public/shaders/vaporwave-horizon.wgsl",
+        "issues": [
+          "line 40: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "vortex-drag",
+        "file": "public/shaders/vortex-drag.wgsl",
+        "issues": [
+          "line 87: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "sonar-reveal",
+        "file": "public/shaders/sonar-reveal.wgsl",
+        "issues": [
+          "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "bayer-dither-interactive",
+        "file": "public/shaders/bayer-dither-interactive.wgsl",
+        "issues": [
+          "line 39: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Potential division by zero: dividing by 'scale' without explicit zero check",
+          "Potential division by zero: dividing by 'levels' without explicit zero check",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "spectral-distortion",
+        "file": "public/shaders/spectral-distortion.wgsl",
+        "issues": [
+          "line 45: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling.",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      },
+      {
+        "shader_id": "atmos_volumetric_fog",
+        "file": "public/shaders/atmos_volumetric_fog.wgsl",
+        "issues": [
+          "line 89: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+          "Workgroup size (16, 16, 1) - standard is (8, 8, 1)"
+        ],
+        "agents_flagged": [],
+        "recommended_fix": "Change @workgroup_size to (8, 8, 1); Change @workgroup_size to (8, 8, 1)"
+      }
+    ],
+    "low": []
+  },
+  "common_issues": {
+    "missing_texture_store": [
+      "magnetic-edge",
+      "dimension-slicer",
+      "spectral-rain",
+      "knitted-fabric",
+      "radiating-haze",
+      "voronoi-faceted-glass",
+      "gen-cyber-terminal",
+      "dynamic-halftone",
+      "pixel-sand",
+      "chromatic-folds-2",
+      "frosted-glass-lens",
+      "tilt-shift",
+      "gen-neuro-kinetic-bloom",
+      "biomimetic-scales",
+      "pixel-scattering",
+      "gen-celestial-prism-orchid",
+      "digital-reveal",
+      "gen_capabilities",
+      "melting-oil",
+      "cyber-grid-pulse",
+      "liquid-warp-interactive",
+      "pixel-focus",
+      "stereoscopic-3d",
+      "wave-halftone",
+      "quantum-foam",
+      "cosmic-jellyfish",
+      "glass-shatter",
+      "kaleido-portal-interactive",
+      "gen-silica-tsunami",
+      "gen-superfluid-quantum-foam",
+      "aurora-rift",
+      "luma-smear-interactive",
+      "interactive-glitch",
+      "cmyk-halftone-interactive",
+      "chroma-shift-grid",
+      "bio-touch",
+      "cyber-rain-interactive",
+      "astral-veins",
+      "echo-trace",
+      "gen-astro-kinetic-chrono-orrery",
+      "chromatic-shockwave",
+      "physarum-grokcf1",
+      "quantum-flux",
+      "split-dimension",
+      "luma-echo-warp",
+      "gen-stellar-web-loom",
+      "chromatic-crawler",
+      "reality-tear",
+      "neural-resonance",
+      "gen-celestial-forge",
+      "spectrum-bleed",
+      "mirror-dimension",
+      "gen-abyssal-leviathan-scales",
+      "neon-edge-reveal",
+      "chromatic-focus-interactive",
+      "rainbow-cloud",
+      "gen_rainbow_smoke",
+      "gen-fractured-monolith",
+      "double-exposure-zoom",
+      "pixel-explode",
+      "glass-wipes",
+      "codebreaker-reveal",
+      "spectral-vortex",
+      "kinetic-dispersion",
+      "chromatic-folds-gemini",
+      "rgb-distance-split",
+      "quantum-wormhole",
+      "polka-wave",
+      "chroma-vortex",
+      "gen-neural-bioluminescence-matrix",
+      "scan-distort",
+      "molten-glass",
+      "astral-kaleidoscope-grokcf1",
+      "spectral-brush",
+      "luma-topography",
+      "color-blindness",
+      "liquid-time-warp",
+      "tile-twist",
+      "digital-mold",
+      "magnetic-ring",
+      "kintsugi-repair",
+      "glass-wall",
+      "hex-circuit",
+      "signal-noise",
+      "pixel-stretch-cross",
+      "elastic-surface",
+      "double-exposure",
+      "gen_cyclic_automaton",
+      "gen_julia_set",
+      "psychedelic-noise-flow",
+      "rgb-glitch-trail",
+      "kimi_spotlight",
+      "luma-melt-interactive",
+      "pixelate-blast",
+      "kimi_fractal_dreams",
+      "navier-stokes-dye",
+      "circuit-breaker",
+      "gen_psychedelic_spiral",
+      "voronoi-shatter",
+      "bubble-chamber",
+      "tesseract-fold",
+      "cyber-terminal-ascii",
+      "data-scanner",
+      "stella-orbit",
+      "honey-melt",
+      "vertical-slice-wave",
+      "kimi_chromatic_warp",
+      "temporal-rift",
+      "zipper-reveal",
+      "temporal-distortion-field",
+      "gen-holographic-plasma-geode",
+      "radial-blur",
+      "gen-quantum-mycelium",
+      "neon-poly-grid",
+      "nebulous-dream",
+      "bayer-dither-interactive",
+      "neon-contour-interactive",
+      "ethereal-swirl",
+      "spectral-distortion",
+      "chromatic-infection",
+      "spectral-smear",
+      "boids",
+      "viscous-drag",
+      "quantum-tunnel-interactive",
+      "physarum-gemini",
+      "raindrop-ripples",
+      "fractal-glass-distort",
+      "steampunk-gear-lens",
+      "luminescent-glass-tiles",
+      "gen_fluffy_raincloud",
+      "gen-quantum-aether-origami",
+      "slime-drip",
+      "gen_wave_equation",
+      "sonic-distortion",
+      "refractive-bubbles",
+      "neural-dreamscape",
+      "magnetic-pixels",
+      "gen-kinetic-neo-brutalist-megastructure",
+      "xerox-degrade",
+      "gen-cymatic-plasma-mandalas",
+      "gen-liquid-crystal-hive-mind",
+      "liquid-lens",
+      "crt-phosphor-decay",
+      "energy-shield",
+      "digital-lens",
+      "kimi_quantum_field",
+      "luma-force",
+      "astral-kaleidoscope-gemini",
+      "digital-haze",
+      "dynamic-lens-flares",
+      "chromatic-manifold-2",
+      "luma-slice-interactive",
+      "time-slit-scan",
+      "interactive-kuwahara",
+      "gen-singularity-forge",
+      "oscilloscope-overlay",
+      "quantum-smear",
+      "spectral-slit-scan",
+      "chromatic-folds",
+      "luma-magnetism",
+      "_template_shared_memory",
+      "voronoi",
+      "chromatic-swirl",
+      "gen-raptor-mini",
+      "green-tracer",
+      "physarum",
+      "gen-magnetic-ferrofluid",
+      "luma-pixel-sort",
+      "kimi_ripple_touch",
+      "sonic-boom",
+      "digital-compression",
+      "spirograph-reveal",
+      "radiating-displacement",
+      "velocity-field-paint",
+      "aurora-rift-gemini",
+      "quantum-prism",
+      "gen_grok4_life",
+      "neon-edge-diffusion",
+      "astral-kaleidoscope",
+      "complex-exponent-warp",
+      "contour-flow",
+      "gen_kimi_nebula",
+      "gen_hyper_warp",
+      "polar-warp-interactive",
+      "pixel-stretch-interactive",
+      "lighthouse-reveal",
+      "spectral-glitch-sort",
+      "kimi_flock_symphony",
+      "waveform-glitch",
+      "electric-contours",
+      "interactive-film-burn",
+      "cyber-slit-scan",
+      "liquid-v1",
+      "rain-ripples",
+      "gen_reaction_diffusion"
+    ],
+    "invalid_bindings": [
+      "aurora-rift-2-pass1",
+      "quantum-foam-pass3",
+      "aurora-rift-pass2",
+      "aurora-rift-pass1",
+      "quantum-foam-pass1",
+      "quantum-foam-pass2",
+      "aurora-rift-2-pass2"
+    ],
+    "workgroup_size_mismatch": [
+      "magnetic-edge",
+      "dimension-slicer",
+      "spectral-rain",
+      "cyber-hex-armor",
+      "flip-matrix",
+      "lidar",
+      "nano-assembler",
+      "rorschach-inkblot",
+      "x-ray-reveal",
+      "pixel-sand",
+      "quantum-foam-pass3",
+      "biomimetic-scales",
+      "gen-quantum-superposition",
+      "pixel-scattering",
+      "digital-reveal",
+      "melting-oil",
+      "ring_slicer",
+      "strip-scan-glitch",
+      "gen-magnetic-field-lines",
+      "liquid-warp-interactive",
+      "vhs-jog",
+      "pixel-focus",
+      "stereoscopic-3d",
+      "wave-halftone",
+      "crumpled-paper",
+      "chromatic-focus",
+      "pixel-sorter",
+      "gen-cosmic-web-filament",
+      "vortex-warp",
+      "glass-shatter",
+      "cyber-physical-portal",
+      "temporal_echo",
+      "interactive-pixel-wind",
+      "cmyk-halftone-interactive",
+      "pp-bloom",
+      "luma-flow-field",
+      "plastic-bricks",
+      "astral-veins",
+      "interactive-fisheye",
+      "recursion-mirror-vortex",
+      "split-dimension",
+      "luma-echo-warp",
+      "rgb-glitch-displacement",
+      "focal-pixelate",
+      "interactive-pcb-traces",
+      "reality-tear",
+      "neural-resonance",
+      "galaxy-compute",
+      "gen-celestial-forge",
+      "quantum-cursor",
+      "neon-edges",
+      "pp-tone-map",
+      "holographic-contour",
+      "gen_rainbow_smoke",
+      "pixel-depth-sort",
+      "block-distort-interactive",
+      "gen-fractured-monolith",
+      "reactive-glass-grid",
+      "pixel-explode",
+      "glass-wipes",
+      "swirling-void",
+      "spectral-vortex",
+      "gen_grokcf_interference",
+      "venetian-blinds",
+      "chroma-kinetic",
+      "rgb-distance-split",
+      "interactive-glitch-brush",
+      "quantum-wormhole",
+      "neon-pulse-stream",
+      "hex-pulse",
+      "origami-fold",
+      "infinite-zoom-lens",
+      "echo-ripple",
+      "gen-inverse-mandelbrot",
+      "multi-fractal-compositor",
+      "ambient-liquid",
+      "hybrid-chromatic-liquid",
+      "voronoi-chaos",
+      "interactive-glitch-cubes",
+      "scan-distort-gpt52",
+      "hybrid-fractal-feedback",
+      "rgb-ripple-distortion",
+      "luma-topography",
+      "fractal-noise-dissolve",
+      "liquid-time-warp",
+      "prismatic-feedback-loop",
+      "vinyl-scratch",
+      "interactive-origami",
+      "spectral-flow-sorting",
+      "gen_kimi_crystal",
+      "holographic-projection-gpt52",
+      "cosmic-flow",
+      "pixel-storm",
+      "gen_julia_set",
+      "psychedelic-noise-flow",
+      "rgb-glitch-trail",
+      "phosphor-decay",
+      "concentric-spin",
+      "pixelate-blast",
+      "gen-alien-flora",
+      "gen_psychedelic_spiral",
+      "voronoi-shatter",
+      "dla-crystals",
+      "magnetic-field",
+      "cyber-terminal-ascii",
+      "holographic-glitch",
+      "kimi_chromatic_warp",
+      "vaporwave-horizon",
+      "vortex-drag",
+      "zipper-reveal",
+      "gravity-lens",
+      "sonar-reveal",
+      "bayer-dither-interactive",
+      "crt-clear-zone",
+      "spectral-distortion",
+      "nano-repair",
+      "atmos_volumetric_fog",
+      "chrono-slit-scan",
+      "sim-fluid-feedback-field",
+      "hex-lens",
+      "spectral-smear",
+      "anisotropic-kuwahara",
+      "viscous-drag",
+      "ink-marbling",
+      "neon-flashlight",
+      "rgb-fluid",
+      "gravity-well",
+      "rgb-delay-brush",
+      "gen_fluffy_raincloud",
+      "quantum-superposition",
+      "retro_phosphor_dream",
+      "neon-edge-radar",
+      "sonic-distortion",
+      "refractive-bubbles",
+      "quantized-ripples",
+      "perspective-tilt",
+      "xerox-degrade",
+      "chromatic-mosaic-projector",
+      "divine-light-gpt52",
+      "liquid-volumetric-zoom",
+      "gen-hyper-labyrinth",
+      "chromatic-manifold-2",
+      "directional-glitch",
+      "datamosh-brush",
+      "interactive-fresnel",
+      "kimi_nebula_depth",
+      "distortion_gravitational_lens",
+      "chromatic-folds",
+      "gen-xeno-botanical-synth-flora",
+      "voronoi",
+      "kimi_liquid_glass",
+      "voxel-grid",
+      "green-tracer",
+      "physarum",
+      "artistic_painterly_oil",
+      "gen-ethereal-anemone-bloom",
+      "glitch-pixel-sort",
+      "holographic-shatter",
+      "sonic-boom",
+      "neon-topology",
+      "hybrid-spectral-sorting",
+      "magma-fissure",
+      "elastic-strip",
+      "pixelation-drift",
+      "log-polar-droste",
+      "fabric-step",
+      "glass-brick-wall",
+      "aurora-rift-gemini",
+      "optical-illusion-spin",
+      "gen-voronoi-crystal",
+      "neon-edge-diffusion",
+      "luma-glass",
+      "contour-flow",
+      "gen_kimi_nebula",
+      "cyber-ripples",
+      "lichtenberg-fractal",
+      "quantum-ripples",
+      "liquid-warp",
+      "lighthouse-reveal",
+      "neon-echo",
+      "halftone",
+      "gen-bismuth-crystal-citadel",
+      "rainbow-vector-field",
+      "gen-gravitational-strain",
+      "anamorphic-flare",
+      "interactive-film-burn",
+      "radial-slit-scan",
+      "hyper-chromatic-delay",
+      "pixel-drag-smear",
+      "rain-ripples",
+      "gen_reaction_diffusion",
+      "gen-feedback-echo-chamber",
+      "elastic-chromatic",
+      "crystal-freeze",
+      "paper-burn",
+      "chronos-brush",
+      "gen-chronos-labyrinth",
+      "liquid-swirl",
+      "vhs-tracking-mouse",
+      "radial-rgb",
+      "radiating-haze",
+      "liquid_magnetic_ferro",
+      "bio_lenia_continuous",
+      "video-echo-chamber",
+      "rain",
+      "gen-cyber-terminal",
+      "gen-prismatic-bismuth-lattice",
+      "quantum-foam-pass2",
+      "frosted-glass-lens",
+      "heat-haze-gpt52",
+      "rotoscope-ink",
+      "gen_capabilities",
+      "sonar-pulse",
+      "light-leaks",
+      "liquid-glitch",
+      "aero-chromatics",
+      "bismuth-crystallizer",
+      "kaleido-portal-interactive",
+      "pixel-repel",
+      "gen-silica-tsunami",
+      "rgb-split-glitch",
+      "signal-tuner",
+      "bio-touch",
+      "volumetric-rainbow-clouds",
+      "volumetric-depth-zoom",
+      "particle-disperse",
+      "mouse-gravity",
+      "quantum-field-visualizer",
+      "frost-reveal",
+      "physarum-grokcf1",
+      "quantum-flux",
+      "gen-stellar-web-loom",
+      "scanline-tear",
+      "crystal-refraction",
+      "glass-bead-curtain",
+      "cyber-trace",
+      "cyber-focus",
+      "double-exposure-zoom",
+      "hybrid-reaction-diffusion-glass",
+      "glass_refraction_alpha",
+      "kinetic-dispersion",
+      "gen-brutalist-monument",
+      "radial-hex-lens",
+      "scan-distort",
+      "halftone-reveal",
+      "glitch-slice-mirror",
+      "molten-glass",
+      "neural-nexus",
+      "galaxy",
+      "interactive-emboss",
+      "quantum-foam-pass1",
+      "parallax_depth_layers",
+      "pixel-rain",
+      "static-reveal",
+      "glass-wall",
+      "datamosh",
+      "sim-fluid-feedback-field-pass2",
+      "hex-circuit",
+      "polka-dot-reveal",
+      "gen-temporal-motion-smear",
+      "liquid-perspective",
+      "bubble-wrap",
+      "pixel-reveal",
+      "alucinate",
+      "neon-light",
+      "voronoi-dynamics",
+      "optical-feedback",
+      "ascii-shockwave",
+      "kimi_spotlight",
+      "photonic-caustics",
+      "luma-melt-interactive",
+      "sim-heat-haze-field",
+      "voronoi-glass",
+      "chromatic-manifold",
+      "circuit-breaker",
+      "liquid-optimized",
+      "neon-ripple-split",
+      "gen_grok41_plasma",
+      "stipple-engraving",
+      "cyber-organic",
+      "bubble-chamber",
+      "volumetric-god-rays",
+      "retro-gameboy",
+      "virtual-lens",
+      "data-scanner",
+      "flux-core",
+      "honey-melt",
+      "neon-pulse",
+      "gen-lenia-2",
+      "time-lag-map",
+      "radial-blur",
+      "voronoi-light",
+      "cyber-magnifier",
+      "nebulous-dream",
+      "neon-contour-interactive",
+      "ethereal-swirl",
+      "ascii-decode",
+      "rgb-topology",
+      "neon-cursor-trace",
+      "data-stream",
+      "psy-swirls",
+      "liquid-viscous-grokcf1",
+      "quantum-tunnel-interactive",
+      "interactive-magnetic-ripple",
+      "data-moshing",
+      "poincare-tile",
+      "engraving-stipple",
+      "cyber-scan",
+      "gravitational-lensing",
+      "slime-drip",
+      "predator-prey",
+      "gen_wave_equation",
+      "neural-dreamscape",
+      "magnetic-pixels",
+      "aurora-rift-2",
+      "rain-lens-wipe",
+      "gen-cymatic-plasma-mandalas",
+      "digital-waves",
+      "audio_geometric_pulse",
+      "liquid-lens",
+      "scanline-wave",
+      "blueprint-reveal",
+      "liquid-chrome-ripple",
+      "gen-audio-spirograph",
+      "digital-lens",
+      "iridescent-oil-slick",
+      "gen-hyperbolic-tessellation",
+      "luma-force",
+      "selective-color",
+      "infinite-fractal-feedback",
+      "prismatic-3d-compositor",
+      "digital-haze",
+      "dynamic-lens-flares",
+      "holographic-interferometry",
+      "gen-supernova-remnant",
+      "ascii-flow",
+      "adaptive-mosaic",
+      "gen-quantum-neural-lace",
+      "wave-equation",
+      "gen-isometric-city",
+      "kinetic_tiles",
+      "tensor-flow-sculpt",
+      "gen-magnetic-ferrofluid",
+      "neon-strings",
+      "pixel-wind-chimes",
+      "rgb-ripple-waves",
+      "fiber-optic-weave",
+      "liquid-viscous",
+      "motion-heatmap",
+      "infinite-spiral-zoom",
+      "lenia",
+      "gen-fractal-clockwork",
+      "phantom-lag",
+      "digital-compression",
+      "gen-crystal-caverns",
+      "liquid-metal",
+      "neon-fluid-warp",
+      "holographic_interference",
+      "mouse-pixel-sort",
+      "digital-moss",
+      "magnetic-rgb",
+      "volumetric-cloud-nebula",
+      "interactive-frost",
+      "digital-decay",
+      "polar-warp-interactive",
+      "graphic_novel",
+      "wolfram-data-demo",
+      "aurora-rift-2-pass2",
+      "refraction-shards",
+      "aerogel-smoke",
+      "magnetic-chroma",
+      "kimi_flock_symphony",
+      "electric-contours",
+      "rgb-shift-brush",
+      "interactive-rgb-split",
+      "spectral-waves",
+      "stellar-plasma",
+      "knitted-fabric",
+      "black-hole",
+      "ferrofluid",
+      "neural-raymarcher",
+      "chromatic-folds-2",
+      "gamma-ray-burst",
+      "tilt-shift",
+      "cellular-automata-3d",
+      "glitch-reveal",
+      "cyber-grid-pulse",
+      "velvet-vortex",
+      "scanline-sorting",
+      "cyber-halftone-scanner",
+      "quantum-foam",
+      "cosmic-jellyfish",
+      "hybrid-cyber-organic",
+      "aurora-rift-2-pass1",
+      "cyber-lattice",
+      "gen-neural-fractal",
+      "luma-smear-interactive",
+      "spectral-bleed-confine",
+      "chroma-shift-grid",
+      "cyber-rain-interactive",
+      "crystal-illuminator",
+      "poly-art",
+      "ink-bleed",
+      "echo-trace",
+      "gen-astro-kinetic-chrono-orrery",
+      "chromatic-crawler",
+      "gen_orb",
+      "spectrum-bleed",
+      "mirror-dimension",
+      "neon-edge-reveal",
+      "gen-mycelium-network",
+      "scan-slice",
+      "hybrid-sdf-plasma",
+      "chroma-lens",
+      "fractal-boids-field",
+      "hex-mosaic",
+      "rainbow-cloud",
+      "polka-wave",
+      "liquid-touch",
+      "vhs-tracking",
+      "vortex",
+      "chroma-vortex",
+      "charcoal-rub",
+      "gen-neural-bioluminescence-matrix",
+      "pp-sharpen",
+      "kaleido-scope-grokcf1",
+      "phase-shift",
+      "astral-kaleidoscope-grokcf1",
+      "spectral-brush",
+      "magnetic-luma-sort",
+      "tile-twist",
+      "kintsugi-repair",
+      "flow-sort",
+      "liquid-jelly",
+      "liquid_crystal_birefringence",
+      "elastic-surface",
+      "gen-chromatic-metamorphosis",
+      "double-exposure",
+      "refraction-tunnel",
+      "fractal-image-surf",
+      "bitonic-sort",
+      "spiral-lens",
+      "interactive_neural_swarm",
+      "holographic-projection-failure",
+      "cross-stitch",
+      "kimi_fractal_dreams",
+      "vortex-distortion",
+      "gen-quasicrystal",
+      "cursor-aura",
+      "gen-art-deco-sky",
+      "stella-orbit",
+      "hyper-space-jump",
+      "vertical-slice-wave",
+      "temporal-rift",
+      "temporal-distortion-field",
+      "ascii-lens",
+      "gen-holographic-plasma-geode",
+      "gen-quantum-mycelium",
+      "luma-refraction",
+      "split-flap-display",
+      "spectral-mesh",
+      "gen-bifurcation-diagram",
+      "physarum-gemini",
+      "raindrop-ripples",
+      "steampunk-gear-lens",
+      "cyber-rain",
+      "ripple-blocks",
+      "luminescent-glass-tiles",
+      "bubble-lens",
+      "magnetic-interference",
+      "turing-veins",
+      "pp-ssao",
+      "heat-haze",
+      "hybrid-noise-kaleidoscope",
+      "gen-liquid-crystal-hive-mind",
+      "motion-revealer",
+      "energy-shield",
+      "circular-pixelate",
+      "neon-warp",
+      "sim-fluid-feedback-field-pass1",
+      "particle_dreams_alpha",
+      "paper-cutout",
+      "astral-kaleidoscope-gemini",
+      "cymatic-sand",
+      "luma-slice-interactive",
+      "time-slit-scan",
+      "oscilloscope-overlay",
+      "data-slicer",
+      "spectral-slit-scan",
+      "gen-topology-flow",
+      "gen_grok41_mandelbrot",
+      "crt-magnet",
+      "gen_grok4_perlin",
+      "cyber-glitch-hologram",
+      "sim-smoke-trails",
+      "glass-brick-distortion",
+      "glitch-cathedral",
+      "frosty-window",
+      "luma-pixel-sort",
+      "solarize-warp",
+      "vortex-prism",
+      "interactive-ripple",
+      "chroma-depth-tunnel",
+      "data-slicer-interactive",
+      "ink_dispersion_alpha",
+      "radiating-displacement",
+      "gen-velocity-bloom",
+      "parallax-shift",
+      "kaleido-scope",
+      "holographic-prism",
+      "glitch-ripple-drag",
+      "entropy-grid",
+      "holographic-sticker",
+      "gemstone-fractures",
+      "gen_hyper_warp",
+      "data-stream-corruption",
+      "pixel-sort-glitch",
+      "particle-swarm",
+      "liquid-oil",
+      "neon-contour-drag",
+      "liquid-rainbow",
+      "waveform-glitch",
+      "cyber-slit-scan",
+      "sim-ink-diffusion",
+      "night-vision-scope",
+      "liquid-v1",
+      "generative-psy-swirls",
+      "interactive-zoom-blur",
+      "neon-edge-pulse",
+      "sim-fluid-feedback-field-pass3",
+      "pixel-sort-radial",
+      "voronoi-faceted-glass",
+      "generative-turing-veins",
+      "crt-tv",
+      "encaustic-wax",
+      "dynamic-halftone",
+      "cyber-lens",
+      "hyperbolic-dreamweaver",
+      "liquid-viscous-simple",
+      "temporal-rgb-smear",
+      "gen-celestial-prism-orchid",
+      "sim-decay-system",
+      "slinky-distort",
+      "liquid-displacement",
+      "gen_trails",
+      "luminance-wind",
+      "chromatic-phase-inversion",
+      "aurora-rift",
+      "mirror-drag",
+      "interactive-glitch",
+      "gen_grokcf_voronoi",
+      "spectrogram-displace",
+      "sequin-flip",
+      "hybrid-particle-fluid",
+      "fabric-zipper",
+      "ascii-glyph",
+      "aurora_borealis",
+      "digital-glitch",
+      "liquid-fast",
+      "chromatic-shockwave",
+      "hypnotic-spiral",
+      "tensor-flow-sculpting",
+      "synthwave-grid-warp",
+      "multi-turing",
+      "gen-bioluminescent-abyss",
+      "gen-abyssal-leviathan-scales",
+      "chromatographic-separation",
+      "chromatic-focus-interactive",
+      "gen-micro-cosmos",
+      "impasto-swirl",
+      "codebreaker-reveal",
+      "chromatic-folds-gemini",
+      "voxel-depth-sort",
+      "plasma",
+      "gen-holographic-data-core",
+      "pin-art-3d",
+      "speed-lines-focus",
+      "iso-hills",
+      "infinite-video-feedback",
+      "liquid-prism",
+      "thermal-touch",
+      "magnetic-dipole",
+      "gen_quantum_foam",
+      "interactive-voronoi-lens",
+      "divine-light",
+      "color-blindness",
+      "digital-mold",
+      "sim-slime-mold-growth",
+      "interactive-voronoi-web",
+      "magnetic-ring",
+      "hybrid-magnetic-field",
+      "signal-noise",
+      "pixel-stretch-cross",
+      "sim-sand-dunes",
+      "crystal-facets",
+      "triangle-mosaic",
+      "gen_cyclic_automaton",
+      "reaction-diffusion",
+      "liquid",
+      "hybrid-voronoi-glass",
+      "steamy-glass",
+      "navier-stokes-dye",
+      "scanline-drift",
+      "holographic-edge-ripple",
+      "prism-displacement",
+      "bioluminescent-abyss",
+      "spectral-bleed-confinement",
+      "tesseract-fold",
+      "neon-pulse-edge",
+      "voronoi-zoom-turbulence",
+      "neon-poly-grid",
+      "chromatic-reaction-diffusion",
+      "laser-burn",
+      "holographic-projection",
+      "directional-blur-wipe",
+      "infinite-zoom",
+      "liquid-mirror",
+      "predator-camouflage",
+      "chromatic-infection",
+      "boids",
+      "warp_drive",
+      "gen-biomechanical-hive",
+      "aurora-rift-pass2",
+      "page-curl-interactive",
+      "temporal-echo",
+      "liquid-zoom",
+      "fractal-glass-distort",
+      "moire-interference",
+      "parallax-glow-compositor",
+      "gen-quantum-aether-origami",
+      "mosaic-reveal",
+      "pp-chromatic",
+      "matrix-curtain",
+      "sphere-projection",
+      "sim-volumetric-fake",
+      "byte-mosh",
+      "fluid-grid",
+      "stipple-render",
+      "nebula-gyroid",
+      "edge-glow-mouse",
+      "chroma-threads",
+      "cosmic-web",
+      "crt-phosphor-decay",
+      "interactive-halftone-spin",
+      "quantum-fractal",
+      "thermal-vision",
+      "kimi_quantum_field",
+      "temporal-slit-paint",
+      "matrix_digital_rain",
+      "interactive-kuwahara",
+      "signal-modulation",
+      "gen_grid",
+      "gen-singularity-forge",
+      "texture",
+      "quantum-smear",
+      "underwater_caustics",
+      "luma-magnetism",
+      "prismatic-mosaic",
+      "gen_mandelbulb_3d",
+      "liquid-rgb",
+      "chromatic-swirl",
+      "fractal-kaleidoscope",
+      "breathing-kaleidoscope",
+      "quad-mirror",
+      "sliding-tile-glitch",
+      "kimi_ripple_touch",
+      "sine-wave",
+      "sketch-reveal",
+      "phosphor-magnifier",
+      "spirograph-reveal",
+      "julia-warp",
+      "foil-impression",
+      "rgb-iso-lines",
+      "velocity-field-paint",
+      "gen-neuro-cosmos",
+      "quantum-prism",
+      "gen_grok4_life",
+      "lens-flare-brush",
+      "astral-kaleidoscope",
+      "complex-exponent-warp",
+      "luma-velocity-melt",
+      "liquid-prism-cascade",
+      "pixel-sort-explorer",
+      "pixel-stretch-interactive",
+      "hyper-tensor-fluid",
+      "spectral-glitch-sort",
+      "ion-stream",
+      "bioluminescent",
+      "fire_smoke_volumetric",
+      "liquid-smear",
+      "gen-string-theory",
+      "kaleidoscope",
+      "aurora-rift-pass1",
+      "audio-voronoi-displacement",
+      "pp-vignette",
+      "snow"
+    ],
+    "missing_depth_write": [
+      "magnetic-edge",
+      "dimension-slicer",
+      "spectral-rain",
+      "knitted-fabric",
+      "radiating-haze",
+      "voronoi-faceted-glass",
+      "gen-cyber-terminal",
+      "dynamic-halftone",
+      "pixel-sand",
+      "chromatic-folds-2",
+      "frosted-glass-lens",
+      "tilt-shift",
+      "gen-neuro-kinetic-bloom",
+      "biomimetic-scales",
+      "pixel-scattering",
+      "gen-celestial-prism-orchid",
+      "digital-reveal",
+      "gen_capabilities",
+      "melting-oil",
+      "cyber-grid-pulse",
+      "liquid-warp-interactive",
+      "pixel-focus",
+      "stereoscopic-3d",
+      "wave-halftone",
+      "quantum-foam",
+      "cosmic-jellyfish",
+      "glass-shatter",
+      "kaleido-portal-interactive",
+      "gen-silica-tsunami",
+      "gen-superfluid-quantum-foam",
+      "aurora-rift",
+      "luma-smear-interactive",
+      "interactive-glitch",
+      "cmyk-halftone-interactive",
+      "chroma-shift-grid",
+      "bio-touch",
+      "cyber-rain-interactive",
+      "astral-veins",
+      "echo-trace",
+      "gen-astro-kinetic-chrono-orrery",
+      "chromatic-shockwave",
+      "physarum-grokcf1",
+      "quantum-flux",
+      "split-dimension",
+      "luma-echo-warp",
+      "gen-stellar-web-loom",
+      "chromatic-crawler",
+      "reality-tear",
+      "neural-resonance",
+      "gen-celestial-forge",
+      "spectrum-bleed",
+      "mirror-dimension",
+      "gen-abyssal-leviathan-scales",
+      "neon-edge-reveal",
+      "chromatic-focus-interactive",
+      "rainbow-cloud",
+      "gen_rainbow_smoke",
+      "gen-fractured-monolith",
+      "double-exposure-zoom",
+      "pixel-explode",
+      "glass-wipes",
+      "codebreaker-reveal",
+      "spectral-vortex",
+      "kinetic-dispersion",
+      "chromatic-folds-gemini",
+      "rgb-distance-split",
+      "quantum-wormhole",
+      "polka-wave",
+      "chroma-vortex",
+      "gen-neural-bioluminescence-matrix",
+      "scan-distort",
+      "molten-glass",
+      "astral-kaleidoscope-grokcf1",
+      "spectral-brush",
+      "luma-topography",
+      "color-blindness",
+      "liquid-time-warp",
+      "tile-twist",
+      "digital-mold",
+      "magnetic-ring",
+      "kintsugi-repair",
+      "glass-wall",
+      "hex-circuit",
+      "signal-noise",
+      "pixel-stretch-cross",
+      "elastic-surface",
+      "double-exposure",
+      "gen_cyclic_automaton",
+      "gen_julia_set",
+      "psychedelic-noise-flow",
+      "rgb-glitch-trail",
+      "kimi_spotlight",
+      "luma-melt-interactive",
+      "pixelate-blast",
+      "kimi_fractal_dreams",
+      "navier-stokes-dye",
+      "circuit-breaker",
+      "gen_psychedelic_spiral",
+      "voronoi-shatter",
+      "bubble-chamber",
+      "tesseract-fold",
+      "cyber-terminal-ascii",
+      "data-scanner",
+      "stella-orbit",
+      "honey-melt",
+      "vertical-slice-wave",
+      "kimi_chromatic_warp",
+      "temporal-rift",
+      "zipper-reveal",
+      "temporal-distortion-field",
+      "gen-holographic-plasma-geode",
+      "radial-blur",
+      "gen-quantum-mycelium",
+      "neon-poly-grid",
+      "nebulous-dream",
+      "bayer-dither-interactive",
+      "neon-contour-interactive",
+      "ethereal-swirl",
+      "spectral-distortion",
+      "chromatic-infection",
+      "spectral-smear",
+      "boids",
+      "viscous-drag",
+      "quantum-tunnel-interactive",
+      "physarum-gemini",
+      "raindrop-ripples",
+      "fractal-glass-distort",
+      "steampunk-gear-lens",
+      "luminescent-glass-tiles",
+      "gen_fluffy_raincloud",
+      "gen-quantum-aether-origami",
+      "slime-drip",
+      "gen_wave_equation",
+      "sonic-distortion",
+      "refractive-bubbles",
+      "neural-dreamscape",
+      "magnetic-pixels",
+      "gen-kinetic-neo-brutalist-megastructure",
+      "xerox-degrade",
+      "gen-cymatic-plasma-mandalas",
+      "gen-liquid-crystal-hive-mind",
+      "liquid-lens",
+      "crt-phosphor-decay",
+      "energy-shield",
+      "digital-lens",
+      "kimi_quantum_field",
+      "luma-force",
+      "astral-kaleidoscope-gemini",
+      "digital-haze",
+      "dynamic-lens-flares",
+      "chromatic-manifold-2",
+      "luma-slice-interactive",
+      "time-slit-scan",
+      "interactive-kuwahara",
+      "gen-singularity-forge",
+      "oscilloscope-overlay",
+      "quantum-smear",
+      "spectral-slit-scan",
+      "chromatic-folds",
+      "luma-magnetism",
+      "_template_shared_memory",
+      "voronoi",
+      "chromatic-swirl",
+      "gen-raptor-mini",
+      "green-tracer",
+      "physarum",
+      "gen-magnetic-ferrofluid",
+      "luma-pixel-sort",
+      "kimi_ripple_touch",
+      "sonic-boom",
+      "digital-compression",
+      "spirograph-reveal",
+      "radiating-displacement",
+      "velocity-field-paint",
+      "aurora-rift-gemini",
+      "quantum-prism",
+      "gen_grok4_life",
+      "neon-edge-diffusion",
+      "astral-kaleidoscope",
+      "complex-exponent-warp",
+      "contour-flow",
+      "gen_kimi_nebula",
+      "gen_hyper_warp",
+      "polar-warp-interactive",
+      "pixel-stretch-interactive",
+      "lighthouse-reveal",
+      "spectral-glitch-sort",
+      "kimi_flock_symphony",
+      "waveform-glitch",
+      "electric-contours",
+      "interactive-film-burn",
+      "cyber-slit-scan",
+      "liquid-v1",
+      "rain-ripples",
+      "gen_reaction_diffusion"
+    ],
+    "division_by_zero": [],
+    "array_bounds": [
+      "spectral-bleed-confinement",
+      "chromatic-folds",
+      "sim-smoke-trails",
+      "liquid-rgb",
+      "wave-equation",
+      "time-lag-map",
+      "physarum",
+      "tensor-flow-sculpt",
+      "chromatic-folds-gemini",
+      "liquid-viscous",
+      "pixel-sand",
+      "fractal-kaleidoscope",
+      "boids",
+      "anisotropic-kuwahara",
+      "breathing-kaleidoscope",
+      "liquid-viscous-grokcf1",
+      "gen-quantum-superposition",
+      "liquid-viscous-simple",
+      "temporal-echo",
+      "gen-inverse-mandelbrot",
+      "interactive-ripple",
+      "ambient-liquid",
+      "melting-oil",
+      "magnetic-dipole",
+      "liquid-glitch",
+      "poincare-tile",
+      "radiating-displacement",
+      "log-polar-droste",
+      "fabric-step",
+      "chromatic-phase-inversion",
+      "predator-prey",
+      "neon-edge-diffusion",
+      "flow-sort",
+      "sim-fluid-feedback-field-pass2",
+      "liquid-jelly",
+      "byte-mosh",
+      "liquid-perspective",
+      "spectral-bleed-confine",
+      "spectrogram-displace",
+      "liquid-oil",
+      "digital-waves",
+      "bioluminescent",
+      "voronoi-dynamics",
+      "gen-gravitational-strain",
+      "bitonic-sort",
+      "liquid-rainbow",
+      "ascii-glyph",
+      "liquid-fast",
+      "liquid",
+      "photonic-caustics",
+      "recursion-mirror-vortex",
+      "navier-stokes-dye",
+      "chromatic-manifold-2",
+      "tensor-flow-sculpting",
+      "liquid-optimized",
+      "multi-turing",
+      "generative-psy-swirls",
+      "dla-crystals",
+      "rain-ripples"
+    ],
+    "unused_params": [
+      "multi-fractal-compositor",
+      "neural-raymarcher",
+      "ambient-liquid",
+      "chromatic-manifold",
+      "echo-trace",
+      "melting-oil",
+      "mosaic-reveal",
+      "navier-stokes-dye",
+      "neon-edge-diffusion",
+      "parallax_depth_layers",
+      "particle_dreams_alpha",
+      "static-reveal",
+      "prismatic-mosaic",
+      "vortex-warp",
+      "gen-crystal-caverns",
+      "kimi_flock_symphony",
+      "nebula-gyroid",
+      "psy-swirls",
+      "turing-veins",
+      "wolfram-data-demo",
+      "interactive-origami",
+      "color-blindness",
+      "concentric-spin",
+      "page-curl-interactive",
+      "pixel-scattering",
+      "pixel-stretch-interactive",
+      "chromatic-shockwave",
+      "cyber-slit-scan",
+      "dynamic-halftone",
+      "interactive-emboss",
+      "liquid-volumetric-zoom",
+      "mirror-drag",
+      "parallax-glow-compositor",
+      "pixel-drag-smear",
+      "selective-color",
+      "tile-twist",
+      "velocity-field-paint",
+      "volumetric-depth-zoom",
+      "matrix_digital_rain",
+      "liquid-fast",
+      "liquid-glitch",
+      "liquid-jelly",
+      "liquid-oil",
+      "liquid-perspective",
+      "liquid-rainbow",
+      "liquid-rgb",
+      "liquid-viscous-simple",
+      "liquid-viscous",
+      "halftone",
+      "pixel-rain",
+      "galaxy-compute",
+      "luma-flow-field",
+      "sim-fluid-feedback-field",
+      "elastic-chromatic",
+      "electric-contours",
+      "interactive-fresnel",
+      "neon-edge-pulse",
+      "pixel-sorter"
+    ]
+  },
+  "statistics": {
+    "by_category": {
+      "distortion": {
+        "total": 54,
+        "critical": 6,
+        "high": 6,
+        "medium": 42,
+        "low": 0,
+        "clean": 0
+      },
+      "geometric": {
+        "total": 12,
+        "critical": 1,
+        "high": 0,
+        "medium": 11,
+        "low": 0,
+        "clean": 0
+      },
+      "simulation": {
+        "total": 26,
+        "critical": 4,
+        "high": 2,
+        "medium": 20,
+        "low": 0,
+        "clean": 0
+      },
+      "artistic": {
+        "total": 89,
+        "critical": 26,
+        "high": 7,
+        "medium": 56,
+        "low": 0,
+        "clean": 0
+      },
+      "interactive-mouse": {
+        "total": 229,
+        "critical": 11,
+        "high": 20,
+        "medium": 198,
+        "low": 0,
+        "clean": 0
+      },
+      "image": {
+        "total": 50,
+        "critical": 0,
+        "high": 0,
+        "medium": 50,
+        "low": 0,
+        "clean": 0
+      },
+      "visual-effects": {
+        "total": 36,
+        "critical": 3,
+        "high": 4,
+        "medium": 29,
+        "low": 0,
+        "clean": 0
+      },
+      "generative": {
+        "total": 104,
+        "critical": 14,
+        "high": 3,
+        "medium": 87,
+        "low": 0,
+        "clean": 0
+      },
+      "lighting-effects": {
+        "total": 14,
+        "critical": 4,
+        "high": 1,
+        "medium": 9,
+        "low": 0,
+        "clean": 0
+      },
+      "unknown": {
+        "total": 16,
+        "critical": 1,
+        "high": 1,
+        "medium": 13,
+        "low": 0,
+        "clean": 1
+      },
+      "retro-glitch": {
+        "total": 29,
+        "critical": 5,
+        "high": 1,
+        "medium": 23,
+        "low": 0,
+        "clean": 0
+      },
+      "liquid-effects": {
+        "total": 25,
+        "critical": 13,
+        "high": 0,
+        "medium": 12,
+        "low": 0,
+        "clean": 0
+      },
+      "advanced-hybrid": {
+        "total": 10,
+        "critical": 0,
+        "high": 2,
+        "medium": 8,
+        "low": 0,
+        "clean": 0
+      },
+      "hybrid": {
+        "total": 10,
+        "critical": 0,
+        "high": 2,
+        "medium": 8,
+        "low": 0,
+        "clean": 0
+      }
+    },
+    "error_types": {
+      "workgroup_size_mismatch": 1384,
+      "missing_write": 234,
+      "missing_depth_write": 195,
+      "array_bounds": 59,
+      "invalid_binding": 8,
+      "syntax_error": 4
+    }
+  },
+  "orphan_files": {
+    "orphan_wgsl": [
+      "public/shaders/gen-bioluminescent-abyss.wgsl",
+      "public/shaders/imageVideo.wgsl",
+      "public/shaders/sim-fluid-feedback-field-pass1.wgsl",
+      "public/shaders/sim-fluid-feedback-field-pass2.wgsl",
+      "public/shaders/sim-fluid-feedback-field-pass3.wgsl",
+      "public/shaders/spectral-bleed-confine.wgsl",
+      "public/shaders/tensor-flow-sculpt.wgsl"
+    ],
+    "orphan_json": []
+  }
+}

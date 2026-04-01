@@ -1,6 +1,5 @@
 {
   "id": "chroma-vortex",
-  "label": "Chroma Vortex",
   "url": "shaders/chroma-vortex.wgsl",
   "category": "visual-effects",
   "features": [
@@ -49,5 +48,6 @@
     "glow",
     "audio",
     "music"
-  ]
+  ],
+  "name": "Chroma Vortex"
 }

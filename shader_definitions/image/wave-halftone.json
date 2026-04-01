@@ -1,6 +1,5 @@
 {
   "id": "wave-halftone",
-  "label": "Wave Halftone",
   "category": "image",
   "url": "shaders/wave-halftone.wgsl",
   "description": "Halftone dot pattern with a waving grid and mouse magnification lens.",
@@ -44,5 +43,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "name": "Wave Halftone"
 }

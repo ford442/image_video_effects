@@ -152,7 +152,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     //  Read source and depth
     // ─────────────────────────────────────────────────────────────────────────
     let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(readDepthTexture, u_sampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Per-channel edge detection

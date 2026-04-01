@@ -2,7 +2,7 @@
   "id": "liquid-warp",
   "name": "Liquid Warp",
   "url": "shaders/liquid-warp.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],

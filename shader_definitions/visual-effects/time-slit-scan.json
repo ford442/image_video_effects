@@ -1,6 +1,5 @@
 {
   "id": "time-slit-scan",
-  "label": "Time Slit Scan",
   "category": "visual-effects",
   "url": "shaders/time-slit-scan.wgsl",
   "features": [
@@ -40,5 +39,6 @@
     "vfx",
     "particles",
     "glow"
-  ]
+  ],
+  "name": "Time Slit Scan"
 }

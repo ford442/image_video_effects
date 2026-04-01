@@ -1,6 +1,5 @@
 {
   "id": "neon-topology",
-  "label": "Neon Topology",
   "category": "visual-effects",
   "url": "shaders/neon-topology.wgsl",
   "description": "Renders the image as a glowing 3D topographic map.",
@@ -50,5 +49,6 @@
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "name": "Neon Topology"
 }

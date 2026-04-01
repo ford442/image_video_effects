@@ -1,7 +1,6 @@
 {
   "id": "pixel-repel",
-  "label": "Pixel Repeller",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "url": "shaders/pixel-repel.wgsl",
   "features": [
     "mouse-driven"
@@ -39,5 +38,6 @@
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "name": "Pixel Repeller"
 }

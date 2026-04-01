@@ -1,6 +1,5 @@
 {
   "id": "parallax-shift",
-  "label": "Parallax Shift",
   "category": "distortion",
   "url": "shaders/parallax-shift.wgsl",
   "description": "Uses luminance as depth to create a mouse-controlled 3D parallax effect.",
@@ -45,5 +44,6 @@
     "warp",
     "distort",
     "transform"
-  ]
+  ],
+  "name": "Parallax Shift"
 }

@@ -2,7 +2,7 @@
   "id": "kimi-spotlight",
   "name": "Kimi Spotlight",
   "url": "shaders/kimi_spotlight.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "description": "Flashlight effect that reveals full color under the beam while surroundings are desaturated and darkened.",
   "features": [
     "mouse-driven",

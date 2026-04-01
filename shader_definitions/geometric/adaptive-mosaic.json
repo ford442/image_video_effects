@@ -1,6 +1,5 @@
 {
   "id": "adaptive-mosaic",
-  "label": "Adaptive Mosaic",
   "url": "shaders/adaptive-mosaic.wgsl",
   "category": "geometric",
   "features": [
@@ -44,5 +43,6 @@
   "tags": [
     "geometric",
     "pattern"
-  ]
+  ],
+  "name": "Adaptive Mosaic"
 }

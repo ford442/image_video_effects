@@ -1,6 +1,5 @@
 {
   "id": "glass-wall",
-  "label": "Glass Wall",
   "url": "shaders/glass-wall.wgsl",
   "category": "image",
   "features": [
@@ -9,5 +8,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "name": "Glass Wall"
 }

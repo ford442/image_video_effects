@@ -1,0 +1,43 @@
+{
+  "id": "pp-bloom",
+  "name": "PP Bloom",
+  "url": "shaders/pp-bloom.wgsl",
+  "category": "post-processing",
+  "description": "High-quality HDR bloom with multi-tap Gaussian blur, anamorphic stretch, and lens dirt effects",
+  "tags": [
+    "post-process",
+    "bloom",
+    "hdr",
+    "blur"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param2",
+      "name": "Anamorphic",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param3",
+      "name": "Threshold",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param4",
+      "name": "Quality",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

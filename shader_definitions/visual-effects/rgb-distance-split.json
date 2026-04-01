@@ -1,6 +1,5 @@
 {
   "id": "rgb-distance-split",
-  "label": "RGB Distance Split",
   "category": "visual-effects",
   "features": [
     "mouse-driven"
@@ -41,5 +40,6 @@
     "vfx",
     "particles",
     "glow"
-  ]
+  ],
+  "name": "RGB Distance Split"
 }

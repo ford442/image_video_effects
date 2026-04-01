@@ -1,40 +1,44 @@
 {
   "id": "velocity-field-paint",
-  "label": "Velocity Field Paint",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "url": "shaders/velocity-field-paint.wgsl",
   "description": "Uses mouse movement to paint a velocity field that distorts the image like fluid.",
   "features": [
     "mouse-driven"
   ],
-  "params": {
-    "zoomParam1": {
-      "label": "Dissipation",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Dissipation",
+      "default": 0.9,
       "min": 0.0,
-      "max": 1.0,
-      "default": 0.9
+      "max": 1.0
     },
-    "zoomParam2": {
-      "label": "Brush Size",
+    {
+      "id": "param2",
+      "name": "Brush Size",
+      "default": 0.5,
       "min": 0.0,
-      "max": 1.0,
-      "default": 0.5
+      "max": 1.0
     },
-    "zoomParam3": {
-      "label": "Force",
+    {
+      "id": "param3",
+      "name": "Force",
+      "default": 0.5,
       "min": 0.0,
-      "max": 1.0,
-      "default": 0.5
+      "max": 1.0
     },
-    "zoomParam4": {
-      "label": "Unused",
+    {
+      "id": "param4",
+      "name": "Unused",
+      "default": 0.0,
       "min": 0.0,
-      "max": 1.0,
-      "default": 0.0
+      "max": 1.0
     }
-  },
+  ],
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "name": "Velocity Field Paint"
 }

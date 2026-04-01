@@ -22,8 +22,8 @@
 
 struct Uniforms {
   config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  bleed_params: vec4<f32>,      // x=diffusion, y=hueDrift, z=satBoost, w=unused
-  bleed_config: vec4<f32>,      // reserved for future use
+  zoom_config: vec4<f32>,       // x=diffusion, y=hueDrift, z=satBoost, w=unused
+  zoom_params: vec4<f32>,       // reserved for future use
   ripples:     array<vec4<f32>, 50>,
 };
 
@@ -80,9 +80,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
 
     // 2️⃣ Uniforms
-    let diffusion = u.bleed_params.x;   // speed of colour spread
-    let hueDrift  = u.bleed_params.y;   // how fast hue rotates
-    let satBoost  = u.bleed_params.z;   // extra saturation for bleed
+    let diffusion = u.zoom_config.x;   // speed of colour spread
+    let hueDrift  = u.zoom_config.y;   // how fast hue rotates
+    let satBoost  = u.zoom_config.z;   // extra saturation for bleed
 
     // 3️⃣ Compute blurred colour (diffusion)
     var blurred = src;

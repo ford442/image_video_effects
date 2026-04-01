@@ -201,7 +201,7 @@ function MainApp() {
 
     // --- State: General & Stacking ---
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
-    const [modes, setModes] = useState<RenderMode[]>(['liquid', 'none', 'none']);
+    const [modes, setModes] = useState<RenderMode[]>(['liquid-displacement', 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
     const [slotParams, setSlotParams] = useState<SlotParams[]>([
         defaultSlotParams,

@@ -13,16 +13,13 @@
 @group(0) @binding(5) var depthSampler: sampler;
 @group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-// Input from Pass 2
-@group(0) @binding(13) var dataTextureB: texture_2d<f32>;
 
 struct Uniforms {
     config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
@@ -64,7 +61,7 @@ fn sampleGlow(uv: vec2<f32>, emission: f32, dims: vec2<f32>) -> vec3<f32> {
             let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
             let weight = 1.0 / (1.0 + length(vec2<f32>(f32(x), f32(y))));
             
-            let sampleData = textureSampleLevel(dataTextureB, videoSampler, sampleUV, 0.0);
+            let sampleData = textureSampleLevel(dataTextureC, videoSampler, sampleUV, 0.0);
             glowAccum = glowAccum + sampleData.rgb * sampleData.a * weight;
             weightSum = weightSum + weight;
         }
@@ -102,8 +99,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
     let globalIntensity = u.config.y;
     
-    // Read particle data from Pass 2
-    let particleData = textureLoad(dataTextureB, gid.xy, 0);
+    // Read particle data from Pass 2 (via dataTextureC)
+    let particleData = textureLoad(dataTextureC, gid.xy, 0);
     let particleColor = particleData.rgb;
     let emission = particleData.a;
     

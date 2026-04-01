@@ -2,7 +2,7 @@
   "id": "liquid-touch",
   "name": "Liquid Touch",
   "url": "shaders/liquid-touch.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],

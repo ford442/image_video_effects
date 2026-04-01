@@ -11,7 +11,8 @@
       "default": 1,
       "min": 0,
       "max": 5,
-      "target": "zoom_params.x"
+      "target": "zoom_params.x",
+      "id": "tilt_sensitivity"
     },
     {
       "name": "Distance (FOV)",
@@ -19,7 +20,8 @@
       "default": 1,
       "min": 0.5,
       "max": 3,
-      "target": "zoom_params.y"
+      "target": "zoom_params.y",
+      "id": "distance_(fov)"
     },
     {
       "name": "Y-Axis Tilt (Pitch)",
@@ -27,7 +29,8 @@
       "default": 1,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.z"
+      "target": "zoom_params.z",
+      "id": "y_axis_tilt_(pitch)"
     }
   ],
   "features": [

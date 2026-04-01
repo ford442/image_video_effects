@@ -2,7 +2,7 @@
   "id": "energy-shield",
   "name": "Energy Shield",
   "url": "shaders/energy-shield.wgsl",
-  "category": "interactive",
+  "category": "interactive-mouse",
   "features": [
     "mouse-driven"
   ],

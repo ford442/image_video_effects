@@ -11,7 +11,8 @@
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.x"
+      "target": "zoom_params.x",
+      "id": "threshold"
     },
     {
       "name": "Distortion",
@@ -19,7 +20,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.y"
+      "target": "zoom_params.y",
+      "id": "distortion"
     },
     {
       "name": "Smoothness",
@@ -27,7 +29,8 @@
       "default": 0.1,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.z"
+      "target": "zoom_params.z",
+      "id": "smoothness"
     },
     {
       "name": "Invert Mode",
@@ -35,7 +38,8 @@
       "default": 0,
       "min": 0,
       "max": 1,
-      "target": "zoom_params.w"
+      "target": "zoom_params.w",
+      "id": "invert_mode"
     }
   ],
   "features": [

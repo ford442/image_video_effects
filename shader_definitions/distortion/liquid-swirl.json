@@ -1,6 +1,5 @@
 {
   "id": "liquid-swirl",
-  "label": "Liquid Swirl",
   "category": "distortion",
   "features": [
     "mouse-driven",
@@ -46,5 +45,6 @@
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "name": "Liquid Swirl"
 }
