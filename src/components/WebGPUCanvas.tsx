@@ -22,6 +22,7 @@ interface WebGPUCanvasProps {
     videoSourceUrl?: string; // NEW: Used for "Uploaded" videos (Blob URL)
     isMuted: boolean;
     setInputSource?: (source: InputSource) => void; // Added for error handling
+    activeSlot: number;
     activeGenerativeShader?: string;
     apiBaseUrl: string;
     // Webcam Props
@@ -36,7 +37,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
-    setInputSource, activeGenerativeShader, apiBaseUrl,
+    setInputSource, activeSlot, activeGenerativeShader, apiBaseUrl,
     isWebcamActive = false,
     webcamVideoElement,
     liveStreamUrl
@@ -319,10 +320,10 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [isMouseDown, rendererRef]);
 
-    // Sync slotParams to renderer (zoomParam1-6) - use first slot's params
+    // Sync slotParams to renderer (zoomParam1-6) - use active slot's params
     useEffect(() => {
         if (rendererRef.current?.updateSlotParams && slotParams.length > 0) {
-            const params = slotParams[0]; // Use first slot's params
+            const params = slotParams[activeSlot] ?? slotParams[0];
             rendererRef.current.updateSlotParams({
                 zoomParam1: params.zoomParam1,
                 zoomParam2: params.zoomParam2,
@@ -332,7 +333,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 zoomParam6: params.zoomParam6,
             });
         }
-    }, [slotParams, rendererRef]);
+    }, [slotParams, activeSlot, rendererRef]);
 
     // Animation Loop
     useEffect(() => {

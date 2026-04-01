@@ -296,6 +296,10 @@ function MainApp() {
 
         if (mode === 'none') {
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'idle'; return n; });
+            // Tell the renderer to disable this slot so other slots keep running
+            if (rendererRef.current && typeof (rendererRef.current as any).setSlotShader === 'function') {
+                (rendererRef.current as any).setSlotShader(index, '');
+            }
             return;
         }
 
@@ -1321,6 +1325,7 @@ function MainApp() {
                         isMouseDown={isMouseDown} setIsMouseDown={setIsMouseDown} onInit={onInitCanvas}
                         inputSource={inputSource} videoSourceUrl={videoSourceUrl}
                         isMuted={isMuted} setInputSource={setInputSource}
+                        activeSlot={activeSlot}
                         activeGenerativeShader={activeGenerativeShader}
                         selectedVideo={selectedVideo}
                         apiBaseUrl={STORAGE_API_URL}
