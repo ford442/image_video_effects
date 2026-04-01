@@ -147,6 +147,20 @@ export class RendererManager {
     }
   }
 
+  /** Assign a shader to a specific slot (0-2) without clearing other slots. */
+  setSlotShader(index: number, id: string): void {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.setSlotShader(index, id);
+    }
+  }
+
+  /** Update all zoom params from SlotParams (called when UI sliders change). */
+  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number; zoomParam5?: number; zoomParam6?: number }): void {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.updateSlotParams(params);
+    }
+  }
+
   addRipple(x: number, y: number): void {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.addRipple(x, y);
