@@ -73,18 +73,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let viscosity = mix(0.9, 0.999, u.zoom_params.x);  // x: Viscosity
     let turbulence = u.zoom_params.y * 2.0;            // y: Turbulence
     
-    // Read current velocity from dataTextureC (previous velocity field)
-    let vel = textureLoad(dataTextureC, gid.xy, 0).xy;
-    
-    // Backtrace to find where this velocity came from
-    let prevPos = uv - vel * pixel * 2.0;
-    
-    // Sample velocity from previous position (advection)
-    let advectedVel = textureSampleLevel(dataTextureC, u_sampler, clamp(prevPos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).xy;
-    
-    // Add curl noise for turbulence
+    // Initialize velocity field from curl noise (Pass 1 - no previous data)
+    // For feedback loops, this seeds the initial velocity
     let curl = curlNoise(uv * 5.0 + time * 0.1);
-    let newVel = advectedVel + curl * turbulence * 0.01;
+    let newVel = curl * turbulence * 0.1;
     
     // Apply viscosity (damping)
     newVel *= viscosity;
@@ -92,7 +84,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Store new velocity in dataTextureA
     textureStore(dataTextureA, gid.xy, vec4<f32>(newVel, 0.0, 1.0));
     
-    // Write minimal output to maintain pipeline
-    textureStore(writeTexture, gid.xy, vec4<f32>(0.0));
+    // Pass-through input to maintain chain (Pass 2 will do final compositing)
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    textureStore(writeTexture, gid.xy, inputColor);
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(1.0, 0.0, 0.0, 0.0));
 }

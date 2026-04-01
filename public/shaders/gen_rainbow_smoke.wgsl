@@ -137,14 +137,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // This represents light scattered toward the viewer
     let in_scattered = albedo * brightness * density * SIGMA_S;
     
-    // Dark, smoky background (what we see through transparent smoke)
-    let background = vec3<f32>(0.02, 0.02, 0.05) * transmittance;
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    // Final RGBA output
+    // Opacity control
+    let opacity = 0.9;
+    
+    // Final RGBA output with blending
     // RGB: In-scattered light (emissive appearance)
     // A: Volumetric opacity from optical depth
-    let final_color = in_scattered + background * (1.0 - alpha);
+    let generatedColor = in_scattered;
+    let finalColor = mix(inputColor.rgb, generatedColor, alpha * opacity);
+    let finalAlpha = max(inputColor.a, alpha * opacity);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(vel, density, phase));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

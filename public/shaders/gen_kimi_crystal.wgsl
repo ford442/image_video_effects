@@ -185,13 +185,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Final intensity adjustment
     color = pow(color, vec3<f32>(0.9)) * 1.1;
     
-    // Alpha is transmission where crystal exists
-    let alpha = mix(1.0, transmission, crystalMask);
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    textureStore(writeTexture, px, vec4<f32>(color, alpha));
-    textureStore(dataTextureA, px, vec4<f32>(color, crystalMask * transmission));
+    // Opacity control - blend crystal over input
+    let opacity = 0.9;
+    
+    // Calculate alpha based on crystal transmission
+    let crystalAlpha = mix(1.0, transmission, crystalMask);
+    
+    // ═══ BLEND WITH INPUT ═══
+    // Where crystal exists, blend based on transmission
+    // Where no crystal, pass through input
+    let finalColor = mix(inputColor.rgb, color, crystalMask * opacity);
+    let finalAlpha = mix(inputColor.a, crystalAlpha, crystalMask * opacity);
+    
+    textureStore(writeTexture, px, vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, px, vec4<f32>(finalColor, crystalMask * transmission));
     
     // Depth based on crystal presence
-    let depth = crystalMask * 0.5 + 0.5;
-    textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let generatedDepth = crystalMask * 0.5 + 0.5;
+    let finalDepth = mix(inputDepth, generatedDepth, crystalMask * opacity);
+    textureStore(writeDepthTexture, px, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

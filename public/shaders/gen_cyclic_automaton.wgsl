@@ -26,6 +26,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
 
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
     let num_states = 24.0;
     let threshold = 2;
 
@@ -73,12 +77,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Color mapping - rainbow cycle
     let hue = new_state / num_states * 6.28318;
-    let color = 0.5 + 0.5 * vec3<f32>(
+    let generatedColor = 0.5 + 0.5 * vec3<f32>(
         sin(hue),
         sin(hue + 2.094),
         sin(hue + 4.188)
     );
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // ═══ BLEND WITH INPUT ═══
+    let opacity = 0.85;  // Controls how much automaton overlays on input
+    let finalColor = mix(inputColor.rgb, generatedColor, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(new_state / num_states, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

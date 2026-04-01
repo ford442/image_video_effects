@@ -1,0 +1,228 @@
+{
+  "timestamp": "2026-04-01T07:57:00+02:00",
+  "summary": "Binding Fix Review for 55 Shaders - Layer Chain Analysis",
+  "background": "Fixed 55 shaders by adding bindings 4-12 (39 shaders) and remapping invalid bindings 13+ to 7-9 (7 multi-pass shaders)",
+  "investigation_scope": [
+    "Multi-pass shader data flow analysis",
+    "Binding convention consistency check",
+    "Variable name correctness verification",
+    "Layer chain integrity assessment"
+  ],
+  
+  "multi_pass_shaders": [
+    {
+      "shader": "aurora-rift-pass1.wgsl",
+      "writes_to": "dataTextureA (intermediate), writeTexture (passthrough=vec4(0.0))",
+      "reads_from": "videoTex (binding 1)",
+      "chain_convention": "non-standard",
+      "notes": "Uses videoTex/videoSampler instead of readTexture/u_sampler. This is inconsistent with standard shaders but binding 1 is correct per renderer.",
+      "issue": null
+    },
+    {
+      "shader": "aurora-rift-pass2.wgsl",
+      "writes_to": "writeTexture (final), dataTextureA (history buffer)",
+      "reads_from": "dataTextureC (from Pass 1 via binding 9), videoTex (binding 1)",
+      "chain_convention": "non-standard",
+      "notes": "Uses videoTex instead of readTexture. Reads volumetric data from dataTextureC (Pass 1 wrote to A). Updates history in dataTextureA.",
+      "issue": null
+    },
+    {
+      "shader": "aurora-rift-2-pass1.wgsl",
+      "writes_to": "dataTextureA (intermediate), writeTexture (passthrough=vec4(0.0))",
+      "reads_from": "videoTex (binding 1)",
+      "chain_convention": "non-standard",
+      "notes": "Identical structure to aurora-rift-pass1 with enhanced parameters. Uses videoTex convention.",
+      "issue": null
+    },
+    {
+      "shader": "aurora-rift-2-pass2.wgsl",
+      "writes_to": "writeTexture (final), dataTextureA (history buffer)",
+      "reads_from": "dataTextureC (from Pass 1 via binding 9), videoTex (binding 1)",
+      "chain_convention": "non-standard",
+      "notes": "Identical structure to aurora-rift-pass2 with enhanced atmospheric effects.",
+      "issue": null
+    },
+    {
+      "shader": "quantum-foam-pass1.wgsl",
+      "writes_to": "dataTextureA (field data), writeTexture (minimal=vec4(0.0))",
+      "reads_from": "videoTex (binding 1)",
+      "chain_convention": "non-standard",
+      "notes": "Uses videoTex convention. Generates quantum field and stores in dataTextureA for Pass 2.",
+      "issue": null
+    },
+    {
+      "shader": "quantum-foam-pass2.wgsl",
+      "writes_to": "dataTextureB (particles), dataTextureA (history)",
+      "reads_from": "dataTextureC (field from Pass 1), videoTex (binding 1)",
+      "chain_convention": "non-standard",
+      "notes": "Reads field from dataTextureC (Pass 1 wrote to A). Writes particles to dataTextureB for Pass 3. Updates history in dataTextureA.",
+      "issue": null
+    },
+    {
+      "shader": "quantum-foam-pass3.wgsl",
+      "writes_to": "writeTexture (final composite)",
+      "reads_from": "dataTextureC (particles from Pass 2 via textureSample)",
+      "chain_convention": "non-standard",
+      "notes": "Final compositing pass. Reads particles from dataTextureC (Pass 2 wrote to B, C is copy of B from prev frame).",
+      "issue": null
+    },
+    {
+      "shader": "sim-fluid-feedback-field-pass1.wgsl",
+      "writes_to": "dataTextureA (velocity field), writeTexture (minimal=vec4(0.0))",
+      "reads_from": "readTexture (binding 1 - STANDARD), dataTextureC (velocity from prev frame)",
+      "chain_convention": "standard",
+      "notes": "Uses standard readTexture naming. Advects velocity through itself.",
+      "issue": null
+    },
+    {
+      "shader": "sim-fluid-feedback-field-pass2.wgsl",
+      "writes_to": "dataTextureB (density), writeTexture (density preview), writeDepthTexture",
+      "reads_from": "dataTextureA (velocity from Pass 1), dataTextureC (density from prev frame)",
+      "chain_convention": "standard",
+      "notes": "Uses standard readTexture naming. Advects density through velocity field. Reads velocity from A (Pass 1 wrote to A).",
+      "issue": null
+    },
+    {
+      "shader": "sim-fluid-feedback-field-pass3.wgsl",
+      "writes_to": "writeTexture (final composite), writeDepthTexture",
+      "reads_from": "dataTextureB (density from Pass 2), dataTextureC (for glow sampling), readTexture",
+      "chain_convention": "standard",
+      "notes": "Final compositing. Reads density from dataTextureB (Pass 2 wrote to B). Uses textureSample on dataTextureC for glow.",
+      "issue": null
+    }
+  ],
+
+  "binding_convention_analysis": {
+    "standard_convention": {
+      "binding_0": "u_sampler (filtering)",
+      "binding_1": "readTexture (texture_2d<f32>)",
+      "binding_2": "writeTexture (storage write-only)",
+      "binding_3": "uniforms buffer",
+      "binding_4": "readDepthTexture",
+      "binding_5": "non_filtering_sampler",
+      "binding_6": "writeDepthTexture",
+      "binding_7": "dataTextureA (storage write-only)",
+      "binding_8": "dataTextureB (storage write-only)",
+      "binding_9": "dataTextureC (texture_2d<f32> - readable copy of A or B)"
+    },
+    "non_standard_shaders": {
+      "count": 47,
+      "pattern": "Use videoTex/videoSampler instead of readTexture/u_sampler",
+      "affected_shaders": [
+        "aurora-rift*.wgsl", "quantum-foam*.wgsl", "liquid-time-warp.wgsl",
+        "liquid-warp-interactive.wgsl", "neon-contour-interactive.wgsl",
+        "neural-resonance.wgsl", "magnetic-ring.wgsl", "digital-haze.wgsl",
+        "neural-dreamscape.wgsl", "quantum-smear.wgsl", "astral-kaleidoscope*.wgsl",
+        "chromatic-focus-interactive.wgsl", "chromatic-folds*.wgsl",
+        "radiating-haze.wgsl", "radiating-displacement.wgsl", "spectral-vortex.wgsl",
+        "cyber-slit-scan.wgsl", "chromatic-crawler.wgsl", "spectrum-bleed.wgsl",
+        "cyber-rain*.wgsl", "green-tracer.wgsl", "scan-distort*.wgsl",
+        "astral-veins.wgsl", "quantum-wormhole.wgsl", "rainbow-cloud.wgsl",
+        "glass-wall.wgsl", "chromatic-infection.wgsl", "chromatic-manifold*.wgsl",
+        "nebulous-dream.wgsl", "quantum-prism.wgsl"
+      ]
+    },
+    "binding_correctness": "All shaders use binding 1 for input texture, whether named readTexture or videoTex. This is technically correct per renderer layout."
+  },
+
+  "issues_found": [
+    {
+      "id": "ISSUE-001",
+      "shader": "aurora-rift-pass2.wgsl",
+      "issue": "Uses textureSampleLevel(dataTextureC, videoSampler, ...) instead of textureLoad",
+      "severity": "medium",
+      "explanation": "Using textureSample on dataTextureC at binding 9 works because dataTexC has TEXTURE_BINDING usage. However, textureLoad is more efficient for storage texture reads and avoids sampler overhead.",
+      "impact": "Minor performance overhead, not a functional bug"
+    },
+    {
+      "id": "ISSUE-002",
+      "shader": "sim-fluid-feedback-field-pass3.wgsl",
+      "issue": "Uses textureSampleLevel on dataTextureC but dataTextureC may contain Pass 1 output, not Pass 2",
+      "severity": "high",
+      "explanation": "The shader reads from dataTextureC for glow effect, but dataTextureC is a copy of dataTextureA from the previous frame. After Pass 2 writes to dataTextureB, there's no copy from B to C before Pass 3. This means Pass 3 reads stale data.",
+      "impact": "Glow effect may use wrong frame data, causing visual artifacts or temporal incoherence"
+    },
+    {
+      "id": "ISSUE-003",
+      "shader": "Multiple multi-pass shaders",
+      "issue": "Pass 2 shaders write to dataTextureA for history, but this overwrites Pass 1 output",
+      "severity": "medium",
+      "explanation": "aurora-rift-pass2 writes history to dataTextureA at line 218, which overwrites the volumetric data from Pass 1. If Pass 2 is re-run without re-running Pass 1, dataTextureC will contain wrong data.",
+      "impact": "May cause issues if shaders are reordered or if Pass 2 runs multiple times without Pass 1"
+    },
+    {
+      "id": "ISSUE-004",
+      "shader": "quantum-foam-pass3.wgsl",
+      "issue": "Reads from dataTextureC expecting Pass 2 output, but Pass 2 wrote to dataTextureB",
+      "severity": "critical",
+      "explanation": "Pass 2 writes particles to dataTextureB. Pass 3 reads from dataTextureC. For this to work, dataTextureC must contain a copy of dataTextureB from the previous frame. WebGPURenderer.ts only shows dataTexC being created, not being updated with data from dataTexB.",
+      "impact": "CRITICAL: Pass 3 reads wrong data - expects particles but gets old field data or uninitialized data"
+    }
+  ],
+
+  "layer_chain_root_cause": {
+    "hypothesis": "The layer chain issue (shaders superseding each other) is NOT caused by the binding fixes",
+    "actual_cause": "The issue appears to be related to how the renderer copies data between passes in multi-pass shaders",
+    "evidence": [
+      "All bindings 7-9 are correctly declared in all shaders",
+      "All shaders use textureStore with correct variable names matching bindings",
+      "No shader writes ONLY to data textures without writing to writeTexture (Pass 3 shaders correctly write final output)",
+      "The data flow: Pass 1 (A→C copy) → Pass 2 reads C, writes B → (B→C copy needed) → Pass 3 reads C"
+    ],
+    "renderer_analysis": {
+      "dataTexC_binding": "Binding 9 points to dataTexC which is created once at init",
+      "missing_copy": "After Pass 2 writes to dataTexB, there needs to be a copy from dataTexB to dataTexC before Pass 3",
+      "current_behavior": "Looking at WebGPURenderer.ts, only readTex/writeTex ping-pong is handled per slot. Data textures A/B/C are not managed between passes.",
+      "conclusion": "The multi-pass shader chain requires explicit copyTextureToTexture calls between passes that the renderer may not be performing"
+    }
+  },
+
+  "fix_recommendations": [
+    {
+      "priority": "critical",
+      "recommendation": "Verify WebGPURenderer handles multi-pass data texture copying",
+      "details": "Ensure that when running quantum-foam-pass2 followed by quantum-foam-pass3, there's a copy from dataTexB to dataTexC between passes. The renderer currently only copies writeTex to readTex after each slot.",
+      "files_to_check": ["src/renderer/WebGPURenderer.ts"],
+      "code_location": "render loop, after each shader execution"
+    },
+    {
+      "priority": "high",
+      "recommendation": "Fix sim-fluid-feedback-field-pass3 dataTextureC usage",
+      "details": "Either change the shader to read from dataTextureB directly with textureLoad, or ensure the renderer copies dataTexB to dataTexC before Pass 3 runs.",
+      "alternative": "Modify Pass 3 to use textureLoad(dataTextureB, ...) instead of textureSampleLevel(dataTextureC, ...)"
+    },
+    {
+      "priority": "medium",
+      "recommendation": "Standardize naming convention",
+      "details": "Consider renaming videoTex to readTexture in the 47 non-standard shaders for consistency, though this is not causing the layer chain issue.",
+      "scope": "47 shaders using videoTex convention"
+    },
+    {
+      "priority": "medium",
+      "recommendation": "Document the data texture lifecycle",
+      "details": "Create documentation explaining: Pass N writes to A/B → copy to C → Pass N+1 reads C. Ensure the renderer implements this copy logic for multi-pass shaders.",
+      "deliverable": "docs/multi-pass-data-flow.md"
+    }
+  ],
+
+  "verification_commands": [
+    {
+      "description": "Check if renderer copies data textures between passes",
+      "command": "grep -n 'copyTextureToTexture\\|dataTex' src/renderer/WebGPURenderer.ts | head -50"
+    },
+    {
+      "description": "Search for multi-pass handling in renderer",
+      "command": "grep -n 'multipass\\|multi-pass\\|pass.*1\\|pass.*2\\|pass.*3' src/renderer/WebGPURenderer.ts"
+    },
+    {
+      "description": "Check if dataTexC ever gets updated with data from dataTexB",
+      "command": "grep -n 'dataTexB.*dataTexC\\|dataTexC.*dataTexB' src/renderer/*.ts"
+    }
+  ],
+
+  "conclusion": {
+    "binding_fix_status": "The binding fixes (adding 4-12, remapping 13+ to 7-9) are CORRECT and NOT the cause of the layer chain issue",
+    "actual_issue": "The layer chain problem appears to be a pre-existing issue with how multi-pass shaders share data via data textures. The renderer may not be copying data between dataTexA/dataTexB and dataTexC as required by the multi-pass architecture.",
+    "recommended_action": "Focus investigation on WebGPURenderer.ts multi-pass handling, not the shader bindings"
+  }
+}

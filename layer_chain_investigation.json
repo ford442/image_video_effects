@@ -1,0 +1,215 @@
+{
+  "timestamp": "2026-04-01T07:57:25+02:00",
+  "renderer_chain": {
+    "description": "The WebGPURenderer uses a ping-pong texture system for multi-slot shader chaining. The flow is: sourceTex (original input) → readTex → [compute shader writes to writeTex] → copy writeTex→readTex → [next shader reads from readTex] → ... → final blit to canvas.",
+    "ping_pong_mechanism": "1. sourceTex stores original image/video (preserved for re-use). 2. readTex is the current input for each shader. 3. writeTex is where the shader outputs. 4. After each shader dispatch, copyTextureToTexture copies writeTex→readTex. 5. The blit reads from readTex for final display.",
+    "chain_sequence": [
+      "sourceTex ← image/video upload (once per frame)",
+      "readTex ← sourceTex (via copyTextureToTexture)",
+      "For each ENABLED chained slot:",
+      "  - Shader samples from readTexture (binding 1)",
+      "  - Shader writes to writeTexture (binding 2)",
+      "  - copyTextureToTexture(writeTex → readTex)",
+      "blit reads from readTex to canvas"
+    ]
+  },
+  "statistics": {
+    "total_shaders": 700,
+    "shaders_reading_from_input": 523,
+    "shaders_not_reading_input": 177,
+    "shaders_using_textureSampleLevel": 609,
+    "generative_shaders_by_category": 109,
+    "multi_pass_shaders": 10
+  },
+  "findings": {
+    "shaders_ignoring_input": [
+      "gen_grid.wgsl",
+      "gen_kimi_nebula.wgsl",
+      "gen_capabilities.wgsl",
+      "gen_cyclic_automaton.wgsl",
+      "gen_fluffy_raincloud.wgsl",
+      "gen_grok41_mandelbrot.wgsl",
+      "gen_grok41_plasma.wgsl",
+      "gen_grok4_life.wgsl",
+      "gen_grok4_perlin.wgsl",
+      "gen_grokcf_interference.wgsl",
+      "gen_grokcf_voronoi.wgsl",
+      "gen_hyper_warp.wgsl",
+      "gen_julia_set.wgsl",
+      "gen_kimi_crystal.wgsl",
+      "gen_mandelbulb_3d.wgsl",
+      "gen_orb.wgsl",
+      "gen_psychedelic_spiral.wgsl",
+      "gen_quantum_foam.wgsl",
+      "gen_rainbow_smoke.wgsl",
+      "gen_reaction_diffusion.wgsl",
+      "gen_trails.wgsl",
+      "gen_wave_equation.wgsl",
+      "galaxy.wgsl",
+      "aurora-rift-pass1.wgsl",
+      "aurora-rift-2-pass1.wgsl",
+      "quantum-foam-pass1.wgsl",
+      "quantum-foam-pass2.wgsl",
+      "sim-fluid-feedback-field-pass1.wgsl",
+      "sim-fluid-feedback-field-pass2.wgsl"
+    ],
+    "shaders_with_nonstandard_binding_names": [
+      "chromatic-folds.wgsl (uses videoTex instead of readTexture)",
+      "neural-dreamscape.wgsl (uses videoTex instead of readTexture)",
+      "quantum-foam-pass1.wgsl (uses videoTex instead of readTexture)",
+      "quantum-foam-pass2.wgsl (uses videoTex instead of readTexture)"
+    ],
+    "multi_pass_shaders_writing_zeros": [
+      "quantum-foam-pass1.wgsl writes vec4(0.0) to writeTexture",
+      "quantum-foam-pass2.wgsl writes vec4(0.0) to writeTexture",
+      "sim-fluid-feedback-field-pass1.wgsl writes vec4(0.0) to writeTexture",
+      "sim-fluid-feedback-field-pass2.wgsl writes vec4(0.0) to writeTexture",
+      "aurora-rift-pass1.wgsl writes vec4(0.0) to writeTexture",
+      "aurora-rift-2-pass1.wgsl writes vec4(0.0) to writeTexture"
+    ],
+    "generative_shaders_correct_behavior": [
+      "gen_grid.wgsl - correctly generates without reading input",
+      "gen_kimi_nebula.wgsl - correctly generates without reading input",
+      "galaxy.wgsl - correctly generates without reading input",
+      "gen_*.wgsl shaders - category: generative, designed to work without input"
+    ]
+  },
+  "sample_analysis": [
+    {
+      "shader": "liquid.wgsl",
+      "reads_from_input": true,
+      "writes_to_output": true,
+      "blends_input": true,
+      "issue": "None - reads from readTexture, applies displacement, writes to writeTexture with proper alpha blending"
+    },
+    {
+      "shader": "liquid-metal.wgsl",
+      "reads_from_input": true,
+      "writes_to_output": true,
+      "blends_input": true,
+      "issue": "None - properly samples readTexture, applies metallic effect, writes with alpha"
+    },
+    {
+      "shader": "vortex.wgsl",
+      "reads_from_input": true,
+      "writes_to_output": true,
+      "blends_input": true,
+      "issue": "None - samples readTexture at displaced UVs, applies velocity field distortion"
+    },
+    {
+      "shader": "kaleidoscope.wgsl",
+      "reads_from_input": true,
+      "writes_to_output": true,
+      "blends_input": true,
+      "issue": "None - samples readTexture at mirrored UVs, preserves input"
+    },
+    {
+      "shader": "galaxy.wgsl",
+      "reads_from_input": false,
+      "writes_to_output": true,
+      "blends_input": false,
+      "issue": "Generative shader - intentionally ignores readTexture, generates procedural galaxy. Will 'supersede' previous layers if used in chain mode."
+    },
+    {
+      "shader": "gen_grid.wgsl",
+      "reads_from_input": false,
+      "writes_to_output": true,
+      "blends_input": false,
+      "issue": "Generative shader - intentionally ignores readTexture, generates procedural grid. Will 'supersede' previous layers."
+    },
+    {
+      "shader": "chromatic-folds.wgsl",
+      "reads_from_input": true,
+      "writes_to_output": true,
+      "blends_input": true,
+      "issue": "Uses non-standard binding names (videoTex, outTex) but binds to correct indices. Reads from input correctly."
+    },
+    {
+      "shader": "neural-dreamscape.wgsl",
+      "reads_from_input": true,
+      "writes_to_output": true,
+      "blends_input": true,
+      "issue": "Uses non-standard binding names (videoTex, outTex) but binds to correct indices. Mixes input with generated neural patterns."
+    },
+    {
+      "shader": "quantum-foam-pass1.wgsl",
+      "reads_from_input": false,
+      "writes_to_output": true,
+      "blends_input": false,
+      "issue": "Multi-pass shader - stores data in dataTextureA but writes vec4(0.0) to writeTexture. If used standalone, outputs black."
+    },
+    {
+      "shader": "quantum-foam-pass2.wgsl",
+      "reads_from_input": true,
+      "writes_to_output": true,
+      "blends_input": false,
+      "issue": "Multi-pass shader - reads from videoTex and dataTextureC (which contains pass1 data from PREVIOUS frame), writes vec4(0.0)."
+    },
+    {
+      "shader": "sim-fluid-feedback-field-pass1.wgsl",
+      "reads_from_input": false,
+      "writes_to_output": true,
+      "blends_input": false,
+      "issue": "Multi-pass shader - writes vec4(0.0) to writeTexture. Stores velocity field in dataTextureA."
+    }
+  ],
+  "root_cause_analysis": {
+    "primary_issue": "The 'superseding' behavior is caused by a combination of three factors:",
+    "factors": [
+      {
+        "factor": 1,
+        "name": "Generative shaders ignore input",
+        "description": "109 shaders in the generative category intentionally do not read from readTexture. They generate output from mathematical functions. When these are used in chained mode, they completely replace any previous layer's output instead of building on it."
+      },
+      {
+        "factor": 2,
+        "name": "Multi-pass intermediate shaders output zero",
+        "description": "Multi-pass shaders like quantum-foam-pass1 write vec4(0.0) to writeTexture, storing their real output in dataTextureA. The renderer copies this zero output to readTex, breaking the chain for subsequent shaders."
+      },
+      {
+        "factor": 3,
+        "name": "Missing multi-pass coordination in renderer",
+        "description": "The renderer treats all shaders identically. Multi-pass shaders need special handling: Pass 1→Pass 2→Pass 3 should be treated as a single unit, with only the final pass output copied to readTex for the next slot."
+      }
+    ]
+  },
+  "recommended_fixes": [
+    {
+      "shader": "All generative shaders (gen_*.wgsl, galaxy.wgsl)",
+      "fix_type": "add_input_read",
+      "description": "Modify generative shaders to read from readTexture and blend with generated content. Example: let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb; finalColor = mix(inputColor, generatedColor, effectStrength);"
+    },
+    {
+      "shader": "Multi-pass shaders (quantum-foam-pass*, sim-fluid-feedback-field-pass*)",
+      "fix_type": "fix_output_write",
+      "description": "Pass 1 and Pass 2 shaders should NOT write vec4(0.0) to writeTexture. They should preserve the input by copying it through: textureStore(writeTexture, coord, inputColor); OR the renderer should be modified to skip the writeTex→readTex copy for intermediate passes."
+    },
+    {
+      "shader": "Renderer (WebGPURenderer.ts)",
+      "fix_type": "add_multi_pass_awareness",
+      "description": "Add multi-pass shader detection. When a shader with 'multi-pass-1' feature is detected, automatically run its subsequent passes (pass2, pass3) and only copy the FINAL pass output to readTex."
+    },
+    {
+      "shader": "All shaders with non-standard names",
+      "fix_type": "standardize_binding_names",
+      "description": "While videoTex and outTex work (they bind to the same indices), standardizing to readTexture and writeTexture improves maintainability."
+    },
+    {
+      "shader": "Shader metadata (JSON definitions)",
+      "fix_type": "add_compositing_info",
+      "description": "Add a 'compositing' field to shader definitions: { 'mode': 'replace' | 'blend' | 'add', 'blend_strength': 0.0-1.0 }. The renderer can use this to properly composite shader output."
+    }
+  ],
+  "immediate_workarounds": [
+    {
+      "description": "Use parallel mode for generative shaders instead of chained mode. Parallel shaders all read from the same base readTex and their outputs don't interfere with chained shaders."
+    },
+    {
+      "description": "Don't stack generative shaders with image processing shaders in chained mode. Either use generative shaders alone OR use image processing shaders that properly read and modify input."
+    },
+    {
+      "description": "For multi-pass shaders, ensure all passes are loaded in consecutive slots (e.g., Slot 0: pass1, Slot 1: pass2, Slot 2: pass3). The current renderer doesn't support this well but it's the intended design."
+    }
+  ],
+  "conclusion": "The shader chain mechanism in the renderer is correctly implemented. The 'superseding' issue is caused by shader behavior: generative shaders ignore input (by design) and multi-pass intermediate shaders write zeros (implementation issue). To fix this: 1) Generative shaders should blend with input, 2) Multi-pass shaders should either preserve input through or the renderer should be multi-pass aware, 3) Consider adding explicit compositing modes to shader definitions."
+}

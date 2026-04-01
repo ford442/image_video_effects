@@ -163,14 +163,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let boundary_glow = exp(-f32(iteration) * 0.1);
     color += vec3<f32>(0.3, 0.25, 0.2) * boundary_glow * 0.5;
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+    
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, color, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
+    
     // Store final color
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
     
     // Store iteration data and convergence info
     textureStore(dataTextureA, global_id.xy, vec4<f32>(
         f32(converged_root) / 3.0,
         f32(iteration) / f32(max_iterations),
         boundary_glow,
-        1.0
+        finalAlpha
     ));
 }

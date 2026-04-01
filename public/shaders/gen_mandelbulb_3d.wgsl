@@ -197,6 +197,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalRGB: vec3<f32>;
     var finalAlpha: f32;
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uvFull, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvFull, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+
     if (hit) {
         let pos = camPos + rd * t;
         let normal = calcNormal(pos, power);
@@ -214,18 +221,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Color from orbit trap
         let trapColor = orbitTrapColor(pos, power, time);
-        let baseColor = mix(vec3<f32>(0.8, 0.7, 0.9), trapColor, 0.5 + colorShift * 0.5);
+        let hitColor = mix(vec3<f32>(0.8, 0.7, 0.9), trapColor, 0.5 + colorShift * 0.5);
         
         // Combine
-        finalRGB = baseColor * diffuse * shadow + vec3<f32>(0.1) + vec3<f32>(1.0) * specular;
+        let shadedColor = hitColor * diffuse * shadow + vec3<f32>(0.1) + vec3<f32>(1.0) * specular;
         
         // Alpha based on distance (fog)
-        finalAlpha = 1.0 - smoothstep(2.0, 5.0, t) * fogDensity;
+        let hitAlpha = 1.0 - smoothstep(2.0, 5.0, t) * fogDensity;
+        
+        // Blend hit with input
+        finalRGB = mix(inputColor.rgb, shadedColor, hitAlpha * opacity);
+        finalAlpha = max(inputColor.a, hitAlpha * opacity);
     } else {
-        // Background
-        let bg = textureSampleLevel(readTexture, u_sampler, uvFull, 0.0).rgb;
-        finalRGB = bg;
-        finalAlpha = 0.0;
+        // Pass through input when no hit
+        finalRGB = inputColor.rgb;
+        finalAlpha = inputColor.a;
     }
     
     // Fog color blend
@@ -239,8 +249,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - length(uvFull - 0.5) * 0.4;
     finalRGB *= vignette;
     
+    // Depth blending
+    let finalDepth = select(inputDepth, t / 5.0, hit);
+    
     textureStore(writeTexture, coord, vec4<f32>(finalRGB, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(t / 5.0, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
     
     // Store RGBA for feedback
     textureStore(dataTextureA, coord, vec4<f32>(finalRGB, finalAlpha));

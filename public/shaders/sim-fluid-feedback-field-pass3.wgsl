@@ -40,7 +40,7 @@ fn calculateGlow(uv: vec2<f32>, intensity: f32) -> vec3<f32> {
         let angle = f32(i) * 6.28318 / f32(samples);
         let radius = 0.02 * (1.0 + f32(i % 4) * 0.3);
         let offset = vec2<f32>(cos(angle), sin(angle)) * radius;
-        let sampleColor = textureSampleLevel(dataTextureC, u_sampler, uv + offset, 0.0).rgb;
+        let sampleColor = textureSampleLevel(dataTextureB, u_sampler, uv + offset, 0.0).rgb;
         glow += sampleColor;
     }
     
@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     for (var i = 0; i < scatterSamples; i++) {
         let t = f32(i) / f32(scatterSamples);
         let sampleUV = uv + scatterDir * t * 0.1;
-        let sampleDensity = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0).rgb;
+        let sampleDensity = textureSampleLevel(dataTextureB, u_sampler, sampleUV, 0.0).rgb;
         scattered += sampleDensity * (1.0 - t);
     }
     scattered /= f32(scatterSamples);

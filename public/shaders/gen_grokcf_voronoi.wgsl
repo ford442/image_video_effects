@@ -191,17 +191,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - length((uv - 0.5) * 1.2);
     final_color = final_color * smoothstep(0.0, 0.7, vignette);
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+    
     // Calculate alpha
     let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let edgeAlpha = mix(0.6, 1.0, edge_mask);
-    let depthAlpha = mix(0.6, 1.0, depth);
-    let alpha = (edgeAlpha + depthAlpha) * 0.5;
+    let generatedAlpha = edgeAlpha;
+    
+    // Blend with input
+    let finalColor = mix(inputColor.rgb, final_color, generatedAlpha * opacity);
+    let finalAlpha = max(inputColor.a, generatedAlpha * opacity);
     
     // Output RGBA
-    textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
     
     // Output depth
-    let depth_out = 1.0 - combined_f1 * 0.8 + edge_value * 0.2;
+    let depth_out = mix(inputDepth, 1.0 - combined_f1 * 0.8 + edge_value * 0.2, generatedAlpha * opacity);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth_out, 0.0, 0.0, 0.0));
 }

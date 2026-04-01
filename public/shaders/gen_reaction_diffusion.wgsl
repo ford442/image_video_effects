@@ -71,13 +71,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var new_a = a + da * 0.5;
     var new_b = b + db * 0.5 + mouse_influence;
 
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+
     // Visualize: warm orange (A) vs cool cyan (B)
-    let color = mix(
+    let generatedColor = mix(
         vec3<f32>(1.0, 0.3, 0.1),
         vec3<f32>(0.1, 0.6, 1.0),
         new_b
     ) + vec3<f32>(1.0, 0.8, 0.5) * reaction * 10.0;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Blend with input
+    let finalColor = mix(inputColor.rgb, generatedColor, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(new_a, new_b, 0.0, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

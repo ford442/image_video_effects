@@ -132,13 +132,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     in_scattered += rain_color * (1.0 - exp(-rain_optical_depth)); // Rain contribution
     in_scattered += cloud_color * (1.0 - exp(-cloud_optical_depth)); // Cloud contribution
     
-    // Final volumetric compositing
-    // Output RGBA where:
-    // - RGB = in-scattered light (emissive + scattered)
-    // - A = accumulated opacity from density
-    let final_color = in_scattered;
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+    
+    // Final volumetric compositing with blending
+    let generatedColor = in_scattered;
+    let finalColor = mix(inputColor.rgb, generatedColor, final_alpha * opacity);
+    let finalAlpha = max(inputColor.a, final_alpha * opacity);
     
     // Store state and output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, final_alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(rain_vel, rain_density, cloud_density));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

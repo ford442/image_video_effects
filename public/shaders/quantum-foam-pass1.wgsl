@@ -196,7 +196,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Store field for Pass 2
     textureStore(dataTextureA, gid.xy, field);
     
-    // Minimal color output (Pass 3 will do final compositing)
-    textureStore(writeTexture, gid.xy, vec4<f32>(0.0));
+    // Pass-through input to maintain chain (Pass 2 will do final compositing)
+    let inputColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
+    textureStore(writeTexture, gid.xy, inputColor);
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

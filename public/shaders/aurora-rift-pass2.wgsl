@@ -154,8 +154,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
     
-    // Read volumetric data from Pass 1 (via dataTextureC)
-    let volumetric = textureLoad(dataTextureC, gid.xy, 0);
+    // Read volumetric data from Pass 1 (via dataTextureA where Pass 1 wrote)
+    let volumetric = textureLoad(dataTextureA, gid.xy, 0);
     let auroraColor = volumetric.rgb;
     let density = volumetric.a;
     
@@ -192,6 +192,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Anisotropic diffusion (temporal blur)
     let historyUV = clamp(uv + warp * 0.28, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = textureSampleLevel(dataTextureC, videoSampler, historyUV, 0.0).rgb;
+    // Note: history reads from dataTextureC for temporal feedback effect
     let flowDir = normalize(warp + curl + vec2<f32>(0.001));
     let anisotropy = 1.0 - abs(dot(flowDir, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.28;
     let diffused = mix(blended, history, diffusionRate * anisotropy);

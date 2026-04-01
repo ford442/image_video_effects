@@ -120,7 +120,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Gamma correction and intensity
     color = pow(color, vec3<f32>(0.8)) * 1.2;
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.85;
+    
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, color, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
+    
     // Store for feedback
-    textureStore(writeTexture, px, vec4<f32>(color, 1.0));
-    textureStore(dataTextureA, px, vec4<f32>(color, nebulaDensity));
+    textureStore(writeTexture, px, vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, px, vec4<f32>(finalColor, nebulaDensity));
+    textureStore(writeDepthTexture, px, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

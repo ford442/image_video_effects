@@ -124,6 +124,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var depth: f32 = 0.0;
     var alpha: f32 = 1.0;
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let uv_norm = vec2<f32>(global_id.xy) / resolution;
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv_norm, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_norm, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+
     if discriminant > 0.0 {
         let t = (-b - sqrt(discriminant)) / (2.0 * a);
         let hitPoint = ro_final + rd_final * t;
@@ -167,24 +175,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let baseColor = gasGiantColor(pattern, time, coeffs.w);
         let litColor = baseColor * (diff * 0.7 + ambient) + vec3<f32>(spec);
         let atmosphereColor = vec3<f32>(0.6, 0.8, 1.0);
-        outputColor = litColor + atmosphereColor * rim;
+        let generatedColor = litColor + atmosphereColor * rim;
         
         // Alpha based on rim for atmospheric fade
         let rimAlpha = pow(1.0 - abs(dot(normal, viewDir)), 2.0);
-        alpha = mix(0.9, 1.0, rimAlpha * 0.5);
+        let hitAlpha = mix(0.9, 1.0, rimAlpha * 0.5);
+        
+        // Blend with input
+        outputColor = mix(inputColor.rgb, generatedColor, hitAlpha * opacity);
+        alpha = max(inputColor.a, hitAlpha * opacity);
         
         let clipZ = hitPoint.z;
-        depth = (clipZ + sphereRadius) / (sphereRadius * 2.0 + 1.8);
+        let generatedDepth = (clipZ + sphereRadius) / (sphereRadius * 2.0 + 1.8);
+        depth = mix(inputDepth, generatedDepth, hitAlpha * opacity);
     } else {
-        // Background
-        let bgGradient = 1.0 - length(uv) * 0.5;
-        outputColor = vec3<f32>(0.02, 0.03, 0.06) * bgGradient;
-        let starNoise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-        if starNoise > 0.995 {
-            outputColor += vec3<f32>(1.0) * (starNoise - 0.995) * 200.0;
-        }
-        depth = 1.0;
-        alpha = 1.0;
+        // Background - pass through input
+        outputColor = inputColor.rgb;
+        depth = inputDepth;
+        alpha = inputColor.a;
     }
     
     // Output RGBA

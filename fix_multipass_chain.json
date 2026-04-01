@@ -1,0 +1,128 @@
+{
+  "agent": "Multi-Pass Chain Fixer",
+  "date": "2026-04-01",
+  "problem": "Multi-pass shaders write intermediate data to dataTextureA/B, but subsequent passes read from dataTextureC expecting automatic copies that don't happen",
+  "fix_strategy": "Option 1 - Change Pass 2+ to read from where the previous pass actually wrote",
+  "fixed_shader_chains": [
+    {
+      "chain": "aurora-rift-pass1/2",
+      "passes": 2,
+      "changes": [
+        {
+          "file": "aurora-rift-pass2.wgsl",
+          "change": "Pass 2 now reads volumetric data from dataTextureA (where Pass 1 wrote)",
+          "line": 158,
+          "before": "textureLoad(dataTextureC, gid.xy, 0)",
+          "after": "textureLoad(dataTextureA, gid.xy, 0)"
+        }
+      ],
+      "data_flow": "Pass 1 writes to dataTextureA → Pass 2 reads from dataTextureA",
+      "note": "Temporal history feedback still uses dataTextureC (correct for feedback effects)"
+    },
+    {
+      "chain": "aurora-rift-2-pass1/2",
+      "passes": 2,
+      "changes": [
+        {
+          "file": "aurora-rift-2-pass2.wgsl",
+          "change": "Pass 2 now reads volumetric data from dataTextureA (where Pass 1 wrote)",
+          "line": 165,
+          "before": "textureLoad(dataTextureC, gid.xy, 0)",
+          "after": "textureLoad(dataTextureA, gid.xy, 0)"
+        }
+      ],
+      "data_flow": "Pass 1 writes to dataTextureA → Pass 2 reads from dataTextureA",
+      "note": "Temporal history feedback still uses dataTextureC (correct for feedback effects)"
+    },
+    {
+      "chain": "quantum-foam-pass1/2/3",
+      "passes": 3,
+      "changes": [
+        {
+          "file": "quantum-foam-pass2.wgsl",
+          "change": "Pass 2 now reads field data from dataTextureA (where Pass 1 wrote)",
+          "line": 147,
+          "before": "textureLoad(dataTextureC, gid.xy, 0)",
+          "after": "textureLoad(dataTextureA, gid.xy, 0)"
+        },
+        {
+          "file": "quantum-foam-pass3.wgsl",
+          "change": "Pass 3 now reads particle data from dataTextureB (where Pass 2 wrote)",
+          "line": 103,
+          "before": "textureLoad(dataTextureC, gid.xy, 0)",
+          "after": "textureLoad(dataTextureB, gid.xy, 0)"
+        },
+        {
+          "file": "quantum-foam-pass3.wgsl",
+          "change": "Glow sampling now reads from dataTextureB (where Pass 2 wrote)",
+          "line": 64,
+          "before": "textureSampleLevel(dataTextureC, videoSampler, sampleUV, 0.0)",
+          "after": "textureSampleLevel(dataTextureB, videoSampler, sampleUV, 0.0)"
+        }
+      ],
+      "data_flow": "Pass 1 writes to dataTextureA → Pass 2 reads A, writes B → Pass 3 reads B",
+      "note": "Temporal history feedback in Pass 2 still uses dataTextureC (correct for feedback effects)"
+    },
+    {
+      "chain": "sim-fluid-feedback-field-pass1/2/3",
+      "passes": 3,
+      "changes": [
+        {
+          "file": "sim-fluid-feedback-field-pass1.wgsl",
+          "change": "Pass 1 now initializes velocity from curl noise instead of reading non-existent data from dataTextureC",
+          "line": 77,
+          "before": "Read from dataTextureC (previous velocity field) + advection",
+          "after": "Initialize from curlNoise(uv * 5.0 + time * 0.1) * turbulence * 0.1"
+        },
+        {
+          "file": "sim-fluid-feedback-field-pass3.wgsl",
+          "change": "Glow sampling now reads from dataTextureB (where Pass 2 wrote density)",
+          "line": 43,
+          "before": "textureSampleLevel(dataTextureC, u_sampler, uv + offset, 0.0).rgb",
+          "after": "textureSampleLevel(dataTextureB, u_sampler, uv + offset, 0.0).rgb"
+        },
+        {
+          "file": "sim-fluid-feedback-field-pass3.wgsl",
+          "change": "Scattering samples now read from dataTextureB (where Pass 2 wrote density)",
+          "line": 79,
+          "before": "textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0).rgb",
+          "after": "textureSampleLevel(dataTextureB, u_sampler, sampleUV, 0.0).rgb"
+        }
+      ],
+      "data_flow": "Pass 1 initializes velocity → writes A → Pass 2 reads A, advects density → writes B → Pass 3 reads B",
+      "known_issue": "Pass 2 reads density from dataTextureC for advection feedback loop, but no B→C copy exists. Density will accumulate from mouse/ripple sources each frame but won't advect from previous frame's density."
+    }
+  ],
+  "shaders_modified": [
+    "public/shaders/aurora-rift-pass2.wgsl",
+    "public/shaders/aurora-rift-2-pass2.wgsl",
+    "public/shaders/quantum-foam-pass2.wgsl",
+    "public/shaders/quantum-foam-pass3.wgsl",
+    "public/shaders/sim-fluid-feedback-field-pass1.wgsl",
+    "public/shaders/sim-fluid-feedback-field-pass2.wgsl",
+    "public/shaders/sim-fluid-feedback-field-pass3.wgsl"
+  ],
+  "unchanged_shaders": [
+    "aurora-rift-pass1.wgsl (correctly writes to dataTextureA)",
+    "aurora-rift-2-pass1.wgsl (correctly writes to dataTextureA)",
+    "quantum-foam-pass1.wgsl (correctly writes to dataTextureA)"
+  ],
+  "notes": [
+    "Fixed 7 shader files across 4 multi-pass chains",
+    "Pass 1 shaders were already correct - they write to dataTextureA",
+    "The issue was Pass 2+ shaders reading from dataTextureC instead of where previous pass wrote",
+    "Temporal history reads (for feedback effects) still use dataTextureC as designed",
+    "sim-fluid-feedback-field-pass1 was reading from empty dataTextureC - now initializes from curl noise",
+    "All data chains now properly connect: A→Pass2 or A→Pass2→B→Pass3",
+    "sim-fluid-feedback-field has a remaining issue: Pass 2 expects B→C copy for density feedback loop"
+  ],
+  "data_texture_convention": {
+    "dataTextureA": "Pass 1 output, readable by Pass 2+ (storage, write; loadable by subsequent passes)",
+    "dataTextureB": "Pass 2 output, readable by Pass 3+ (storage, write; loadable by subsequent passes)",
+    "dataTextureC": "Read-only sampleable texture for temporal feedback/history (requires explicit copy to be populated)"
+  },
+  "renderer_requirements_for_full_fix": [
+    "For sim-fluid-feedback-field to work with density advection feedback, renderer needs B→C copy between frames",
+    "Alternative: Shaders could be redesigned to use dataTextureA for ping-pong feedback (read A, write A)"
+  ]
+}

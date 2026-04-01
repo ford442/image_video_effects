@@ -1,0 +1,40 @@
+{
+  "agent": "Zero-Output Fixer",
+  "timestamp": "2026-04-01T07:57:25+02:00",
+  "shaders_checked": [
+    "aurora-rift-pass1.wgsl",
+    "aurora-rift-2-pass1.wgsl",
+    "quantum-foam-pass1.wgsl",
+    "sim-fluid-feedback-field-pass1.wgsl"
+  ],
+  "shaders_fixed": [
+    {
+      "shader": "aurora-rift-pass1.wgsl",
+      "issue": "writes vec4<f32>(0.0) to writeTexture, breaking layer chain",
+      "fix": "now passes through input video color while storing volumetric data in dataTextureA for Pass 2"
+    },
+    {
+      "shader": "aurora-rift-2-pass1.wgsl",
+      "issue": "writes vec4<f32>(0.0) to writeTexture, breaking layer chain",
+      "fix": "now passes through input video color while storing volumetric data in dataTextureA for Pass 2"
+    },
+    {
+      "shader": "quantum-foam-pass1.wgsl",
+      "issue": "writes vec4<f32>(0.0) to writeTexture with comment 'Minimal color output'",
+      "fix": "now passes through input video color while storing field data in dataTextureA for Pass 2"
+    },
+    {
+      "shader": "sim-fluid-feedback-field-pass1.wgsl",
+      "issue": "writes vec4<f32>(0.0) to writeTexture with comment 'Write minimal output'",
+      "fix": "now passes through input color from readTexture while storing velocity in dataTextureA"
+    }
+  ],
+  "notes": [
+    "All 4 multi-pass Pass 1 shaders had the same pattern: they stored intermediate data in dataTextureA but wrote zeros to writeTexture.",
+    "This caused the next shader in the chain (Pass 2 or any shader in the next slot) to receive black/empty input.",
+    "Fix applied: Sample the input texture (videoTex or readTexture) and pass it through to writeTexture.",
+    "The intermediate data is still correctly stored in dataTextureA for the Pass 2 shader to read.",
+    "Depth pass-through was already correct in all shaders.",
+    "Pattern to watch for in future multi-pass shaders: textureStore(writeTexture, gid.xy, vec4<f32>(0.0)) is almost always wrong for Pass 1 shaders."
+  ]
+}

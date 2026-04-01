@@ -243,7 +243,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let center_dist = length(uv - 0.5) * 1.4;
     color *= 1.0 - center_dist * center_dist * 0.3;
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+    
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, color, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
+    
     // Output to textures
-    textureStore(writeTexture, vec2<u32>(px), vec4<f32>(color, 1.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(new_state, new_age, new_activity, 1.0));
+    textureStore(writeTexture, vec2<u32>(px), vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(new_state, new_age, new_activity, finalAlpha));
+    textureStore(writeDepthTexture, vec2<u32>(px), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

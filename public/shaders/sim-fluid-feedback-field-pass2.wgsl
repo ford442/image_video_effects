@@ -50,7 +50,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Backtrace for density advection
     let prevPos = uv - vel * pixel * 3.0;
     
-    // Advect density from previous position
+    // Advect density from previous position (reads from dataTextureC for temporal feedback)
+    // NOTE: This expects a B→C copy between frames. Without it, density starts fresh each frame.
     var density = textureSampleLevel(dataTextureC, u_sampler, clamp(prevPos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     
     // Add source at mouse position

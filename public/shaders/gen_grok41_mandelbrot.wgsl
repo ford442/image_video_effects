@@ -162,12 +162,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate alpha based on density (presence-based)
     let presence = smoothstep(0.05, 0.2, density);
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(global_id.xy) / resolution, 0.0).r;
-    let alpha = mix(0.0, 1.0, presence);
+    
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let uv_norm = vec2<f32>(global_id.xy) / resolution;
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv_norm, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_norm, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+    
+    // ═══ BLEND WITH INPUT ═══
+    let generatedAlpha = mix(0.0, 1.0, presence);
+    let finalColor = mix(inputColor.rgb, color, generatedAlpha * opacity);
+    let finalAlpha = max(inputColor.a, generatedAlpha * opacity);
     
     // Output RGBA
-    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
     
     // Output depth
-    textureStore(writeDepthTexture, coord, vec4<f32>(density, 0.0, 0.0, 0.0));
+    let finalDepth = mix(inputDepth, density, generatedAlpha * opacity);
+    textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

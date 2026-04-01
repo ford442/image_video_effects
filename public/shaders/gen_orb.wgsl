@@ -62,6 +62,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let time = u.config.x;
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
     // Aspect ratio correction
     let aspect = resolution.x / resolution.y;
     var p = uv * 2.0 - 1.0;
@@ -73,8 +77,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let beta = mix(1.0, 5.0, u.zoom_params.z);    // β: geometric factor
     let particleCount = i32(mix(500.0, 3000.0, u.zoom_params.w));
     
+    // Opacity for blending
+    let opacity = 0.85;
+    
     // Background - deep space
-    var color = vec3<f32>(0.02, 0.02, 0.04);
+    var generatedColor = vec3<f32>(0.02, 0.02, 0.04);
     
     // View parameters
     let rotSpeed = time * 0.15;
@@ -212,23 +219,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     accumColor += vec3<f32>(0.3, 0.7, 0.9) * wingGlow2 * 0.2;
     
     // Tone mapping and color grading
-    color = color + accumColor;
+    generatedColor = generatedColor + accumColor;
     
     // Soft contrast enhancement
-    color = color / (1.0 + color * 0.5);
+    generatedColor = generatedColor / (1.0 + generatedColor * 0.5);
     
     // Subtle vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.5;
-    color *= vignette;
+    generatedColor *= vignette;
     
     // Calculate alpha based on luminance and depth
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let luma = dot(generatedColor, vec3<f32>(0.299, 0.587, 0.114));
     let presence = smoothstep(0.02, 0.1, luma);
     let alpha = mix(0.0, 1.0, presence);
     
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, generatedColor, alpha * opacity);
+    let finalAlpha = max(inputColor.a, alpha * opacity);
+    
+    // Depth blending
+    let finalDepth = mix(inputDepth, maxDepth, alpha * opacity);
+    
     // Output final RGBA color
-    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
     
     // Output depth for potential post-processing
-    textureStore(writeDepthTexture, coord, vec4<f32>(maxDepth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

@@ -29,6 +29,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
 
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
     // Feedback trail from previous frame
     let history = textureLoad(dataTextureC, px, 0).rgb;
 
@@ -61,18 +65,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Intense psychedelic color cycling
     let hue = value * 0.5 + time * 0.5;
-    let color = vec3<f32>(
+    let spiralColor = vec3<f32>(
         sin(hue * 6.28318),
         sin(hue * 6.28318 + 2.094),
         sin(hue * 6.28318 + 4.188)
     );
 
     // High contrast and brightness for psychedelic pop
-    let intense = pow(color, vec3<f32>(0.7)) * 3.0;
+    let intense = pow(spiralColor, vec3<f32>(0.7)) * 3.0;
 
+    // Opacity control - allows blending with input
+    let opacity = 0.8;
+    
     // Add feedback trail for motion blur effect
-    let final_color = intense + history * 0.9;
+    let generated_color = intense + history * 0.9;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(final_color, 1.0));
+    // ═══ BLEND WITH INPUT ═══
+    let final_color = mix(inputColor.rgb, generated_color, opacity);
+    let final_alpha = max(inputColor.a, opacity);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, final_alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(final_color, final_alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

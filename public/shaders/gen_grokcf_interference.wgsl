@@ -164,19 +164,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let boundary = smoothstep(0.98, 1.0, edgeDist);
     color = mix(color, vec3<f32>(0.3, 0.25, 0.2), boundary * 0.5);
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.9;
+    
     // Calculate alpha based on content presence
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.7, 1.0, luma);
+    let generatedAlpha = mix(0.7, 1.0, luma);
     
-    // Depth-aware alpha modulation
-    let depthAlpha = mix(0.6, 1.0, depth);
-    let finalAlpha = (alpha + depthAlpha) * 0.5;
+    // Blend with input
+    let finalColor = mix(inputColor.rgb, color, generatedAlpha * opacity);
+    let finalAlpha = max(inputColor.a, generatedAlpha * opacity);
     
     // Output RGBA color
-    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
     
     // Store vibration energy in depth for potential post-processing
-    let depthValue = vibrationEnergy * 0.5 + 0.5;
+    let depthValue = mix(inputDepth, vibrationEnergy * 0.5 + 0.5, generatedAlpha * opacity);
     textureStore(writeDepthTexture, coord, vec4<f32>(depthValue, 0.0, 0.0, 0.0));
 }

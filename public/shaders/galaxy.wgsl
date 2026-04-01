@@ -47,12 +47,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
     let time = u.config.x;
+    
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
     // ═══ AUDIO REACTIVITY ═══
     let audioOverall = u.config.y;
     let audioBass = u.config.y * 1.2;
     let audioMid = u.config.z;
     let audioHigh = u.config.w;
     let audioReactivity = 1.0 + audioOverall * 0.5;
+    
+    // Opacity control - allows blending with input
+    let opacity = mix(0.5, 1.0, u.zoom_params.x);
     
     // Centered UV coordinates
     let p = (uv - 0.5) * 2.0;
@@ -62,10 +70,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Galaxy parameters from uniforms
     let zoom = u.zoom_config.x;
-    let arms = mix(2.0, 6.0, u.zoom_params.x);
-    let rotation = mix(0.5, 3.0, u.zoom_params.y);
-    let spread = mix(0.1, 0.5, u.zoom_params.z);
-    let brightness = mix(0.5, 2.0, u.zoom_params.w);
+    let arms = mix(2.0, 6.0, u.zoom_params.y);
+    let rotation = mix(0.5, 3.0, u.zoom_params.z);
+    let spread = mix(0.1, 0.5, u.zoom_params.w);
+    let brightness = mix(0.5, 2.0, 0.5);
     
     // Convert to polar coordinates
     let radius = length(screenP);
@@ -90,27 +98,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let starColor = vec3<f32>(1.0, 1.0, 1.0);
     
     let baseColor = mix(coreColor, armColor, smoothstep(0.0, 0.5, radius));
-    var finalColor = baseColor * density + starColor * star;
+    var generatedColor = baseColor * density + starColor * star;
     
     // Add twinkling
     let twinkle = sin(time * 3.0 * audioReactivity + radius * 10.0) * 0.1 + 0.9;
-    finalColor = finalColor * twinkle;
+    generatedColor = generatedColor * twinkle;
     
     // Vignette
     let vignette = 1.0 - radius * 0.5;
-    finalColor = finalColor * vignette;
+    generatedColor = generatedColor * vignette;
     
     // Calculate alpha based on brightness/presence
-    let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    let luma = dot(generatedColor, vec3<f32>(0.299, 0.587, 0.114));
     let presence = smoothstep(0.05, 0.2, luma);
     let alpha = mix(0.0, 1.0, presence);
     
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, generatedColor, alpha * opacity);
+    let finalAlpha = max(inputColor.a, alpha * opacity);
+    
     // Depth: closer stars are brighter/closer to center
-    let depth = 1.0 - radius * 0.5;
+    let generatedDepth = 1.0 - radius * 0.5;
+    let finalDepth = mix(inputDepth, generatedDepth, alpha * opacity);
     
     // Write RGBA color
-    textureStore(writeTexture, coord, vec4<f32>(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
+    textureStore(writeTexture, coord, vec4<f32>(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0)), finalAlpha));
     
     // Write depth
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

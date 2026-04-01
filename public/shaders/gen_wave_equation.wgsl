@@ -26,6 +26,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
 
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
     // Wave physics parameters
     let damping = 0.995;
     let wave_speed = 0.5;
@@ -65,13 +69,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Visualize: deep water to foamy crests
     let t = height * 0.5 + 0.5;
-    let color = mix(
+    let waterColor = mix(
         vec3<f32>(0.05, 0.15, 0.3),
         vec3<f32>(0.9, 0.95, 1.0),
         smoothstep(0.0, 1.0, t)
     );
-    let final_color = color + vec3<f32>(0.3, 0.6, 1.0) * smoothstep(0.05, 0.15, abs(velocity)) * 0.5;
+    let generatedColor = waterColor + vec3<f32>(0.3, 0.6, 1.0) * smoothstep(0.05, 0.15, abs(velocity)) * 0.5;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+    // ═══ BLEND WITH INPUT ═══
+    let opacity = 0.85;  // Wave overlay opacity
+    let finalColor = mix(inputColor.rgb, generatedColor, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(height, velocity, 0.0, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

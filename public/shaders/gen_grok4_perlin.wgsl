@@ -73,24 +73,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     n = (n + 1.0) * 0.5;
 
     // Color as terrain: blue water, green land, white peaks
-    var color: vec3<f32>;
+    var generatedColor: vec3<f32>;
     if (n < 0.3) {
-        color = vec3<f32>(0.1, 0.2, 0.6) * (n / 0.3);
+        generatedColor = vec3<f32>(0.1, 0.2, 0.6) * (n / 0.3);
     } else if (n < 0.7) {
-        color = vec3<f32>(0.2, 0.6, 0.3) * ((n - 0.3) / 0.4 + 0.6);
+        generatedColor = vec3<f32>(0.2, 0.6, 0.3) * ((n - 0.3) / 0.4 + 0.6);
     } else {
-        color = vec3<f32>(1.0, 1.0, 1.0) * ((n - 0.7) / 0.3 + 0.8);
+        generatedColor = vec3<f32>(1.0, 1.0, 1.0) * ((n - 0.7) / 0.3 + 0.8);
     }
 
-    // Sample depth
+    // Sample input and depth
     let uv_norm = vec2<f32>(global_id.xy) / resolution;
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_norm, 0.0).r;
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv_norm, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_norm, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.85;
     
     // Calculate alpha based on noise value and luminance
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.7, 1.0, luma * n);
-    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+    let luma = dot(generatedColor, vec3<f32>(0.299, 0.587, 0.114));
+    let generatedAlpha = mix(0.7, 1.0, luma * n);
+    
+    // Blend with input
+    let finalColor = mix(inputColor.rgb, generatedColor, generatedAlpha * opacity);
+    let finalAlpha = max(inputColor.a, generatedAlpha * opacity);
 
-    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

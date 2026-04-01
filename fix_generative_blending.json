@@ -1,0 +1,164 @@
+{
+  "agent": "Generative Shader Fixer",
+  "date": "2026-04-01",
+  "fixed_count": 22,
+  "skipped_count": 1,
+  "fixed_shaders": [
+    {
+      "shader": "galaxy.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, alpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Now samples readTexture and blends galaxy with input layer"
+    },
+    {
+      "shader": "gen_grid.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, lineAlpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Added input sampling and opacity blending"
+    },
+    {
+      "shader": "gen_orb.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, alpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Lorenz attractor now blends with input instead of replacing"
+    },
+    {
+      "shader": "gen_psychedelic_spiral.wgsl",
+      "blending_added": "mix(inputColor.rgb, generated_color, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Spiral effect now overlays on previous layer"
+    },
+    {
+      "shader": "gen_cyclic_automaton.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Cellular automaton blends with input"
+    },
+    {
+      "shader": "gen_trails.wgsl",
+      "blending_added": "mix(inputColor.rgb, output_color, final_alpha_boosted * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Boids flocking now blends with previous layer"
+    },
+    {
+      "shader": "gen_wave_equation.wgsl",
+      "blending_added": "mix(inputColor.rgb, water_color, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Wave simulation overlays on input"
+    },
+    {
+      "shader": "gen_rainbow_smoke.wgsl",
+      "blending_added": "mix(inputColor.rgb, in_scattered, alpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Smoke blends with background"
+    },
+    {
+      "shader": "gen_reaction_diffusion.wgsl",
+      "blending_added": "mix(inputColor.rgb, pattern_color, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Gray-Scott pattern now blends with input"
+    },
+    {
+      "shader": "gen_quantum_foam.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Quantum foam overlays on previous layer"
+    },
+    {
+      "shader": "gen_julia_set.wgsl",
+      "blending_added": "mix(inputColor.rgb, color, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Newton fractal now blends with input"
+    },
+    {
+      "shader": "gen_kimi_nebula.wgsl",
+      "blending_added": "mix(inputColor.rgb, color, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Nebula blends with previous layer"
+    },
+    {
+      "shader": "gen_mandelbulb_3d.wgsl",
+      "blending_added": "hit ? mix(inputColor.rgb, hit_color, alpha * opacity) : inputColor.rgb",
+      "depth_passthrough_added": true,
+      "notes": "Mandelbulb blends when hit, passes through input on miss"
+    },
+    {
+      "shader": "gen_fluffy_raincloud.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, final_alpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Cloud and rain blend with input"
+    },
+    {
+      "shader": "gen_hyper_warp.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Domain warping effect blends with input"
+    },
+    {
+      "shader": "gen_kimi_crystal.wgsl",
+      "blending_added": "mix(inputColor.rgb, color, crystalMask * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Crystal now blends using existing transmission with opacity control"
+    },
+    {
+      "shader": "gen_grok4_life.wgsl",
+      "blending_added": "mix(inputColor.rgb, color, opacity)",
+      "depth_passthrough_added": true,
+      "notes": "SmoothLife cellular automaton overlays on input"
+    },
+    {
+      "shader": "gen_grok4_perlin.wgsl",
+      "blending_added": "mix(inputColor.rgb, generatedColor, generatedAlpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Perlin noise terrain blends with previous layer"
+    },
+    {
+      "shader": "gen_grok41_mandelbrot.wgsl",
+      "blending_added": "mix(inputColor.rgb, color, generatedAlpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Buddhabrot nebula blends with input"
+    },
+    {
+      "shader": "gen_grok41_plasma.wgsl",
+      "blending_added": "hit ? mix(inputColor.rgb, generatedColor, hitAlpha * opacity) : inputColor.rgb",
+      "depth_passthrough_added": true,
+      "notes": "Gas giant sphere blends when hit, passes through on miss"
+    },
+    {
+      "shader": "gen_grokcf_interference.wgsl",
+      "blending_added": "mix(inputColor.rgb, color, generatedAlpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Chladni plate cymatics blends with input"
+    },
+    {
+      "shader": "gen_grokcf_voronoi.wgsl",
+      "blending_added": "mix(inputColor.rgb, final_color, generatedAlpha * opacity)",
+      "depth_passthrough_added": true,
+      "notes": "Worley noise voronoi blends with input"
+    }
+  ],
+  "skipped_shaders": [
+    {
+      "shader": "plasma.wgsl",
+      "reason": "Already correctly samples from readTexture and blends with baseColor at the start - no fix needed"
+    }
+  ],
+  "pattern_summary": {
+    "shaders_needing_fix": 22,
+    "shaders_already_blending": 1,
+    "total_generative_checked": 23,
+    "common_fix_pattern": "Add: 1) inputColor = textureSampleLevel(readTexture,...), 2) inputDepth = textureSampleLevel(readDepthTexture,...), 3) opacity variable, 4) final blend using mix(inputColor.rgb, generatedColor, alpha * opacity)",
+    "depth_passthrough_pattern": "textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0)) or blended depth"
+  },
+  "changes_made": {
+    "all_fixed_shaders_now": [
+      "Sample from readTexture using textureSampleLevel",
+      "Sample from readDepthTexture for depth pass-through",
+      "Apply opacity-controlled blending with mix()",
+      "Write blended color with proper alpha",
+      "Pass through or blend depth values"
+    ],
+    "key_benefit": "Generative shaders now properly layer on top of previous effects instead of completely replacing them, enabling proper multi-slot shader stacking"
+  },
+  "notes": "All 22 generative shaders now support proper layer blending. The opacity values (typically 0.85-0.9) ensure generative effects are visible while still allowing previous layers to show through. This fixes the 'superseding' problem where generative shaders would completely obscure image/video sources or previous shader effects."
+}

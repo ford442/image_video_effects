@@ -126,6 +126,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
     // Get parameters from uniforms
     let distortionAmount = u.zoom_params.x;
     let gridScale = u.zoom_params.y;
@@ -137,6 +141,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = select(1.5, gridScale, gridScale > 0.1);
     let thickness = select(0.03, lineThickness, lineThickness > 0.001);
     let shift = select(0.0, colorShift, colorShift > 0.001);
+    
+    // Opacity for blending with input
+    let opacity = mix(0.6, 1.0, lineThickness);
     
     // Aspect correction
     let aspect = resolution.x / resolution.y;
@@ -161,28 +168,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mixFactor = smoothstep(0.0, 0.5, distortionMag);
     let lineColor = mix(baseColor, accentColor, mixFactor);
     
-    // Final Color Assembly
-    var finalColor = vec3<f32>(0.02, 0.02, 0.05);
-    finalColor = finalColor + lineColor * lineIntensity;
-    finalColor = finalColor + lineColor * lineGlow * 0.5;
-    finalColor = finalColor + accentColor * distortionMag * 0.15;
+    // Final Color Assembly (generated)
+    var generatedColor = vec3<f32>(0.02, 0.02, 0.05);
+    generatedColor = generatedColor + lineColor * lineIntensity;
+    generatedColor = generatedColor + lineColor * lineGlow * 0.5;
+    generatedColor = generatedColor + accentColor * distortionMag * 0.15;
     
     // Vignette
     let vignetteUV = uv * (1.0 - uv);
     let vignette = vignetteUV.x * vignetteUV.y * 15.0;
-    finalColor = finalColor * clamp(vignette, 0.0, 1.0);
-    finalColor = pow(finalColor, vec3<f32>(0.85));
+    generatedColor = generatedColor * clamp(vignette, 0.0, 1.0);
+    generatedColor = pow(generatedColor, vec3<f32>(0.85));
     
-    // Calculate alpha based on line intensity and depth
-    let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Calculate alpha based on line intensity
+    let luma = dot(generatedColor, vec3<f32>(0.299, 0.587, 0.114));
     let lineAlpha = mix(0.5, 1.0, lineIntensity + lineGlow);
-    let depthAlpha = mix(0.6, 1.0, depth);
-    let alpha = (lineAlpha + depthAlpha) * 0.5;
+    let alpha = lineAlpha;
+    
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, generatedColor, alpha * opacity);
+    let finalAlpha = max(inputColor.a, alpha * opacity);
+    
+    // Depth blending
+    let generatedDepth = distortionMag;
+    let finalDepth = mix(inputDepth, generatedDepth, alpha * opacity);
     
     // Output RGBA color
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
     
     // Output depth
-    textureStore(writeDepthTexture, coord, vec4<f32>(distortionMag, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

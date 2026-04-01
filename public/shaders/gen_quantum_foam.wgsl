@@ -157,24 +157,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
     // Parameters
     let foamScale = 4.0 + u.zoom_params.x * 8.0;      // 4-12
     let webDensity = u.zoom_params.y;                  // 0-1
     let glowIntensity = 0.5 + u.zoom_params.z;         // 0.5-1.5
     let evolutionSpeed = 0.3 + u.zoom_params.w * 0.7;  // 0.3-1.0
     
+    // Opacity control
+    let opacity = 0.85;
+    
     // Audio reactivity (from mouse Y as proxy)
     let audioPulse = u.zoom_config.z;
     
     // Quantum foam base
-    var color = quantumFoam(uv, time * evolutionSpeed, foamScale);
+    var generatedColor = quantumFoam(uv, time * evolutionSpeed, foamScale);
     
     // Add entanglement web
     let web = entanglementWeb(uv, time * evolutionSpeed * 0.5, webDensity);
-    color += vec3<f32>(web * 0.8, web * 0.9, web * 1.2);
+    generatedColor += vec3<f32>(web * 0.8, web * 0.9, web * 1.2);
     
     // Audio-reactive burst
-    color *= 1.0 + audioPulse * 2.0;
+    generatedColor *= 1.0 + audioPulse * 2.0;
     
     // Volumetric glow simulation (blur approximation)
     let glowRadius = 2;
@@ -187,19 +194,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     glowAccum /= f32((glowRadius * 2 + 1) * (glowRadius * 2 + 1));
-    color += glowAccum * glowIntensity * 0.5;
+    generatedColor += glowAccum * glowIntensity * 0.5;
     
     // HDR tone mapping
-    color = acesToneMap(color * 0.8);
+    generatedColor = acesToneMap(generatedColor * 0.8);
     
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
-    color *= vignette;
+    generatedColor *= vignette;
+    
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, generatedColor, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
     
     // Output
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
     
     // Store foam state for temporal continuity
-    textureStore(dataTextureA, coord, vec4<f32>(color * 0.5 + 0.5, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor * 0.5 + 0.5, finalAlpha));
 }

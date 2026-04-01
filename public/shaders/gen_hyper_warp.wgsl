@@ -117,11 +117,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Boost brightness and contrast for intensity
     color = pow(color, vec3<f32>(0.8)) * 1.5;
 
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    
+    // Opacity control
+    let opacity = 0.85;
+
     // --- Feedback and Output ---
     // Reaction-diffusion style feedback: sharpen and blend
     let sharpened_history = clamp(history * 1.1 - 0.05, vec3<f32>(0.0), vec3<f32>(1.0));
-    let final_color = mix(color, sharpened_history, 0.95);
+    let generatedColor = mix(color, sharpened_history, 0.95);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(final_color, 1.0));
+    // ═══ BLEND WITH INPUT ═══
+    let finalColor = mix(inputColor.rgb, generatedColor, opacity);
+    let finalAlpha = max(inputColor.a, opacity);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

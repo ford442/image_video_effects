@@ -254,11 +254,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let output_color = mix(history_contrib, accumulated_color, final_alpha_boosted);
     let output = vec4<f32>(clamp(output_color, vec3<f32>(0.0), vec3<f32>(3.0)), final_alpha_boosted);
     
-    // Sample depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    // Output RGBA
-    textureStore(writeTexture, coord, output);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, output);
+    // Opacity control for blending with input
+    let opacity = 0.85;
+    
+    // Blend boids with input layer
+    let finalColor = mix(inputColor.rgb, output_color, final_alpha_boosted * opacity);
+    let finalAlpha = max(inputColor.a, final_alpha_boosted * opacity);
+    let finalOutput = vec4<f32>(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(3.0)), finalAlpha);
+    
+    // Output RGBA with depth pass-through
+    textureStore(writeTexture, coord, finalOutput);
+    textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, finalOutput);
 }

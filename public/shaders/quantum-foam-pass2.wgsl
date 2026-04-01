@@ -143,8 +143,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
     let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     
-    // Read field from Pass 1 (via dataTextureC)
-    let field = textureLoad(dataTextureC, gid.xy, 0);
+    // Read field from Pass 1 (via dataTextureA where Pass 1 wrote)
+    let field = textureLoad(dataTextureA, gid.xy, 0);
     let warp = field.xy;
     let pattern = field.z;
     let cellBoundary = field.w;
@@ -187,6 +187,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Temporal anisotropic diffusion
     let historyUV = clamp(uv + warp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = textureSampleLevel(dataTextureC, videoSampler, historyUV, 0.0).rgb;
+    // Note: history reads from dataTextureC for temporal feedback effect
     let flowDirection = normalize(warp + curl + vec2<f32>(0.001));
     let anisotropicFactor = 1.0 - abs(dot(flowDirection, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
     let anisotropicBlend = mix(emissiveColor, history, diffusionRate * anisotropicFactor);
