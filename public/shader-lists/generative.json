@@ -1550,6 +1550,59 @@
     ]
   },
   {
+    "id": "gen-cybernetic-ferro-coral",
+    "name": "Cybernetic Ferro-Coral",
+    "url": "shaders/gen-cybernetic-ferro-coral.wgsl",
+    "category": "generative",
+    "description": "A biomechanical reef of magnetic, liquid-metal coral that dynamically shapes itself in response to acoustic vibrations, revealing a glowing quantum-plasma core beneath a dark metallic exterior.",
+    "tags": [
+      "biomechanical",
+      "ferrofluid",
+      "coral",
+      "magnetic",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "spikeIntensity",
+        "name": "Spike Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "coreGlow",
+        "name": "Core Glow",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-cymatic-plasma-mandalas",
     "name": "Cymatic Plasma-Mandalas",
     "url": "shaders/gen-cymatic-plasma-mandalas.wgsl",
