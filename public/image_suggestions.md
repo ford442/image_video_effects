@@ -1971,6 +1971,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating complex reflections on wet surfaces (rain, asphalt) mixed with multiple colored neon light sources and dense urban clutter.
 
+### Suggestion: Biopunk Graphene Observatory
+- **Date:** 2027-03-01
+- **Prompt:** "A sprawling biopunk astronomical observatory perched on a rocky cliff. The subject is constructed from ultra-strong, dark graphene interwoven with pulsating, bioluminescent organic vines. The lighting is nocturnal and moody, with a giant, glowing blue exoplanet rising in the background, casting ethereal cool light across the matte black graphene. The mood is scientific, alien, and deeply serene. Captured with a wide-angle 16mm lens, highlighting the contrast between the rigid, dark geometry of the observatory and the glowing, fleshy organic components."
+- **Negative prompt:** "daylight, sun, bright, modern, clean, people, cartoon, soft"
+- **Tags:** sci-fi, biopunk, architecture, graphene, night
+- **Style / Reference:** dark sci-fi concept art, photorealistic rendering
+- **Composition:** wide angle, imposing structure, low horizon
+- **Color palette:** matte dark grey, glowing neon blue, bioluminescent green, pitch black sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270301_graphene-observatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing matte, light-absorbing textures intertwined with glowing organic features under night sky lighting.
+
+### Suggestion: Neoclassical Bismuth Library
+- **Date:** 2027-03-01
+- **Prompt:** "A majestic, Neoclassical library interior where the towering, fluted columns and grand arched ceilings are formed entirely from giant, iridescent bismuth hopper crystals. The subject features massive bookshelves filled with glowing, ethereal tomes. The lighting is cinematic and mystical, with god-rays of warm golden light streaming through a high dome, striking the metallic bismuth surfaces and reflecting a dazzling rainbow of thin-film interference colors. The mood is scholarly, ancient, and deeply magical. Captured with a 24mm wide lens from a low angle, emphasizing the towering geometric pillars."
+- **Negative prompt:** "wood, plain stone, modern, fluorescent lights, messy, blurry, simple"
+- **Tags:** fantasy, architecture, interior, bismuth, neoclassical
+- **Style / Reference:** fantasy architectural visualization, hyper-realistic 3D render
+- **Composition:** low angle looking up, symmetrical, deep perspective
+- **Color palette:** iridescent rainbow, warm golden light, glowing white, deep shadows
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270301_bismuth-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing iridescent metallic reflections combined with grand historical architectural styles.
+
+### Suggestion: Ashcan School Steampunk Alley
+- **Date:** 2027-03-01
+- **Prompt:** "A gritty, steam-filled alleyway in a heavily industrialized Victorian city, depicted in the raw, documentary style of the Ashcan School. The subject focuses on weary mechanics working on a massive, brass-plated steam carriage. The lighting is overcast, smoky, and dim, relying on the muted, naturalistic light filtering through the thick smog to cast soft, indistinct shadows over the dirt and grime of the cobblestones. The mood is authentic, raw, and exhausted. Captured with an eye-level perspective, emphasizing the harsh reality of urban steampunk life."
+- **Negative prompt:** "clean, shiny, bright, utopian, modern, neon, highly saturated"
+- **Tags:** steampunk, urban, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, Robert Henri inspired, thick brushstrokes
+- **Composition:** eye-level, cluttered alley, naturalistic framing
+- **Color palette:** muted ochre, dark greys, rusted browns, dull brass
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270301_ashcan-steampunk.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of gritty historical art movements with fantastical steampunk elements and muted lighting.
+
+### Suggestion: Mother of Pearl Volcanic Eruption
+- **Date:** 2027-03-01
+- **Prompt:** "A surreal and breathtaking landscape of a massive volcano erupting, but instead of magma, it spews rivers of liquid, shimmering mother of pearl. The subject features towering plumes of iridescent ash and glowing, pearlescent lava flowing down the mountain. The lighting is dramatic and ethereal, with the internal glow of the eruption reflecting off the nacreous surfaces to create a spectacular array of pastel interference patterns against a dark, stormy sky. The mood is awe-inspiring, chaotic, and exquisitely beautiful. Captured with a wide-angle lens from a safe distance, capturing the immense scale of the eruption."
+- **Negative prompt:** "red lava, orange, fire, realistic volcano, smoke, messy, blurry"
+- **Tags:** landscape, surreal, volcano, mother of pearl, iridescent
+- **Style / Reference:** surreal digital art, photorealistic nature photography
+- **Composition:** wide landscape, explosive center, dramatic clouds
+- **Color palette:** pearlescent pinks, shimmering silver, soft cyan, dark stormy grey
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270301_mother-of-pearl-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating fluid dynamics combined with thin-film iridescent materials and glowing pastel lighting.
+
+### Suggestion: Italian Futurism Aerogel Train
+- **Date:** 2027-03-01
+- **Prompt:** "A chaotic, high-speed scene of a futuristic maglev train tearing across a bridge, depicted in the harsh, fragmented style of Italian Futurism. The subject is composed of ultra-light, translucent blue aerogel, but rendered through aggressive, jagged diagonal lines and overlapping geometric planes that capture the immense speed and kinetic energy. The lighting is dynamic and directional, casting stark, jagged shadows that enhance the splintered geometry of the translucent material. The mood is energetic, modern, and overpowering. Captured with a highly tilted perspective to emphasize raw motion and mechanical blur."
+- **Negative prompt:** "calm, stationary, realistic, photography, smooth curves, organic"
+- **Tags:** abstract, art, italian futurism, train, aerogel, speed
+- **Style / Reference:** Italian Futurism art movement, Luigi Russolo inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** ghostly aerogel blue, steel greys, harsh stark white, kinetic blur
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270301_futurism-aerogel-train.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the dynamic abstraction of Italian Futurism to translucent, highly scattering materials in motion.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
