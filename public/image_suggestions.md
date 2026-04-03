@@ -2036,6 +2036,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Challenges the model to apply the dynamic abstraction of Italian Futurism to translucent, highly scattering materials in motion.
 
+### Suggestion: Bioluminescent Glass Terrarium
+- **Date:** 2027-05-10
+- **Prompt:** "A macro, highly detailed photograph of a Victorian-style geometric glass terrarium resting on an old wooden desk. Inside the terrarium, a miniature ecosystem of bioluminescent fungi and glowing neon-blue ferns thrives in the damp soil. The lighting is low-key and moody, predominantly emanating from the glowing flora inside the glass, casting intricate, colorful shadows onto the polished wood. The mood is magical, quiet, and enchanted. Captured with a 100mm macro lens, shallow depth of field, highlighting the condensation on the glass panes."
+- **Negative prompt:** "bright daylight, artificial room lights, messy, blurry, low resolution, people"
+- **Tags:** macro, fantasy, bioluminescent, terrarium, glowing
+- **Style / Reference:** photorealistic macro photography, fantasy still-life
+- **Composition:** center-focused, shallow depth of field, eye-level
+- **Color palette:** glowing neon blue, vibrant magenta, dark polished wood, pitch black shadows
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270510_bioluminescent-terrarium.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing sub-surface scattering, glass refraction, and internal glowing light sources.
+
+### Suggestion: Art Deco Cyber-Panther
+- **Date:** 2027-05-10
+- **Prompt:** "A sleek, majestic cybernetic panther standing on a rain-slicked city rooftop at night. The panther's body is intricately designed in the Art Deco style, featuring overlapping plates of polished obsidian, gleaming gold filigree, and glowing amber optics. The lighting is cinematic and dramatic, with the harsh, cold blue neon lights of the cyberpunk city contrasting against the warm, golden glow radiating from the panther's internal mechanics. The mood is formidable, elegant, and dangerous. Captured with a 50mm lens, low angle to emphasize the panther's imposing silhouette against the foggy skyline."
+- **Negative prompt:** "organic fur, daylight, bright sky, cartoon, simple, lowres, sloppy"
+- **Tags:** cyberpunk, art deco, animal, cybernetic, neon
+- **Style / Reference:** cinematic cyberpunk concept art, hard surface modeling
+- **Composition:** low angle, rule of thirds, dramatic framing
+- **Color palette:** polished obsidian black, gleaming gold, electric blue neon, warm amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270510_art-deco-panther.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating complex hard-surface reflections, metallic gold textures, and contrasting neon lighting.
+
+### Suggestion: Origami Space Station
+- **Date:** 2027-05-10
+- **Prompt:** "A breathtaking view of a massive, intricate space station orbiting a glowing pale-blue exoplanet, constructed entirely from meticulously folded, giant sheets of pristine white origami paper. The paper subject features sharp, precise creases and geometric solar sails catching the blinding light of a distant star. The lighting is harsh, unattenuated cosmic sunlight, creating stark black shadows within the crisp folds of the paper and a brilliant white glare on the illuminated surfaces. The mood is surreal, delicate, and technologically poetic. Captured with a wide-angle cinematic lens to show the delicate paper structure against the vastness of space."
+- **Negative prompt:** "metal, plastic, realistic machinery, soft curves, blurry, organic"
+- **Tags:** sci-fi, space, origami, surreal, megastructure
+- **Style / Reference:** surreal digital art, hyper-realistic papercraft
+- **Composition:** wide angle, stark contrast, massive scale
+- **Color palette:** pristine white paper, deep cosmic black, glowing pale blue
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270510_origami-space-station.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing sharp geometric shadowing on matte, fibrous materials (paper) in a high-contrast lighting environment.
+
+### Suggestion: Cyberpunk Hover-Train
+- **Date:** 2027-05-10
+- **Prompt:** "A high-speed, dynamic shot of a sleek cyberpunk hover-train tearing through a dense, neon-lit megacity at midnight. The train is a bullet-shaped marvel of brushed steel and glowing cyan repulsor engines. The lighting is incredibly vibrant, with motion-blurred streaks of neon pink, yellow, and blue from the passing city signs reflecting off the train's polished hull. The mood is energetic, futuristic, and chaotic. Captured with a tracking camera using a slow shutter speed, keeping the train sharply in focus while the city background blurs into horizontal streaks of light."
+- **Negative prompt:** "slow, stationary, daylight, steam train, old, quiet, dull colors"
+- **Tags:** cyberpunk, vehicle, train, speed, neon
+- **Style / Reference:** cinematic sci-fi photography, motion blur technique
+- **Composition:** dynamic horizontal motion, tracking shot, tight framing on the train
+- **Color palette:** brushed steel grey, vibrant neon pink, cyan repulsor glow, electric yellow
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270510_cyberpunk-hovertrain.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating directional motion blur effects and complex neon reflections on fast-moving metallic objects.
+
+### Suggestion: Liquid Gold Waterfall
+- **Date:** 2027-05-10
+- **Prompt:** "A majestic, surreal landscape featuring a towering waterfall cascading down a sheer cliff face, but instead of water, it is a flowing torrent of molten, liquid gold. The heavy, viscous metallic fluid crashes into a churning, glowing pool at the base. The lighting is a dramatic, moody twilight, where the incredibly bright, warm glow of the liquid gold illuminates the surrounding dark, jagged obsidian rocks with intense, fiery reflections. The mood is opulent, mythical, and awe-inspiring. Captured with a wide 24mm lens, utilizing a fast shutter speed to capture the intricate, splashing droplets of molten metal in mid-air."
+- **Negative prompt:** "real water, blue, green, daylight, bright sky, soft, blurry, low resolution"
+- **Tags:** landscape, surreal, waterfall, gold, metallic
+- **Style / Reference:** surreal nature photography, hyper-detailed fluid simulation
+- **Composition:** vertical composition, imposing scale, low angle
+- **Color palette:** brilliant molten gold, deep obsidian black, dark twilight blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270510_liquid-gold-waterfall.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing the generation of heavy, viscous fluid dynamics and intensely reflective, self-illuminating metallic materials.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
