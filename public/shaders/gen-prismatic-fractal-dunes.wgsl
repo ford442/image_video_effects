@@ -2,7 +2,6 @@
 // Prismatic Fractal-Dunes
 // Category: generative
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,12 +15,12 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Dune Complexity, y=Prism Dispersion, z=Geyser Height, w=Wind Speed
+    config: vec4<f32>, // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>, // x=Dune Complexity, y=Prism Dispersion, z=Geyser Height, w=Wind Speed
+    ripples: array<vec4<f32>, 50>,
 };
 
 // --- UTILS ---
@@ -62,6 +61,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+// --- SCENE ---
 fn map(p: vec3<f32>, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec2<f32> {
     var d = 1000.0;
     var mat = 0.0;
@@ -83,16 +83,13 @@ fn map(p: vec3<f32>, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, aud
     let geyserGrid = fract(p.xz * 0.5) - 0.5;
     let cellId = floor(p.xz * 0.5);
     let h = hash21(cellId);
-
     var geyserD = 1000.0;
     if (h > 0.8) {
         // Active geyser
         let localQ = vec3<f32>(geyserGrid.x, q.y, geyserGrid.y);
-
         // Simple KIFS fold for shard
         var shardP = localQ;
         shardP.y -= audio * geyserHeight * 2.0;
-
         for (var i = 0; i < 4; i++) {
             shardP.x = abs(shardP.x);
             shardP.z = abs(shardP.z);
@@ -103,7 +100,6 @@ fn map(p: vec3<f32>, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, aud
             shardP *= 1.5;
             shardP.y -= 0.5;
         }
-
         geyserD = (length(shardP) - 0.1) * pow(1.5, -4.0);
     }
 
@@ -118,7 +114,6 @@ fn map(p: vec3<f32>, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, aud
     }
 
     let duneD = p.y - height;
-
     if (duneD < geyserD) {
         d = duneD;
         mat = 1.0; // Sand
@@ -126,7 +121,6 @@ fn map(p: vec3<f32>, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, aud
         d = geyserD;
         mat = 2.0; // Crystal
     }
-
     return vec2<f32>(d, mat);
 }
 
@@ -146,12 +140,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
-
     let uv = (fragCoord * 2.0 - res) / res.y;
     let time = u.config.x;
     let audio = u.config.y;
-
-    // Parameters
     let duneComplexity = u.zoom_params.x;
     let dispersion = u.zoom_params.y;
     let geyserHeight = u.zoom_params.z;
@@ -184,7 +175,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     for(var i=0; i<100; i++) {
         var p = ro + rd * t;
         dMat = map(p, duneComplexity, windSpeed, geyserHeight, audio, time, mousePos);
-
         if (dMat.x < 0.01 || t > 50.0) { break; }
         t += dMat.x;
     }
@@ -196,7 +186,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Lighting
         let sun1 = normalize(vec3<f32>(0.8, 0.5, 0.2));
         let sun2 = normalize(vec3<f32>(-0.8, 0.3, 0.5));
-
         let diff1 = max(dot(n, sun1), 0.0);
         let diff2 = max(dot(n, sun2), 0.0);
 
@@ -223,6 +212,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
-
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
 }
