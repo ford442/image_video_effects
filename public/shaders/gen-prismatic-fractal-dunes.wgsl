@@ -17,9 +17,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Dune Complexity, y=Prism Dispersion, z=Geyser Height, w=Wind Speed
+    config: vec4<f32>, // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>, // x=Dune Complexity, y=Prism Dispersion, z=Geyser Height, w=Wind Speed
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -61,49 +61,78 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-fn map(p: vec3<f32>, time: f32, audioAmp: f32, duneComp: f32, geyserHeight: f32, mousePos: vec2<f32>, windSpeed: f32) -> vec2<f32> {
-    // Dune SDF
-    let wind = time * windSpeed;
-    var n = fbm(p.xz * 0.2 + vec2<f32>(wind, wind * 0.5), 6) * (duneComp * 0.2);
-    var d = p.y + 1.0 - n * 0.5;
+// --- SCENE ---
+fn map(p: vec3<f32>, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec2<f32> {
+    var d = 1000.0;
+    var mat = 0.0;
 
-    // Mouse interaction
-    let md = length(p.xz - mousePos);
-    let crater = exp(-md * md * 0.5) * 2.0;
-    d += crater;
+    // Domain warping for dunes
+    let wp1 = p.xz * 0.5 + vec2<f32>(time * windSpeed * 0.2, time * windSpeed * 0.1);
+    let warpX = fbm(wp1, 3);
+    let warpY = fbm(wp1 + vec2<f32>(5.2, 1.3), 3);
+    let warpedP = p.xz * (0.2 * duneComplexity) + vec2<f32>(warpX, warpY) * 2.0;
 
-    // Geysers / KIFS Shards
-    var shardP = p;
-    shardP.y -= (-1.0 + n * 0.5);
-    shardP.x -= mousePos.x * exp(-md);
-    shardP.z -= mousePos.y * exp(-md);
-    let shardF = fract(shardP.xz * 0.5) - 0.5;
-    let distC = length(floor(shardP.xz * 0.5));
-    let sync = sin(distC * 10.0 - time * 5.0) * 0.5 + 0.5;
-    var q = vec3<f32>(shardF.x, shardP.y, shardF.y);
-    q.y -= (audioAmp * geyserHeight * sync);
+    // Base dune height
+    var height = fbm(warpedP, 6) * 3.0;
 
-    for(var i=0; i<3; i++) {
-        q.x = abs(q.x) - 0.1;
-        q.z = abs(q.z) - 0.1;
-        let temp_qx_qz = rotate2D(time + f32(i)) * vec2<f32>(q.x, q.z);
-        q.x = temp_qx_qz.x; q.z = temp_qx_qz.y;
+    // Geyser logic (KIFS)
+    var q = p;
+    q.y -= height;
+
+    // Distort space near geyser points
+    let geyserGrid = fract(p.xz * 0.5) - 0.5;
+    let cellId = floor(p.xz * 0.5);
+    let h = hash21(cellId);
+    var geyserD = 1000.0;
+    if (h > 0.8) {
+        // Active geyser
+        let localQ = vec3<f32>(geyserGrid.x, q.y, geyserGrid.y);
+        // Simple KIFS fold for shard
+        var shardP = localQ;
+        shardP.y -= audio * geyserHeight * 2.0;
+        for (var i = 0; i < 4; i++) {
+            shardP.x = abs(shardP.x);
+            shardP.z = abs(shardP.z);
+            let rot = rotate2D(time + f32(i));
+            let rTemp = rot * shardP.xz;
+            shardP.x = rTemp.x;
+            shardP.z = rTemp.y;
+            shardP *= 1.5;
+            shardP.y -= 0.5;
+        }
+        geyserD = (length(shardP) - 0.1) * pow(1.5, -4.0);
     }
-    let shardD = max(max(abs(q.x), abs(q.z)) - 0.05, abs(q.y) - 0.5);
 
-    if(shardD < d) {
-        return vec2<f32>(shardD, 1.0); // 1.0 = Crystal Shard
+    // Mouse crater interaction
+    let mouseDist = length(p.xz - mousePos.xz);
+    let crater = smoothstep(0.0, 3.0, mouseDist) * 2.0 - 1.0;
+    height += crater * 1.5;
+
+    // Pull shards to mouse
+    if (mouseDist < 3.0) {
+        geyserD = smin(geyserD, length(p - mousePos) - 0.5, 1.0);
     }
-    return vec2<f32>(d, 0.0); // 0.0 = Sand
+
+    let duneD = p.y - height;
+    if (duneD < geyserD) {
+        d = duneD;
+        mat = 1.0; // Sand
+    } else {
+        d = geyserD;
+        mat = 2.0; // Crystal
+    }
+    return vec2<f32>(d, mat);
 }
 
-fn calcNormal(p: vec3<f32>, time: f32, audioAmp: f32, duneComp: f32, geyserHeight: f32, mousePos: vec2<f32>, windSpeed: f32) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, duneComplexity: f32, windSpeed: f32, geyserHeight: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy, time, audioAmp, duneComp, geyserHeight, mousePos, windSpeed).x - map(p - e.xyy, time, audioAmp, duneComp, geyserHeight, mousePos, windSpeed).x,
-        map(p + e.yxy, time, audioAmp, duneComp, geyserHeight, mousePos, windSpeed).x - map(p - e.yxy, time, audioAmp, duneComp, geyserHeight, mousePos, windSpeed).x,
-        map(p + e.yyx, time, audioAmp, duneComp, geyserHeight, mousePos, windSpeed).x - map(p - e.yyx, time, audioAmp, duneComp, geyserHeight, mousePos, windSpeed).x
-    ));
+    let d = map(p, duneComplexity, windSpeed, geyserHeight, audio, time, mousePos).x;
+    let n = vec3<f32>(
+        map(p + e.xyy, duneComplexity, windSpeed, geyserHeight, audio, time, mousePos).x - d,
+        map(p + e.yxy, duneComplexity, windSpeed, geyserHeight, audio, time, mousePos).x - d,
+        map(p + e.yyx, duneComplexity, windSpeed, geyserHeight, audio, time, mousePos).x - d
+    );
+    return normalize(n);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -111,67 +140,77 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
-
     let uv = (fragCoord * 2.0 - res) / res.y;
     let time = u.config.x;
     let audio = u.config.y;
-
     let duneComplexity = u.zoom_params.x;
     let dispersion = u.zoom_params.y;
     let geyserHeight = u.zoom_params.z;
     let windSpeed = u.zoom_params.w;
 
+    // Mouse Interaction
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
     let mouseY = -(u.zoom_config.z * 2.0 - 1.0);
-    let mousePos = vec2<f32>(mouseX * 5.0, mouseY * 5.0);
+    let mousePos = vec3<f32>(mouseX * 10.0, 0.0, mouseY * 10.0);
 
-    var ro = vec3<f32>(0.0, 1.0, -5.0);
-    var rd = normalize(vec3<f32>(uv.x, uv.y - 0.2, 1.0));
+    // Camera setup
+    var ro = vec3<f32>(0.0, 5.0, -10.0);
+    var rd = normalize(vec3<f32>(uv, 1.0));
 
-    let temp_ro_xz = rotate2D(time * 0.1) * ro.xz;
-    ro.x = temp_ro_xz.x; ro.z = temp_ro_xz.y;
-    let temp_rd_xz = rotate2D(time * 0.1) * rd.xz;
-    rd.x = temp_rd_xz.x; rd.z = temp_rd_xz.y;
+    // Camera pan
+    ro.z += time * windSpeed;
+    ro.y = 5.0 + sin(time * 0.2) * 2.0;
 
-    var col = vec3<f32>(0.05, 0.05, 0.1) * uv.y;
+    // Look downward slightly
+    let camRotX = rotate2D(0.4);
+    let temp_rd_yz = camRotX * rd.yz;
+    rd.y = temp_rd_yz.x;
+    rd.z = temp_rd_yz.y;
+
+    var col = vec3<f32>(0.0);
     var t = 0.0;
+    var dMat = vec2<f32>(0.0, 0.0);
 
-    for(var i=0; i<80; i++) {
-        let p = ro + rd * t;
-        let resMap = map(p, time, audio, duneComplexity, geyserHeight, mousePos, windSpeed);
-        let d = resMap.x;
-        let mat = resMap.y;
-
-        if(d < 0.01) {
-            let n = calcNormal(p, time, audio, duneComplexity, geyserHeight, mousePos, windSpeed);
-            if(mat > 0.5) {
-                // Crystal
-                col = vec3<f32>(0.0, 1.0, 1.0) * (audio * 2.0 + 0.5);
-                let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 5.0);
-                col += vec3<f32>(1.0, 0.0, 1.0) * fresnel * dispersion;
-            } else {
-                // Sand
-                let sun1 = normalize(vec3<f32>(1.0, 1.0, -1.0));
-                let sun2 = normalize(vec3<f32>(-1.0, 0.5, 1.0));
-                let diff1 = max(dot(n, sun1), 0.0);
-                let diff2 = max(dot(n, sun2), 0.0);
-                col = vec3<f32>(0.8, 0.6, 0.3) * diff1 + vec3<f32>(0.2, 0.3, 0.6) * diff2;
-
-                // Dispersion aberration rough approx
-                let rx = max(dot(calcNormal(p + vec3<f32>(0.1,0.0,0.0), time, audio, duneComplexity, geyserHeight, mousePos, windSpeed), sun1), 0.0);
-                let bz = max(dot(calcNormal(p - vec3<f32>(0.0,0.0,0.1), time, audio, duneComplexity, geyserHeight, mousePos, windSpeed), sun1), 0.0);
-                col.r += rx * dispersion * 0.1;
-                col.b += bz * dispersion * 0.1;
-            }
-            break;
-        }
-        t += d;
-        if(t > 20.0) {
-            break;
-        }
+    // Raymarching
+    for(var i=0; i<100; i++) {
+        var p = ro + rd * t;
+        dMat = map(p, duneComplexity, windSpeed, geyserHeight, audio, time, mousePos);
+        if (dMat.x < 0.01 || t > 50.0) { break; }
+        t += dMat.x;
     }
 
-    col = mix(col, vec3<f32>(0.1, 0.1, 0.15), 1.0 - exp(-0.02 * t * t));
+    if (t < 50.0) {
+        let p = ro + rd * t;
+        let n = calcNormal(p, duneComplexity, windSpeed, geyserHeight, audio, time, mousePos);
+
+        // Lighting
+        let sun1 = normalize(vec3<f32>(0.8, 0.5, 0.2));
+        let sun2 = normalize(vec3<f32>(-0.8, 0.3, 0.5));
+        let diff1 = max(dot(n, sun1), 0.0);
+        let diff2 = max(dot(n, sun2), 0.0);
+
+        if (dMat.y == 1.0) {
+            // Sand material
+            let sandBase = vec3<f32>(0.9, 0.7, 0.5);
+            let chromaticShift = n.x * dispersion;
+            let r = max(dot(n + vec3<f32>(chromaticShift, 0.0, 0.0), sun1), 0.0);
+            let g = max(dot(n, sun1), 0.0);
+            let b = max(dot(n - vec3<f32>(chromaticShift, 0.0, 0.0), sun1), 0.0);
+            col = sandBase * (vec3<f32>(r, g, b) * 0.8 + diff2 * vec3<f32>(0.2, 0.4, 0.8));
+        } else {
+            // Crystal material
+            let fre = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+            col = vec3<f32>(0.2, 0.8, 1.0) * audio * 2.0;
+            col += vec3<f32>(1.0, 0.2, 0.8) * fre * dispersion;
+        }
+
+        // Fog
+        col = mix(col, vec3<f32>(0.1, 0.05, 0.2), 1.0 - exp(-0.02 * t));
+    } else {
+        // Sky
+        col = vec3<f32>(0.1, 0.05, 0.2) - rd.y * 0.2;
+    }
+
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
 }
