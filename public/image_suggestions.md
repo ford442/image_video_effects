@@ -2101,6 +2101,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for pushing the generation of heavy, viscous fluid dynamics and intensely reflective, self-illuminating metallic materials.
 
+### Suggestion: Graphene Exoplanet Core
+- **Date:** 2027-06-01
+- **Prompt:** "An ultra-macro, photorealistic visualization deep within the core of an exoplanet, where immense pressure has forged a labyrinth of dark, matte graphene structures. The geometric subject absorbs almost all light, contrasting sharply with rivers of super-heated, blindingly bright plasma flowing through the hexagonal lattice. The lighting is intensely harsh, emanating entirely from the plasma rivers, creating a stark interplay of blinding white-hot streaks against crushing black geometry. The mood is terrifying, alien, and unfathomably powerful. Captured with a microscopic camera perspective, freezing the dynamic flow of plasma against the rigid, light-absorbing carbon structure."
+- **Negative prompt:** "surface, sky, daylight, soft lighting, blurry, organic, earth-like, low contrast"
+- **Tags:** sci-fi, macro, exoplanet, core, graphene, plasma
+- **Style / Reference:** scientific visualization, hyper-detailed hard sci-fi
+- **Composition:** chaotic yet geometric, sharp macro focus, dense
+- **Color palette:** pitch black, blinding white-hot, intense neon blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_graphene-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of intensely bright internal light sources interacting with perfectly matte, light-absorbing structures (graphene).
+
+### Suggestion: Brass Giant Beehive
+- **Date:** 2027-06-01
+- **Prompt:** "A highly detailed, macro view deep inside a gigantic, clockwork beehive constructed entirely of polished brass and copper. The subject features thousands of perfectly repeating hexagonal cells containing glowing, viscous amber-colored oil instead of honey. Tiny mechanical bees with delicate copper wings tend to the cells. The lighting is warm and directional, catching the edges of the metallic hexagons to create brilliant specular glints and deep, rich shadows in the recesses. The mood is industrious, precise, and whimsical. Captured with a 100mm macro lens, deep depth of field to emphasize the endless geometric repetition of the metallic honeycomb."
+- **Negative prompt:** "organic, real bees, nature, soft, blurry, messy, daylight"
+- **Tags:** steampunk, macro, beehive, brass, mechanical
+- **Style / Reference:** macro product photography, hyper-detailed steampunk
+- **Composition:** full frame repeating pattern, deep perspective
+- **Color palette:** polished brass, warm copper, glowing amber oil, deep metallic shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_brass-giant-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the generation of perfect, repeating metallic geometry (hexagons) under warm, directional lighting.
+
+### Suggestion: Mother of Pearl Orbital Ring
+- **Date:** 2027-06-01
+- **Prompt:** "An epic, sweeping view of a colossal Orbital Ring megastructure encircling a gas giant, built entirely from massive, interlocking plates of shimmering mother of pearl (nacre). The ring structure reflects a spectacular array of pearlescent pastels. The lighting features a dramatic sunrise from the nearby star, catching the smooth ridges of the nacre to reveal intense rainbow interference patterns against the deep cosmic void. The mood is utopian, majestic, and elegantly alien. Captured with a wide-angle cinematic lens from low orbit, emphasizing the vast, sweeping curve of the iridescent structure against the dark sky."
+- **Negative prompt:** "dystopian, rusty, dark, gritty, small scale, earth, organic"
+- **Tags:** sci-fi, space, megastructure, mother of pearl, orbital ring
+- **Style / Reference:** cinematic space art, utopian sci-fi concept design
+- **Composition:** curved horizon, extreme wide angle, massive scale
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, cosmic black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270601_mother-of-pearl-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates large-scale thin-film iridescent interference mapped to a massive, smooth, geometric megastructure in space.
+
+### Suggestion: Ashcan School Tsunami
+- **Date:** 2027-06-01
+- **Prompt:** "A massive, terrifying tsunami wave crashing down on an early 20th-century industrial waterfront, depicted in the raw, gritty style of the Ashcan School. The subject features dark, churning water tearing through smokestacks and wooden piers. The lighting is overcast, bleak, and murky, casting soft, indistinct shadows that emphasize the dirt, texture, and chaotic power of the destruction. The mood is grim, authentic, and overwhelming. Captured with an eye-level, documentary-style perspective, focusing on the unglamorous and terrifying reality of the disaster from the viewpoint of the docks."
+- **Negative prompt:** "modern, clean, bright colors, sunny, cheerful, photorealistic, 3d render"
+- **Tags:** art, disaster, tsunami, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, chaotic framing, imposing wave
+- **Color palette:** murky greens, muted greys, rusted browns, dull ochre
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_ashcan-school-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of a massive natural disaster with the gritty, muted, everyday-life style of the Ashcan School.
+
+### Suggestion: Italian Futurism Supernova
+- **Date:** 2027-06-01
+- **Prompt:** "A cataclysmic supernova explosion depicted in the harsh, fragmented style of Italian Futurism. The cosmic subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward, capturing the immense explosive speed and raw stellar energy. The lighting is highly contrasted and intense, simulating blinding flashes of radiation tearing through the void of space. The mood is energetic, destructive, and overwhelmingly powerful. Captured with a dynamic, tilted perspective, emphasizing the shattered geometry and raw kinetic motion of the expanding star."
+- **Negative prompt:** "calm, realistic space, smooth gradients, photography, soft clouds, gentle"
+- **Tags:** abstract, art, italian futurism, space, supernova, explosion
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, explosive center
+- **Color palette:** blinding stark white, vivid crimson, harsh yellow, deep cosmic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_futurism-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an epic cosmic event.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
