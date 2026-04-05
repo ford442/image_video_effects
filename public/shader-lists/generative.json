@@ -2017,6 +2017,59 @@
     ]
   },
   {
+    "id": "gen-hyper-dimensional-tesseract-labyrinth",
+    "name": "Hyper-Dimensional Tesseract-Labyrinth",
+    "url": "shaders/gen-hyper-dimensional-tesseract-labyrinth.wgsl",
+    "category": "generative",
+    "description": "A dizzying, gravity-defying maze of glowing hyper-cubes that unfold and rotate through 4D space, creating impossible, Escher-like geometries driven by sound.",
+    "tags": [
+      "geometric",
+      "4d",
+      "optical-illusion",
+      "audio-reactive",
+      "raymarching"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "tesseractComplexity",
+        "name": "Tesseract Complexity",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "edgeGlow",
+        "name": "Edge Glow",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "warpField",
+        "name": "Warp Field",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "flySpeed",
+        "name": "Fly Speed",
+        "default": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-hyper-labyrinth",
     "name": "Hyper Labyrinth",
     "url": "shaders/gen-hyper-labyrinth.wgsl",
@@ -2917,6 +2970,59 @@
         "max": 1,
         "step": 0.01,
         "description": "Atmospheric fog density"
+      }
+    ]
+  },
+  {
+    "id": "gen-prismatic-fractal-dunes",
+    "name": "Prismatic Fractal-Dunes",
+    "url": "shaders/gen-prismatic-fractal-dunes.wgsl",
+    "category": "generative",
+    "description": "An infinite, shifting desert where the sand grains are micro-prisms, rippling and flowing like liquid glass under cosmic winds and erupting into chromatic geysers of light to the rhythm of sound.",
+    "tags": [
+      "landscape",
+      "refraction",
+      "audio-reactive",
+      "raymarching",
+      "fractal"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "duneComplexity",
+        "name": "Dune Complexity",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "prismDispersion",
+        "name": "Prism Dispersion",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.05
+      },
+      {
+        "id": "geyserHeight",
+        "name": "Geyser Height",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "windSpeed",
+        "name": "Wind Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01
       }
     ]
   },
