@@ -2924,7 +2924,9 @@
     "id": "gen-prismatic-fractal-dunes",
     "name": "Prismatic Fractal-Dunes",
     "url": "shaders/gen-prismatic-fractal-dunes.wgsl",
+    "type": "generative",
     "category": "generative",
+    "coordinate": 850,
     "description": "An infinite, shifting desert where the sand grains are micro-prisms, rippling and flowing like liquid glass under cosmic winds and erupting into chromatic geysers of light to the rhythm of sound.",
     "tags": [
       "landscape",
@@ -2935,7 +2937,6 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-driven",
       "audio-reactive"
     ],
     "params": [
