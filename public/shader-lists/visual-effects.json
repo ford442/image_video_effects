@@ -1,0 +1,805 @@
+[
+  {
+    "id": "parallax_depth_layers",
+    "name": "Parallax Layers RGBA",
+    "url": "shaders/parallax_depth_layers.wgsl",
+    "category": "visual-effects",
+    "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
+    "tags": [
+      "parallax",
+      "depth",
+      "layers",
+      "alpha",
+      "perspective",
+      "scrolling"
+    ],
+    "features": [
+      "rgba",
+      "parallax",
+      "depth-layers",
+      "alpha-occlusion",
+      "dof",
+      "atmospheric"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Parallax",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Layer Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Depth of Field",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Fog",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "chroma-vortex",
+    "url": "shaders/chroma-vortex.wgsl",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "twist",
+        "name": "Vortex Twist",
+        "type": "float",
+        "default": 0.2,
+        "min": -1,
+        "max": 1
+      },
+      {
+        "id": "spread",
+        "name": "RGB Split",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Vortex Radius",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "centerBias",
+        "name": "Center Stability",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "description": "Rotational RGB splitting effect centered on the mouse.",
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music"
+    ],
+    "name": "Chroma Vortex"
+  },
+  {
+    "id": "chromatic-focus-interactive",
+    "name": "Chromatic Focus",
+    "category": "visual-effects",
+    "url": "shaders/chromatic-focus-interactive.wgsl",
+    "description": "Strong chromatic aberration that increases with distance from mouse focus.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "strength",
+        "name": "Abberation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur",
+        "name": "Blur",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Focus Rad",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8
+      },
+      {
+        "id": "hard",
+        "name": "Falloff",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "cyber-grid-pulse",
+    "url": "shaders/cyber-grid-pulse.wgsl",
+    "icon": "grid_on",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "category": "visual-effects",
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ],
+    "name": "Cyber Grid Pulse"
+  },
+  {
+    "id": "cyber-scan",
+    "name": "Cyber Scan",
+    "url": "shaders/cyber-scan.wgsl",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "A digital scanning line that follows the mouse, highlighting edges and overlaying a cybernetic grid.",
+    "params": [
+      {
+        "id": "scanWidth",
+        "name": "Scan Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gridIntensity",
+        "name": "Grid Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorSpeed",
+        "name": "Color Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeStrength",
+        "name": "Edge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "data-scanner",
+    "category": "visual-effects",
+    "url": "shaders/data-scanner.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ],
+    "name": "Data Scanner"
+  },
+  {
+    "id": "hex-circuit",
+    "name": "Hex Circuit",
+    "url": "shaders/hex-circuit.wgsl",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Overlays a cybernetic hexagonal grid that highlights image edges and reacts to mouse pulses.",
+    "params": [
+      {
+        "id": "grid_size",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow_strength",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edge_sensitivity",
+        "name": "Edge Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "holographic-projection-gpt52",
+    "name": "Holo Projection Prism gpt52",
+    "url": "shaders/holographic-projection-gpt52.wgsl",
+    "category": "visual-effects",
+    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "scanSpeed",
+        "name": "Scan Speed",
+        "min": 0,
+        "max": 5,
+        "default": 1.2
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch Amount",
+        "min": 0,
+        "max": 1,
+        "default": 0.35
+      },
+      {
+        "id": "hue",
+        "name": "Holo Tint",
+        "min": 0,
+        "max": 1,
+        "default": 0.15
+      },
+      {
+        "id": "focus",
+        "name": "Focus Strength",
+        "min": 0,
+        "max": 1,
+        "default": 0.85
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music"
+    ]
+  },
+  {
+    "id": "holographic-projection",
+    "name": "Holo Projector",
+    "url": "shaders/holographic-projection.wgsl",
+    "category": "visual-effects",
+    "description": "Transforms the image into a flickering hologram. Move mouse to focus and stabilize the projection.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "scanSpeed",
+        "name": "Scan Speed",
+        "min": 0,
+        "max": 5,
+        "default": 1
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch Amount",
+        "min": 0,
+        "max": 1,
+        "default": 0.3
+      },
+      {
+        "id": "hue",
+        "name": "Holo Tint",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "focus",
+        "name": "Focus Strength",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "holographic-sticker",
+    "category": "visual-effects",
+    "url": "shaders/holographic-sticker.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music"
+    ],
+    "name": "Holographic Sticker"
+  },
+  {
+    "id": "neon-edge-pulse",
+    "name": "Neon Edge Pulse",
+    "url": "shaders/neon-edge-pulse.wgsl",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "description": "Detects edges and highlights them with pulsing neon colors. Mouse proximity increases intensity.",
+    "params": [
+      {
+        "id": "edgeThreshold",
+        "name": "Edge Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "neon-topology",
+    "category": "visual-effects",
+    "url": "shaders/neon-topology.wgsl",
+    "description": "Renders the image as a glowing 3D topographic map.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Line Density",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "height",
+        "name": "Height Scale",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mouse",
+        "name": "Mouse Force",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Glow Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "name": "Neon Topology"
+  },
+  {
+    "id": "phosphor-decay",
+    "name": "Phosphor Decay",
+    "url": "shaders/phosphor-decay.wgsl",
+    "category": "visual-effects",
+    "description": "Simulates CRT phosphor persistence. Bright areas leave trails. Mouse acts as an electron beam.",
+    "params": [
+      {
+        "name": "Persistence",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "id": "persistence"
+      },
+      {
+        "name": "Beam Intensity",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "beam_intensity"
+      },
+      {
+        "name": "Beam Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "id": "beam_size"
+      },
+      {
+        "name": "Color Drift",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "id": "color_drift"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "quantum-field-visualizer",
+    "name": "Quantum Field Visualizer",
+    "url": "shaders/quantum-field-visualizer.wgsl",
+    "category": "visual-effects",
+    "description": "Visualizes quantum fluctuations as colorful noise. The act of observation (mouse proximity) collapses the wave function, clearing the image.",
+    "params": [
+      {
+        "id": "observation_strength",
+        "name": "Observation Field",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fluctuation_speed",
+        "name": "Fluctuation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "energy_level",
+        "name": "Energy Level",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "uncertainty",
+        "name": "Uncertainty",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "rgb-distance-split",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "url": "shaders/rgb-distance-split.wgsl",
+    "description": "Chromatic aberration that intensifies with distance from the mouse.",
+    "params": [
+      {
+        "id": "split",
+        "name": "Split Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "angle",
+        "name": "Angle Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur",
+        "name": "Blur Amount",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "deadzone",
+        "name": "Deadzone",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ],
+    "name": "RGB Distance Split"
+  },
+  {
+    "id": "rgb-topology",
+    "name": "RGB Topology",
+    "category": "visual-effects",
+    "url": "shaders/rgb-topology.wgsl",
+    "description": "Visualizes the image as 3D topographic maps, one for each color channel (Red, Green, Blue). The layers are offset based on mouse tilt.",
+    "params": [
+      {
+        "name": "Contour Density",
+        "id": "zoomParam1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Parallax Height",
+        "id": "zoomParam2",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Line Thickness",
+        "id": "zoomParam3",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Glow",
+        "id": "zoomParam4",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "time-slit-scan",
+    "category": "visual-effects",
+    "url": "shaders/time-slit-scan.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Drift Speed",
+        "default": 0.01,
+        "min": 0,
+        "max": 0.05
+      },
+      {
+        "id": "param2",
+        "name": "Slit Width",
+        "default": 0.02,
+        "min": 0.001,
+        "max": 0.2
+      },
+      {
+        "id": "param3",
+        "name": "Time Scale",
+        "default": 1,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": "param4",
+        "name": "Decay",
+        "default": 0.99,
+        "min": 0.9,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ],
+    "name": "Time Slit Scan"
+  },
+  {
+    "id": "voxel-grid",
+    "name": "Voxel Grid",
+    "url": "shaders/voxel-grid.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "grid",
+        "name": "Grid Density",
+        "default": 40,
+        "min": 10,
+        "max": 100
+      },
+      {
+        "id": "radius",
+        "name": "Touch Radius",
+        "default": 0.4,
+        "min": 0.1,
+        "max": 0.8
+      },
+      {
+        "id": "strength",
+        "name": "Rotation Force",
+        "default": 1,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": "gap",
+        "name": "Cell Gap",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.4
+      }
+    ],
+    "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity.",
+    "category": "visual-effects",
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  }
+]

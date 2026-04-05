@@ -1,0 +1,600 @@
+[
+  {
+    "id": "retro_phosphor_dream",
+    "name": "Phosphor Dream",
+    "url": "shaders/retro_phosphor_dream.wgsl",
+    "category": "retro-glitch",
+    "description": "Authentic CRT simulation with RGB phosphor triads, persistence afterglow, interlaced flicker, barrel distortion, and chromatic aberration",
+    "tags": [
+      "crt",
+      "retro",
+      "phosphor",
+      "analog",
+      "vintage"
+    ],
+    "features": [
+      "temporal-persistence",
+      "audio-reactive",
+      "phosphor-glow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Curvature",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Phosphor Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Scanlines",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Flicker",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "scanline-tear",
+    "name": "Scanline Tear",
+    "url": "shaders/scanline-tear.wgsl",
+    "category": "retro-glitch",
+    "description": "Authentic analog video interlacing simulation with field-based temporal offset, HSync/VSync modeling, and VHS-style tracking errors.",
+    "params": [
+      {
+        "id": "interlaceStrength",
+        "name": "Interlace Strength",
+        "description": "Controls interlacing artifact intensity, field persistence, and combing on motion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "hsyncError",
+        "name": "HSync Error",
+        "description": "Horizontal sync instability - creates rolling bars and horizontal displacement",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "vsyncError",
+        "name": "VSync Error",
+        "description": "Vertical sync roll - creates image rolling and retrace bars",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorBurstError",
+        "name": "Color Burst Error",
+        "description": "Chroma phase errors causing hue shifts and chroma noise",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "multi-pass",
+      "glitch",
+      "temporal"
+    ],
+    "tags": [
+      "interlacing",
+      "vhs",
+      "analog",
+      "retro",
+      "scanlines",
+      "sync-loss",
+      "tracking",
+      "video",
+      "ntsc"
+    ]
+  },
+  {
+    "id": "matrix_digital_rain",
+    "name": "Matrix Digital Rain",
+    "url": "shaders/matrix_digital_rain.wgsl",
+    "category": "retro-glitch",
+    "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
+    "tags": [
+      "matrix",
+      "digital",
+      "rain",
+      "cyberpunk",
+      "retro",
+      "code"
+    ],
+    "features": [
+      "rgba",
+      "matrix",
+      "digital-rain",
+      "decoding",
+      "retro"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Scanlines",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "ascii-flow",
+    "category": "retro-glitch",
+    "url": "shaders/ascii-flow.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ],
+    "name": "ASCII Flow"
+  },
+  {
+    "id": "bayer-dither-interactive",
+    "name": "Bayer Dither Interactive",
+    "category": "retro-glitch",
+    "url": "shaders/bayer-dither-interactive.wgsl",
+    "description": "Applies an ordered 8x8 Bayer dithering effect with adjustable bit depth and pixelation scale.",
+    "features": [
+      "mouse-driven",
+      "retro-style"
+    ],
+    "params": [
+      {
+        "name": "Bit Depth",
+        "id": "zoomParam1",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.1
+      },
+      {
+        "name": "Contrast",
+        "id": "zoomParam2",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  {
+    "id": "crt-phosphor-decay",
+    "name": "CRT Phosphor Decay",
+    "url": "shaders/crt-phosphor-decay.wgsl",
+    "category": "retro-glitch",
+    "description": "Simulates the ghosting trails and scanlines of an old monitor. Touch adds static.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "decay-rate",
+        "name": "Trail Length",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      {
+        "id": "brightness-boost",
+        "name": "Glow Boost",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "scanline-opacity",
+        "name": "Scanlines",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "noise-level",
+        "name": "Touch Static",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  {
+    "id": "crt-tv",
+    "name": "CRT TV - Phosphor Physics",
+    "url": "shaders/crt-tv.wgsl",
+    "category": "retro-glitch",
+    "description": "Authentic CRT phosphor physics simulation with aperture grille shadow mask, per-channel phosphor decay (R>G>B persistence rates), halation glow from glass scattering, barrel distortion, and realistic scanlines",
+    "tags": [
+      "crt",
+      "retro",
+      "phosphor",
+      "scanlines",
+      "vintage",
+      "monitor",
+      "arcade",
+      "gaming"
+    ],
+    "params": [
+      {
+        "id": "scanline_intensity",
+        "name": "Scanline Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "phosphor_glow",
+        "name": "Phosphor Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "halation",
+        "name": "Halation Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "barrel_distortion",
+        "name": "Barrel Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "cyber-rain-interactive",
+    "name": "Cyber Rain",
+    "category": "retro-glitch",
+    "url": "shaders/cyber-rain-interactive.wgsl",
+    "description": "Matrix-style digital rain that reacts to image luminance and mouse.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Rain Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "trail",
+        "name": "Trail Len",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  {
+    "id": "holographic-projection-failure",
+    "name": "Holo-Projection Failure",
+    "url": "shaders/holographic-projection-failure.wgsl",
+    "category": "retro-glitch",
+    "description": "A failing holographic transmission. Glitches stabilize when the mouse 'tunes' the signal locally.",
+    "params": [
+      {
+        "id": "instability",
+        "name": "Instability",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic_split",
+        "name": "RGB Split",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scanline_drift",
+        "name": "V-Hold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "signal_noise",
+        "name": "Static",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage",
+      "audio",
+      "music"
+    ]
+  },
+  {
+    "id": "pixelate-blast",
+    "url": "shaders/pixelate-blast.wgsl",
+    "icon": "blur_on",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Max Pixel Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Invert Area",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 1
+      },
+      {
+        "id": "param4",
+        "name": "Color Crunch",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "category": "retro-glitch",
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ],
+    "name": "Pixelate Blast"
+  },
+  {
+    "id": "rgb-glitch-displacement",
+    "name": "RGB Glitch Displacement",
+    "url": "shaders/rgb-glitch-displacement.wgsl",
+    "category": "retro-glitch",
+    "description": "Digital glitch effect with RGB channel displacement, block glitches, scanlines, pixel sorting, and datamosh effects. Mouse-reactive wave displacement and chromatic aberration.",
+    "tags": [
+      "glitch",
+      "rgb",
+      "digital",
+      "scanlines",
+      "chromatic",
+      "datamosh",
+      "retro",
+      "vintage"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "Kimi",
+    "params": [
+      {
+        "id": "glitchIntensity",
+        "name": "Glitch Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "scanlineDensity",
+        "name": "Scanline Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "scanline-drift",
+    "name": "Scanline Drift",
+    "category": "retro-glitch",
+    "url": "shaders/scanline-drift.wgsl",
+    "description": "Horizontal segments of the image drift left and right, simulating a bad video signal or tracking error.",
+    "params": [
+      {
+        "name": "Drift Speed",
+        "id": "zoomParam1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Line Height",
+        "id": "zoomParam2",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Jitter Amount",
+        "id": "zoomParam3",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Color Shift",
+        "id": "zoomParam4",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  },
+  {
+    "id": "spectral-glitch-sort",
+    "name": "Spectral Glitch Sort",
+    "url": "shaders/spectral-glitch-sort.wgsl",
+    "category": "retro-glitch",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "description": "Displaces pixels based on their brightness, creating a glitchy sorting effect controlled by the mouse.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Sort Length",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "threshold",
+        "name": "Luma Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "angle",
+        "name": "Direction",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "noise",
+        "name": "Digital Noise",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vintage"
+    ]
+  }
+]
