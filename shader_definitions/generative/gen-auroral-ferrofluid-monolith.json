@@ -1,0 +1,53 @@
+{
+  "id": "gen-auroral-ferrofluid-monolith",
+  "name": "Auroral Ferrofluid-Monolith",
+  "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
+  "coordinate": 149,
+  "category": "generative",
+  "description": "A colossal, liquid-metal obelisk suspended in a void, its surface rippling with spiky, audio-reactive ferrofluid structures while crackling with volumetric auroral energy.",
+  "tags": [
+    "ferrofluid",
+    "monolith",
+    "aurora",
+    "liquid-metal",
+    "audio-reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "spikeLength",
+      "name": "Spike Length",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "auroraIntensity",
+      "name": "Aurora Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "id": "magneticTwist",
+      "name": "Magnetic Twist",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "fluidMetallic",
+      "name": "Fluid Metallic",
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}
