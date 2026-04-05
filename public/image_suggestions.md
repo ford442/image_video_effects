@@ -2101,6 +2101,136 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for pushing the generation of heavy, viscous fluid dynamics and intensely reflective, self-illuminating metallic materials.
 
+### Suggestion: Graphene Exoplanet Core
+- **Date:** 2027-06-01
+- **Prompt:** "An ultra-macro, photorealistic visualization deep within the core of an exoplanet, where immense pressure has forged a labyrinth of dark, matte graphene structures. The geometric subject absorbs almost all light, contrasting sharply with rivers of super-heated, blindingly bright plasma flowing through the hexagonal lattice. The lighting is intensely harsh, emanating entirely from the plasma rivers, creating a stark interplay of blinding white-hot streaks against crushing black geometry. The mood is terrifying, alien, and unfathomably powerful. Captured with a microscopic camera perspective, freezing the dynamic flow of plasma against the rigid, light-absorbing carbon structure."
+- **Negative prompt:** "surface, sky, daylight, soft lighting, blurry, organic, earth-like, low contrast"
+- **Tags:** sci-fi, macro, exoplanet, core, graphene, plasma
+- **Style / Reference:** scientific visualization, hyper-detailed hard sci-fi
+- **Composition:** chaotic yet geometric, sharp macro focus, dense
+- **Color palette:** pitch black, blinding white-hot, intense neon blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_graphene-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of intensely bright internal light sources interacting with perfectly matte, light-absorbing structures (graphene).
+
+### Suggestion: Brass Giant Beehive
+- **Date:** 2027-06-01
+- **Prompt:** "A highly detailed, macro view deep inside a gigantic, clockwork beehive constructed entirely of polished brass and copper. The subject features thousands of perfectly repeating hexagonal cells containing glowing, viscous amber-colored oil instead of honey. Tiny mechanical bees with delicate copper wings tend to the cells. The lighting is warm and directional, catching the edges of the metallic hexagons to create brilliant specular glints and deep, rich shadows in the recesses. The mood is industrious, precise, and whimsical. Captured with a 100mm macro lens, deep depth of field to emphasize the endless geometric repetition of the metallic honeycomb."
+- **Negative prompt:** "organic, real bees, nature, soft, blurry, messy, daylight"
+- **Tags:** steampunk, macro, beehive, brass, mechanical
+- **Style / Reference:** macro product photography, hyper-detailed steampunk
+- **Composition:** full frame repeating pattern, deep perspective
+- **Color palette:** polished brass, warm copper, glowing amber oil, deep metallic shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_brass-giant-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the generation of perfect, repeating metallic geometry (hexagons) under warm, directional lighting.
+
+### Suggestion: Mother of Pearl Orbital Ring
+- **Date:** 2027-06-01
+- **Prompt:** "An epic, sweeping view of a colossal Orbital Ring megastructure encircling a gas giant, built entirely from massive, interlocking plates of shimmering mother of pearl (nacre). The ring structure reflects a spectacular array of pearlescent pastels. The lighting features a dramatic sunrise from the nearby star, catching the smooth ridges of the nacre to reveal intense rainbow interference patterns against the deep cosmic void. The mood is utopian, majestic, and elegantly alien. Captured with a wide-angle cinematic lens from low orbit, emphasizing the vast, sweeping curve of the iridescent structure against the dark sky."
+- **Negative prompt:** "dystopian, rusty, dark, gritty, small scale, earth, organic"
+- **Tags:** sci-fi, space, megastructure, mother of pearl, orbital ring
+- **Style / Reference:** cinematic space art, utopian sci-fi concept design
+- **Composition:** curved horizon, extreme wide angle, massive scale
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, cosmic black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270601_mother-of-pearl-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates large-scale thin-film iridescent interference mapped to a massive, smooth, geometric megastructure in space.
+
+### Suggestion: Ashcan School Tsunami
+- **Date:** 2027-06-01
+- **Prompt:** "A massive, terrifying tsunami wave crashing down on an early 20th-century industrial waterfront, depicted in the raw, gritty style of the Ashcan School. The subject features dark, churning water tearing through smokestacks and wooden piers. The lighting is overcast, bleak, and murky, casting soft, indistinct shadows that emphasize the dirt, texture, and chaotic power of the destruction. The mood is grim, authentic, and overwhelming. Captured with an eye-level, documentary-style perspective, focusing on the unglamorous and terrifying reality of the disaster from the viewpoint of the docks."
+- **Negative prompt:** "modern, clean, bright colors, sunny, cheerful, photorealistic, 3d render"
+- **Tags:** art, disaster, tsunami, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, chaotic framing, imposing wave
+- **Color palette:** murky greens, muted greys, rusted browns, dull ochre
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_ashcan-school-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of a massive natural disaster with the gritty, muted, everyday-life style of the Ashcan School.
+
+### Suggestion: Italian Futurism Supernova
+- **Date:** 2027-06-01
+- **Prompt:** "A cataclysmic supernova explosion depicted in the harsh, fragmented style of Italian Futurism. The cosmic subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward, capturing the immense explosive speed and raw stellar energy. The lighting is highly contrasted and intense, simulating blinding flashes of radiation tearing through the void of space. The mood is energetic, destructive, and overwhelmingly powerful. Captured with a dynamic, tilted perspective, emphasizing the shattered geometry and raw kinetic motion of the expanding star."
+- **Negative prompt:** "calm, realistic space, smooth gradients, photography, soft clouds, gentle"
+- **Tags:** abstract, art, italian futurism, space, supernova, explosion
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, explosive center
+- **Color palette:** blinding stark white, vivid crimson, harsh yellow, deep cosmic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270601_futurism-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an epic cosmic event.
+
+### Suggestion: Constructivism Mega-Factory
+- **Date:** 2027-06-15
+- **Prompt:** "A colossal, sprawling industrial mega-factory depicted in the stark, geometric style of Constructivism. The subject features towering smokestacks, massive iron gears, and sweeping diagonal conveyer belts. The lighting is harsh and dramatic, casting stark, angular shadows that emphasize the monumental scale and mechanical power of the facility. The mood is imposing, revolutionary, and deeply industrial. Captured with a dynamic, low-angle perspective, emphasizing the towering structural beams and relentless mechanical motion."
+- **Negative prompt:** "organic, nature, soft curves, realistic photography, peaceful, bright colors"
+- **Tags:** abstract, art, constructivism, industrial, factory
+- **Style / Reference:** Constructivism art movement, Vladimir Tatlin inspired
+- **Composition:** dynamic diagonals, low angle, monumental scale
+- **Color palette:** stark black, pure white, rusted iron red, harsh industrial grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270615_constructivism-megafactory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the application of the strict, geometric abstraction of Constructivism to a massive industrial environment.
+
+### Suggestion: Porcelain Android Portrait
+- **Date:** 2027-06-15
+- **Prompt:** "A hyper-detailed, surreal fashion portrait of an advanced android whose outer shell is constructed entirely from delicate, cracked white porcelain painted with intricate blue willow patterns. The subject's face is serene, with glowing fiber-optic eyes piercing through the smooth ceramic mask. The lighting is soft and diffused, similar to a high-end studio setup, highlighting the glossy specular reflections and the fine spiderweb cracks in the porcelain. The mood is melancholic, fragile, and beautiful. Captured with an 85mm portrait lens, featuring a shallow depth of field that softly blurs the dark studio background."
+- **Negative prompt:** "metallic, plastic, messy, realistic human skin, bright daylight, outdoor"
+- **Tags:** surreal, portrait, android, porcelain, sci-fi
+- **Style / Reference:** surreal fashion photography, high-end product lighting
+- **Composition:** centered portrait, eye-level, shallow depth of field
+- **Color palette:** glossy white porcelain, cobalt blue patterns, soft glowing cyan, dark background
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270615_porcelain-android.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating highly glossy, reflective materials with intricate surface details (cracks, painted patterns) under studio lighting.
+
+### Suggestion: Rococo Space Station Interior
+- **Date:** 2027-06-15
+- **Prompt:** "An incredibly opulent interior view of a majestic space station designed entirely in the lavish Rococo style. The subject features sweeping asymmetrical curves, gilded stuccowork, pastel frescoes, and enormous crystal chandeliers floating in zero gravity. The lighting is incredibly soft and romantic, with warm golden light bouncing off the abundant gold leaf and pastel surfaces, while a massive viewing window reveals a vibrant pink nebula outside. The mood is extravagant, aristocratic, and dreamlike. Captured with a wide-angle 16mm lens to encompass the breathtaking architectural detail and the cosmic view."
+- **Negative prompt:** "minimalist, brutalist, dark, gritty, cyberpunk, modern, boring"
+- **Tags:** sci-fi, architecture, interior, rococo, space
+- **Style / Reference:** Rococo architecture, lavish sci-fi concept art
+- **Composition:** wide angle, symmetrical opulence, deep perspective
+- **Color palette:** soft pastel pinks, pale mint greens, abundant gold leaf, cosmic magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270615_rococo-spacestation.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing the blending of highly ornate, opulent historical architecture with advanced sci-fi settings and zero-gravity elements.
+
+### Suggestion: Liquid Mercury Ocean
+- **Date:** 2027-06-15
+- **Prompt:** "A mesmerizing, surreal landscape featuring a vast, churning ocean composed entirely of highly reflective liquid mercury. The heavy, metallic waves crash against a jagged shoreline of dark obsidian. The lighting is intensely dramatic, with a low-hanging, massive red giant star casting a brilliant, distorted crimson reflection across the entire undulating surface of the metallic ocean. The mood is alien, heavy, and awe-inspiring. Captured with a wide 24mm lens, utilizing a fast shutter speed to freeze the intricate, mirror-like droplets of crashing mercury."
+- **Negative prompt:** "blue water, realistic ocean, white foam, daylight, soft, blurry, organic"
+- **Tags:** landscape, surreal, ocean, mercury, metallic
+- **Style / Reference:** surreal sci-fi landscape, hyper-detailed fluid simulation
+- **Composition:** low horizon, wide expansive view, dramatic wave action
+- **Color palette:** highly reflective silver, deep obsidian black, brilliant crimson red
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270615_liquid-mercury-ocean.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating complex fluid dynamics combined with perfect, mirror-like metallic reflections across a vast surface.
+
+### Suggestion: Jade Cybernetic Dragon
+- **Date:** 2027-06-15
+- **Prompt:** "An ultra-detailed, macro shot of a magnificent cybernetic dragon whose armor plating is carved entirely from translucent, luminous green jade. The subject is coiled around a glowing server rack in a dark, high-tech vault. The lighting is low-key and dramatic, relying on the internal, pulsing golden light of the dragon's cybernetic core to illuminate the jade from within, creating a stunning sub-surface scattering effect that highlights the stone's natural inclusions. The mood is ancient, powerful, and technologically supreme. Captured with a 100mm macro lens, sharp focus on the carved jade scales of the dragon's head."
+- **Negative prompt:** "plastic, flat lighting, bright daylight, organic flesh, soft, blurry"
+- **Tags:** macro, fantasy, cybernetic, jade, dragon
+- **Style / Reference:** photorealistic macro product photography, intricate carving
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** translucent emerald green, glowing warm gold, deep technological black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270615_jade-dragon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing sub-surface scattering on intricate, hard-surface carved stone (jade) mixed with glowing technological elements.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
