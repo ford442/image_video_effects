@@ -2166,6 +2166,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an epic cosmic event.
 
+### Suggestion: Constructivism Mega-Factory
+- **Date:** 2027-06-15
+- **Prompt:** "A colossal, sprawling industrial mega-factory depicted in the stark, geometric style of Constructivism. The subject features towering smokestacks, massive iron gears, and sweeping diagonal conveyer belts. The lighting is harsh and dramatic, casting stark, angular shadows that emphasize the monumental scale and mechanical power of the facility. The mood is imposing, revolutionary, and deeply industrial. Captured with a dynamic, low-angle perspective, emphasizing the towering structural beams and relentless mechanical motion."
+- **Negative prompt:** "organic, nature, soft curves, realistic photography, peaceful, bright colors"
+- **Tags:** abstract, art, constructivism, industrial, factory
+- **Style / Reference:** Constructivism art movement, Vladimir Tatlin inspired
+- **Composition:** dynamic diagonals, low angle, monumental scale
+- **Color palette:** stark black, pure white, rusted iron red, harsh industrial grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270615_constructivism-megafactory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the application of the strict, geometric abstraction of Constructivism to a massive industrial environment.
+
+### Suggestion: Porcelain Android Portrait
+- **Date:** 2027-06-15
+- **Prompt:** "A hyper-detailed, surreal fashion portrait of an advanced android whose outer shell is constructed entirely from delicate, cracked white porcelain painted with intricate blue willow patterns. The subject's face is serene, with glowing fiber-optic eyes piercing through the smooth ceramic mask. The lighting is soft and diffused, similar to a high-end studio setup, highlighting the glossy specular reflections and the fine spiderweb cracks in the porcelain. The mood is melancholic, fragile, and beautiful. Captured with an 85mm portrait lens, featuring a shallow depth of field that softly blurs the dark studio background."
+- **Negative prompt:** "metallic, plastic, messy, realistic human skin, bright daylight, outdoor"
+- **Tags:** surreal, portrait, android, porcelain, sci-fi
+- **Style / Reference:** surreal fashion photography, high-end product lighting
+- **Composition:** centered portrait, eye-level, shallow depth of field
+- **Color palette:** glossy white porcelain, cobalt blue patterns, soft glowing cyan, dark background
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270615_porcelain-android.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating highly glossy, reflective materials with intricate surface details (cracks, painted patterns) under studio lighting.
+
+### Suggestion: Rococo Space Station Interior
+- **Date:** 2027-06-15
+- **Prompt:** "An incredibly opulent interior view of a majestic space station designed entirely in the lavish Rococo style. The subject features sweeping asymmetrical curves, gilded stuccowork, pastel frescoes, and enormous crystal chandeliers floating in zero gravity. The lighting is incredibly soft and romantic, with warm golden light bouncing off the abundant gold leaf and pastel surfaces, while a massive viewing window reveals a vibrant pink nebula outside. The mood is extravagant, aristocratic, and dreamlike. Captured with a wide-angle 16mm lens to encompass the breathtaking architectural detail and the cosmic view."
+- **Negative prompt:** "minimalist, brutalist, dark, gritty, cyberpunk, modern, boring"
+- **Tags:** sci-fi, architecture, interior, rococo, space
+- **Style / Reference:** Rococo architecture, lavish sci-fi concept art
+- **Composition:** wide angle, symmetrical opulence, deep perspective
+- **Color palette:** soft pastel pinks, pale mint greens, abundant gold leaf, cosmic magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270615_rococo-spacestation.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing the blending of highly ornate, opulent historical architecture with advanced sci-fi settings and zero-gravity elements.
+
+### Suggestion: Liquid Mercury Ocean
+- **Date:** 2027-06-15
+- **Prompt:** "A mesmerizing, surreal landscape featuring a vast, churning ocean composed entirely of highly reflective liquid mercury. The heavy, metallic waves crash against a jagged shoreline of dark obsidian. The lighting is intensely dramatic, with a low-hanging, massive red giant star casting a brilliant, distorted crimson reflection across the entire undulating surface of the metallic ocean. The mood is alien, heavy, and awe-inspiring. Captured with a wide 24mm lens, utilizing a fast shutter speed to freeze the intricate, mirror-like droplets of crashing mercury."
+- **Negative prompt:** "blue water, realistic ocean, white foam, daylight, soft, blurry, organic"
+- **Tags:** landscape, surreal, ocean, mercury, metallic
+- **Style / Reference:** surreal sci-fi landscape, hyper-detailed fluid simulation
+- **Composition:** low horizon, wide expansive view, dramatic wave action
+- **Color palette:** highly reflective silver, deep obsidian black, brilliant crimson red
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270615_liquid-mercury-ocean.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating complex fluid dynamics combined with perfect, mirror-like metallic reflections across a vast surface.
+
+### Suggestion: Jade Cybernetic Dragon
+- **Date:** 2027-06-15
+- **Prompt:** "An ultra-detailed, macro shot of a magnificent cybernetic dragon whose armor plating is carved entirely from translucent, luminous green jade. The subject is coiled around a glowing server rack in a dark, high-tech vault. The lighting is low-key and dramatic, relying on the internal, pulsing golden light of the dragon's cybernetic core to illuminate the jade from within, creating a stunning sub-surface scattering effect that highlights the stone's natural inclusions. The mood is ancient, powerful, and technologically supreme. Captured with a 100mm macro lens, sharp focus on the carved jade scales of the dragon's head."
+- **Negative prompt:** "plastic, flat lighting, bright daylight, organic flesh, soft, blurry"
+- **Tags:** macro, fantasy, cybernetic, jade, dragon
+- **Style / Reference:** photorealistic macro product photography, intricate carving
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** translucent emerald green, glowing warm gold, deep technological black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270615_jade-dragon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing sub-surface scattering on intricate, hard-surface carved stone (jade) mixed with glowing technological elements.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
