@@ -156,6 +156,12 @@
       "title": "Crystalline Chrono-Dyson",
       "added": "2026-03-31T15:50:46.809370",
       "completed": "2026-04-01T07:57:32.902179"
+    },
+    {
+      "filename": "2026-04-02_prismatic-fractal-dunes.md",
+      "title": "Prismatic Fractal-Dunes",
+      "added": "2026-04-02T15:13:51.148460",
+      "completed": "2026-04-04T09:12:22.516241"
     }
   ],
   "rejected": [],
@@ -230,11 +236,6 @@
       "filename": "2026-03-30_vitreous-chrono-chandelier.md",
       "title": "Vitreous Chrono-Chandelier",
       "added": "2026-03-30T15:31:13.516101"
-    },
-    {
-      "filename": "2026-04-02_prismatic-fractal-dunes.md",
-      "title": "Prismatic Fractal-Dunes",
-      "added": "2026-04-02T15:13:51.148460"
     }
   ],
   "in_progress": null
