@@ -1,0 +1,1659 @@
+[
+  {
+    "id": "audio-voronoi-displacement",
+    "name": "Audio Voronoi Displacement",
+    "url": "shaders/audio-voronoi-displacement.wgsl",
+    "category": "distortion",
+    "description": "Audio-reactive Voronoi cells that displace the image. Image fractured into cells that pulse with music.",
+    "features": [
+      "advanced-hybrid",
+      "voronoi",
+      "audio-fft",
+      "displacement-mapping",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "cell_count",
+        "name": "Cell Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of Voronoi cells"
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "How much audio affects the cells"
+      },
+      {
+        "id": "displacement",
+        "name": "Displacement Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Strength of displacement effect"
+      },
+      {
+        "id": "color_intensity",
+        "name": "Color Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Intensity of frequency-based coloring"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash22 (gen_grid.wgsl)",
+      "Voronoi pattern",
+      "Audio band simulation"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "gravitational-lensing",
+    "name": "Gravitational Lensing",
+    "url": "shaders/gravitational-lensing.wgsl",
+    "category": "distortion",
+    "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
+    "features": [
+      "advanced-hybrid",
+      "schwarzschild-metric",
+      "geodesic-raytracing",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "black_hole_mass",
+        "name": "Black Hole Mass",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Mass of the black hole"
+      },
+      {
+        "id": "disk_brightness",
+        "name": "Accretion Disk Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Brightness of accretion disk"
+      },
+      {
+        "id": "camera_orbit",
+        "name": "Camera Orbit",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Camera orbit position"
+      },
+      {
+        "id": "redshift",
+        "name": "Gravitational Redshift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Intensity of gravitational redshift"
+      }
+    ],
+    "chunks_used": [
+      "Schwarzschild metric",
+      "Geodesic raytracing",
+      "Accretion disk rendering",
+      "Doppler beaming"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "spectral-flow-sorting",
+    "name": "Spectral Flow Sorting",
+    "url": "shaders/spectral-flow-sorting.wgsl",
+    "category": "distortion",
+    "description": "Optical flow-based pixel sorting with spectral analysis. Pixels flow and sort along motion vectors.",
+    "features": [
+      "advanced-hybrid",
+      "pixel-sorting",
+      "optical-flow",
+      "fft",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "flow_sensitivity",
+        "name": "Flow Sensitivity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Sensitivity to motion"
+      },
+      {
+        "id": "sort_threshold",
+        "name": "Sort Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Pixel sorting threshold"
+      },
+      {
+        "id": "freq_influence",
+        "name": "Frequency Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Influence of frequency analysis"
+      },
+      {
+        "id": "smoothing",
+        "name": "Temporal Smoothing",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Temporal smoothing amount"
+      }
+    ],
+    "chunks_used": [
+      "Optical flow calculation",
+      "Local frequency analysis",
+      "Pixel sorting along lines"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "distortion_gravitational_lens",
+    "name": "Gravitational Lens",
+    "url": "shaders/distortion_gravitational_lens.wgsl",
+    "category": "distortion",
+    "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration",
+    "tags": [
+      "gravity",
+      "lens",
+      "einstein",
+      "relativity",
+      "space",
+      "accretion"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "relativistic",
+      "hdr"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Mass Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Disk Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Chromatic Aberration",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "glass_refraction_alpha",
+    "name": "Glass Refraction RGBA",
+    "url": "shaders/glass_refraction_alpha.wgsl",
+    "category": "distortion",
+    "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
+    "tags": [
+      "glass",
+      "refraction",
+      "dispersion",
+      "fresnel",
+      "raymarch",
+      "transparent"
+    ],
+    "features": [
+      "rgba",
+      "ray-marching",
+      "refraction",
+      "fresnel",
+      "chromatic",
+      "glass"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Transparency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Roughness",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.8
+  },
+  {
+    "id": "chromatic-swirl",
+    "url": "shaders/chromatic-swirl.wgsl",
+    "icon": "cyclone",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Swirl Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Auto Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 1
+      }
+    ],
+    "category": "distortion",
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ],
+    "name": "Chromatic Swirl"
+  },
+  {
+    "id": "complex-exponent-warp",
+    "name": "Complex Exponent Warp",
+    "category": "distortion",
+    "url": "shaders/complex-exponent-warp.wgsl",
+    "description": "Applies a complex domain distortion z -> z^p where p is controlled by mouse position. Creates spirals, fractals, and inversions.",
+    "features": [
+      "mouse-driven",
+      "complex-math"
+    ],
+    "params": [
+      {
+        "name": "Scale",
+        "id": "zoomParam1",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "name": "Spiral Rotation",
+        "id": "zoomParam2",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "crystal-facets",
+    "name": "Crystal Facets",
+    "category": "distortion",
+    "url": "shaders/crystal-facets.wgsl",
+    "description": "Physical crystal refraction with light transmission. Simulates radial-cut crystal with proper Fresnel reflection, internal scattering from fractures, and chromatic dispersion based on refractive index.",
+    "params": [
+      {
+        "name": "Facet Count",
+        "id": "zoomParam1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Number of crystal facets (3-16)"
+      },
+      {
+        "name": "Refractive Index",
+        "id": "zoomParam2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "IOR mix: Glass (1.5) to Diamond (2.42)"
+      },
+      {
+        "name": "Fracture Density",
+        "id": "zoomParam3",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "description": "Internal fractures reduce transmission (0=pure, 1=heavily fractured)"
+      },
+      {
+        "name": "Crystal Thickness",
+        "id": "zoomParam4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Physical thickness affecting light path and absorption"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "alpha-transmission",
+      "physical-refraction"
+    ],
+    "tags": [
+      "crystal",
+      "refraction",
+      "transmission",
+      "fresnel",
+      "dispersion",
+      "physical"
+    ]
+  },
+  {
+    "id": "dimension-slicer",
+    "name": "Dimension Slicer",
+    "url": "shaders/dimension-slicer.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "description": "Opens a dimensional rift at the mouse position, distorting space inside a rotating slice.",
+    "params": [
+      {
+        "id": "width",
+        "name": "Slice Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "angle",
+        "name": "Rotation",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "fractal-glass-distort",
+    "name": "Fractal Glass Distort",
+    "url": "shaders/fractal-glass-distort.wgsl",
+    "category": "distortion",
+    "description": "Recursive refraction effect that creates a fractal-like kaleidoscope. Mouse position controls the distortion center.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "rotation",
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Fractal Scale",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "glass-brick-wall",
+    "name": "Glass Brick Wall",
+    "url": "shaders/glass-brick-wall.wgsl",
+    "category": "distortion",
+    "description": "Simulates a wall of refractive glass bricks with mouse-controlled lighting.",
+    "params": [
+      {
+        "name": "Brick Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "brick_size"
+      },
+      {
+        "name": "Distortion",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "distortion"
+      },
+      {
+        "name": "Mortar Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "id": "mortar_size"
+      },
+      {
+        "name": "Glossiness",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.6,
+        "id": "glossiness"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "gravity-well",
+    "name": "Gravity Well",
+    "url": "shaders/gravity-well.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "strength",
+        "name": "Gravity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Event Horizon",
+        "default": 0.2,
+        "min": 0.01,
+        "max": 0.5
+      },
+      {
+        "id": "aberration",
+        "name": "Prism",
+        "default": 0.02,
+        "min": 0,
+        "max": 0.1
+      },
+      {
+        "id": "falloff",
+        "name": "Density",
+        "default": 2,
+        "min": 0.1,
+        "max": 5
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "julia-warp",
+    "name": "Julia Warp",
+    "url": "shaders/julia-warp.wgsl",
+    "category": "distortion",
+    "description": "Julia fractal-based warping with orbit traps for psychedelic coloring.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "liquid-prism",
+    "url": "shaders/liquid-prism.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Prism Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "frequency",
+        "name": "Wave Frequency",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ],
+    "name": "Liquid Prism"
+  },
+  {
+    "id": "liquid-swirl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "url": "shaders/liquid-swirl.wgsl",
+    "description": "Swirls the image around the cursor like mixing paint.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Swirl Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Swirl Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "smoothness",
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Auto Rotation",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "name": "Liquid Swirl"
+  },
+  {
+    "id": "liquid-warp-interactive",
+    "name": "Liquid Warp",
+    "category": "distortion",
+    "url": "shaders/liquid-warp-interactive.wgsl",
+    "description": "Fluid-like distortion driven by mouse flow and noise.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Noise Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "visc",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "luma-glass",
+    "name": "Luma Glass",
+    "category": "distortion",
+    "url": "shaders/luma-glass.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Dynamic refraction shader where the image luminance creates a glass-like surface, lit by the mouse.",
+    "params": [
+      {
+        "id": "refract-str",
+        "name": "Refraction Depth",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "smoothness",
+        "name": "Surface Smoothness",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "specular",
+        "name": "Specular Shine",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "light-height",
+        "name": "Light Distance",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "luminescent-glass-tiles",
+    "url": "shaders/luminescent-glass-tiles.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Mouse Radius",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "turbulence",
+        "name": "Mouse Chaos",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "description": "Glass tiles that refract based on video brightness and mouse interaction.",
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ],
+    "name": "Luminescent Glass"
+  },
+  {
+    "id": "parallax-shift",
+    "category": "distortion",
+    "url": "shaders/parallax-shift.wgsl",
+    "description": "Uses luminance as depth to create a mouse-controlled 3D parallax effect.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Depth Scale",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoom",
+        "name": "Edge Zoom",
+        "type": "float",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "focus",
+        "name": "Focus Plane",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ],
+    "name": "Parallax Shift"
+  },
+  {
+    "id": "pixel-sort-glitch",
+    "name": "Pixel Sort Glitch",
+    "url": "shaders/pixel-sort-glitch.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Edge-aware pixel sorting glitch with threshold masking. Creates melting pixels that flow along detected edges. Features horizontal, vertical, and angular sorting directions with adjustable window size and edge influence.",
+    "params": [
+      {
+        "id": "threshold",
+        "name": "Brightness Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "Pixels brighter than this threshold will be sorted; darks are protected"
+      },
+      {
+        "id": "direction",
+        "name": "Sorting Direction",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "labels": [
+          "Horizontal",
+          "Vertical",
+          "Angular/Edge"
+        ]
+      },
+      {
+        "id": "windowSize",
+        "name": "Sort Window Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "description": "Size of the local window for sorting (1-32 pixels)"
+      },
+      {
+        "id": "edgeInfluence",
+        "name": "Edge Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "description": "How much detected edges affect sorting direction and flow"
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform",
+      "glitch",
+      "edge",
+      "sort"
+    ]
+  },
+  {
+    "id": "predator-camouflage",
+    "name": "Predator Camouflage",
+    "url": "shaders/predator-camouflage.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Simulates an optical camouflage cloaking device around the mouse cursor, with refraction, chromatic aberration, and shimmer.",
+    "params": [
+      {
+        "id": "radius",
+        "name": "Cloak Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion",
+        "name": "Refraction Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "shimmer",
+        "name": "Shimmer Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "prism-displacement",
+    "category": "distortion",
+    "url": "shaders/prism-displacement.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Size",
+        "default": 0.25,
+        "min": 0.1,
+        "max": 0.8
+      },
+      {
+        "id": "param2",
+        "name": "Refraction",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2
+      },
+      {
+        "id": "param3",
+        "name": "Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 6.28
+      },
+      {
+        "id": "param4",
+        "name": "Edge Shine",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ],
+    "name": "Prism Lens"
+  },
+  {
+    "id": "sonic-boom",
+    "name": "Sonic Boom",
+    "url": "shaders/sonic-boom.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "radius",
+        "name": "Ring Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "width",
+        "name": "Ring Width",
+        "default": 0.05,
+        "min": 0.01,
+        "max": 0.2
+      },
+      {
+        "id": "strength",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "split",
+        "name": "Chrom. Split",
+        "default": 0.02,
+        "min": 0,
+        "max": 0.1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "temporal-distortion-field",
+    "name": "Temporal Distortion Field",
+    "url": "shaders/temporal-distortion-field.wgsl",
+    "category": "distortion",
+    "description": "Creates a localized time-dilation field. Areas near the mouse update instantly, while distant areas lag behind in time.",
+    "params": [
+      {
+        "id": "field_radius",
+        "name": "Field Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "time_lag",
+        "name": "Time Lag",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ghosting",
+        "name": "Ghosting",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion",
+        "name": "Warp",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "voronoi-chaos",
+    "name": "Voronoi Chaos",
+    "url": "shaders/voronoi-chaos.wgsl",
+    "category": "distortion",
+    "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
+    "params": [
+      {
+        "name": "Cell Scale",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "cell_scale"
+      },
+      {
+        "name": "Chaos Amount",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "chaos_amount"
+      },
+      {
+        "name": "Color Mix",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "id": "color_mix"
+      },
+      {
+        "name": "Center Dot Size",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "id": "center_dot_size"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform"
+    ]
+  },
+  {
+    "id": "vortex-distortion",
+    "name": "Vortex Distortion",
+    "url": "shaders/vortex-distortion.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "description": "A swirling vortex centered on the mouse that twists the image and adds chromatic aberration.",
+    "params": [
+      {
+        "id": "twistStrength",
+        "name": "Twist Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "darkness",
+        "name": "Center Darkness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "liquid_crystal_birefringence",
+    "name": "Liquid Crystal",
+    "url": "shaders/liquid_crystal_birefringence.wgsl",
+    "category": "distortion",
+    "description": "Liquid crystal optical effects with birefringent double refraction, twisted nematic polarization rotation, and Schlieren texture",
+    "tags": [
+      "liquid-crystal",
+      "birefringence",
+      "polarization",
+      "optics",
+      "lcd"
+    ],
+    "features": [
+      "rgba",
+      "birefringence",
+      "polarization",
+      "liquid-crystal",
+      "schlieren"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Twist",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Birefringence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Voltage",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "hybrid-chromatic-liquid",
+    "name": "Hybrid Chromatic Liquid",
+    "url": "shaders/hybrid-chromatic-liquid.wgsl",
+    "category": "distortion",
+    "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field",
+    "features": [
+      "hybrid",
+      "liquid-distortion",
+      "chromatic-aberration",
+      "flow-field",
+      "fresnel",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "flow_scale",
+        "name": "Flow Field Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Scale of the flow field pattern"
+      },
+      {
+        "id": "distortion",
+        "name": "Liquid Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Amount of liquid displacement"
+      },
+      {
+        "id": "chromatic",
+        "name": "RGB Split",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Chromatic aberration strength"
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Animation speed of flow field"
+      }
+    ],
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "fresnelSchlick (crystal-facets.wgsl)",
+      "flow-field pattern (luma-flow-field.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "hybrid-spectral-sorting",
+    "name": "Hybrid Spectral Sorting",
+    "url": "shaders/hybrid-spectral-sorting.wgsl",
+    "category": "distortion",
+    "description": "Audio-reactive pixel sorting with frequency-based color shifts and displacement based on spectral analysis",
+    "features": [
+      "hybrid",
+      "pixel-sorting",
+      "spectral-analysis",
+      "audio-reactive",
+      "hue-shift",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "sort_threshold",
+        "name": "Sort Sensitivity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Luminance threshold for pixel sorting"
+      },
+      {
+        "id": "spectral_bands",
+        "name": "Spectral Bands",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Number of frequency bands"
+      },
+      {
+        "id": "displacement",
+        "name": "Spectral Displacement",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Displacement based on spectral energy"
+      },
+      {
+        "id": "hue_shift",
+        "name": "Hue Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color shift based on frequency band"
+      }
+    ],
+    "chunks_used": [
+      "pixel sorting pattern (bitonic-sort)",
+      "spectral analysis (spectrogram-displace)",
+      "audio-reactive pattern",
+      "fbm2 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "hueShift (stellar-plasma.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "hybrid-voronoi-glass",
+    "name": "Hybrid Voronoi Glass",
+    "url": "shaders/hybrid-voronoi-glass.wgsl",
+    "category": "distortion",
+    "description": "Voronoi diagram rendered as glass blocks with chromatic dispersion and physically-inspired refraction",
+    "features": [
+      "hybrid",
+      "voronoi",
+      "glass-refraction",
+      "chromatic-dispersion",
+      "fresnel",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "cell_density",
+        "name": "Cell Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of Voronoi cells"
+      },
+      {
+        "id": "ior",
+        "name": "Refraction Index",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Index of refraction (glass to diamond)"
+      },
+      {
+        "id": "dispersion",
+        "name": "Chromatic Dispersion",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "RGB channel separation on refraction"
+      },
+      {
+        "id": "thickness",
+        "name": "Glass Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Virtual thickness of glass blocks"
+      }
+    ],
+    "chunks_used": [
+      "hash22 (voronoi-glass.wgsl)",
+      "fresnelSchlick (crystal-facets.wgsl)",
+      "dispersion pattern (hyperbolic-dreamweaver.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "temporal_echo",
+    "name": "Temporal Echo",
+    "url": "shaders/temporal_echo.wgsl",
+    "category": "distortion",
+    "description": "Time-warp effect with multi-frame temporal accumulation, RGB channel time offsets, ghost trails, and motion-based displacement",
+    "tags": [
+      "temporal",
+      "echo",
+      "time",
+      "ghost",
+      "trail",
+      "warp"
+    ],
+    "features": [
+      "rgba",
+      "temporal",
+      "echo",
+      "motion",
+      "feedback",
+      "time-warp"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Echo Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Time Offset",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Decay",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Displacement",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "sim-heat-haze-field",
+    "name": "Heat Haze Field",
+    "url": "shaders/sim-heat-haze-field.wgsl",
+    "category": "distortion",
+    "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns.",
+    "features": [
+      "simulation",
+      "temperature-field",
+      "convection",
+      "refraction",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "temperature",
+        "name": "Temperature Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Temperature intensity"
+      },
+      {
+        "id": "convection_speed",
+        "name": "Convection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Speed of convection currents"
+      },
+      {
+        "id": "distortion",
+        "name": "Distortion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Refraction distortion strength"
+      },
+      {
+        "id": "heat_sources",
+        "name": "Heat Source Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Number of heat sources"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "Temperature diffusion",
+      "Convection simulation",
+      "Refraction mapping"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
+]

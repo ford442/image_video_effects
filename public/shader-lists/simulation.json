@@ -1,0 +1,1367 @@
+[
+  {
+    "id": "fractal-boids-field",
+    "name": "Fractal Boids Field",
+    "url": "shaders/fractal-boids-field.wgsl",
+    "category": "simulation",
+    "description": "Flocking behavior on a fractal vector field. Swarms of particles flowing through organic fractal currents.",
+    "features": [
+      "advanced-hybrid",
+      "boids",
+      "fractal-flow-field",
+      "gpu-particles",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "boid_count",
+        "name": "Boid Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of simulated boids"
+      },
+      {
+        "id": "flow_strength",
+        "name": "Flow Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Influence of fractal flow field"
+      },
+      {
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How long trails persist"
+      },
+      {
+        "id": "separation",
+        "name": "Separation Distance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Boid separation distance"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp",
+      "Boids separation/alignment/cohesion"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "hyper-tensor-fluid",
+    "name": "Hyper Tensor Fluid",
+    "url": "shaders/hyper-tensor-fluid.wgsl",
+    "category": "simulation",
+    "description": "Fluid flows according to image structure via tensor eigendecomposition. Combines tensor fields with Navier-Stokes dynamics.",
+    "features": [
+      "advanced-hybrid",
+      "tensor-field",
+      "navier-stokes",
+      "depth-aware",
+      "fbm",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "tensor_strength",
+        "name": "Tensor Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Strength of tensor field influence on flow"
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Fluid viscosity (flow resistance)"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of FBM turbulence"
+      },
+      {
+        "id": "advection_speed",
+        "name": "Advection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Speed of fluid advection"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "Structure tensor eigendecomposition",
+      "Velocity advection"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "boids",
+    "name": "Boids Reveal",
+    "url": "shaders/boids.wgsl",
+    "category": "simulation",
+    "description": "Flocking boids with reveal masking and simple attraction mechanics.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "chromatographic-separation",
+    "name": "Chromatographic Separation",
+    "url": "shaders/chromatographic-separation.wgsl",
+    "category": "simulation",
+    "description": "RGB channel fluid simulation with separate viscosities, wind forces, and inter-layer drag.",
+    "params": [
+      {
+        "id": "viscosityR",
+        "name": "Red Viscosity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "viscosityG",
+        "name": "Green Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "viscosityB",
+        "name": "Blue Viscosity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperature",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "fluid-dynamics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "dla-crystals",
+    "name": "DLA Crystal Growth",
+    "url": "shaders/dla-crystals.wgsl",
+    "category": "simulation",
+    "description": "Diffusion-limited aggregation creating fractal crystal structures that grow from click points.",
+    "params": [
+      {
+        "id": "walkerSpeed",
+        "name": "Walker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "attractStrength",
+        "name": "Attraction Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "stickiness",
+        "name": "Stickiness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "branchAngle",
+        "name": "Branch Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "fractal",
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "fabric-step",
+    "name": "Fabric of Reality",
+    "url": "shaders/fabric-step.wgsl",
+    "category": "simulation",
+    "description": "Mass-spring cloth simulation with Verlet integration, constraint solving, and interactive tearing mechanics.",
+    "params": [
+      {
+        "id": "stiffness",
+        "name": "Stiffness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "tearThreshold",
+        "name": "Tear Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gravity",
+        "name": "Gravity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "lenia",
+    "name": "Lenia Cellular Automata",
+    "url": "shaders/lenia.wgsl",
+    "category": "simulation",
+    "description": "Continuous cellular automata (Lenia) with ring kernel growth functions.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "magnetic-dipole",
+    "name": "Magnetic Dipole Field",
+    "url": "shaders/magnetic-dipole.wgsl",
+    "category": "simulation",
+    "description": "Magnetic field visualization with iron filing alignment and dipole physics.",
+    "params": [
+      {
+        "id": "chargeStrength",
+        "name": "Charge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "alignmentInertia",
+        "name": "Alignment Inertia",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spriteSize",
+        "name": "Filing Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fieldDensity",
+        "name": "Field Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "melting-oil",
+    "name": "Melting Oil",
+    "url": "shaders/melting-oil.wgsl",
+    "category": "simulation",
+    "description": "Sobel gradient-driven oil-paint flow with viscosity and hue shifts.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ]
+  },
+  {
+    "id": "multi-turing",
+    "name": "Multiscale Turing Patterns",
+    "url": "shaders/multi-turing.wgsl",
+    "category": "simulation",
+    "description": "Multiple reaction-diffusion systems at different scales combined for organic pattern generation.",
+    "params": [
+      {
+        "id": "feed1",
+        "name": "Feed Rate 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "kill1",
+        "name": "Kill Rate 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feed2",
+        "name": "Feed Rate 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "kill2",
+        "name": "Kill Rate 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "organic-growth",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "navier-stokes-dye",
+    "name": "Navier-Stokes Dye",
+    "url": "shaders/navier-stokes-dye.wgsl",
+    "category": "simulation",
+    "description": "Velocity advection and dye injection with a pressure-like solve placeholder.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ]
+  },
+  {
+    "id": "physarum-gemini",
+    "name": "Physarum Gemini",
+    "url": "shaders/physarum-gemini.wgsl",
+    "category": "simulation",
+    "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "physarum-grokcf1",
+    "name": "Physarum grokcf1",
+    "url": "shaders/physarum-grokcf1.wgsl",
+    "category": "simulation",
+    "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "physarum",
+    "name": "Physarum Slime Mold",
+    "url": "shaders/physarum.wgsl",
+    "category": "simulation",
+    "description": "Agent-based slime mold texture feeder that creates trails and networks.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "reaction-diffusion",
+    "name": "Reaction-Diffusion",
+    "url": "shaders/reaction-diffusion.wgsl",
+    "category": "simulation",
+    "description": "Grey-Scott style color bleed with cross-channel inhibition.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "bio_lenia_continuous",
+    "name": "Lenia Continuous",
+    "url": "shaders/bio_lenia_continuous.wgsl",
+    "category": "simulation",
+    "description": "Continuous cellular automata (Lenia) with smooth growth functions, multiple kernel radii, and biological emergence patterns",
+    "tags": [
+      "lenia",
+      "cellular-automata",
+      "biological",
+      "emergence",
+      "simulation"
+    ],
+    "features": [
+      "feedback-loop",
+      "mouse-spawn",
+      "audio-reactive",
+      "continuous-ca"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Growth Center",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Growth Width",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Time Step",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "fire_smoke_volumetric",
+    "name": "Fire Smoke Volumetric",
+    "url": "shaders/fire_smoke_volumetric.wgsl",
+    "category": "simulation",
+    "description": "Volumetric fire and smoke with ray marching, curl noise turbulence, blackbody temperature coloring, and density-based alpha",
+    "tags": [
+      "fire",
+      "smoke",
+      "volumetric",
+      "blackbody",
+      "simulation",
+      "curl"
+    ],
+    "features": [
+      "rgba",
+      "volumetric",
+      "fire",
+      "smoke",
+      "blackbody",
+      "curl-noise"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Fire Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Smoke",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "hybrid-particle-fluid",
+    "name": "Hybrid Particle Fluid",
+    "url": "shaders/hybrid-particle-fluid.wgsl",
+    "category": "simulation",
+    "description": "Particles that move like fluid with glowing trails, combining particle advection with curl noise velocity field",
+    "features": [
+      "hybrid",
+      "particle-system",
+      "fluid-advection",
+      "glow",
+      "curl-noise",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "particle_count",
+        "name": "Particle Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of particles in simulation"
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Fluid velocity magnitude"
+      },
+      {
+        "id": "trails",
+        "name": "Trail Decay",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How long trails persist (higher = longer)"
+      },
+      {
+        "id": "glow_size",
+        "name": "Glow Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Size of particle glow effect"
+      }
+    ],
+    "chunks_used": [
+      "curl noise velocity field",
+      "fbm2 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "hybrid-reaction-diffusion-glass",
+    "name": "Hybrid Reaction-Diffusion Glass",
+    "url": "shaders/hybrid-reaction-diffusion-glass.wgsl",
+    "category": "simulation",
+    "description": "Turing patterns (reaction-diffusion) refracted through depth-aware glass distortion",
+    "features": [
+      "hybrid",
+      "reaction-diffusion",
+      "glass-distortion",
+      "depth-aware",
+      "fresnel",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "feed_rate",
+        "name": "Feed Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Chemical feed rate (pattern density)"
+      },
+      {
+        "id": "kill_rate",
+        "name": "Kill Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chemical kill rate (pattern stability)"
+      },
+      {
+        "id": "refraction",
+        "name": "Glass Refraction",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Strength of glass refraction"
+      },
+      {
+        "id": "depth_effect",
+        "name": "Depth Effect",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "How much depth affects distortion"
+      }
+    ],
+    "chunks_used": [
+      "Gray-Scott reaction-diffusion (reaction-diffusion.wgsl)",
+      "fresnelSchlick (crystal-facets.wgsl)",
+      "laplacian operator",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "aero-chromatics",
+    "name": "Aero Chromatics",
+    "category": "simulation",
+    "url": "shaders/aero-chromatics.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Wind tunnel simulation where image brightness determines aerodynamic drag, creating chromatic smoke trails.",
+    "params": [
+      {
+        "id": "wind-strength",
+        "name": "Wind Force",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Smoke Decay",
+        "type": "float",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Split",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "source-mix",
+        "name": "Source Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "luma-flow-field",
+    "category": "simulation",
+    "url": "shaders/luma-flow-field.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Flow Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5
+      },
+      {
+        "id": "param2",
+        "name": "Decay",
+        "default": 0.96,
+        "min": 0.9,
+        "max": 0.999
+      },
+      {
+        "id": "param3",
+        "name": "Mouse Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": "param4",
+        "name": "Color Shift",
+        "default": 0.01,
+        "min": 0,
+        "max": 0.1
+      }
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "name": "Luma Flow Field"
+  },
+  {
+    "id": "nano-assembler",
+    "name": "Nano Assembler",
+    "url": "shaders/nano-assembler.wgsl",
+    "category": "simulation",
+    "description": "Simulates nanobots constructing the image. Mouse movement disrupts the assembly, scattering the particles.",
+    "params": [
+      {
+        "id": "assembly_progress",
+        "name": "Assembly",
+        "default": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "particle_density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scatter_force",
+        "name": "Disruption",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rebuild_speed",
+        "name": "Rebuild Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "quantum-foam-pass1",
+    "name": "Quantum Foam (Pass 1: Field Generation)",
+    "url": "shaders/quantum-foam-pass1.wgsl",
+    "category": "simulation",
+    "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system.",
+    "features": [
+      "multi-pass-1",
+      "compute-shader",
+      "temporal"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 3,
+      "nextShader": "quantum-foam-pass2"
+    },
+    "tags": [
+      "quantum",
+      "field-generation",
+      "noise",
+      "simulation"
+    ]
+  },
+  {
+    "id": "quantum-foam-pass2",
+    "name": "Quantum Foam (Pass 2: Particle Advection)",
+    "url": "shaders/quantum-foam-pass2.wgsl",
+    "category": "simulation",
+    "description": "Advects particles through the quantum field. Second pass of 3-pass system.",
+    "features": [
+      "multi-pass-2",
+      "compute-shader",
+      "temporal"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 3,
+      "prevShader": "quantum-foam-pass1",
+      "nextShader": "quantum-foam-pass3"
+    },
+    "tags": [
+      "quantum",
+      "particles",
+      "advection",
+      "simulation"
+    ]
+  },
+  {
+    "id": "quantum-foam-pass3",
+    "name": "Quantum Foam (Pass 3: Compositing)",
+    "url": "shaders/quantum-foam-pass3.wgsl",
+    "category": "simulation",
+    "description": "Volumetric rendering and final compositing with glow and tone mapping. Third pass of 3-pass system.",
+    "features": [
+      "multi-pass-3",
+      "compute-shader",
+      "post-processing"
+    ],
+    "multipass": {
+      "pass": 3,
+      "totalPasses": 3,
+      "prevShader": "quantum-foam-pass2"
+    },
+    "tags": [
+      "quantum",
+      "compositing",
+      "glow",
+      "tone-mapping"
+    ]
+  },
+  {
+    "id": "sim-fluid-feedback-field",
+    "name": "Fluid Feedback Field",
+    "url": "shaders/sim-fluid-feedback-field-pass1.wgsl",
+    "category": "simulation",
+    "description": "Multi-pass Navier-Stokes fluid simulation with feedback trails. Glowing fluid that swirls and mixes.",
+    "features": [
+      "simulation",
+      "multi-pass",
+      "navier-stokes",
+      "velocity-advection",
+      "density-advection",
+      "randomization-safe"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 3,
+      "passes": [
+        {
+          "pass": 1,
+          "name": "Velocity Advection",
+          "file": "sim-fluid-feedback-field-pass1.wgsl"
+        },
+        {
+          "pass": 2,
+          "name": "Density Advection",
+          "file": "sim-fluid-feedback-field-pass2.wgsl"
+        },
+        {
+          "pass": 3,
+          "name": "Composite",
+          "file": "sim-fluid-feedback-field-pass3.wgsl"
+        }
+      ]
+    },
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Flow resistance (viscosity)"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Turbulence amount"
+      },
+      {
+        "id": "fade_rate",
+        "name": "Fade Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Density fade rate"
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Glow intensity"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "noise",
+      "Curl noise",
+      "Velocity advection",
+      "Density advection"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "sim-sand-dunes",
+    "name": "Sand Dunes",
+    "url": "shaders/sim-sand-dunes.wgsl",
+    "category": "simulation",
+    "description": "Falling sand physics with wind erosion. Sand falls, piles at angle of repose, wind moves loose sand.",
+    "features": [
+      "simulation",
+      "cellular-automata",
+      "falling-sand",
+      "wind-erosion",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "gravity",
+        "name": "Gravity Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Gravity strength"
+      },
+      {
+        "id": "wind",
+        "name": "Wind Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Wind direction and speed"
+      },
+      {
+        "id": "viscosity",
+        "name": "Sand Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Sand viscosity"
+      },
+      {
+        "id": "erosion",
+        "name": "Erosion Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Wind erosion rate"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "Sand physics rules",
+      "Wind simulation"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "sim-slime-mold-growth",
+    "name": "Slime Mold Growth",
+    "url": "shaders/sim-slime-mold-growth.wgsl",
+    "category": "simulation",
+    "description": "Physarum-style slime mold with trail following. Branching network of glowing trails exploring space.",
+    "features": [
+      "simulation",
+      "agent-based",
+      "chemoattractant",
+      "sensor-steering",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "sensor_angle",
+        "name": "Sensor Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Steering sensitivity (sensor angle)"
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Trail decay rate"
+      },
+      {
+        "id": "particle_count",
+        "name": "Particle Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Number of simulated particles"
+      },
+      {
+        "id": "randomness",
+        "name": "Randomness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Randomness/jitter in movement"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash22 (gen_grid.wgsl)",
+      "Physarum agent simulation",
+      "Trail deposition",
+      "Sensor-based steering"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "sim-smoke-trails",
+    "name": "Smoke Trails",
+    "url": "shaders/sim-smoke-trails.wgsl",
+    "category": "simulation",
+    "description": "Volumetric smoke with vorticity and buoyancy. Billowing smoke rising with natural turbulence.",
+    "features": [
+      "simulation",
+      "volumetric-smoke",
+      "vorticity",
+      "buoyancy",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Smoke Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Smoke density"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Turbulence strength"
+      },
+      {
+        "id": "rise_speed",
+        "name": "Rise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Smoke rise speed"
+      },
+      {
+        "id": "dissipation",
+        "name": "Dissipation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Smoke dissipation rate"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "noise",
+      "Curl noise",
+      "Buoyancy simulation"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  },
+  {
+    "id": "steamy-glass",
+    "name": "Steamy Glass",
+    "category": "simulation",
+    "url": "shaders/steamy-glass.wgsl",
+    "description": "Simulates a foggy window that can be wiped clean with the mouse. The steam slowly returns over time.",
+    "params": [
+      {
+        "name": "Fog Density",
+        "id": "zoomParam1",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Fade Speed",
+        "id": "zoomParam2",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Wipe Radius",
+        "id": "zoomParam3",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Blur Amount",
+        "id": "zoomParam4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  }
+]

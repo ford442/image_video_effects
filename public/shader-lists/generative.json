@@ -2937,6 +2937,7 @@
     ],
     "features": [
       "mouse-driven",
+      "audio-driven",
       "audio-reactive"
     ],
     "params": [

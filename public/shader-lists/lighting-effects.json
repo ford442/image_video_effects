@@ -1,0 +1,386 @@
+[
+  {
+    "id": "atmos_volumetric_fog",
+    "name": "Volumetric Fog",
+    "url": "shaders/atmos_volumetric_fog.wgsl",
+    "category": "lighting-effects",
+    "description": "Volumetric fog with ray marching, Mie/Rayleigh scattering, height-based density, god rays, and mouse-controlled light source",
+    "tags": [
+      "volumetric",
+      "fog",
+      "god-rays",
+      "scattering",
+      "atmosphere"
+    ],
+    "features": [
+      "ray-marching",
+      "mouse-control",
+      "audio-reactive",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Fog Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Scattering",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "God Rays",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "gen-velocity-bloom",
+    "name": "Velocity Bloom",
+    "url": "shaders/gen-velocity-bloom.wgsl",
+    "category": "lighting-effects",
+    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity",
+    "tags": [
+      "temporal",
+      "bloom",
+      "velocity",
+      "motion",
+      "glow",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "temporal",
+      "motion-aware",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "threshold",
+        "name": "Velocity Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "intensity",
+        "name": "Bloom Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "radius",
+        "name": "Bloom Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay",
+        "name": "Decay Rate",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "holographic_interference",
+    "name": "Holographic Interference",
+    "url": "shaders/holographic_interference.wgsl",
+    "category": "lighting-effects",
+    "description": "Holographic rainbow patterns with interference fringes, multi-layer ghosting with staggered alpha, and wavelength-dependent diffraction",
+    "tags": [
+      "holographic",
+      "interference",
+      "rainbow",
+      "ghosting",
+      "diffraction"
+    ],
+    "features": [
+      "rgba",
+      "interference",
+      "diffraction",
+      "hologram",
+      "rainbow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Layers",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Rainbow Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Coherence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Ghost Offset",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "aurora-rift-2-pass1",
+    "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
+    "url": "shaders/aurora-rift-2-pass1.wgsl",
+    "category": "lighting-effects",
+    "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
+    "features": [
+      "multi-pass-1",
+      "compute-shader",
+      "volumetric",
+      "raymarch"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "aurora-rift-2-pass2"
+    },
+    "tags": [
+      "aurora",
+      "volumetric",
+      "lighting",
+      "enhanced"
+    ]
+  },
+  {
+    "id": "aurora-rift-2-pass2",
+    "name": "Aurora Rift 2 (Pass 2: Enhanced Scattering)",
+    "url": "shaders/aurora-rift-2-pass2.wgsl",
+    "category": "lighting-effects",
+    "description": "Enhanced atmospheric scattering with richer color grading. Second pass of 2-pass system.",
+    "features": [
+      "multi-pass-2",
+      "compute-shader",
+      "post-processing",
+      "tone-mapping"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2,
+      "prevShader": "aurora-rift-2-pass1"
+    },
+    "tags": [
+      "aurora",
+      "scattering",
+      "grading",
+      "enhanced"
+    ]
+  },
+  {
+    "id": "aurora-rift-pass1",
+    "name": "Aurora Rift (Pass 1: Volumetric)",
+    "url": "shaders/aurora-rift-pass1.wgsl",
+    "category": "lighting-effects",
+    "description": "Raymarches volumetric aurora with curl-driven flow. First pass of 2-pass system.",
+    "features": [
+      "multi-pass-1",
+      "compute-shader",
+      "volumetric",
+      "raymarch"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "aurora-rift-pass2"
+    },
+    "tags": [
+      "aurora",
+      "volumetric",
+      "lighting",
+      "atmospheric"
+    ]
+  },
+  {
+    "id": "aurora-rift-pass2",
+    "name": "Aurora Rift (Pass 2: Atmospheric Scattering)",
+    "url": "shaders/aurora-rift-pass2.wgsl",
+    "category": "lighting-effects",
+    "description": "Atmospheric scattering, color grading, and tone mapping. Second pass of 2-pass system.",
+    "features": [
+      "multi-pass-2",
+      "compute-shader",
+      "post-processing",
+      "tone-mapping"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2,
+      "prevShader": "aurora-rift-pass1"
+    },
+    "tags": [
+      "aurora",
+      "scattering",
+      "grading",
+      "post-processing"
+    ]
+  },
+  {
+    "id": "underwater_caustics",
+    "name": "Underwater Caustics",
+    "url": "shaders/underwater_caustics.wgsl",
+    "category": "lighting-effects",
+    "description": "Realistic underwater caustics with Gerstner wave surface simulation, refracted light patterns, god rays, and depth-based alpha",
+    "tags": [
+      "water",
+      "caustics",
+      "underwater",
+      "gerstner",
+      "ocean"
+    ],
+    "features": [
+      "rgba",
+      "gerstner-waves",
+      "caustics",
+      "god-rays",
+      "underwater"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Wave Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Caustic Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Depth",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Clarity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "sim-volumetric-fake",
+    "name": "Volumetric Fake (God Rays)",
+    "url": "shaders/sim-volumetric-fake.wgsl",
+    "category": "lighting-effects",
+    "description": "Fast approximation of volumetric lighting. Radial blur from light source with depth-based scattering.",
+    "features": [
+      "simulation",
+      "fake-volumetrics",
+      "radial-blur",
+      "god-rays",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "light_intensity",
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Light source intensity"
+      },
+      {
+        "id": "dust",
+        "name": "Dust Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Dust particle density"
+      },
+      {
+        "id": "scattering",
+        "name": "Scattering",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Scattering amount"
+      },
+      {
+        "id": "noise_speed",
+        "name": "Noise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Dust movement speed"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "noise",
+      "Radial blur",
+      "Depth-based occlusion"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
+]
