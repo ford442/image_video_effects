@@ -2231,6 +2231,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for testing sub-surface scattering on intricate, hard-surface carved stone (jade) mixed with glowing technological elements.
 
+### Suggestion: Graphene Deep Sea Submarine
+- **Date:** 2027-07-01
+- **Prompt:** "A sleek, stealthy deep-sea submarine constructed entirely from dark, light-absorbing graphene, gliding silently over a glowing bioluminescent trench. The lighting is extremely dark, relying solely on the eerie, glowing blue and green light emanating from the trench below, which catches the matte surface of the graphene hull. The mood is tense, mysterious, and claustrophobic. Captured with a wide 24mm lens to emphasize the massive scale of the dark ocean depths and the sleek geometry of the vessel."
+- **Negative prompt:** "bright sunlight, surface, clear water, shiny metal, plastic, colorful"
+- **Tags:** sci-fi, underwater, vehicle, graphene, dark
+- **Style / Reference:** cinematic sci-fi concept art, deep sea exploration
+- **Composition:** wide angle, low lighting, vast scale
+- **Color palette:** matte dark grey, glowing bioluminescent blue and green, pitch black water
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270701_graphene-submarine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of matte, light-absorbing textures (graphene) in extremely low-light, bioluminescent environments.
+
+### Suggestion: Tweed Cybernetic Cheetah
+- **Date:** 2027-07-01
+- **Prompt:** "A hyper-detailed, surreal macro shot of a cybernetic cheetah mid-sprint, where its sleek armor plating is entirely upholstered in classic, warm brown herringbone tweed fabric. The robotic subject features glowing orange optic sensors and exposed chrome joints beneath the fabric. The lighting is a dramatic golden hour sunset, casting long shadows and highlighting the intricate woven texture of the tweed against the blurred, fast-moving background of a futuristic savanna. The mood is absurd, dynamic, and highly detailed. Captured with a 100mm telephoto lens, utilizing motion blur panning to keep the cheetah sharp while blurring the environment."
+- **Negative prompt:** "organic fur, slow, stationary, bright daylight, realistic animal, plain metal"
+- **Tags:** surreal, cybernetic, animal, tweed, macro
+- **Style / Reference:** surreal wildlife photography, hyper-detailed material swap
+- **Composition:** dynamic horizontal motion, tight framing, panning blur
+- **Color palette:** earthy brown tweed, warm golden sunset, glowing orange, blurred green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270701_tweed-cheetah.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates the application of soft, woven micro-textures (tweed) on dynamic, fast-moving robotic subjects with panning motion blur.
+
+### Suggestion: Damascus Steel Grand Piano
+- **Date:** 2027-07-01
+- **Prompt:** "A grand piano sitting isolated in the center of a grand, abandoned concert hall, forged entirely from dark, intricately rippled Damascus steel. The metallic subject features flowing light and dark grey wave patterns across its entire surface, with gleaming silver keys. The lighting is incredibly dramatic and moody, with a single, intense beam of volumetric moonlight piercing through a shattered skylight to illuminate the piano, casting deep black shadows across the dusty stage. The mood is melancholic, elegant, and silent. Captured with a 50mm lens from a slightly elevated angle to showcase the rippled patterns on the piano lid."
+- **Negative prompt:** "wood, plastic, daylight, clean, modern, bright room, people"
+- **Tags:** still-life, interior, damascus steel, music, abandoned
+- **Style / Reference:** photorealistic still-life photography, moody architectural render
+- **Composition:** centered subject, dramatic spotlight, dusty atmosphere
+- **Color palette:** dark metallic greys, stark white moonlight, deep shadow black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270701_damascus-piano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing the flowing texture generation of Damascus steel on large, elegant surfaces under intense volumetric spotlighting.
+
+### Suggestion: Aerogel Gothic Cathedral
+- **Date:** 2027-07-01
+- **Prompt:** "An imposing Gothic cathedral towering over a quiet European town, constructed completely out of weightless, translucent blue aerogel. The architectural subject features intricate flying buttresses and towering spires that appear ghostly and ephemeral. The lighting is a bright, clear midday sun, piercing directly through the massive porous structure, creating a million soft, internal refractions and a glowing, ethereal blue aura that bathes the surrounding stone courtyard. The mood is holy, surreal, and incredibly peaceful. Captured with a wide 14mm lens, looking up to emphasize the towering, weightless spires."
+- **Negative prompt:** "solid stone, dark, night, creepy, heavy, realistic architecture"
+- **Tags:** surreal, architecture, gothic, aerogel, ethereal
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** low angle looking up, symmetrical, massive scale
+- **Color palette:** ghostly aerogel blue, blinding white sunlight, warm stone grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270701_aerogel-cathedral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large, incredibly detailed architectural structures made of highly scattering, low-density translucent materials under direct sunlight.
+
+### Suggestion: Bismuth Cyberpunk Server Room
+- **Date:** 2027-07-01
+- **Prompt:** "A claustrophobic, high-tech cyberpunk server room where the towering server racks and cooling pipes are naturally formed from massive, iridescent bismuth hopper crystals. The metallic, geometric subjects interlock flawlessly, glowing with internal neon pink and cyan data streams. The lighting is moody and entirely artificial, relying on the glowing data streams to reflect off the faceted bismuth, creating a dazzling array of thin-film interference colors in the dark, cramped space. The mood is advanced, chaotic, and mesmerizing. Captured with a 24mm wide lens, using a deep depth of field to capture the endless rows of crystalline servers."
+- **Negative prompt:** "daylight, natural, organic, soft curves, plain metal, clean, simple"
+- **Tags:** cyberpunk, interior, tech, bismuth, iridescent
+- **Style / Reference:** cyberpunk concept art, hyper-detailed environment design
+- **Composition:** one-point perspective, deep corridor, overwhelming detail
+- **Color palette:** iridescent rainbow, glowing neon pink and cyan, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270701_bismuth-server-room.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex, repeating geometric structures interacting with highly saturated iridescent thin-film materials and neon lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
