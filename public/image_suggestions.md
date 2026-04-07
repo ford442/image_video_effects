@@ -2296,6 +2296,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating complex, repeating geometric structures interacting with highly saturated iridescent thin-film materials and neon lighting.
 
+### Suggestion: Damascus Steel Beaver Dam
+- **Date:** 2027-08-01
+- **Prompt:** "A highly detailed, surreal landscape photography shot of a beaver dam constructed entirely from intricately rippled Damascus steel logs and branches. The metallic subject blocks a tranquil, dark forest stream. The lighting is early morning sunlight piercing through the dense canopy, casting sharp, bright specular glints on the metallic wave patterns and deep, moody shadows in the crevices of the dam. The mood is unnatural, fascinating, and quiet. Captured with a 35mm lens, low angle near the water surface, focusing on the complex flowing textures of the steel against the natural water."
+- **Negative prompt:** "wood, organic branches, mud, dull metal, blurry, out of focus, bright daylight"
+- **Tags:** surreal, landscape, nature, damascus steel, beaver dam
+- **Style / Reference:** surreal nature photography, hyper-detailed material swap
+- **Composition:** wide shot, low angle, rule of thirds
+- **Color palette:** dark metallic greys, bright silver glints, lush forest greens, dark water
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_damascus-beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the application of complex, flowing metallic textures (Damascus steel) onto organic, chaotic structures (beaver dam).
+
+### Suggestion: Aerogel Bioluminescent Reef
+- **Date:** 2027-08-01
+- **Prompt:** "A breathtaking, macro underwater photograph of a sprawling coral reef where the coral formations are composed entirely of ultra-light, translucent blue aerogel. The subject is populated by tiny, glowing bioluminescent sea life that illuminates the reef from within. The lighting is exclusively from the bioluminescence, creating thousands of soft, internal refractions within the porous aerogel and a ghostly, ethereal glow that barely penetrates the surrounding dark water. The mood is silent, magical, and alien. Captured with a 50mm macro lens, shallow depth of field, blurring the deep ocean background."
+- **Negative prompt:** "bright sunlight, surface, muddy water, opaque coral, realistic fish"
+- **Tags:** underwater, nature, macro, aerogel, bioluminescent
+- **Style / Reference:** photorealistic underwater photography, surreal material swap
+- **Composition:** macro close-up, centered subject, beautiful soft bokeh
+- **Color palette:** ghostly aerogel blue, glowing neon green and magenta, pitch black water
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_aerogel-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the interaction of internal, self-illuminating light sources within highly scattering, low-density translucent materials.
+
+### Suggestion: Tweed Supernova
+- **Date:** 2027-08-01
+- **Prompt:** "A surreal, epic cosmic visualization of a cataclysmic supernova explosion, where the expanding clouds of stellar gas and plasma are inexplicably formed from unraveling threads and soft folds of warm brown herringbone tweed fabric. The central subject is a blindingly bright stellar core tearing through the fabric. The lighting is harsh, unattenuated cosmic light from the core casting deep, dark shadows in the folds of the tweed, highlighting its woven micro-texture against the pitch-black void of space. The mood is absurd, dramatic, and tactile. Captured with a wide-angle cinematic lens to emphasize the massive cosmic scale."
+- **Negative prompt:** "realistic space, glowing plasma, smooth, metallic, blurry, low resolution"
+- **Tags:** sci-fi, space, surreal, supernova, tweed
+- **Style / Reference:** surreal digital art, hyper-detailed material swap
+- **Composition:** expansive wide angle, explosive center, flying fabric debris
+- **Color palette:** earthy brown tweed, blinding stark white, deep cosmic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_tweed-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of soft, woven micro-textures (tweed) subjected to intense, dramatic lighting on a massive cosmic scale.
+
+### Suggestion: Italian Futurism Exoplanet Core
+- **Date:** 2027-08-01
+- **Prompt:** "An ultra-macro, theoretical visualization deep within the core of an exoplanet, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes representing super-compressed carbon and violent plasma flows. The lighting is intensely bright and chaotic, emanating from the plasma and casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective, emphasizing the raw motion and explosive pressure of the core."
+- **Negative prompt:** "calm, stationary, photorealistic, soft curves, gentle, natural, organic"
+- **Tags:** abstract, art, italian futurism, space, exoplanet, core
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, explosive center
+- **Color palette:** blinding white-hot, intense neon blue, stark black, vivid crimson
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270801_futurism-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme pressure and kinetic energy.
+
+### Suggestion: Ashcan School Fireworks
+- **Date:** 2027-08-01
+- **Prompt:** "A bustling, gritty early 20th-century city street at night, illuminated by a spectacular fireworks display, depicted in the raw, documentary style of the Ashcan School. The subject focuses on working-class crowds looking up at the sky, their faces lit by the colorful explosions. The lighting is moody and realistic, with the bright flashes of the fireworks casting soft, indistinct, colored shadows that highlight the dirt and texture of the urban tenements. The mood is authentic, celebratory yet unglamorous. Captured with an eye-level, documentary-style perspective, focusing on the people and the urban reality."
+- **Negative prompt:** "modern, clean, bright daylight, photorealistic, 3d render, highly saturated, smooth"
+- **Tags:** art, urban, historical, ashcan school, fireworks
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, crowded street, naturalistic framing, looking up
+- **Color palette:** muted greys, rusted browns, sudden flashes of vivid red and dull gold
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270801_ashcan-school-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of bright, dynamic light sources (fireworks) with the gritty, muted, everyday-life style of the Ashcan School.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
