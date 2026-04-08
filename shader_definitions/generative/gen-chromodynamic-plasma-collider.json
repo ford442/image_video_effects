@@ -1,0 +1,57 @@
+{
+  "id": "gen-chromodynamic-plasma-collider",
+  "name": "Chromodynamic Plasma-Collider",
+  "coordinate": 853,
+  "type": "wgsl",
+  "category": "generative",
+  "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter.",
+  "tags": [
+    "cosmic",
+    "mechanical",
+    "particle",
+    "plasma",
+    "audio-reactive",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-driven",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "ringDensity",
+      "name": "Ring Density",
+      "default": 15.0,
+      "min": 5.0,
+      "max": 30.0,
+      "step": 1.0
+    },
+    {
+      "id": "collisionRate",
+      "name": "Collision Rate",
+      "default": 5.0,
+      "min": 0.5,
+      "max": 20.0,
+      "step": 0.5
+    },
+    {
+      "id": "anomalyPull",
+      "name": "Anomaly Pull",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "tunnelWarp",
+      "name": "Tunnel Warp",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    }
+  ]
+}
