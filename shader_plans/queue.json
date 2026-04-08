@@ -186,6 +186,12 @@
       "title": "Stellar Plasma-Ouroboros",
       "added": "2026-04-06T15:09:44.223195",
       "completed": "2026-04-07T07:54:12.218139"
+    },
+    {
+      "filename": "2026-04-07_chromodynamic-plasma-collider.md",
+      "title": "Chromodynamic Plasma-Collider",
+      "added": "2026-04-07T15:10:39.717708",
+      "completed": "2026-04-08T08:01:14.203447"
     }
   ],
   "rejected": [],
@@ -280,11 +286,6 @@
       "filename": "2026-04-06_stellar-plasma-ouroboros.md",
       "title": "Stellar Plasma-Ouroboros",
       "added": "2026-04-06T15:09:44.223195"
-    },
-    {
-      "filename": "2026-04-07_chromodynamic-plasma-collider.md",
-      "title": "Chromodynamic Plasma-Collider",
-      "added": "2026-04-07T15:10:39.717708"
     }
   ],
   "in_progress": null
