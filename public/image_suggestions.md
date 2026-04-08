@@ -2361,6 +2361,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the blending of bright, dynamic light sources (fireworks) with the gritty, muted, everyday-life style of the Ashcan School.
 
+### Suggestion: Neon Solarpunk Balcony
+- **Date:** 2026-08-15
+- **Prompt:** "A medium shot of a lush, solarpunk balcony at night in a futuristic metropolis. The subject is a dense garden of glowing bioluminescent ferns and orchids, interspersed with sleek, white ceramic solar panels and curved glass railings. The lighting is a striking mix of the soft cyan glow from the plants and the harsh, distant neon magenta and yellow lights from the city's towering skyscrapers in the background. The mood is tranquil yet highly advanced, capturing a quiet oasis above the chaotic city. Captured with a 50mm lens, shallow depth of field, rendering the distant city lights as large, beautiful bokeh."
+- **Negative prompt:** "dystopian, dark, gritty, cyberpunk, messy, pollution, daylight"
+- **Tags:** solarpunk, architecture, nature, bioluminescent, night
+- **Style / Reference:** utopian architectural visualization, photorealistic night photography
+- **Composition:** medium shot, rule of thirds, shallow depth of field
+- **Color palette:** glowing cyan, neon magenta, bright yellow, crisp white ceramic
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260815_neon-solarpunk-balcony.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing bioluminescent flora combined with out-of-focus background neon bokeh.
+
+### Suggestion: Biomechanical Sphinx
+- **Date:** 2026-08-15
+- **Prompt:** "A wide, low-angle shot of a colossal, biomechanical Sphinx resting in a sprawling, desolate desert of black sand. The subject is constructed from interwoven carbon fiber muscles, polished chrome armor plates, and exposed, glowing red hydraulic fluid tubes. The lighting is an intense, harsh midday sun beating down, creating stark, blinding specular highlights on the chrome and deep, impenetrable black shadows under the creature's massive paws. The mood is ancient, terrifying, and overwhelmingly powerful. Captured with a wide 24mm lens to emphasize the massive scale of the mechanical beast against the barren landscape."
+- **Negative prompt:** "organic, realistic animal, soft lighting, greenery, people, messy"
+- **Tags:** sci-fi, biomechanical, desert, monument, colossal
+- **Style / Reference:** hard sci-fi concept art, photorealistic 3D render
+- **Composition:** low angle, monumental scale, wide expansive view
+- **Color palette:** polished chrome, deep black sand, glowing crimson red, stark blue sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260815_biomechanical-sphinx.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating highly reflective metallic surfaces and complex biomechanical hard-surface modeling under harsh direct lighting.
+
+### Suggestion: Subterranean Fungi Metropolis
+- **Date:** 2026-08-15
+- **Prompt:** "An incredibly detailed, sweeping view of an advanced, subterranean metropolis built entirely within and out of colossal, bioluminescent fungi. The organic, mushroom-like structures feature intricate, carved windows emitting warm amber light. The lighting relies on the natural, multi-colored glow of the fungi themselves—cyan, magenta, and green—illuminating the vast, misty cavern. The mood is magical, bustling, and deeply alien. Captured with a wide-angle lens, utilizing a deep depth of field to showcase the complex, multi-tiered architecture stretching far into the cavernous distance."
+- **Negative prompt:** "surface, sky, daylight, human architecture, concrete, metal, simple"
+- **Tags:** fantasy, subterranean, city, bioluminescent, organic
+- **Style / Reference:** fantasy environment design, highly detailed 3D rendering
+- **Composition:** expansive view, deep perspective, multi-tiered
+- **Color palette:** glowing cyan, magenta, neon green, warm amber light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260815_fungi-metropolis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the creation of complex, organic architectural structures illuminated by multiple varied bioluminescent light sources.
+
+### Suggestion: Graphene Katana Macro
+- **Date:** 2026-08-15
+- **Prompt:** "An extreme macro, highly detailed photograph of the blade of a futuristic katana forged from pure, light-absorbing graphene. The subject's dark, matte surface is adorned with a microscopic, glowing azure circuit pattern etched directly into the carbon structure. The lighting is highly controlled, directional studio lighting that grazes the matte blade, highlighting the incredibly sharp edge and the intense, pulsating glow of the micro-circuitry against the pitch-black material. The mood is lethal, precise, and technologically advanced. Captured with a 100mm macro lens, razor-thin depth of field, focusing entirely on the glowing etchings."
+- **Negative prompt:** "shiny metal, polished, traditional sword, messy background, wide angle"
+- **Tags:** macro, sci-fi, weapon, graphene, circuits
+- **Style / Reference:** photorealistic product photography, macro texture study
+- **Composition:** extreme close-up, diagonal leading line, shallow depth of field
+- **Color palette:** matte pitch black, intense glowing azure, stark lighting
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260815_graphene-katana.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating the contrast between intensely glowing micro-details and a perfectly matte, light-absorbing substrate.
+
+### Suggestion: Art Nouveau Stained Glass Spaceship
+- **Date:** 2026-08-15
+- **Prompt:** "A majestic, wide view of a luxury passenger spaceship cruising through deep space, designed entirely in an opulent Art Nouveau style. The hull features sweeping, organic whiplash curves of polished bronze, and the massive observation decks are enclosed by intricate, multi-colored stained glass. The lighting is cinematic, with intense, pure white starlight from a nearby star shining through the stained glass, casting brilliant, colorful, fractured light onto the bronze hull, set against the pitch-black cosmic void. The mood is elegant, romantic, and technologically poetic. Captured with a wide 35mm lens, showcasing the vessel against a backdrop of distant stars."
+- **Negative prompt:** "dystopian, utilitarian, grey, boxy, modern, realistic NASA, messy"
+- **Tags:** sci-fi, space, art nouveau, vehicle, stained glass
+- **Style / Reference:** opulent sci-fi concept art, cinematic space rendering
+- **Composition:** wide angle, majestic scale, dramatic lighting
+- **Color palette:** polished warm bronze, vibrant stained glass colors (ruby, sapphire, emerald), deep space black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260815_stained-glass-spaceship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of highly ornate, historical architectural styles (Art Nouveau, stained glass) with futuristic vehicles and cosmic lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
