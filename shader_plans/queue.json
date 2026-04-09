@@ -192,6 +192,12 @@
       "title": "Chromodynamic Plasma-Collider",
       "added": "2026-04-07T15:10:39.717708",
       "completed": "2026-04-08T08:01:14.203447"
+    },
+    {
+      "filename": "2026-04-08_abyssal-chrono-coral.md",
+      "title": "Abyssal Chrono-Coral",
+      "added": "2026-04-08T15:28:10.450796",
+      "completed": "2026-04-09T08:05:58.457041"
     }
   ],
   "rejected": [],
@@ -291,11 +297,6 @@
       "filename": "2026-04-07_chromodynamic-plasma-collider.md",
       "title": "Chromodynamic Plasma-Collider",
       "added": "2026-04-07T15:10:39.717708"
-    },
-    {
-      "filename": "2026-04-08_abyssal-chrono-coral.md",
-      "title": "Abyssal Chrono-Coral",
-      "added": "2026-04-08T15:28:10.450796"
     }
   ],
   "in_progress": null
