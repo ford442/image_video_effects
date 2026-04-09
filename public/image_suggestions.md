@@ -2426,6 +2426,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the blending of highly ornate, historical architectural styles (Art Nouveau, stained glass) with futuristic vehicles and cosmic lighting.
 
+### Suggestion: Bioluminescent Deep-Sea Observatory
+- **Date:** 2026-05-15
+- **Prompt:** "A futuristic glass-domed observatory anchored to a deep-sea trench wall, glowing with soft internal amber lights. Outside the thick curved windows, colossal bioluminescent jellyfish drift through the dark, icy water, illuminating the ocean floor with pulsating neon blues and greens. The mood is mysterious and tranquil. High detail, cinematic lighting, 8k resolution, volumetric water scattering."
+- **Negative prompt:** "sunlight, surface, land, pixelated, blurry, human figures"
+- **Tags:** sci-fi, underwater, bioluminescence, ocean, architecture
+- **Style / Reference:** photorealistic, cinematic sci-fi concept art
+- **Composition:** wide establishing shot, looking slightly upward at the observatory
+- **Color palette:** deep oceanic blues, neon cyan, contrasting warm amber interiors
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_deep-sea-observatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing volumetric underwater scattering and contrasting light temperatures.
+
+### Suggestion: Steampunk Botanist's Greenhouse
+- **Date:** 2026-05-15
+- **Prompt:** "An incredibly detailed interior of a Victorian steampunk greenhouse filled with giant, exotic glowing plants and mechanical brass flowers. Sunlight filters through a massive wrought-iron and stained-glass ceiling, casting intricate colored shadows. Brass pipes emit small puffs of steam, and a leather-bound journal rests on a polished wooden workbench. A whimsical, warm, and inviting mood. Shot with a 35mm lens, high depth of field."
+- **Negative prompt:** "modern, clean, sterile, dark, lowres, text"
+- **Tags:** steampunk, botanical, fantasy, interior, bright
+- **Style / Reference:** Victorian illustration meets hyper-detailed 3D render
+- **Composition:** eye-level medium shot, rule of thirds focusing on the workbench with plants in the background
+- **Color palette:** lush greens, brassy golds, warm sunlight, stained glass multi-colors
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260515_steampunk-greenhouse.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex shadows, specular highlights on brass, and foliage textures.
+
+### Suggestion: Cybernetic Zen Garden
+- **Date:** 2026-05-15
+- **Prompt:** "A serene Japanese Zen garden where the traditional elements are replaced with cyberpunk technology. The sand is made of glowing fiber optic cables perfectly raked into circular patterns. The rocks are smooth obsidian servers with subtle blue led pulses. A holographic cherry blossom tree drops luminous pink digital petals in the background. The scene is illuminated by the soft neon glow in a dusky atmosphere. Moody, meditative, hyper-detailed."
+- **Negative prompt:** "organic dirt, messy, daylight, traditional wood, noisy"
+- **Tags:** cyberpunk, zen, garden, neon, holographic
+- **Style / Reference:** futuristic 3D environment, Unreal Engine 5 aesthetic
+- **Composition:** high angle shot looking down at the raked patterns and the central 'rock'
+- **Color palette:** dark slate grey, neon blue, magenta pink
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_cybernetic-zen-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the engine's ability to render clean, glowing curves and subtle light emissions on dark surfaces.
+
+### Suggestion: Ethereal Astral Librarian
+- **Date:** 2026-05-15
+- **Prompt:** "A portrait of a cosmic librarian made entirely of stardust and swirling nebulae, wearing ornate silver robes adorned with glowing constellations. They are holding a floating, glowing book made of pure light. The background is a massive, infinite library where the shelves are built from asteroid rock and the books are captured galaxies. Epic, magical, awe-inspiring mood. Soft, ethereal lighting, 85mm portrait lens with bokeh."
+- **Negative prompt:** "human skin, realistic face, mundane, dark, horror"
+- **Tags:** portrait, cosmic, fantasy, ethereal, magic
+- **Style / Reference:** ethereal fantasy art, cosmic illustration
+- **Composition:** close-up portrait, shallow depth of field focusing on the face and the glowing book
+- **Color palette:** midnight blues, shimmering silver, bright nebula purple and pink
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260515_astral-librarian.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Pushes the AI to handle particle-like textures (stardust) combined with intricate clothing details.
+
+### Suggestion: Post-Apocalyptic Neon Diner
+- **Date:** 2026-05-15
+- **Prompt:** "A 1950s retro diner sitting alone in a vast, desolate, post-apocalyptic desert wasteland. It is dusk, and the diner's neon 'OPEN' sign flickers in vibrant pink and turquoise, providing the only bright light in the scene. The chrome exterior is rusted and half-buried in sand, and strange alien flora is starting to grow over the roof. Cinematic, lonely but colorful mood. Shot on anamorphic lens with lens flares."
+- **Negative prompt:** "clean, new, bustling, city, rain, overcast"
+- **Tags:** post-apocalyptic, retro-futurism, desert, neon, cinematic
+- **Style / Reference:** cinematic wasteland photography, retro 50s sci-fi
+- **Composition:** wide exterior shot, diner positioned slightly off-center, dramatic sky
+- **Color palette:** dusty orange, rusted browns, neon pink, turquoise
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260515_neon-wasteland-diner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests high contrast between a dimly lit background and intense neon light sources, along with weathered textures.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
