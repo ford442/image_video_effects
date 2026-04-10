@@ -3522,56 +3522,43 @@
   {
     "id": "gen-silica-tsunami",
     "name": "Silica Tsunami",
-    "url": "shaders/gen-silica-tsunami.wgsl",
-    "category": "generative",
     "description": "A slow-motion wave of refractive glass-like particles that crests and shatters, dynamically reshaping around the mouse and reacting to audio amplitude.",
-    "tags": [
-      "generative",
-      "wave",
-      "glass",
-      "refraction",
-      "audio",
-      "music"
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "waveHeight",
-        "name": "Wave Height",
-        "min": 0,
-        "max": 5,
-        "default": 2,
-        "step": 0.1
-      },
-      {
-        "id": "glassRefraction",
-        "name": "Glass Refraction",
-        "min": 0,
-        "max": 1,
-        "default": 0.8,
-        "step": 0.05
-      },
-      {
-        "id": "particleDensity",
-        "name": "Particle Density",
-        "min": 0.1,
-        "max": 2,
-        "default": 1,
-        "step": 0.1
-      },
-      {
-        "id": "audioReactivity",
-        "name": "Audio Reactivity",
-        "min": 0,
-        "max": 3,
-        "default": 1.5,
-        "step": 0.1
+    "type": "generative",
+    "category": "generative",
+    "coordinate": 855,
+    "url": "shaders/gen-silica-tsunami.wgsl",
+    "uniforms": {
+      "zoom_params": {
+        "x": {
+          "name": "Wave Height",
+          "value": 2,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        },
+        "y": {
+          "name": "Glass Refraction",
+          "value": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        "z": {
+          "name": "Particle Density",
+          "value": 1,
+          "min": 0.1,
+          "max": 2,
+          "step": 0.05
+        },
+        "w": {
+          "name": "Audio Reactivity",
+          "value": 1.5,
+          "min": 0,
+          "max": 3,
+          "step": 0.1
+        }
       }
-    ]
+    }
   },
   {
     "id": "gen-singularity-forge",

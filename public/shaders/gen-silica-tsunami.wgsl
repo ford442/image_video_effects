@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------
+// Silica Tsunami
+// Category: generative
+// ----------------------------------------------------------------
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -17,197 +21,123 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Wave Height, y=Glass Refraction, z=Particle Density, w=Audio Reactivity
+    zoom_params: vec4<f32>,  // x=waveHeight, y=glassRefraction, z=particleDensity, w=audioReactivity
     ripples: array<vec4<f32>, 50>,
 };
 
-fn rot(a: f32) -> mat2x2<f32> {
-    let s = sin(a);
-    let c = cos(a);
-    return mat2x2<f32>(c, -s, s, c);
-}
-
+// Utils
 fn hash31(p: vec3<f32>) -> f32 {
-    var p3 = fract(p * 0.1031);
+    var p3  = fract(p * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
-fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    let q = abs(p) - b;
-    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+fn rot(a: f32) -> mat2x2<f32> {
+    let s = sin(a); let c = cos(a);
+    return mat2x2<f32>(c, -s, s, c);
 }
 
-// Global parameters for the map function
-var<private> g_time: f32;
-var<private> g_mouse: vec2<f32>;
-var<private> g_audio: f32;
-
-// Returns distance and material (x=dist, y=mat, z=accumulated interior light)
-fn map(p: vec3<f32>) -> vec3<f32> {
-    let waveHeight = u.zoom_params.x;
-    let particleDensity = max(0.1, u.zoom_params.z);
-    let audioReactivity = u.zoom_params.w;
-
-    var bp = p;
-
-    // Wave function
-    let speed = g_time * 2.0;
-    // Base wave shape
-    var crest = sin(bp.x * 0.5 - speed) * cos(bp.z * 0.3 + speed * 0.5);
-
-    // Audio driven turbulence
-    let audioBump = g_audio * audioReactivity * sin(bp.x * 10.0) * cos(bp.z * 8.0);
-    crest += audioBump * 0.5;
-
-    // Mouse attraction/repulsion
-    let mDist = length(bp.xz - g_mouse * 15.0);
-    let mouseInfluence = exp(-mDist * 0.2) * 2.0;
-    crest += mouseInfluence;
-
-    crest *= waveHeight;
-
-    // Create an infinite grid of particles
-    let domainSpacing = particleDensity * 2.0;
-
-    // Find the cell index
-    let cell = floor((bp + domainSpacing * 0.5) / domainSpacing);
-
-    // Apply domain repetition
-    bp.x = bp.x - cell.x * domainSpacing;
-    bp.z = bp.z - cell.z * domainSpacing;
-
-    // Modify particle height based on its world position wave
-    let wX = cell.x * domainSpacing;
-    let wZ = cell.z * domainSpacing;
-    var wCrest = sin(wX * 0.5 - speed) * cos(wZ * 0.3 + speed * 0.5) * waveHeight;
-    wCrest += g_audio * audioReactivity * sin(wX * 10.0) * cos(wZ * 8.0) * 0.5;
-    wCrest += exp(-length(vec2<f32>(wX, wZ) - g_mouse * 15.0) * 0.2) * 2.0 * waveHeight;
-
-    bp.y -= wCrest;
-
-    // Rotate particle based on cell
-    let h = hash31(vec3<f32>(cell.x, 0.0, cell.z));
-    let temp_bp_xz = rot(g_time * (0.5 + h) + h * 6.28) * bp.xz;
-    bp.x = temp_bp_xz.x;
-    bp.z = temp_bp_xz.y;
-
-    let temp_bp_xy = rot(g_time * 0.3 + h * 6.28) * bp.xy;
-    bp.x = temp_bp_xy.x;
-    bp.y = temp_bp_xy.y;
-
-
-    // Base shape: slightly rounded boxes
-    let boxSize = particleDensity * 0.4 * (0.5 + 0.5 * h);
-    let d = sdBox(bp, vec3<f32>(boxSize)) - boxSize * 0.2;
-
-    return vec3<f32>(d, 1.0, 0.0);
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = max(k - abs(a - b), 0.0) / k;
+    return min(a, b) - h * h * k * 0.25;
 }
 
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+// Map function
+fn map(pos: vec3<f32>, time: f32) -> f32 {
+    let waveHeight = u.zoom_params.x; // default 2.0
+    let particleDensity = u.zoom_params.z; // default 1.0
+    let audioReactivity = u.zoom_params.w; // default 1.5
+    let audio = u.config.y * audioReactivity;
+
+    var p = pos;
+    let spacing = particleDensity;
+    let half_spacing = spacing * 0.5;
+
+    // Mouse attractor/repulsor
+    let mouseActive = u.zoom_config.x;
+    let mouse = u.zoom_config.yz;
+    let mousePos = vec3<f32>(mouse.x * 20.0, 0.0, mouse.y * 20.0);
+
+    if (mouseActive > 0.5) {
+        let dToMouse = length(p.xz - mousePos.xz);
+        let repel = smoothstep(5.0, 0.0, dToMouse) * 2.0;
+        p.y += repel;
+    }
+
+    // Wave displacement
+    let waveOffset = sin(p.x * 0.5 - time) * cos(p.z * 0.5 - time) * waveHeight;
+    p.y -= waveOffset + audio * sin(p.x * 2.0);
+
+    // Domain repetition
+    let id = floor(p / spacing);
+    p = fract(p / spacing) * spacing - half_spacing;
+
+    // Base shape
+    let r = 0.3 * (0.5 + 0.5 * hash31(id));
+    return length(p) - r;
+}
+
+fn calcNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
+    let d = map(p, time);
     return normalize(vec3<f32>(
-        map(p + e.xyy).x - map(p - e.xyy).x,
-        map(p + e.yxy).x - map(p - e.yxy).x,
-        map(p + e.yyx).x - map(p - e.yyx).x
+        map(p + e.xyy, time) - d,
+        map(p + e.yxy, time) - d,
+        map(p + e.yyx, time) - d
     ));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let dims = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(id.xy);
+    let dims = vec2<f32>(textureDimensions(writeTexture));
+    let pixel = vec2<f32>(f32(id.x), f32(id.y));
 
-    if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) {
+    if (pixel.x >= dims.x || pixel.y >= dims.y) {
         return;
     }
 
-    var uv = (fragCoord * 2.0 - dims) / dims.y;
+    var uv = (pixel - 0.5 * dims) / dims.y;
+    let time = u.config.x;
 
-    g_time = u.config.x;
-    g_audio = u.config.y * 0.1; // scale down the audio proxy
+    var ro = vec3<f32>(0.0, 5.0, -time * 5.0);
+    var rd = normalize(vec3<f32>(uv.x, uv.y - 0.5, -1.0)); // look slightly down
+    rd.xz = rot(0.2) * rd.xz;
 
-    let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mY = -(u.zoom_config.z / dims.y) * 2.0 + 1.0;
-    g_mouse = vec2<f32>(mX, mY);
-
-    // Camera setup
-    var ro = vec3<f32>(0.0, 5.0, -10.0);
-
-    // Orbit camera with mouse
-    let temp_ro_xz = rot(mX * 2.0) * ro.xz;
-    ro.x = temp_ro_xz.x;
-    ro.z = temp_ro_xz.y;
-
-    let temp_ro_yz = rot(mY * 1.0) * ro.yz;
-    ro.y = temp_ro_yz.x;
-    ro.z = temp_ro_yz.y;
-
-
-    let ta = vec3<f32>(0.0, 0.0, 0.0);
-    let ww = normalize(ta - ro);
-    let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
-    let vv = normalize(cross(uu, ww));
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
-
-    // Raymarching
     var t = 0.0;
     var d = 0.0;
-    var maxT = 40.0;
+    var p = vec3<f32>(0.0);
+    var col = vec3<f32>(0.0);
 
-    for (var i = 0; i < 100; i++) {
-        let p = ro + rd * t;
-        let res = map(p);
-        d = res.x;
-        if (d < 0.001 || t > maxT) { break; }
+    let max_steps = 100;
+    let max_dist = 40.0;
+
+    for (var i = 0; i < max_steps; i++) {
+        p = ro + rd * t;
+        d = map(p, time);
+        if (d < 0.01 || t > max_dist) { break; }
         t += d * 0.8;
     }
 
-    var col = vec3<f32>(0.05, 0.1, 0.15); // Deep ocean background
-    col -= uv.y * 0.1;
+    if (t < max_dist) {
+        let n = calcNormal(p, time);
+        let l = normalize(vec3<f32>(-1.0, 2.0, -1.0));
+        let diff = max(dot(n, l), 0.0);
+        let r = reflect(rd, n);
 
-    if (t < maxT) {
-        let p = ro + rd * t;
-        let n = calcNormal(p);
+        let glassRefraction = u.zoom_params.y; // default 0.8
+        let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 5.0);
 
-        let lig = normalize(vec3<f32>(0.8, 1.0, -0.5));
-        let dif = max(dot(n, lig), 0.0);
-        let fre = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+        col = vec3<f32>(0.1, 0.4, 0.8) * diff; // base water color
+        col += vec3<f32>(0.8, 0.9, 1.0) * fresnel * glassRefraction; // reflection/caustics
+        col += pow(max(dot(r, l), 0.0), 32.0) * vec3<f32>(1.0); // spec
 
-        // Glass Refraction / Scattering
-        let refrStrength = u.zoom_params.y;
-
-        // Fake interior lighting/refraction by sampling behind the hit point
-        let interiorRay = refract(rd, n, 0.65); // glass IOR
-        let p2 = p + interiorRay * 0.5;
-        let interiorDist = map(p2).x;
-        let interiorGlow = max(0.0, interiorDist) * 0.5;
-
-        // Coloring
-        let baseGlass = vec3<f32>(0.1, 0.4, 0.8);
-        let crestColor = vec3<f32>(0.7, 0.9, 1.0);
-
-        // Mix based on height
-        let hMix = smoothstep(-2.0, u.zoom_params.x * 2.0, p.y);
-        var matCol = mix(baseGlass, crestColor, hMix);
-
-        // Combine lighting
-        col = matCol * (dif * 0.5 + 0.1) + fre * vec3<f32>(1.0) * refrStrength;
-
-        // Add fake scattering
-        col += vec3<f32>(0.2, 0.5, 0.9) * interiorGlow * refrStrength;
-
-        // Distance fog
-        let fog = 1.0 - exp(-t * 0.05);
-        col = mix(col, vec3<f32>(0.05, 0.1, 0.15), fog);
+        // Fog
+        col = mix(col, vec3<f32>(0.05, 0.1, 0.2), 1.0 - exp(-0.02 * t * t));
+    } else {
+        col = vec3<f32>(0.05, 0.1, 0.2); // background
     }
 
-    // Add specular highlights from the sun/light source in the sky
-    let sun = pow(max(dot(rd, normalize(vec3<f32>(0.8, 1.0, -0.5))), 0.0), 64.0);
-    col += sun * vec3<f32>(1.0, 0.9, 0.7) * (1.0 - step(maxT - 0.1, t));
-
-    // Tone mapping and gamma correction
-    col = col / (col + vec3<f32>(1.0));
+    col = col / (1.0 + col);
     col = pow(col, vec3<f32>(0.4545));
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));

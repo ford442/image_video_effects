@@ -198,6 +198,12 @@
       "title": "Abyssal Chrono-Coral",
       "added": "2026-04-08T15:28:10.450796",
       "completed": "2026-04-09T08:05:58.457041"
+    },
+    {
+      "filename": "2026-03-08_silica-tsunami.md",
+      "title": "Silica Tsunami",
+      "added": "2026-03-08T15:23:19.072421",
+      "completed": "2026-04-10T07:53:58.129004"
     }
   ],
   "rejected": [],
@@ -213,11 +219,6 @@
     ]
   },
   "pending": [
-    {
-      "filename": "2026-03-08_silica-tsunami.md",
-      "title": "Silica Tsunami",
-      "added": "2026-03-08T15:23:19.072421"
-    },
     {
       "filename": "2026-03-12_cybernetic-ferro-coral.md",
       "title": "Cybernetic Ferro-Coral",
