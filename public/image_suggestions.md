@@ -2491,6 +2491,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests high contrast between a dimly lit background and intense neon light sources, along with weathered textures.
 
+### Suggestion: Graphene Cyberpunk Tsunami
+- **Date:** 2027-09-01
+- **Prompt:** "A towering, catastrophic tsunami wave crashing over a futuristic cyberpunk metropolis at night, but the water is inexplicably composed of liquid, light-absorbing graphene. The dark, matte fluid absorbs the harsh neon pink and cyan lights of the skyscrapers it destroys. The lighting is extremely contrasted, with bright neon signs casting long, distorted reflections on the sleek, black, undulating surface of the graphene wave. The mood is apocalyptic, high-tech, and terrifying. Captured from a low angle on the flooded streets, utilizing a wide 14mm lens to emphasize the massive, overhanging scale of the dark wave."
+- **Negative prompt:** "blue water, realistic ocean, daylight, sunny, soft, calm, organic, clouds"
+- **Tags:** cyberpunk, disaster, tsunami, graphene, neon
+- **Style / Reference:** cinematic sci-fi disaster visualization
+- **Composition:** wide angle, low perspective, towering wave
+- **Color palette:** pitch black matte graphene, bright neon pink, electric cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270901_graphene-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of an apocalyptic fluid dynamic using a light-absorbing, dark matte material under bright neon lighting.
+
+### Suggestion: Art Deco Exoplanet Core
+- **Date:** 2027-09-01
+- **Prompt:** "An ultra-macro, surreal visualization deep within the core of an exoplanet, designed entirely in an elegant Art Deco style. The subject features towering, geometric pillars of polished brass and obsidian, surrounded by rivers of glowing, golden plasma flowing in sharp, angular zigzags. The lighting is intensely bright from the golden plasma, casting sharp, deep shadows on the polished brass and obsidian surfaces, creating a luxurious, monumental feel. The mood is opulent, alien, and mathematically precise. Captured with a 50mm lens, deep depth of field to keep the sharp geometric pillars and glowing rivers in perfect focus."
+- **Negative prompt:** "organic, round shapes, messy, dark, daylight, natural rock, blurry"
+- **Tags:** sci-fi, macro, exoplanet, core, art deco, brass
+- **Style / Reference:** Art Deco architectural visualization, hard sci-fi
+- **Composition:** symmetrical, vertical leading lines, sharp geometry
+- **Color palette:** polished brass, deep obsidian black, glowing golden yellow
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20270901_artdeco-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex geometric hard-surface modeling paired with intense, glowing metallic plasma lighting.
+
+### Suggestion: Tweed Beehive Macro
+- **Date:** 2027-09-01
+- **Prompt:** "An incredibly detailed, macro view deep inside a gigantic beehive where the entire honeycomb structure is constructed from soft, interwoven threads of warm brown herringbone tweed fabric. The subject features perfectly repeating hexagonal cells made of yarn, filled with glowing, viscous golden honey. The lighting is warm and directional, catching the fibrous texture of the tweed and causing the golden honey to glow brilliantly with sub-surface scattering. The mood is cozy, surreal, and highly tactile. Captured with a 100mm macro lens, utilizing a shallow depth of field to isolate a single, honey-filled tweed cell."
+- **Negative prompt:** "wax, plastic, hard surface, realistic hive, bees, bright daylight, wide angle"
+- **Tags:** macro, surreal, beehive, tweed, honeycomb
+- **Style / Reference:** surreal macro photography, hyper-detailed material swap
+- **Composition:** full frame repeating pattern, tight close-up, shallow depth of field
+- **Color palette:** earthy brown tweed, glowing golden yellow, soft amber
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20270901_tweed-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates the application of soft, woven micro-textures (tweed) on perfect, repeating geometric patterns combined with viscous fluid.
+
+### Suggestion: Bismuth Orbital Ring
+- **Date:** 2027-09-01
+- **Prompt:** "An epic, sweeping view of a colossal Orbital Ring megastructure encircling a dark, terrestrial planet, constructed entirely from gigantic, interlocking iridescent bismuth hopper crystals. The subject features massive stepped geometric formations extending infinitely along the orbit. The lighting is harsh and direct from a nearby star, casting deep black shadows in the vacuum of space, while causing the metallic bismuth surfaces to shine brilliantly in a rainbow of thin-film interference colors. The mood is majestic, alien, and technologically supreme. Captured with a wide-angle cinematic lens from low orbit, emphasizing the vast scale of the crystalline ring."
+- **Negative prompt:** "smooth curves, dull, plastic, atmospheric haze, organic, soft lighting"
+- **Tags:** sci-fi, megastructure, space, orbital ring, bismuth, iridescent
+- **Style / Reference:** cinematic space art, hard sci-fi concept design
+- **Composition:** curved horizon, extreme wide angle, massive geometric scale
+- **Color palette:** iridescent rainbow, glaring white starlight, deep cosmic black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20270901_bismuth-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive scale, planetary curvature, and complex stepped geometric structures interacting with highly saturated iridescent thin-film materials.
+
+### Suggestion: Ashcan School Beaver Dam
+- **Date:** 2027-09-01
+- **Prompt:** "A gritty, realistic landscape of a beaver dam blocking a murky, slow-moving river near an early 20th-century industrial town, depicted in the raw, documentary style of the Ashcan School. The subject features an incredibly detailed tangle of muddy branches, discarded lumber, and urban debris forming the dam. The lighting is overcast and bleak, casting soft, indistinct shadows that emphasize the dirt, texture, and chaotic nature of the construction. The mood is authentic, raw, and full of everyday life. Captured with an eye-level, documentary-style perspective, focusing on the unglamorous reality of the industrial waterfront."
+- **Negative prompt:** "modern, bright, cheerful, clean, highly saturated, photorealistic, shiny"
+- **Tags:** art, landscape, historical, ashcan school, beaver dam, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, chaotic framing, realistic naturalism
+- **Color palette:** muted browns, dark greys, murky greens, dull ochre
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20270901_ashcan-beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of an organic, chaotic subject (beaver dam) with the gritty, muted, everyday-life style of the Ashcan School.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
