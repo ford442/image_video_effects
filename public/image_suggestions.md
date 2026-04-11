@@ -2556,6 +2556,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the blending of an organic, chaotic subject (beaver dam) with the gritty, muted, everyday-life style of the Ashcan School.
 
+### Suggestion: Italian Futurism Bioluminescent Reef
+- **Date:** 2027-10-01
+- **Prompt:** "A dynamic, chaotic underwater scene of a sprawling bioluminescent reef, depicted in the harsh, fragmented style of Italian Futurism. The organic subject is deconstructed into aggressive, jagged diagonal lines and overlapping geometric planes that capture the kinetic energy of the ocean currents. The lighting is intense and directional, with bright neon cyan and magenta bioluminescence casting stark, jagged shadows that enhance the dynamic, splintered geometry. The mood is energetic, aggressive, and highly stylized. Captured with a tilted perspective to emphasize raw motion and the explosive growth of the coral."
+- **Negative prompt:** "calm, realistic, photography, smooth curves, organic, gentle, peaceful water"
+- **Tags:** abstract, art, italian futurism, underwater, bioluminescent, reef
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** glowing neon cyan, vibrant magenta, steel greys, deep ocean black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271001_futurism-bioluminescent-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an underwater organic ecosystem.
+
+### Suggestion: Ashcan School Beehive
+- **Date:** 2027-10-01
+- **Prompt:** "A gritty, realistic close-up of a large, wild beehive hanging in a smoke-filled, early 20th-century industrial alleyway, depicted in the raw, documentary style of the Ashcan School. The subject features a detailed, textured mass of honeycomb and swarming bees, built precariously on rusted iron pipes. The lighting is overcast, bleak, and murky, casting soft, indistinct shadows that emphasize the dirt, soot, and chaotic nature of the urban environment. The mood is authentic, raw, and unidealized. Captured with an eye-level, documentary-style perspective, focusing on the intersection of nature and industrial decay."
+- **Negative prompt:** "modern, bright, cheerful, clean, highly saturated, photorealistic, shiny, idyllic nature"
+- **Tags:** art, urban, historical, ashcan school, beehive, gritty
+- **Style / Reference:** Ashcan School painting, Robert Henri inspired, thick brushstrokes
+- **Composition:** eye-level, cluttered framing, realistic naturalism
+- **Color palette:** muted browns, dark greys, dull amber, rusted ochre
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20271001_ashcan-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of a natural subject (beehive) with the gritty, muted, everyday-life style of the Ashcan School in an urban setting.
+
+### Suggestion: Bismuth Fireworks
+- **Date:** 2027-10-01
+- **Prompt:** "A spectacular nighttime display where the fireworks exploding in the sky are entirely formed from jagged, perfectly geometric bismuth hopper crystals. The subjects expand outward in sharp, stair-stepped patterns instead of soft sparks. The lighting is highly contrasted and artificial, with the internal energy of the explosions causing the metallic bismuth fragments to shine brilliantly in a rainbow of thin-film interference colors against the pitch-black sky. The mood is surreal, celebratory, and mathematically precise. Captured with a wide-angle lens, utilizing a fast shutter speed to freeze the sharp, crystalline explosions."
+- **Negative prompt:** "soft sparks, smoke, realistic fireworks, daylight, blurry, organic, smooth"
+- **Tags:** surreal, night, fireworks, bismuth, geometric, iridescent
+- **Style / Reference:** surreal 3D render, hyper-detailed material swap
+- **Composition:** expansive sky view, explosive centers, sharp geometric fragmentation
+- **Color palette:** iridescent rainbow (pinks, greens, golds), bright white flashes, deep night black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271001_bismuth-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of sharp, stepped geometric structures interacting with highly saturated iridescent thin-film materials in an explosive composition.
+
+### Suggestion: Brass Orbital Ring
+- **Date:** 2027-10-01
+- **Prompt:** "An epic, sweeping view of a colossal Orbital Ring megastructure encircling a rusted, desert planet, constructed entirely from intricate, interlocking brass clockwork and gears. The mechanical subject features massive, polished cogs and steam vents extending infinitely along the orbit. The lighting is harsh and direct from a nearby star, casting deep black shadows in the vacuum of space, while highlighting the polished brass surfaces with brilliant specular glints. The mood is majestic, steampunk, and technologically awe-inspiring. Captured with a wide-angle cinematic lens from low orbit, emphasizing the vast scale of the mechanical ring."
+- **Negative prompt:** "smooth metal, modern, sleek, plastic, atmospheric haze, organic, soft lighting, futuristic"
+- **Tags:** steampunk, megastructure, space, orbital ring, brass, mechanical
+- **Style / Reference:** cinematic steampunk art, hard sci-fi concept design
+- **Composition:** curved horizon, extreme wide angle, massive mechanical scale
+- **Color palette:** polished warm brass, copper, blinding white starlight, deep cosmic black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20271001_brass-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive scale, planetary curvature, and complex steampunk mechanical structures under harsh cosmic lighting.
+
+### Suggestion: Graphene Volcanic Eruption
+- **Date:** 2027-10-01
+- **Prompt:** "A terrifying, surreal landscape of a massive volcano erupting, where the mountain and the flying debris are composed of perfectly matte, light-absorbing graphene. The dark, geometric subject spews rivers of blindingly bright, super-heated white plasma instead of lava. The lighting is intensely harsh, emanating entirely from the plasma rivers and explosive core, creating a stark interplay of blinding white-hot streaks against the crushing black geometry of the graphene. The mood is apocalyptic, alien, and unfathomably powerful. Captured with a wide-angle lens from a safe distance, freezing the dynamic flow of plasma against the rigid, light-absorbing carbon structure."
+- **Negative prompt:** "red lava, orange, fire, realistic volcano, smoke, messy, blurry, soft lighting, daylight"
+- **Tags:** sci-fi, landscape, volcano, graphene, plasma, dark
+- **Style / Reference:** surreal sci-fi landscape, hyper-detailed scientific visualization
+- **Composition:** wide landscape, explosive center, sharp contrast
+- **Color palette:** pitch black matte graphene, blinding white-hot plasma, intense neon blue edges
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271001_graphene-volcanic-eruption.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating an explosive fluid dynamic using a perfectly matte, light-absorbing material under intensely bright, contrasting internal lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
