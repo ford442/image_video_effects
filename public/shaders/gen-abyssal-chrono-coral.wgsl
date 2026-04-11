@@ -25,200 +25,160 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-// --- UTILS ---
 fn rotate2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle);
     let s = sin(angle);
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// 3D Rotation
-fn rotX(angle: f32) -> mat3x3<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return mat3x3<f32>(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c);
-}
-fn rotY(angle: f32) -> mat3x3<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return mat3x3<f32>(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c);
-}
-fn rotZ(angle: f32) -> mat3x3<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return mat3x3<f32>(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
-}
-
-// 3D FBM noise
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
-    q += dot(q, q.yxz + 33.33);
+    q += vec3<f32>(dot(q, q.yxz + vec3<f32>(33.33)));
     return fract((q.xxy + q.yxx) * q.zyx);
 }
-fn noise(p: vec3<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(mix(dot(hash3(i + vec3<f32>(0.0, 0.0, 0.0)), f - vec3<f32>(0.0, 0.0, 0.0)),
-                       dot(hash3(i + vec3<f32>(1.0, 0.0, 0.0)), f - vec3<f32>(1.0, 0.0, 0.0)), u.x),
-                   mix(dot(hash3(i + vec3<f32>(0.0, 1.0, 0.0)), f - vec3<f32>(0.0, 1.0, 0.0)),
-                       dot(hash3(i + vec3<f32>(1.0, 1.0, 0.0)), f - vec3<f32>(1.0, 1.0, 0.0)), u.x), u.y),
-               mix(mix(dot(hash3(i + vec3<f32>(0.0, 0.0, 1.0)), f - vec3<f32>(0.0, 0.0, 1.0)),
-                       dot(hash3(i + vec3<f32>(1.0, 0.0, 1.0)), f - vec3<f32>(1.0, 0.0, 1.0)), u.x),
-                   mix(dot(hash3(i + vec3<f32>(0.0, 1.0, 1.0)), f - vec3<f32>(0.0, 1.0, 1.0)),
-                       dot(hash3(i + vec3<f32>(1.0, 1.0, 1.0)), f - vec3<f32>(1.0, 1.0, 1.0)), u.x), u.y), u.z);
-}
-fn fbm(p: vec3<f32>) -> f32 {
+
+fn fbm3(p: vec3<f32>) -> f32 {
     var f = 0.0;
-    var amp = 0.5;
-    var pos = p;
-    for (var i = 0; i < 4; i++) {
-        f += amp * noise(pos);
-        pos = pos * 2.0;
-        amp *= 0.5;
+    var x = p;
+    var a = 0.5;
+    for(var i = 0; i < 4; i++) {
+        let h = hash3(x);
+        f += a * (h.x + h.y + h.z) / 3.0;
+        x *= 2.0;
+        a *= 0.5;
     }
     return f;
 }
 
-// Smooth min
 fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - h * h * k * 0.25;
+    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// SDF
-fn map(p: vec3<f32>, time: f32) -> f32 {
-    var pos = p;
+fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
+    var p = pos_in;
 
-    let audio = u.config.y;
-    let coralDensity = u.zoom_params.x; // default 0.5
-    let branchComplexity = u.zoom_params.y; // default 4.0
+    // Domain repetition
+    p.x = (fract(p.x / 10.0 + 0.5) - 0.5) * 10.0;
+    p.z = (fract(p.z / 10.0 + 0.5) - 0.5) * 10.0;
 
     // Domain warping
-    pos += vec3<f32>(fbm(pos * 0.5 + time * 0.2), fbm(pos * 0.5 - time * 0.3), fbm(pos * 0.5 + time * 0.1)) * 1.5;
+    p.x += (fbm3(p * 0.5 + time * 0.2) - 0.5) * 2.0;
+    p.y += (fbm3(p * 0.5 + time * 0.2 + 100.0) - 0.5) * 2.0;
+    p.z += (fbm3(p * 0.5 + time * 0.2 + 200.0) - 0.5) * 2.0;
 
-    // KIFS Fractal
+    let iterations = i32(u.zoom_params.y);
     var d = 1000.0;
-    var scale = 1.0;
+    var s = 1.0;
 
-    let iters = i32(clamp(branchComplexity, 1.0, 8.0));
+    for(var i = 0; i < iterations; i++) {
+        p = abs(p) - vec3<f32>(0.5, 1.5, 0.5);
+        p.xy = rotate2D(0.5 + sin(time * 0.1) * 0.2) * p.xy;
+        p.yz = rotate2D(0.3 + cos(time * 0.15) * 0.2) * p.yz;
+        s *= 1.2;
+        p *= 1.2;
 
-    for (var i = 0; i < iters; i++) {
-        pos = abs(pos) - vec3<f32>(1.2, 0.8, 1.5) * coralDensity;
-        pos *= rotY(0.5 + audio * 0.1);
-        pos *= rotX(0.3);
-        pos *= rotZ(0.2);
-
-        let cylinder = length(pos.xy) - 0.2 / scale * (1.0 + audio);
-        d = smin(d, cylinder, 0.5 / scale);
-
-        scale *= 1.3;
+        // Base coral branch
+        let branch = (length(p.xz) - u.zoom_params.x * (1.0 + u.config.y * 0.5)) / s;
+        d = smin(d, branch, 0.2);
     }
 
-    // Base surface
-    let ground = pos.y + 2.0;
-    d = smin(d, ground, 1.0);
+    // Bioluminescent nodes at tips
+    let node_d = length(p) / s - (0.2 + u.config.y * 0.1);
 
-    return d;
+    if (node_d < d) {
+        return vec2<f32>(node_d, 2.0); // Material 2: nodes
+    }
+    return vec2<f32>(d, 1.0); // Material 1: branch
 }
 
-fn getNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
-    let d = map(p, time);
     return normalize(vec3<f32>(
-        map(p + e.xyy, time) - d,
-        map(p + e.yxy, time) - d,
-        map(p + e.yyx, time) - d
+        map(p + e.xyy, time).x - map(p - e.xyy, time).x,
+        map(p + e.yxy, time).x - map(p - e.yxy, time).x,
+        map(p + e.yyx, time).x - map(p - e.yyx, time).x
     ));
 }
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = vec2<f32>(textureDimensions(writeTexture));
-    let id = vec2<f32>(f32(global_id.x), f32(global_id.y));
+    let coord = vec2<i32>(global_id.xy);
+    let resolution = vec2<f32>(u.config.z, u.config.w);
 
-    if (id.x >= dims.x || id.y >= dims.y) {
+    if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
         return;
     }
 
-    var uv = (id - 0.5 * dims) / dims.y;
+    let uv = (vec2<f32>(coord) - 0.5 * resolution) / resolution.y;
+    var base_time = u.config.x * 0.5;
 
-    let time = u.config.x;
-    let audio = u.config.y;
-    let mouse = u.zoom_config.yz;
-    let mouseActive = u.zoom_config.x; // Mouse activity
+    // Mouse time dilation field
+    let mouse_uv = u.zoom_config.yz;
+    let dist_to_mouse = length(uv - mouse_uv);
+    let dilation_strength = u.zoom_params.w;
+    let dilation = smoothstep(dilation_strength, 0.0, dist_to_mouse) * 10.0;
+    let local_time = base_time + dilation;
 
-    let timeDilation = u.zoom_params.w; // default 0.2
+    var ro = vec3<f32>(0.0, base_time * 2.0, base_time * 1.5);
+    var rd = normalize(vec3<f32>(uv, 1.0));
 
-    // Mouse interaction: Gravity well time dilation
-    var dilatedTime = time;
-
-    // Simple mapped mouse pos for the effect
-    let mouseWorldPos = vec3<f32>(mouse.x * 10.0, mouse.y * 10.0, 5.0);
-
-    var ro = vec3<f32>(0.0, 0.0, -time * 2.0); // Camera drifts forward
-    var rd = normalize(vec3<f32>(uv, -1.0));
-
-    // Basic camera rotation
-    rd *= rotY(sin(time * 0.2) * 0.3);
-    rd *= rotX(cos(time * 0.15) * 0.2);
-
-    // Apply time dilation based on mouse
-    if (mouseActive > 0.5) {
-       let distToMouse = length(ro - mouseWorldPos);
-       dilatedTime += (1.0 / (distToMouse + 0.1)) * timeDilation * 50.0;
-    }
+    // Camera rotation
+    rd.xy = rotate2D(sin(base_time * 0.1) * 0.2) * rd.xy;
+    rd.xz = rotate2D(cos(base_time * 0.05) * 0.2) * rd.xz;
 
     var t = 0.0;
     var d = 0.0;
-    var p = vec3<f32>(0.0);
+    var mat = 0.0;
+    var acc_glow = 0.0;
 
-    var accum = 0.0;
-    var glow = 0.0;
-    let bioGlow = u.zoom_params.z; // default 1.0
+    for(var i = 0; i < 100; i++) {
+        let p = ro + rd * t;
+        let res = map(p, local_time);
+        d = res.x;
+        mat = res.y;
 
-    for (var i = 0; i < 80; i++) {
-        p = ro + rd * t;
-        d = map(p, dilatedTime);
+        if (d < 0.001) { break; }
+        t += d * 0.5;
 
-        // Volumetric accumulation
-        accum += exp(-d * 2.0) * 0.05 * bioGlow * (1.0 + audio * 2.0);
-
-        if (d < 0.001 || t > 30.0) {
-            break;
+        if (mat == 2.0) {
+            acc_glow += 0.01 / (0.01 + d * d) * u.zoom_params.z;
         }
-
-        t += d * 0.6; // Smaller step size for detailed fractals
-        glow += 0.01 / (0.01 + d * d);
+        if (t > 20.0) { break; }
     }
 
-    var col = vec3<f32>(0.0, 0.05, 0.1); // Deep abyssal blue ambient
+    var col = vec3<f32>(0.0);
 
-    if (t < 30.0) {
-        let n = getNormal(p, dilatedTime);
-        let l = normalize(vec3<f32>(-1.0, 1.0, -1.0));
+    if (t < 20.0) {
+        let p = ro + rd * t;
+        let n = calcNormal(p, local_time);
+        let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
+
         let diff = max(dot(n, l), 0.0);
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
 
-        // Coloring based on position and sdf value (approximating depth/subsurface)
-        let baseCol = mix(vec3<f32>(0.0, 0.2, 0.4), vec3<f32>(0.1, 0.8, 0.9), fresnel);
-        let tipCol = vec3<f32>(0.9, 0.1, 0.6) * (1.0 + audio);
-
-        col = mix(baseCol, tipCol, accum);
-        col += vec3<f32>(0.2, 0.6, 0.8) * fresnel * 0.5;
-        col *= diff * 0.8 + 0.2;
+        if (mat == 1.0) {
+            // Subsurface scattering proxy + deep abyssal color
+            let sss = smoothstep(0.0, 1.0, map(p + l * 0.1, local_time).x);
+            col = vec3<f32>(0.0, 0.2, 0.4) * diff + vec3<f32>(0.0, 0.5, 0.8) * sss + fresnel * vec3<f32>(0.5, 0.8, 1.0);
+        } else {
+            // Bioluminescent nodes
+            col = vec3<f32>(0.0, 1.0, 0.8) * 2.0 + vec3<f32>(1.0, 0.0, 0.5) * fresnel;
+        }
+    } else {
+        // Starlight background
+        let stars = pow(hash3(rd * 100.0).x, 50.0);
+        col += stars * vec3<f32>(1.0);
     }
 
-    // Add glowing fog
-    col += vec3<f32>(0.1, 0.3, 0.6) * accum * 0.5;
-    col += vec3<f32>(0.8, 0.2, 0.5) * glow * 0.05;
+    // Add volumetric fog/glow
+    col += acc_glow * vec3<f32>(0.0, 0.5, 1.0);
 
-    // Add simple ambient starlight
-    col += fbm(rd * 50.0) * vec3<f32>(0.5, 0.7, 1.0) * 0.1;
+    // Ambient fog
+    col = mix(col, vec3<f32>(0.0, 0.05, 0.1), 1.0 - exp(-0.02 * t));
 
-    // Tone mapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(0.4545)); // Gamma correction
+    // Audio reactivity to overall brightness
+    col *= 1.0 + u.config.y * 0.2;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
 }
