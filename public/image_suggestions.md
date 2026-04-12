@@ -2621,6 +2621,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating an explosive fluid dynamic using a perfectly matte, light-absorbing material under intensely bright, contrasting internal lighting.
 
+### Suggestion: Aerogel Fireworks
+- **Date:** 2027-11-01
+- **Prompt:** "A surreal, dreamlike nighttime celebration where exploding fireworks are inexplicably composed of weightless, translucent blue aerogel. The sky is filled with massive, frozen bursts of the porous material, which catches the ambient city light to create thousands of soft, internal refractions and a ghostly, ethereal glow. The lighting is a mix of distant urban neon and the internal scattering of light within the aerogel, casting a serene blue hue over the dark sky. The mood is silent, magical, and impossible. Captured with a wide-angle lens, utilizing a long exposure to emphasize the glowing trails of the aerogel bursts against the starry night."
+- **Negative prompt:** "realistic fireworks, bright flashes, fire, smoke, daylight, messy, noisy"
+- **Tags:** surreal, night, fireworks, aerogel, abstract
+- **Style / Reference:** surreal digital art, hyper-detailed material swap
+- **Composition:** expansive sky view, explosive centers, soft blurred edges
+- **Color palette:** ghostly aerogel blue, soft neon pink reflections, deep night black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_aerogel-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the interaction of internal light scattering within highly translucent, low-density materials in an explosive, nighttime context.
+
+### Suggestion: Damascus Steel Exoplanet Core
+- **Date:** 2027-11-01
+- **Prompt:** "An ultra-macro, theoretical visualization deep within the core of an exoplanet, where immense pressure has forged the rocky mantle into flowing, rippled layers of Damascus steel. The heavy metallic subject features intricate, overlapping wave patterns of dark and light grey metal, glowing with extreme heat. The lighting is entirely internal, radiating from a blinding white-hot center that casts sharp glints and deep, molten shadows across the metallic ridges. The mood is crushing, alien, and unfathomably powerful. Captured with a microscopic camera perspective, freezing the chaotic, pressurized metal in sharp focus."
+- **Negative prompt:** "organic, water, soft, blurry, cool colors, daylight, realistic cave"
+- **Tags:** sci-fi, macro, exoplanet, core, damascus steel
+- **Style / Reference:** scientific visualization, hyper-detailed hard surface modeling
+- **Composition:** chaotic yet flowing geometry, sharp macro focus, dense
+- **Color palette:** dark metallic greys, blinding white-hot, fiery orange, molten red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_damascus-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex, flowing metallic textures subjected to extreme heat and internal illumination.
+
+### Suggestion: Mother of Pearl Beehive
+- **Date:** 2027-11-01
+- **Prompt:** "An incredibly detailed, macro view deep inside a gigantic, surreal beehive where the entire honeycomb structure is constructed from shimmering, iridescent mother of pearl (nacre). The subject features perfectly repeating hexagonal cells that reflect a spectacular array of pearlescent pastels, filled with clear, glowing nectar. The lighting is soft and ethereal, filtering through the semi-transparent nacre walls to create a mesmerizing sub-surface scattering effect and intense rainbow interference patterns. The mood is luxurious, magical, and mathematically perfect. Captured with a 100mm macro lens, deep depth of field to emphasize the endless geometric repetition of the iridescent honeycomb."
+- **Negative prompt:** "wax, yellow honey, plastic, hard surface, realistic hive, bees, dull, flat lighting"
+- **Tags:** macro, surreal, beehive, mother of pearl, iridescent
+- **Style / Reference:** surreal macro photography, hyper-detailed material swap
+- **Composition:** full frame repeating pattern, deep perspective
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, glowing nectar
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_mother-of-pearl-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates large-scale thin-film iridescent interference mapped to perfect, repeating geometric patterns.
+
+### Suggestion: Graphene Bioluminescent Reef
+- **Date:** 2027-11-01
+- **Prompt:** "A breathtaking, macro underwater photograph of a sprawling coral reef where the coral formations are composed entirely of dark, matte, light-absorbing graphene. The geometric, black subjects are populated by tiny, intensely glowing bioluminescent sea life that illuminates the reef from within. The lighting is exclusively from the bioluminescence, creating a stark, high-contrast interplay of blinding neon cyan and magenta streaks against the crushing black, matte geometry of the graphene. The mood is silent, alien, and deeply serene. Captured with a 50mm macro lens, utilizing a shallow depth of field to isolate a single glowing polyp against the dark void."
+- **Negative prompt:** "bright sunlight, surface, muddy water, bright coral, realistic fish, soft lighting"
+- **Tags:** underwater, sci-fi, macro, graphene, bioluminescent
+- **Style / Reference:** photorealistic underwater photography, sci-fi material swap
+- **Composition:** macro close-up, sharp contrast, beautiful soft bokeh
+- **Color palette:** pitch black matte graphene, glowing neon cyan, vibrant magenta
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20271101_graphene-bioluminescent-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of perfectly matte, light-absorbing textures interacting with intensely bright, colored bioluminescent light sources.
+
+### Suggestion: Italian Futurism Tsunami
+- **Date:** 2027-11-01
+- **Prompt:** "A massive, terrifying tsunami wave crashing down on a stylized metropolis, depicted entirely in the aggressive, fragmented style of Italian Futurism. The destructive fluid subject is deconstructed into sharp, intersecting diagonal lines and overlapping geometric planes that capture the kinetic energy and overwhelming speed of the water. The lighting is dynamic and directional, casting stark, jagged shadows that enhance the splintered geometry of the composition. The mood is energetic, destructive, and modern. Captured with a highly tilted perspective to emphasize raw motion and the violent impact of the fragmented wave."
+- **Negative prompt:** "realistic water, soft curves, calm, photography, peaceful, organic, smooth"
+- **Tags:** abstract, art, italian futurism, tsunami, disaster
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** deep ocean blue, steel greys, harsh stark white, chaotic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_futurism-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an overwhelming, chaotic fluid event.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
