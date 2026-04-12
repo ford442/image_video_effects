@@ -352,6 +352,9 @@ class ShaderApiService {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`API ${response.status}`);
       const data: ApiShaderEntry[] = await response.json();
+      if (!Array.isArray(data)) {
+        throw new TypeError('API response is not an array');
+      }
       
       console.log(`[ShaderApi] Received ${data.length} shaders from API`);
       

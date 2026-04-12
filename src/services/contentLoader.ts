@@ -35,6 +35,9 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
         const response = await fetch(IMAGE_MANIFEST_URL);
         if (response.ok) {
             const data = await response.json() as ApiManifestItem[];
+            if (!Array.isArray(data)) {
+                throw new TypeError('API response is not an array');
+            }
             manifest = data.map((item) => ({
                 url: item.url,
                 tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],

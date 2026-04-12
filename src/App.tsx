@@ -112,6 +112,12 @@ const SHADER_DEFAULTS: Record<string, number[]> = {
     'bloom': [0.50, 0.40, 0.55, 0.35],
     'dynamic-lens-flares': [0.45, 0.50, 0.40, 0.45],
     'chromatic-crawler': [0.40, 0.45, 0.50, 0.35],
+    
+    // Image processing effects
+    'digital-haze': [0.50, 0.40, 0.45, 0.35],
+    
+    // Generative: Crystalline Chrono-Dyson (Panel Density, Quasar Glow, Flux Speed, Swarm Count)
+    'gen-crystalline-chrono-dyson': [0.40, 0.55, 0.50, 0.45],
 };
 
 // Helper to get shader defaults - tries multiple ID variations for matching
@@ -365,7 +371,7 @@ function MainApp() {
 
                 // Record play event (fire-and-forget)
                 if (ok) {
-                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, { method: 'POST' }).catch(() => {});
+                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, { method: 'GET' }).catch(() => {});
                 }
             } catch (error) {
                 console.error(`❌ Failed to load shader ${shaderEntry.id}:`, error);
@@ -406,6 +412,9 @@ function MainApp() {
                 const response = await fetch(IMAGE_MANIFEST_URL);
                 if (response.ok) {
                     const data = await response.json();
+                    if (!Array.isArray(data)) {
+                        throw new TypeError('API response is not an array');
+                    }
                     manifest = data.map((item: any) => ({
                         url: item.url,
                         tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],
