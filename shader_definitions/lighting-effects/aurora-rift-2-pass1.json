@@ -4,11 +4,55 @@
   "url": "shaders/aurora-rift-2-pass1.wgsl",
   "category": "lighting-effects",
   "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
-  "features": ["multi-pass-1", "compute-shader", "volumetric", "raymarch"],
+  "features": [
+    "multi-pass-1",
+    "compute-shader",
+    "volumetric",
+    "raymarch"
+  ],
   "multipass": {
     "pass": 1,
     "totalPasses": 2,
     "nextShader": "aurora-rift-2-pass2"
   },
-  "tags": ["aurora", "volumetric", "lighting", "enhanced"]
+  "tags": [
+    "aurora",
+    "volumetric",
+    "lighting",
+    "enhanced"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

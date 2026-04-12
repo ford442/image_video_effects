@@ -23,7 +23,8 @@ export type ShaderCategory =
     | 'lighting-effects'
     | 'liquid-effects'
     | 'retro-glitch'
-    | 'visual-effects';
+    | 'visual-effects'
+    | 'post-processing';
 
 // Added 'webcam', 'generative', and 'live' (HLS streaming)
 export type InputSource = 'image' | 'video' | 'webcam' | 'generative' | 'live';

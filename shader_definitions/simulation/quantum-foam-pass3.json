@@ -4,11 +4,54 @@
   "url": "shaders/quantum-foam-pass3.wgsl",
   "category": "simulation",
   "description": "Volumetric rendering and final compositing with glow and tone mapping. Third pass of 3-pass system.",
-  "features": ["multi-pass-3", "compute-shader", "post-processing"],
+  "features": [
+    "multi-pass-3",
+    "compute-shader",
+    "post-processing"
+  ],
   "multipass": {
     "pass": 3,
     "totalPasses": 3,
     "prevShader": "quantum-foam-pass2"
   },
-  "tags": ["quantum", "compositing", "glow", "tone-mapping"]
+  "tags": [
+    "quantum",
+    "compositing",
+    "glow",
+    "tone-mapping"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

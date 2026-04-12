@@ -4,7 +4,40 @@
   "url": "shaders/voronoi-faceted-glass.wgsl",
   "category": "image",
   "description": "Cellular glass distortion effect.",
-  "params": [],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "features": [
     "mouse-driven"
   ],

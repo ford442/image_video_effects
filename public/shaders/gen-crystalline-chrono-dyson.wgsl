@@ -78,7 +78,7 @@ fn map(p: vec3<f32>) -> f32 {
     return mix(panels, quasar_dist, h) - k * h * (1.0 - h);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coords = vec2<i32>(id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
