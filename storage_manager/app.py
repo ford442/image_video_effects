@@ -43,6 +43,7 @@ STORAGE_MAP = {
     "sample": {"folder": "samples/", "index": "samples/_samples.json"},
     "music": {"folder": "music/", "index": "music/_music.json"},
     "note": {"folder": "notes/", "index": "notes/_notes.json"},
+    "location": {"folder": "locations/", "index": "locations/_locations.json"},
     "shader": {"folder": "shaders/", "index": "shaders/_shaders.json"},
     "brainfuck": {
         "folder": "brainfuck/",
@@ -154,6 +155,16 @@ class ItemPayload(BaseModel):
     type: str = "song"
     data: dict
     rating: Optional[int] = None
+
+class LocationPayload(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    heading: float = 0.0
+    pitch: float = 0.0
+    zoom: float = 1.0
+    description: Optional[str] = ""
+    tags: List[str] = Field(default_factory=list)
 
 class MetaData(BaseModel):
     id: str
@@ -425,6 +436,150 @@ async def health_check():
         "gcs_connected": bucket is not None,
         "storage": status_report
     }
+
+# ========================= LOCATIONS ENDPOINTS =========================
+
+@app.get("/api/locations")
+async def list_locations():
+    """List all saved locations from cloud storage."""
+    config = STORAGE_MAP["location"]
+    try:
+        index = await run_io(_read_json_sync, config["index"])
+        if not isinstance(index, list):
+            index = []
+        return index
+    except Exception as e:
+        logging.error(f"Failed to list locations: {e}")
+        raise HTTPException(500, f"Failed to list locations: {str(e)}")
+
+@app.post("/api/locations")
+async def save_location(payload: LocationPayload):
+    """Save a new location to cloud storage."""
+    config = STORAGE_MAP["location"]
+    location_id = str(uuid.uuid4())
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    filename = f"{location_id}.json"
+    full_path = f"{config['folder']}{filename}"
+    
+    data = {
+        "id": location_id,
+        "name": payload.name,
+        "lat": payload.lat,
+        "lng": payload.lng,
+        "heading": payload.heading,
+        "pitch": payload.pitch,
+        "zoom": payload.zoom,
+        "description": payload.description,
+        "tags": payload.tags,
+        "date": date_str,
+        "type": "location",
+        "filename": filename,
+    }
+    
+    async with INDEX_LOCK:
+        try:
+            await run_io(_write_json_sync, full_path, data)
+            
+            index = await run_io(_read_json_sync, config["index"])
+            if not isinstance(index, list):
+                index = []
+            index.insert(0, data)
+            await run_io(_write_json_sync, config["index"], index)
+            
+            await cache.delete("locations:list")
+            return {"success": True, "id": location_id, "location": data}
+        except Exception as e:
+            logging.error(f"Failed to save location: {e}")
+            raise HTTPException(500, f"Failed to save location: {str(e)}")
+
+@app.get("/api/locations/{location_id}")
+async def get_location(location_id: str):
+    """Get a single location by ID."""
+    config = STORAGE_MAP["location"]
+    try:
+        index = await run_io(_read_json_sync, config["index"])
+        if not isinstance(index, list):
+            raise HTTPException(500, "Location index corrupted")
+        entry = next((item for item in index if item.get("id") == location_id), None)
+        if not entry:
+            raise HTTPException(404, "Location not found")
+        return entry
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to get location {location_id}: {e}")
+        raise HTTPException(500, f"Failed to get location: {str(e)}")
+
+@app.delete("/api/locations/{location_id}")
+async def delete_location(location_id: str):
+    """Delete a location from cloud storage."""
+    config = STORAGE_MAP["location"]
+    async with INDEX_LOCK:
+        try:
+            index = await run_io(_read_json_sync, config["index"])
+            if not isinstance(index, list):
+                raise HTTPException(500, "Location index corrupted")
+            
+            entry = next((item for item in index if item.get("id") == location_id), None)
+            if not entry:
+                raise HTTPException(404, "Location not found")
+            
+            # Remove file from bucket
+            blob_path = f"{config['folder']}{entry['filename']}"
+            blob = bucket.blob(blob_path)
+            if await run_io(blob.exists):
+                await run_io(blob.delete)
+            
+            # Remove from index
+            index = [item for item in index if item.get("id") != location_id]
+            await run_io(_write_json_sync, config["index"], index)
+            await cache.delete("locations:list")
+            
+            return {"success": True, "id": location_id, "deleted": True}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"Failed to delete location {location_id}: {e}")
+            raise HTTPException(500, f"Failed to delete location: {str(e)}")
+
+@app.put("/api/locations/{location_id}")
+async def update_location(location_id: str, payload: LocationPayload):
+    """Update an existing location."""
+    config = STORAGE_MAP["location"]
+    async with INDEX_LOCK:
+        try:
+            index = await run_io(_read_json_sync, config["index"])
+            if not isinstance(index, list):
+                raise HTTPException(500, "Location index corrupted")
+            
+            entry_idx = next((i for i, item in enumerate(index) if item.get("id") == location_id), -1)
+            if entry_idx == -1:
+                raise HTTPException(404, "Location not found")
+            
+            entry = index[entry_idx]
+            entry["name"] = payload.name
+            entry["lat"] = payload.lat
+            entry["lng"] = payload.lng
+            entry["heading"] = payload.heading
+            entry["pitch"] = payload.pitch
+            entry["zoom"] = payload.zoom
+            entry["description"] = payload.description
+            entry["tags"] = payload.tags
+            entry["date"] = datetime.now().strftime("%Y-%m-%d")
+            
+            # Update file
+            blob_path = f"{config['folder']}{entry['filename']}"
+            await run_io(_write_json_sync, blob_path, entry)
+            # Update index
+            await run_io(_write_json_sync, config["index"], index)
+            await cache.delete("locations:list")
+            
+            return {"success": True, "id": location_id, "location": entry}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"Failed to update location {location_id}: {e}")
+            raise HTTPException(500, f"Failed to update location: {str(e)}")
 
 # ========================= SHADER RATINGS UI =========================
 @app.get("/ratings", response_class=HTMLResponse)

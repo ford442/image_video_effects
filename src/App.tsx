@@ -1473,6 +1473,34 @@ function MainApp() {
                 shaders={availableModes}
                 isOpen={showShaderScanner}
                 onClose={() => setShowShaderScanner(false)}
+                onTestShader={async (shaderId, testValues) => {
+                    try {
+                        // Load the shader
+                        setMode(0, shaderId as RenderMode);
+                        
+                        // Wait for shader to load
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        // Test setting parameters
+                        const testParams: Partial<SlotParams> = {
+                            zoomParam1: testValues[0] ?? 0.5,
+                            zoomParam2: testValues[1] ?? 0.5,
+                            zoomParam3: testValues[2] ?? 0.5,
+                            zoomParam4: testValues[3] ?? 0.5,
+                        };
+                        updateSlotParam(0, testParams as SlotParams);
+                        
+                        // Wait for params to apply
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        
+                        return { success: true };
+                    } catch (error) {
+                        return { 
+                            success: false, 
+                            error: error instanceof Error ? error.message : String(error) 
+                        };
+                    }
+                }}
             />
 
             {/* Storage Browser Modal */}

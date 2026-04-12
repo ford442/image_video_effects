@@ -1,6 +1,16 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { ShaderEntry } from '../renderer/types';
 
+interface ShaderParam {
+  id: string;
+  name: string;
+  default: number;
+  min: number;
+  max: number;
+  step?: number;
+  mapping?: string;
+}
+
 interface ShaderScanResult {
   id: string;
   name: string;
@@ -9,12 +19,16 @@ interface ShaderScanResult {
   status: 'pending' | 'loading' | 'success' | 'error' | 'skipped';
   errorMessage?: string;
   compileTimeMs?: number;
+  params?: ShaderParam[];
+  paramStatus?: 'valid' | 'invalid' | 'no-params';
+  paramErrors?: string[];
 }
 
 interface ShaderScannerProps {
   shaders: ShaderEntry[];
   isOpen: boolean;
   onClose: () => void;
+  onTestShader?: (shaderId: string, testValues: number[]) => Promise<{ success: boolean; error?: string }>;
 }
 
 // Simple template wrapper to make shaders compile-testable
@@ -43,11 +57,13 @@ struct Uniforms {
 __SHADER_CODE__
 `;
 
-export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose }) => {
+export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose, onTestShader }) => {
   const [results, setResults] = useState<ShaderScanResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanMode, setScanMode] = useState<'compile' | 'params' | 'both'>('both');
   const [progress, setProgress] = useState(0);
   const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null);
+  const [showParamDetails, setShowParamDetails] = useState<string | null>(null);
   const abortRef = useRef(false);
 
   // Check WebGPU support once when opened
@@ -69,39 +85,86 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
     }
   }, [isOpen, webgpuSupported]);
 
+  // Validate shader parameters from JSON definition
+  const validateParams = (params: any[]): { valid: boolean; errors: string[]; normalized: ShaderParam[] } => {
+    const errors: string[] = [];
+    const normalized: ShaderParam[] = [];
+    
+    if (!params || params.length === 0) {
+      return { valid: true, errors: [], normalized: [] };
+    }
+    
+    for (const param of params) {
+      // Check required fields
+      if (!param.id) errors.push('Missing param id');
+      if (!param.name) errors.push('Missing param name');
+      
+      // Validate ranges
+      const min = param.min ?? 0;
+      const max = param.max ?? 1;
+      const defaultVal = param.default ?? 0.5;
+      
+      if (min >= max) errors.push(`Invalid range: min(${min}) >= max(${max})`);
+      if (defaultVal < min || defaultVal > max) {
+        errors.push(`Default value ${defaultVal} out of range [${min}, ${max}]`);
+      }
+      
+      normalized.push({
+        id: param.id || 'unnamed',
+        name: param.name || 'Unnamed',
+        default: defaultVal,
+        min,
+        max,
+        step: param.step,
+        mapping: param.mapping
+      });
+    }
+    
+    return { valid: errors.length === 0, errors, normalized };
+  };
+
   const runScan = useCallback(async () => {
-    if (!navigator.gpu) {
-      alert('WebGPU is not supported in this browser');
-      return;
-    }
+    const doCompileCheck = scanMode === 'compile' || scanMode === 'both';
+    const doParamCheck = scanMode === 'params' || scanMode === 'both';
+    
+    let device: GPUDevice | null = null;
+    
+    if (doCompileCheck) {
+      if (!navigator.gpu) {
+        alert('WebGPU is not supported in this browser');
+        return;
+      }
 
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) {
-      alert('Failed to get WebGPU adapter');
-      return;
-    }
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        alert('Failed to get WebGPU adapter');
+        return;
+      }
 
-    const device = await adapter.requestDevice();
-    if (!device) {
-      alert('Failed to get WebGPU device');
-      return;
+      device = await adapter.requestDevice();
+      if (!device) {
+        alert('Failed to get WebGPU device');
+        return;
+      }
     }
 
     setIsScanning(true);
     abortRef.current = false;
     
-    // Initialize results
+    // Initialize results with param info if available
     const initialResults: ShaderScanResult[] = shaders.map(s => ({
       id: s.id,
       name: s.name,
       url: s.url,
       category: s.category,
-      status: 'pending'
+      status: 'pending',
+      params: s.params,
+      paramStatus: s.params && s.params.length > 0 ? 'valid' : 'no-params'
     }));
     setResults(initialResults);
 
     const errors: ShaderScanResult[] = [];
-    const batchSize = 5; // Process in batches to avoid overwhelming the GPU
+    const batchSize = 3; // Smaller batch for more reliable testing
 
     for (let i = 0; i < shaders.length; i += batchSize) {
       if (abortRef.current) break;
@@ -118,6 +181,8 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
         });
 
         const startTime = performance.now();
+        let compileError: string | undefined;
+        let paramValidation = { valid: true, errors: [] as string[], normalized: [] as ShaderParam[] };
         
         try {
           // Fetch the shader code
@@ -135,51 +200,93 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
               updated[index] = { 
                 ...updated[index], 
                 status: 'skipped',
-                errorMessage: 'Not a compute shader'
+                errorMessage: 'Not a compute shader',
+                paramStatus: 'no-params'
               };
               return updated;
             });
             return;
           }
 
-          // Wrap the shader with required bindings
-          const wrappedCode = WRAPPER_TEMPLATE.replace('__SHADER_CODE__', code);
+          // Validate parameters from JSON
+          if (doParamCheck && shader.params) {
+            paramValidation = validateParams(shader.params);
+          }
 
-          // Try to create the shader module
-          const shaderModule = device.createShaderModule({
-            label: shader.id,
-            code: wrappedCode
-          });
+          // Compile check
+          if (doCompileCheck && device) {
+            // Wrap the shader with required bindings
+            const wrappedCode = WRAPPER_TEMPLATE.replace('__SHADER_CODE__', code);
 
-          // Get compilation info
-          const compilationInfo = await shaderModule.getCompilationInfo();
+            // Try to create the shader module
+            const shaderModule = device.createShaderModule({
+              label: shader.id,
+              code: wrappedCode
+            });
+
+            // Get compilation info
+            const compilationInfo = await shaderModule.getCompilationInfo();
+            
+            // Check for errors
+            const errorMessages = compilationInfo.messages.filter(
+              msg => msg.type === 'error'
+            );
+            
+            if (errorMessages.length > 0) {
+              compileError = errorMessages.map(msg => 
+                `Line ${msg.lineNum}:${msg.linePos} - ${msg.message}`
+              ).join('\n');
+            }
+          }
+
+          // If we have onTestShader callback, run runtime test
+          if (onTestShader && doParamCheck && !compileError) {
+            const testValues = shader.params?.map((p: any) => {
+              const min = p.min ?? 0;
+              const max = p.max ?? 1;
+              return min + (max - min) * 0.6; // Test at 60% of range
+            }) || [];
+            
+            try {
+              const testResult = await onTestShader(shader.id, testValues);
+              if (!testResult.success) {
+                paramValidation.errors.push(`Runtime test failed: ${testResult.error}`);
+                paramValidation.valid = false;
+              }
+            } catch (e) {
+              paramValidation.errors.push(`Runtime test error: ${e}`);
+              paramValidation.valid = false;
+            }
+          }
           
           const compileTimeMs = performance.now() - startTime;
           
-          // Check for errors
-          const errorMessages = compilationInfo.messages.filter(
-            msg => msg.type === 'error'
-          );
+          // Determine final status
+          const hasCompileError = !!compileError;
+          const hasParamErrors = !paramValidation.valid;
           
-          if (errorMessages.length > 0) {
-            const errorText = errorMessages.map(msg => 
-              `Line ${msg.lineNum}:${msg.linePos} - ${msg.message}`
-            ).join('\n');
+          if (hasCompileError || hasParamErrors) {
+            const errorParts: string[] = [];
+            if (hasCompileError) errorParts.push(`COMPILE: ${compileError}`);
+            if (hasParamErrors) errorParts.push(`PARAMS: ${paramValidation.errors.join(', ')}`);
             
             setResults(prev => {
               const updated = [...prev];
               updated[index] = { 
                 ...updated[index], 
                 status: 'error',
-                errorMessage: errorText,
-                compileTimeMs
+                errorMessage: errorParts.join(' | '),
+                compileTimeMs,
+                params: paramValidation.normalized,
+                paramStatus: hasParamErrors ? 'invalid' : 'valid',
+                paramErrors: paramValidation.errors
               };
               return updated;
             });
             errors.push({
               ...shader,
               status: 'error',
-              errorMessage: errorText,
+              errorMessage: errorParts.join(' | '),
               compileTimeMs
             });
           } else {
@@ -188,7 +295,9 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
               updated[index] = { 
                 ...updated[index], 
                 status: 'success',
-                compileTimeMs
+                compileTimeMs,
+                params: paramValidation.normalized,
+                paramStatus: paramValidation.normalized.length > 0 ? 'valid' : 'no-params'
               };
               return updated;
             });
@@ -201,7 +310,8 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
               ...updated[index], 
               status: 'error',
               errorMessage,
-              compileTimeMs: performance.now() - startTime
+              compileTimeMs: performance.now() - startTime,
+              paramStatus: 'invalid'
             };
             return updated;
           });
@@ -223,12 +333,12 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
     const errorCount = errors.length;
     
     if (errorCount === 0) {
-      console.log('✅ All shaders compiled successfully!');
+      console.log('✅ All shaders passed!');
     } else {
-      console.error(`❌ Found ${errorCount} shaders with compilation errors`);
+      console.error(`❌ Found ${errorCount} shaders with errors`);
       console.table(errors.map(e => ({ id: e.id, error: e.errorMessage?.slice(0, 100) })));
     }
-  }, [shaders]);
+  }, [shaders, scanMode, onTestShader]);
 
   const stopScan = useCallback(() => {
     abortRef.current = true;
@@ -239,16 +349,35 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
     const errorResults = results.filter(r => r.status === 'error');
     const report = {
       timestamp: new Date().toISOString(),
+      scanMode,
       totalShaders: shaders.length,
       successCount: results.filter(r => r.status === 'success').length,
       errorCount: errorResults.length,
       skippedCount: results.filter(r => r.status === 'skipped').length,
+      paramStats: {
+        withParams: results.filter(r => r.params && r.params.length > 0).length,
+        withoutParams: results.filter(r => !r.params || r.params.length === 0).length,
+        validParams: results.filter(r => r.paramStatus === 'valid').length,
+        invalidParams: results.filter(r => r.paramStatus === 'invalid').length
+      },
       errors: errorResults.map(r => ({
         id: r.id,
         name: r.name,
         category: r.category,
         url: r.url,
-        error: r.errorMessage
+        error: r.errorMessage,
+        paramStatus: r.paramStatus,
+        paramErrors: r.paramErrors
+      })),
+      allResults: results.map(r => ({
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        status: r.status,
+        compileTimeMs: r.compileTimeMs,
+        paramCount: r.params?.length || 0,
+        paramStatus: r.paramStatus,
+        params: r.params
       }))
     };
 
@@ -259,7 +388,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
     a.download = `shader-scan-report-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [results, shaders.length]);
+  }, [results, shaders.length, scanMode]);
 
   const errorCount = results.filter(r => r.status === 'error').length;
   const successCount = results.filter(r => r.status === 'success').length;
@@ -326,7 +455,8 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
         display: 'flex', 
         gap: '10px', 
         marginBottom: '20px',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexWrap: 'wrap'
       }}>
         <button
           onClick={runScan}
@@ -379,6 +509,26 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
           </button>
         )}
 
+        {/* Scan Mode Selector */}
+        <select
+          value={scanMode}
+          onChange={(e) => setScanMode(e.target.value as 'compile' | 'params' | 'both')}
+          disabled={isScanning}
+          style={{
+            background: '#001100',
+            border: '1px solid #00ff00',
+            color: '#00ff00',
+            padding: '8px 12px',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            cursor: isScanning ? 'not-allowed' : 'pointer'
+          }}
+        >
+          <option value="both">🔍 Compile + Params</option>
+          <option value="compile">⚙️ Compilation Only</option>
+          <option value="params">🎚️ Parameters Only</option>
+        </select>
+
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '15px' }}>
           <span>Total: {shaders.length}</span>
           <span style={{ color: '#00ff00' }}>✅ {successCount}</span>
@@ -428,6 +578,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
           }}>
             <tr>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Status</th>
+              <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Params</th>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>ID</th>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Name</th>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Category</th>
@@ -437,33 +588,100 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
           </thead>
           <tbody>
             {results.map((result, idx) => (
-              <tr key={result.id} style={{
-                backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(0, 255, 0, 0.05)'
-              }}>
-                <td style={{ padding: '6px 8px' }}>
-                  {result.status === 'pending' && '⏳'}
-                  {result.status === 'loading' && '🔄'}
-                  {result.status === 'success' && '✅'}
-                  {result.status === 'error' && '❌'}
-                  {result.status === 'skipped' && '⏭️'}
-                </td>
-                <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{result.id}</td>
-                <td style={{ padding: '6px 8px' }}>{result.name}</td>
-                <td style={{ padding: '6px 8px' }}>{result.category}</td>
-                <td style={{ padding: '6px 8px' }}>
-                  {result.compileTimeMs ? `${result.compileTimeMs.toFixed(1)}ms` : '-'}
-                </td>
-                <td style={{ 
-                  padding: '6px 8px', 
-                  color: result.status === 'error' ? '#ff6666' : '#888',
-                  maxWidth: '400px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }} title={result.errorMessage}>
-                  {result.errorMessage || '-'}
-                </td>
-              </tr>
+              <React.Fragment key={result.id}>
+                <tr style={{
+                  backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(0, 255, 0, 0.05)',
+                  cursor: result.params && result.params.length > 0 ? 'pointer' : 'default'
+                }}
+                onClick={() => result.params && result.params.length > 0 && setShowParamDetails(showParamDetails === result.id ? null : result.id)}
+                >
+                  <td style={{ padding: '6px 8px' }}>
+                    {result.status === 'pending' && '⏳'}
+                    {result.status === 'loading' && '🔄'}
+                    {result.status === 'success' && '✅'}
+                    {result.status === 'error' && '❌'}
+                    {result.status === 'skipped' && '⏭️'}
+                  </td>
+                  <td style={{ padding: '6px 8px' }}>
+                    {result.params && result.params.length > 0 ? (
+                      <span style={{ 
+                        color: result.paramStatus === 'valid' ? '#00ff00' : 
+                               result.paramStatus === 'invalid' ? '#ff6666' : '#ffff00'
+                      }}>
+                        {result.params.length} {result.paramStatus === 'valid' ? '✓' : result.paramStatus === 'invalid' ? '✗' : '?'}
+                        {result.params.length > 0 && ' ▼'}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#666' }}>-</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{result.id}</td>
+                  <td style={{ padding: '6px 8px' }}>{result.name}</td>
+                  <td style={{ padding: '6px 8px' }}>{result.category}</td>
+                  <td style={{ padding: '6px 8px' }}>
+                    {result.compileTimeMs ? `${result.compileTimeMs.toFixed(1)}ms` : '-'}
+                  </td>
+                  <td style={{ 
+                    padding: '6px 8px', 
+                    color: result.status === 'error' ? '#ff6666' : '#888',
+                    maxWidth: '300px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }} title={result.errorMessage}>
+                    {result.errorMessage || '-'}
+                  </td>
+                </tr>
+                
+                {/* Parameter Details Row */}
+                {showParamDetails === result.id && result.params && result.params.length > 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ 
+                      padding: '10px 20px', 
+                      background: '#001a00',
+                      borderBottom: '1px solid #003300'
+                    }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#00ff00' }}>
+                        Parameter Details:
+                      </div>
+                      <table style={{ width: '100%', fontSize: '11px' }}>
+                        <thead>
+                          <tr style={{ color: '#66ff66' }}>
+                            <th style={{ textAlign: 'left', padding: '4px' }}>ID</th>
+                            <th style={{ textAlign: 'left', padding: '4px' }}>Name</th>
+                            <th style={{ textAlign: 'left', padding: '4px' }}>Default</th>
+                            <th style={{ textAlign: 'left', padding: '4px' }}>Range</th>
+                            <th style={{ textAlign: 'left', padding: '4px' }}>Step</th>
+                            <th style={{ textAlign: 'left', padding: '4px' }}>Mapping</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {result.params.map((param, pidx) => (
+                            <tr key={param.id} style={{ 
+                              color: param.default >= param.min && param.default <= param.max ? '#aaffaa' : '#ff6666'
+                            }}>
+                              <td style={{ padding: '4px', fontFamily: 'monospace' }}>{param.id}</td>
+                              <td style={{ padding: '4px' }}>{param.name}</td>
+                              <td style={{ padding: '4px' }}>{param.default}</td>
+                              <td style={{ padding: '4px' }}>[{param.min} - {param.max}]</td>
+                              <td style={{ padding: '4px' }}>{param.step || '0.01'}</td>
+                              <td style={{ padding: '4px', fontFamily: 'monospace', color: '#888' }}>{param.mapping || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {result.paramErrors && result.paramErrors.length > 0 && (
+                        <div style={{ marginTop: '8px', color: '#ff6666' }}>
+                          <strong>Parameter Errors:</strong>
+                          {result.paramErrors.map((err, i) => (
+                            <div key={i}>• {err}</div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -474,9 +692,25 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
             textAlign: 'center',
             color: '#666'
           }}>
-            Click "Start Scan" to begin checking shaders for compilation errors
+            Click "Start Scan" to check shaders for compilation errors and parameter validity
           </div>
         )}
+      </div>
+      
+      {/* Legend */}
+      <div style={{
+        marginTop: '10px',
+        padding: '10px',
+        background: '#001100',
+        border: '1px solid #003300',
+        fontSize: '11px',
+        color: '#888'
+      }}>
+        <strong>Legend:</strong>{' '}
+        <span style={{ color: '#00ff00' }}>✓ Valid params</span>{' | '}
+        <span style={{ color: '#ff6666' }}>✗ Invalid params</span>{' | '}
+        <span style={{ color: '#ffff00' }}>? Not checked</span>{' | '}
+        Click rows with params to expand details
       </div>
     </div>
   );
