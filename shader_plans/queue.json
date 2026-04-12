@@ -210,6 +210,12 @@
       "title": "Abyssal Chrono-Coral",
       "added": "2026-04-11T07:53:28.005948",
       "completed": "2026-04-11T07:53:47.709581"
+    },
+    {
+      "filename": "2026-04-11_ethereal-quantum-medusa.md",
+      "title": "Ethereal Quantum-Medusa",
+      "added": "2026-04-11T15:33:41.719534",
+      "completed": "2026-04-12T07:54:46.291741"
     }
   ],
   "rejected": [],
@@ -309,11 +315,6 @@
       "filename": "2026-04-10_nebular-chrono-astrolabe.md",
       "title": "Nebular Chrono-Astrolabe",
       "added": "2026-04-10T15:29:37.625891"
-    },
-    {
-      "filename": "2026-04-11_ethereal-quantum-medusa.md",
-      "title": "Ethereal Quantum-Medusa",
-      "added": "2026-04-11T15:33:41.719534"
     }
   ],
   "in_progress": null
