@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { type Renderer } from '../renderer/Renderer';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
+import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
 import { LiveStreamBridge } from './LiveStreamBridge';
 
 interface WebGPUCanvasProps {
@@ -52,11 +53,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const streamRef = useRef<MediaStream | null>(null);
     const hlsVideoRef = useRef<HTMLVideoElement | null>(null); // NEW: Live stream video element
 
-    // Track the physical display size of the canvas element
+    // Track the CSS display size of the canvas element
     const [displaySize, setDisplaySize] = useState({ width: 1, height: 1 });
-
-    // Constants for the internal high-res buffer
-    const INTERNAL_RES = 2048;
 
     // Track if canvas has valid dimensions before initializing WebGPU
     const [canvasReady, setCanvasReady] = useState(false);
@@ -66,10 +64,10 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Ensure canvas has valid dimensions before WebGPU initialization
     const ensureCanvasSize = (canvas: HTMLCanvasElement) => {
-        // Get actual rendered size
+        // Only check the on-screen CSS box here; the backing buffer is fixed separately.
         const rect = canvas.getBoundingClientRect();
-        const width = Math.max(1, Math.floor(rect.width * window.devicePixelRatio));
-        const height = Math.max(1, Math.floor(rect.height * window.devicePixelRatio));
+        const width = Math.max(1, Math.floor(rect.width));
+        const height = Math.max(1, Math.floor(rect.height));
         
         // Log for debugging - should NOT be 0x0
         if (width <= 1 || height <= 1) {
@@ -96,13 +94,17 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
 
         // Enforce the high-res buffer size
-        canvas.width = INTERNAL_RES;
-        canvas.height = INTERNAL_RES;
+        canvas.width = INTERNAL_RENDER_RESOLUTION;
+        canvas.height = INTERNAL_RENDER_RESOLUTION;
         if (process.env.NODE_ENV === 'development') {
             console.log(`Initializing WebGPU with canvas: ${canvas.width}x${canvas.height}`);
         }
 
-        const renderer = new RendererManager({ width: 1920, height: 1080, agentCount: 50000 });
+        const renderer = new RendererManager({
+            width: INTERNAL_RENDER_RESOLUTION,
+            height: INTERNAL_RENDER_RESOLUTION,
+            agentCount: 50000
+        });
         let mounted = true;
 
         // Hook up dimensions listener - kept for potential future use or informational purposes,
@@ -523,6 +525,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             <canvas
                 ref={canvasRef}
                 data-testid="webgpu-canvas"
+                width={INTERNAL_RENDER_RESOLUTION}
+                height={INTERNAL_RENDER_RESOLUTION}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
