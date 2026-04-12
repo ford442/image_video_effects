@@ -4,11 +4,55 @@
   "url": "shaders/aurora-rift-2-pass2.wgsl",
   "category": "lighting-effects",
   "description": "Enhanced atmospheric scattering with richer color grading. Second pass of 2-pass system.",
-  "features": ["multi-pass-2", "compute-shader", "post-processing", "tone-mapping"],
+  "features": [
+    "multi-pass-2",
+    "compute-shader",
+    "post-processing",
+    "tone-mapping"
+  ],
   "multipass": {
     "pass": 2,
     "totalPasses": 2,
     "prevShader": "aurora-rift-2-pass1"
   },
-  "tags": ["aurora", "scattering", "grading", "enhanced"]
+  "tags": [
+    "aurora",
+    "scattering",
+    "grading",
+    "enhanced"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
 }

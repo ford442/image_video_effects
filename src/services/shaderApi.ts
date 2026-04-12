@@ -303,6 +303,7 @@ export interface ApiShaderEntry {
   coordinate?: number;
   rating?: number | null;
   has_errors?: boolean;
+  category?: string;         // Shader category (e.g., 'image', 'generative', 'distortion')
   tags: string[];
   url?: string;
   params?: ShaderParam[];  // Shader parameter definitions for UI sliders
@@ -415,6 +416,7 @@ class ShaderApiService {
           type: 'shader',
           format: 'wgsl',
           description: shader.description || '',
+          category: shader.category || category,  // Use shader's own category or the file category
           tags: shader.tags || [],
           url: shader.url ? `./${shader.url}` : `./shaders/${shader.id}.wgsl`,
           params: (shader.params || []).map((p: any, idx: number) => ({
