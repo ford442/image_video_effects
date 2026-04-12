@@ -91,12 +91,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let m_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, 0.0), 0.0).rgb;
     let b_c = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, stepY), 0.0).rgb;
     
-    fn luma(c: vec3<f32>) -> f32 {
-        return dot(c, vec3<f32>(0.299, 0.587, 0.114));
-    }
-    
-    let gx = -luma(m_l) + luma(m_r);
-    let gy = -luma(t_c) + luma(b_c);
+    let gx = -dot(m_l, vec3<f32>(0.299, 0.587, 0.114)) + dot(m_r, vec3<f32>(0.299, 0.587, 0.114));
+    let gy = -dot(t_c, vec3<f32>(0.299, 0.587, 0.114)) + dot(b_c, vec3<f32>(0.299, 0.587, 0.114));
     let edgeStrength = sqrt(gx * gx + gy * gy);
     
     // Sketch effect: high contrast edges

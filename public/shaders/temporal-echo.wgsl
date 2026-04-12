@@ -103,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sample from history
     let past_y = clamp(slice_y - history_offset, 0, 59);
     let past_uv = vec2<f32>(uv.x, (uv.y + f32(past_y) / f32(dim.y)) / 60.0);
-    let past = textureSampleLevel(dataTextureC, vec2<i32>(i32(uv.x * f32(dim.x)), i32((uv.y + f32(past_y) / f32(dim.y)) * f32(dim.y))), 0);
+    let past = textureLoad(dataTextureC, vec2<i32>(i32(uv.x * f32(dim.x)), i32((uv.y + f32(past_y) / f32(dim.y)) * f32(dim.y))), 0);
     
     // Apply echo decay
     let decayedPast = vec4<f32>(

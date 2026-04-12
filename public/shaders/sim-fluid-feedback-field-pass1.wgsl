@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Initialize velocity field from curl noise (Pass 1 - no previous data)
     // For feedback loops, this seeds the initial velocity
     let curl = curlNoise(uv * 5.0 + time * 0.1);
-    let newVel = curl * turbulence * 0.1;
+    var newVel = curl * turbulence * 0.1;
     
     // Apply viscosity (damping)
     newVel *= viscosity;

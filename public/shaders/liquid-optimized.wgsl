@@ -42,6 +42,12 @@ const TILE_PADDED: u32 = TILE_SIZE + 2u * HALO;  // 18
 var<workgroup> tileHeight: array<array<f32, 18>, 18>;
 var<workgroup> tilePrevHeight: array<array<f32, 18>, 18>;
 
+// Helper to load with clamping to texture bounds
+fn loadPixel(coord: vec2<i32>, resI: vec2<i32>) -> vec4<f32> {
+  let clamped = clamp(coord, vec2<i32>(0), resI - vec2<i32>(1));
+  return textureLoad(dataTextureC, clamped, 0);
+}
+
 // Load dataTextureC (height field) into shared memory with halo
 // OPTIMIZED: Uses textureLoad for integer pixel coordinates (faster than textureSampleLevel)
 fn loadTileToSharedMemory(
@@ -55,15 +61,9 @@ fn loadTileToSharedMemory(
   // Each thread loads multiple values (cooperative loading)
   // For 16×16 workgroup, we need to load 18×18 = 324 values
   
-  // Helper to load with clamping to texture bounds
-  fn loadPixel(coord: vec2<i32>) -> vec4<f32> {
-    let clamped = clamp(coord, vec2<i32>(0), resI - vec2<i32>(1));
-    return textureLoad(dataTextureC, clamped, 0);
-  }
-  
   // Primary load - center of tile (integer coords = use textureLoad)
   let primaryCoord = baseCoord + vec2<i32>(lid.xy);
-  let primaryData = loadPixel(primaryCoord);
+  let primaryData = loadPixel(primaryCoord, resI);
   tileHeight[lid.y + HALO][lid.x + HALO] = primaryData.g;  // h_curr
   tilePrevHeight[lid.y + HALO][lid.x + HALO] = primaryData.r;  // h_prev
   
@@ -71,7 +71,7 @@ fn loadTileToSharedMemory(
   // Right edge (if this is the rightmost thread in workgroup)
   if (lid.x == TILE_SIZE - 1u) {
     let rightCoord = baseCoord + vec2<i32>(i32(TILE_SIZE), i32(lid.y));
-    let rightData = loadPixel(rightCoord);
+    let rightData = loadPixel(rightCoord, resI);
     tileHeight[lid.y + HALO][TILE_SIZE + HALO] = rightData.g;
     tilePrevHeight[lid.y + HALO][TILE_SIZE + HALO] = rightData.r;
   }
@@ -79,7 +79,7 @@ fn loadTileToSharedMemory(
   // Bottom edge (if this is the bottommost thread)
   if (lid.y == TILE_SIZE - 1u) {
     let bottomCoord = baseCoord + vec2<i32>(i32(lid.x), i32(TILE_SIZE));
-    let bottomData = loadPixel(bottomCoord);
+    let bottomData = loadPixel(bottomCoord, resI);
     tileHeight[TILE_SIZE + HALO][lid.x + HALO] = bottomData.g;
     tilePrevHeight[TILE_SIZE + HALO][lid.x + HALO] = bottomData.r;
   }
@@ -87,7 +87,7 @@ fn loadTileToSharedMemory(
   // Corner (if both rightmost and bottommost)
   if (lid.x == TILE_SIZE - 1u && lid.y == TILE_SIZE - 1u) {
     let cornerCoord = baseCoord + vec2<i32>(i32(TILE_SIZE), i32(TILE_SIZE));
-    let cornerData = loadPixel(cornerCoord);
+    let cornerData = loadPixel(cornerCoord, resI);
     tileHeight[TILE_SIZE + HALO][TILE_SIZE + HALO] = cornerData.g;
     tilePrevHeight[TILE_SIZE + HALO][TILE_SIZE + HALO] = cornerData.r;
   }
@@ -95,7 +95,7 @@ fn loadTileToSharedMemory(
   // Left edge (if this is the leftmost thread)
   if (lid.x == 0u) {
     let leftCoord = baseCoord + vec2<i32>(-1, i32(lid.y));
-    let leftData = loadPixel(leftCoord);
+    let leftData = loadPixel(leftCoord, resI);
     tileHeight[lid.y + HALO][0u] = leftData.g;
     tilePrevHeight[lid.y + HALO][0u] = leftData.r;
   }
@@ -103,7 +103,7 @@ fn loadTileToSharedMemory(
   // Top edge (if this is the topmost thread)
   if (lid.y == 0u) {
     let topCoord = baseCoord + vec2<i32>(i32(lid.x), -1);
-    let topData = loadPixel(topCoord);
+    let topData = loadPixel(topCoord, resI);
     tileHeight[0u][lid.x + HALO] = topData.g;
     tilePrevHeight[0u][lid.x + HALO] = topData.r;
   }
@@ -111,7 +111,7 @@ fn loadTileToSharedMemory(
   // Top-left corner
   if (lid.x == 0u && lid.y == 0u) {
     let tlCoord = baseCoord + vec2<i32>(-1, -1);
-    let tlData = loadPixel(tlCoord);
+    let tlData = loadPixel(tlCoord, resI);
     tileHeight[0u][0u] = tlData.g;
     tilePrevHeight[0u][0u] = tlData.r;
   }

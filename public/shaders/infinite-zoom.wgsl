@@ -242,7 +242,7 @@ fn apply_mobius_zoom_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
 fn calculate_mobius_color_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     let zoom_speed = u.zoom_params.x;
     let param_a = u.zoom_params.y;
-    let color_cycling = u.lighting_params.w;
+    let color_cycling = u.zoom_params.z;
     
     let t = zoom_time * zoom_speed;
     

@@ -82,7 +82,9 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     // Magnetic twist
     let twist = u.zoom_params.z;
-    p.xz = rot(p.y * twist * 0.5 + u.config.x * 0.2) * p.xz;
+    let rot_xz = rot(p.y * twist * 0.5 + u.config.x * 0.2) * p.xz;
+    p.x = rot_xz.x;
+    p.z = rot_xz.y;
 
     // Mouse magnetic pole distortion
     let mx = (u.zoom_config.y - 0.5) * 10.0;

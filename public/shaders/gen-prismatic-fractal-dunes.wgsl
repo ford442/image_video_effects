@@ -95,9 +95,9 @@ fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32,
     q.y -= dune_h;
 
     let cellId = floor(p.xz / 4.0);
-    let active = hash21(cellId) > 0.75; // ~25% of cells have geysers
+    let is_active = hash21(cellId) > 0.75; // ~25% of cells have geysers
 
-    if (active) {
+    if (is_active) {
         var bp = q;
         for (var i = 0; i < 4; i++) { // more iterations = sharper prisms
             bp.xz = abs(bp.xz) - 0.5;

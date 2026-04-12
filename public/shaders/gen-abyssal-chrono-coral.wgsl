@@ -73,8 +73,12 @@ fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
 
     for(var i = 0; i < iterations; i++) {
         p = abs(p) - vec3<f32>(0.5, 1.5, 0.5);
-        p.xy = rotate2D(0.5 + sin(time * 0.1) * 0.2) * p.xy;
-        p.yz = rotate2D(0.3 + cos(time * 0.15) * 0.2) * p.yz;
+        let rot_xy = rotate2D(0.5 + sin(time * 0.1) * 0.2) * p.xy;
+        p.x = rot_xy.x;
+        p.y = rot_xy.y;
+        let rot_yz = rotate2D(0.3 + cos(time * 0.15) * 0.2) * p.yz;
+        p.y = rot_yz.x;
+        p.z = rot_yz.y;
         s *= 1.2;
         p *= 1.2;
 

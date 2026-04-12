@@ -61,7 +61,7 @@ fn sampleGlow(uv: vec2<f32>, emission: f32, dims: vec2<f32>) -> vec3<f32> {
             let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
             let weight = 1.0 / (1.0 + length(vec2<f32>(f32(x), f32(y))));
             
-            let sampleData = textureSampleLevel(dataTextureB, videoSampler, sampleUV, 0.0);
+            let sampleData = textureSampleLevel(dataTextureC, videoSampler, sampleUV, 0.0);
             glowAccum = glowAccum + sampleData.rgb * sampleData.a * weight;
             weightSum = weightSum + weight;
         }
@@ -99,8 +99,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
     let globalIntensity = u.config.y;
     
-    // Read particle data from Pass 2 (via dataTextureB where Pass 2 wrote)
-    let particleData = textureLoad(dataTextureB, gid.xy, 0);
+    // Read particle data from Pass 2 (via dataTextureC which has Pass 2's content)
+    let particleData = textureSampleLevel(dataTextureC, videoSampler, uv, 0.0);
     let particleColor = particleData.rgb;
     let emission = particleData.a;
     

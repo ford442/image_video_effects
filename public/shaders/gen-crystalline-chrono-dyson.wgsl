@@ -25,7 +25,7 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-// Custom fmod function (avoids reserved keyword 'mod')
+// Custom fmod function (avoids reserved keyword 'mod_val')
 fn fmod(x: f32, y: f32) -> f32 {
     return x - y * floor(x / y);
 }

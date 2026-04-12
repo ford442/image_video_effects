@@ -101,7 +101,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var ro = vec3<f32>(0.0, 5.0, -time * 5.0);
     var rd = normalize(vec3<f32>(uv.x, uv.y - 0.5, -1.0)); // look slightly down
-    rd.xz = rot(0.2) * rd.xz;
+    let rot_xz = rot(0.2) * rd.xz;
+    rd.x = rot_xz.x;
+    rd.z = rot_xz.y;
 
     var t = 0.0;
     var d = 0.0;

@@ -67,8 +67,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let r = vec2<f32>(1.0, 1.732);
     let h = r * 0.5;
 
-    let a = mod(uv_scaled, r) - h;
-    let b = mod(uv_scaled - h, r) - h;
+    let a = mod_val(uv_scaled, r) - h;
+    let b = mod_val(uv_scaled - h, r) - h;
 
     let g = dot(a, a) < dot(b, b);
     var vert_id = vec2<f32>(0.0);
@@ -133,6 +133,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
-fn mod(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
+fn mod_val(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
     return x - y * floor(x / y);
 }

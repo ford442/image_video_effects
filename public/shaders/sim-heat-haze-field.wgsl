@@ -101,7 +101,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let grad = vec2<f32>(tempRight - tempLeft, tempUp - tempDown);
     
     // Hot air rises (buoyancy creates upward displacement)
-    let displacement = vec2<f32>(
+    var displacement = vec2<f32>(
         grad.x * distortion,
         -newTemp * distortion * convectionSpeed * 0.5
     );

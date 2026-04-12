@@ -1,3 +1,13 @@
+
+fn custom_custom_mod(x: f32, y: f32) -> f32 {
+    return x - y * floor(x / y);
+}
+
+
+fn custom_custom_custom_mod(x: f32, y: f32) -> f32 {
+    return x - y * floor(x / y);
+}
+
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -64,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // HSV to RGB with psychedelic saturation/brightness
     let h = hueFract * 6.0;
     let c = u.zoom_params.z; // brightness
-    let x = c * (1.0 - abs(mod(h, 2.0) - 1.0));
+    let x = c * (1.0 - abs(custom_custom_mod(h, 2.0) - 1.0));
 
     var rainbow = vec3<f32>(0.0);
     if (h < 1.0) { rainbow = vec3<f32>(c, x, 0.0); }

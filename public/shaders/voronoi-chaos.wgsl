@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Mouse interaction: push points away from mouse
             if (mousePos.x >= 0.0) {
                  // Convert grid ID to UV space
-                 let cellCenterUV = (id + point) / cellsScale;
+                 var cellCenterUV = (id + point) / cellsScale;
                  cellCenterUV.x /= aspect; // revert aspect
 
                  let dToMouse = distance(cellCenterUV, mousePos);

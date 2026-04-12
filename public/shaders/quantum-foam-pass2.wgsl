@@ -143,8 +143,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
     let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     
-    // Read field from Pass 1 (via dataTextureA where Pass 1 wrote)
-    let field = textureLoad(dataTextureA, gid.xy, 0);
+    // Read field from Pass 1 (via dataTextureC which has Pass 1's dataTextureA content)
+    let field = textureSampleLevel(dataTextureC, videoSampler, uv, 0.0);
     let warp = field.xy;
     let pattern = field.z;
     let cellBoundary = field.w;

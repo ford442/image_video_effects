@@ -46,7 +46,7 @@ fn hash3(p: vec3<f32>) -> f32 {
 // Value noise for turbulence
 fn noise(p: vec2<f32>) -> f32 {
     let i = floor(p);
-    let f = fract(p);
+    var f = fract(p);
     f = f * f * (3.0 - 2.0 * f); // Smoothstep
     
     let a = hash2(i);

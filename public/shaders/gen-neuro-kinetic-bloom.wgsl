@@ -91,7 +91,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coords = vec2<i32>(global_id.xy);
     let dims = textureDimensions(writeTexture);
-    if (coords.x >= dims.x || coords.y >= dims.y) { return; }
+    if (coords.x >= i32(dims.x) || coords.y >= i32(dims.y)) { return; }
 
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
     let ro = vec3<f32>(0.0, 0.0, -12.0 + u.zoom_params.w);

@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let erosion = mix(0.0, 0.1, u.zoom_params.w);     // w: Erosion rate
     
     // Read current cell
-    let self = textureLoad(dataTextureC, gid.xy, 0).r;
+    let this_val = textureLoad(dataTextureC, gid.xy, 0).r;
     let selfType = textureLoad(dataTextureC, gid.xy, 0).g; // Sand type/color variation
     
     // Read neighbors
@@ -62,11 +62,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let left = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 0u), 0).r;
     let right = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 0u), 0).r;
     
-    var newState = self;
+    var newState = this_val;
     var newType = selfType;
     
     // Sand physics
-    if (self > 0.5) {
+    if (this_val > 0.5) {
         // This cell has sand - try to fall
         if (below < 0.5) {
             // Fall straight down

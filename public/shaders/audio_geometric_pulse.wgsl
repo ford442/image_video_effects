@@ -69,8 +69,8 @@ fn pulseWave(uv: vec2<f32>, time: f32, speed: f32, freq: f32) -> f32 {
     return sin(d * freq - time * speed) * exp(-d * 2.0);
 }
 
-// Custom mod function for floating-point numbers
-fn mod(x: f32, y: f32) -> f32 {
+// Custom mod_val function for floating-point numbers
+fn mod_val(x: f32, y: f32) -> f32 {
     return x - y * floor(x / y);
 }
 
@@ -79,7 +79,7 @@ fn kaleidoscope(uv: vec2<f32>, segments: i32) -> vec2<f32> {
     let angle = atan2(uv.y, uv.x);
     let r = length(uv);
     let segAngle = 2.0 * PI / f32(segments);
-    let a = mod(angle, segAngle);
+    let a = mod_val(angle, segAngle);
     if (a > segAngle / 2.0) {
         return vec2<f32>(cos(segAngle - a) * r, sin(segAngle - a) * r);
     }

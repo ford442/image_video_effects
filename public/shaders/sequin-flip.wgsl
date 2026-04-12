@@ -19,7 +19,7 @@ struct Uniforms {
 @group(0) @binding(11) var comparisonSampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-fn mod(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
+fn mod_val(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
   return x - y * floor(x / y);
 }
 
@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let row = floor(grid_uv.y / row_height);
 
   // Shift x if row is odd
-  let is_odd = mod(vec2<f32>(row), vec2<f32>(2.0)).x;
+  let is_odd = mod_val(vec2<f32>(row), vec2<f32>(2.0)).x;
   if (is_odd > 0.5) {
       grid_uv.x += 0.5;
   }

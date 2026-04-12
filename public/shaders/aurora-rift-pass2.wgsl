@@ -155,7 +155,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
     
     // Read volumetric data from Pass 1 (via dataTextureA where Pass 1 wrote)
-    let volumetric = textureLoad(dataTextureA, gid.xy, 0);
+    let volumetric = textureSampleLevel(dataTextureC, videoSampler, uv, 0.0);
     let auroraColor = volumetric.rgb;
     let density = volumetric.a;
     
