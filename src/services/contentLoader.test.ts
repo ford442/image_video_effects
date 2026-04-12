@@ -100,4 +100,37 @@ describe('fetchContentManifest', () => {
         });
         expect(result.videos).toEqual(FALLBACK_VIDEOS);
     });
+
+    it('falls back to the local manifest when the API returns a non-array', async () => {
+        fetchMock.mockImplementation((url: RequestInfo | URL) => {
+            if (url === IMAGE_MANIFEST_URL) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({ error: 'unexpected object' }),
+                });
+            }
+
+            if (url === LOCAL_MANIFEST_URL) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({
+                        images: [{ url: 'gallery/fallback.png', tags: ['fallback'] }],
+                        videos: [],
+                    }),
+                });
+            }
+
+            return Promise.reject(new Error(`Unexpected url: ${String(url)}`));
+        });
+
+        const result = await fetchContentManifest();
+
+        expect(result.manifest).toEqual([
+            {
+                url: `${BUCKET_BASE_URL}/gallery/fallback.png`,
+                tags: ['fallback'],
+                description: 'fallback',
+            },
+        ]);
+    });
 });
