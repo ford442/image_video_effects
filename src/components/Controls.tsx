@@ -244,11 +244,12 @@ const Controls: React.FC<ControlsProps> = ({
     }, [typedNumber, availableModes, activeSlot, setMode, findShaderByCoordinate]);
 
     const currentModes = useMemo(() => {
-        if (shaderCategory === 'generative') {
-            return availableModes.filter(entry => entry.category === 'generative');
+        if (shaderCategory === 'image') {
+            // 'image' shows all non-generative shaders (the "Effects / Filters" bucket)
+            return availableModes.filter(entry => entry.category !== 'generative');
         }
-
-        return availableModes.filter(entry => entry.category !== 'generative');
+        // Any other specific category — show only that category
+        return availableModes.filter(entry => entry.category === shaderCategory);
     }, [availableModes, shaderCategory]);
     const currentMode = modes[activeSlot];
     const currentParams = slotParams[activeSlot];
@@ -546,8 +547,18 @@ const Controls: React.FC<ControlsProps> = ({
             <div className="control-group">
                 <label htmlFor="category-select" className="gold-section-header" style={{fontSize: '13px'}}>Effect Filter</label>
                 <select id="category-select" className="glass-select" value={shaderCategory} onChange={(e) => setShaderCategory(e.target.value as ShaderCategory)}>
-                    <option value="image">Effects / Filters</option>
+                    <option value="image">All Effects / Filters</option>
                     <option value="generative">Procedural Generation</option>
+                    <option value="distortion">Distortion</option>
+                    <option value="simulation">Simulation</option>
+                    <option value="artistic">Artistic</option>
+                    <option value="interactive-mouse">Interactive / Mouse</option>
+                    <option value="lighting-effects">Lighting Effects</option>
+                    <option value="liquid-effects">Liquid Effects</option>
+                    <option value="retro-glitch">Retro / Glitch</option>
+                    <option value="visual-effects">Visual Effects</option>
+                    <option value="geometric">Geometric</option>
+                    <option value="post-processing">Post-Processing</option>
                 </select>
             </div>
 
@@ -885,18 +896,46 @@ const Controls: React.FC<ControlsProps> = ({
 
             {currentShaderEntry?.params && currentShaderEntry.params.length > 6 && (
                 <div style={{color: '#a0a0b0', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
-                    +<span style={{color: '#FFD700'}}>{currentShaderEntry.params.length - 6}</span> more params available in shader file
+                    Showing 6 of {currentShaderEntry.params.length} parameters (renderer limit)
                 </div>
             )}
             
             {currentShaderEntry && (!currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
-                <div className="glass-card" style={{textAlign: 'center', padding: '15px', color: '#a0a0b0', fontStyle: 'italic'}}>
-                    <div style={{marginBottom: '8px'}}>🔧</div>
-                    <div>No adjustable parameters for this effect.</div>
-                    <div style={{fontSize: '11px', marginTop: '5px', opacity: 0.7}}>
-                        Shader: <code style={{color: '#FFD700'}}>{currentShaderEntry.id}</code>
-                    </div>
+                <>
+                <div style={{color: '#a0a0b0', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
+                    Generic parameters for <code style={{color: '#FFD700'}}>{currentShaderEntry.id}</code>
                 </div>
+                <div className="params-grid">
+                {[
+                    { id: 'fallback1', name: 'Param 1', paramKey: 'zoomParam1' as const },
+                    { id: 'fallback2', name: 'Param 2', paramKey: 'zoomParam2' as const },
+                    { id: 'fallback3', name: 'Param 3', paramKey: 'zoomParam3' as const },
+                    { id: 'fallback4', name: 'Param 4', paramKey: 'zoomParam4' as const },
+                ].map((fb) => {
+                    const val = currentParams[fb.paramKey];
+                    return (
+                        <div key={fb.id} className="control-group">
+                            <label htmlFor={`param-${fb.id}`} style={{display: 'flex', justifyContent: 'space-between', color: '#a0a0b0'}}>
+                                <span>{fb.name}</span>
+                                <span style={{color: '#FFD700', fontSize: '11px', fontWeight: 500}}>{val.toFixed(2)}</span>
+                            </label>
+                            <input
+                                id={`param-${fb.id}`}
+                                type="range"
+                                className="glass-range"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={val}
+                                onChange={(e) => {
+                                    updateSlotParam(activeSlot, { [fb.paramKey]: parseFloat(e.target.value) });
+                                }}
+                            />
+                        </div>
+                    );
+                })}
+                </div>
+                </>
             )}
             
             {!currentShaderEntry && (

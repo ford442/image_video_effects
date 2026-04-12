@@ -61,7 +61,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, ring_density: f32, warp: f32) -> 
     return d;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }

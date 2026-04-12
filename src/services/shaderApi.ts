@@ -331,7 +331,7 @@ class ShaderApiService {
   constructor(baseUrl: string = STORAGE_API_URL) {
     this.baseUrl = baseUrl;
     this.cache = new Map();
-    this.cacheExpiry = 5 * 60 * 1000; // 5 minutes
+    this.cacheExpiry = 30 * 60 * 1000; // 30 minutes — shader lists rarely change
     this.lastFetch = 0;
   }
 

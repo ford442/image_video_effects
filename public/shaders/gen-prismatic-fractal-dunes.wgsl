@@ -134,7 +134,7 @@ fn calcNormal(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpee
     ));
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));

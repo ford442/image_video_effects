@@ -39,11 +39,11 @@ function validateWgslContent(wgslContent, id) {
         return { fatal: 'missing fn main() entry point', warnings };
     }
 
-    // Warning: workgroup size should be (8, 8, 1) to match renderer dispatch
-    if (!/@workgroup_size\s*\(\s*8\s*,\s*8\s*,\s*1\s*\)/.test(wgslContent)) {
+    // Warning: workgroup size should be (16, 16, 1) for optimal GPU occupancy
+    if (!/@workgroup_size\s*\(\s*16\s*,\s*16\s*,\s*1\s*\)/.test(wgslContent)) {
         const ws = wgslContent.match(/@workgroup_size\s*\([^)]+\)/);
         const detail = ws ? `found ${ws[0]}` : 'no @workgroup_size attribute found';
-        warnings.push(`unexpected workgroup_size: ${detail} (expected @workgroup_size(8, 8, 1))`);
+        warnings.push(`unexpected workgroup_size: ${detail} (expected @workgroup_size(16, 16, 1))`);
     }
 
     // Warning: no textureStore means nothing will be written to the output texture
