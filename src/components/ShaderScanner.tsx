@@ -31,8 +31,25 @@ interface ShaderScannerProps {
   onTestShader?: (shaderId: string, testValues: number[]) => Promise<{ success: boolean; error?: string }>;
 }
 
-// Simple template wrapper to make shaders compile-testable
-const WRAPPER_TEMPLATE = `
+// Shaders are already complete WGSL files with all necessary declarations
+// We compile them directly without wrapping
+const prepareShaderCode = (code: string): string => {
+  // Check if shader already has the standard header
+  if (code.includes('@group(0) @binding(0)') && code.includes('struct Uniforms')) {
+    // Shader is complete, use as-is
+    return code;
+  }
+  
+  // If shader is missing bindings, add them (legacy support)
+  const needsBindings = !code.includes('@group(0) @binding(0)');
+  const needsUniforms = !code.includes('struct Uniforms');
+  
+  if (!needsBindings && !needsUniforms) {
+    return code;
+  }
+  
+  // Minimal wrapper for incomplete shaders
+  const bindings = needsBindings ? `
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -46,16 +63,19 @@ const WRAPPER_TEMPLATE = `
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+` : '';
 
+  const uniforms = needsUniforms ? `
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+` : '';
 
-__SHADER_CODE__
-`;
+  return bindings + uniforms + code;
+};
 
 export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose, onTestShader }) => {
   const [results, setResults] = useState<ShaderScanResult[]>([]);
@@ -215,13 +235,13 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
 
           // Compile check
           if (doCompileCheck && device) {
-            // Wrap the shader with required bindings
-            const wrappedCode = WRAPPER_TEMPLATE.replace('__SHADER_CODE__', code);
+            // Prepare shader code (add bindings if missing, but most shaders are complete)
+            const shaderCode = prepareShaderCode(code);
 
             // Try to create the shader module
             const shaderModule = device.createShaderModule({
               label: shader.id,
-              code: wrappedCode
+              code: shaderCode
             });
 
             // Get compilation info
