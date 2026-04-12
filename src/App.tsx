@@ -413,7 +413,7 @@ function MainApp() {
                 if (response.ok) {
                     const data = await response.json();
                     if (!Array.isArray(data)) {
-                        throw new TypeError('API response is not an array');
+                        throw new TypeError(`API response is not an array, received: ${typeof data}`);
                     }
                     manifest = data.map((item: any) => ({
                         url: item.url,

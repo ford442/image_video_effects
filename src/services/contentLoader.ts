@@ -36,7 +36,7 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
         if (response.ok) {
             const data = await response.json() as ApiManifestItem[];
             if (!Array.isArray(data)) {
-                throw new TypeError('API response is not an array');
+                throw new TypeError(`API response is not an array, received: ${typeof data}`);
             }
             manifest = data.map((item) => ({
                 url: item.url,
