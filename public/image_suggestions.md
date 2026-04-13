@@ -2686,6 +2686,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an overwhelming, chaotic fluid event.
 
+### Suggestion: Ashcan School Volcanic Eruption
+- **Date:** 2027-11-01
+- **Prompt:** "A gritty, realistic landscape of a massive volcanic eruption near an early 20th-century industrial town, depicted in the raw, documentary style of the Ashcan School. The subject features dark, churning ash clouds and muted lava flows tearing through smokestacks and tenement buildings. The lighting is overcast and bleak, casting soft, indistinct shadows that emphasize the dirt, texture, and chaotic power of the destruction. The mood is authentic, raw, and overwhelming. Captured with an eye-level, documentary-style perspective, focusing on the unglamorous reality of the disaster from the viewpoint of the streets."
+- **Negative prompt:** "modern, clean, bright colors, sunny, cheerful, photorealistic, 3d render"
+- **Tags:** art, disaster, volcano, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, chaotic framing, imposing ash cloud
+- **Color palette:** murky greens, muted greys, rusted browns, dull ochre
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_ashcan-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of a massive natural disaster with the gritty, muted, everyday-life style of the Ashcan School.
+
+### Suggestion: Brass Supernova
+- **Date:** 2027-11-01
+- **Prompt:** "A spectacular nighttime display where the fireworks exploding in the sky are entirely formed from jagged, perfectly geometric brass clockwork and gears. The subjects expand outward in sharp, stair-stepped patterns instead of soft sparks. The lighting is highly contrasted and artificial, with the internal energy of the explosions causing the metallic brass fragments to shine brilliantly in a rainbow of thin-film interference colors against the pitch-black sky. The mood is surreal, celebratory, and mathematically precise. Captured with a wide-angle lens, utilizing a fast shutter speed to freeze the sharp, crystalline explosions."
+- **Negative prompt:** "soft sparks, smoke, realistic fireworks, daylight, blurry, organic, smooth"
+- **Tags:** surreal, night, supernova, brass, geometric, iridescent
+- **Style / Reference:** surreal 3D render, hyper-detailed material swap
+- **Composition:** expansive sky view, explosive centers, sharp geometric fragmentation
+- **Color palette:** iridescent rainbow (pinks, greens, golds), bright white flashes, deep night black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_brass-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of sharp, stepped geometric structures interacting with highly saturated iridescent thin-film materials in an explosive composition.
+
+### Suggestion: Mother of Pearl Tsunami
+- **Date:** 2027-11-01
+- **Prompt:** "A majestic, towering tsunami wave caught frozen in time just before it crashes down. The water is entirely mother of pearl, glowing intensely with neon blues and purples in the dark of night. Within the translucent wall of water, silhouetted shapes of giant marine life can be seen swirling. The sky above is dark and stormy with dramatic lightning illuminating the crest of the wave. The mood is terrifying yet awe-inspiring and beautiful. Captured with a low camera angle, wide lens, and high shutter speed to freeze the water droplets."
+- **Negative prompt:** "daylight, calm water, small wave, shore, people, boats, sunny"
+- **Tags:** nature, ocean, tsunami, mother of pearl, dramatic
+- **Style / Reference:** photorealistic, long exposure photography style
+- **Composition:** imposing, low angle, wave dominating the frame
+- **Color palette:** neon blues, deep purples, dark greys, bright white lightning flashes
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_mother-of-pearl-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing water rendering, transparency, and intense glowing emission under dark environmental lighting.
+
+### Suggestion: Tweed Volcanic Eruption
+- **Date:** 2027-11-01
+- **Prompt:** "An incredibly detailed, macro view deep inside a gigantic, surreal volcano where the entire structure is constructed from soft, interwoven threads of warm brown herringbone tweed fabric. The subject features perfectly repeating hexagonal cells made of yarn, filled with glowing, viscous golden lava. The lighting is warm and directional, catching the fibrous texture of the tweed and causing the golden lava to glow brilliantly with sub-surface scattering. The mood is cozy, surreal, and highly tactile. Captured with a 100mm macro lens, utilizing a shallow depth of field to isolate a single, lava-filled tweed cell."
+- **Negative prompt:** "wax, plastic, hard surface, realistic volcano, bright daylight, wide angle"
+- **Tags:** macro, surreal, volcano, tweed, honeycomb
+- **Style / Reference:** surreal macro photography, hyper-detailed material swap
+- **Composition:** full frame repeating pattern, tight close-up, shallow depth of field
+- **Color palette:** earthy brown tweed, glowing golden yellow, soft amber
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20271101_tweed-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates the application of soft, woven micro-textures (tweed) on perfect, repeating geometric patterns combined with viscous fluid.
+
+### Suggestion: Aerogel Orbital Ring
+- **Date:** 2027-11-01
+- **Prompt:** "A breathtaking, wide-angle view of an orbital ring constructed entirely from massive, floating blocks of weightless, translucent blue aerogel. The central subject, the ring, is suspended high above a dense layer of white clouds. The lighting is brilliant midday sunlight, piercing through the porous aerogel structures, creating millions of soft, internal refractions and a glowing, ghostly blue aura around the buildings. The mood is utopian, silent, and airy. Captured with a wide 24mm lens to emphasize the massive, floating scale."
+- **Negative prompt:** "solid glass, concrete, metal, dark, gritty, cyberpunk, night"
+- **Tags:** sci-fi, architecture, aerogel, orbital ring, floating
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** ghostly aerogel blue, blinding white sunlight, pure white clouds
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20271101_aerogel-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under direct sunlight.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
