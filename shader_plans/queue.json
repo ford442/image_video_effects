@@ -216,6 +216,12 @@
       "title": "Ethereal Quantum-Medusa",
       "added": "2026-04-11T15:33:41.719534",
       "completed": "2026-04-12T07:54:46.291741"
+    },
+    {
+      "filename": "2026-04-10_nebular-chrono-astrolabe.md",
+      "title": "Nebular Chrono-Astrolabe",
+      "added": "2026-04-10T15:29:37.625891",
+      "completed": "2026-04-13T08:04:09.237312"
     }
   ],
   "rejected": [],
@@ -310,11 +316,6 @@
       "filename": "2026-04-07_chromodynamic-plasma-collider.md",
       "title": "Chromodynamic Plasma-Collider",
       "added": "2026-04-07T15:10:39.717708"
-    },
-    {
-      "filename": "2026-04-10_nebular-chrono-astrolabe.md",
-      "title": "Nebular Chrono-Astrolabe",
-      "added": "2026-04-10T15:29:37.625891"
     },
     {
       "filename": "2026-04-12_celestial-glass-tornado.md",
