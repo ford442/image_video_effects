@@ -2751,6 +2751,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under direct sunlight.
 
+### Suggestion: Cyberpunk Neon Bioluminescent Market
+- **Date:** 2024-05-24
+- **Prompt:** "A bustling cyberpunk night market in a flooded alleyway, illuminated by neon signs and glowing bioluminescent fungi growing on decaying concrete. A diverse crowd of cybernetic humans and aliens trading exotic glowing flora. Rain slicked cobblestones reflecting vibrant pinks and cyan lights. Cinematic lighting, volumetric fog, highly detailed, 8k resolution, photorealistic."
+- **Negative prompt:** "watermark, text, lowres, blurry, mutated, deformed, bad anatomy"
+- **Tags:** cyberpunk, sci-fi, photorealism, bioluminescent, market, neon
+- **Style / Reference:** photorealistic, Syd Mead, Blade Runner aesthetic
+- **Composition:** wide shot, eye-level perspective, deep depth of field
+- **Color palette:** vibrant magenta, cyan, deep shadows, bioluminescent green
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Great for testing wet surface reflections and complex multi-source neon lighting.
+
+### Suggestion: Ethereal Ancient Forest Sanctuary
+- **Date:** 2024-05-24
+- **Prompt:** "A majestic ancient forest sanctuary bathed in morning mist, featuring a colossal weeping willow tree with luminous silver leaves. At the base of the tree is a perfectly still, crystal clear pond reflecting the sky. Soft sunbeams filtering through the canopy, illuminating floating dust motes. Tranquil, mystical mood, hyper-detailed fantasy illustration."
+- **Negative prompt:** "dark, scary, low quality, artifacting, chaotic, unnatural"
+- **Tags:** fantasy, nature, ethereal, forest, magical, tranquil
+- **Style / Reference:** digital painting, Studio Ghibli, Thomas Kinkade lighting
+- **Composition:** centered subject, low angle shot looking up at the tree
+- **Color palette:** soft emerald greens, silver, pale gold sunlight, ethereal blues
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating soft volumetric lighting and intricate leaf details.
+
+### Suggestion: Retro-Futuristic Art Deco Space Station
+- **Date:** 2024-05-24
+- **Prompt:** "The grand concourse of a retro-futuristic space station designed in opulent Art Deco style. Towering brass pillars, intricate geometric marble floors, and massive arched windows looking out into a vibrant nebula. Elegant passengers in 1920s-inspired space attire. Warm incandescent lighting mixed with starlight. Masterpiece, highly detailed architectural visualization."
+- **Negative prompt:** "modern, sleek, minimalist, dystopian, broken, low resolution"
+- **Tags:** retro-futuristic, art deco, space, architecture, sci-fi
+- **Style / Reference:** architectural visualization, Bioshock Infinite aesthetic, golden age sci-fi
+- **Composition:** symmetrical perspective, wide angle lens
+- **Color palette:** brass, gold, polished black marble, deep purple and pink nebula
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Use to test the model's ability to combine historical architectural styles with futuristic settings.
+
+### Suggestion: Steampunk Clockwork Dragonfly Macro
+- **Date:** 2024-05-24
+- **Prompt:** "Extreme macro photography of a mechanical dragonfly perched on a rusted iron gear. The dragonfly is constructed of tiny brass cogs, copper wire, and iridescent stained glass wings. Morning dew drops glistening on its metallic body. Warm morning sunlight, shallow depth of field, bokeh background. Photorealistic, incredibly detailed."
+- **Negative prompt:** "cartoon, 2d, painting, out of focus, noisy, artifacts"
+- **Tags:** steampunk, macro, mechanical, insect, photorealism
+- **Style / Reference:** macro photography, hyper-realistic, steampunk design
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** copper, brass, iridescent greens and blues, rusted iron
+- **Aspect ratio:** 3:2
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for pushing the model's detailing capabilities on micro-mechanical parts and bokeh effects.
+
+### Suggestion: Post-Apocalyptic Solarpunk Rooftop Garden
+- **Date:** 2024-05-24
+- **Prompt:** "A lush solarpunk rooftop garden thriving on top of a weathered, vine-covered skyscraper in a reclaimed post-apocalyptic city. Makeshift wind turbines and solar panels integrated seamlessly with overgrown tomato plants and sunflowers. A young woman in practical, upcycled clothing tending to the plants. Bright, optimistic midday sunlight, clear blue sky. Detailed, vibrant illustration."
+- **Negative prompt:** "grimdark, depressing, toxic, ruined, low detail, muddy colors"
+- **Tags:** solarpunk, post-apocalyptic, overgrown, optimistic, garden
+- **Style / Reference:** concept art, Moebius, vibrant digital illustration
+- **Composition:** high angle shot looking down slightly across the rooftop
+- **Color palette:** vibrant greens, sunny yellow, terracotta, clear sky blue
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests the AI's ability to blend technology with dense organic foliage in an optimistic tone.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
