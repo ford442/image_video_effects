@@ -2200,6 +2200,47 @@
     ]
   },
   {
+    "id": "gen-graviton-plasma-lotus",
+    "type": "shader",
+    "category": "generative",
+    "url": "shaders/gen-graviton-plasma-lotus.wgsl",
+    "coordinate": 860,
+    "sliders": [
+      {
+        "name": "Rotation Speed",
+        "param": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Complexity",
+        "param": "zoom_params.y",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Bloom Intensity",
+        "param": "zoom_params.z",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Gravity Well Strength",
+        "param": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-holographic-data-core",
     "name": "Holographic Data Core",
     "url": "shaders/gen-holographic-data-core.wgsl",
