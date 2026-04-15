@@ -2816,6 +2816,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the AI's ability to blend technology with dense organic foliage in an optimistic tone.
 
+### Suggestion: Ashcan School Tsunami
+- **Date:** 2026-11-20
+- **Prompt:** "A massive, terrifying tsunami wave crashing down on a gritty early 20th-century industrial waterfront, depicted in the raw, documentary style of the Ashcan School. The dark, churning water tears through smokestacks and tenement buildings, while frantic dockworkers attempt to flee. The lighting is overcast and bleak, casting soft, indistinct shadows that emphasize the dirt, texture, and chaotic power of the destruction. The mood is grim, authentic, and overwhelming. Captured with an eye-level, documentary-style perspective, focusing on the unglamorous and terrifying reality of the disaster from the viewpoint of the streets."
+- **Negative prompt:** "modern, clean, bright colors, sunny, cheerful, photorealistic, 3d render, idyllic"
+- **Tags:** art, disaster, tsunami, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, chaotic framing, imposing wave dominating the background
+- **Color palette:** murky greens, muted greys, rusted browns, dull ochre
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261120_ashcan-school-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of a massive natural disaster with the gritty, muted, everyday-life style of the Ashcan School.
+
+### Suggestion: Brass Exoplanet Core
+- **Date:** 2026-11-20
+- **Prompt:** "An ultra-macro, theoretical visualization deep within the core of an exoplanet, where immense pressure has forged a labyrinth of perfectly polished brass clockwork and gears. The massive geometric subject absorbs the ambient heat, contrasting sharply with rivers of super-heated, blindingly bright golden plasma flowing through the mechanical lattice. The lighting is intensely harsh, emanating entirely from the plasma rivers, creating a stark interplay of blinding golden-hot streaks against the reflective brass machinery. The mood is terrifying, alien, and unfathomably powerful. Captured with a microscopic camera perspective, freezing the dynamic flow of plasma against the rigid brass structure."
+- **Negative prompt:** "surface, sky, daylight, soft lighting, blurry, organic, earth-like, low contrast, dark shadows"
+- **Tags:** sci-fi, macro, exoplanet, core, brass, plasma
+- **Style / Reference:** scientific visualization, hyper-detailed hard sci-fi, steampunk aesthetic
+- **Composition:** chaotic yet geometric, sharp macro focus, dense
+- **Color palette:** polished brass, blinding golden-hot plasma, deep metallic shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261120_brass-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex geometric hard-surface modeling paired with intense, glowing metallic plasma lighting.
+
+### Suggestion: Bismuth Beehive
+- **Date:** 2026-11-20
+- **Prompt:** "An incredibly detailed, macro view deep inside a gigantic, surreal beehive where the entire honeycomb structure is constructed from naturally iridescent bismuth hopper crystals. The subject features perfectly repeating stepped hexagonal cells that reflect a spectacular array of thin-film interference colors, filled with clear, glowing nectar. The lighting is harsh and directional from an internal glowing core, causing the metallic bismuth surfaces to shine brilliantly in a rainbow of colors against a dark background. The mood is luxurious, magical, and mathematically precise. Captured with a 100mm macro lens, deep depth of field to emphasize the endless geometric repetition of the iridescent honeycomb."
+- **Negative prompt:** "wax, yellow honey, plastic, hard surface, realistic hive, bees, dull, flat lighting, organic curves"
+- **Tags:** macro, surreal, beehive, bismuth, iridescent
+- **Style / Reference:** surreal macro photography, hyper-detailed material swap
+- **Composition:** full frame repeating pattern, deep perspective
+- **Color palette:** iridescent rainbow (pinks, greens, golds), glowing white nectar, deep black shadows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261120_bismuth-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates large-scale thin-film iridescent interference mapped to perfect, repeating geometric patterns.
+
+### Suggestion: Mother of Pearl Beaver Dam
+- **Date:** 2026-11-20
+- **Prompt:** "A majestic, surreal landscape featuring an intricate beaver dam blocking a tranquil forest stream, constructed entirely from shimmering, iridescent pieces of mother of pearl. The intricately woven nacre logs and branches reflect a spectacular array of pearlescent pastels. The lighting is soft, early morning sunlight filtering through the dense forest canopy, catching the smooth ridges of the nacre to reveal intense rainbow interference patterns across the entire structure. The mood is peaceful, magical, and pristine. Captured with a 35mm lens from the edge of the water, showing both the complex texture of the dam and the calm ecosystem it creates."
+- **Negative prompt:** "wood, mud, organic branches, dirty, dark, dull, murky water, realistic dam"
+- **Tags:** nature, landscape, surreal, mother of pearl, beaver dam
+- **Style / Reference:** surreal nature photography, hyper-detailed material swap
+- **Composition:** wide shot, low angle near water surface, leading lines of the stream
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, clear water, lush forest greens
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261120_mother-of-pearl-beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating thin-film iridescence on complex organic structures (woven branches) in a natural environment.
+
+### Suggestion: Graphene Orbital Ring
+- **Date:** 2026-11-20
+- **Prompt:** "An epic, sweeping view of a colossal Orbital Ring megastructure encircling a bright, terrestrial planet, constructed entirely from perfectly matte, light-absorbing graphene. The sleek, dark, geometric subject absorbs almost all starlight, contrasting sharply with the bright, glowing city lights and spaceports scattered across its surface. The lighting is a dramatic sunrise cresting over the planet's horizon, casting a blinding white glare that is starkly absorbed by the matte graphene structure. The mood is silent, awe-inspiring, and technologically supreme. Captured with an extreme wide-angle cinematic lens from low Earth orbit, emphasizing planetary scale and the vast, dark ring."
+- **Negative prompt:** "shiny metal, reflective, bright structure, rusted, broken, dystopian, small scale"
+- **Tags:** sci-fi, megastructure, space, orbital ring, graphene
+- **Style / Reference:** hard sci-fi environment design, cinematic space art
+- **Composition:** curved horizon, extreme wide angle, massive scale
+- **Color palette:** pitch black matte graphene, blinding solar white, vibrant earth greens and blues, glowing neon city lights
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261120_graphene-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive scale, planetary curvature, and the matte, light-absorbing properties of a massive graphene structure against intense cosmic lighting.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
