@@ -402,7 +402,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const rect = canvas.getBoundingClientRect();
         const x = (event.clientX - rect.left) / rect.width;
         const y = (event.clientY - rect.top) / rect.height;
-        if ('addRipplePoint' in rendererRef.current) {
+        if (typeof (rendererRef.current as any).addRipplePoint === 'function') {
+            (rendererRef.current as any).addRipplePoint(x, y);
+        } else if ('addRipplePoint' in rendererRef.current) {
             (rendererRef.current as any).addRipplePoint(x, y);
         }
     };
@@ -540,7 +542,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 width={INTERNAL_RENDER_RESOLUTION}
                 height={INTERNAL_RENDER_RESOLUTION}
                 onPointerMove={handleCanvasMouseMove}
-                onPointerDown={handleMouseDown}
+                onPointerDown={handleMouseDown} onMouseDown={handleMouseDown}
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
