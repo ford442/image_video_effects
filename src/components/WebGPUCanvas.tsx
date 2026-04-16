@@ -31,6 +31,8 @@ interface WebGPUCanvasProps {
     webcamVideoElement?: HTMLVideoElement | null;
     // Live Stream Props
     liveStreamUrl?: string; // NEW: HLS live stream URL
+    // Expose the canvas element to the parent (e.g. for recording)
+    onCanvasRef?: (canvas: HTMLCanvasElement | null) => void;
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
@@ -41,7 +43,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     setInputSource, activeSlot, activeGenerativeShader, apiBaseUrl,
     isWebcamActive = false,
     webcamVideoElement,
-    liveStreamUrl
+    liveStreamUrl,
+    onCanvasRef
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,6 +64,15 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
+
+    // Expose canvas element to parent (e.g. for recording) via onCanvasRef callback
+    useEffect(() => {
+        if (!canvasRef.current) return;
+        onCanvasRef?.(canvasRef.current);
+        return () => onCanvasRef?.(null);
+    // canvasRef.current is stable; we only need to re-run if the callback identity changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onCanvasRef]);
 
     // Ensure canvas has valid dimensions before WebGPU initialization
     const ensureCanvasSize = (canvas: HTMLCanvasElement) => {
@@ -527,10 +539,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 data-testid="webgpu-canvas"
                 width={INTERNAL_RENDER_RESOLUTION}
                 height={INTERNAL_RENDER_RESOLUTION}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseLeave}
                 onPointerMove={handleCanvasMouseMove}
                 onPointerDown={handleMouseDown}
                 onPointerUp={handleMouseUp}
