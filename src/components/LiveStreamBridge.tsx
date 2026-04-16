@@ -100,12 +100,11 @@ export const LiveStreamBridge: React.FC<LiveStreamBridgeProps> = ({
           video.removeEventListener('loadedmetadata', handleCanPlay);
         };
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari)
+        // Native HLS support (Safari) — keep a reference so the listener can be removed
         video.src = streamUrl;
-        video.addEventListener('loadedmetadata', () => {
-          setIsReady(true);
-          onVideoReady(video);
-        });
+        const handleNativeReady = () => { setIsReady(true); onVideoReady(video); };
+        video.addEventListener('loadedmetadata', handleNativeReady);
+        return () => video.removeEventListener('loadedmetadata', handleNativeReady);
       } else {
         onError?.('HLS not supported in this browser');
       }

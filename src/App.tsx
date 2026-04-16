@@ -291,9 +291,16 @@ function MainApp() {
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
+    // Mirrors slotShaderStatus state so setMode can read it without being in its dep array
+    const slotShaderStatusRef = useRef<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle']);
+    // Direct ref to the WebGPU canvas — set via onCanvasRef callback (avoids fragile querySelector)
+    const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // --- Helpers ---
     const setMode = useCallback(async (index: number, mode: RenderMode) => {
+        // Guard: if a shader is already compiling on this slot, skip to prevent chaos-mode pile-up
+        if (slotShaderStatusRef.current[index] === 'loading') return;
+
         setModes(prev => {
             const next = [...prev];
             next[index] = mode;
@@ -301,6 +308,7 @@ function MainApp() {
         });
 
         if (mode === 'none') {
+            slotShaderStatusRef.current[index] = 'idle';
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'idle'; return n; });
             // Tell the renderer to disable this slot so other slots keep running
             if (rendererRef.current && typeof (rendererRef.current as any).setSlotShader === 'function') {
@@ -312,8 +320,9 @@ function MainApp() {
         // Attempt to load & compile the shader, tracking status
         const shaderEntry = availableModes.find(s => s.id === mode);
         if (shaderEntry && rendererRef.current && 'loadShader' in rendererRef.current) {
+            slotShaderStatusRef.current[index] = 'loading';
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
-            
+
             try {
                 // Determine shader URL — API shaders now point directly to the .wgsl static file
                 // served by nginx with CORS headers, so pass the URL straight to loadShader.
@@ -331,6 +340,7 @@ function MainApp() {
                     }
                 }
                 
+                slotShaderStatusRef.current[index] = ok ? 'idle' : 'error';
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
                 
                 // Initialize slider values to shader's declared param defaults
@@ -375,6 +385,7 @@ function MainApp() {
                 }
             } catch (error) {
                 console.error(`❌ Failed to load shader ${shaderEntry.id}:`, error);
+                slotShaderStatusRef.current[index] = 'error';
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
             }
         }
@@ -402,6 +413,9 @@ function MainApp() {
     // --- Effects & Initializers ---
     
     useEffect(() => {
+        const controller = new AbortController();
+        const signal = controller.signal;
+
         // Fetch the dynamic image manifest from the backend on startup
         const fetchImageManifest = async () => {
             let manifest: ImageRecord[] = [];
@@ -409,7 +423,7 @@ function MainApp() {
 
             // 1. Try API
             try {
-                const response = await fetch(IMAGE_MANIFEST_URL);
+                const response = await fetch(IMAGE_MANIFEST_URL, { signal });
                 if (response.ok) {
                     const data = await response.json();
                     if (!Array.isArray(data)) {
@@ -422,13 +436,14 @@ function MainApp() {
                     }));
                 }
             } catch (error) {
+                if ((error as Error).name === 'AbortError') return;
                 console.warn("Backend API failed, trying local manifest...", error);
             }
 
             // 2. Try Local Manifest (Bucket Images & Videos) if API Empty OR Videos Missing
             if (manifest.length === 0 || videos.length === 0) {
                 try {
-                    const response = await fetch(LOCAL_MANIFEST_URL);
+                    const response = await fetch(LOCAL_MANIFEST_URL, { signal });
                     if (response.ok) {
                         const data = await response.json();
 
@@ -456,6 +471,7 @@ function MainApp() {
                         console.log("Loaded local manifest. Total:", manifest.length, "images,", videos.length, "videos");
                     }
                 } catch (e) {
+                    if ((e as Error).name === 'AbortError') return;
                     console.warn("Failed to load local manifest:", e);
                 }
             }
@@ -472,7 +488,7 @@ function MainApp() {
             } else {
                 setStatus(`Loaded ${manifest.length} images, ${videos.length} videos`);
             }
-            
+
             // Video fallback
             if (videos.length === 0) {
                 console.warn("No videos found. Using sample videos.");
@@ -492,15 +508,19 @@ function MainApp() {
             }
         };
         fetchImageManifest();
+        return () => controller.abort();
     }, []);
 
     // --- Load Available Shaders (API-First with Local Fallback) ---
     useEffect(() => {
+        let isMounted = true;
+
         const loadShaders = async () => {
             try {
                 // Try API first, fallback to local shader_coordinates.json
                 const apiShaders = await ShaderApi.getShaderList();
-                
+                if (!isMounted) return;
+
                 // Transform API shaders to match expected format
                 const entries: ShaderEntry[] = apiShaders.map(shader => ({
                     id: shader.id,
@@ -522,7 +542,7 @@ function MainApp() {
                         labels: p.labels,
                     })),
                 }));
-                
+
                 setAvailableModes(entries);
                 setShadersReady(true);
                 // Debug: Check params
@@ -533,11 +553,12 @@ function MainApp() {
                     console.log(`   Example: ${withParams[0].id} has params:`, withParams[0].params);
                 }
             } catch (error) {
+                if (!isMounted) return;
                 console.warn('Failed to load shaders:', error);
                 setShadersReady(true); // Mark ready even on failure so boot gate doesn't block forever
             }
         };
-        
+
         // Helper to determine category — use API category field first, then infer from tags/id
         function determineCategory(shader: ApiShaderEntry): ShaderCategory {
             // Prefer the category field from the API/definition if available
@@ -565,8 +586,9 @@ function MainApp() {
             if (shader.tags?.includes('geometric') || shader.tags?.includes('tessellation')) return 'geometric';
             return 'image';
         }
-        
+
         loadShaders();
+        return () => { isMounted = false; };
     }, []);
 
     // --- Image Loading ---
@@ -628,8 +650,9 @@ function MainApp() {
     }, [imageManifest, handleLoadImage]);
 
     // --- Coordinated Boot Gate ---
-    // Wait for both renderer and shader list to be ready before loading initial shader + image.
-    // This fixes the race where onInitCanvas fired before availableModes was populated.
+    // Wait for both renderer and shader list to be ready before loading initial shader.
+    // Image auto-load is handled by a separate effect below so it works even if the
+    // manifest arrives after the renderer/shader gate fires.
     useEffect(() => {
         if (!rendererReady || !shadersReady) return;
         if (initialBootAppliedRef.current) return;
@@ -641,13 +664,17 @@ function MainApp() {
             console.log(`[boot] Loading initial shader: ${initialMode}`);
             setMode(0, initialMode);
         }
+    }, [rendererReady, shadersReady, modes, setMode]);
 
-        // Auto-load first image if manifest is ready
-        if (imageManifest.length > 0 && !currentImageUrl && inputSource === 'image') {
-            console.log('[boot] Auto-loading first image...');
-            handleNewRandomImage();
-        }
-    }, [rendererReady, shadersReady, modes, setMode, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
+    // --- Initial Image Auto-Load ---
+    // Separate from the boot gate so it fires whenever the manifest becomes available,
+    // even if that happens after the renderer is already ready.
+    useEffect(() => {
+        if (!rendererReady || imageManifest.length === 0 || currentImageUrl) return;
+        if (inputSource !== 'image') return;
+        console.log('[boot] Auto-loading first image (manifest ready)...');
+        handleNewRandomImage();
+    }, [rendererReady, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
     const loadDepthModel = useCallback(async () => {
         if (depthEstimator) { setStatus('Depth model already loaded.'); return; }
@@ -1074,8 +1101,8 @@ function MainApp() {
     }, []);
 
     const startRecording = useCallback(async () => {
-        // Find the canvas element
-        const canvas = document.querySelector('canvas[data-testid="webgpu-canvas"]') as HTMLCanvasElement;
+        // Use the canvas ref exposed by WebGPUCanvas (avoids fragile DOM querySelector)
+        const canvas = webgpuCanvasRef.current;
         if (!canvas) {
             setStatus('❌ Canvas not found for recording');
             return;
@@ -1202,10 +1229,15 @@ function MainApp() {
 
         channel.onmessage = (event) => {
             const msg = event.data as SyncMessage;
-            
+
             if (msg.type === 'HELLO') {
-                // Remote app connected, send full state
+                // Remote app connected — send full state and start heartbeat if not already running
                 sendMessage('STATE_FULL', buildFullState());
+                if (!heartbeatIntervalRef.current) {
+                    heartbeatIntervalRef.current = setInterval(() => {
+                        sendMessage('HEARTBEAT');
+                    }, 5000); // 5s is plenty for a keep-alive
+                }
             } else if (msg.type === 'CMD_SET_MODE') {
                 const { index, mode } = msg.payload;
                 setMode(index, mode);
@@ -1242,15 +1274,11 @@ function MainApp() {
             }
         };
 
-        // Start heartbeat to keep remote connected
-        heartbeatIntervalRef.current = setInterval(() => {
-            sendMessage('HEARTBEAT');
-        }, 1000); // Send heartbeat every second
-
         return () => {
             channel.close();
             if (heartbeatIntervalRef.current) {
                 clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
             }
         };
     }, [buildFullState, sendMessage, handleNewRandomImage, loadDepthModel, updateSlotParam, setMode]);
@@ -1357,6 +1385,7 @@ function MainApp() {
                         apiBaseUrl={STORAGE_API_URL}
                         isWebcamActive={isWebcamActive}
                         webcamVideoElement={videoElementRef.current}
+                        onCanvasRef={(el) => { webgpuCanvasRef.current = el; }}
                     />
                     <div className="status-bar">
                         {isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}

@@ -99,10 +99,12 @@ export class ShaderRatingService {
       
       if (!response.ok) throw new Error('Failed to submit rating');
       const updated = await response.json();
-      
-      // Update cache
+
+      // Update the individual cache entry and invalidate the list timestamp so
+      // the next enrichWithRatings() / getRating() call fetches fresh data.
       this.cache.set(shaderId, updated);
-      
+      this.lastFetch = 0;
+
       return updated;
     } catch (error) {
       console.error('ShaderRatingService.rateShader:', error);
