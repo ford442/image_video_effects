@@ -234,6 +234,12 @@
       "title": "Graviton Plasma-Lotus",
       "added": "2026-04-14T15:39:29.625548",
       "completed": "2026-04-15T07:43:43.433522"
+    },
+    {
+      "filename": "2026-04-15_bioluminescent-aether-pulsar.md",
+      "title": "Bioluminescent Aether-Pulsar",
+      "added": "2026-04-15T15:49:38.606422",
+      "completed": "2026-04-16T08:50:49.214642"
     }
   ],
   "rejected": [],
@@ -338,11 +344,6 @@
       "filename": "2026-04-14_graviton-plasma-lotus.md",
       "title": "Graviton Plasma-Lotus",
       "added": "2026-04-14T15:39:29.625548"
-    },
-    {
-      "filename": "2026-04-15_bioluminescent-aether-pulsar.md",
-      "title": "Bioluminescent Aether-Pulsar",
-      "added": "2026-04-15T15:49:38.606422"
     }
   ],
   "in_progress": null
