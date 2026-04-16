@@ -2882,6 +2882,72 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Tests the rendering of massive scale, planetary curvature, and the matte, light-absorbing properties of a massive graphene structure against intense cosmic lighting.
 
 
+### Suggestion: Steampunk Bioluminescent Submarine
+- **Date:** 2024-05-24
+- **Prompt:** "A highly detailed, macro shot of a steampunk-inspired miniature submarine exploring a vibrant bioluminescent coral reef. The submarine is crafted from polished brass and copper with glowing amber portholes. The lighting is dominated by the ethereal cyan and magenta glow of the bioluminescent coral, casting colorful reflections on the metallic hull. The mood is adventurous, magical, and mysterious. Captured with a 100mm macro lens, featuring a shallow depth of field that blurs the distant underwater structures into soft bokeh."
+- **Negative prompt:** "sunlight, surface, flat lighting, dull, organic, blurry, modern"
+- **Tags:** steampunk, underwater, bioluminescent, macro, sci-fi
+- **Style / Reference:** photorealistic macro photography, steampunk aesthetics
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** polished brass, glowing cyan, vibrant magenta, deep ocean blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240524_steampunk-submarine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing the contrast between warm metallic reflections and cool bioluminescent ambient light.
+
+### Suggestion: Ethereal Neon Desert Mirage
+- **Date:** 2024-05-24
+- **Prompt:** "A surreal, wide-angle landscape of an endless, rolling desert of pale pink sand. In the distance, a massive, shimmering mirage takes the shape of a colossal neon-blue geometric pyramid. The lighting is an otherworldly twilight, where the glowing pyramid provides the primary light source, casting long, sharp blue shadows across the pink dunes. The mood is silent, liminal, and dreamlike. Captured with a wide 24mm lens to emphasize the vast emptiness and the sharp contrast of the glowing geometry."
+- **Negative prompt:** "daylight, sun, yellow sand, realistic, busy, people, cluttered"
+- **Tags:** surreal, landscape, desert, neon, geometric
+- **Style / Reference:** surreal digital art, minimalist aesthetic
+- **Composition:** wide expansive view, centered subject, low horizon
+- **Color palette:** pale pink sand, intense neon blue, dark twilight purple
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20240524_neon-desert-mirage.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating sharp geometric lighting interacting with soft, expansive natural textures like sand.
+
+### Suggestion: Baroque Cyberpunk Chessboard
+- **Date:** 2024-05-24
+- **Prompt:** "An exquisite, close-up view of an intricate chessboard where the pieces are a fusion of ornate Baroque marble sculptures and glowing cybernetic components. The white pieces are pristine marble laced with neon pink fiber optics, while the black pieces are obsidian with glowing cyan circuitry. The lighting is highly cinematic, featuring a stark contrast between a warm golden overhead spotlight and the cold, electric glow of the neon accents. The mood is tense, opulent, and highly advanced. Captured with a 50mm lens, utilizing a shallow depth of field focusing solely on the clash between a marble knight and an obsidian pawn."
+- **Negative prompt:** "wood, plastic, flat lighting, blurry, modern, simple, wide angle"
+- **Tags:** cyberpunk, baroque, still-life, chess, contrast
+- **Style / Reference:** photorealistic product photography, high-end 3D rendering
+- **Composition:** tight close-up, dynamic angle, shallow depth of field
+- **Color palette:** pure white marble, dark obsidian, neon pink, electric cyan, warm gold
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240524_baroque-cyber-chess.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of highly ornate, classical materials with glowing, modern cybernetic elements under dramatic lighting.
+
+### Suggestion: Art Deco Holographic Library
+- **Date:** 2024-05-24
+- **Prompt:** "A grand, symmetrical view down the main aisle of a towering library designed in a lavish Art Deco style. The massive bookshelves are made of polished mahogany and gold inlay, but instead of physical books, they hold thousands of glowing, translucent holographic data cubes. The lighting is soft and ambient, emanating entirely from the blue and gold holograms, casting a warm, majestic glow over the opulent architecture. The mood is intellectual, wealthy, and futuristic. Captured with a wide-angle 16mm lens to encompass the towering scale and perfect symmetry."
+- **Negative prompt:** "paper books, dusty, dark, gritty, cyberpunk, messy, daylight"
+- **Tags:** sci-fi, architecture, interior, art deco, holographic
+- **Style / Reference:** opulent sci-fi concept art, retro-futuristic
+- **Composition:** symmetrical, one-point perspective, deep corridor
+- **Color palette:** polished mahogany brown, brilliant gold, glowing holographic blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240524_artdeco-holo-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing the interaction of semi-transparent glowing holograms with highly polished, rich architectural materials.
+
+### Suggestion: Solarpunk Floating Botanical Garden
+- **Date:** 2024-05-24
+- **Prompt:** "A breathtaking, sweeping aerial view of a massive, teardrop-shaped floating botanical garden suspended high above a pristine, lush green canyon. The structure is constructed from curved, gleaming white composite materials and vast glass domes housing exotic, oversized flora. The lighting features brilliant, midday sunlight that pierces through the glass domes and creates intricate, dappled shadows across the hanging vines and waterfalls. The mood is utopian, harmonious, and uplifting. Captured with a wide-angle drone perspective to showcase the architectural elegance against the natural landscape."
+- **Negative prompt:** "dystopian, dark, night, pollution, gritty, lowres, blurry"
+- **Tags:** solarpunk, architecture, nature, aerial, utopian
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** aerial perspective, wide expansive view, dynamic curves
+- **Color palette:** brilliant white, lush forest greens, vibrant floral reds, clear sky blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240524_solarpunk-botanical.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of large-scale, curved, clean architecture combined with dense, detailed botanical elements and complex glass reflections.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
