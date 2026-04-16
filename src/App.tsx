@@ -381,7 +381,10 @@ function MainApp() {
 
                 // Record play event (fire-and-forget)
                 if (ok) {
-                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, { method: 'GET' }).catch(() => {});
+                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                    }).catch(() => {});
                 }
             } catch (error) {
                 console.error(`❌ Failed to load shader ${shaderEntry.id}:`, error);
