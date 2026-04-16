@@ -36,10 +36,11 @@ fn multi_octave_wave(pos: f32, time: f32, freq: f32, speed: f32, octaves: u32) -
     return value;
 }
 
-// Safe texture sampling with edge clamping
-fn sample_clamped(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32> {
-    let clampedUV = clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
-    return textureSampleLevel(tex, samp, clampedUV, 0.0);
+// Safe texture fetch with edge clamping (textureLoad avoids filtering-sampler restrictions)
+fn sample_load(tex: texture_2d<f32>, uv: vec2<f32>) -> vec4<f32> {
+    let dims = vec2<f32>(textureDimensions(tex));
+    let coords = clamp(vec2<i32>(uv * dims), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    return textureLoad(tex, coords, 0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -79,17 +80,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (chromatic > 0.01) {
         // Red channel (least refraction)
         let redUV = finalUV - totalDisplacement * chromatic * 0.3;
-        finalColor.r = sample_clamped(readTexture, u_sampler, redUV).r;
-        
+        finalColor.r = sample_load(readTexture, redUV).r;
+
         // Green channel (medium refraction)
-        finalColor.g = sample_clamped(readTexture, u_sampler, finalUV).g;
-        
+        finalColor.g = sample_load(readTexture, finalUV).g;
+
         // Blue channel (most refraction)
         let blueUV = finalUV + totalDisplacement * chromatic * 0.3;
-        finalColor.b = sample_clamped(readTexture, u_sampler, blueUV).b;
+        finalColor.b = sample_load(readTexture, blueUV).b;
     } else {
         // Standard sampling without chromatic aberration
-        finalColor = sample_clamped(readTexture, u_sampler, finalUV).rgb;
+        finalColor = sample_load(readTexture, finalUV).rgb;
     }
 
     // --- Edge Darkening (vignette effect to hide clamping) ---
@@ -103,6 +104,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (chromatic > 0.01) {
         depthUV = finalUV + totalDisplacement * chromatic * 0.2;
     }
-    let depth = sample_clamped(readDepthTexture, non_filtering_sampler, depthUV).r;
+    let depth = sample_load(readDepthTexture, depthUV).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
