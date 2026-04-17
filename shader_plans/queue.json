@@ -240,6 +240,12 @@
       "title": "Bioluminescent Aether-Pulsar",
       "added": "2026-04-15T15:49:38.606422",
       "completed": "2026-04-16T08:50:49.214642"
+    },
+    {
+      "filename": "2026-04-16_hyper-refractive-rain-matrix.md",
+      "title": "Hyper-Refractive Rain-Matrix",
+      "added": "2026-04-16T19:08:37.280752",
+      "completed": "2026-04-17T08:28:04.125293"
     }
   ],
   "rejected": [],
@@ -344,11 +350,6 @@
       "filename": "2026-04-14_graviton-plasma-lotus.md",
       "title": "Graviton Plasma-Lotus",
       "added": "2026-04-14T15:39:29.625548"
-    },
-    {
-      "filename": "2026-04-16_hyper-refractive-rain-matrix.md",
-      "title": "Hyper-Refractive Rain-Matrix",
-      "added": "2026-04-16T19:08:37.280752"
     }
   ],
   "in_progress": null

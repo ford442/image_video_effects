@@ -2602,6 +2602,56 @@
     ]
   },
   {
+    "id": "gen-hyper-refractive-rain-matrix",
+    "name": "Hyper-Refractive Rain-Matrix",
+    "type": "shader",
+    "category": "generative",
+    "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
+    "coordinate": 862,
+    "sliders": [
+      {
+        "id": "rain_density",
+        "name": "Rain Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "param": "zoom_params.x",
+        "description": "Density of the rain matrix"
+      },
+      {
+        "id": "drop_speed",
+        "name": "Drop Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "param": "zoom_params.y",
+        "description": "Falling speed of the drops"
+      },
+      {
+        "id": "fluid_viscosity",
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "param": "zoom_params.z",
+        "description": "Viscosity of the fluid merging effect"
+      },
+      {
+        "id": "storm_intensity",
+        "name": "Storm Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "param": "zoom_params.w",
+        "description": "Intensity of the background storm"
+      }
+    ]
+  },
+  {
     "id": "gen-hyperbolic-tessellation",
     "name": "Hyperbolic Tessellation Engine",
     "url": "shaders/gen-hyperbolic-tessellation.wgsl",
