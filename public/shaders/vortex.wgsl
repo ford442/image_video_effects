@@ -86,7 +86,7 @@ struct Vortex {
 // Calculate vorticity (curl) at a point from all vortices
 // ω = ∇ × v (scalar in 2D)
 // ═══════════════════════════════════════════════════════════════
-fn calculateVorticity(uv: vec2<f32>, vortices: array<Vortex, 4>, time: f32) -> f32 {
+fn calculateVorticity(uv: vec2<f32>, vortices: array<Vortex, 4>, time: f32, audioReactivity: f32) -> f32 {
     var vorticity = 0.0;
     
     for (var i: i32 = 0; i < 4; i = i + 1) {
@@ -152,16 +152,17 @@ fn vorticityConfinement(
     uv: vec2<f32>, 
     vortices: array<Vortex, 4>, 
     time: f32,
-    epsilon: f32
+    epsilon: f32,
+    audioReactivity: f32
 ) -> vec2<f32> {
     let eps = 0.01;
     
     // Sample vorticity at neighbors
-    let w_center = abs(calculateVorticity(uv, vortices, time));
-    let w_xp = abs(calculateVorticity(uv + vec2<f32>(eps, 0.0), vortices, time));
-    let w_xn = abs(calculateVorticity(uv - vec2<f32>(eps, 0.0), vortices, time));
-    let w_yp = abs(calculateVorticity(uv + vec2<f32>(0.0, eps), vortices, time));
-    let w_yn = abs(calculateVorticity(uv - vec2<f32>(0.0, eps), vortices, time));
+    let w_center = abs(calculateVorticity(uv, vortices, time, audioReactivity));
+    let w_xp = abs(calculateVorticity(uv + vec2<f32>(eps, 0.0), vortices, time, audioReactivity));
+    let w_xn = abs(calculateVorticity(uv - vec2<f32>(eps, 0.0), vortices, time, audioReactivity));
+    let w_yp = abs(calculateVorticity(uv + vec2<f32>(0.0, eps), vortices, time, audioReactivity));
+    let w_yn = abs(calculateVorticity(uv - vec2<f32>(0.0, eps), vortices, time, audioReactivity));
     
     // Gradient of |vorticity|
     let gradW = vec2<f32>(w_xp - w_xn, w_yp - w_yn) / (2.0 * eps);
@@ -171,7 +172,7 @@ fn vorticityConfinement(
     let N = gradW / gradWMag;
     
     // Vorticity at center
-    let w = calculateVorticity(uv, vortices, time);
+    let w = calculateVorticity(uv, vortices, time, audioReactivity);
     
     // Force perpendicular to both N and vorticity (in 2D: (Nx, Ny) × w)
     let force = epsilon * vec2<f32>(N.y * w, -N.x * w);
@@ -182,61 +183,6 @@ fn vorticityConfinement(
 // ═══════════════════════════════════════════════════════════════
 // Calculate pressure gradient visualization
 // Pressure is high where velocity converges, low where it diverges
-// ═══════════════════════════════════════════════════════════════
-fn calculatePressure(uv: vec2<f32>, velocity: vec2<f32>, eps: f32) -> f32 {
-    // Approximate divergence: ∇ · v
-    let div = (
-        length(calculateVelocity(uv + vec2<f32>(eps, 0.0), getVortices(0.0), 0.0)) -
-        length(calculateVelocity(uv - vec2<f32>(eps, 0.0), getVortices(0.0), 0.0))
-    ) / (2.0 * eps);
-    
-    // Pressure inversely related to divergence
-    return -div;
-}
-
-// Helper to get vortices array (needed for recursion in pressure calc)
-fn getVortices(time: f32) -> array<Vortex, 4> {
-    var vortices: array<Vortex, 4>;
-    
-    // Vortex 1: Primary, follows mouse loosely
-    vortices[0] = Vortex(
-        vec2<f32>(0.5 + 0.1 * sin(time * 0.3 * audioReactivity), 0.5 + 0.1 * cos(time * 0.4 * audioReactivity)),
-        0.15,
-        0.08,
-        1.0
-    );
-    
-    // Vortex 2: Secondary, orbits primary
-    let orbitAngle = time * 0.5 * audioReactivity;
-    vortices[1] = Vortex(
-        vec2<f32>(0.5 + 0.25 * cos(orbitAngle), 0.5 + 0.25 * sin(orbitAngle)),
-        0.1,
-        0.06,
-        -1.0
-    );
-    
-    // Vortex 3: Counter-rotating, slower
-    vortices[2] = Vortex(
-        vec2<f32>(0.3 + 0.15 * sin(time * 0.2 * audioReactivity + 1.0), 0.7 + 0.1 * cos(time * 0.25 * audioReactivity)),
-        0.08,
-        0.05,
-        1.0
-    );
-    
-    // Vortex 4: Small, fast, chaotic
-    vortices[3] = Vortex(
-        vec2<f32>(0.7 + 0.08 * sin(time * 0.8 * audioReactivity), 0.3 + 0.08 * cos(time * 0.7 * audioReactivity)),
-        0.06,
-        0.04,
-        -1.0
-    );
-    
-    return vortices;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ALPHA PHYSICS: Calculate alpha based on distortion magnitude
-// Higher distortion = more scattered light = lower alpha
 // ═══════════════════════════════════════════════════════════════
 fn calculateDistortionAlpha(
     velocity: vec2<f32>,
@@ -345,7 +291,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var velocity = calculateVelocity(uv, vortices, time);
     
     // Add vorticity confinement to preserve swirling
-    let confinementForce = vorticityConfinement(uv, vortices, time, 0.02 * vortexStrength);
+    let confinementForce = vorticityConfinement(uv, vortices, time, 0.02 * vortexStrength, audioReactivity);
     velocity = velocity + confinementForce;
     
     // Add turbulent noise
@@ -357,7 +303,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     velocity = velocity + turbulenceNoise * turbAmount;
     
     // Calculate vorticity for visualization and alpha
-    let vorticity = calculateVorticity(uv, vortices, time);
+    let vorticity = calculateVorticity(uv, vortices, time, audioReactivity);
     
     // ═══════════════════════════════════════════════════════════
     // Distort UV by velocity field

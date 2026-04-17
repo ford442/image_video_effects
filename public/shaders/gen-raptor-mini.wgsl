@@ -21,7 +21,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Turn Speed, y=Max Speed, z=Rage Duration, w=Rage Speed Boost
+    zoom_params: vec4<f32>,  // x=Turn Speed, y=Max Speed, z=Rage Duration, w=Glow Radius
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -32,7 +32,7 @@ fn hash21(p: vec2<f32>) -> vec2<f32> {
     return fract((p3.xx + p3.yz) * p3.zy);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
     let coords = vec2<i32>(global_id.xy);
@@ -40,12 +40,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
 
     // Audio rage mode affects visual intensity
-    let rage = u.config.y * u.zoom_params.w;
+    let rage = bass * 3.0;
 
     // Simulating raptor agents through a generative cellular noise approach
     var col = vec3<f32>(0.0);
+    var alpha = 0.0;
 
     let scale_pattern = 4.0;
     var st = uv * scale_pattern * 5.0;
@@ -66,7 +68,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let f = fract(st) - 0.5;
 
     let rng = hash21(id);
-    let dist = length(f) - 0.2 * (1.0 + rage * 0.5);
+    let bodyRadius = 0.2 * (1.0 + rage * 0.5);
+    let dist = length(f) - bodyRadius;
+    let glow_radius = u.zoom_params.w * 0.6;
 
     if(dist < 0.0) {
         // Raptor body
@@ -75,10 +79,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Scale pattern on raptor
         let scale_tex = fract(length(f * u.zoom_params.z * 10.0));
         col *= scale_tex;
+        alpha = 1.0;
     } else {
-        // Trail / Background
-        col = mix(vec3<f32>(0.01, 0.02, 0.03), vec3<f32>(0.05, 0.1, 0.05), pow(max(0.0, 1.0 - length(uv - mouse)), 2.0));
+        // Trail / Background with glow halo
+        let trail = mix(vec3<f32>(0.01, 0.02, 0.03), vec3<f32>(0.05, 0.1, 0.05), pow(max(0.0, 1.0 - length(uv - mouse)), 2.0));
+        let glow = smoothstep(glow_radius, 0.0, dist);
+        col = mix(trail, vec3<f32>(0.2, 0.8, 0.3), glow * 0.5);
+        alpha = glow * 0.35;
     }
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+
+    let screen_uv = (vec2<f32>(coords) + 0.5) / vec2<f32>(dims);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screen_uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

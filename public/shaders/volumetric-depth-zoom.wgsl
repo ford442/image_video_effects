@@ -58,7 +58,10 @@ fn ping_pong_v2(v: vec2<f32>) -> vec2<f32> {
 }
 
 fn reconstruct_normal(uv: vec2<f32>, depth: f32, resolution: vec2<f32>) -> vec3<f32> {
-    let normal_strength = if (arrayLength(&extraBuffer) > 2u) { extraBuffer[2] } else { 1.0 };
+    var normal_strength = 1.0;
+    if (arrayLength(&extraBuffer) > 2u) {
+        normal_strength = extraBuffer[2];
+    }
     let offset_x = vec2<f32>(1.0 / resolution.x, 0.0);
     let offset_y = vec2<f32>(0.0, 1.0 / resolution.y);
 
@@ -74,7 +77,10 @@ fn reconstruct_normal(uv: vec2<f32>, depth: f32, resolution: vec2<f32>) -> vec3<
 
 fn calculate_fog(depth: f32, color: vec3<f32>) -> vec3<f32> {
     let fog_density = u.zoom_params.w;
-    let fog_falloff = if (arrayLength(&extraBuffer) > 3u) { extraBuffer[3] } else { 1.0 };
+    var fog_falloff = 1.0;
+    if (arrayLength(&extraBuffer) > 3u) {
+        fog_falloff = extraBuffer[3];
+    }
     let fog_color = vec3<f32>(0.05, 0.1, 0.08);
     let fog_factor = 1.0 - exp(-pow(depth, fog_falloff) * fog_density);
     return mix(color, fog_color, clamp(fog_factor, 0.0, 1.0));
@@ -82,7 +88,10 @@ fn calculate_fog(depth: f32, color: vec3<f32>) -> vec3<f32> {
 
 // Sample a layer with perspective projection
 fn sample_layer(uv: vec2<f32>, zoom_center: vec2<f32>, layer_depth: f32) -> vec4<f32> {
-    var cameraZ = if (arrayLength(&extraBuffer) > 4u) { extraBuffer[4] } else { 0.0 };
+    var cameraZ = 0.0;
+    if (arrayLength(&extraBuffer) > 4u) {
+        cameraZ = extraBuffer[4];
+    }
     // Perspective scaling and zoom
     let perspective = 1.0 + cameraZ * (1.0 - layer_depth * 0.5);
     let zoom = 1.0 + layer_depth * 4.0;
@@ -105,7 +114,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let zoom_center = u.zoom_config.yz;
 
     // Camera and parallax
-    var cameraZ = if (arrayLength(&extraBuffer) > 4u) { extraBuffer[4] } else { 0.0 };
+    var cameraZ = 0.0;
+    if (arrayLength(&extraBuffer) > 4u) {
+        cameraZ = extraBuffer[4];
+    }
     var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
     let parallax = (mousePos - vec2<f32>(0.5, 0.5)) * u.zoom_params.z * cameraZ * 0.1;
     let parallax_uv = uv + parallax;
@@ -124,7 +136,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Depth-of-field: weight based on focal plane
         let focal_depth = fract(zoom_time * u.zoom_params.x);
-        let dof_amount = if (arrayLength(&extraBuffer) > 3u) { extraBuffer[3] } else { 1.0 };
+        var dof_amount = 1.0;
+        if (arrayLength(&extraBuffer) > 3u) {
+            dof_amount = extraBuffer[3];
+        }
         let dof_factor = exp(-abs(depth - focal_depth) * dof_amount * 10.0);
 
         // Volumetric density falloff
@@ -145,7 +160,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth_y = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixel_size.y), 0.0).r;
     let depth_grad = length(vec2<f32>(depth_x - final_depth, depth_y - final_depth));
 
-    let specular = pow(max(depth_grad * 10.0, 0.0), 16.0) * (if (arrayLength(&extraBuffer) > 0u) { extraBuffer[0] } else { 1.0 });
+    var extra_strength = 1.0;
+    if (arrayLength(&extraBuffer) > 0u) {
+        extra_strength = extraBuffer[0];
+    }
+    let specular = pow(max(depth_grad * 10.0, 0.0), 16.0) * extra_strength;
 
     // Lighting
     let normal = reconstruct_normal(uv, final_depth, resolution);
@@ -153,9 +172,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let light_pos = vec3<f32>(cos(light_angle), sin(light_angle), -1.5);
     let view_pos = vec3<f32>(uv - vec2<f32>(0.5, 0.5), cameraZ);
     let light_dir = normalize(light_pos - view_pos);
-    let diffuse = max(dot(normal, light_dir), 0.0) * (if (arrayLength(&extraBuffer) > 0u) { extraBuffer[0] } else { 1.0 });
+    var extra_strength2 = 1.0;
+    if (arrayLength(&extraBuffer) > 0u) {
+        extra_strength2 = extraBuffer[0];
+    }
+    let diffuse = max(dot(normal, light_dir), 0.0) * extra_strength2;
 
-    let ambient = if (arrayLength(&extraBuffer) > 1u) { extraBuffer[1] } else { 0.2 };
+    var ambient = 0.2;
+    if (arrayLength(&extraBuffer) > 1u) {
+        ambient = extraBuffer[1];
+    }
     let lit_color = final_color * (ambient + diffuse) + vec3<f32>(specular);
 
     // Fog

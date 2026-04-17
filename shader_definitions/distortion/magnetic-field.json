@@ -13,22 +13,22 @@
       "max": 1
     },
     {
-      "id": "frequency",
-      "name": "Field Lines",
+      "id": "radius",
+      "name": "Radius",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "rotation",
-      "name": "Rotation Speed",
+      "id": "density",
+      "name": "Field Density",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "turbulence",
-      "name": "Turbulence",
+      "id": "mode",
+      "name": "Mode",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -37,10 +37,15 @@
   "features": [
     "animated",
     "physics",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

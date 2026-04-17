@@ -27,6 +27,8 @@ struct Uniforms {
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
+  particleCount: f32,
+  gridResolution: vec2<f32>,
 };
 
 struct Particle {
@@ -145,9 +147,9 @@ fn computeParticleHistogram(
     // Step 2: Each thread processes multiple particles (stride pattern)
     let globalOffset = wid.x * WORKGROUP_SIZE;
     
-    for (var i = gid.x; i < uniforms.particleCount; i = i + (WORKGROUP_SIZE * 65535u)) {
+    for (var i = gid.x; i < u32(uniforms.particleCount); i = i + (WORKGROUP_SIZE * 65535u)) {
         let particle = particles[i];
-        let cellIndex = positionToCell(particle.position, uniforms.gridResolution);
+        let cellIndex = positionToCell(particle.position, vec2<f32>(16.0));
         accumulateLocal(cellIndex);
     }
     

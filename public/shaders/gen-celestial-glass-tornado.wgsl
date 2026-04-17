@@ -45,10 +45,14 @@ fn map(p: vec3<f32>) -> f32 {
     let base_twist = u.zoom_params.x;
 
     // Twist the tornado
-    q.xz = rot(q.y * (base_twist + audio_twist) + t) * q.xz;
+    let q_xz = rot(q.y * (base_twist + audio_twist) + t) * q.xz;
+    q.x = q_xz.x;
+    q.z = q_xz.y;
 
     // Pull towards mouse
-    q.xy = mix(q.xy, vec2<f32>(mx, my), pull * 0.2);
+    let q_xy = mix(q.xy, vec2<f32>(mx, my), pull * 0.2);
+    q.x = q_xy.x;
+    q.y = q_xy.y;
 
     // Tornado core
     var tornado = length(q.xz) - (1.0 + q.y * 0.2 + sin(q.y * 4.0 + t) * 0.2);
@@ -56,11 +60,17 @@ fn map(p: vec3<f32>) -> f32 {
     // KIFS Debris
     var k = p;
     k.y += t * 2.0; // debris falling/rising
-    k.xz = rot(t * 0.5) * k.xz;
+    let k_xz = rot(t * 0.5) * k.xz;
+    k.x = k_xz.x;
+    k.z = k_xz.y;
     for (var i = 0; i < 4; i++) {
         k = abs(k) - vec3<f32>(0.5, 0.8, 0.5) * u.zoom_params.y;
-        k.xy = rot(1.2) * k.xy;
-        k.xz = rot(0.8) * k.xz;
+        let k_xy = rot(1.2) * k.xy;
+        k.x = k_xy.x;
+        k.y = k_xy.y;
+        let k_xz2 = rot(0.8) * k.xz;
+        k.x = k_xz2.x;
+        k.z = k_xz2.y;
     }
     let debris = length(k) - 0.1;
 
@@ -85,10 +95,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Mouse camera sweep
     let mx = (u.zoom_config.y - 0.5) * 3.14 * 0.5;
     let my = (u.zoom_config.z - 0.5) * 3.14 * 0.5;
-    rd.yz = rot(-my) * rd.yz;
-    rd.xz = rot(-mx) * rd.xz;
-    ro.yz = rot(-my) * ro.yz;
-    ro.xz = rot(-mx) * ro.xz;
+    let rd_yz = rot(-my) * rd.yz;
+    rd.y = rd_yz.x;
+    rd.z = rd_yz.y;
+    let rd_xz = rot(-mx) * rd.xz;
+    rd.x = rd_xz.x;
+    rd.z = rd_xz.y;
+    let ro_yz = rot(-my) * ro.yz;
+    ro.y = ro_yz.x;
+    ro.z = ro_yz.y;
+    let ro_xz = rot(-mx) * ro.xz;
+    ro.x = ro_xz.x;
+    ro.z = ro_xz.y;
 
     var t = 0.0;
     var d = 0.0;

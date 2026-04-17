@@ -16,7 +16,7 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=DecaySpeed, y=BrushRadius, z=NoiseIntensity, w=Unused
+  zoom_params: vec4<f32>,  // x=DecaySpeed, y=BrushRadius, z=NoiseIntensity, w=NoiseScale
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -26,7 +26,7 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -40,28 +40,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let decaySpeed = u.zoom_params.x * 0.05 + 0.001;
     let brushRadius = u.zoom_params.y * 0.3 + 0.05;
     let noiseIntensity = u.zoom_params.z;
+    let noiseScale = 50.0 + u.zoom_params.w * 200.0;
 
     // Mouse
     var mouse = u.zoom_config.yz;
     let dist = distance((uv - mouse) * aspectVec, vec2<f32>(0.0));
 
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let reactiveRadius = brushRadius * (1.0 + bass * 0.2);
+
     // Read previous mask (Red channel of dataTextureC)
     let prevMask = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
 
     // Update Mask
-    var mask = prevMask - decaySpeed; // Decay
+    var mask = prevMask - decaySpeed;
 
     // Add brush
-    let brush = smoothstep(brushRadius, brushRadius * 0.5, dist);
+    let brush = smoothstep(reactiveRadius, reactiveRadius * 0.5, dist);
     mask = max(mask, brush);
     mask = clamp(mask, 0.0, 1.0);
 
-    // Save mask
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(mask, 0.0, 0.0, 1.0));
+    // Save mask with alpha
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(mask, 0.0, 0.0, mask));
 
     // Generate Static Noise
-    let noiseVal = hash12(uv * 100.0 + vec2<f32>(u.config.x * 10.0));
-    let noiseColor = vec4<f32>(vec3<f32>(noiseVal), 1.0);
+    let noiseVal = hash12(uv * noiseScale + vec2<f32>(u.config.x * 10.0)) * noiseIntensity;
+    let noiseAlpha = 1.0 - mask;
+    let noiseColor = vec4<f32>(vec3<f32>(noiseVal), noiseAlpha);
 
     // Sample Video
     let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -70,5 +76,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = mix(noiseColor, videoColor, mask);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

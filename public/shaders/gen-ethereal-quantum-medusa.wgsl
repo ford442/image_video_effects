@@ -59,7 +59,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let num_tentacles = 8.0;
     let a = (angle + 3.14159) / (6.28318 / num_tentacles);
     let idx = floor(a);
-    p_tent.xy = rot2D(t * 0.5 + p_tent.y * u.zoom_params.y) * p_tent.xy;
+    let p_tent_xy = rot2D(t * 0.5 + p_tent.y * u.zoom_params.y) * p_tent.xy;
+    p_tent.x = p_tent_xy.x;
+    p_tent.y = p_tent_xy.y;
     let tentacles = length(p_tent.xz) - 0.1 * (1.0 - p_tent.y * 0.1);
 
     let d = smin(bell, tentacles, 0.5);

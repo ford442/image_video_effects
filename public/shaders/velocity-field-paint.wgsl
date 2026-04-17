@@ -17,11 +17,11 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>, // y,z is mouse
-  zoom_params: vec4<f32>, // x: dissipation, y: brush size, z: force, w: color mix
+  zoom_params: vec4<f32>, // x: dissipation, y: brush size, z: force, w: audio reactivity
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -34,7 +34,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dissipation = 0.9 + u.zoom_params.x * 0.09;
     let brushSize = 0.05 + u.zoom_params.y * 0.2;
-    let force = u.zoom_params.z * 0.5;
+    let audioReact = u.zoom_params.w;
+    let bass = plasmaBuffer[0].x;
+    let force = u.zoom_params.z * 0.5 * (1.0 + bass * audioReact);
 
     // Sample previous velocity field from dataTextureC (Red/Green channels = Velocity X/Y)
     let prevData = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
@@ -56,14 +58,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     velocity *= dissipation;
 
     // Advect UVs
-    // We sample the image at (uv - velocity)
-    let offsetUV = uv - velocity * 0.05; // Scale velocity for sampling
+    let offsetUV = uv - velocity * 0.05;
     let sampledColor = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
 
     // Write to display
     textureStore(writeTexture, vec2<i32>(global_id.xy), sampledColor);
 
-    // Store velocity for next frame (in Red/Green channels)
-    // We can also store some "pressure" or other state in B/A if needed
+    // Store velocity for next frame
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(velocity, 0.0, 1.0));
+
+    // Pass depth through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

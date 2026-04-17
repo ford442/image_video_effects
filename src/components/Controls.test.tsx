@@ -30,8 +30,6 @@ const defaultSlotParams: SlotParams = {
     zoomParam2: 0.5,
     zoomParam3: 0.5,
     zoomParam4: 0.5,
-    zoomParam5: 0.5,
-    zoomParam6: 0.5,
     lightStrength: 1.0,
     ambient: 0.2,
     normalStrength: 0.1,
@@ -52,9 +50,6 @@ test('renders Rain controls when active slot mode is rain', () => {
             updateSlotParam={mockUpdateSlotParam}
             shaderCategory="image"
             setShaderCategory={mockSetShaderCategory}
-            zoom={1} setZoom={() => {}}
-            panX={0} setPanX={() => {}}
-            panY={0} setPanY={() => {}}
             onNewImage={() => {}}
             autoChangeEnabled={false} setAutoChangeEnabled={() => {}}
             autoChangeDelay={10} setAutoChangeDelay={() => {}}
@@ -91,9 +86,6 @@ test('does not render Rain controls when active slot mode is not rain', () => {
             updateSlotParam={mockUpdateSlotParam}
             shaderCategory="image"
             setShaderCategory={mockSetShaderCategory}
-            zoom={1} setZoom={() => {}}
-            panX={0} setPanX={() => {}}
-            panY={0} setPanY={() => {}}
             onNewImage={() => {}}
             autoChangeEnabled={false} setAutoChangeEnabled={() => {}}
             autoChangeDelay={10} setAutoChangeDelay={() => {}}
@@ -131,9 +123,6 @@ test('filters slot mega-menu to non-generative or generative shaders based on ef
             updateSlotParam={mockUpdateSlotParam}
             shaderCategory="image"
             setShaderCategory={mockSetShaderCategory}
-            zoom={1} setZoom={() => {}}
-            panX={0} setPanX={() => {}}
-            panY={0} setPanY={() => {}}
             onNewImage={() => {}}
             autoChangeEnabled={false} setAutoChangeEnabled={() => {}}
             autoChangeDelay={10} setAutoChangeDelay={() => {}}
@@ -167,9 +156,6 @@ test('filters slot mega-menu to non-generative or generative shaders based on ef
             updateSlotParam={mockUpdateSlotParam}
             shaderCategory="generative"
             setShaderCategory={mockSetShaderCategory}
-            zoom={1} setZoom={() => {}}
-            panX={0} setPanX={() => {}}
-            panY={0} setPanY={() => {}}
             onNewImage={() => {}}
             autoChangeEnabled={false} setAutoChangeEnabled={() => {}}
             autoChangeDelay={10} setAutoChangeDelay={() => {}}

@@ -76,9 +76,6 @@ test('mouse down emits ripple for mouse-driven shader', () => {
         <WebGPUCanvas
             modes={['interactive-ripple', 'none', 'none']}
             slotParams={[{}, {}, {}] as any}
-            zoom={1}
-            panX={0}
-            panY={0}
             rendererRef={rendererRef as any}
             farthestPoint={{ x: 0.5, y: 0.5 }}
             mousePosition={{ x: -1, y: -1 }}

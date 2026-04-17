@@ -15,7 +15,8 @@
     "gravity",
     "procedural",
     "audio",
-    "music"
+    "music",
+    "reactive"
   ],
   "features": [
     "mouse-driven",

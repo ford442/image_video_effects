@@ -55,7 +55,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Inner Core
     var p_core = p1;
-    p_core.xy = rot2D(u.config.x * u.zoom_params.x) * p_core.xy;
+    let p_core_xy = rot2D(u.config.x * u.zoom_params.x) * p_core.xy;
+    p_core.x = p_core_xy.x;
+    p_core.y = p_core_xy.y;
     let core = length(p_core) - 0.5;
     d = core;
     mat_id = 1.0;
@@ -66,8 +68,12 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         if(i >= num_rings) { break; }
         var p_ring = p1;
         let fi = f32(i);
-        p_ring.yz = rot2D(u.config.x * 0.5 + u.config.y * 2.0 + fi * 0.5) * p_ring.yz;
-        p_ring.xz = rot2D(u.config.x * 0.2 * u.zoom_params.x + fi * 1.2) * p_ring.xz;
+        let p_ring_yz = rot2D(u.config.x * 0.5 + u.config.y * 2.0 + fi * 0.5) * p_ring.yz;
+        p_ring.y = p_ring_yz.x;
+        p_ring.z = p_ring_yz.y;
+        let p_ring_xz = rot2D(u.config.x * 0.2 * u.zoom_params.x + fi * 1.2) * p_ring.xz;
+        p_ring.x = p_ring_xz.x;
+        p_ring.z = p_ring_xz.y;
 
         let ring = sdTorus(p_ring, vec2<f32>(1.5 + fi * 0.4, 0.05 + fi * 0.02));
 

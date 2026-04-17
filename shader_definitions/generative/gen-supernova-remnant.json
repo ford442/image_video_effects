@@ -45,12 +45,12 @@
       "step": 0.01
     },
     {
-      "id": "colorTemp",
-      "name": "Temperature Shift",
-      "default": 0.5,
+      "id": "gasOpacity",
+      "name": "Gas Opacity",
+      "default": 1.0,
       "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "max": 3.0,
+      "step": 0.05
     }
   ]
 }

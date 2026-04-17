@@ -50,16 +50,15 @@ fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f32) ->
   return vec2<f32>(finalD, 2.0);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   let time = u.config.x;
   // ═══ AUDIO REACTIVITY ═══
-  let audioOverall = u.config.y;
-  let audioBass = u.config.y * 1.2;
-  let audioMid = u.config.z;
-  let audioHigh = u.config.w;
-  let audioReactivity = 1.0 + audioOverall * 0.5;
+  let audioBass = plasmaBuffer[0].x;
+  let audioMid = plasmaBuffer[0].y;
+  let audioHigh = plasmaBuffer[0].z;
+  let audioReactivity = 1.0 + audioBass * 0.5;
   var mouse = u.zoom_config.yz;
   
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
@@ -68,7 +67,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   let scale = u.zoom_params.x * 1.9 + 0.1;
   let glowIntensity = u.zoom_params.z * 2.0;
-  let pulse = u.zoom_params.w;
+  let fogDensity = u.zoom_params.w * 2.0;
 
   let mouseAngle = mouse.x * 6.28;
   var ro = vec3<f32>(sin(mouseAngle) * 10.0, 3.0, cos(mouseAngle) * 10.0);
@@ -82,7 +81,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var mat = 0.0;
   for (var i: i32 = 0; i < 100; i++) {
     var p = ro + rd * t;
-    let r = map(p, scale, pulse, time, audioReactivity);
+    let r = map(p, scale, 0.5, time, audioReactivity);
     if (r.x < 0.001) { mat = r.y; break; }
     t += r.x * 0.9;
     if (t > 80.0) { break; }
@@ -93,7 +92,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   if (t < 79.0) {
     var p = ro + rd * t;
     if (mat > 1.5) {
-      let glow = pow(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * pulse * 0.3, 2.0);
+      let glow = pow(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * 0.3, 2.0);
       col = vec3<f32>(0.4, 0.8, 1.0) * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.6;
     } else {
       col = vec3<f32>(0.15, 0.1, 0.08);
@@ -103,7 +102,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let mouseLight = max(0.0, 1.0 - length(uv - mouse) * 3.0);
   col += vec3<f32>(0.8, 0.6, 1.0) * mouseLight * 0.8;
 
-  textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+  var alpha = 0.0;
+  if (t < 79.0) {
+    alpha = clamp(1.0 - t / 80.0 * fogDensity, 0.05, 1.0);
+  }
+  alpha *= (0.2 + 0.8 * mouseLight);
+
+  textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
   
   var depth = 0.5;
   if (t < 79.0) {

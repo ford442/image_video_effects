@@ -45,25 +45,6 @@ fn fieldMagnitude(field: vec2<f32>) -> f32 {
     return length(field);
 }
 
-// Particle tracing along field line
-fn traceFieldLine(start: vec2<f32>, fieldFn: fn(vec2<f32>) -> vec2<f32>, steps: i32) -> f32 {
-    var pos = start;
-    var totalField = 0.0;
-    
-    for (var i: i32 = 0; i < steps; i++) {
-        let f = fieldFn(pos);
-        let fLen = length(f);
-        totalField += fLen;
-        
-        // Euler integration along field line
-        pos = pos + normalize(f) * 0.01;
-        
-        if (fLen < 0.001) { break; }
-    }
-    
-    return totalField;
-}
-
 // Distance to field line (simplified)
 fn distToFieldLine(uv: vec2<f32>, dipolePos: vec2<f32>, moment: vec2<f32>) -> f32 {
     let r = uv - dipolePos;

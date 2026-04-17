@@ -74,9 +74,9 @@ fn sdCappedCone(p: vec3<f32>, h: f32, r1: f32, r2: f32) -> f32 {
     let q = vec2<f32>(length(p.xz), p.y);
     let k1 = vec2<f32>(r2, h);
     let k2 = vec2<f32>(r2 - r1, 2.0 * h);
-    let ca = vec2<f32>(q.x - min(q.x, (q.y < 0.0) ? r1 : r2), abs(q.y) - h);
+    let ca = vec2<f32>(q.x - min(q.x, select(r2, r1, q.y < 0.0)), abs(q.y) - h);
     let cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
-    let s = (cb.x < 0.0 && ca.y < 0.0) ? -1.0 : 1.0;
+    let s = select(1.0, -1.0, cb.x < 0.0 && ca.y < 0.0);
     return s * sqrt(min(dot(ca, ca), dot(cb, cb)));
 }
 
@@ -274,7 +274,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let star_uv = uv + g_mouse * 0.05;
     for (var i = 1; i <= 3; i++) {
         let fi = f32(i);
-        let s = hash31(vec3<f32>(floor(star_uv * (150.0 / fi)), fi, 0.0));
+        let s = hash31(vec3<f32>(floor(star_uv * (150.0 / fi)), fi));
         if (s > 0.99) { starCol += vec3<f32>(s) * (1.0 - fi * 0.2); }
     }
 

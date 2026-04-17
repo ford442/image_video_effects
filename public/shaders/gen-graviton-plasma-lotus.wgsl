@@ -41,8 +41,12 @@ fn fold(p: vec3<f32>, time: f32) -> vec3<f32> {
         q = abs(q) - 0.5;
         // Apply rotation
         let r = rot(time * 0.1 + f32(i));
-        q.xy = r * q.xy;
-        q.yz = r * q.yz;
+        let q_xy = r * q.xy;
+        q.x = q_xy.x;
+        q.y = q_xy.y;
+        let q_yz = r * q.yz;
+        q.y = q_yz.x;
+        q.z = q_yz.y;
     }
     return q;
 }

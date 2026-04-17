@@ -25,19 +25,21 @@ fn get_luma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
 
-  let mouseX = u.zoom_config.y; // 0..1
   let mouseY = u.zoom_config.z; // 0..1
-
-  let threshold = mouseX; // Threshold controlled by mouse X
-  let intensity = mouseY; // Intensity controlled by mouse Y
 
   let direction = u.zoom_params.x; // 0 = Vertical, 1 = Horizontal
   let reverse = u.zoom_params.y; // 0 = standard, 1 = reverse sort
+  let intensityScale = u.zoom_params.z; // Scales mouse Y intensity
+  let threshold = u.zoom_params.w; // Sort threshold luma
+
+  // Audio reactivity
+  let bass = plasmaBuffer[0].x;
+  let intensity = mouseY * intensityScale * (1.0 + bass * 0.5);
 
   // Sample original
   let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0);

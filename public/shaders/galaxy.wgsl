@@ -73,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let arms = mix(2.0, 6.0, u.zoom_params.y);
     let rotation = mix(0.5, 3.0, u.zoom_params.z);
     let spread = mix(0.1, 0.5, u.zoom_params.w);
-    let brightness = mix(0.5, 2.0, 0.5);
+    let brightness = 1.25;
     
     // Convert to polar coordinates
     let radius = length(screenP);

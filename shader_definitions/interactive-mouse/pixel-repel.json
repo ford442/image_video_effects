@@ -3,7 +3,9 @@
   "category": "interactive-mouse",
   "url": "shaders/pixel-repel.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -37,7 +39,10 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "audio",
+    "music",
+    "reactive"
   ],
   "name": "Pixel Repeller"
 }

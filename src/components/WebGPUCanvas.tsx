@@ -8,9 +8,6 @@ import { LiveStreamBridge } from './LiveStreamBridge';
 interface WebGPUCanvasProps {
     modes: RenderMode[];
     slotParams: SlotParams[];
-    zoom: number;
-    panX: number;
-    panY: number;
     rendererRef: React.MutableRefObject<Renderer | null>;
     farthestPoint: { x: number; y: number };
     mousePosition: { x: number; y: number };
@@ -36,7 +33,7 @@ interface WebGPUCanvasProps {
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
-    modes, slotParams, zoom, panX, panY, rendererRef,
+    modes, slotParams, rendererRef,
     farthestPoint, mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
@@ -334,7 +331,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [isMouseDown, rendererRef]);
 
-    // Sync slotParams to renderer (zoomParam1-6) - use active slot's params
+    // Sync slotParams to renderer (zoomParam1-4) - use active slot's params
     useEffect(() => {
         if (rendererRef.current?.updateSlotParams && slotParams.length > 0) {
             const params = slotParams[activeSlot] ?? slotParams[0];
@@ -343,8 +340,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 zoomParam2: params.zoomParam2,
                 zoomParam3: params.zoomParam3,
                 zoomParam4: params.zoomParam4,
-                zoomParam5: params.zoomParam5,
-                zoomParam6: params.zoomParam6,
             });
         }
     }, [slotParams, activeSlot, rendererRef]);
@@ -364,7 +359,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     modes,
                     slotParams,
                     videoRef.current,
-                    zoom, panX, panY, farthestPoint, mousePosition, isMouseDown,
+                    farthestPoint, mousePosition, isMouseDown,
                     activeGenerativeShader,
                     canvasSize, // viewWidth (square)
                     canvasSize  // viewHeight (square)
@@ -374,7 +369,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [modes, slotParams, zoom, panX, panY, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader, inputSource, displaySize]);
+    }, [modes, slotParams, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader, inputSource, displaySize]);
 
     // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {

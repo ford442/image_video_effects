@@ -136,7 +136,7 @@ function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
         const defaults = SHADER_DEFAULTS[key];
         if (defaults) {
             console.log(`[getShaderDefaults] Found defaults for "${shaderId}" (matched as "${key}")`);
-            return [...defaults, ...Array(6 - defaults.length).fill(0.5)].slice(0, numParams);
+            return [...defaults, ...Array(4 - defaults.length).fill(0.5)].slice(0, numParams);
         }
     }
     
@@ -192,8 +192,6 @@ const defaultSlotParams: SlotParams = {
     zoomParam2: 1.01,
     zoomParam3: 0.5,
     zoomParam4: 0.5,
-    zoomParam5: 0.5,
-    zoomParam6: 0.5,
     lightStrength: 1.0,
     ambient: 0.2,
     normalStrength: 0.1,
@@ -215,11 +213,6 @@ function MainApp() {
         defaultSlotParams
     ]);
 
-    // --- State: Global View ---
-    const [zoom, setZoom] = useState(1.0);
-    const [panX, setPanX] = useState(0.5);
-    const [panY, setPanY] = useState(0.5);
-    
     // --- State: Automation & Status ---
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
@@ -365,8 +358,6 @@ function MainApp() {
                         else if (i === 1) paramDefaults.zoomParam2 = defaultValue;
                         else if (i === 2) paramDefaults.zoomParam3 = defaultValue;
                         else if (i === 3) paramDefaults.zoomParam4 = defaultValue;
-                        else if (i === 4) paramDefaults.zoomParam5 = defaultValue;
-                        else if (i === 5) paramDefaults.zoomParam6 = defaultValue;
                     }
                     
                     console.log(`[setMode] Setting slot ${index} defaults:`, paramDefaults);
@@ -858,8 +849,6 @@ function MainApp() {
             zoomParam2: 0.5 + Math.random() * 0.5,      // 0.5 - 1.0
             zoomParam3: Math.random() * 1.0,            // 0.0 - 1.0
             zoomParam4: Math.random() * 1.0,            // 0.0 - 1.0
-            zoomParam5: Math.random() * 1.0,            // 0.0 - 1.0
-            zoomParam6: Math.random() * 1.0,            // 0.0 - 1.0
             lightStrength: 0.5 + Math.random() * 1.5,   // 0.5 - 2.0
             ambient: 0.1 + Math.random() * 0.4,         // 0.1 - 0.5
             normalStrength: 0.05 + Math.random() * 0.25,// 0.05 - 0.3
@@ -993,11 +982,6 @@ function MainApp() {
             params.set('img', encodeURIComponent(currentImageUrl));
         }
         
-        // View settings
-        params.set('zoom', zoom.toFixed(2));
-        params.set('panX', panX.toFixed(2));
-        params.set('panY', panY.toFixed(2));
-        
         // Generative shader if active
         if (inputSource === 'generative' && activeGenerativeShader) {
             params.set('gen', activeGenerativeShader);
@@ -1006,7 +990,7 @@ function MainApp() {
         const hash = params.toString();
         const baseUrl = window.location.origin + window.location.pathname;
         return `${baseUrl}#${hash}`;
-    }, [modes, activeSlot, slotParams, inputSource, currentImageUrl, zoom, panX, panY, activeGenerativeShader]);
+    }, [modes, activeSlot, slotParams, inputSource, currentImageUrl, activeGenerativeShader]);
 
     const restoreStateFromHash = useCallback(() => {
         const hash = window.location.hash.slice(1); // Remove #
@@ -1063,14 +1047,6 @@ function MainApp() {
                 handleLoadImage(decodeURIComponent(img));
             }
             
-            // Restore view settings
-            const zoomVal = params.get('zoom');
-            const panXVal = params.get('panX');
-            const panYVal = params.get('panY');
-            if (zoomVal) setZoom(parseFloat(zoomVal));
-            if (panXVal) setPanX(parseFloat(panXVal));
-            if (panYVal) setPanY(parseFloat(panYVal));
-            
             // Restore generative shader
             const gen = params.get('gen');
             if (gen) {
@@ -1082,7 +1058,7 @@ function MainApp() {
         } catch (e) {
             console.error('Failed to restore state from hash:', e);
         }
-    }, [setMode, setActiveSlot, updateSlotParam, setInputSource, setZoom, setPanX, setPanY, setActiveGenerativeShader, handleLoadImage, startWebcam]);
+    }, [setMode, setActiveSlot, updateSlotParam, setInputSource, setActiveGenerativeShader, handleLoadImage, startWebcam]);
 
     // Restore state from URL hash on load
     useEffect(() => {
@@ -1204,9 +1180,6 @@ function MainApp() {
         activeSlot,
         slotParams,
         shaderCategory,
-        zoom,
-        panX,
-        panY,
         inputSource,
         autoChangeEnabled,
         autoChangeDelay,
@@ -1215,7 +1188,7 @@ function MainApp() {
         videoList,
         selectedVideo,
         isMuted,
-    }), [modes, activeSlot, slotParams, shaderCategory, zoom, panX, panY, inputSource, 
+    }), [modes, activeSlot, slotParams, shaderCategory, inputSource, 
         autoChangeEnabled, autoChangeDelay, depthEstimator, availableModes, videoList, selectedVideo, isMuted]);
 
     // Send message to remote
@@ -1251,12 +1224,6 @@ function MainApp() {
                 updateSlotParam(index, updates);
             } else if (msg.type === 'CMD_SET_SHADER_CATEGORY') {
                 setShaderCategory(msg.payload);
-            } else if (msg.type === 'CMD_SET_ZOOM') {
-                setZoom(msg.payload);
-            } else if (msg.type === 'CMD_SET_PAN_X') {
-                setPanX(msg.payload);
-            } else if (msg.type === 'CMD_SET_PAN_Y') {
-                setPanY(msg.payload);
             } else if (msg.type === 'CMD_SET_INPUT_SOURCE') {
                 setInputSource(msg.payload);
             } else if (msg.type === 'CMD_SET_AUTO_CHANGE') {
@@ -1291,7 +1258,7 @@ function MainApp() {
         if (channelRef.current) {
             sendMessage('STATE_FULL', buildFullState());
         }
-    }, [modes, activeSlot, shaderCategory, zoom, panX, panY, inputSource, 
+    }, [modes, activeSlot, shaderCategory, inputSource, 
         autoChangeEnabled, autoChangeDelay, isMuted, selectedVideo, buildFullState, sendMessage]);
 
     return (
@@ -1339,8 +1306,7 @@ function MainApp() {
                         // ... pass all props to Controls component
                         modes={modes} setMode={setMode} activeSlot={activeSlot} setActiveSlot={setActiveSlot}
                         slotParams={slotParams} updateSlotParam={updateSlotParam} slotShaderStatus={slotShaderStatus} shaderCategory={shaderCategory}
-                        setShaderCategory={setShaderCategory} zoom={zoom} setZoom={setZoom} panX={panX}
-                        setPanX={setPanX} panY={panY} setPanY={setPanY} onNewImage={handleNewRandomImage}
+                        setShaderCategory={setShaderCategory} onNewImage={handleNewRandomImage}
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
                         onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
@@ -1376,7 +1342,7 @@ function MainApp() {
                 </aside>
                 <main className="canvas-container">
                     <WebGPUCanvas
-                        modes={modes} slotParams={slotParams} zoom={zoom} panX={panX} panY={panY}
+                        modes={modes} slotParams={slotParams}
                         rendererRef={rendererRef} farthestPoint={{x:0.5, y:0.5}}
                         mousePosition={mousePosition} setMousePosition={setMousePosition}
                         isMouseDown={isMouseDown} setIsMouseDown={setIsMouseDown} onInit={onInitCanvas}

@@ -3,7 +3,9 @@
   "category": "visual-effects",
   "url": "shaders/time-slit-scan.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -38,7 +40,10 @@
   "tags": [
     "vfx",
     "particles",
-    "glow"
+    "glow",
+    "audio",
+    "music",
+    "reactive"
   ],
   "name": "Time Slit Scan"
 }

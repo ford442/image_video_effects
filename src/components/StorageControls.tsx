@@ -20,9 +20,6 @@ interface StorageControlsProps {
   inputSource?: string;
   currentImageUrl?: string;
   activeGenerativeShader?: string;
-  zoom?: number;
-  panX?: number;
-  panY?: number;
   
   // Callbacks for loading
   onLoadShader?: (shader: ShaderItem, code: string) => void;
@@ -104,9 +101,6 @@ export const StorageControls: React.FC<StorageControlsProps> = ({
   inputSource = 'image',
   currentImageUrl,
   activeGenerativeShader,
-  zoom = 1,
-  panX = 0.5,
-  panY = 0.5,
   onLoadShader,
   onLoadImage,
   onLoadVideo,
@@ -130,15 +124,12 @@ export const StorageControls: React.FC<StorageControlsProps> = ({
         inputSource,
         currentImageUrl,
         activeGenerativeShader,
-        zoom,
-        panX,
-        panY,
       });
       setShowSaveDialog(false);
     } finally {
       setIsSaving(false);
     }
-  }, [currentModes, slotParams, inputSource, currentImageUrl, activeGenerativeShader, zoom, panX, panY, storage]);
+  }, [currentModes, slotParams, inputSource, currentImageUrl, activeGenerativeShader, storage]);
   
   // Handle save shader
   const handleSaveShader = useCallback(async (name: string) => {

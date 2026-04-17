@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -67,14 +67,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Combine
     var outputColor = warpedColor;
 
-    // Echo logic: Mix current warped frame with history
+    // Echo logic: Mix current warped frame with history (preserve alpha)
     let mixed = mix(warpedColor, history, decay);
 
     // If mouse is down, we inject more of the warped current frame to "break" the echo
     outputColor = mix(mixed, warpedColor, isMouseDown * 0.5);
 
-    // Write output
-    outputColor.a = 1.0;
+    // Write output (preserve alpha)
     textureStore(writeTexture, vec2<i32>(global_id.xy), outputColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), outputColor);
 }

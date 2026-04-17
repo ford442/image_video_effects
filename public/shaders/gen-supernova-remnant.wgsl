@@ -23,7 +23,7 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>, // x=Explosion Energy, y=Shell Density, z=Chaos, w=Gas Opacity
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -111,17 +111,18 @@ fn rayleighTaylor(uv: vec2<f32>, t: f32) -> f32 {
     return n1 * n2;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let t = u.config.x;
     
     // Parameters - safe randomization
-    let explosionEnergy = mix(0.3, 1.5, u.zoom_params.x);
+    let bass = plasmaBuffer[0].x;
+    let explosionEnergy = mix(0.3, 1.5, u.zoom_params.x) * (1.0 + bass * 0.3);
     let shellDensityParam = mix(3.0, 12.0, u.zoom_params.y);
     let chaos = mix(0.1, 0.8, u.zoom_params.z);
-    let colorTempShift = mix(-0.2, 0.2, u.zoom_params.w);
+    let gasOpacity = u.zoom_params.w;
     
     // Aspect correction
     let aspect = resolution.x / resolution.y;
@@ -159,7 +160,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = shellDensity(r * fingerMod, shellRadius, thickness);
         
         // Temperature decreases with age
-        let temp = (1.0 - shellAge) * 0.9 + 0.1 + colorTempShift;
+        let temp = (1.0 - shellAge) * 0.9 + 0.1;
         
         // Add turbulence detail
         let detail = fbm(vec3<f32>(pTurb * 20.0, t * 0.5 + fi), 3);
@@ -198,6 +199,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Gamma correction
     col = pow(col, vec3<f32>(0.9));
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    // Density-based alpha so outer gas is wispy
+    let alpha = clamp(totalDensity * gasOpacity, 0.0, 1.0);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(1.0 - r * 0.5, 0.0, 0.0, 0.0));
 }

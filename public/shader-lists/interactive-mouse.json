@@ -1366,7 +1366,9 @@
     "category": "interactive-mouse",
     "url": "shaders/pixel-repel.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1400,7 +1402,10 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio",
+      "music",
+      "reactive"
     ],
     "name": "Pixel Repeller"
   },
@@ -1672,6 +1677,55 @@
     ]
   },
   {
+    "id": "sonar-reveal",
+    "name": "Sonar Reveal",
+    "category": "interactive-mouse",
+    "url": "shaders/sonar-reveal.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "description": "Reveals the original image in a radius around the mouse, with a scanning radar ring. Reactive to audio.",
+    "params": [
+      {
+        "name": "Reveal Size",
+        "id": "size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Ring Intensity",
+        "id": "intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Edge Softness",
+        "id": "softness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Color Mode",
+        "id": "color",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "stereoscopic-3d",
     "name": "Stereoscopic 3D",
     "url": "shaders/stereoscopic-3d.wgsl",
@@ -1721,7 +1775,9 @@
     "url": "shaders/velocity-field-paint.wgsl",
     "description": "Uses mouse movement to paint a velocity field that distorts the image like fluid.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -1747,7 +1803,7 @@
       },
       {
         "id": "param4",
-        "name": "Unused",
+        "name": "Audio Reactivity",
         "default": 0,
         "min": 0,
         "max": 1
@@ -1755,7 +1811,10 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio",
+      "music",
+      "reactive"
     ],
     "name": "Velocity Field Paint"
   },

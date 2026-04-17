@@ -741,40 +741,59 @@
     "url": "shaders/chromatic-manifold.wgsl",
     "category": "image",
     "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature.",
-    "params": [
-      {
-        "id": "warpStrength",
-        "name": "Warp Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "tearThreshold",
-        "name": "Tear Threshold",
-        "default": 0.8,
-        "min": 0,
-        "max": 3
-      },
-      {
-        "id": "curvature",
-        "name": "Curvature Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
       "reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "color_boost",
+        "name": "Color Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Saturation and color intensity boost"
+      },
+      {
+        "id": "warpStrength",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of spatial warp"
+      },
+      {
+        "id": "tearThreshold",
+        "name": "Tear Threshold",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Threshold for HDR tear artifacts"
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Depth-driven curvature amount"
+      }
     ]
   },
   {
@@ -850,14 +869,33 @@
         "default": 0.6,
         "min": 0,
         "max": 1
+      },
+      {
+        "id": "edgeFade",
+        "name": "Edge Fade",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "audioReact",
+        "name": "Audio Reactivity",
+        "default": 0,
+        "min": 0,
+        "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -1606,6 +1644,36 @@
     ],
     "params": [
       {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Fractal scale"
+      },
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Iteration depth"
+      },
+      {
+        "id": "entanglement",
+        "name": "Entanglement",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Quantum entanglement strength"
+      },
+      {
         "id": "edge_glow",
         "name": "Edge Glow",
         "default": 0.3,
@@ -2106,7 +2174,9 @@
     "category": "image",
     "description": "The screen is covered in static noise. Scratch with the mouse to reveal the video underneath.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -2131,16 +2201,19 @@
         "max": 1
       },
       {
-        "id": "unused",
-        "name": "Unused",
-        "default": 0,
+        "id": "noiseScale",
+        "name": "Noise Scale",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -3062,14 +3135,44 @@
     ],
     "params": [
       {
-        "id": "perspective_strength",
-        "name": "Perspective Strength",
+        "id": "zoom_speed",
+        "name": "Zoom Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Speed of infinite zoom"
+      },
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Hyperbolic distortion amount"
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Strength of perspective effect"
+        "description": "Rotation of the zoom tunnel"
+      },
+      {
+        "id": "max_iterations",
+        "name": "Max Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Maximum fractal iterations"
       }
     ]
   },
@@ -3175,19 +3278,40 @@
     ],
     "features": [
       "audio-reactive",
-      "audio-driven",
-      "mouse-driven"
+      "audio-driven"
     ],
     "params": [
       {
-        "id": "center_zoom",
-        "name": "Center Zoom",
+        "id": "segments",
+        "name": "Segments",
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Zoom at kaleidoscope center"
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "edge_softness",
+        "name": "Edge Softness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -3206,22 +3330,22 @@
         "max": 1
       },
       {
-        "id": "frequency",
-        "name": "Field Lines",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "rotation",
-        "name": "Rotation Speed",
+        "id": "density",
+        "name": "Field Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "turbulence",
-        "name": "Turbulence",
+        "id": "mode",
+        "name": "Mode",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -3230,11 +3354,16 @@
     "features": [
       "animated",
       "physics",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -3516,20 +3645,50 @@
       "filter",
       "image-processing"
     ],
+    "features": [
+      "mouse-driven"
+    ],
     "params": [
       {
-        "id": "color_dispersion",
-        "name": "Color Dispersion",
+        "id": "twist_scale",
+        "name": "Twist Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Amount of twist distortion"
+      },
+      {
+        "id": "distortion_step",
+        "name": "Distortion Step",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Step size of distortion"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Spectral color rotation"
+      },
+      {
+        "id": "curl_amp",
+        "name": "Curl Amplification",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Spectral color separation"
+        "description": "Amplification of curl velocity field"
       }
-    ],
-    "features": [
-      "mouse-driven"
     ]
   },
   {
@@ -4523,25 +4682,58 @@
   },
   {
     "id": "chroma-threads",
-    "category": "image",
+    "name": "Chroma Threads",
     "url": "shaders/chroma-threads.wgsl",
+    "category": "image",
     "features": [
       "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "zoom_params",
-        "name": "zoom_params",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
-    "name": "Chroma Threads"
+    "params": [
+      {
+        "id": "thread_density",
+        "name": "Thread Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of chromatic threads"
+      },
+      {
+        "id": "vibration_amp",
+        "name": "Vibration Amp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Amplitude of thread vibration"
+      },
+      {
+        "id": "rgb_split",
+        "name": "RGB Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Chromatic aberration strength"
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Trail decay factor"
+      }
+    ]
   },
   {
     "id": "chrono-slit-scan",
@@ -4685,9 +4877,11 @@
     "category": "image",
     "url": "shaders/concentric-spin.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
-    "description": "Concentric rings that rotate in alternating directions. Mouse controls the center.",
+    "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
     "params": [
       {
         "id": "param1",
@@ -4712,7 +4906,7 @@
       },
       {
         "id": "param4",
-        "name": "Unused",
+        "name": "Ring Gap Opacity",
         "default": 0,
         "min": 0,
         "max": 1
@@ -4720,7 +4914,10 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -6179,25 +6376,58 @@
   },
   {
     "id": "spectral-mesh",
-    "category": "image",
+    "name": "Spectral Mesh",
     "url": "shaders/spectral-mesh.wgsl",
+    "category": "image",
     "features": [
       "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "zoom_params",
-        "name": "zoom_params",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
-    "name": "Spectral Mesh"
+    "params": [
+      {
+        "id": "grid_density",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the spectral mesh"
+      },
+      {
+        "id": "displacement",
+        "name": "Displacement Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Height of mesh displacement"
+      },
+      {
+        "id": "mouse_radius",
+        "name": "Mouse Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Radius of mouse interaction"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Spectral color shift"
+      }
+    ]
   },
   {
     "id": "spectral-slit-scan",
@@ -8126,11 +8356,16 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -8190,21 +8425,40 @@
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Glitch strength"
       },
       {
         "id": "radius",
         "name": "Radius",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius of glitch effect"
       },
       {
         "id": "scatter",
         "name": "Scatter",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Scatter and noise amount"
+      },
+      {
+        "id": "angle_bias",
+        "name": "Angle Bias",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Directional rotation bias"
       }
     ],
     "features": [
@@ -8449,7 +8703,7 @@
     "name": "Entropy Grid",
     "url": "shaders/entropy-grid.wgsl",
     "category": "image",
-    "description": "Scrambles the image into a chaotic grid. Mouse restores order (or creates chaos).",
+    "description": "Scrambles the image into a chaotic grid. Mouse restores order (or creates chaos) with audio-reactive chaos.",
     "params": [
       {
         "id": "gridSize",
@@ -8481,11 +8735,16 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -8710,21 +8969,40 @@
         "name": "Bead Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Size of glass beads"
       },
       {
         "id": "refraction",
         "name": "Refraction",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Refraction strength"
       },
       {
         "id": "tension",
         "name": "Interact Tension",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Curtain tension on interaction"
+      },
+      {
+        "id": "glass_density",
+        "name": "Glass Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Beer-Lambert density factor"
       }
     ],
     "features": [
@@ -9527,7 +9805,7 @@
     "name": "Interactive Fisheye",
     "url": "shaders/interactive-fisheye.wgsl",
     "category": "image",
-    "description": "Barrel distortion lens that magnifies the area under the mouse.",
+    "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius.",
     "params": [
       {
         "id": "strength",
@@ -9542,15 +9820,34 @@
         "default": 0.4,
         "min": 0,
         "max": 1
+      },
+      {
+        "id": "curve",
+        "name": "Bulge Curve",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "vignette",
+        "name": "Edge Vignette",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
       }
     ],
     "features": [
       "mouse-driven",
-      "geometry"
+      "geometry",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -10182,7 +10479,9 @@
     "category": "image",
     "description": "A rotating beam of light that reveals the image, emanating from the mouse position.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -10216,7 +10515,10 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -12608,7 +12910,7 @@
     "name": "Radial Blur",
     "url": "shaders/radial-blur.wgsl",
     "category": "image",
-    "description": "Strong radial blur emanating from the mouse cursor.",
+    "description": "Strong radial blur emanating from the mouse cursor with non-linear sampling and audio reactivity.",
     "params": [
       {
         "id": "strength",
@@ -12616,14 +12918,40 @@
         "default": 0.5,
         "min": 0,
         "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Sample Decay",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Glow Boost",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "exponent",
+        "name": "Sample Exponent",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -13355,14 +13683,14 @@
         "max": 1
       },
       {
-        "id": "saturation_boost",
-        "name": "Saturation Boost",
+        "id": "mask_feather",
+        "name": "Mask Feather",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Color saturation enhancement"
+        "description": "Softness exponent for the mask edge"
       }
     ],
     "features": [
@@ -13676,50 +14004,6 @@
     ],
     "features": [
       "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "sonar-reveal",
-    "name": "Sonar Reveal",
-    "category": "image",
-    "url": "shaders/sonar-reveal.wgsl",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "Reveals the original image in a radius around the mouse, with a scanning radar ring.",
-    "params": [
-      {
-        "name": "Reveal Size",
-        "id": "size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Ring Intensity",
-        "id": "intensity",
-        "default": 0.8,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Edge Softness",
-        "id": "softness",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Color Mode",
-        "id": "color",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
     ],
     "tags": [
       "filter",
@@ -14173,7 +14457,7 @@
     "name": "Swirling Void",
     "url": "shaders/swirling-void.wgsl",
     "category": "image",
-    "description": "A powerful vortex that twists the image around the mouse cursor, simulating a black hole accretion disk.",
+    "description": "A powerful vortex that twists the image around the mouse cursor, simulating a black hole accretion disk with audio-reactive strength.",
     "params": [
       {
         "id": "strength",
@@ -14195,14 +14479,26 @@
         "default": 0.5,
         "min": 0,
         "max": 1
+      },
+      {
+        "id": "audioReact",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -14242,11 +14538,16 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {
@@ -16994,25 +17295,58 @@
   },
   {
     "id": "scan-distort",
-    "category": "image",
+    "name": "Scan Distort",
     "url": "shaders/scan-distort.wgsl",
+    "category": "image",
     "features": [
       "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "zoom_params",
-        "name": "zoom_params",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
-    "name": "Scan Distort"
+    "params": [
+      {
+        "id": "block_size",
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Size of distortion blocks"
+      },
+      {
+        "id": "quant_level",
+        "name": "Quantization Levels",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Color quantization levels"
+      },
+      {
+        "id": "mv_visibility",
+        "name": "MV Visibility",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Motion vector visibility"
+      },
+      {
+        "id": "glitch_freq",
+        "name": "Glitch Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Frequency of glitch pulses"
+      }
+    ]
   },
   {
     "id": "signal-noise",
@@ -17417,8 +17751,8 @@
         "max": 1
       },
       {
-        "id": "color_variance",
-        "name": "Color Spread",
+        "id": "pattern_opacity",
+        "name": "Pattern Opacity",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -17967,50 +18301,6 @@
     ]
   },
   {
-    "id": "interactive-fresnel",
-    "name": "Interactive Fresnel",
-    "url": "shaders/interactive-fresnel.wgsl",
-    "category": "image",
-    "description": "Simulates a Fresnel lens with stepped concentric rings.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "ringDensity",
-        "name": "Ring Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "magnification",
-        "name": "Magnification",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "unused",
-        "name": "Unused",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "interactive-pcb-traces",
     "name": "Interactive PCB Traces",
     "url": "shaders/interactive-pcb-traces.wgsl",
@@ -18205,29 +18495,29 @@
     "description": "Glitch art pixel sorting effect.",
     "params": [
       {
-        "id": "threshold",
-        "name": "Sort Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "angle",
+        "id": "direction",
         "name": "Sort Direction",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "length",
-        "name": "Sort Length",
-        "default": 0.5,
+        "id": "reverse",
+        "name": "Reverse Sort",
+        "default": 0,
         "min": 0,
         "max": 1
       },
       {
-        "id": "chaos",
-        "name": "Randomness",
+        "id": "intensityScale",
+        "name": "Intensity Scale",
+        "default": 1,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": "threshold",
+        "name": "Sort Threshold Luma",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -18235,11 +18525,16 @@
     ],
     "features": [
       "mouse-driven",
-      "glitch"
+      "glitch",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {

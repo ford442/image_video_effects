@@ -32,9 +32,7 @@ export interface FullState {
     activeSlot: number;
     slotParams: SlotParams[];
     shaderCategory: ShaderCategory;
-    zoom: number;
-    panX: number;
-    panY: number;
+
     inputSource: InputSource;
     autoChangeEnabled: boolean;
     autoChangeDelay: number;

@@ -6,29 +6,29 @@
   "description": "Glitch art pixel sorting effect.",
   "params": [
     {
-      "id": "threshold",
-      "name": "Sort Threshold",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "angle",
+      "id": "direction",
       "name": "Sort Direction",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "length",
-      "name": "Sort Length",
-      "default": 0.5,
+      "id": "reverse",
+      "name": "Reverse Sort",
+      "default": 0.0,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "chaos",
-      "name": "Randomness",
+      "id": "intensityScale",
+      "name": "Intensity Scale",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0
+    },
+    {
+      "id": "threshold",
+      "name": "Sort Threshold Luma",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
@@ -36,10 +36,15 @@
   ],
   "features": [
     "mouse-driven",
-    "glitch"
+    "glitch",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

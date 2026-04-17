@@ -11,7 +11,8 @@
     "quantum",
     "orrery",
     "audio",
-    "music"
+    "music",
+    "reactive"
   ],
   "features": [
     "mouse-driven",

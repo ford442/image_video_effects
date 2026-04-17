@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -32,12 +32,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glowAmt = u.zoom_params.z;
     let timeSpeed = u.zoom_params.w;
 
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+
     let time = u.config.x * timeSpeed;
     var mouse = u.zoom_config.yz;
 
     // Warp UVs for Grid
     let dist = distance(uv * vec2(aspect, 1.0), mouse * vec2(aspect, 1.0));
-    let warp = (1.0 - smoothstep(0.0, 0.5, dist)) * warpAmt;
+    let warp = (1.0 - smoothstep(0.0, 0.5, dist)) * warpAmt * (1.0 + bass * 0.3);
 
     // Displace UVs away from mouse
     var dir = normalize(uv - mouse);
@@ -48,26 +51,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Draw Lines
     let lines = abs(fract(gridUV) - 0.5);
-    let gridLine = smoothstep(0.45, 0.48, max(lines.x, lines.y)); // Thick lines? No, 0.5 is center.
-    // Logic: fract goes 0->1. Center 0.5. abs(val-0.5) goes 0.5->0->0.5.
-    // We want lines at edges (near 0.5).
-    // So if value is > 0.45, it's a line.
+    let gridLine = smoothstep(0.45, 0.48, max(lines.x, lines.y));
 
     // Neon Color
     let lineColor = vec3<f32>(1.0, 0.0, 1.0); // Magenta
     let gridColor = lineColor * gridLine * (1.0 + glowAmt * 2.0);
 
     // Sample Video on Floor (warped)
-    let videoColor = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).rgb;
+    let videoColor = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
 
     // Reflection effect: Mirror video on grid
     // Or just mix.
-    var finalColor = mix(videoColor * 0.5, gridColor, gridLine);
+    var finalRGB = mix(videoColor.rgb * 0.5, gridColor, gridLine);
 
     // Add glow around mouse
-    finalColor += vec3(0.0, 1.0, 1.0) * warp * 2.0;
+    finalRGB += vec3(0.0, 1.0, 1.0) * warp * 2.0;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalColor, 1.0));
+    // Derive alpha from grid line intensity so lines are translucent
+    let alpha = clamp(gridLine + warp * 2.0, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalRGB, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));

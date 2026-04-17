@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // Chronos Labyrinth - Escher-esque Shifting Maze
 // Category: generative
-// Features: raymarching, impossible geometry, temporal rifts, mouse-driven
+// Features: raymarching, impossible geometry, temporal rifts, mouse-driven, audio-reactive
 // ═══════════════════════════════════════════════════════════════
 
 // --- STANDARD HEADER ---
@@ -23,7 +23,7 @@
 struct Uniforms {
     config: vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>, // x=Complexity, y=ShiftSpeed, z=TemporalRifts, w=Material
+    zoom_params: vec4<f32>, // x=Complexity, y=ShiftSpeed, z=TemporalRifts, w=AtmosphericPerspective
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -120,6 +120,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 // The Map function - defines the labyrinth geometry
 fn map(p: vec3<f32>) -> vec2<f32> {
     var time = u.config.x;
+    let bass = plasmaBuffer[0].x;
     
     // Base repetition size based on complexity
     let cell_size = mix(4.0, 1.5, u.zoom_params.x);
@@ -187,13 +188,14 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     }
     
     // Temporal Rifts - glowing anomalies
-    if (u.zoom_params.z > 0.01) {
+    let rift_intensity = u.zoom_params.z * (1.0 + bass * 0.3);
+    if (rift_intensity > 0.01) {
         let rift_hash = hash1(cell_id * 3.14159);
         let rift_time = time * (0.3 + rift_hash * 0.5);
         let rift_pulse = sin(rift_time) * 0.5 + 0.5;
         
         // Only show rift based on intensity and timing
-        if (rift_pulse < u.zoom_params.z * 0.5) {
+        if (rift_pulse < rift_intensity * 0.5) {
             let rift_pos = vec3<f32>(
                 sin(rift_hash * 6.28) * 0.8,
                 cos(rift_hash * 4.13) * 0.5,
@@ -274,7 +276,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
     return vec3<f32>(t, mat, 0.0);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -310,6 +312,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     var color = vec3<f32>(0.0);
     var depth = MAX_DIST;
+    var alpha = 1.0;
     
     if (mat > 0.0 && t < MAX_DIST) {
         var p = ro + rd * t;
@@ -319,18 +322,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Materials
         var base_color: vec3<f32>;
         var roughness: f32;
+        let material_blend = 0.5;
         
         if (mat < 1.5) {
             // Wall material - blend between stone and obsidian
             let stone_col = vec3<f32>(0.45, 0.42, 0.38); // Ancient stone
             let obsidian_col = vec3<f32>(0.08, 0.08, 0.12); // Polished obsidian
-            base_color = mix(stone_col, obsidian_col, u.zoom_params.w);
+            base_color = mix(stone_col, obsidian_col, material_blend);
             
             // Add procedural texture variation
             let tex_noise = fract(sin(dot(p.xz, vec2<f32>(12.9898, 78.233))) * 43758.5453);
             base_color *= 0.9 + tex_noise * 0.2;
             
-            roughness = mix(0.9, 0.1, u.zoom_params.w); // Stone rough, obsidian smooth
+            roughness = mix(0.9, 0.1, material_blend); // Stone rough, obsidian smooth
         } else {
             // Temporal Rift - glowing energy
             base_color = vec3<f32>(0.0);
@@ -349,14 +353,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Specular for obsidian mode
         var spec = 0.0;
-        if (u.zoom_params.w > 0.1 && mat < 1.5) {
+        if (mat < 1.5) {
             let refl = reflect(-light_dir, n);
-            spec = pow(max(dot(refl, -rd), 0.0), 32.0) * u.zoom_params.w;
+            spec = pow(max(dot(refl, -rd), 0.0), 32.0) * material_blend;
         }
         
         // Fresnel rim lighting for neon effect
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-        let rim_col = mix(vec3<f32>(0.3, 0.25, 0.2), vec3<f32>(0.0, 0.8, 1.0), u.zoom_params.w);
+        let rim_col = mix(vec3<f32>(0.3, 0.25, 0.2), vec3<f32>(0.0, 0.8, 1.0), material_blend);
         
         if (mat > 1.5) {
             // Temporal Rift glow
@@ -366,14 +370,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         } else {
             // Standard material
             let amb = 0.15 * ao;
-            color = base_color * (amb + diff * shadow * 0.7) + rim_col * fresnel * (0.3 + u.zoom_params.w);
+            color = base_color * (amb + diff * shadow * 0.7) + rim_col * fresnel * (0.3 + material_blend);
             color += vec3<f32>(spec);
         }
         
         // Fog
         let fog_amount = 1.0 - exp(-t * 0.04);
-        let fog_color = mix(vec3<f32>(0.02, 0.02, 0.04), vec3<f32>(0.0, 0.0, 0.08), u.zoom_params.w);
+        let fog_color = mix(vec3<f32>(0.02, 0.02, 0.04), vec3<f32>(0.0, 0.0, 0.08), material_blend);
         color = mix(color, fog_color, fog_amount);
+        
+        // Distance-field alpha fade (atmospheric perspective)
+        let atm_perspective = u.zoom_params.w * 0.08 + 0.005;
+        alpha = exp(-t * atm_perspective);
         
     } else {
         // Void background with subtle stars
@@ -381,8 +389,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (star_hash > 0.997) {
             color = vec3<f32>(0.6, 0.7, 1.0) * (0.5 + 0.5 * sin(time + star_hash * 10.0));
         } else {
-            color = mix(vec3<f32>(0.01, 0.01, 0.02), vec3<f32>(0.0, 0.0, 0.05), u.zoom_params.w);
+            color = mix(vec3<f32>(0.01, 0.01, 0.02), vec3<f32>(0.0, 0.0, 0.05), 0.5);
         }
+        alpha = 0.0;
     }
     
     // Vignette
@@ -392,6 +401,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tone mapping
     color = color / (1.0 + color);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth / MAX_DIST, 0.0, 0.0, 0.0));
 }

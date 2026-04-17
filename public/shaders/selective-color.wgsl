@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -47,19 +47,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // We want 1 when d < radius.
   // So we use smoothstep(radius, radius - softness, d)
   // If d = radius, val is 0. If d = radius - softness, val is 1.
-  let mask = smoothstep(radius, radius - softness, d);
+  let feather_exp = mix(0.5, 3.0, u.zoom_params.w);
+  let raw_mask = smoothstep(radius, radius - softness, d);
+  let mask = pow(raw_mask, feather_exp);
 
   let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let gray = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let gray_vec = vec3<f32>(gray);
 
   // Background is desaturated by 'desat_strength'
-  let background = mix(color.rgb, gray_vec, desat_strength);
+  let background_rgb = mix(color.rgb, gray_vec, desat_strength);
 
-  // Final composite: if mask is 1, show original color. if 0, show background.
-  let final_color = mix(background, color.rgb, mask);
+  // Final composite: preserve alpha, mask affects both color and alpha
+  let final_rgb = mix(background_rgb, color.rgb, mask);
+  let final_alpha = mix(color.a * (1.0 - desat_strength * 0.3), color.a, mask);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_rgb, final_alpha));
 
   // Pass through depth texture
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

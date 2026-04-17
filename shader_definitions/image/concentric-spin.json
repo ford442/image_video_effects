@@ -4,9 +4,11 @@
   "category": "image",
   "url": "shaders/concentric-spin.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
-  "description": "Concentric rings that rotate in alternating directions. Mouse controls the center.",
+  "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
   "params": [
     {
       "id": "param1",
@@ -31,7 +33,7 @@
     },
     {
       "id": "param4",
-      "name": "Unused",
+      "name": "Ring Gap Opacity",
       "default": 0.0,
       "min": 0.0,
       "max": 1.0
@@ -39,6 +41,9 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

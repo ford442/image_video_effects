@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
 
@@ -48,16 +48,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Create a simple animated color pattern
     let color1 = vec3<f32>(sin(fragUV.x * 20.0 + time), cos(fragUV.y * 20.0 + time), 0.5);
     let color2 = vec3<f32>(0.1, 0.2, 0.4);
-    let pattern = mix(color1, color2, smoothstep(0.4, 0.6, sin(length(fragUV - 0.5) * 15.0 + time)));
+    let pattern_mask = smoothstep(0.4, 0.6, sin(length(fragUV - 0.5) * 15.0 + time));
+    let pattern = mix(color1, color2, pattern_mask);
+    let pattern_alpha = 0.4 + pattern_mask * 0.6;
 
     // Sample the input texture (image or video)
     let textureColor = textureSampleLevel(readTexture, u_sampler, fragUV, 0.0);
 
-    // Mix the generated pattern with the input texture
-    let finalColor = mix(pattern, textureColor.rgb, 0.6);
+    // Mix the generated pattern with the input texture using pattern alpha
+    let pattern_opacity = 0.3 + u.zoom_params.w * 0.7;
+    let blend = mix(textureColor.rgb, pattern, pattern_alpha * pattern_opacity);
+    let final_alpha = mix(textureColor.a, 1.0, pattern_alpha * pattern_opacity);
 
     // Write output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(blend, final_alpha));
 
     // Update depth for next frame (Pass-through)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

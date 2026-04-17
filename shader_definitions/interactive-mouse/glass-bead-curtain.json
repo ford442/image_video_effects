@@ -10,21 +10,40 @@
       "name": "Bead Size",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Size of glass beads"
     },
     {
       "id": "refraction",
       "name": "Refraction",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Refraction strength"
     },
     {
       "id": "tension",
       "name": "Interact Tension",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Curtain tension on interaction"
+    },
+    {
+      "id": "glass_density",
+      "name": "Glass Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Beer-Lambert density factor"
     }
   ],
   "features": [

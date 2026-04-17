@@ -21,7 +21,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Thread Density, y=Weave Speed, z=Plasma Glow, w=Singularity Pull
+    zoom_params: vec4<f32>,  // x=Thread Density, y=Weave Speed, z=Plasma Glow, w=Thread Opacity Exp
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -82,7 +82,7 @@ var<private> g_audio: f32;
 fn map(pos: vec3<f32>) -> vec2<f32> {
     let density = max(0.1, u.zoom_params.x);
     let weaveSpeed = u.zoom_params.y;
-    let singularityPull = u.zoom_params.w;
+    let singularityPull = 1.5;
 
     var p = pos;
 
@@ -131,7 +131,7 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(d * 0.6, mat_id);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(id.xy);
@@ -171,6 +171,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var glow = 0.0;
     var colorAccum = vec3<f32>(0.0);
     let plasmaGlow = u.zoom_params.z;
+    let bass = plasmaBuffer[0].x;
 
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * t;
@@ -182,9 +183,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let mat_id = res.y;
         if (mat_id == 0.0) {
-            colorAccum += vec3<f32>(0.1, 0.3, 0.8) * curGlow * plasmaGlow * 0.02;
+            colorAccum += vec3<f32>(0.1, 0.3, 0.8) * curGlow * plasmaGlow * 0.02 * (1.0 + bass);
         } else {
-            colorAccum += vec3<f32>(0.5, 0.2, 0.9) * curGlow * plasmaGlow * 0.015;
+            colorAccum += vec3<f32>(0.5, 0.2, 0.9) * curGlow * plasmaGlow * 0.015 * (1.0 + bass * 1.5);
         }
 
         if (d < 0.001 || t > maxT) { break; }
@@ -198,5 +199,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = col / (col + vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    let intensity = length(col);
+    let threadOpacityExp = u.zoom_params.w;
+    let alpha = pow(clamp(intensity * 2.0, 0.0, 1.0), threadOpacityExp);
+
+    let screenUV = fragCoord / dims;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screenUV, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
 }

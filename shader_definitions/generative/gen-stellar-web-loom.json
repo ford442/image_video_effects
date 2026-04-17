@@ -11,7 +11,8 @@
     "volumetric",
     "audio-reactive",
     "audio",
-    "music"
+    "music",
+    "reactive"
   ],
   "features": [
     "mouse-driven",
@@ -44,12 +45,12 @@
       "step": 0.1
     },
     {
-      "id": "singularityPull",
-      "name": "Singularity Pull",
-      "default": 1.5,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
+      "id": "threadOpacityExp",
+      "name": "Thread Opacity Exponent",
+      "default": 1.0,
+      "min": 0.25,
+      "max": 3.0,
+      "step": 0.05
     }
   ]
 }

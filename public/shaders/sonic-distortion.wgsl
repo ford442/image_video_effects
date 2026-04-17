@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -59,10 +59,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         offset = dir * (wave + jitter) * amp * mask;
     }
 
-    // Chromatic Aberration based on offset
-    let r = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv + offset * 1.05, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + offset * 1.1, 0.0).b;
+    // Chromatic Aberration based on offset (full vec4 blending)
+    let c0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let c1 = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0);
+    let c2 = textureSampleLevel(readTexture, u_sampler, uv + offset * 1.05, 0.0);
+    let c3 = textureSampleLevel(readTexture, u_sampler, uv + offset * 1.1, 0.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
+    let aberration_weight = mask * c0.a;
+    var color = c0;
+    color.r = mix(c0.r, c1.r, aberration_weight);
+    color.g = mix(c0.g, c2.g, aberration_weight);
+    color.b = mix(c0.b, c3.b, aberration_weight);
+    color.a = mix(c0.a, c1.a, mask * 0.5);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

@@ -1,22 +1,55 @@
 {
   "id": "spectral-mesh",
-  "category": "image",
+  "name": "Spectral Mesh",
   "url": "shaders/spectral-mesh.wgsl",
+  "category": "image",
   "features": [
     "mouse-driven"
-  ],
-  "params": [
-    {
-      "id": "zoom_params",
-      "name": "zoom_params",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    }
   ],
   "tags": [
     "filter",
     "image-processing"
   ],
-  "name": "Spectral Mesh"
+  "params": [
+    {
+      "id": "grid_density",
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of the spectral mesh"
+    },
+    {
+      "id": "displacement",
+      "name": "Displacement Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Height of mesh displacement"
+    },
+    {
+      "id": "mouse_radius",
+      "name": "Mouse Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Radius of mouse interaction"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Spectral color shift"
+    }
+  ]
 }

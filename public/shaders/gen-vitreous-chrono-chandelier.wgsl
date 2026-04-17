@@ -21,7 +21,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Shatter Threshold, y=Chime Density, z=Refraction Index, w=Glow Intensity
+    zoom_params: vec4<f32>,  // x=Shatter Threshold, y=Chime Density, z=Refraction Index, w=Transmission
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -43,7 +43,7 @@ fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
     return (p_abs.x + p_abs.y + p_abs.z - s) * 0.57735027;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
@@ -55,11 +55,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let shatterThreshold = u.zoom_params.x;
     let chimeDensity = u.zoom_params.y;
     let refractionIndex = u.zoom_params.z;
-    let glowIntensity = u.zoom_params.w;
+    let transmission = u.zoom_params.w;
 
     // Audio Reactivity
-    let audioBass = u.config.y;
+    let audioBass = plasmaBuffer[0].x;
     let time = u.config.x * 0.5;
+    let glowIntensity = 1.2;
 
     // Camera setup
     var ro = vec3<f32>(0.0, 5.0, -10.0);
@@ -105,5 +106,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += glow;
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    var alpha = 0.0;
+    if (t < 50.0) {
+        alpha = clamp(1.0 - t * 0.04 * (1.0 - transmission * 0.5), 0.2, 0.95);
+    } else {
+        alpha = clamp(length(glow) * 2.0, 0.0, 0.5);
+    }
+
+    let uv01 = fragCoord / res;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
 }

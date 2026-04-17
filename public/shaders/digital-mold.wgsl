@@ -33,7 +33,7 @@ fn noise(p: vec2<f32>) -> f32 {
                mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
@@ -49,9 +49,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+
     // Mold grows where mouse is
     // Use noise to make edges irregular
-    let n = noise(uv * noiseScale + time * 0.1);
+    let n = noise(uv * noiseScale + time * (0.1 + bass * 0.2));
     // Mask is 1.0 near mouse, fades out. Noise adds jagged edges.
     let mask = smoothstep(spread, max(0.0, spread - 0.2), dist + (n * 0.1 - 0.05));
 
@@ -60,7 +63,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (mask > 0.0) {
         // Apply mold effect
         // Greenish tint
-        let moldColor = vec4<f32>(0.2, 0.8, 0.3, 1.0);
+        let moldTint = vec3<f32>(0.2, 0.8, 0.3);
 
         // Decay/Pixelate
         let pixelSize = 10.0 / noiseScale; // Inverse scale for pixel size
@@ -68,11 +71,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let pixelColor = textureSampleLevel(readTexture, u_sampler, pixelUV, 0.0);
 
         // Darken and shift
-        let decayed = mix(pixelColor, moldColor, colorShift);
+        let decayed = vec4<f32>(mix(pixelColor.rgb, moldTint, colorShift), pixelColor.a);
 
-        // Apply based on mask intensity and decay rate
-        color = mix(color, decayed, mask * decayRate);
+        // Apply based on mask intensity, decay rate, and input alpha
+        let blendFactor = mask * decayRate * color.a;
+        color = mix(color, decayed, blendFactor);
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

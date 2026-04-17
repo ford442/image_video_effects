@@ -61,6 +61,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let belowRight = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0).r;
     let left = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 0u), 0).r;
     let right = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 0u), 0).r;
+    let above = textureLoad(dataTextureC, gid.xy + vec2<u32>(0u, 1u), 0).r;
     
     var newState = this_val;
     var newType = selfType;
@@ -92,7 +93,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     } else {
         // Empty - check if sand falls into here
-        let above = textureLoad(dataTextureC, gid.xy + vec2<u32>(0u, 1u), 0).r;
         let aboveLeft = textureLoad(dataTextureC, gid.xy + vec2<u32>(1u, 1u), 0).r;
         let aboveRight = textureLoad(dataTextureC, gid.xy - vec2<u32>(1u, 1u), 0).r;
         let aboveType = textureLoad(dataTextureC, gid.xy + vec2<u32>(0u, 1u), 0).g;

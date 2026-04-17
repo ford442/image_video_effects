@@ -3,7 +3,7 @@
   "name": "Entropy Grid",
   "url": "shaders/entropy-grid.wgsl",
   "category": "image",
-  "description": "Scrambles the image into a chaotic grid. Mouse restores order (or creates chaos).",
+  "description": "Scrambles the image into a chaotic grid. Mouse restores order (or creates chaos) with audio-reactive chaos.",
   "params": [
     {
       "id": "gridSize",
@@ -35,10 +35,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

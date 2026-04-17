@@ -26,7 +26,7 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -51,7 +51,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Repel force: stronger when closer
         let t = smoothstep(radius, radius * (1.0 - smoothing * 0.5), dist);
         var dir = normalize(dVec);
-        displacement = dir * t * strength * 0.3;
+        let bass = plasmaBuffer[0].x;
+        displacement = dir * t * strength * 0.3 * (1.0 + bass * 0.5);
     }
 
     // Chromatic aberration based on displacement
@@ -59,11 +60,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gUV = clamp(uv - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
     let bUV = clamp(uv - displacement * (1.0 - aberration), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+    let c0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let cR = textureSampleLevel(readTexture, u_sampler, rUV, 0.0);
+    let cG = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
+    let cB = textureSampleLevel(readTexture, u_sampler, bUV, 0.0);
 
-    let color = vec4<f32>(r, g, b, 1.0);
+    let w = aberration * c0.a;
+    let color = vec4<f32>(
+      mix(c0.r, cR.r, w),
+      mix(c0.g, cG.g, w),
+      mix(c0.b, cB.b, w),
+      c0.a
+    );
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 

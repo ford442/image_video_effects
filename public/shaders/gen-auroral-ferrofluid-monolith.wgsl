@@ -126,7 +126,9 @@ fn mapAurora(p_in: vec3<f32>) -> f32 {
     let dBox = sdBox(p, vec3<f32>(1.5, 4.5, 1.5));
     if (dBox > 2.0) { return 0.0; } // Optimization
 
-    p.xz = rot(p.y * 0.5 - u.config.x * 0.5) * p.xz;
+    let p_xz = rot(p.y * 0.5 - u.config.x * 0.5) * p.xz;
+    p.x = p_xz.x;
+    p.z = p_xz.y;
 
     let f1 = fbm(p * 1.5 + vec3<f32>(0.0, u.config.x, 0.0));
     let f2 = fbm(p * 3.0 - vec3<f32>(u.config.x, 0.0, u.config.x));

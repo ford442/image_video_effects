@@ -17,11 +17,11 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime
-  zoom_params: vec4<f32>,  // x=Segments, y=Speed, z=Zoom, w=Unused
+  zoom_params: vec4<f32>,  // x=Segments, y=Speed, z=Zoom, w=EdgeSoftness
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
@@ -36,6 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let segments = max(u.zoom_params.x * 20.0, 6.0); 
     let speed = u.zoom_params.y * 0.5;
     let zoom_input = max(u.zoom_params.z, 0.5);
+    let edgeSoftness = max(u.zoom_params.w * 0.05, 0.0001);
 
     // Center UVs to -1.0 to 1.0
     var centered = uv - 0.5;
@@ -59,11 +60,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let new_pos = vec2<f32>(cos(angle), sin(angle)) * radius / zoom_input;
     let final_uv = new_pos + 0.5;
 
-    // Bounds check to avoid streaking edges
-    var color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-    if (final_uv.x >= 0.0 && final_uv.x <= 1.0 && final_uv.y >= 0.0 && final_uv.y <= 1.0) {
-        color = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
-    }
+    // Sample with edge softness for transparent edges
+    let sampled = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
+    let fadeX = smoothstep(0.0, edgeSoftness, final_uv.x) * smoothstep(1.0, 1.0 - edgeSoftness, final_uv.x);
+    let fadeY = smoothstep(0.0, edgeSoftness, final_uv.y) * smoothstep(1.0, 1.0 - edgeSoftness, final_uv.y);
+    let edgeFade = fadeX * fadeY;
+    let color = vec4<f32>(sampled.rgb * edgeFade, sampled.a * edgeFade);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 

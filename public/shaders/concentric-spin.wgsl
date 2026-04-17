@@ -20,7 +20,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -33,6 +33,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringDensity = mix(5.0, 50.0, u.zoom_params.x);
     let speedMult = mix(0.0, 5.0, u.zoom_params.y);
     let smoothness = u.zoom_params.z * 0.1; // Smooth transition between rings
+    let gapOpacity = u.zoom_params.w;
+
+    // Audio reactivity
+    let audioPulse = 1.0 + plasmaBuffer[0].x * 0.3;
 
     // Mouse is the center of rotation
     var center = u.zoom_config.yz;
@@ -48,17 +52,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringIdx = floor(ringVal);
 
     // Determine rotation for this ring
-    // Alternating direction: (ringIdx % 2) -> -1 or 1
-    // WGSL mod is f32 based usually.
-    let direction = (ringIdx % 2.0) * 2.0 - 1.0; // 0->-1, 1->1 ? No.
-    // ringIdx % 2.0 is 0 or 1.
-    // if 0: 0*2-1 = -1. if 1: 1*2-1 = 1. Correct.
+    let direction = (ringIdx % 2.0) * 2.0 - 1.0;
 
-    let rotation = u.config.x * speedMult * direction; // Time based
-
-    // Smooth transition?
-    // If we want the boundary to not shear, we can't easily.
-    // The rings must shear.
+    let rotation = u.config.x * speedMult * direction * audioPulse;
 
     // Apply rotation
     a += rotation;
@@ -70,10 +66,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalUV = (newP + centerVec) / vec2<f32>(aspect, 1.0);
 
     // Sample
-    // Handle wrapping? Sampler does it.
     let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Ring gap opacity: fade alpha near ring boundaries
+    let ringPhase = fract(ringVal);
+    let edgeDist = min(ringPhase, 1.0 - ringPhase);
+    let gapMask = smoothstep(0.0, smoothness + 0.001, edgeDist);
+    let finalAlpha = color.a * mix(1.0, gapMask, gapOpacity);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, finalAlpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

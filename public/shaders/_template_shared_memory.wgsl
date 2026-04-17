@@ -51,6 +51,14 @@ var<workgroup> tileData: array<array<f32, 18>, 18>;
 // Uses textureLoad for integer pixel coordinates (faster than textureSampleLevel)
 // textureLoad bypasses the sampler and is ~10-20% faster for exact pixel reads
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Helper to load with bounds clamping using textureLoad (faster!)
+fn loadPixel(coord: vec2<i32>) -> f32 {
+  let resI = vec2<i32>(textureDimensions(dataTextureC, 0));
+  let clamped = clamp(coord, vec2<i32>(0), resI - vec2<i32>(1));
+  return textureLoad(dataTextureC, clamped, 0).r;  // 0 = mip level
+}
+
 fn loadTileToSharedMemory(
   gid: vec3<u32>,
   lid: vec3<u32>,
@@ -58,12 +66,6 @@ fn loadTileToSharedMemory(
 ) {
   let resI = vec2<i32>(resolution);
   let baseCoord = vec2<i32>(gid.xy) - vec2<i32>(i32(HALO));
-  
-  // Helper to load with bounds clamping using textureLoad (faster!)
-  fn loadPixel(coord: vec2<i32>) -> f32 {
-    let clamped = clamp(coord, vec2<i32>(0), resI - vec2<i32>(1));
-    return textureLoad(dataTextureC, clamped, 0).r;  // 0 = mip level
-  }
   
   // Center load (integer coords = use textureLoad)
   let primaryCoord = baseCoord + vec2<i32>(lid.xy);

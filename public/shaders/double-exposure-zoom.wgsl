@@ -22,8 +22,10 @@ struct Uniforms {
 // Double Exposure Zoom
 // Param 1: Rotation (Input 0..1 maps to -PI..PI)
 // Param 2: Zoom Level (Input 0..1 maps to 0.25x .. 4.0x)
+// Param 3: Edge Fade (0..1)
+// Param 4: Audio Reactivity (0..1)
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -33,25 +35,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
-    // Mouse handling
     var mouse = u.zoom_config.yz;
-    // If mouse is inactive (often -1 or similar check, but config.yz is usually valid 0-1 if inside canvas)
-    // We can just assume it's valid or default to center if needed.
-    // Usually Renderer sets it to last known position.
 
-    // Parameters
-    let rot = (u.zoom_params.x - 0.5) * 6.28318; // -PI to PI
-    // Logarithmic zoom scale feels more natural
-    let zoom = pow(2.0, (u.zoom_params.y - 0.5) * 4.0); // 2^-2 (0.25) to 2^2 (4.0)
+    let rot = (u.zoom_params.x - 0.5) * 6.28318;
+    let zoomRaw = u.zoom_params.y;
+    let edgeFade = u.zoom_params.z;
+    let audioReact = u.zoom_params.w;
+    let bass = plasmaBuffer[0].x;
 
-    // Sample Base Layer
+    let zoom = pow(2.0, (zoomRaw - 0.5) * 4.0 + bass * audioReact);
+
     let col1 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // Calculate UV for Second Layer (Transformed)
-    // Pivot is Mouse
     var uv2 = uv - mouse;
-
-    // Aspect Correct Rotation
     uv2.x *= aspect;
     let c = cos(rot);
     let s = sin(rot);
@@ -59,22 +55,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ry = uv2.x * s + uv2.y * c;
     uv2 = vec2<f32>(rx, ry);
     uv2.x /= aspect;
-
-    // Apply Zoom
     uv2 /= zoom;
-
-    // Translate back
     uv2 += mouse;
 
-    // Sample Second Layer
-    // We sample with clamp-to-edge usually, which might look like streaks at the border.
-    // Let's fade it out if it goes too far to look cleaner.
-    var col2 = textureSampleLevel(readTexture, u_sampler, uv2, 0.0);
+    let col2 = textureSampleLevel(readTexture, u_sampler, uv2, 0.0);
 
-    // Blend: Screen Mode
-    // result = 1 - (1 - a) * (1 - b)
-    let blended = 1.0 - (1.0 - col1.rgb) * (1.0 - col2.rgb);
+    // Edge fade for transformed layer
+    let edgeDist = min(min(uv2.x, 1.0 - uv2.x), min(uv2.y, 1.0 - uv2.y));
+    let edgeMask = smoothstep(0.0, 0.05 + edgeFade * 0.45, edgeDist);
+    let col2Faded = vec4<f32>(col2.rgb, col2.a * edgeMask);
 
-    // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(blended, 1.0));
+    // RGBA-aware screen blend
+    let blendedRGB = 1.0 - (1.0 - col1.rgb) * (1.0 - col2Faded.rgb);
+    let alpha = 1.0 - (1.0 - col1.a) * (1.0 - col2Faded.a);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(blendedRGB, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

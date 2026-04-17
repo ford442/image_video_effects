@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
@@ -50,13 +50,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Shift vector
     let shiftVec = vec2<f32>(cos(angleParam), sin(angleParam)) * shiftAmt * strength;
 
-    // Chromatic aberration
-    let r = textureSampleLevel(readTexture, u_sampler, uv - shiftVec, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + shiftVec, 0.0).b;
-    let a = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    // Chromatic aberration (full vec4 blending)
+    let c0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let c_left = textureSampleLevel(readTexture, u_sampler, uv - shiftVec, 0.0);
+    let c_right = textureSampleLevel(readTexture, u_sampler, uv + shiftVec, 0.0);
 
-    var color = vec4<f32>(r, g, b, a);
+    let blend = strength * c0.a;
+    var color = c0;
+    color.r = mix(c0.r, c_left.r, blend);
+    color.g = c0.g;
+    color.b = mix(c0.b, c_right.b, blend);
+    color.a = mix(c0.a, max(c_left.a, c_right.a), blend * 0.5);
 
     // Optional: Grid overlay for style, fades out with strength too?
     // Or just subtle everywhere

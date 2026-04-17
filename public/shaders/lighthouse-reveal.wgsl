@@ -31,7 +31,7 @@ fn get_mouse() -> vec2<f32> {
     return mouse;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -47,16 +47,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
 
     let radius = u.zoom_params.x;
-    let beam_width = u.zoom_params.y; // 0.05 to 1.0 (roughly radians / PI)
+    let beam_width = u.zoom_params.y;
     let softness = u.zoom_params.z;
     let ambient = u.zoom_params.w;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
 
     let dist = distance(uv_aspect, mouse_aspect);
     let angle = atan2(uv_aspect.y - mouse_aspect.y, uv_aspect.x - mouse_aspect.x);
 
-    // Rotation speed
-    let rotation = time * 2.0;
+    // Rotation speed with audio reactivity
+    let rotation = time * 2.0 * (1.0 + bass * 0.5);
 
     // Normalize angle difference to -PI to PI
     var angle_diff = angle - rotation;
@@ -64,7 +65,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     angle_diff = (fract((angle_diff / (2.0 * pi)) + 0.5) - 0.5) * 2.0 * pi;
 
     // Calculate Beam Mask
-    // Angular falloff
     let angle_dist = abs(angle_diff);
     let angle_mask = 1.0 - smoothstep(beam_width * pi * 0.5, (beam_width * pi * 0.5) + softness + 0.01, angle_dist);
 
@@ -74,9 +74,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Combined mask
     let mask = angle_mask * radial_mask;
 
-    // Apply lighting
+    // Apply lighting preserving alpha
     let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let finalColor = mix(texColor.rgb * ambient, texColor.rgb, mask);
+    let visibility = mix(ambient, 1.0, mask);
+    let finalRGB = texColor.rgb * visibility;
+    let finalAlpha = texColor.a * visibility;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, finalAlpha));
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

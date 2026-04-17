@@ -4,39 +4,58 @@
   "url": "shaders/chromatic-manifold.wgsl",
   "category": "image",
   "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature.",
-  "params": [
-    {
-      "id": "warpStrength",
-      "name": "Warp Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "tearThreshold",
-      "name": "Tear Threshold",
-      "default": 0.8,
-      "min": 0,
-      "max": 3
-    },
-    {
-      "id": "curvature",
-      "name": "Curvature Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
-  ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
-  ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
     "music",
     "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "color_boost",
+      "name": "Color Boost",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Saturation and color intensity boost"
+    },
+    {
+      "id": "warpStrength",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of spatial warp"
+    },
+    {
+      "id": "tearThreshold",
+      "name": "Tear Threshold",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Threshold for HDR tear artifacts"
+    },
+    {
+      "id": "curvature",
+      "name": "Curvature Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Depth-driven curvature amount"
+    }
   ]
 }

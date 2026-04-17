@@ -115,7 +115,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Determine current field (even/odd alternates each frame)
     // Field rate = 2x frame rate for interlaced video
     let frameTime = floor(time * 60.0) / 60.0;  // Quantize to frame boundaries
-    let fieldPhase = floor(time * 120.0) % 2u;  // 0 = even field, 1 = odd field
+    let fieldPhase = u32(floor(time * 120.0)) % 2u;  // 0 = even field, 1 = odd field
     let scanline = coord.y;
     let isEvenLine = (scanline % 2) == 0;
     let isOddLine = !isEvenLine;
@@ -233,7 +233,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Chroma noise (speckles in color)
         let chromaNoise = hash(vec2<f32>(uv.x * 200.0 + time, uv.y * 200.0)) * 0.1 * colorBurstError;
-        outputColor.rgb += vec3<f32>(chromaNoise * 0.5, chromaNoise, chromaNoise * 0.3);
+        outputColor = vec4<f32>(outputColor.rgb + vec3<f32>(chromaNoise * 0.5, chromaNoise, chromaNoise * 0.3), outputColor.a);
     }
     
     // ═══════════════════════════════════════════════════════════════
@@ -242,12 +242,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Darken inactive field lines
     let fieldDimming = 0.7 + 0.3 * f32(inCurrentField);
-    outputColor.rgb *= mix(1.0, fieldDimming, interlaceStrength * 0.5);
+    outputColor = vec4<f32>(outputColor.rgb * mix(1.0, fieldDimming, interlaceStrength * 0.5), outputColor.a);
     
     // Scanline intensity
     let scanlineIntensity = 0.15 * interlaceStrength;
     let scanlinePattern = sin(uv.y * resolution.y * 3.14159) * 0.5 + 0.5;
-    outputColor.rgb *= 1.0 - scanlineIntensity * scanlinePattern;
+    outputColor = vec4<f32>(outputColor.rgb * 1.0 - scanlineIntensity * scanlinePattern, outputColor.a);
     
     // ═══════════════════════════════════════════════════════════════
     // SYNC LOSS ARTIFACTS
@@ -258,14 +258,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rollPos = fract(time * 0.5 * (0.5 + vsyncError * 2.0));
         let rollDist = abs(uv.y - rollPos);
         let inRollBar = rollDist < 0.02;
-        outputColor.rgb *= 1.0 - f32(inRollBar) * 0.5 * vsyncError;
+        outputColor = vec4<f32>(outputColor.rgb * 1.0 - f32(inRollBar) * 0.5 * vsyncError, outputColor.a);
     }
     
     // Horizontal tearing at edges during HSync loss
     if (hsyncError > 0.0) {
         let edgeTear = hash(vec2<f32>(time * 100.0, uv.y * 10.0)) * hsyncError * 0.1;
         if (uv.x < 0.05 || uv.x > 0.95) {
-            outputColor.rgb = mix(outputColor.rgb, vec3<f32>(0.0), edgeTear);
+            outputColor = vec4<f32>(mix(outputColor.rgb, vec3<f32>(0.0), edgeTear), outputColor.a);
         }
     }
     
@@ -275,11 +275,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Analog signal noise
     let signalNoise = hash(uv * time) * 0.05 * interlaceStrength;
-    outputColor.rgb += vec3<f32>(signalNoise);
+    outputColor = vec4<f32>(outputColor.rgb + vec3<f32>(signalNoise), outputColor.a);
     
     // RF interference lines
-    let rfLines = sin(uv.y * 200.0 + time * 20.0) > 0.99 ? 0.1 : 0.0;
-    outputColor.rgb += vec3<f32>(rfLines * interlaceStrength * 0.5);
+    let rfLines = select(0.0, 0.1, sin(uv.y * 200.0 + time * 20.0) > 0.99);
+    outputColor = vec4<f32>(outputColor.rgb + vec3<f32>(rfLines * interlaceStrength * 0.5), outputColor.a);
     
     // Clamp output
     outputColor = clamp(outputColor, vec4<f32>(0.0), vec4<f32>(1.0));

@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -38,40 +38,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv_aspect = vec2<f32>(uv_centered.x * aspect, uv_centered.y);
   let dist = length(uv_aspect);
 
-  let strength = u.zoom_params.x; // Default 0.5. Range 0 to 1+.
-  // Positive strength = Barrel (Bulge), Negative = Pincushion?
-  // Let's implement Barrel.
+  let strength = u.zoom_params.x;
+  let radius = u.zoom_params.y;
+  let curve = u.zoom_params.z * 2.0 + 0.5;
+  let vignetteStrength = u.zoom_params.w;
 
-  let radius = u.zoom_params.y; // Effect radius. Default 0.5.
+  // Audio reactivity
+  let bass = plasmaBuffer[0].x;
+  let reactiveRadius = radius * (1.0 + bass * 0.2);
 
-  if (dist < radius) {
-      // Distortion function
-      // We want to map UVs closer to the center to simulate magnification/bulge.
-      // Or map UVs further out?
-      // "Zoom in" means we sample points closer to center.
-
-      // Normalized distance (0 to 1)
-      let norm_dist = dist / radius;
-
-      // Bulge curve: simple power or smoothstep?
-      // Let's use: r_new = r * (1 - strength * weight)
-      // weight should be highest at center.
-
-      let weight = (1.0 - norm_dist) * (1.0 - norm_dist);
-
-      // This pulls the sample coordinate towards the mouse.
-      // uv_new = mouse + (uv - mouse) * factor
-      // If factor < 1.0, we zoom in.
-
+  var sampleUV = uv;
+  if (dist < reactiveRadius) {
+      let norm_dist = dist / reactiveRadius;
+      let weight = pow(1.0 - norm_dist, curve);
       let factor = 1.0 - (strength * weight);
-
-      uv = mouse + uv_centered * factor;
+      sampleUV = mouse + uv_centered * factor;
   }
 
-  let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+
+  // Subtle vignette alpha falloff at the distortion radius edge
+  var finalAlpha = color.a;
+  if (dist < reactiveRadius) {
+      let edgeFade = smoothstep(reactiveRadius * 0.85, reactiveRadius, dist);
+      let vignetteAlpha = color.a * mix(1.0, 0.85, edgeFade);
+      finalAlpha = mix(color.a, vignetteAlpha, vignetteStrength);
+  }
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, finalAlpha));
 
   // Depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -284,9 +284,7 @@ export class StorageService {
       inputSource: string;
       currentImageUrl?: string;
       activeGenerativeShader?: string;
-      zoom?: number;
-      panX?: number;
-      panY?: number;
+
     }
   ): Promise<StorageSaveResponse> {
     return this.save({

@@ -37,7 +37,7 @@ function validateWithNaga(filePath) {
     });
     return { valid: true, errors: [] };
   } catch (error) {
-    const stderr = error.stderr || error.message || '';
+    const stderr = error.stderr?.toString() || error.message || '';
     const lines = stderr.split('\n').filter(l => l.trim());
     
     const errors = [];

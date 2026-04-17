@@ -5,7 +5,7 @@ import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
 const DEFAULT_SLOT_PARAMS: SlotParams = {
-    zoomParam1: 0.5, zoomParam2: 0.5, zoomParam3: 0.5, zoomParam4: 0.5, zoomParam5: 0.5, zoomParam6: 0.5,
+    zoomParam1: 0.5, zoomParam2: 0.5, zoomParam3: 0.5, zoomParam4: 0.5,
     lightStrength: 1.0, ambient: 0.2, normalStrength: 0.1, fogFalloff: 4.0, depthThreshold: 0.5,
 };
 
@@ -20,9 +20,6 @@ const RemoteApp: React.FC = () => {
         { ...DEFAULT_SLOT_PARAMS }
     ]);
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
-    const [zoom, setZoom] = useState(1.0);
-    const [panX, setPanX] = useState(0.5);
-    const [panY, setPanY] = useState(0.5);
     const [inputSource, setInputSource] = useState<InputSource>('image');
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
@@ -74,9 +71,6 @@ const RemoteApp: React.FC = () => {
                 setActiveSlot(state.activeSlot);
                 setSlotParams(state.slotParams);
                 setShaderCategory(state.shaderCategory);
-                setZoom(state.zoom);
-                setPanX(state.panX);
-                setPanY(state.panY);
                 setInputSource(state.inputSource);
                 setAutoChangeEnabled(state.autoChangeEnabled);
                 setAutoChangeDelay(state.autoChangeDelay);
@@ -138,21 +132,6 @@ const RemoteApp: React.FC = () => {
     const handleSetShaderCategory = (cat: ShaderCategory) => {
         setShaderCategory(cat);
         sendMessage('CMD_SET_SHADER_CATEGORY', cat);
-    };
-
-    const handleSetZoom = (val: number) => {
-        setZoom(val);
-        sendMessage('CMD_SET_ZOOM', val);
-    };
-
-    const handleSetPanX = (val: number) => {
-        setPanX(val);
-        sendMessage('CMD_SET_PAN_X', val);
-    };
-
-    const handleSetPanY = (val: number) => {
-        setPanY(val);
-        sendMessage('CMD_SET_PAN_Y', val);
     };
 
     const handleSetInputSource = (source: InputSource) => {
@@ -261,9 +240,6 @@ const RemoteApp: React.FC = () => {
                     updateSlotParam={handleUpdateSlotParam}
                     shaderCategory={shaderCategory}
                     setShaderCategory={handleSetShaderCategory}
-                    zoom={zoom} setZoom={handleSetZoom}
-                    panX={panX} setPanX={handleSetPanX}
-                    panY={panY} setPanY={handleSetPanY}
                     onNewImage={handleLoadRandom}
                     autoChangeEnabled={autoChangeEnabled}
                     setAutoChangeEnabled={handleSetAutoChange}

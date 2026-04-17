@@ -19,7 +19,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Grid Density, y=Glyph Sharpness, z=Character Brightness, w=Interactive Decoder Radius
+    zoom_params: vec4<f32>,  // x=Grid Density, y=Glyph Sharpness, z=Character Brightness, w=Scanline Bloom
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -143,7 +143,7 @@ fn get_character(id: i32, uv: vec2<f32>, sharpness: f32) -> f32 {
     return 0.0;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(id.xy);
@@ -159,12 +159,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let grid_density = u.zoom_params.x;
     let sharpness = u.zoom_params.y;
     let brightness_mult = u.zoom_params.z;
-    let decoder_radius = u.zoom_params.w;
+    let scanline_bloom = u.zoom_params.w;
 
     // Mouse coords (0-1)
     let mX = u.zoom_config.y / dims.x;
     let mY = u.zoom_config.z / dims.y;
     let mouse_uv = vec2<f32>(mX, mY);
+
+    // Audio-driven cursor jitter
+    let bass = plasmaBuffer[0].x;
+    let jittered_mouse = mouse_uv + vec2<f32>(
+        bass * 0.03 * sin(u.config.x * 15.0),
+        bass * 0.03 * cos(u.config.x * 12.0)
+    );
 
     // Create a dynamic grid based on density (e.g. 80x25 to 160x50)
     let grid_cols = floor(80.0 * grid_density);
@@ -176,7 +183,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cell_center_uv = (cell_id + vec2<f32>(0.5)) / grid_size;
 
     // Sample underlying image at cell center
-    let tex_color = textureSampleLevel(readTexture, u_sampler, cell_center_uv, 0.0).rgb;
+    let tex = textureSampleLevel(readTexture, u_sampler, cell_center_uv, 0.0);
+    let tex_color = tex.rgb;
+    let tex_alpha = tex.a;
 
     // Calculate luminance
     let luma = dot(tex_color, vec3<f32>(0.299, 0.587, 0.114));
@@ -193,19 +202,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (luma > 0.95) { char_id = 8; } // @
 
     // Interactive Decoder Logic
-    let dist_to_mouse = length((uv - mouse_uv) * vec2<f32>(aspect, 1.0));
+    let dist_to_mouse = length((uv - jittered_mouse) * vec2<f32>(aspect, 1.0));
     var is_decoded = false;
 
-    // Smooth threshold for decoder radius
-    let decoder_thresh = decoder_radius * 0.5;
+    // Fixed decoder radius
+    let decoder_radius = 0.25;
+    let decoder_thresh = decoder_radius;
     if (decoder_thresh > 0.01 && dist_to_mouse < decoder_thresh) {
         // Falloff blending
         let falloff = 1.0 - smoothstep(decoder_thresh * 0.5, decoder_thresh, dist_to_mouse);
 
         // Switch to Binary (0 or 1) based on pseudo-random hash and luma
         if (falloff > 0.5) {
-            // Audio reactivity: audio input causes binary values to scramble rapidly
-            let rnd = hash21(cell_id + vec2<f32>(u.config.x + u.config.y * 0.5));
+            // Audio reactivity: bass causes binary values to scramble rapidly
+            let rnd = hash21(cell_id + vec2<f32>(u.config.x + bass * 8.0));
             if (luma > 0.1) {
                 if (rnd > 0.5) {
                     char_id = 9; // 0
@@ -240,9 +250,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let vignette = pow(crt_uv.x * crt_uv.y * 15.0, 0.2);
     col *= vignette;
 
-    // Scanlines
+    // Scanlines with bloom
     let scanline = 0.5 + 0.5 * sin(uv.y * dims.y * 3.14159);
-    col *= mix(1.0, scanline, 0.15);
+    let scanlineMix = 0.15 + scanline_bloom * 0.2;
+    col *= mix(1.0, scanline, scanlineMix);
+    col += vec3<f32>(0.2, 1.0, 0.5) * max(scanline - 0.5, 0.0) * scanline_bloom * 0.5;
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Glyph edge alpha anti-aliasing
+    let finalAlpha = char_mask * vignette * tex_alpha;
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, finalAlpha));
 }

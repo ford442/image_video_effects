@@ -47,22 +47,19 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.config.y;
-    let audioBass = u.config.y * 1.2;
-    let audioMid = u.config.z;
-    let audioHigh = u.config.w;
-    let audioReactivity = 1.0 + audioOverall * 0.5;
+    let audioMid = plasmaBuffer[0].y;
+    let audioReactivity = 1.0 + audioMid * 0.5;
     
-    let growth = u.zoom_params.x;
+    let growth = u.zoom_params.x * (1.0 + audioMid * 0.3);
     let complexity = u.zoom_params.y * 10.0 + 3.0;
     let depthWeight = u.zoom_params.z;
-    let organic = u.zoom_params.w;
+    let glowSpread = u.zoom_params.w;
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
@@ -74,7 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let branchPattern = sin(angle * complexity + time * 0.5 * audioReactivity) * cos(radius * 10.0 - time);
     let organicNoise = hash(floor(uv * 20.0) + time * 0.1 * audioReactivity);
     
-    let flora = smoothstep(0.0, 0.5 + organic * organicNoise, branchPattern * growth);
+    let flora = smoothstep(0.0, 0.5 + glowSpread * organicNoise, branchPattern * growth);
     
     // Color
     let floraColorBase = vec3<f32>(
@@ -84,7 +81,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let floraColor = floraColorBase * depthLayeredAlpha(floraColorBase, uv, depthWeight);
     
-    let alpha = volumetricAlpha(flora, 1.0) * depthLayeredAlpha(floraColorBase, uv, depthWeight);
+    let feather = glowSpread * 0.5 + 0.05;
+    let alpha = volumetricAlpha(flora, 1.0) * depthLayeredAlpha(floraColorBase, uv, depthWeight) * smoothstep(0.0, feather, flora);
     
     textureStore(writeTexture, global_id.xy, vec4<f32>(floraColor, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

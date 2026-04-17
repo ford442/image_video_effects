@@ -26,6 +26,12 @@ const MAX_STEPS = 100;
 const SURF_DIST = 0.001;
 const MAX_DIST = 100.0;
 
+fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
+    let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
 // --- MATH & SDF HELPERS ---
 fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -55,13 +61,15 @@ fn map(p: vec3<f32>) -> f32 {
     let complexity = u.zoom_params.x;
     let speed = u.zoom_params.y;
     let audio_react = u.zoom_params.w;
+    let bass = plasmaBuffer[0].x;
 
     let loop_count = i32(clamp(complexity, 1.0, 10.0));
+    let speed_mult = 1.0 + bass * audio_react;
 
     for(var i = 0; i < loop_count; i++) {
         let fi = f32(i);
 
-        let rot_xy = rot2D(u.config.x * 0.2 * speed * (fi + 1.0) + u.config.y * audio_react) * vec2<f32>(q.x, q.y);
+        let rot_xy = rot2D(u.config.x * 0.2 * speed * (fi + 1.0) * speed_mult + bass * audio_react * 3.14) * vec2<f32>(q.x, q.y);
         q.x = rot_xy.x;
         q.y = rot_xy.y;
 
@@ -76,10 +84,11 @@ fn map(p: vec3<f32>) -> f32 {
 }
 
 // --- COMPUTE MAIN ---
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(textureDimensions(writeTexture));
     let uv = (vec2<f32>(id.xy) * 2.0 - dims) / dims.y;
+    let screen_uv = (vec2<f32>(id.xy) + 0.5) / dims;
 
     // Ray setup
     let ro = vec3<f32>(0.0, 0.0, -5.0);
@@ -94,11 +103,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
+    var alpha = 0.0;
     let glow = u.zoom_params.z;
     if(t < MAX_DIST) {
-        // Base coloring
-        col = vec3<f32>(0.8, 0.6, 0.2) * (1.0 - t/MAX_DIST) * glow;
+        // Base coloring with hue shift from param3 (Glow Intensity)
+        let hue_shift = glow * 0.3;
+        let base_col = hsv2rgb(vec3<f32>(0.12 + hue_shift, 0.8, 1.0));
+        let falloff = 1.0 - t / MAX_DIST;
+        col = base_col * falloff * glow;
+        alpha = falloff * glow;
     }
 
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screen_uv, 0.0).r;
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

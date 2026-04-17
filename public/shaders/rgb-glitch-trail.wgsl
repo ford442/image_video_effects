@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
@@ -47,8 +47,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
      intensity = min(1.0, intensity + val);
   }
 
-  // Write state
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(intensity, 0.0, 0.0, 1.0));
+  // Write state as full RGBA trail color
+  let trail_hue = mix(vec3<f32>(1.0, 0.0, 0.5), vec3<f32>(0.0, 1.0, 1.0), chaos);
+  let trail_color = vec4<f32>(trail_hue * intensity, intensity);
+  textureStore(dataTextureA, global_id.xy, trail_color);
 
   // Effect
   var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -58,20 +60,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noise = fract(sin(seed) * 43758.5453);
 
     let shift = intensity * shiftStrength;
-    var r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(shift, 0.0), 0.0).r;
-    var b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(shift, 0.0), 0.0).b;
+    let c_left = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(shift, 0.0), 0.0);
+    let c_right = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(shift, 0.0), 0.0);
 
-    var g = color.g;
+    var blended = color;
+    let glitch_weight = intensity * color.a;
+    blended.r = mix(color.r, c_left.r, glitch_weight);
+    blended.b = mix(color.b, c_right.b, glitch_weight);
+
     if (chaos > 0.0 && intensity > 0.5) {
        if (noise > 0.9) {
           let streak = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(noise * 0.1, 0.0), 0.0);
-          r = streak.r;
-          g = streak.g;
-          b = streak.b;
+          blended = mix(blended, streak, glitch_weight);
        }
     }
 
-    color = vec4<f32>(r, g, b, color.a);
+    color = blended;
   }
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);

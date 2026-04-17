@@ -2,24 +2,24 @@ struct Uniforms {
     config: vec4<f32>,
     zoom_config: vec4<f32>,
     zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 100>,
+    ripples: array<vec4<f32>, 50>,
 }
 
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var input_texture: texture_2d<f32>;
-@group(0) @binding(2) var output_texture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depth_texture_read: texture_2d<f32>;
-@group(0) @binding(5) var u_sampler_nonfilter: sampler;
-@group(0) @binding(6) var depth_texture_write: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var data_texture_a: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var data_texture_b: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var data_texture_c: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extra_buffer: array<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasma_buffer: array<vec4<f32>>;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = vec2<f32>(u.config.zw);
     var uv = vec2<f32>(global_id.xy) / dimensions;
@@ -33,20 +33,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
     let aspect = dimensions.x / dimensions.y;
 
+    // Audio reactivity on drift speed
+    let audioPulse = 1.0 + plasmaBuffer[0].x * 0.5;
+
     // Calculate sampling coordinate for history (drifted)
-    // We drift horizontally opposite to direction of time flow usually
-    let drift = vec2<f32>(drift_speed * 0.1, 0.0);
+    let drift = vec2<f32>(drift_speed * 0.1 * audioPulse, 0.0);
     let history_uv = fract(uv + drift); // Wrap around
 
     // Sample history
-    var history_color = textureSampleLevel(data_texture_c, u_sampler, history_uv, 0.0);
+    var history_color = textureSampleLevel(dataTextureC, u_sampler, history_uv, 0.0);
 
     // Sample current input
-    let input_color = textureSampleLevel(input_texture, u_sampler, uv, 0.0);
+    let input_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Determine slit position
-    // If mouse is active (down or just moving), use mouse X. Else auto-scan?
-    // Let's rely on mouse. If no mouse, maybe center?
     let slit_center = mouse.x;
 
     // Check if we are inside the slit
@@ -60,10 +60,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Write to output and history
-    textureStore(output_texture, vec2<i32>(global_id.xy), final_color);
-    textureStore(data_texture_a, vec2<i32>(global_id.xy), final_color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), final_color);
     
     // Pass through depth
-    let depth = textureSampleLevel(depth_texture_read, u_sampler_nonfilter, uv, 0.0).r;
-    textureStore(depth_texture_write, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

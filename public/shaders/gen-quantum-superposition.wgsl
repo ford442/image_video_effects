@@ -29,7 +29,7 @@
 struct Uniforms {
     config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
-    zoom_params: vec4<f32>, // x=ParticleCount(1-8), y=Decoherence, z=WaveSpeed, w=ColorMode
+    zoom_params: vec4<f32>, // x=ParticleCount(1-8), y=Decoherence, z=WaveSpeed, w=WavefunctionOpacity
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -145,7 +145,7 @@ fn fringeColor(pathDiff: f32, t: f32) -> vec3<f32> {
 // ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res    = u.config.zw;
     let uv     = vec2<f32>(gid.xy) / res;
@@ -155,10 +155,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let numParticles = i32(u.zoom_params.x * 7.0 + 1.5);     // 1 – 8
     let decoherence  = u.zoom_params.y * 0.08 + 0.005;        // spread σ base
     let waveSpeed    = u.zoom_params.z * 2.0 + 0.3;           // wave oscillation speed
-    let colorMode    = u.zoom_params.w;                         // 0=spectral, 1=time-hue
+    let waveOpacity  = u.zoom_params.w * 1.5 + 0.2;           // probability cloud opacity scale
 
     let aspect = res.x / res.y;
     let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+
+    let bass = plasmaBuffer[0].x;
 
     // ── Accumulate quantum interference from all particles ────────────────
     var totalRe    = 0.0;
@@ -179,7 +181,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         for (var g = 0; g < numGhosts; g++) {
             let ghostT   = t * waveSpeed * 0.2 + f32(g) * 6.28318 / f32(numGhosts);
-            let ghostPos = lissajousPos(ghostT, a, b, dlt, scl, off);
+            let basePos  = lissajousPos(ghostT, a, b, dlt, scl, off);
+            let jitter   = bass * 0.04;
+            let jitterOffset = vec2<f32>(
+                sin(t * 3.0 + f32(g) * 1.3) * jitter,
+                cos(t * 2.5 + f32(g) * 1.7) * jitter
+            );
+            let ghostPos = basePos + jitterOffset;
             let ghostPh  = t * waveSpeed + f32(i) * 2.094 + f32(g) * 1.257;
             let sigma    = ghostSpread * (1.0 + hash1(seed + f32(g) * 7.7) * 0.5);
 
@@ -190,7 +198,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let prob = psi.x * psi.x + psi.y * psi.y;
             totalProb  += prob;
 
-            let hue = fract(f32(i) / f32(max(numParticles, 1)) + t * 0.05 * colorMode + 0.1);
+            let hue = fract(f32(i) / f32(max(numParticles, 1)) + 0.1);
             colorAccum += hsv2rgb(hue, 0.8, 1.0) * prob;
         }
     }
@@ -218,11 +226,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Final color ───────────────────────────────────────────────────────
     let normalizedProb = collapsedProb * rippleCollapse;
 
-    let probColor = select(
-        hsv2rgb(fract(t * 0.04 + normalizedProb * 2.0), 0.9, 1.0),
-        colorAccum / max(totalProb + 0.001, 0.001),
-        colorMode < 0.5
-    );
+    let probColor = colorAccum / max(totalProb + 0.001, 0.001);
 
     let intColor = hsv2rgb(fract(t * 0.07 + 0.5), 0.6, 1.0) * (interference + 0.5) * 0.3;
 
@@ -262,6 +266,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
     let depthOut = clamp(normalizedProb * 2.0, 0.0, 1.0);
-    textureStore(writeTexture, gid.xy, vec4<f32>(col, 1.0));
+    let alpha = clamp(normalizedProb * 4.0 * waveOpacity, 0.0, 1.0);
+    textureStore(writeTexture, gid.xy, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
 }

@@ -26,12 +26,6 @@ interface ControlsProps {
     slotShaderStatus?: Array<'idle' | 'loading' | 'error'>;
     shaderCategory: ShaderCategory;
     setShaderCategory: (category: ShaderCategory) => void;
-    zoom: number;
-    setZoom: (zoom: number) => void;
-    panX: number;
-    setPanX: (panX: number) => void;
-    panY: number;
-    setPanY: (panY: number) => void;
     onNewImage: () => void;
     autoChangeEnabled: boolean;
     setAutoChangeEnabled: (enabled: boolean) => void;
@@ -112,9 +106,6 @@ const Controls: React.FC<ControlsProps> = ({
     slotParams, updateSlotParam,
     slotShaderStatus = ['idle', 'idle', 'idle'],
     shaderCategory, setShaderCategory,
-    zoom, setZoom,
-    panX, setPanX,
-    panY, setPanY,
     onNewImage,
     autoChangeEnabled, setAutoChangeEnabled,
     autoChangeDelay, setAutoChangeDelay,
@@ -853,15 +844,13 @@ const Controls: React.FC<ControlsProps> = ({
 
             <div className="params-grid">
             {currentShaderEntry?.params?.map((param, index) => {
-                if (index > 5) return null; // Support up to 6 params
+                if (index > 3) return null; // Support up to 4 params
 
                 let val = 0;
                 if (index === 0) val = currentParams.zoomParam1;
                 else if (index === 1) val = currentParams.zoomParam2;
                 else if (index === 2) val = currentParams.zoomParam3;
                 else if (index === 3) val = currentParams.zoomParam4;
-                else if (index === 4) val = currentParams.zoomParam5;
-                else if (index === 5) val = currentParams.zoomParam6;
 
                 return (
                     <div key={param.id} className="control-group">
@@ -884,8 +873,6 @@ const Controls: React.FC<ControlsProps> = ({
                                 else if (index === 1) update.zoomParam2 = v;
                                 else if (index === 2) update.zoomParam3 = v;
                                 else if (index === 3) update.zoomParam4 = v;
-                                else if (index === 4) update.zoomParam5 = v;
-                                else if (index === 5) update.zoomParam6 = v;
                                 updateSlotParam(activeSlot, update);
                             }}
                         />
@@ -894,9 +881,9 @@ const Controls: React.FC<ControlsProps> = ({
             })}
             </div>
 
-            {currentShaderEntry?.params && currentShaderEntry.params.length > 6 && (
+            {currentShaderEntry?.params && currentShaderEntry.params.length > 4 && (
                 <div style={{color: '#a0a0b0', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
-                    Showing 6 of {currentShaderEntry.params.length} parameters (renderer limit)
+                    Showing 4 of {currentShaderEntry.params.length} parameters (renderer limit)
                 </div>
             )}
             
@@ -965,25 +952,6 @@ const Controls: React.FC<ControlsProps> = ({
                     </div>
                 </div>
             )}
-
-            <hr className="gold-divider" />
-
-            {/* --- View Controls (Zoom/Pan) --- */}
-            <div className="gold-section-header">
-                View Controls
-            </div>
-            <div className="control-group view-controls-grid">
-                <label style={{color: '#a0a0b0'}}>Zoom: <span style={{color: '#FFD700'}}>{zoom.toFixed(2)}x</span></label>
-                <input type="range" className="glass-range" min="0.1" max="5.0" step="0.01" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} />
-            </div>
-            <div className="control-group view-controls-grid">
-                <label style={{color: '#a0a0b0'}}>Pan X: <span style={{color: '#FFD700'}}>{panX.toFixed(2)}</span></label>
-                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panX} onChange={(e) => setPanX(parseFloat(e.target.value))} />
-            </div>
-            <div className="control-group view-controls-grid">
-                <label style={{color: '#a0a0b0'}}>Pan Y: <span style={{color: '#FFD700'}}>{panY.toFixed(2)}</span></label>
-                <input type="range" className="glass-range" min="-2.0" max="2.0" step="0.01" value={panY} onChange={(e) => setPanY(parseFloat(e.target.value))} />
-            </div>
 
             <hr className="gold-divider" />
 

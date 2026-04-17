@@ -91,7 +91,9 @@ fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32,
 
     // === PRISMATIC GEYSERS (KIFS from feature + sparse activation from main) ===
     var q = p;
-    q.xz = p.xz - round(p.xz / 4.0) * 4.0; // domain repetition
+    let q_xz = p.xz - round(p.xz / 4.0) * 4.0; // domain repetition
+    q.x = q_xz.x;
+    q.z = q_xz.y;
     q.y -= dune_h;
 
     let cellId = floor(p.xz / 4.0);
@@ -100,7 +102,9 @@ fn map(p: vec3<f32>, time: f32, audio: f32, duneComplexity: f32, windSpeed: f32,
     if (is_active) {
         var bp = q;
         for (var i = 0; i < 4; i++) { // more iterations = sharper prisms
-            bp.xz = abs(bp.xz) - 0.5;
+            let bp_xz = abs(bp.xz) - 0.5;
+            bp.x = bp_xz.x;
+            bp.z = bp_xz.y;
             let rot = rotate2D(time * 0.5 + f32(i) * 0.7);
             let temp_xz = rot * bp.xz;
             bp.x = temp_xz.x;

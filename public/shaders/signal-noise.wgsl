@@ -31,7 +31,7 @@ fn noise(p: f32) -> f32 {
     return mix(hash(i), hash(i + 1.0), smoothstep(0.0, 1.0, f));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
@@ -52,19 +52,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trigger = step(0.8, hash(scanline * 0.1 + t));
     let x_offset = shift * intensity * trigger;
 
-    // Add RGB split
+    // Add RGB split via full vec4 blending
     let r_offset = x_offset * 1.5;
     let b_offset = x_offset * 0.5;
 
-    let r = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x + r_offset, uv.y), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x + x_offset, uv.y), 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x + b_offset, uv.y), 0.0).b;
+    let c0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let c_r = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x + r_offset, uv.y), 0.0);
+    let c_g = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x + x_offset, uv.y), 0.0);
+    let c_b = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x + b_offset, uv.y), 0.0);
 
-    // Add horizontal noise lines (static)
+    let shift_weight = clamp(abs(x_offset) * 10.0, 0.0, 1.0) * c0.a;
+    var color = c0;
+    color.r = mix(color.r, c_r.r, shift_weight);
+    color.g = mix(color.g, c_g.g, shift_weight);
+    color.b = mix(color.b, c_b.b, shift_weight);
+
+    // Add horizontal noise lines (static), modulated by original alpha
     let static_noise = hash(uv.y * 500.0 + t) * hash(uv.x * 500.0);
-    let static_intensity = intensity * 0.5 * trigger;
+    let static_intensity = intensity * 0.5 * trigger * c0.a;
 
-    let color = vec3<f32>(r, g, b) + vec3<f32>(static_noise * static_intensity);
+    color = vec4<f32>(color.rgb + vec3<f32>(static_noise * static_intensity), color.a);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

@@ -8,19 +8,49 @@
     "filter",
     "image-processing"
   ],
+  "features": [
+    "mouse-driven"
+  ],
   "params": [
     {
-      "id": "color_dispersion",
-      "name": "Color Dispersion",
+      "id": "twist_scale",
+      "name": "Twist Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Amount of twist distortion"
+    },
+    {
+      "id": "distortion_step",
+      "name": "Distortion Step",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Step size of distortion"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
       "default": 0.4,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Spectral color rotation"
+    },
+    {
+      "id": "curl_amp",
+      "name": "Curl Amplification",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Spectral color separation"
+      "description": "Amplification of curl velocity field"
     }
-  ],
-  "features": [
-    "mouse-driven"
   ]
 }

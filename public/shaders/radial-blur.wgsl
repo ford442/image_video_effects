@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -33,37 +33,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var mouse = u.zoom_config.yz;
 
   // Parameters
-  // Param 1: Blur Strength (0.0 to 1.0) -> scaled for effect
   let strength = u.zoom_params.x * 0.5;
+  let decay = u.zoom_params.y;
+  let glow = u.zoom_params.z;
+  let exponent = mix(0.2, 3.0, u.zoom_params.w);
 
-  // Param 2: Samples (mapped 5 to 50)
-  // We can't use variable loop counts easily in all drivers without unrolling issues,
-  // but a fixed max loop with early break or just fixed is safer.
-  // Let's use fixed 30 samples for consistent performance.
   let samples = 30;
 
   var color = vec4<f32>(0.0);
+
+  // Audio reactivity
+  let bass = plasmaBuffer[0].x;
+  let reactiveStrength = strength * (1.0 + bass * 0.3);
 
   // Vector from current pixel to mouse
   var dir = mouse - uv;
 
   // Accumulate
   for (var i = 0; i < samples; i++) {
-    let t = f32(i) / f32(samples - 1);
-    // Non-linear sampling for better look? Or linear.
-    // Linear is fine for standard radial blur.
+    var t = f32(i) / f32(samples - 1);
+    t = pow(t, exponent);
 
     // Sample position: move towards mouse
-    let offset = dir * strength * t;
+    let offset = dir * reactiveStrength * t;
     let sampleUV = uv + offset;
 
-    // Clamp to valid UV? Texture sampler handles clamping/repeating based on config.
-    // Usually 'repeat' or 'clamp-to-edge'.
-
-    color += textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    var sampleColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    sampleColor *= (1.0 - decay * t);
+    color += sampleColor;
   }
 
   color = color / f32(samples);
+  color *= (1.0 + glow);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+
+  // Depth pass-through
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

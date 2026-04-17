@@ -25,7 +25,7 @@ fn hue_shift(color: vec3<f32>, shift: f32) -> vec3<f32> {
     return vec3<f32>(color * cos_angle + cross(k, color) * sin(shift) + k * dot(k, color) * (1.0 - cos_angle));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
     let coords = vec2<i32>(global_id.xy);
@@ -52,23 +52,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let history = textureLoad(dataTextureC, coords, 0);
 
     // Logic:
-    // 1. Decay the history slightly
-    var new_history = history.rgb * decay_rate;
+    // 1. Decay the history slightly (preserve alpha)
+    var new_history_rgb = history.rgb * decay_rate;
+    var new_history_a = history.a * decay_rate;
 
     // 2. Apply Hue Shift to history if requested
     if (shift_amount > 0.0) {
-        new_history = hue_shift(new_history, shift_amount);
+        new_history_rgb = hue_shift(new_history_rgb, shift_amount);
     }
 
     // 3. If mouse is near, paint with current video
     if (dist < brush_size) {
-        let alpha = smoothstep(brush_size, brush_size * 0.5, dist);
+        let brush_alpha = smoothstep(brush_size, brush_size * 0.5, dist);
         // Paint: mix history with current video based on brush strength
-        new_history = mix(new_history, current_video.rgb, alpha);
+        new_history_rgb = mix(new_history_rgb, current_video.rgb, brush_alpha);
+        new_history_a = mix(new_history_a, current_video.a, brush_alpha);
     }
 
     // Output
-    let out_color = vec4<f32>(new_history, 1.0);
+    let out_color = vec4<f32>(new_history_rgb, new_history_a);
 
     textureStore(writeTexture, coords, out_color);
     textureStore(dataTextureA, coords, out_color);

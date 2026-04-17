@@ -155,7 +155,7 @@ export class RendererManager {
   }
 
   /** Update all zoom params from SlotParams (called when UI sliders change). */
-  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number; zoomParam5?: number; zoomParam6?: number }): void {
+  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }): void {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.updateSlotParams(params);
     }

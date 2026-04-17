@@ -152,8 +152,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (d < 0.01) {
             let n_fbm = fbm(p * 2.0 + vec3<f32>(0.0, 0.0, time * 2.0));
             col = vec3<f32>(0.1, 0.2, 0.3) + vec3<f32>(0.5, 0.7, 1.0) * n_fbm;
-            let ref = reflect(rd, normalize(p));
-            col += textureSampleLevel(readTexture, u_sampler, ref.xy, 0.0).rgb * 0.5;
+            let refl = reflect(rd, normalize(p));
+            col += textureSampleLevel(readTexture, u_sampler, refl.xy, 0.0).rgb * 0.5;
             break;
         }
 

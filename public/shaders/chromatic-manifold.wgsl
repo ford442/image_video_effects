@@ -180,7 +180,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // HDR tears
-    let tearThreshold = mix(1.2, 3.0, clamp(u.zoom_config.x, 0.0, 1.0));
+    let tearThreshold = mix(1.2, 3.0, clamp(u.zoom_params.z, 0.0, 1.0));
     if (maxRGB > tearThreshold) {
         let smear = normalize(grad + vec2<f32>(0.0001, 0.0)) * radiusScale * 0.02;
         let smearUV = uv + smear;

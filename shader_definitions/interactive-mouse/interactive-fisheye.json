@@ -3,7 +3,7 @@
   "name": "Interactive Fisheye",
   "url": "shaders/interactive-fisheye.wgsl",
   "category": "image",
-  "description": "Barrel distortion lens that magnifies the area under the mouse.",
+  "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius.",
   "params": [
     {
       "id": "strength",
@@ -18,14 +18,33 @@
       "default": 0.4,
       "min": 0.0,
       "max": 1.0
+    },
+    {
+      "id": "curve",
+      "name": "Bulge Curve",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "vignette",
+      "name": "Edge Vignette",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
     }
   ],
   "features": [
     "mouse-driven",
-    "geometry"
+    "geometry",
+    "audio-reactive",
+    "audio-driven"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

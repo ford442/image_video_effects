@@ -18,7 +18,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=TwistScale, y=DistortionStep, z=ColorShift, w=Unused
+  zoom_params: vec4<f32>,  // x=TwistScale, y=DistortionStep, z=ColorShift, w=CurlAmp
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -81,7 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dy = (b - t) * 0.5;
     
     // Curl vector (velocity)
-    let vel = vec2<f32>(dy, -dx) * 10.0; // Amplify
+    let vel = vec2<f32>(dy, -dx) * mix(1.0, 20.0, u.zoom_params.w); // Amplify
     
     // 2. Accumulate Phase in Depth Buffer
     let prevPhase = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;

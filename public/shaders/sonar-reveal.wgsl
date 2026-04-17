@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
@@ -36,6 +36,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let intensity = u.zoom_params.y * 2.0;
     let softness = u.zoom_params.z * 0.2;
     let colorMode = u.zoom_params.w;
+
+    // Audio reactivity
+    let audioPulse = 1.0 + plasmaBuffer[0].x * 0.5;
 
     // Aspect corrected distance to mouse
     let aspect = resolution.x / resolution.y;
@@ -64,11 +67,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Combine
     // Revealed area sees full color. Outside sees dim gray.
-    var finalColor = mix(dimColor, baseColor.rgb, reveal);
+    var finalRGB = mix(dimColor, baseColor.rgb, reveal);
 
     // Add ring overlay
-    finalColor = finalColor + ringColorVec * ring * intensity;
+    finalRGB = finalRGB + ringColorVec * ring * intensity * audioPulse;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    // Preserve input alpha through reveal mix
+    let finalAlpha = baseColor.a;
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, finalAlpha));
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -44,7 +44,7 @@ fn waveFunctionMagnitude(wf: WaveFunction) -> f32 {
   return sqrt(wf.real * wf.real + wf.imaginary * wf.imaginary);
 }
 
-fn quantumFractal(z_in: vec2<f32>, c: vec2<f32>, maxIter: u32, time: f32) -> WaveFunction {
+fn quantumFractal(z_in: vec2<f32>, c: vec2<f32>, maxIter: u32, time: f32, zoom_params_w: f32) -> WaveFunction {
   var psi = WaveFunction(z_in.x, z_in.y);
   var potential = WaveFunction(0.0, 0.0);
   
@@ -57,8 +57,8 @@ fn quantumFractal(z_in: vec2<f32>, c: vec2<f32>, maxIter: u32, time: f32) -> Wav
     
     // Quantum tunneling effect
     let tunnel = WaveFunction(
-      sin(time * 0.5 * u.zoom_params.w + f32(i) * 0.1),
-      cos(time * 0.3 * u.zoom_params.w + f32(i) * 0.07)
+      sin(time * 0.5 * zoom_params_w + f32(i) * 0.1),
+      cos(time * 0.3 * zoom_params_w + f32(i) * 0.07)
     );
     
     psi = complexAdd(z_squared, WaveFunction(c.x, c.y));
@@ -69,7 +69,7 @@ fn quantumFractal(z_in: vec2<f32>, c: vec2<f32>, maxIter: u32, time: f32) -> Wav
     potential.imaginary = potential.imaginary + psi.imaginary / (f32(i) + 1.0);
     
     // Escape condition with quantum uncertainty
-    if (waveFunctionMagnitude(psi) > 4.0 + sin(time * 0.1 * u.zoom_params.w) * 0.5) {
+    if (waveFunctionMagnitude(psi) > 4.0 + sin(time * 0.1 * zoom_params_w) * 0.5) {
       break;
     }
   }
@@ -99,12 +99,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ═══ AUDIO REACTIVITY ═══
   let audioOverall = u.zoom_config.x;
   let audioBass = audioOverall * 1.5;
-  let u.zoom_params.w = 1.0 + audioOverall * 0.3;
-  
+
   // Parameters
   let scale = u.zoom_params.x; // Default ~3.0
   let iterParam = u.zoom_params.y; // Default ~100
   let entanglementStrength = u.zoom_params.z; // Default ~1.0
+  let zoom_params_w = u.zoom_params.w; // Edge glow / animation speed
   
   let maxIter = u32(max(10.0, iterParam));
 
@@ -116,17 +116,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   
   // Create multiple entangled fractal points
   let c1 = vec2<f32>(
-    -0.7269 + sin(time * 0.1 * u.zoom_params.w) * 0.05,
-    0.1889 + cos(time * 0.15 * u.zoom_params.w) * 0.05
+    -0.7269 + sin(time * 0.1 * zoom_params_w) * 0.05,
+    0.1889 + cos(time * 0.15 * zoom_params_w) * 0.05
   );
   
   let c2 = vec2<f32>(
-    0.285 + cos(time * 0.07 * u.zoom_params.w) * 0.03,
-    0.01 + sin(time * 0.09 * u.zoom_params.w) * 0.03
+    0.285 + cos(time * 0.07 * zoom_params_w) * 0.03,
+    0.01 + sin(time * 0.09 * zoom_params_w) * 0.03
   );
   
   // Coordinate transformation with cosmic rotation
-  let rot = time * 0.1 * u.zoom_params.w;
+  let rot = time * 0.1 * zoom_params_w;
   let rotatedUV = vec2<f32>(
     (uv.x - 0.5) * cos(rot) - (uv.y - 0.5) * sin(rot) + 0.5,
     (uv.x - 0.5) * sin(rot) + (uv.y - 0.5) * cos(rot) + 0.5
@@ -135,16 +135,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let z = (rotatedUV - vec2<f32>(0.5, 0.5)) * vec2<f32>(aspect, 1.0) * scale + center;
   
   // Calculate primary quantum fractal
-  let psi1 = quantumFractal(z, c1, maxIter, time);
+  let psi1 = quantumFractal(z, c1, maxIter, time, zoom_params_w);
   let mag1 = waveFunctionMagnitude(psi1);
   
   // Secondary entangled fractal with phase shift
-  let phaseShift = vec2<f32>(sin(time * 0.5 * u.zoom_params.w), cos(time * 0.5 * u.zoom_params.w)) * 0.1;
-  let psi2 = quantumFractal(z + phaseShift, c2, u32(f32(maxIter) * 0.8), time);
+  let phaseShift = vec2<f32>(sin(time * 0.5 * zoom_params_w), cos(time * 0.5 * zoom_params_w)) * 0.1;
+  let psi2 = quantumFractal(z + phaseShift, c2, u32(f32(maxIter) * 0.8), time, u.zoom_params.w);
   let mag2 = waveFunctionMagnitude(psi2);
   
   // Quantum entanglement visualization
-  let entanglement = sin(mag1 * 10.0 + time) * cos(mag2 * 8.0 + time * 1.3 * u.zoom_params.w) * entanglementStrength;
+  let entanglement = sin(mag1 * 10.0 + time) * cos(mag2 * 8.0 + time * 1.3 * zoom_params_w) * entanglementStrength;
   
   // Probability interference pattern
   let probability = abs(mag1 - mag2) * (1.0 + entanglement);
@@ -155,14 +155,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var b = sin(probability * 3.0 + time + 4.188) * 0.5 + 0.5;  // 4π/3
   
   // Add temporal evolution
-  let evolution = sin(time * 2.0 * u.zoom_params.w + probability * 10.0) * 0.1;
+  let evolution = sin(time * 2.0 * zoom_params_w + probability * 10.0) * 0.1;
   
   // Sample previous frame for feedback (Simulated with source image + noise since no feedback)
   // We use the source image as a "base reality" that gets entangled
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   
   // Quantum decoherence effect
-  let decoherence = 0.05 * sin(time * 0.7 * u.zoom_params.w + uv.x * 10.0) * cos(time * 0.9 * u.zoom_params.w + uv.y * 10.0);
+  let decoherence = 0.05 * sin(time * 0.7 * zoom_params_w + uv.x * 10.0) * cos(time * 0.9 * zoom_params_w + uv.y * 10.0);
   
   // Final color with quantum effects
   var color = vec3<f32>(
@@ -181,10 +181,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, src, 0.2);
   
   // Output with HDR for glow effects
-  color = color * (1.5 + sin(time * 0.5 * u.zoom_params.w) * 0.2);
+  color = color * (1.5 + sin(time * 0.5 * zoom_params_w) * 0.2);
   
   // Add infinite regression effect (Simulated by sampling source at different scale)
-  let regressUV = fract(uv * exp(sin(time * 0.1 * u.zoom_params.w) * 0.5) + time * 0.01 * u.zoom_params.w);
+  let regressUV = fract(uv * exp(sin(time * 0.1 * zoom_params_w) * 0.5) + time * 0.01 * zoom_params_w);
   let regress = textureSampleLevel(readTexture, u_sampler, regressUV, 0.0).rgb * 0.1;
   color = color + regress;
   

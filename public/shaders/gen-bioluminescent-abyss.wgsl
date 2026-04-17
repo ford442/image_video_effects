@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  Bioluminescent Abyss - Generative Shader with Deep Sea Organism Properties
 //  Category: generative
-//  Features: Tube worm tissue, bioluminescent emission, organic transparency
+//  Features: Tube worm tissue, bioluminescent emission, organic transparency, audio-reactive
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,7 +21,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Density, y=Current/Sway, z=GlowIntensity, w=ColorShift
+    zoom_params: vec4<f32>,  // x=Density, y=Current/Sway, z=GlowIntensity, w=WaterClarity
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -244,7 +244,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(t, mat);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -282,6 +282,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var alpha = 1.0;
     let fogColor = vec3<f32>(0.0, 0.02, 0.05);
     let lightDir = normalize(vec3<f32>(0.2, 1.0, 0.2));
+    let bass = plasmaBuffer[0].x;
 
     if (t < 100.0) {
         var p = ro + rd * t;
@@ -309,10 +310,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             
         } else if (mat == 3.0) { // Worm Tip
             isGlowing = true;
-            glowIntensity = u.zoom_params.z;
-            let color_shift = u.zoom_params.w;
+            glowIntensity = u.zoom_params.z * (1.0 + bass * 0.3);
+            let hue = p.y * 0.1;
 
-            let hue = color_shift + p.y * 0.1;
             let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
             let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - 3.0);
             let glowColor = clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
@@ -344,8 +344,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Calculate marine organism alpha
         alpha = calculateMarineAlpha(mat, thickness, n, lightDir, isGlowing, glowIntensity);
 
+        // Depth-based water clarity fog
+        let clarity = u.zoom_params.w * 0.05 + 0.005;
+        alpha = alpha * exp(-t * clarity);
+
+        // Bioluminescence glow slightly reduces alpha
+        if (isGlowing) {
+            alpha = mix(alpha, 0.35, glowIntensity * 0.15);
+        }
+
     } else {
         color = fogColor;
+        alpha = 0.0;
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));

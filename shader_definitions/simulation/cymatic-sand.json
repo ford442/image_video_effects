@@ -6,7 +6,9 @@
   "category": "generative",
   "features": [
     "mouse-driven",
-    "simulation"
+    "simulation",
+    "audio-reactive",
+    "audio-driven"
   ],
   "params": [
     {
@@ -40,6 +42,9 @@
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "audio",
+    "music",
+    "reactive"
   ]
 }

@@ -64,7 +64,7 @@ function getNagaError(filePath) {
     execSync(`naga "${filePath}"`, { stdio: 'pipe' });
     return null;
   } catch (error) {
-    return error.stderr || error.message || '';
+    return error.stderr?.toString() || error.message || '';
   }
 }
 

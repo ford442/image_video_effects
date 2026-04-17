@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -59,13 +59,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let c = cos(angle_offset);
     let rDir = vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c);
 
-    let shift = rDir * intensity * effect * dist; // Scale by dist too for radial explosion feel
+    let shift = rDir * intensity * effect * dist;
 
-    let r = textureSampleLevel(readTexture, u_sampler, uv - shift, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + shift, 0.0).b;
+    let c0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let c_left = textureSampleLevel(readTexture, u_sampler, uv - shift, 0.0);
+    let c_right = textureSampleLevel(readTexture, u_sampler, uv + shift, 0.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(r, g, b, 1.0));
+    let blend_weight = effect * c0.a;
+    var color = c0;
+    color.r = mix(c0.r, c_left.r, blend_weight);
+    color.g = c0.g;
+    color.b = mix(c0.b, c_right.b, blend_weight);
+    color.a = c0.a;
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

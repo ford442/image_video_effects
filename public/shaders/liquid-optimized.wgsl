@@ -365,7 +365,7 @@ fn main(
     let timeSinceClick = currentTime - rippleData.z;
     
     // Compute mask: ripple is active (0.0 < time < 3.0)
-    let active = f32(timeSinceClick > 0.0 && timeSinceClick < 3.0);
+    let rippleActive = f32(timeSinceClick > 0.0 && timeSinceClick < 3.0);
     
     let directionVec = uv - rippleData.xy;
     let dist = length(directionVec);
@@ -374,7 +374,7 @@ fn main(
     let validDist = f32(dist > 0.0001);
     
     // Combined mask - both conditions must be true
-    let contribMask = active * validDist;
+    let contribMask = rippleActive * validDist;
     
     // Only sample depth if ripple might contribute (early exit for performance)
     // Note: We still do the texture sample but mask the result

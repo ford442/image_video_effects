@@ -128,8 +128,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Camera rotation
-    rd.xy = rotate2D(sin(base_time * 0.1) * 0.2) * rd.xy;
-    rd.xz = rotate2D(cos(base_time * 0.05) * 0.2) * rd.xz;
+    let rd_xy = rotate2D(sin(base_time * 0.1) * 0.2) * rd.xy;
+    rd.x = rd_xy.x;
+    rd.y = rd_xy.y;
+    let rd_xz = rotate2D(cos(base_time * 0.05) * 0.2) * rd.xz;
+    rd.x = rd_xz.x;
+    rd.z = rd_xz.y;
 
     var t = 0.0;
     var d = 0.0;

@@ -21,7 +21,7 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Network Density, y=Growth Chaos, z=Pulse Speed, w=Spore Thickness
+    zoom_params: vec4<f32>,  // x=Network Density, y=Growth Chaos, z=Pulse Speed, w=Edge Softness
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -63,7 +63,7 @@ var<private> g_time: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_audio: f32;
 
-fn map(p: vec3<f32>) -> vec2<f32> {
+fn map(p: vec3<f32>) -> vec3<f32> {
     var bp = p;
     let density = u.zoom_params.x; // Network Density
     let chaos = u.zoom_params.y; // Growth Chaos
@@ -90,9 +90,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     q.x = temp_q_xz.x;
     q.z = temp_q_xz.y;
 
-
     // Base Cylinder SDF
     var d = sdCylinder(q, vec3<f32>(0.0, 0.0, 0.15 / density));
+    let threadCenterDist = length(q.xz);
 
     // Mouse Repulsion Sphere
     let mouse3D = vec3<f32>(g_mouse.x * 10.0, g_mouse.y * 10.0, 5.0); // Projection of mouse into space
@@ -103,7 +103,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     d = smin(d, repulsionSphere + 2.0, 1.0); // Softly blend
     d = max(d, -repulsionSphere); // Cut out the sphere completely
 
-    return vec2<f32>(d, 1.0);
+    return vec3<f32>(d, 1.0, threadCenterDist);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -115,7 +115,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(id.xy);
@@ -151,7 +151,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         d = res.x;
 
         // Volumetric spore accumulation
-        let sporeThick = u.zoom_params.w;
+        let sporeThick = u.zoom_params.w * 0.5;
         if (d > 0.1) {
             accumDens += sporeThick * 0.02 * (1.0 / (1.0 + d * d));
         }
@@ -161,10 +161,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.02, 0.01, 0.05); // Deep background
+    var alpha = 0.0;
 
     if (t < maxT) {
         let p = ro + rd * t;
         let n = calcNormal(p);
+
+        // Retrieve thread center distance from the hit point
+        let res = map(p);
+        let distToThread = res.z;
+        let edgeSoftness = u.zoom_params.w * 0.5;
+        alpha = 1.0 - smoothstep(0.0, edgeSoftness, distToThread);
 
         // Fake Subsurface Scattering
         let subsurfaceP = p - n * 0.15;
@@ -174,7 +181,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Bioluminescent Energy Pulses
         let pulseSpeed = u.zoom_params.z;
-        let pulseWave = sin(p.z * 5.0 - g_time * pulseSpeed * 3.0 + g_audio * 5.0);
+        let treble = plasmaBuffer[0].z;
+        let pulseWave = sin(p.z * 5.0 - g_time * pulseSpeed * 3.0 + g_audio * 5.0 + treble * 10.0);
         let pulse = smoothstep(0.8, 1.0, pulseWave);
         let glowCol = vec3<f32>(0.1, 0.9, 0.8) * pulse * 3.0; // Neon cyan pulse
 
@@ -199,5 +207,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = col / (col + vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, vec2<u32>(id.xy), vec4<f32>(col, 1.0));
+    let screenUV = fragCoord / dims;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screenUV, 0.0).r;
+    textureStore(writeDepthTexture, vec2<u32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<u32>(id.xy), vec4<f32>(col, alpha));
 }

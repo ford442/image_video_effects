@@ -45,7 +45,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fadeRate = mix(0.95, 0.995, u.zoom_params.z);  // z: Fade rate
     
     // Read velocity from dataTextureA (written by Pass 1)
-    let vel = textureLoad(dataTextureA, gid.xy, 0).xy;
+    let vel = textureLoad(dataTextureC, gid.xy, 0).xy;
     
     // Backtrace for density advection
     let prevPos = uv - vel * pixel * 3.0;

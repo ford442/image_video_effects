@@ -65,19 +65,20 @@ fn curlNoise(p: vec2<f32>) -> vec2<f32> {
 // ─────────────────────────────────────────────────────────────────────────────
 //  Edge-magnitude: Sobel on single channel
 // ─────────────────────────────────────────────────────────────────────────────
+fn sampleChannel(off: vec2<f32>, c: i32, uv: vec2<f32>) -> f32 {
+    let s = textureSampleLevel(readTexture, u_sampler,
+                clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    if (c == 0) { return s.r; }
+    else if (c == 1) { return s.g; }
+    return s.b;
+}
+
 fn sobelEdge(uv: vec2<f32>, tx: vec2<f32>, ch: i32) -> f32 {
-    fn sc(off: vec2<f32>, c: i32) -> f32 {
-        let s = textureSampleLevel(readTexture, u_sampler,
-                    clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-        if (c == 0) { return s.r; }
-        else if (c == 1) { return s.g; }
-        return s.b;
-    }
-    let gx = -sc(vec2<f32>(-tx.x,  tx.y), ch) + sc(vec2<f32>(tx.x,  tx.y), ch)
-             -sc(vec2<f32>(-tx.x, 0.0), ch) * 2.0 + sc(vec2<f32>(tx.x, 0.0), ch) * 2.0
-             -sc(vec2<f32>(-tx.x, -tx.y), ch) + sc(vec2<f32>(tx.x, -tx.y), ch);
-    let gy = sc(vec2<f32>(-tx.x, tx.y), ch) + sc(vec2<f32>(0.0, tx.y), ch) * 2.0 + sc(vec2<f32>(tx.x, tx.y), ch)
-             -sc(vec2<f32>(-tx.x, -tx.y), ch) - sc(vec2<f32>(0.0, -tx.y), ch) * 2.0 - sc(vec2<f32>(tx.x, -tx.y), ch);
+    let gx = -sampleChannel(vec2<f32>(-tx.x,  tx.y), ch, uv) + sampleChannel(vec2<f32>(tx.x,  tx.y), ch, uv)
+             -sampleChannel(vec2<f32>(-tx.x, 0.0), ch, uv) * 2.0 + sampleChannel(vec2<f32>(tx.x, 0.0), ch, uv) * 2.0
+             -sampleChannel(vec2<f32>(-tx.x, -tx.y), ch, uv) + sampleChannel(vec2<f32>(tx.x, -tx.y), ch, uv);
+    let gy = sampleChannel(vec2<f32>(-tx.x, tx.y), ch, uv) + sampleChannel(vec2<f32>(0.0, tx.y), ch, uv) * 2.0 + sampleChannel(vec2<f32>(tx.x, tx.y), ch, uv)
+             -sampleChannel(vec2<f32>(-tx.x, -tx.y), ch, uv) - sampleChannel(vec2<f32>(0.0, -tx.y), ch, uv) * 2.0 - sampleChannel(vec2<f32>(tx.x, -tx.y), ch, uv);
     return length(vec2<f32>(gx, gy)) * 0.125;
 }
 

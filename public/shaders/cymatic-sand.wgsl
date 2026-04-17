@@ -28,7 +28,7 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -48,15 +48,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lineWidth = u.zoom_params.y * 0.1 + 0.01;
     let grainSize = u.zoom_params.z * 500.0 + 100.0;
     let contrast = u.zoom_params.w + 1.0;
+    let mids = plasmaBuffer[0].y;
 
     // Adjust UV to -1..1 for symmetry
     var p = uv * 2.0 - 1.0;
     p.x *= aspect;
 
+    // Audio reactivity on shake frequency
+    let shake = 1.0 + mids * 2.0;
+
     // Chladni Formula
     // A common variation: cos(n*pi*x)*cos(m*pi*y) - cos(m*pi*x)*cos(n*pi*y)
     let pi = 3.14159;
-    let wave = cos(n * pi * p.x) * cos(m * pi * p.y) - cos(m * pi * p.x) * cos(n * pi * p.y);
+    let wave = cos(n * pi * p.x * shake) * cos(m * pi * p.y * shake) - cos(m * pi * p.x * shake) * cos(n * pi * p.y * shake);
 
     // Nodal lines are where wave is close to 0
     let vibration = abs(wave);
@@ -76,7 +80,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sand = step(1.0 - sandProb * sandAmount, noiseVal);
 
     // Background Image
-    var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let inputRGBA = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    var color = inputRGBA.rgb;
+    let bgAlpha = inputRGBA.a;
 
     // Darken background slightly to show white sand
     color *= 0.5;
@@ -86,12 +92,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sandColor = vec3<f32>(0.9, 0.85, 0.7);
     color = mix(color, sandColor, sand);
 
-    // Optional: Visualise vibration (heat map) for debugging or effect
-    // color += vec3<f32>(vibration * 0.1, 0.0, 0.0);
+    // Alpha proportional to sand presence and contrast, blended with background alpha
+    let alpha = mix(bgAlpha * 0.5, 1.0, sand * sandProb * sandAmount * contrast);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 
-    // Pass depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Height-field depth: sand closer, background farther
+    let heightDepth = sand * 0.8 + 0.1;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(heightDepth, 0.0, 0.0, 0.0));
 }

@@ -468,10 +468,15 @@
       "3d",
       "bioluminescence",
       "raymarching",
-      "volumetric"
+      "volumetric",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -500,8 +505,8 @@
       },
       {
         "id": "param4",
-        "name": "Color Shift",
-        "default": 0,
+        "name": "Water Clarity",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.05
@@ -902,7 +907,8 @@
       "quantum",
       "orrery",
       "audio",
-      "music"
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
@@ -1383,42 +1389,51 @@
   },
   {
     "id": "gen-celestial-glass-tornado",
+    "name": "Celestial Glass Tornado",
+    "url": "shaders/gen-celestial-glass-tornado.wgsl",
+    "category": "generative",
     "coordinate": 859,
     "type": "shader",
-    "category": "generative",
-    "url": "shaders/gen-celestial-glass-tornado.wgsl",
-    "sliders": [
+    "params": [
       {
+        "id": "vortex_twist",
         "name": "Vortex Twist",
-        "param": "zoom_params.x",
         "default": 1,
         "min": 0,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.x",
+        "description": "Twist of the vortex"
       },
       {
+        "id": "debris_density",
         "name": "Debris Density",
-        "param": "zoom_params.y",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.05
+        "step": 0.05,
+        "mapping": "zoom_params.y",
+        "description": "Density of debris particles"
       },
       {
+        "id": "chromatic_split",
         "name": "Chromatic Split",
-        "param": "zoom_params.z",
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Chromatic aberration split"
       },
       {
+        "id": "audio_reactivity",
         "name": "Audio Reactivity",
-        "param": "zoom_params.w",
         "default": 1,
         "min": 0,
         "max": 2,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Audio reactivity multiplier"
       }
     ]
   },
@@ -1590,13 +1605,13 @@
         "step": 0.1
       },
       {
-        "id": "material",
-        "name": "Architectural Style",
-        "default": 0,
+        "id": "atm_perspective",
+        "name": "Atmospheric Perspective",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "description": "0=Ancient Stone, 1=Obsidian & Neon"
+        "step": 0.05,
+        "description": "Distance fade intensity"
       }
     ]
   },
@@ -1617,7 +1632,8 @@
       "gravity",
       "procedural",
       "audio",
-      "music"
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
@@ -1717,13 +1733,13 @@
         "description": "Brightness of crystal glow"
       },
       {
-        "id": "pulse",
-        "name": "Pulse",
-        "default": 0,
+        "id": "fogDensity",
+        "name": "Fog Density",
+        "default": 0.5,
         "min": 0,
-        "max": 1,
+        "max": 2,
         "step": 0.01,
-        "description": "Crystal pulsing animation speed"
+        "description": "Volumetric fog density"
       }
     ]
   },
@@ -1793,7 +1809,8 @@
       "procedural",
       "decoder",
       "audio",
-      "music"
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
@@ -1827,11 +1844,11 @@
         "step": 0.1
       },
       {
-        "id": "decoderRadius",
-        "name": "Interactive Decoder Radius",
+        "id": "scanlineBloom",
+        "name": "Scanline Bloom",
         "default": 0.5,
         "min": 0,
-        "max": 1,
+        "max": 2,
         "step": 0.05
       }
     ]
@@ -2006,42 +2023,51 @@
   },
   {
     "id": "gen-ethereal-quantum-medusa",
+    "name": "Ethereal Quantum Medusa",
+    "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
+    "category": "generative",
     "coordinate": 857,
     "type": "shader",
-    "category": "generative",
-    "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
-    "sliders": [
+    "params": [
       {
+        "id": "swimming_speed",
         "name": "Swimming Speed",
-        "param": "zoom_params.x",
         "default": 1,
         "min": 0.1,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.x",
+        "description": "Speed of medusa movement"
       },
       {
+        "id": "tentacle_curl",
         "name": "Tentacle Curl",
-        "param": "zoom_params.y",
         "default": 2,
         "min": 0,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.y",
+        "description": "Curliness of tentacles"
       },
       {
+        "id": "quantum_glow",
         "name": "Quantum Glow",
-        "param": "zoom_params.z",
         "default": 1,
         "min": 0,
         "max": 3,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "description": "Glow intensity"
       },
       {
+        "id": "repulsion_strength",
         "name": "Repulsion Strength",
-        "param": "zoom_params.w",
         "default": 0.5,
         "min": 0,
         "max": 2,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Mouse repulsion strength"
       }
     ]
   },
@@ -2235,42 +2261,51 @@
   },
   {
     "id": "gen-graviton-plasma-lotus",
-    "type": "shader",
-    "category": "generative",
+    "name": "Graviton Plasma Lotus",
     "url": "shaders/gen-graviton-plasma-lotus.wgsl",
+    "category": "generative",
+    "type": "shader",
     "coordinate": 860,
-    "sliders": [
+    "params": [
       {
+        "id": "rotation_speed",
         "name": "Rotation Speed",
-        "param": "zoom_params.x",
         "default": 1,
         "min": 0.1,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.x",
+        "description": "Speed of rotation"
       },
       {
+        "id": "complexity",
         "name": "Complexity",
-        "param": "zoom_params.y",
         "default": 1,
         "min": 0.5,
         "max": 3,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.y",
+        "description": "Form complexity"
       },
       {
+        "id": "bloom_intensity",
         "name": "Bloom Intensity",
-        "param": "zoom_params.z",
         "default": 1,
         "min": 0,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "description": "Bloom glow intensity"
       },
       {
+        "id": "gravity_well",
         "name": "Gravity Well Strength",
-        "param": "zoom_params.w",
         "default": 0.5,
         "min": 0,
         "max": 2,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Gravity well pull strength"
       }
     ]
   },
@@ -3062,42 +3097,51 @@
   },
   {
     "id": "gen-nebular-chrono-astrolabe",
-    "type": "shader",
-    "category": "generative",
+    "name": "Nebular Chrono Astrolabe",
     "url": "shaders/gen-nebular-chrono-astrolabe.wgsl",
+    "category": "generative",
+    "type": "shader",
     "coordinate": 858,
-    "sliders": [
+    "params": [
       {
+        "id": "rotation_speed",
         "name": "Rotation Speed",
-        "param": "zoom_params.x",
         "default": 1,
         "min": 0.1,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.x",
+        "description": "Rotation speed of the astrolabe"
       },
       {
+        "id": "complexity",
         "name": "Complexity",
-        "param": "zoom_params.y",
         "default": 2,
         "min": 1,
         "max": 5,
-        "step": 1
+        "step": 1,
+        "mapping": "zoom_params.y",
+        "description": "Number of ring layers"
       },
       {
+        "id": "glow_intensity",
         "name": "Glow Intensity",
-        "param": "zoom_params.z",
         "default": 1,
         "min": 0,
         "max": 3,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "description": "Glow intensity"
       },
       {
+        "id": "gravity_well",
         "name": "Gravity Well Strength",
-        "param": "zoom_params.w",
         "default": 0.5,
         "min": 0,
         "max": 2,
-        "step": 0.1
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Mouse gravity attraction"
       }
     ]
   },
@@ -3591,8 +3635,8 @@
         "step": 0.1
       },
       {
-        "id": "sporeThickness",
-        "name": "Spore Thickness",
+        "id": "edgeSoftness",
+        "name": "Edge Softness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3708,12 +3752,12 @@
       },
       {
         "id": "param4",
-        "name": "Color Mode",
+        "name": "Wavefunction Opacity",
         "min": 0,
         "max": 1,
-        "default": 0,
-        "step": 1,
-        "description": "0=per-particle spectrum, 1=time-evolving hue."
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Probability cloud opacity scale."
       }
     ]
   },
@@ -3781,12 +3825,14 @@
     "description": "Fast predatory mini raptor agents chase the mouse and strike with claws. Audio rage mode boosts speed and attacks.",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "agent",
       "chase",
       "audio",
+      "music",
       "procedural",
       "generative",
       "reactive"
@@ -3817,12 +3863,12 @@
         "step": 0.1
       },
       {
-        "id": "rageSpeedBoost",
-        "name": "Rage Speed Boost",
-        "default": 2,
-        "min": 1,
-        "max": 3,
-        "step": 0.1
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
       }
     ]
   },
@@ -3938,7 +3984,8 @@
       "volumetric",
       "audio-reactive",
       "audio",
-      "music"
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
@@ -3971,12 +4018,12 @@
         "step": 0.1
       },
       {
-        "id": "singularityPull",
-        "name": "Singularity Pull",
-        "default": 1.5,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
+        "id": "threadOpacityExp",
+        "name": "Thread Opacity Exponent",
+        "default": 1,
+        "min": 0.25,
+        "max": 3,
+        "step": 0.05
       }
     ]
   },
@@ -4137,12 +4184,12 @@
         "step": 0.01
       },
       {
-        "id": "colorTemp",
-        "name": "Temperature Shift",
-        "default": 0.5,
+        "id": "gasOpacity",
+        "name": "Gas Opacity",
+        "default": 1,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 3,
+        "step": 0.05
       }
     ]
   },
@@ -4212,7 +4259,10 @@
       "mechanical",
       "audio-reactive",
       "raymarching",
-      "glass"
+      "glass",
+      "audio",
+      "music",
+      "reactive"
     ],
     "features": [
       "mouse-driven",
@@ -4245,12 +4295,12 @@
         "step": 0.01
       },
       {
-        "id": "glowIntensity",
-        "name": "Glow Intensity",
-        "default": 1,
+        "id": "transmission",
+        "name": "Transmission",
+        "default": 0.5,
         "min": 0,
-        "max": 3,
-        "step": 0.05
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -4357,12 +4407,12 @@
         "step": 0.1
       },
       {
-        "id": "growthWarp",
-        "name": "Growth Warp",
-        "default": 1,
-        "min": 0.1,
-        "max": 3,
-        "step": 0.1
+        "id": "glowSpread",
+        "name": "Glow Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -5192,11 +5242,16 @@
     "category": "generative",
     "description": "Hypnotic spiral with intense feedback and mouse warping.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "audio",
+      "music",
+      "reactive"
     ],
     "params": [
       {
@@ -6412,7 +6467,9 @@
     "category": "generative",
     "features": [
       "mouse-driven",
-      "simulation"
+      "simulation",
+      "audio-reactive",
+      "audio-driven"
     ],
     "params": [
       {
@@ -6446,7 +6503,10 @@
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "audio",
+      "music",
+      "reactive"
     ]
   },
   {

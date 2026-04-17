@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -58,9 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = historyColor * decay;
     }
 
-    // Ensure alpha is 1
-    finalColor.a = 1.0;
-
+    // Preserve blended alpha (do not force to 1.0)
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
 
