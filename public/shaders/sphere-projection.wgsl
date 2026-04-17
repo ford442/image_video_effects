@@ -116,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Lighting
         let lightDir = normalize(vec3<f32>(-0.5, 0.5, -1.0));
         let diff = max(0.0, dot(n, lightDir));
-        let ambient = 0.2;
+        let ambient = mix(0.0, 0.6, u.zoom_params.w);
         let lighting = mix(1.0, ambient + diff, light_param);
 
         final_color = color.rgb * lighting;

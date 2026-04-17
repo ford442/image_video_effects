@@ -3374,31 +3374,44 @@
     "description": "Rotates the image plane in 3D space based on mouse position (Pitch/Yaw). Zoom param adjusts distance.",
     "params": [
       {
+        "id": "tilt_sensitivity",
         "name": "Tilt Sensitivity",
-        "type": "float",
-        "default": 1,
-        "min": 0,
-        "max": 5,
-        "target": "zoom_params.x",
-        "id": "tilt_sensitivity"
-      },
-      {
-        "name": "Distance (FOV)",
-        "type": "float",
-        "default": 1,
-        "min": 0.5,
-        "max": 3,
-        "target": "zoom_params.y",
-        "id": "distance_(fov)"
-      },
-      {
-        "name": "Y-Axis Tilt (Pitch)",
-        "type": "float",
-        "default": 1,
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.z",
-        "id": "y_axis_tilt_(pitch)"
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Sensitivity of the tilt effect"
+      },
+      {
+        "id": "distance",
+        "name": "Distance (FOV)",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Camera distance / field of view"
+      },
+      {
+        "id": "pitch_enable",
+        "name": "Y-Axis Tilt (Pitch)",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Enable or scale pitch tilt amount"
+      },
+      {
+        "id": "plane_scale",
+        "name": "Plane Scale",
+        "default": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Scale of the projected plane"
       }
     ],
     "features": [
@@ -3510,25 +3523,44 @@
     "description": "Color tiles break apart and reassemble into shifting prisms, turning strong colors into a kaleidoscopic mosaic that ripples across the image.",
     "params": [
       {
-        "id": "tileSize",
-        "name": "Tile Size",
-        "default": 0.05,
-        "min": 0.01,
-        "max": 0.2
-      },
-      {
-        "id": "speed",
-        "name": "Mosaic Speed",
+        "id": "min_speed",
+        "name": "Min Speed",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Minimum layer animation speed"
       },
       {
-        "id": "satBoost",
+        "id": "max_speed",
+        "name": "Max Speed",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Maximum layer animation speed"
+      },
+      {
+        "id": "saturation_boost",
         "name": "Saturation Boost",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Saturation boost amount"
+      },
+      {
+        "id": "fog_density",
+        "name": "Fog Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Volumetric fog density"
       }
     ],
     "features": [
@@ -6964,14 +6996,40 @@
         "name": "Lens Radius",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Radius of the ASCII lens"
       },
       {
         "id": "density",
         "name": "Character Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Density of ASCII characters in the lens"
+      },
+      {
+        "id": "line_width",
+        "name": "Glyph Line Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Width of glyph lines in the ASCII characters"
+      },
+      {
+        "id": "brightness_bias",
+        "name": "Brightness Threshold Bias",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Bias for brightness threshold comparisons"
       }
     ],
     "features": [
@@ -7957,21 +8015,40 @@
         "name": "Hex Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Size of the hexagonal grid cells"
       },
       {
         "id": "glow_intensity",
         "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Intensity of the hex edge glow"
       },
       {
         "id": "reveal_radius",
         "name": "Reveal Radius",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Radius around mouse where armor retracts"
+      },
+      {
+        "id": "border_thickness",
+        "name": "Border Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Thickness of hexagon borders"
       }
     ],
     "features": [
@@ -8306,11 +8383,44 @@
     ],
     "params": [
       {
-        "id": "zoom_params",
-        "name": "zoom_params",
+        "id": "pixel_strength",
+        "name": "Pixel Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Controls grid size for pixelation"
+      },
+      {
+        "id": "clear_radius",
+        "name": "Clear Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius around mouse where fog clears"
+      },
+      {
+        "id": "noise_amount",
+        "name": "Noise Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of digital noise in the haze"
+      },
+      {
+        "id": "haze_density",
+        "name": "Haze Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Density of the volumetric haze"
       }
     ],
     "tags": [
@@ -8759,14 +8869,40 @@
         "name": "Teeth Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of zipper teeth"
       },
       {
         "id": "spread",
         "name": "Opening Spread",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Width of the zipper opening"
+      },
+      {
+        "id": "weave_freq",
+        "name": "Weave Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Frequency of the fabric weave pattern"
+      },
+      {
+        "id": "jaggedness",
+        "name": "Tooth Jaggedness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Amplitude of tooth jaggedness"
       }
     ],
     "features": [
@@ -10267,21 +10403,40 @@
         "name": "Cell Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of Voronoi cells"
       },
       {
         "id": "lens_strength",
         "name": "Lens Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of the lens distortion"
       },
       {
         "id": "chaos",
         "name": "Chaos",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Randomness of cell point movement"
+      },
+      {
+        "id": "lens_curve",
+        "name": "Lens Curve",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Curvature of the lens bulge effect"
       }
     ],
     "features": [
@@ -10980,11 +11135,44 @@
     ],
     "params": [
       {
-        "id": "zoom_params",
-        "name": "zoom_params",
+        "id": "base_radius",
+        "name": "Base Radius",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base radius of the magnetic ring"
+      },
+      {
+        "id": "strength",
+        "name": "Distortion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of the distortion effect"
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Speed of the ring pulse animation"
+      },
+      {
+        "id": "ring_thickness",
+        "name": "Ring Thickness",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 0.3,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Thickness of the magnetic ring"
       }
     ],
     "tags": [
@@ -12123,21 +12311,40 @@
         "name": "Depth Scale",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Maximum displacement depth"
       },
       {
         "id": "shadows",
         "name": "Shadow Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of layer rim shadows"
       },
       {
         "id": "layers",
         "name": "Quality",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Number of depth layers to sample"
+      },
+      {
+        "id": "shadow_threshold",
+        "name": "Shadow Threshold",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Threshold for applying rim shadowing"
       }
     ],
     "features": [
@@ -12656,14 +12863,40 @@
         "name": "Mode",
         "default": 0,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Mirror mode blend"
       },
       {
         "id": "zoom",
         "name": "Zoom",
-        "default": 1,
-        "min": 0.1,
-        "max": 3
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Zoom level of the mirrored image"
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Rotation of the mirror pattern"
+      },
+      {
+        "id": "edge_softness",
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Softness of mirror sector edges"
       }
     ],
     "features": [
@@ -12969,21 +13202,40 @@
         "name": "Hex Scale",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Size of hexagonal pixels"
       },
       {
         "id": "radius",
         "name": "Lens Radius",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius of the lens effect"
       },
       {
         "id": "distortion",
         "name": "Distortion",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of magnification distortion"
+      },
+      {
+        "id": "edge_hardness",
+        "name": "Hex Edge Hardness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Hardness of hexagon cell edges"
       }
     ],
     "tags": [
@@ -13315,21 +13567,40 @@
         "name": "Trail Persistence",
         "default": 0.9,
         "min": 0.5,
-        "max": 0.99
+        "max": 0.99,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "How long trails persist over time"
       },
       {
         "id": "split",
         "name": "Time Split",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Amount of RGB channel time separation"
       },
       {
         "id": "radius",
         "name": "Brush Size",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Size of the brush around the mouse"
+      },
+      {
+        "id": "alpha_scale",
+        "name": "Alpha Absorption Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Scale of wavelength-dependent alpha absorption"
       }
     ],
     "features": [
@@ -13397,21 +13668,40 @@
         "name": "Line Thickness",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Thickness of contour lines"
       },
       {
         "id": "frequency",
         "name": "Contour Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Density of contour lines"
       },
       {
         "id": "parallax",
         "name": "Parallax Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB channel parallax separation"
+      },
+      {
+        "id": "bg_opacity",
+        "name": "Background Opacity",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Opacity of the original image behind contours"
       }
     ],
     "features": [
@@ -14250,22 +14540,41 @@
         "id": "zoom",
         "name": "Sphere Zoom",
         "default": 0.6,
-        "min": 0.1,
-        "max": 2
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Zoom level of the sphere projection"
       },
       {
         "id": "rotation",
         "name": "Spin Speed",
-        "default": 0,
-        "min": -1,
-        "max": 1
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Auto-rotation speed of the sphere"
       },
       {
         "id": "light",
         "name": "Lighting",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of directional lighting"
+      },
+      {
+        "id": "ambient",
+        "name": "Ambient Light",
+        "default": 0.3,
+        "min": 0,
+        "max": 0.6,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Ambient light level on the sphere"
       }
     ],
     "tags": [
@@ -15378,31 +15687,44 @@
     "description": "Interactive X-Ray lens that reveals an inverted, edge-enhanced internal structure.",
     "params": [
       {
+        "id": "lens_size",
         "name": "Lens Size",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.x",
-        "id": "lens_size"
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Radius of the X-ray lens"
       },
       {
+        "id": "edge_strength",
         "name": "Edge Strength",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.y",
-        "id": "edge_strength"
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of edge enhancement"
       },
       {
+        "id": "contrast",
         "name": "Contrast",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.z",
-        "id": "contrast"
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Contrast of the X-ray effect"
+      },
+      {
+        "id": "lens_softness",
+        "name": "Lens Edge Softness",
+        "default": 0.075,
+        "min": 0,
+        "max": 0.15,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Softness of the lens edge falloff"
       }
     ],
     "features": [
@@ -16771,28 +17093,44 @@
     ],
     "params": [
       {
-        "name": "Grid Density",
         "id": "density",
-        "min": 10,
-        "max": 200,
-        "step": 1,
-        "default": 80
-      },
-      {
-        "name": "Color Mode",
-        "id": "color_mode",
+        "name": "Grid Density",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "default": 0
+        "mapping": "zoom_params.x",
+        "description": "Density of the ASCII character grid"
       },
       {
-        "name": "Glow",
-        "id": "glow",
+        "id": "color_mode",
+        "name": "Color Mode",
+        "default": 0,
         "min": 0,
-        "max": 2,
-        "step": 0.1,
-        "default": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Blend between monochrome and full color"
+      },
+      {
+        "id": "glow_strength",
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Glow strength of the ASCII characters"
+      },
+      {
+        "id": "decoder_radius",
+        "name": "Decoder Radius",
+        "default": 0.3,
+        "min": 0.05,
+        "max": 0.4,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Radius of the binary decoder lens around the mouse"
       }
     ],
     "tags": [
@@ -16898,25 +17236,44 @@
     "description": "",
     "params": [
       {
-        "id": "blockIntensity",
-        "name": "Block Intensity",
-        "default": 0.4,
+        "id": "corruption_intensity",
+        "name": "Corruption Intensity",
+        "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Intensity of digital corruption effects"
       },
       {
-        "id": "channelShift",
-        "name": "Channel Shift",
-        "default": 0.4,
+        "id": "bit_manipulation",
+        "name": "Bit Manipulation",
+        "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Type and amount of bitwise corruption"
       },
       {
-        "id": "scanline",
-        "name": "Scanline Tears",
-        "default": 0.2,
+        "id": "error_propagation",
+        "name": "Error Propagation",
+        "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Spread of corruption to neighboring pixels"
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Rate of digital bit-depth decay"
       }
     ],
     "features": [
@@ -17080,18 +17437,44 @@
     "description": "",
     "params": [
       {
-        "id": "edgeThreshold",
+        "id": "min_speed",
+        "name": "Min Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Minimum layer animation speed"
+      },
+      {
+        "id": "max_speed",
+        "name": "Max Speed",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Maximum layer animation speed"
+      },
+      {
+        "id": "edge_threshold",
         "name": "Edge Threshold",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Edge detection threshold"
       },
       {
-        "id": "neonIntensity",
+        "id": "neon_intensity",
         "name": "Neon Intensity",
-        "default": 1,
+        "default": 0.3,
         "min": 0,
-        "max": 2
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Intensity of the neon glow effect"
       }
     ],
     "tags": [
@@ -17880,21 +18263,40 @@
         "name": "Grid Density",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the split-flap grid"
       },
       {
         "id": "radius",
         "name": "Mouse Radius",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius of mouse interaction"
       },
       {
         "id": "auto_speed",
         "name": "Auto Flip Speed",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Speed of automatic idle flipping"
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0.8,
+        "max": 0.99,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Physics damping for tile rotation"
       }
     ],
     "tags": [
@@ -18106,20 +18508,44 @@
     "description": "Reveals a cybernetic wireframe world through a glitchy portal at your mouse cursor.",
     "params": [
       {
+        "id": "radius",
         "name": "Radius",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "id": "radius"
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base radius of the portal"
       },
       {
+        "id": "glitch_speed",
         "name": "Glitch Speed",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "id": "glitch_speed"
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Speed of portal edge glitch jitter"
+      },
+      {
+        "id": "glow_sharpness",
+        "name": "Glow Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Sharpness of the portal edge glow"
+      },
+      {
+        "id": "grid_density",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Density of the cyber grid inside the portal"
       }
     ],
     "features": [
@@ -18185,18 +18611,44 @@
     "description": "Edge detection with electric glowing contours that react to mouse proximity.",
     "params": [
       {
-        "id": "param1",
-        "name": "Threshold",
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base threshold for edge detection"
       },
       {
-        "id": "param2",
-        "name": "Intensity",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Intensity multiplier for the electric glow"
+      },
+      {
+        "id": "threshold_range",
+        "name": "Edge Threshold Range",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Range of the adaptive edge threshold"
+      },
+      {
+        "id": "spark_speed",
+        "name": "Spark Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Speed of electric spark animation"
       }
     ],
     "tags": [
@@ -18595,11 +19047,44 @@
     ],
     "params": [
       {
-        "id": "zoom_params",
-        "name": "zoom_params",
+        "id": "density",
+        "name": "Rain Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of rain streaks"
+      },
+      {
+        "id": "chromatic_strength",
+        "name": "Chromatic Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of chromatic displacement"
+      },
+      {
+        "id": "trail_length",
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Length of raindrop trails"
+      },
+      {
+        "id": "rain_angle_scale",
+        "name": "Rain Angle Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Scale of the rain angle variation"
       }
     ],
     "tags": [
@@ -18616,28 +19101,44 @@
     "description": "Separates RGB channels in time. Red is instant, Green and Blue trail behind with variable lag.",
     "params": [
       {
+        "id": "green_lag",
         "name": "Green Lag",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
         "default": 0.5,
-        "id": "green_lag"
-      },
-      {
-        "name": "Blue Lag",
-        "type": "f32",
         "min": 0,
         "max": 1,
-        "default": 0.8,
-        "id": "blue_lag"
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Lag amount for the green channel"
       },
       {
+        "id": "blue_lag",
+        "name": "Blue Lag",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Lag amount for the blue channel"
+      },
+      {
+        "id": "feedback",
         "name": "Feedback",
-        "type": "f32",
+        "default": 0,
         "min": 0,
         "max": 0.99,
-        "default": 0,
-        "id": "feedback"
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Feedback amount for temporal smearing"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Influence Radius",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 0.6,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Radius of mouse influence on lag reduction"
       }
     ],
     "features": [
@@ -18708,21 +19209,40 @@
         "name": "Spread",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Width of the zipper V-shape opening"
       },
       {
         "id": "tooth_size",
         "name": "Tooth Size",
         "default": 0.02,
         "min": 0.005,
-        "max": 0.1
+        "max": 0.1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Size of zipper teeth"
       },
       {
         "id": "angle",
         "name": "Angle",
         "default": 0,
         "min": -1.57,
-        "max": 1.57
+        "max": 1.57,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Rotation angle of the zipper"
+      },
+      {
+        "id": "tooth_amplitude",
+        "name": "Tooth Amplitude",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Amplitude of the tooth protrusion"
       }
     ],
     "features": [

@@ -69,7 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's say the mechanical edge is at `gap`.
     // The teeth oscillate around `gap`.
 
-    let tooth_amplitude = tooth_size * 0.5;
+    let tooth_amplitude = tooth_size * mix(0.1, 1.0, u.zoom_params.w);
     // Interleave teeth: Left side has teeth where Right side has gaps?
     // Normal zipper: teeth interlock.
     // Left side: High when fract < 0.5

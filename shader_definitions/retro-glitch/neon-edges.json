@@ -6,18 +6,44 @@
   "description": "",
   "params": [
     {
-      "id": "edgeThreshold",
+      "id": "min_speed",
+      "name": "Min Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Minimum layer animation speed"
+    },
+    {
+      "id": "max_speed",
+      "name": "Max Speed",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Maximum layer animation speed"
+    },
+    {
+      "id": "edge_threshold",
       "name": "Edge Threshold",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Edge detection threshold"
     },
     {
-      "id": "neonIntensity",
+      "id": "neon_intensity",
       "name": "Neon Intensity",
-      "default": 1.0,
+      "default": 0.3,
       "min": 0.0,
-      "max": 2.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Intensity of the neon glow effect"
     }
   ],
   "tags": [

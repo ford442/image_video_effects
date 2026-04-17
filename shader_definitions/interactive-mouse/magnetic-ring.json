@@ -7,11 +7,44 @@
   ],
   "params": [
     {
-      "id": "zoom_params",
-      "name": "zoom_params",
+      "id": "base_radius",
+      "name": "Base Radius",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base radius of the magnetic ring"
+    },
+    {
+      "id": "strength",
+      "name": "Distortion Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of the distortion effect"
+    },
+    {
+      "id": "pulse_speed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Speed of the ring pulse animation"
+    },
+    {
+      "id": "ring_thickness",
+      "name": "Ring Thickness",
+      "default": 0.3,
+      "min": 0.01,
+      "max": 0.3,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Thickness of the magnetic ring"
     }
   ],
   "tags": [

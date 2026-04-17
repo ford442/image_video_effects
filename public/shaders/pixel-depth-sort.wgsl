@@ -70,7 +70,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
          final_color = samp;
 
          // Simple rim shadowing
-         if (luma < layer_height + 0.05 && shadow_str > 0.0) {
+         if (luma < layer_height + mix(0.0, 0.2, u.zoom_params.w) && shadow_str > 0.0) {
             final_color *= (1.0 - shadow_str * 0.5);
          }
        }

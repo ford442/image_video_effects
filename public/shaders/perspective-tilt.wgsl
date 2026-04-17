@@ -17,7 +17,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Tilt Sensitivity, y=Distance, z=Pitch Enable, w=Unused
+  zoom_params: vec4<f32>,  // x=Tilt Sensitivity, y=Distance, z=Pitch Enable, w=PlaneScale
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -129,8 +129,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // If aspect != 1, we need to handle it.
             // Let's say u maps to [-aspect/2, aspect/2] and v to [-0.5, 0.5].
 
-            let texU = u_plane / aspect + 0.5;
-            let texV = -v_plane + 0.5; // Flip Y back
+            let texU = (u_plane / aspect) * u.zoom_params.w + 0.5;
+            let texV = -v_plane * u.zoom_params.w + 0.5; // Flip Y back
 
             if (texU >= 0.0 && texU <= 1.0 && texV >= 0.0 && texV <= 1.0) {
                 color = textureSampleLevel(readTexture, u_sampler, vec2<f32>(texU, texV), 0.0);

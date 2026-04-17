@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // smoothstep(radius, radius - blur, dist)
     // Ensure radius - blur < radius (which it is if blur > 0)
 
-    let blur = 0.05;
+    let blur = mix(0.0, 0.15, u.zoom_params.w);
     // Note: smoothstep requires edge0 < edge1 for 0->1 transition.
     // To get 1->0 transition (Inverted smoothstep): 1.0 - smoothstep(min, max, val)
     // Or smoothstep(max, min, val) is undefined/implementation dependent in some languages, but in GLSL/WGSL edge0 and edge1 can be anything.

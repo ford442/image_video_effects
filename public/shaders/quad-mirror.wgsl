@@ -34,12 +34,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // We reflect everything around the X and Y axes defined by the mouse.
 
   // Relative coordinates
-  let rel_x = uv.x - mouse.x;
-  let rel_y = uv.y - mouse.y;
+  let rel = uv - mouse;
+  let rot = mix(0.0, 6.283, u.zoom_params.z);
+  let c = cos(rot);
+  let s = sin(rot);
+  let rel_rot = vec2<f32>(rel.x * c - rel.y * s, rel.x * s + rel.y * c);
 
   // Reflect: absolute distance from center
-  let abs_x = abs(rel_x);
-  let abs_y = abs(rel_y);
+  let abs_x = abs(rel_rot.x);
+  let abs_y = abs(rel_rot.y);
 
   // Sample Coordinate
   // We want to sample from the "positive" quadrant (or whatever quadrant the source image is best in)
@@ -79,7 +82,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  let edge_softness = mix(1.0, smoothstep(0.0, 0.1, min(abs_x, abs_y)), u.zoom_params.w);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color * edge_softness);
 
   // Pass depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

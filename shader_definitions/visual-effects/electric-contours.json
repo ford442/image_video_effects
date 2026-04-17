@@ -9,18 +9,44 @@
   "description": "Edge detection with electric glowing contours that react to mouse proximity.",
   "params": [
     {
-      "id": "param1",
-      "name": "Threshold",
+      "id": "edge_threshold",
+      "name": "Edge Threshold",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base threshold for edge detection"
     },
     {
-      "id": "param2",
-      "name": "Intensity",
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Intensity multiplier for the electric glow"
+    },
+    {
+      "id": "threshold_range",
+      "name": "Edge Threshold Range",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Range of the adaptive edge threshold"
+    },
+    {
+      "id": "spark_speed",
+      "name": "Spark Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Speed of electric spark animation"
     }
   ],
   "tags": [

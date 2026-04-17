@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x * shimmer_speed;
 
     // Generate low frequency noise for bulk distortion
-    let n_scale = 10.0;
+    let n_scale = mix(5.0, 40.0, u.zoom_params.w);
     let n1 = noise(uv * n_scale + vec2<f32>(time * 0.2, 0.0));
     let n2 = noise(uv * n_scale + vec2<f32>(0.0, time * 0.2));
     let displacement_dir = vec2<f32>(n1, n2) - 0.5;

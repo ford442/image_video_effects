@@ -55,7 +55,7 @@ fn calculateFabricAlpha(uv: vec2<f32>, isSeam: bool, isTeeth: bool) -> f32 {
     }
     
     // Fabric weave creates varying opacity
-    let weavePattern = sin(uv.x * 200.0) * sin(uv.y * 200.0) * 0.5 + 0.5;
+    let weavePattern = sin(uv.x * mix(50.0, 400.0, u.zoom_params.z)) * sin(uv.y * mix(50.0, 400.0, u.zoom_params.z)) * 0.5 + 0.5;
     let weaveAlpha = mix(FABRIC_ALPHA * 0.9, FABRIC_ALPHA, weavePattern);
     
     // Thread density affects opacity
@@ -102,7 +102,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Zipper Teeth
   let teeth_pattern = step(0.5, fract(uv.y * teeth_size));
 
-  let tooth_amp = 0.02;
+  let tooth_amp = mix(0.0, 0.1, u.zoom_params.w);
   let jagged_width = width + tooth_amp * sin(uv.y * teeth_size * 6.28);
 
   // Mask

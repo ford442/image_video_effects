@@ -58,7 +58,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var height = 0.0;
     // Only place buildings if hash is above a threshold or scale height
     if (h_rnd > 0.3) {
-        height = pow(h_rnd, 2.0) * 8.0 * density;
+        height = pow(h_rnd, 2.0) * mix(2.0, 16.0, u.zoom_params.w) * density;
     }
 
     // Building SDF

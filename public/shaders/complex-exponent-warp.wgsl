@@ -74,7 +74,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Center (0.5, 0.5) -> Exponent (1.0, 0.0) implies Identity z^1
     // Range: Real [-2, 4], Imag [-2, 2]
 
-    let w_real = (mouse.x - 0.5) * 6.0 + 1.0;
+    let w_real = (mouse.x - 0.5) * mix(1.0, 10.0, u.zoom_params.z) + 1.0;
     let w_imag = (mouse.y - 0.5) * 6.0;
     let w = vec2<f32>(w_real, w_imag);
 
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Convert back to UV [0, 1]
     // Undo aspect ratio correction
     result_z.x /= aspect;
-    var final_uv = result_z * 0.5 + 0.5;
+    var final_uv = result_z * mix(0.1, 1.0, u.zoom_params.w) + 0.5;
 
     // Mirror repeat or clamp? Mirror looks more "infinite"
     // final_uv = fract(final_uv); // Tiling

@@ -135,7 +135,7 @@ fn raymarchVolumetric(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32
         
         if (density > 0.001) {
             // Calculate optical depth for this step
-            let stepOpticalDepth = density * stepSize * SIGMA_T_NEBULA;
+            let stepOpticalDepth = density * stepSize * mix(0.2, 3.0, u.zoom_params.w);
             totalOpticalDepth += stepOpticalDepth;
             
             // Transmittance through this step

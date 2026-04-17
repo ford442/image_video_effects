@@ -100,7 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = hexDist(localUV);
 
     // Edge thickness
-    let border = 0.05;
+    let border = mix(0.01, 0.15, u.zoom_params.w);
     let radius = 0.5 * hexScale - border;
 
     var finalColor = vec4<f32>(0.0);

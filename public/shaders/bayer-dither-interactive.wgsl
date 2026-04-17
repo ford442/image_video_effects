@@ -54,7 +54,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Scale the coordinate system for pixelation effect
     // Scale factor: 1.0 to 16.0
-    let scale = mix(1.0, 16.0, mouse.y);
+    let scale = mix(4.0, 64.0, u.zoom_params.w);
     let scaled_pos = floor(pixel_pos / scale);
     let sample_uv = (scaled_pos * scale + scale * 0.5) / resolution;
 
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Re-calculating with standard formula
     let L = max(2.0, floor(levels));
-    let t = bayer; // 0..1
+    let t = bayer * mix(0.0, 2.0, u.zoom_params.z); // 0..1
     // Ordered Dither: color + (t - 0.5)/L ?
     // Or: if (color > t) 1 else 0 (for 1 bit)
 

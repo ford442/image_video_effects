@@ -43,6 +43,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sobel kernels
     let texel = 1.0 / resolution;
     let t = u.zoom_config.x;
+    let edge_threshold_base = u.zoom_params.x * 0.5;
+    let glow_multiplier = mix(0.0, 2.0, u.zoom_params.y);
 
     let c00 = luminance(textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>(-1.0, -1.0), 0.0).rgb);
     let c10 = luminance(textureSampleLevel(readTexture, u_sampler, uv + texel * vec2<f32>( 0.0, -1.0), 0.0).rgb);
@@ -64,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Electric noise
     let noise = hash12(uv * 50.0 + vec2<f32>(t * 2.0));
-    let spark = smoothstep(0.9, 1.0, noise * mouse_influence);
+    let spark = smoothstep(0.9, 1.0, noise * mouse_influence * mix(0.0, 10.0, u.zoom_params.w));
 
     let base_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
@@ -76,11 +78,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Combine
     // If edge is strong, use edge color + spark. Otherwise base image dimmed.
-    let final_edge = smoothstep(0.1, 0.4, edge);
-    let result = mix(base_color * 0.2, edge_color + vec3<f32>(spark), final_edge);
+    let final_edge = smoothstep(edge_threshold_base, edge_threshold_base + 0.3, edge);
+    let result = mix(base_color * 0.2, edge_color * glow_multiplier + vec3<f32>(spark), final_edge);
 
     // Add extra glow near mouse
-    let glow = mouse_influence * 0.3 * edge_color;
+    let glow = mouse_influence * 0.3 * edge_color * glow_multiplier;
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(result + glow, 1.0));
 }

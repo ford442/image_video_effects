@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Fisheye: displacement is non-linear with distance from center
   // Simple bulge:
   let dist_from_center = length(dir);
-  let bulge = (1.0 - sin(dist_from_center * 3.1415)); // 1 at center, 0 at edge roughly
+  let bulge = (1.0 - sin(dist_from_center * mix(1.0, 10.0, u.zoom_params.w))); // 1 at center, 0 at edge roughly
 
   let offset = dir * bulge * final_strength * 0.5;
 

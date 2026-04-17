@@ -10,14 +10,40 @@
       "name": "Lens Radius",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Radius of the ASCII lens"
     },
     {
       "id": "density",
       "name": "Character Density",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Density of ASCII characters in the lens"
+    },
+    {
+      "id": "line_width",
+      "name": "Glyph Line Width",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Width of glyph lines in the ASCII characters"
+    },
+    {
+      "id": "brightness_bias",
+      "name": "Brightness Threshold Bias",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Bias for brightness threshold comparisons"
     }
   ],
   "features": [

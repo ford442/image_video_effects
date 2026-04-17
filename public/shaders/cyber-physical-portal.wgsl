@@ -96,7 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let borderMask = smoothstep(radius, radius + edgeWidth * 0.5, dist) - smoothstep(radius + edgeWidth * 0.5, radius + edgeWidth, dist);
     // Actually border is just the transition area
     // Let's make a distinct glowing border
-    let glow = exp(-abs(dist - radius) * 20.0);
+    let glow = exp(-abs(dist - radius) * mix(5.0, 50.0, u.zoom_params.z));
 
     if (portalMask > 0.01) {
         // Inside Portal: Cyber View
@@ -107,7 +107,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let scanlineEffect = mix(0.8, 1.0, scanline);
 
         // Grid
-        let grid = step(0.98, fract(uv.x * 20.0)) + step(0.98, fract(uv.y * 20.0));
+        let grid = step(0.98, fract(uv.x * mix(5.0, 50.0, u.zoom_params.w))) + step(0.98, fract(uv.y * mix(5.0, 50.0, u.zoom_params.w)));
 
         // Matrix Green / Cyan Palette
         let cyberColor = vec3<f32>(0.0, edge * 2.0, edge * 0.5); // Green dominant

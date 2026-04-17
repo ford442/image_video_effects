@@ -38,7 +38,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mouse influence - reduce lag near mouse
   var mouse = u.zoom_config.yz;
   let dist = distance(uv, mouse);
-  let mouseFactor = smoothstep(0.0, 0.3, dist); // 0 near mouse, 1 far
+  let mouseFactor = smoothstep(0.0, mix(0.1, 0.6, u.zoom_params.w), dist); // 0 near mouse, 1 far
 
   // Modulate lag with mouse
   let gLag = greenLag * (0.5 + 0.5 * mouseFactor);

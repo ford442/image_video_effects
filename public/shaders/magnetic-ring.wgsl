@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Ring Animation
     let pulse = sin(time * pulseSpeed) * 0.05;
     let radius = baseRadius + pulse;
-    let thickness = 0.1;
+    let thickness = mix(0.01, 0.3, u.zoom_params.w);
 
     // Calculate Ring Influence
     // We want a smooth bump function around 'radius'

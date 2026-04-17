@@ -152,7 +152,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Calculate distance to mouse in UV space, correcting for aspect ratio for circular radius
     let to_mouse = (cell_center_uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist_mouse = length(to_mouse);
-    let decoder_radius = 0.15;
+    let decoder_radius = mix(0.05, 0.4, u.zoom_params.w);
     let is_decoder = step(dist_mouse, decoder_radius); // 1.0 inside, 0.0 outside
 
     // --- Glyph Selection ---

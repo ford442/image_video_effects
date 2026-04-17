@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let trailLen = u.zoom_params.z * 0.5 + 0.1;
 
     // Rotate UV for rain direction
-    let angle = angleVal * 0.5; // rads roughly
+    let angle = angleVal * mix(0.0, 1.5, u.zoom_params.w); // rads roughly
     let c = cos(angle);
     let s = sin(angle);
     let rotMat = mat2x2<f32>(c, -s, s, c);

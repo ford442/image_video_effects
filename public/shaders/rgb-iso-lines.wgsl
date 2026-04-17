@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let line_col = vec3<f32>(r_line, g_line, b_line);
 
   // Add a faint background of original image
-  let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * 0.1;
+  let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * mix(0.0, 0.5, u.zoom_params.w);
   
   let final_col = line_col + base;
 

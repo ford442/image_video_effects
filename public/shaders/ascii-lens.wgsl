@@ -67,7 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add half pixel offset to sample center of block
         let sampleUV = cellUV + (vec2<f32>(0.5) / grid);
         var col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-        let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+        let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114)) + (u.zoom_params.w - 0.5) * 0.4;
 
         var charVal = 0.0;
         var center = vec2<f32>(0.5, 0.5);
@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Line width proportional to density? Constant is better for pixel crispness.
         // In UV space (0-1), 1 pixel width is roughly 1.0 / (res.y / density * 8.0).
         // Let's use a fixed relative width.
-        let width = 0.1;
+        let width = mix(0.02, 0.25, u.zoom_params.z);
 
         // Procedural Glyphs
         // Sorted by brightness

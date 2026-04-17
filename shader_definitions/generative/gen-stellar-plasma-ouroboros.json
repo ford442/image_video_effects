@@ -1,9 +1,10 @@
 {
   "id": "gen-stellar-plasma-ouroboros",
   "coordinate": 852,
-  "type": "generative",
+  "type": "wgsl",
+  "url": "shaders/gen-stellar-plasma-ouroboros.wgsl",
   "category": "generative",
-  "title": "Stellar Plasma-Ouroboros",
+  "name": "Stellar Plasma-Ouroboros",
   "description": "An infinite, self-consuming mechanical serpent made of fractured glass scales and stellar plasma.",
   "params": [
     {

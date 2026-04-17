@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     angle = angle + velocity;
 
     // Damping / Friction
-    velocity = velocity * 0.92;
+    velocity = velocity * mix(0.8, 0.99, u.zoom_params.w);
 
     // Snap to grid (optional, simulates mechanical stops)?
     // Mechanical split flaps usually stop at discrete characters.

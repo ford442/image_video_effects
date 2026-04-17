@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   //  WAVELENGTH-DEPENDENT ALPHA
   //  Thickness derived from temporal split (delay) amount
   // ═══════════════════════════════════════════════════════════════
-  let temporalThickness = mask * split * 5.0;
+  let temporalThickness = mask * split * mix(1.0, 10.0, u.zoom_params.w);
   
   let alphaR = calculateChannelAlpha(temporalThickness, WAVELENGTH_RED);
   let alphaG = calculateChannelAlpha(temporalThickness, WAVELENGTH_GREEN);

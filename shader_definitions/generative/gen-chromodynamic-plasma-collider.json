@@ -3,6 +3,7 @@
   "name": "Chromodynamic Plasma-Collider",
   "coordinate": 853,
   "type": "wgsl",
+  "url": "shaders/gen-chromodynamic-plasma-collider.wgsl",
   "category": "generative",
   "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter.",
   "tags": [

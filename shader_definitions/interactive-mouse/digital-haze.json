@@ -7,11 +7,44 @@
   ],
   "params": [
     {
-      "id": "zoom_params",
-      "name": "zoom_params",
+      "id": "pixel_strength",
+      "name": "Pixel Strength",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls grid size for pixelation"
+    },
+    {
+      "id": "clear_radius",
+      "name": "Clear Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Radius around mouse where fog clears"
+    },
+    {
+      "id": "noise_amount",
+      "name": "Noise Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Amount of digital noise in the haze"
+    },
+    {
+      "id": "haze_density",
+      "name": "Haze Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Density of the volumetric haze"
     }
   ],
   "tags": [

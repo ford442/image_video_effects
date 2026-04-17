@@ -10,14 +10,40 @@
       "name": "Teeth Density",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of zipper teeth"
     },
     {
       "id": "spread",
       "name": "Opening Spread",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Width of the zipper opening"
+    },
+    {
+      "id": "weave_freq",
+      "name": "Weave Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Frequency of the fabric weave pattern"
+    },
+    {
+      "id": "jaggedness",
+      "name": "Tooth Jaggedness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Amplitude of tooth jaggedness"
     }
   ],
   "features": [

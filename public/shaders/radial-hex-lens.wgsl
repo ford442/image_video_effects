@@ -97,7 +97,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Edge darkening for hexes (optional, adds style)
     let dist_to_center = length(distorted_pos - center);
-    let hex_mask = smoothstep(hex_size * 0.5, hex_size * 0.45, dist_to_center);
+    let hex_mask = smoothstep(hex_size * 0.5, mix(hex_size * 0.3, hex_size * 0.55, u.zoom_params.w), dist_to_center);
 
     // Sample texture
     let color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
