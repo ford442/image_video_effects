@@ -6,20 +6,45 @@ import json
 import uuid
 import asyncio
 import logging
+import hashlib
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from dataclasses import dataclass, field as dc_field
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Protocol, runtime_checkable
 from datetime import datetime
 from enum import Enum
 import io
 from ftplib import FTP
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, PlainTextResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from aiocache import Cache
+
+# ========================= OPENTELEMETRY (optional) =========================
+try:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+    _OTEL_AVAILABLE = True
+except ImportError:
+    _OTEL_AVAILABLE = False
+
+# ========================= STRUCTURED LOGGING =========================
+_log_handler = logging.StreamHandler()
+_log_handler.setFormatter(logging.Formatter("%(message)s"))
+_struct_logger = logging.getLogger("storage_manager.sync")
+_struct_logger.setLevel(logging.INFO)
+if not _struct_logger.handlers:
+    _struct_logger.addHandler(_log_handler)
+_struct_logger.propagate = False
+
+
+def _log_event(event: str, **kwargs) -> None:
+    """Emit a structured JSON log line for intent state transitions."""
+    record = {"event": event, "ts": datetime.utcnow().isoformat() + "Z", **kwargs}
+    _struct_logger.info(json.dumps(record))
 
 # Google Cloud Imports
 from google.cloud import storage
@@ -59,7 +84,86 @@ gcs_client = None
 bucket = None
 io_executor = ThreadPoolExecutor(max_workers=20)
 cache = Cache(Cache.MEMORY)
-INDEX_LOCK = asyncio.Lock()
+
+# Per-resource asyncio locks (replace the former single global INDEX_LOCK).
+# Safe to initialise lazily in single-threaded asyncio; factory never yields.
+RESOURCE_LOCKS: Dict[str, asyncio.Lock] = {}
+
+
+def get_resource_lock(resource_type: str) -> asyncio.Lock:
+    """Return (creating if necessary) a per-resource asyncio.Lock."""
+    if resource_type not in RESOURCE_LOCKS:
+        RESOURCE_LOCKS[resource_type] = asyncio.Lock()
+    return RESOURCE_LOCKS[resource_type]
+
+
+# ========================= INTENT STORE =========================
+INTENT_TTL_SECONDS: float = 3600.0
+DIFF_PREVIEW_CAP: int = 100
+
+
+@dataclass
+class SyncIntentDocument:
+    intent_id: str
+    resource_type: str
+    status: str  # PENDING | EXECUTING | EXECUTED | EXPIRED
+    created_at: float
+    expires_at: float
+    gcs_snapshot_sha: str
+    index_snapshot_sha: str
+    diff: dict  # full diff stored in-memory
+    diff_preview: dict  # response-safe preview (capped)
+    applied_at: Optional[float] = None
+    duration_ms: Optional[float] = None
+    backup_path: Optional[str] = None
+    error: Optional[str] = None
+
+
+@runtime_checkable
+class IntentStore(Protocol):
+    def put(self, intent: SyncIntentDocument) -> None: ...
+    def get(self, intent_id: str) -> Optional[SyncIntentDocument]: ...
+    def list_recent(self, resource_type: str, limit: int = 20) -> List[SyncIntentDocument]: ...
+    def cleanup_expired(self) -> int: ...
+
+
+class MemoryIntentStore:
+    """Single-instance in-memory intent store. Swap for Redis by implementing IntentStore."""
+
+    def __init__(self, ttl: float = INTENT_TTL_SECONDS) -> None:
+        self._store: Dict[str, SyncIntentDocument] = {}
+        self._ttl = ttl
+
+    def put(self, intent: SyncIntentDocument) -> None:
+        self._store[intent.intent_id] = intent
+
+    def get(self, intent_id: str) -> Optional[SyncIntentDocument]:
+        intent = self._store.get(intent_id)
+        if intent is None:
+            return None
+        # Lazy expiry for PENDING intents
+        if intent.status == "PENDING" and time.time() > intent.expires_at:
+            intent.status = "EXPIRED"
+        return intent
+
+    def list_recent(self, resource_type: str, limit: int = 20) -> List[SyncIntentDocument]:
+        all_intents = [i for i in self._store.values() if i.resource_type == resource_type]
+        all_intents.sort(key=lambda x: x.created_at, reverse=True)
+        return all_intents[:limit]
+
+    def cleanup_expired(self) -> int:
+        now = time.time()
+        to_remove = [
+            iid for iid, intent in self._store.items()
+            if (intent.status in ("PENDING", "EXPIRED") and now > intent.expires_at)
+            or (intent.status == "EXECUTED" and now - intent.created_at > 7 * 24 * 3600)
+        ]
+        for iid in to_remove:
+            del self._store[iid]
+        return len(to_remove)
+
+
+intent_store: MemoryIntentStore = MemoryIntentStore()
 
 # ========================= HELPERS =========================
 def get_gcs_client():
@@ -126,10 +230,33 @@ async def lifespan(app: FastAPI):
             print(f"!!! SHADER SEEDING FAILED: {e}")
     except Exception as e:
         print(f"!!! GCS CONNECTION FAILED: {e}")
+
+    # Start periodic intent TTL cleanup task
+    async def _intent_cleanup_loop():
+        while True:
+            await asyncio.sleep(60)
+            try:
+                removed = intent_store.cleanup_expired()
+                if removed:
+                    _log_event("intent_cleanup", removed=removed)
+            except Exception:
+                pass
+
+    cleanup_task = asyncio.create_task(_intent_cleanup_loop())
+
     yield
+
+    cleanup_task.cancel()
     io_executor.shutdown()
 
 app = FastAPI(lifespan=lifespan)
+
+# Wire OpenTelemetry instrumentation when the package is available
+if _OTEL_AVAILABLE:
+    try:
+        FastAPIInstrumentor.instrument_app(app)
+    except Exception:
+        pass
 
 # ========================= CORS =========================
 ALLOWED_ORIGINS = [
@@ -207,7 +334,7 @@ async def sync_music_folder():
     config = STORAGE_MAP["music"]
     report = {"added": 0, "removed": 0}
 
-    async with INDEX_LOCK:
+    async with get_resource_lock("music"):
         try:
             # 1. List all files in music/
             blobs = await run_io(lambda: list(bucket.list_blobs(prefix=config["folder"])))
@@ -310,7 +437,7 @@ async def seed_test_samples():
         }
     ]
 
-    async with INDEX_LOCK:
+    async with get_resource_lock("sample"):
         try:
             # Read existing
             index_data = await run_io(_read_json_sync, config["index"])
@@ -391,7 +518,14 @@ class CoordinateSyncPayload(BaseModel):
     coordinates: dict
     overwrite: bool = False
 
-# ========================= GCS I/O HELPERS =========================
+
+# ========================= SYNC INTENT MODELS =========================
+
+class ApplyIntentPayload(BaseModel):
+    intent_id: str
+    acknowledge_divergence: bool = False
+
+
 def _read_json_sync(blob_path):
     blob = bucket.blob(blob_path)
     if blob.exists():
@@ -402,7 +536,129 @@ def _write_json_sync(blob_path, data):
     blob = bucket.blob(blob_path)
     blob.upload_from_string(json.dumps(data), content_type='application/json')
 
-# ========================= ENDPOINTS =========================
+
+def _write_json_atomic_sync(blob_path: str, data) -> str:
+    """Atomically overwrite *blob_path* with *data* and return the backup path.
+
+    Steps:
+    1. Upload JSON to ``<blob_path>.tmp.<uuid>``
+    2. If the current blob exists, copy it to ``<blob_path>.backup.<ts>``
+    3. Upload the new content directly to ``<blob_path>`` (GCS upload is atomic)
+    4. Delete the temp blob
+    Returns the backup blob path (or "" when no prior blob existed).
+    """
+    tmp_path = f"{blob_path}.tmp.{uuid.uuid4().hex}"
+    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    backup_path = f"{blob_path}.backup.{ts}"
+    json_bytes = json.dumps(data).encode()
+
+    # Upload to tmp
+    tmp_blob = bucket.blob(tmp_path)
+    tmp_blob.upload_from_string(json_bytes, content_type="application/json")
+
+    # Backup current blob if it exists
+    main_blob = bucket.blob(blob_path)
+    actual_backup = ""
+    if main_blob.exists():
+        bucket.copy_blob(main_blob, bucket, backup_path)
+        actual_backup = backup_path
+
+    # Overwrite main blob (GCS upload is server-side atomic)
+    main_blob.upload_from_string(json_bytes, content_type="application/json")
+
+    # Remove temp blob
+    try:
+        tmp_blob.delete()
+    except Exception:
+        pass
+
+    return actual_backup
+
+
+def _compute_sync_diff_sync(config: dict, allowed_extensions: tuple, existing_index: list) -> tuple:
+    """Stream-iterate GCS blobs and compute a three-way diff vs *existing_index*.
+
+    Returns ``(diff_full, gcs_snapshot_sha, index_snapshot_sha)`` where
+    *diff_full* contains the complete (uncapped) diff arrays.
+    """
+    index_map = {item["filename"]: item for item in existing_index}
+    index_sha = hashlib.sha256(
+        json.dumps(existing_index, sort_keys=True).encode()
+    ).hexdigest()
+
+    gcs_blobs: List[dict] = []          # lightweight: name + size + url only
+    gcs_name_size: List[tuple] = []     # for deterministic SHA
+
+    index_folder = config["index"].split("/")[-1]  # e.g. "_images.json"
+
+    for blob in bucket.list_blobs(prefix=config["folder"]):
+        fname = blob.name[len(config["folder"]):]
+        if not fname or fname == index_folder or blob.name == config["index"]:
+            continue
+        # Skip backup/tmp blobs created by _write_json_atomic_sync
+        if ".backup." in fname or ".tmp." in fname:
+            continue
+        if not any(fname.lower().endswith(ext) for ext in allowed_extensions):
+            continue
+        gcs_blobs.append({"filename": fname, "name": fname, "size": blob.size, "url": blob.public_url})
+        gcs_name_size.append((fname, blob.size))
+
+    # Deterministic SHA over sorted (name, size) pairs
+    hasher = hashlib.sha256()
+    for pair in sorted(gcs_name_size):
+        hasher.update(f"{pair[0]}:{pair[1]}\n".encode())
+    gcs_sha = hasher.hexdigest()
+
+    gcs_filename_set = {b["filename"] for b in gcs_blobs}
+    to_add: List[dict] = []
+    divergent: List[dict] = []
+    unchanged_count = 0
+
+    for blob_info in gcs_blobs:
+        fname = blob_info["filename"]
+        if fname not in index_map:
+            to_add.append(blob_info)
+        else:
+            idx_entry = index_map[fname]
+            sync_base = idx_entry.get("_sync_base")
+            if sync_base and (
+                sync_base.get("size") != blob_info["size"]
+                or sync_base.get("url") != blob_info["url"]
+            ):
+                divergent.append({"filename": fname, "gcs": blob_info, "index": idx_entry, "sync_base": sync_base})
+            else:
+                unchanged_count += 1
+
+    to_remove: List[dict] = [
+        {"filename": item["filename"], "id": item.get("id")}
+        for item in existing_index
+        if item["filename"] not in gcs_filename_set
+    ]
+
+    diff_full = {
+        "to_add": to_add,
+        "to_remove": to_remove,
+        "divergent": divergent,
+        "unchanged_count": unchanged_count,
+    }
+    return diff_full, gcs_sha, index_sha
+
+
+def _build_diff_preview(diff_full: dict) -> tuple:
+    """Return (diff_preview, diff_preview_truncated) capped at DIFF_PREVIEW_CAP items."""
+    truncated = False
+    preview = {}
+    for key in ("to_add", "to_remove", "divergent"):
+        items = diff_full[key]
+        if len(items) > DIFF_PREVIEW_CAP:
+            preview[key] = items[:DIFF_PREVIEW_CAP]
+            truncated = True
+        else:
+            preview[key] = items
+    preview["unchanged_count"] = diff_full["unchanged_count"]
+    return preview, truncated
+
+
 @app.get("/")
 def home():
     return {
@@ -476,7 +732,7 @@ async def save_location(payload: LocationPayload):
         "filename": filename,
     }
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("location"):
         try:
             await run_io(_write_json_sync, full_path, data)
             
@@ -514,7 +770,7 @@ async def get_location(location_id: str):
 async def delete_location(location_id: str):
     """Delete a location from cloud storage."""
     config = STORAGE_MAP["location"]
-    async with INDEX_LOCK:
+    async with get_resource_lock("location"):
         try:
             index = await run_io(_read_json_sync, config["index"])
             if not isinstance(index, list):
@@ -546,7 +802,7 @@ async def delete_location(location_id: str):
 async def update_location(location_id: str, payload: LocationPayload):
     """Update an existing location."""
     config = STORAGE_MAP["location"]
-    async with INDEX_LOCK:
+    async with get_resource_lock("location"):
         try:
             index = await run_io(_read_json_sync, config["index"])
             if not isinstance(index, list):
@@ -1032,7 +1288,7 @@ async def rate_shader(shader_id: str, stars: float = Form(...)):
     config = STORAGE_MAP["shader"]
     index_path = config["index"]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("shader"):
         try:
             index = await run_io(_read_json_sync, index_path)
             if not isinstance(index, list):
@@ -1076,7 +1332,7 @@ async def record_shader_play(shader_id: str):
     index_path = config["index"]
     now = datetime.now().isoformat()
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("shader"):
         try:
             index = await run_io(_read_json_sync, index_path)
             if not isinstance(index, list):
@@ -1139,7 +1395,7 @@ async def upload_shader(
         "play_count": 0
     }
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("shader"):
         try:
             blob = bucket.blob(full_path)
             await run_io(blob.upload_from_file, file.file, content_type="text/plain")
@@ -1181,7 +1437,7 @@ async def update_shader_metadata(shader_id: str, payload: MetaPatch):
     config = STORAGE_MAP["shader"]
     index_path = config["index"]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("shader"):
         try:
             index = await run_io(_read_json_sync, index_path)
             if not isinstance(index, list):
@@ -1232,7 +1488,7 @@ async def sync_shader_coordinates(payload: CoordinateSyncPayload):
     config = STORAGE_MAP["shader"]
     index_path = config["index"]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("shader"):
         try:
             index = await run_io(_read_json_sync, index_path)
             if not isinstance(index, list):
@@ -1330,7 +1586,7 @@ async def upload_item(payload: ItemPayload):
     
     payload.data["_cloud_meta"] = meta
     
-    async with INDEX_LOCK:
+    async with get_resource_lock(item_type):
         try:
             await run_io(_write_json_sync, full_path, payload.data)
             
@@ -1366,7 +1622,7 @@ async def update_item(item_id: str, payload: ItemPayload):
     
     payload.data["_cloud_meta"] = new_meta
     
-    async with INDEX_LOCK:
+    async with get_resource_lock(item_type):
         try:
             await run_io(_write_json_sync, full_path, payload.data)
             
@@ -1418,7 +1674,7 @@ async def patch_song(item_id: str, patch: MetaPatch):
     config = STORAGE_MAP["song"]
     index_path = config["index"]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("song"):
         try:
             index = await run_io(_read_json_sync, index_path)
             if not isinstance(index, list):
@@ -1474,7 +1730,7 @@ async def upload_sample(
         "rating": rating
     }
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("sample"):
         try:
             blob = bucket.blob(full_path)
             await run_io(blob.upload_from_file, file.file, content_type=file.content_type)
@@ -1520,7 +1776,7 @@ async def record_play(sample_id: str):
     index_path = config["index"]
     now = datetime.now().isoformat()
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("sample"):
         try:
             index_data = await run_io(_read_json_sync, index_path)
             if not isinstance(index_data, list):
@@ -1547,7 +1803,7 @@ async def update_sample_metadata(sample_id: str, payload: SampleMetaUpdatePayloa
     config = STORAGE_MAP["sample"]
     index_path = config["index"]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("sample"):
         try:
             index_data = await run_io(_read_json_sync, index_path)
             if not isinstance(index_data, list):
@@ -1629,7 +1885,7 @@ async def update_music_metadata(music_id: str, payload: SampleMetaUpdatePayload)
     config = STORAGE_MAP["music"]
     index_path = config["index"]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("music"):
         try:
             index_data = await run_io(_read_json_sync, index_path)
             if not isinstance(index_data, list):
@@ -1711,7 +1967,7 @@ async def update_image_metadata(image_id: str, payload: SampleMetaUpdatePayload)
     config = STORAGE_MAP["image"]
     index_path = config["index"]
 
-    async with INDEX_LOCK:
+    async with get_resource_lock("image"):
         try:
             index_data = await run_io(_read_json_sync, index_path)
             if not isinstance(index_data, list):
@@ -1787,7 +2043,7 @@ async def update_video_metadata(video_id: str, payload: SampleMetaUpdatePayload)
     config = STORAGE_MAP["video"]
     index_path = config["index"]
 
-    async with INDEX_LOCK:
+    async with get_resource_lock("video"):
         try:
             index_data = await run_io(_read_json_sync, index_path)
             if not isinstance(index_data, list):
@@ -1824,154 +2080,385 @@ async def update_video_metadata(video_id: str, payload: SampleMetaUpdatePayload)
 
 # ========================= ADMIN / SYNC =========================
 
+# ---------------------------------------------------------------------------
+# Shared helpers for plan/apply
+# ---------------------------------------------------------------------------
 
+_IMAGE_EXTS = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
+_VIDEO_EXTS = ('.mp4', '.webm', '.mov')
+
+
+async def _plan_sync(resource_type: str, allowed_extensions: tuple) -> dict:
+    """Run the read-only planning phase for *resource_type*.  Returns the full response dict."""
+    config = STORAGE_MAP[resource_type]
+    t0 = time.monotonic()
+
+    existing_index = await run_io(_read_json_sync, config["index"])
+    if not isinstance(existing_index, list):
+        existing_index = []
+
+    diff_full, gcs_sha, index_sha = await run_io(
+        _compute_sync_diff_sync, config, allowed_extensions, existing_index
+    )
+
+    diff_preview, truncated = _build_diff_preview(diff_full)
+
+    now = time.time()
+    intent_id = str(uuid.uuid4())
+    expires_at = now + INTENT_TTL_SECONDS
+    doc = SyncIntentDocument(
+        intent_id=intent_id,
+        resource_type=resource_type,
+        status="PENDING",
+        created_at=now,
+        expires_at=expires_at,
+        gcs_snapshot_sha=gcs_sha,
+        index_snapshot_sha=index_sha,
+        diff=diff_full,
+        diff_preview=diff_preview,
+    )
+    intent_store.put(doc)
+
+    duration_ms = round((time.monotonic() - t0) * 1000, 1)
+    _log_event(
+        "intent_planned",
+        intent_id=intent_id,
+        resource_type=resource_type,
+        gcs_sha=gcs_sha,
+        index_sha=index_sha,
+        duration_ms=duration_ms,
+        to_add=len(diff_full["to_add"]),
+        to_remove=len(diff_full["to_remove"]),
+        divergent=len(diff_full["divergent"]),
+    )
+
+    return {
+        "intent_id": intent_id,
+        "expires_at": datetime.utcfromtimestamp(expires_at).isoformat() + "Z",
+        "gcs_snapshot_sha": gcs_sha,
+        "index_snapshot_sha": index_sha,
+        "diff": diff_preview,
+        "diff_preview_truncated": truncated,
+    }
+
+
+async def _apply_sync(
+    resource_type: str,
+    allowed_extensions: tuple,
+    media_type_label: str,
+    payload: ApplyIntentPayload,
+) -> dict:
+    """Run the mutating apply phase for *resource_type*.  Returns the response dict."""
+    config = STORAGE_MAP[resource_type]
+    cache_keys = [f"library:{resource_type}", "library:all"]
+
+    doc = intent_store.get(payload.intent_id)
+    if doc is None or doc.status == "EXPIRED":
+        raise HTTPException(
+            410,
+            detail={
+                "error": "INTENT_NOT_FOUND",
+                "message": "Intent has expired or does not exist. Run /plan again.",
+                "intent_id": payload.intent_id,
+            },
+        )
+    if doc.status == "EXECUTED":
+        return {
+            "intent_id": doc.intent_id,
+            "status": "EXECUTED",
+            "changes_applied": True,
+            "duration_ms": doc.duration_ms,
+            "backup_path": doc.backup_path,
+            "diff": doc.diff_preview,
+        }
+    if doc.status == "EXECUTING":
+        raise HTTPException(
+            409,
+            detail={"error": "EXECUTING", "message": "This intent is already being applied."},
+        )
+
+    if doc.diff.get("divergent") and not payload.acknowledge_divergence:
+        raise HTTPException(
+            409,
+            detail={
+                "error": "INDEX_DIVERGED",
+                "message": (
+                    "The index has entries that diverge from their _sync_base. "
+                    "Re-submit with acknowledge_divergence=true to proceed."
+                ),
+                "divergent_count": len(doc.diff["divergent"]),
+            },
+        )
+
+    async with get_resource_lock(resource_type):
+        t0 = time.monotonic()
+
+        # Re-read current state and verify snapshot hashes match
+        existing_index = await run_io(_read_json_sync, config["index"])
+        if not isinstance(existing_index, list):
+            existing_index = []
+
+        _, current_gcs_sha, current_index_sha = await run_io(
+            _compute_sync_diff_sync, config, allowed_extensions, existing_index
+        )
+
+        if current_gcs_sha != doc.gcs_snapshot_sha or current_index_sha != doc.index_snapshot_sha:
+            _log_event(
+                "intent_stale",
+                intent_id=doc.intent_id,
+                resource_type=resource_type,
+                expected_gcs_sha=doc.gcs_snapshot_sha,
+                actual_gcs_sha=current_gcs_sha,
+                expected_index_sha=doc.index_snapshot_sha,
+                actual_index_sha=current_index_sha,
+            )
+            raise HTTPException(
+                409,
+                detail={
+                    "error": "STATE_CHANGED",
+                    "message": "GCS or index state changed since plan was created. Run /plan again.",
+                    "intent_id": payload.intent_id,
+                },
+            )
+
+        # Transition to EXECUTING
+        doc.status = "EXECUTING"
+        intent_store.put(doc)
+
+        try:
+            # Build new index from full diff stored in intent
+            diff = doc.diff
+            index_map = {item["filename"]: item for item in existing_index}
+            remove_set = {r["filename"] for r in diff["to_remove"]}
+            new_index = [item for item in existing_index if item["filename"] not in remove_set]
+
+            for blob_info in diff["to_add"]:
+                new_entry = {
+                    "id": str(uuid.uuid4()),
+                    "filename": blob_info["filename"],
+                    "name": blob_info["filename"],
+                    "type": resource_type,
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "author": "Unknown",
+                    "description": "",
+                    "rating": None,
+                    "url": blob_info["url"],
+                    "size": blob_info["size"],
+                    "_sync_base": {"size": blob_info["size"], "url": blob_info["url"]},
+                }
+                new_index.insert(0, new_entry)
+
+            # Atomic write + backup
+            backup_path = await run_io(_write_json_atomic_sync, config["index"], new_index)
+
+            # Invalidate cache INSIDE the lock to prevent read-after-write race
+            for key in cache_keys:
+                await cache.delete(key)
+
+            duration_ms = round((time.monotonic() - t0) * 1000, 1)
+            doc.status = "EXECUTED"
+            doc.applied_at = time.time()
+            doc.duration_ms = duration_ms
+            doc.backup_path = backup_path
+            intent_store.put(doc)
+
+            _log_event(
+                "intent_applied",
+                intent_id=doc.intent_id,
+                resource_type=resource_type,
+                gcs_sha=doc.gcs_snapshot_sha,
+                index_sha=doc.index_snapshot_sha,
+                duration_ms=duration_ms,
+                added=len(diff["to_add"]),
+                removed=len(diff["to_remove"]),
+                backup_path=backup_path,
+            )
+
+        except Exception as exc:
+            doc.status = "PENDING"  # Revert so caller can retry apply
+            doc.error = str(exc)
+            intent_store.put(doc)
+            logging.error(f"apply_sync failed for {resource_type}: {exc}")
+            raise HTTPException(500, f"Apply failed: {str(exc)}")
+
+    return {
+        "intent_id": doc.intent_id,
+        "status": "EXECUTED",
+        "changes_applied": True,
+        "duration_ms": doc.duration_ms,
+        "backup_path": doc.backup_path,
+        "diff": doc.diff_preview,
+    }
+
+
+def _intent_to_summary(doc: SyncIntentDocument) -> dict:
+    return {
+        "intent_id": doc.intent_id,
+        "resource_type": doc.resource_type,
+        "status": doc.status,
+        "created_at": datetime.utcfromtimestamp(doc.created_at).isoformat() + "Z",
+        "expires_at": datetime.utcfromtimestamp(doc.expires_at).isoformat() + "Z",
+        "applied_at": (
+            datetime.utcfromtimestamp(doc.applied_at).isoformat() + "Z"
+            if doc.applied_at else None
+        ),
+        "duration_ms": doc.duration_ms,
+        "backup_path": doc.backup_path,
+        "diff_summary": {
+            "to_add": len(doc.diff.get("to_add", [])),
+            "to_remove": len(doc.diff.get("to_remove", [])),
+            "divergent": len(doc.diff.get("divergent", [])),
+            "unchanged_count": doc.diff.get("unchanged_count", 0),
+        },
+        "gcs_snapshot_sha": doc.gcs_snapshot_sha,
+        "index_snapshot_sha": doc.index_snapshot_sha,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Images: plan / apply / audit
+# ---------------------------------------------------------------------------
+
+@app.post("/api/admin/sync-images/plan")
+async def plan_sync_images():
+    """Phase 1 (read-only): compute GCS vs index diff and store an intent.
+    No data is written.  Returns ``intent_id`` to pass to the apply endpoint."""
+    try:
+        return await _plan_sync("image", _IMAGE_EXTS)
+    except Exception as e:
+        raise HTTPException(500, f"Plan failed: {str(e)}")
+
+
+@app.post("/api/admin/sync-images/apply")
+async def apply_sync_images(payload: ApplyIntentPayload):
+    """Phase 2 (mutating): apply a previously-created plan intent atomically."""
+    return await _apply_sync("image", _IMAGE_EXTS, "image", payload)
+
+
+@app.get("/api/admin/sync-images/intents")
+async def list_image_intents(limit: int = Query(20, ge=1, le=100)):
+    """Return recent sync intents for images (newest first)."""
+    intents = intent_store.list_recent("image", limit=limit)
+    return {"intents": [_intent_to_summary(d) for d in intents]}
+
+
+@app.get("/api/admin/sync-images/intents/{intent_id}")
+async def get_image_intent(intent_id: str):
+    """Return detail for a single image sync intent."""
+    doc = intent_store.get(intent_id)
+    if doc is None or doc.resource_type != "image":
+        raise HTTPException(404, "Intent not found")
+    result = _intent_to_summary(doc)
+    result["diff"] = doc.diff_preview
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Videos: plan / apply / audit
+# ---------------------------------------------------------------------------
+
+@app.post("/api/admin/sync-videos/plan")
+async def plan_sync_videos():
+    """Phase 1 (read-only): compute GCS vs index diff and store an intent.
+    No data is written.  Returns ``intent_id`` to pass to the apply endpoint."""
+    try:
+        return await _plan_sync("video", _VIDEO_EXTS)
+    except Exception as e:
+        raise HTTPException(500, f"Plan failed: {str(e)}")
+
+
+@app.post("/api/admin/sync-videos/apply")
+async def apply_sync_videos(payload: ApplyIntentPayload):
+    """Phase 2 (mutating): apply a previously-created plan intent atomically."""
+    return await _apply_sync("video", _VIDEO_EXTS, "video", payload)
+
+
+@app.get("/api/admin/sync-videos/intents")
+async def list_video_intents(limit: int = Query(20, ge=1, le=100)):
+    """Return recent sync intents for videos (newest first)."""
+    intents = intent_store.list_recent("video", limit=limit)
+    return {"intents": [_intent_to_summary(d) for d in intents]}
+
+
+@app.get("/api/admin/sync-videos/intents/{intent_id}")
+async def get_video_intent(intent_id: str):
+    """Return detail for a single video sync intent."""
+    doc = intent_store.get(intent_id)
+    if doc is None or doc.resource_type != "video":
+        raise HTTPException(404, "Intent not found")
+    result = _intent_to_summary(doc)
+    result["diff"] = doc.diff_preview
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Legacy endpoints — HTTP 410 with migration hint
+# ---------------------------------------------------------------------------
 
 @app.post("/api/admin/sync-images")
-async def sync_images_folder():
-    config = STORAGE_MAP["image"]
-    report = {"added": 0, "removed": 0}
+async def sync_images_folder_gone():
+    """Replaced by the two-phase plan/apply flow.  This endpoint is retired."""
+    return JSONResponse(
+        status_code=410,
+        content={
+            "error": "ENDPOINT_RETIRED",
+            "message": (
+                "POST /api/admin/sync-images has been replaced by a two-phase plan/apply flow. "
+                "Use POST /api/admin/sync-images/plan to create an intent, "
+                "then POST /api/admin/sync-images/apply with the returned intent_id."
+            ),
+            "plan_endpoint": "/api/admin/sync-images/plan",
+            "apply_endpoint": "/api/admin/sync-images/apply",
+        },
+    )
 
-    async with INDEX_LOCK:
-        try:
-            blobs = await run_io(lambda: list(bucket.list_blobs(prefix=config["folder"])))
-            media_files = []
-            for b in blobs:
-                fname = b.name.replace(config["folder"], "")
-                if fname and not b.name.endswith(config["index"]):
-                    lower = fname.lower()
-                    if lower.endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
-                        media_files.append({
-                            "filename": fname,
-                            "name": fname,
-                            "size": b.size,
-                            "url": b.public_url
-                        })
-
-            index_data = await run_io(_read_json_sync, config["index"])
-            if not isinstance(index_data, list):
-                index_data = []
-
-            index_map = {item["filename"]: item for item in index_data}
-            disk_set = set(f["filename"] for f in media_files)
-
-            new_index = [item for item in index_data if item["filename"] in disk_set]
-            report["removed"] = len(index_data) - len(new_index)
-
-            for file_info in media_files:
-                if file_info["filename"] not in index_map:
-                    new_entry = {
-                        "id": str(uuid.uuid4()),
-                        "filename": file_info["filename"],
-                        "name": file_info["name"],
-                        "type": "image",
-                        "date": datetime.now().strftime("%Y-%m-%d"),
-                        "author": "Unknown",
-                        "description": "",
-                        "rating": None,
-                        "url": file_info["url"],
-                        "size": file_info["size"]
-                    }
-                    new_index.insert(0, new_entry)
-                    report["added"] += 1
-
-            if report["added"] > 0 or report["removed"] > 0:
-                await run_io(_write_json_sync, config["index"], new_index)
-                await cache.delete("library:image")
-                await cache.delete("library:all")
-
-            report["total"] = len(new_index)
-            return report
-        except Exception as e:
-            raise HTTPException(500, f"Failed to sync images: {str(e)}")
 
 @app.post("/api/admin/sync-videos")
-async def sync_videos_folder():
-    config = STORAGE_MAP["video"]
-    report = {"added": 0, "removed": 0}
-
-    async with INDEX_LOCK:
-        try:
-            blobs = await run_io(lambda: list(bucket.list_blobs(prefix=config["folder"])))
-            media_files = []
-            for b in blobs:
-                fname = b.name.replace(config["folder"], "")
-                if fname and not b.name.endswith(config["index"]):
-                    lower = fname.lower()
-                    if lower.endswith(('.mp4', '.webm', '.mov')):
-                        media_files.append({
-                            "filename": fname,
-                            "name": fname,
-                            "size": b.size,
-                            "url": b.public_url
-                        })
-
-            index_data = await run_io(_read_json_sync, config["index"])
-            if not isinstance(index_data, list):
-                index_data = []
-
-            index_map = {item["filename"]: item for item in index_data}
-            disk_set = set(f["filename"] for f in media_files)
-
-            new_index = [item for item in index_data if item["filename"] in disk_set]
-            report["removed"] = len(index_data) - len(new_index)
-
-            for file_info in media_files:
-                if file_info["filename"] not in index_map:
-                    new_entry = {
-                        "id": str(uuid.uuid4()),
-                        "filename": file_info["filename"],
-                        "name": file_info["name"],
-                        "type": "video",
-                        "date": datetime.now().strftime("%Y-%m-%d"),
-                        "author": "Unknown",
-                        "description": "",
-                        "rating": None,
-                        "url": file_info["url"],
-                        "size": file_info["size"]
-                    }
-                    new_index.insert(0, new_entry)
-                    report["added"] += 1
-
-            if report["added"] > 0 or report["removed"] > 0:
-                await run_io(_write_json_sync, config["index"], new_index)
-                await cache.delete("library:video")
-                await cache.delete("library:all")
-
-            report["total"] = len(new_index)
-            return report
-        except Exception as e:
-            raise HTTPException(500, f"Failed to sync videos: {str(e)}")
+async def sync_videos_folder_gone():
+    """Replaced by the two-phase plan/apply flow.  This endpoint is retired."""
+    return JSONResponse(
+        status_code=410,
+        content={
+            "error": "ENDPOINT_RETIRED",
+            "message": (
+                "POST /api/admin/sync-videos has been replaced by a two-phase plan/apply flow. "
+                "Use POST /api/admin/sync-videos/plan to create an intent, "
+                "then POST /api/admin/sync-videos/apply with the returned intent_id."
+            ),
+            "plan_endpoint": "/api/admin/sync-videos/plan",
+            "apply_endpoint": "/api/admin/sync-videos/apply",
+        },
+    )
 
 @app.post("/api/admin/sync")
-
 async def sync_gcs_storage():
     report = {}
-    async with INDEX_LOCK:
-        for item_type, config in STORAGE_MAP.items():
-            if item_type == "default" or item_type == "music":
-                continue
-            
-            added = 0
-            removed = 0
-            
-            try:
+    for item_type, config in STORAGE_MAP.items():
+        if item_type == "default" or item_type == "music":
+            continue
+
+        added = 0
+        removed = 0
+
+        try:
+            async with get_resource_lock(item_type):
                 blobs = await run_io(lambda: list(bucket.list_blobs(prefix=config["folder"])))
                 actual_files = []
                 for b in blobs:
                     fname = b.name.replace(config["folder"], "")
                     if fname and not b.name.endswith(config["index"]):
                         actual_files.append(fname)
-                
+
                 index_data = await run_io(_read_json_sync, config["index"])
                 if not isinstance(index_data, list):
                     index_data = []
-                
+
                 index_map = {item["filename"]: item for item in index_data}
                 disk_set = set(actual_files)
-                
+
                 new_index = [item for item in index_data if item["filename"] in disk_set]
                 removed = len(index_data) - len(new_index)
-                
+
                 for filename in actual_files:
                     if filename not in index_map:
                         new_entry = {
@@ -1985,7 +2472,7 @@ async def sync_gcs_storage():
                             "genre": None,
                             "last_played": None
                         }
-                        
+
                         if filename.endswith(".json") and item_type in ["song", "pattern", "bank"]:
                             try:
                                 b = bucket.blob(f"{config['folder']}{filename}")
@@ -1994,21 +2481,21 @@ async def sync_gcs_storage():
                                     new_entry["name"] = content["name"]
                                 if "author" in content:
                                     new_entry["author"] = content["author"]
-                            except:
+                            except Exception:
                                 pass
-                        
+
                         new_index.insert(0, new_entry)
                         added += 1
-                
+
                 if added > 0 or removed > 0:
                     await run_io(_write_json_sync, config["index"], new_index)
-                
+
                 report[item_type] = {"added": added, "removed": removed, "status": "synced"}
-            except Exception as e:
-                report[item_type] = {"error": str(e)}
-        
-        await cache.clear()
-        return report
+        except Exception as e:
+            report[item_type] = {"error": str(e)}
+
+    await cache.clear()
+    return report
 
 @app.post("/api/admin/seed-test-samples")
 async def seed_test_samples():
@@ -2022,7 +2509,7 @@ async def seed_test_samples():
          "type": "sample", "author": "Unknown", "date": "2024-02-09", "description": "Demo", "rating": None, "genre": None}
     ]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("sample"):
         try:
             index_data = await run_io(_read_json_sync, config["index"])
             if not isinstance(index_data, list):
@@ -2057,7 +2544,7 @@ async def seed_brainfuck_examples():
          "execution_time_ms": 184, "cells": 16384, "relative_to_cpp": 0.22, "relative_to_js": 1.9}
     ]
     
-    async with INDEX_LOCK:
+    async with get_resource_lock("brainfuck"):
         idx = await run_io(_read_json_sync, config["index"]) or []
         existing_ids = {item.get("id") for item in idx}
         added = 0
@@ -2143,7 +2630,7 @@ async def upload_shader(
         await run_io(meta_blob.upload_from_string, json.dumps(meta), content_type="application/json")
         
         # 3. Update index (inside lock)
-        async with INDEX_LOCK:
+        async with get_resource_lock("shader"):
             index = await run_io(_read_json_sync, config["index"])
             if not isinstance(index, list):
                 index = []
@@ -2214,7 +2701,7 @@ async def sync_ftp_to_gcs():
     config = STORAGE_MAP["shader"]
     report = {"added": 0, "skipped": 0, "errors": []}
 
-    async with INDEX_LOCK:
+    async with get_resource_lock("shader"):
         try:
             ftp_files = await run_io(_list_ftp_files_sync)
             index = await run_io(_read_json_sync, config["index"])
