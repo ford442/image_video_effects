@@ -346,7 +346,7 @@ def main():
             report["incompatible_count"] += 1
     
     # Write report
-    report_path = "/root/image_video_effects/bindgroup_compatibility_report.json"
+    report_path = "/root/image_video_effects/reports/bindgroup_compatibility_report.json"
     with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
     

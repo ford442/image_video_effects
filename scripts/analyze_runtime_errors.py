@@ -412,7 +412,7 @@ class RuntimeErrorDetector:
         print(f"  Clean: {self.clean_count}")
         print(f"  With errors: {self.error_count}")
     
-    def generate_report(self, output_path: str = "runtime_errors_report.json"):
+    def generate_report(self, output_path: str = "reports/runtime_errors_report.json"):
         """Generate the JSON report."""
         report = {
             "timestamp": datetime.now().isoformat(),
@@ -461,7 +461,7 @@ class RuntimeErrorDetector:
 def main():
     detector = RuntimeErrorDetector("public/shaders")
     detector.analyze_all_shaders()
-    detector.generate_report("runtime_errors_report.json")
+    detector.generate_report("reports/runtime_errors_report.json")
 
 if __name__ == "__main__":
     main()

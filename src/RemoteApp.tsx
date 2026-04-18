@@ -44,12 +44,17 @@ const RemoteApp: React.FC = () => {
     }, []);
 
     // Heartbeat Logic
+    // Timeout must be longer than the main app's heartbeat interval (5s) + network jitter
+    const HEARTBEAT_TIMEOUT = 8000;
+    const connectedRef = useRef(connected);
+    connectedRef.current = connected;
+
     const resetHeartbeat = useCallback(() => {
         setConnected(true);
         if (heartbeatTimeoutRef.current) clearTimeout(heartbeatTimeoutRef.current);
         heartbeatTimeoutRef.current = setTimeout(() => {
             setConnected(false);
-        }, 3000); // 3 seconds timeout
+        }, HEARTBEAT_TIMEOUT);
     }, []);
 
     useEffect(() => {
@@ -58,9 +63,10 @@ const RemoteApp: React.FC = () => {
 
         channel.onmessage = (event) => {
             const msg = event.data as SyncMessage;
-            if (msg.type === 'HEARTBEAT') {
-                resetHeartbeat();
-            } else if (msg.type === 'STATE_FULL') {
+            // Any message from main app means the connection is alive
+            resetHeartbeat();
+
+            if (msg.type === 'STATE_FULL') {
                 gotStateRef.current = true;
                 if (helloRetryRef.current) {
                     clearInterval(helloRetryRef.current);
@@ -79,18 +85,25 @@ const RemoteApp: React.FC = () => {
                 setVideoList(state.videoList);
                 setSelectedVideo(state.selectedVideo);
                 setIsMuted(state.isMuted);
-                resetHeartbeat();
             } else if (msg.type === 'STATE_UPDATE') {
                 // Handle partial updates if needed
             }
         };
 
-        // Send Hello with retry (up to 3 retries at 1s intervals)
+        // Send Hello with retry — aggressive retries until we get STATE_FULL
         gotStateRef.current = false;
         sendMessage('HELLO');
         let retryCount = 0;
         helloRetryRef.current = setInterval(() => {
-            if (gotStateRef.current || retryCount >= 3) {
+            if (gotStateRef.current) {
+                // We have connected before — if we lose connection, send HELLO to reconnect
+                if (!connectedRef.current) {
+                    sendMessage('HELLO');
+                }
+                return;
+            }
+            // Not yet connected — aggressive retry for first 10 attempts
+            if (retryCount >= 10) {
                 if (helloRetryRef.current) {
                     clearInterval(helloRetryRef.current);
                     helloRetryRef.current = null;

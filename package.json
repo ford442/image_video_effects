@@ -37,7 +37,7 @@
     "bucket:watch-full": "node scripts/watch-bucket.js --watch",
     "audit:shaders": "bash scripts/wgsl-audit-swarm.sh 4",
     "audit:shaders:sample": "bash scripts/wgsl-audit-swarm.sh 4 --sample",
-    "deploy": "python deploy.py"
+    "deploy": "python scripts/deploy.py"
   },
   "eslintConfig": {
     "extends": [

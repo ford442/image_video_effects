@@ -11,7 +11,7 @@ from time import sleep
 
 # Configuration
 API_BASE_URL = "https://storage.noahcohn.com"
-INPUT_FILE = "/root/image_video_effects/shader_params_extracted.json"
+INPUT_FILE = "/root/image_video_effects/reports/shader_params_extracted.json"
 BATCH_SIZE = 50  # Process in batches to avoid overwhelming API
 MAX_WORKERS = 5  # Parallel uploads
 
@@ -121,7 +121,7 @@ def main():
     
     # Save failed list for retry
     if failed_shaders:
-        with open('/root/image_video_effects/failed_uploads.json', 'w') as f:
+        with open('/root/image_video_effects/reports/failed_uploads.json', 'w') as f:
             json.dump([s for s, _ in failed_shaders], f, indent=2)
         print(f"\nFailed list saved to failed_uploads.json")
 

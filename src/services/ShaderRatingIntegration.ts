@@ -3,6 +3,7 @@
 //  Connects coordinate-based menus with Storage Manager star ratings
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { useState, useEffect, useCallback } from 'react';
 import shaderCoordinates from '../shader_coordinates.json';
 import { STORAGE_API_URL } from '../config/appConfig';
 
@@ -248,8 +249,6 @@ export class CoordinateMenuBuilder {
 // ═══════════════════════════════════════════════════════════════════════════════
 //  React Hook for Shader Ratings
 // ═══════════════════════════════════════════════════════════════════════════════
-
-import { useState, useEffect, useCallback } from 'react';
 
 export function useShaderRatings() {
   const [service] = useState(() => new ShaderRatingService());

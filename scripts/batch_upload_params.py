@@ -9,7 +9,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 API_BASE = "https://storage.noahcohn.com"
-INPUT_FILE = "/root/image_video_effects/shader_params_extracted.json"
+INPUT_FILE = "/root/image_video_effects/reports/shader_params_extracted.json"
 BATCH_SIZE = 50  # Upload 50 shaders per batch request
 
 def load_params():

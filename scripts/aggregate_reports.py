@@ -11,16 +11,16 @@ from collections import defaultdict
 # Load all reports
 print("Loading reports...")
 
-with open('/root/image_video_effects/wgsl_syntax_report.json', 'r') as f:
+with open('/root/image_video_effects/reports/wgsl_syntax_report.json', 'r') as f:
     syntax_report = json.load(f)
 
-with open('/root/image_video_effects/bindgroup_compatibility_report.json', 'r') as f:
+with open('/root/image_video_effects/reports/bindgroup_compatibility_report.json', 'r') as f:
     bindgroup_report = json.load(f)
 
-with open('/root/image_video_effects/runtime_errors_report.json', 'r') as f:
+with open('/root/image_video_effects/reports/runtime_errors_report.json', 'r') as f:
     runtime_report = json.load(f)
 
-with open('/root/image_video_effects/param_validation_report.json', 'r') as f:
+with open('/root/image_video_effects/reports/param_validation_report.json', 'r') as f:
     param_report = json.load(f)
 
 # Build lookup dictionaries
@@ -288,7 +288,7 @@ master_report = {
 }
 
 # Write master report
-output_path = '/root/image_video_effects/shader_validation_master_report.json'
+output_path = '/root/image_video_effects/reports/shader_validation_master_report.json'
 with open(output_path, 'w') as f:
     json.dump(master_report, f, indent=2)
 

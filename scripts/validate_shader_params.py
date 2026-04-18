@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 # Configuration
 SHADER_DEFINITIONS_DIR = Path("/root/image_video_effects/shader_definitions")
 SHADERS_DIR = Path("/root/image_video_effects/public/shaders")
-OUTPUT_FILE = Path("/root/image_video_effects/param_validation_report.json")
+OUTPUT_FILE = Path("/root/image_video_effects/reports/param_validation_report.json")
 
 # Valid categories (from AGENTS.md)
 VALID_CATEGORIES = {

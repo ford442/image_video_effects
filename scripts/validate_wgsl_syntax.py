@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
 SHADERS_DIR = Path("/root/image_video_effects/public/shaders")
-OUTPUT_FILE = Path("/root/image_video_effects/wgsl_syntax_report.json")
+OUTPUT_FILE = Path("/root/image_video_effects/reports/wgsl_syntax_report.json")
 
 # Required bindings for standard compute shaders
 REQUIRED_BINDINGS = [

@@ -670,6 +670,15 @@ function MainApp() {
         handleNewRandomImage();
     }, [rendererReady, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
+    // --- Auto Image Switch Timer ---
+    useEffect(() => {
+        if (!autoChangeEnabled || inputSource !== 'image') return;
+        const interval = setInterval(() => {
+            handleNewRandomImage();
+        }, autoChangeDelay * 1000);
+        return () => clearInterval(interval);
+    }, [autoChangeEnabled, autoChangeDelay, inputSource, handleNewRandomImage]);
+
     const loadDepthModel = useCallback(async () => {
         if (depthEstimator) { setStatus('Depth model already loaded.'); return; }
         try {
@@ -859,8 +868,12 @@ function MainApp() {
     // --- Roulette / Chaos Mode Functions ---
     const getRandomShader = useCallback((): ShaderEntry | null => {
         if (availableModes.length === 0) return null;
-        // Filter out 'none' and ensure valid shader entries
-        const validShaders = availableModes.filter(s => s.id && s.id !== 'none');
+        // Filter out 'none', generative shaders, and ensure valid shader entries.
+        // Generative shaders are excluded from randomization because they ignore
+        // input textures and break chained effects.
+        const validShaders = availableModes.filter(
+            s => s.id && s.id !== 'none' && s.category !== 'generative'
+        );
         if (validShaders.length === 0) return null;
         const randomIndex = Math.floor(Math.random() * validShaders.length);
         return validShaders[randomIndex];
@@ -1212,8 +1225,13 @@ function MainApp() {
         videoList,
         selectedVideo,
         isMuted,
-    }), [modes, activeSlot, slotParams, shaderCategory, inputSource, 
+    }), [modes, activeSlot, slotParams, shaderCategory, inputSource,
         autoChangeEnabled, autoChangeDelay, depthEstimator, availableModes, videoList, selectedVideo, isMuted]);
+
+    // Keep latest buildFullState in a ref so the BroadcastChannel effect
+    // doesn't re-run every time state changes.
+    const buildFullStateRef = useRef(buildFullState);
+    buildFullStateRef.current = buildFullState;
 
     // Send message to remote
     const sendMessage = useCallback((type: SyncMessage['type'], payload?: any) => {
@@ -1222,7 +1240,7 @@ function MainApp() {
         }
     }, []);
 
-    // Setup BroadcastChannel for remote control
+    // Setup BroadcastChannel for remote control — runs once on mount
     useEffect(() => {
         const channel = new BroadcastChannel(SYNC_CHANNEL_NAME);
         channelRef.current = channel;
@@ -1232,7 +1250,10 @@ function MainApp() {
 
             if (msg.type === 'HELLO') {
                 // Remote app connected — send full state and start heartbeat if not already running
-                sendMessage('STATE_FULL', buildFullState());
+                sendMessage('STATE_FULL', buildFullStateRef.current());
+                // Send an immediate heartbeat so the remote doesn't timeout
+                // before the first interval tick
+                sendMessage('HEARTBEAT');
                 if (!heartbeatIntervalRef.current) {
                     heartbeatIntervalRef.current = setInterval(() => {
                         sendMessage('HEARTBEAT');
@@ -1275,7 +1296,8 @@ function MainApp() {
                 heartbeatIntervalRef.current = null;
             }
         };
-    }, [buildFullState, sendMessage, handleNewRandomImage, loadDepthModel, updateSlotParam, setMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Intentionally empty — channel lifecycle should not depend on state
 
     // Send state updates to remote when key state changes
     useEffect(() => {

@@ -26,7 +26,7 @@ jobs:
       run: node scripts/generate_shader_lists.js
     
     - name: Run shader metadata audit
-      run: node audit_mouse_shaders.js
+      run: node scripts/audit_mouse_shaders.js
     
     - name: Check for duplicate shader IDs
       run: node scripts/check_duplicates.js

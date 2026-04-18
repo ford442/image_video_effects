@@ -88,7 +88,7 @@ def extract_params():
             continue
     
     # Save consolidated output
-    with open("/root/image_video_effects/shader_params_extracted.json", 'w') as f:
+    with open("/root/image_video_effects/reports/shader_params_extracted.json", 'w') as f:
         json.dump(output, f, indent=2)
     
     # Generate report
@@ -159,7 +159,7 @@ Each parameter object contains:
 Extracted data saved to: `shader_params_extracted.json`
 """
     
-    with open("/root/image_video_effects/extraction_report.md", 'w') as f:
+    with open("/root/image_video_effects/notes/extraction_report.md", 'w') as f:
         f.write(report)
     
     print(f"Extraction complete!")

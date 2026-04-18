@@ -117,7 +117,7 @@ function main() {
   
   // JSON output
   if (OUTPUT_JSON) {
-    const jsonPath = './naga-validation-report.json';
+    const jsonPath = './reports/naga-validation-report.json';
     fs.writeFileSync(jsonPath, JSON.stringify({
       timestamp: new Date().toISOString(),
       total: shaders.length,

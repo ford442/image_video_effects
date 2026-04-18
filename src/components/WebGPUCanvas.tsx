@@ -136,6 +136,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<any>).current = renderer;
                 }
+                if (videoRef.current && 'setVideo' in renderer) {
+                    (renderer as any).setVideo(videoRef.current);
+                }
 
                 if (onInit) onInit();
             } else {
