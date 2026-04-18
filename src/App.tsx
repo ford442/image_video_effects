@@ -751,6 +751,30 @@ function MainApp() {
         }
     }, []);
 
+    // --- Test Mode Hook (exposes renderer for Playwright harness) ---
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('testMode') === '1' && rendererRef.current) {
+            (window as any).__pixelocity__ = {
+                renderer: rendererRef.current,
+                setSlotShader: (index: number, id: string) => {
+                    const r = rendererRef.current as any;
+                    if (r && typeof r.setSlotShader === 'function') {
+                        r.setSlotShader(index, id);
+                    }
+                },
+                loadShader: async (id: string, url: string) => {
+                    const r = rendererRef.current as any;
+                    if (r && typeof r.loadShader === 'function') {
+                        return r.loadShader(id, url);
+                    }
+                    return false;
+                },
+            };
+        }
+    }, [rendererReady]);
+
     // --- Webcam Handlers ---
     const startWebcam = useCallback(async () => {
         try {

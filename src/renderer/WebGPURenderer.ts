@@ -24,6 +24,8 @@
  */
 
 import { Renderer, RendererConfig } from './Renderer';
+import { validateBindGroup } from './bindGroupValidator';
+import { resolveMultipassChain } from './multipassRegistry';
 
 // ── Constants matching C++ renderer ─────────────────────────────────────────
 
@@ -882,9 +884,19 @@ export class WebGPURenderer implements Renderer {
 
   /** Parse @workgroup_size(x, y) from WGSL source to determine dispatch dimensions */
   private parseWorkgroupSize(wgslSource: string): { x: number; y: number } {
+    // Tolerant: allows whitespace/newlines/comments between @compute and @workgroup_size
     const match = wgslSource.match(/@compute\s+@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
     if (match) {
       return { x: parseInt(match[1], 10), y: parseInt(match[2], 10) };
+    }
+    // Fallback: search for @workgroup_size anywhere after @compute
+    const computeIdx = wgslSource.indexOf('@compute');
+    if (computeIdx !== -1) {
+      const afterCompute = wgslSource.slice(computeIdx);
+      const match2 = afterCompute.match(/@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
+      if (match2) {
+        return { x: parseInt(match2[1], 10), y: parseInt(match2[2], 10) };
+      }
     }
     console.warn('[WebGPU] Could not parse workgroup_size from shader, defaulting to 8x8');
     return { x: 8, y: 8 };
@@ -898,61 +910,73 @@ export class WebGPURenderer implements Renderer {
     if (this.pipelines.has(id) && this.pipelineHashes.get(id) === contentHash) {
       return true;
     }
-    
+
+    // Validate bind-group compatibility BEFORE attempting pipeline creation
+    const validation = validateBindGroup(id, wgsl);
+    if (!validation.valid) {
+      console.warn(
+        `[WebGPU] Shader "${id}" failed bind-group validation (${validation.errors.length} errors). ` +
+        `Using fallback pass-through shader.`
+      );
+      // Skip directly to fallback below
+    }
+
     // Parse workgroup size from shader source
     const wgSize = this.parseWorkgroupSize(wgsl);
 
-    // Try to compile the requested shader
-    try {
-      const module = this.device.createShaderModule({ label: id, code: wgsl });
-
-      // Check for compilation errors using compilationInfo
-      module.getCompilationInfo().then(info => {
-        const errors = info.messages.filter(m => m.type === 'error');
-        if (errors.length > 0) {
-          console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
-        }
-      });
-
-      const pipeline = this.device.createComputePipeline({
-        label: id,
-        layout: this.pipelineLayout,
-        compute: { module, entryPoint: 'main' },
-      });
-
-      this.pipelines.set(id, pipeline);
-      this.pipelineHashes.set(id, contentHash);
-      this.workgroupSizes.set(id, wgSize);
-      return true;
-    } catch (e) {
-      console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
-
-      // Report error through handler
-      globalErrorHandler({
-        type: 'shader-compile',
-        message: `Shader "${id}" failed to compile. Using fallback pass-through shader.`,
-        recoverable: true
-      });
-
-      // Try to use fallback shader
+    // Try to compile the requested shader only if validation passed
+    if (validation.valid) {
       try {
-        const fallbackModule = this.device.createShaderModule({
-          label: `${id}-fallback`,
-          code: FALLBACK_WGSL
+        const module = this.device.createShaderModule({ label: id, code: wgsl });
+
+        // Check for compilation errors using compilationInfo
+        module.getCompilationInfo().then(info => {
+          const errors = info.messages.filter(m => m.type === 'error');
+          if (errors.length > 0) {
+            console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
+          }
         });
-        const fallbackPipeline = this.device.createComputePipeline({
-          label: `${id}-fallback`,
+
+        const pipeline = this.device.createComputePipeline({
+          label: id,
           layout: this.pipelineLayout,
-          compute: { module: fallbackModule, entryPoint: 'main' },
+          compute: { module, entryPoint: 'main' },
         });
-        this.pipelines.set(id, fallbackPipeline);
-        this.workgroupSizes.set(id, this.parseWorkgroupSize(FALLBACK_WGSL));
-        console.log(`[WebGPU] Using fallback shader for '${id}'`);
+
+        this.pipelines.set(id, pipeline);
+        this.pipelineHashes.set(id, contentHash);
+        this.workgroupSizes.set(id, wgSize);
         return true;
-      } catch (fallbackError) {
-        console.error(`[WebGPU] Fallback shader also failed:`, fallbackError);
-        return false;
+      } catch (e) {
+        console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
+
+        // Report error through handler
+        globalErrorHandler({
+          type: 'shader-compile',
+          message: `Shader "${id}" failed to compile. Using fallback pass-through shader.`,
+          recoverable: true
+        });
       }
+    }
+
+    // Try to use fallback shader (reached on validation failure OR pipeline creation failure)
+    try {
+      const fallbackModule = this.device.createShaderModule({
+        label: `${id}-fallback`,
+        code: FALLBACK_WGSL
+      });
+      const fallbackPipeline = this.device.createComputePipeline({
+        label: `${id}-fallback`,
+        layout: this.pipelineLayout,
+        compute: { module: fallbackModule, entryPoint: 'main' },
+      });
+      this.pipelines.set(id, fallbackPipeline);
+      this.workgroupSizes.set(id, this.parseWorkgroupSize(FALLBACK_WGSL));
+      console.log(`[WebGPU] Using fallback shader for '${id}'`);
+      return true;
+    } catch (fallbackError) {
+      console.error(`[WebGPU] Fallback shader also failed:`, fallbackError);
+      return false;
     }
   }
 
@@ -1383,6 +1407,36 @@ export class WebGPURenderer implements Renderer {
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */
   render(): void {}
 
+  /**
+   * Dispatch a single slot, expanding multipass chains into sequential
+   * compute passes within the same command encoder.
+   */
+  private dispatchSlot(
+    encoder: GPUCommandEncoder,
+    slot: { shaderId: string | null; enabled: boolean; mode: SlotMode },
+    labelPrefix: string
+  ): void {
+    if (!slot.shaderId) return;
+    const chain = resolveMultipassChain(slot.shaderId);
+    for (const shaderId of chain) {
+      const pipeline = this.pipelines.get(shaderId);
+      if (!pipeline) {
+        console.warn(`[WebGPURenderer] Pipeline missing for multipass step "${shaderId}"`);
+        continue;
+      }
+      const wg = this.workgroupSizes.get(shaderId) || { x: 8, y: 8 };
+      const pass = encoder.beginComputePass({ label: `${labelPrefix}-${shaderId}` });
+      pass.setPipeline(pipeline);
+      pass.setBindGroup(0, this.computeBindGroup);
+      pass.dispatchWorkgroups(
+        Math.ceil(this.scaledW / wg.x),
+        Math.ceil(this.scaledH / wg.y),
+        1
+      );
+      pass.end();
+    }
+  }
+
   destroy(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
@@ -1503,20 +1557,7 @@ export class WebGPURenderer implements Renderer {
     // ── 1. Run ALL parallel slots first (driver can overlap these) ───────────────
     // All parallel slots read from the same readTex (base image)
     for (const slot of parallelSlots) {
-      const pipeline = this.pipelines.get(slot.shaderId!)!;
-      const wg = this.workgroupSizes.get(slot.shaderId!) || { x: 8, y: 8 };
-      const pass = encoder.beginComputePass({ label: `parallel-${slot.shaderId}` });
-      pass.setPipeline(pipeline);
-      pass.setBindGroup(0, this.computeBindGroup);
-      pass.dispatchWorkgroups(
-        Math.ceil(this.scaledW / wg.x),
-        Math.ceil(this.scaledH / wg.y),
-        1
-      );
-      pass.end();
-
-      // Note: We don't copy between parallel slots - they all read from readTex.
-      // The last parallel slot's output ends up in writeTex.
+      this.dispatchSlot(encoder, slot, 'parallel');
     }
 
     // If there were parallel slots, copy the final result to readTex for chained slots
@@ -1534,32 +1575,25 @@ export class WebGPURenderer implements Renderer {
       if (this.frameCount % 60 === 0) {
         console.log(`[WebGPURenderer] Processing chained slot ${i}: ${slot.shaderId}`);
       }
-      const pipeline = this.pipelines.get(slot.shaderId!)!;
-      const wg = this.workgroupSizes.get(slot.shaderId!) || { x: 8, y: 8 };
+      this.dispatchSlot(encoder, slot, 'chained');
 
-      const pass = encoder.beginComputePass({ label: `chained-${slot.shaderId}` });
-      pass.setPipeline(pipeline);
-      pass.setBindGroup(0, this.computeBindGroup);
-      pass.dispatchWorkgroups(
-        Math.ceil(this.scaledW / wg.x),
-        Math.ceil(this.scaledH / wg.y),
-        1
+      // Copy output to input for next chained slot (always copy so blit reads correct tex)
+      encoder.copyTextureToTexture(
+        { texture: this.writeTex },
+        { texture: this.readTex },
+        [this.scaledW, this.scaledH, 1],
       );
-      pass.end();
-
-      // Copy output to input for next chained slot (except for last one)
-      const isLastChained = (i === chainedSlots.length - 1);
-      if (!isLastChained || parallelSlots.length === 0) {
-        encoder.copyTextureToTexture(
-          { texture: this.writeTex },
-          { texture: this.readTex },
-          [this.scaledW, this.scaledH, 1],
-        );
-      }
 
       // Carry dataTexA forward into dataTexC for next frame's feedback reads
       encoder.copyTextureToTexture(
         { texture: this.dataTexA },
+        { texture: this.dataTexC },
+        [this.scaledW, this.scaledH, 1],
+      );
+
+      // Carry dataTexB forward into dataTexC for shaders that feedback from B
+      encoder.copyTextureToTexture(
+        { texture: this.dataTexB },
         { texture: this.dataTexC },
         [this.scaledW, this.scaledH, 1],
       );
