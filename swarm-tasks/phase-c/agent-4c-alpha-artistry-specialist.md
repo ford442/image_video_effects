@@ -69,11 +69,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pR = textureSampleLevel(readTexture, u_sampler, uv + vec2(ps.x, 0.0), 0.0).b;
     let pD = textureSampleLevel(readTexture, u_sampler, uv - vec2(0.0, ps.y), 0.0).b;
     let pU = textureSampleLevel(readTexture, u_sampler, uv + vec2(0.0, ps.y), 0.0).b;
-    let divergence = (velR.x - velL.x + velU.y - velD.y) * 0.5;
+    let divergence = ((velR.x - velL.x) / (2.0 * ps.x) + (velU.y - velD.y) / (2.0 * ps.y));
     pressure = (pL + pR + pD + pU - divergence) * 0.25;
     
     // Subtract pressure gradient from velocity (enforce incompressibility)
-    vel -= vec2(pR - pL, pU - pD) * 0.5;
+    vel -= vec2((pR - pL) / (2.0 * ps.x), (pU - pD) / (2.0 * ps.y));
     
     // === MOUSE FORCE ===
     let mousePos = u.zoom_config.yz;
@@ -460,8 +460,8 @@ fn rgb2hsv(rgb: vec3<f32>) -> vec3<f32> {
     let delta = maxC - minC;
     var h = 0.0;
     if (delta > 0.0001) {
-        if (maxC == rgb.r) { h = (rgb.g - rgb.b) / delta; }
-        else if (maxC == rgb.g) { h = 2.0 + (rgb.b - rgb.r) / delta; }
+        if (abs(maxC - rgb.r) < 0.0001) { h = (rgb.g - rgb.b) / delta; }
+        else if (abs(maxC - rgb.g) < 0.0001) { h = 2.0 + (rgb.b - rgb.r) / delta; }
         else { h = 4.0 + (rgb.r - rgb.g) / delta; }
     }
     h = fract(h / 6.0);

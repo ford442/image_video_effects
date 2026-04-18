@@ -151,8 +151,8 @@ fn mandelbrot(c: vec2<f32>, maxIter: i32) -> vec2<f32> {
         if (dot(z, z) > 4.0) { break; }
         z = vec2<f32>(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
     }
-    // Smooth iteration count
-    let smooth_i = f32(i) - log2(log2(dot(z, z))) + 4.0;
+    // Smooth iteration count (guarded against log2(0) when dot(z,z) <= 1.0)
+    let smooth_i = select(f32(i), f32(i) - log2(log2(max(dot(z, z), 1.0001))) + 4.0, dot(z, z) > 1.0);
     return vec2<f32>(smooth_i, f32(maxIter));
 }
 ```
@@ -318,7 +318,7 @@ fn complexMul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
 }
 fn complexDiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    let denom = dot(b, b);
+    let denom = max(dot(b, b), 0.0001); // Guard against division by zero
     return vec2<f32>(a.x*b.x + a.y*b.y, a.y*b.x - a.x*b.y) / denom;
 }
 fn complexConj(a: vec2<f32>) -> vec2<f32> {

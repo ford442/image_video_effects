@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 fn thinFilmColor(thickness: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
     // Optical path difference = 2 * n * d * cos(theta_t)
     // where theta_t = refracted angle inside film
-    let sinTheta_t = sin(acos(cosTheta)) / filmIOR;
+    let sinTheta_t = sqrt(1.0 - cosTheta * cosTheta) / filmIOR;
     let cosTheta_t = sqrt(1.0 - sinTheta_t * sinTheta_t);
     let opd = 2.0 * filmIOR * thickness * cosTheta_t;
     
