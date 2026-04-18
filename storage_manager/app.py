@@ -141,9 +141,10 @@ class MemoryIntentStore:
         intent = self._store.get(intent_id)
         if intent is None:
             return None
-        # Lazy expiry for PENDING intents
+        # Lazy expiry for PENDING intents — persist the status change
         if intent.status == "PENDING" and time.time() > intent.expires_at:
             intent.status = "EXPIRED"
+            self._store[intent_id] = intent
         return intent
 
     def list_recent(self, resource_type: str, limit: int = 20) -> List[SyncIntentDocument]:
@@ -2481,8 +2482,9 @@ async def sync_gcs_storage():
                                     new_entry["name"] = content["name"]
                                 if "author" in content:
                                     new_entry["author"] = content["author"]
-                            except Exception:
-                                pass
+                            except Exception as meta_err:
+                                # Metadata extraction is best-effort; proceed without it
+                                logging.debug("Could not extract metadata for %s: %s", filename, meta_err)
 
                         new_index.insert(0, new_entry)
                         added += 1

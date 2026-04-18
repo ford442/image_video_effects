@@ -111,7 +111,6 @@ def fresh_intent_store():
     fresh = MemoryIntentStore(ttl=INTENT_TTL_SECONDS)
     app_module.intent_store = fresh
     yield fresh
-    app_module.intent_store = fresh
 
 
 @pytest.fixture()
