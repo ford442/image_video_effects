@@ -3509,6 +3509,57 @@
     ]
   },
   {
+    "id": "gen-obsidian-echo-chamber",
+    "name": "Obsidian Echo-Chamber",
+    "author": "Jules",
+    "description": "An infinite, abyssal expanse of highly polished, brutalist obsidian monoliths that react to audio by emitting and reflecting brilliant, luminescent echolocation ripples across their glassy surfaces.",
+    "category": "generative",
+    "type": "wgsl",
+    "coordinate": 863,
+    "url": "shaders/gen-obsidian-echo-chamber.wgsl",
+    "tags": [
+      "brutalist",
+      "obsidian",
+      "audio-reactive",
+      "reflection",
+      "dark"
+    ],
+    "sliders": [
+      {
+        "name": "Monolith Spacing",
+        "param": "zoom_params.x",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Audio Ripple Intensity",
+        "param": "zoom_params.y",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Specular Glossiness",
+        "param": "zoom_params.z",
+        "default": 0.9,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Forward Speed",
+        "param": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-prismatic-aether-loom",
     "name": "Prismatic Aether-Loom",
     "url": "shaders/gen-prismatic-aether-loom.wgsl",
