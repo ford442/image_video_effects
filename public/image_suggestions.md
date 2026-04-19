@@ -2948,6 +2948,71 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Tests the generation of large-scale, curved, clean architecture combined with dense, detailed botanical elements and complex glass reflections.
 
 
+### Suggestion: Bioluminescent Forest Canopy
+- **Date:** 2024-05-15
+- **Prompt:** "A dense, ancient forest canopy viewed from below, illuminated entirely by glowing, bioluminescent flora. Giant, translucent leaves pulse with ethereal blue and green light, casting intricate, glowing shadows. Ethereal, floating pollen drifts lazily through the air, catching the magical light. The mood is tranquil, mysterious, and magical."
+- **Negative prompt:** "sunlight, daytime, harsh lighting, barren, dead"
+- **Tags:** fantasy, nature, bioluminescence, magical
+- **Style / Reference:** photorealistic, magical realism
+- **Composition:** low angle shot, looking up
+- **Color palette:** glowing blues, greens, deep purples
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240515_bioluminescent-canopy.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing subsurface scattering on leaves and volumetric lighting from glowing sources.
+
+### Suggestion: Cybernetic Zen Garden
+- **Date:** 2024-05-15
+- **Prompt:** "A tranquil Japanese Zen garden meticulously maintained by robotic monks, where the raked sand is made of glowing fiber optic cables and the rocks are sleek, obsidian data servers. Delicate holographic cherry blossoms fall slowly from metallic trees. The lighting is soft and ambient, contrasting the ancient aesthetic with futuristic technology."
+- **Negative prompt:** "messy, chaotic, daylight, traditional nature"
+- **Tags:** cyberpunk, zen, garden, futuristic
+- **Style / Reference:** hyper-detailed 3D render, cyberpunk
+- **Composition:** wide shot, rule of thirds
+- **Color palette:** stark black, neon pink, soft cyan, metallic silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240515_cybernetic-zen-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing combinations of organic shapes with hard-surface futuristic materials.
+
+### Suggestion: Neon-Noir Jazz Club
+- **Date:** 2024-05-15
+- **Prompt:** "The interior of a smoky, retro-futuristic jazz club in a cyberpunk city. A lone saxophonist, partially composed of brass cybernetics, plays on a dimly lit stage bathed in a single, dramatic red spotlight. The air is thick with smoke that catches the neon signs glaring from the wet windows outside. The atmosphere is melancholic and gritty."
+- **Negative prompt:** "bright, cheerful, clean, modern, daylight"
+- **Tags:** neon-noir, cyberpunk, interior, moody
+- **Style / Reference:** cinematic lighting, noir
+- **Composition:** medium shot, cinematic framing
+- **Color palette:** deep blacks, crimson red, neon blue
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20240515_neon-noir-jazz-club.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests volumetric smoke effects and harsh, colored spotlighting in dark environments.
+
+### Suggestion: Steampunk Observatory
+- **Date:** 2024-05-15
+- **Prompt:** "A chaotic, brass-and-wood astronomical observatory filled with intricate, ticking orreries and giant telescope lenses capturing the light of a nearby nebula. Huge gears and steam pipes line the circular walls, while a large, open dome reveals a star-filled sky dominated by a massive ringed planet. The lighting is warm and fiery, emanating from glowing braziers and the starlight."
+- **Negative prompt:** "minimalist, clean, modern technology, digital screens"
+- **Tags:** steampunk, fantasy, space, intricate
+- **Style / Reference:** victorian sci-fi, highly detailed illustration
+- **Composition:** wide interior shot, central focus on the telescope
+- **Color palette:** brass, mahogany wood, warm amber, starry blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240515_steampunk-observatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for rendering complex, interlocking mechanical details and metallic reflections.
+
+### Suggestion: Abyssal Mecha Graveyard
+- **Date:** 2024-05-15
+- **Prompt:** "The dark, crushing depths of the ocean floor, where the colossal, rusting remains of ancient mechas lie half-buried in the silt. Bioluminescent deep-sea creatures swim through the hollowed-out cockpits and broken visors. A faint, eerie green light leaks from a cracked, still-functioning power core of one of the titans. The scene is ominous, forgotten, and vast."
+- **Negative prompt:** "surface, sunlight, shallow water, clean, new"
+- **Tags:** sci-fi, underwater, mecha, ruins, ominous
+- **Style / Reference:** cinematic concept art, photorealistic underwater
+- **Composition:** wide establishing shot, deep depth of field
+- **Color palette:** deep ocean blue, rust orange, eerie glowing green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240515_abyssal-mecha-graveyard.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for underwater atmospheric scattering, murky water textures, and rusting metal materials.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
