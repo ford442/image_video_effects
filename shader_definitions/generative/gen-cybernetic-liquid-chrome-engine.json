@@ -1,0 +1,44 @@
+{
+  "id": "gen-cybernetic-liquid-chrome-engine",
+  "name": "Cybernetic Liquid-Chrome Engine",
+  "coordinate": 864,
+  "type": "shader",
+  "category": "generative",
+  "url": "shaders/gen-cybernetic-liquid-chrome-engine.wgsl",
+  "description": "A colossal, endlessly shifting mechanical engine constructed of hyper-reflective liquid chrome, pumping iridescent plasma through infinitely complex fractal pistons that react to the heavy bass of audio frequencies.",
+  "tags": ["mechanical", "liquid-metal", "audio-reactive", "raymarching", "fractal"],
+  "sliders": [
+    {
+      "name": "Engine Speed",
+      "param": "zoom_params.x",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "name": "Chrome Reflectivity",
+      "param": "zoom_params.y",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    },
+    {
+      "name": "Plasma Glow",
+      "param": "zoom_params.z",
+      "default": 2.0,
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.1
+    },
+    {
+      "name": "Complexity",
+      "param": "zoom_params.w",
+      "default": 3.0,
+      "min": 1.0,
+      "max": 8.0,
+      "step": 1.0
+    }
+  ]
+}
