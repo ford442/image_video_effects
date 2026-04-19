@@ -1,0 +1,48 @@
+{
+  "id": "mouse-fluid-coupling",
+  "name": "Fluid Coupling",
+  "url": "shaders/mouse-fluid-coupling.wgsl",
+  "category": "interactive-mouse",
+  "features": [
+    "mouse-driven",
+    "temporal"
+  ],
+  "description": "The mouse drags a viscous fluid over the image, creating vortex streets and color absorption. Click ripples inject fluid bursts.",
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "mouseRadius",
+      "name": "Stir Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Absorption",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "vortexStrength",
+      "name": "Vortex Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "fluid-simulation",
+    "temporal",
+    "psychedelic"
+  ]
+}

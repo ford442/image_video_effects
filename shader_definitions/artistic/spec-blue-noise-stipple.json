@@ -1,0 +1,56 @@
+{
+  "id": "spec-blue-noise-stipple",
+  "name": "Blue Noise Stipple",
+  "url": "shaders/spec-blue-noise-stipple.wgsl",
+  "category": "artistic",
+  "description": "Blue-noise dithered pointillism rendering. Uses golden-ratio low-discrepancy sequences for perceptually optimal, uniformly-spaced dot distributions with smooth gradients and no aliasing.",
+  "tags": [
+    "pointillism",
+    "blue-noise",
+    "stipple",
+    "artistic",
+    "dithering",
+    "seurat"
+  ],
+  "features": [
+    "blue-noise",
+    "pointillism",
+    "stochastic-sampling",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "dot_scale",
+      "name": "Dot Scale",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "dot_size",
+      "name": "Dot Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "color_var",
+      "name": "Color Variation",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "density",
+      "name": "Dot Density",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.6
+}

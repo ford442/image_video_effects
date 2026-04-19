@@ -1,0 +1,57 @@
+{
+  "id": "aero-chromatics-prismatic",
+  "name": "Aero Chromatics Prismatic",
+  "url": "shaders/aero-chromatics-prismatic.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Wind-driven chromatic smoke trails enhanced with physical prismatic dispersion via Cauchy's equation. Each wavelength refracts at a different angle through a virtual lens, creating rainbow edge effects on advected smoke.",
+  "tags": [
+    "prismatic",
+    "dispersion",
+    "chromatic",
+    "cauchy",
+    "smoke",
+    "simulation"
+  ],
+  "features": [
+    "prismatic-dispersion",
+    "chromatic-advection",
+    "cauchy-equation",
+    "mouse-driven",
+    "spectral"
+  ],
+  "params": [
+    {
+      "id": "wind",
+      "name": "Wind Force",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "decay",
+      "name": "Smoke Decay",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic Split",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "source",
+      "name": "Source Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.8
+}

@@ -3,8 +3,8 @@
   "name": "Hybrid Magnetic Field",
   "url": "shaders/hybrid-magnetic-field.wgsl",
   "category": "generative",
-  "description": "Magnetic field line visualization with flowing particles and FBM-varied field distortion",
-  "features": ["hybrid", "vector-field", "particle-trails", "magnetic-distortion", "glow", "randomization-safe"],
+  "description": "Magnetic field line visualization with flowing particles and FBM-varied field distortion. Audio reactivity makes field lines pulse and glow with the beat.",
+  "features": ["hybrid", "vector-field", "particle-trails", "magnetic-distortion", "glow", "randomization-safe", "audio-reactive"],
   "params": [
     {
       "id": "field_strength",
@@ -47,6 +47,7 @@
       "description": "FBM noise influence on field"
     }
   ],
+  "tags": ["audio", "music", "magnetic", "field", "particles", "trails", "glow"],
   "chunks_used": [
     "magnetic field calculation",
     "fbm2 variation (gen_grid.wgsl)",

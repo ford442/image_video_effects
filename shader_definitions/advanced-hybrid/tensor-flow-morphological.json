@@ -1,0 +1,118 @@
+{
+  "id": "tensor-flow-morphological",
+  "name": "Tensor Flow Morphological",
+  "url": "shaders/tensor-flow-morphological.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Depth-aware tensor eigenwarp with morphological post-processing. Erosion darkens compressed tensor regions, dilation brightens tensile regions. Gradient highlights edges created by tensor warping.",
+  "features": [
+    "advanced-hybrid",
+    "tensor-warp",
+    "morphological",
+    "depth-aware",
+    "mouse-driven",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "strain_scale",
+      "name": "Strain Scale",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Amplitude of tensor-field deformation"
+    },
+    {
+      "id": "detail_preserve",
+      "name": "Detail Preserve",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How much high-frequency detail is preserved"
+    },
+    {
+      "id": "depth_weight",
+      "name": "Depth Weight",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Influence of depth on deformation"
+    },
+    {
+      "id": "tensor_mode",
+      "name": "Tensor Mode",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend from stretch-dominant to shear-dominant"
+    }
+  ],
+  "advanced_params": [
+    {
+      "id": "kernel_radius",
+      "name": "Kernel Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.x",
+      "description": "Morphological structuring element radius"
+    },
+    {
+      "id": "erosion_dilation_blend",
+      "name": "Erosion/Dilation Blend",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.y",
+      "description": "0=erosion, 1=dilation"
+    },
+    {
+      "id": "gradient_boost",
+      "name": "Gradient Boost",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.z",
+      "description": "Morphological gradient amplification"
+    },
+    {
+      "id": "morph_blend",
+      "name": "Morphology Blend",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.w",
+      "description": "Blend between sculpted and morphological result"
+    }
+  ],
+  "chunks_used": [
+    "sampleDepth (tensor-flow-sculpting.wgsl)",
+    "tensorEigen (tensor-flow-sculpting.wgsl)",
+    "vnoise (tensor-flow-sculpting.wgsl)",
+    "rippleDisp (tensor-flow-sculpting.wgsl)",
+    "fbm_tfs (tensor-flow-sculpting.wgsl)",
+    "stressColor (tensor-flow-sculpting.wgsl)",
+    "morphological operators (conv-morphological-erosion-dilation.wgsl)"
+  ],
+  "performance_target": "25-35 FPS (GTX 1060)",
+  "created_by": "Agent CB-3 — Convolution Post-Processor",
+  "created_date": "2026-04-18",
+  "tags": [
+    "tensor",
+    "warp",
+    "morphological",
+    "depth-aware",
+    "sculpt"
+  ]
+}

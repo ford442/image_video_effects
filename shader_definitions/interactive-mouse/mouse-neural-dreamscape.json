@@ -1,0 +1,49 @@
+{
+  "id": "mouse-neural-dreamscape",
+  "name": "Neural Dreamscape",
+  "url": "shaders/mouse-neural-dreamscape.wgsl",
+  "category": "interactive-mouse",
+  "features": [
+    "mouse-driven",
+    "temporal"
+  ],
+  "description": "A virtual neural network grid activates around the mouse. Neurons glow and synapse connections pulse with activation. Click ripples send waves through the network.",
+  "params": [
+    {
+      "id": "networkDensity",
+      "name": "Network Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "activationRadius",
+      "name": "Activation Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "pulseSpeed",
+      "name": "Pulse Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "synapseStrength",
+      "name": "Synapse Strength",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "neural",
+    "network",
+    "psychedelic",
+    "generative"
+  ]
+}

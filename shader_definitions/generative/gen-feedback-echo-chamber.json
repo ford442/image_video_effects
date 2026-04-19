@@ -12,13 +12,16 @@
     "ghosting",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "alpha",
+    "accumulative"
   ],
   "features": [
     "temporal",
     "multi-pass",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "advanced-alpha"
   ],
   "params": [
     {

@@ -1,0 +1,43 @@
+{
+  "id": "gen-biomechanical-hive-julia",
+  "name": "Biomechanical Hive Julia",
+  "url": "shaders/gen-biomechanical-hive-julia.wgsl",
+  "category": "advanced-hybrid",
+  "description": "A biomechanical hive where each cell contains a living quaternion Julia fractal core. The chitinous exoskeleton surrounds morphing 4D fractal organisms that pulse with bioluminescence.",
+  "tags": ["biomechanical", "fractal", "julia", "raymarched", "hive", "organic", "futuristic"],
+  "features": ["mouse-driven", "raymarched", "temporal"],
+  "params": [
+    {
+      "id": "density",
+      "name": "Hive Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "pulse",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "biomass",
+      "name": "Biomass",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "morph",
+      "name": "Julia Morph Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

@@ -44,7 +44,8 @@
     "chromatic-aberration",
     "physical-refraction",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "advanced-alpha"
   ],
   "tags": [
     "crystal",
@@ -55,6 +56,8 @@
     "fresnel",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "alpha",
+    "physical-transmittance"
   ]
 }

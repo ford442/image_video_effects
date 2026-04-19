@@ -1,0 +1,56 @@
+{
+  "id": "spec-cooperative-edge-linking",
+  "name": "Cooperative Edge Linking",
+  "url": "shaders/spec-cooperative-edge-linking.wgsl",
+  "category": "image",
+  "description": "Workgroup-cooperative edge detection and chain tracing. Uses shared memory union-find to link connected edges within each tile, assigning unique edge IDs for downstream segmentation and flow effects.",
+  "tags": [
+    "edge-detection",
+    "edge-linking",
+    "cooperative",
+    "workgroup",
+    "segmentation",
+    "union-find"
+  ],
+  "features": [
+    "cooperative-workgroup",
+    "edge-linking",
+    "segmentation",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "edge_threshold",
+      "name": "Edge Threshold",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "link_radius",
+      "name": "Link Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "color_mode",
+      "name": "Color Mode",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Edge Glow",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

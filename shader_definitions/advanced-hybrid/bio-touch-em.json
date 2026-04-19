@@ -1,0 +1,50 @@
+{
+  "id": "bio-touch-em",
+  "name": "Bio Touch EM",
+  "url": "shaders/bio-touch-em.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors. Click ripples spawn orbiting secondary charges.",
+  "features": [
+    "mouse-driven",
+    "field-simulation",
+    "organic",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "x",
+      "name": "Glow Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "y",
+      "name": "Cell Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "z",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "w",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "organic",
+    "electromagnetic",
+    "glow",
+    "interactive"
+  ]
+}

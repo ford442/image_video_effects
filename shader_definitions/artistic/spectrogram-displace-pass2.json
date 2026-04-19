@@ -1,0 +1,16 @@
+{
+  "id": "spectrogram-displace-pass2",
+  "name": "Spectrogram Displace (Pass 2)",
+  "url": "shaders/spectrogram-displace-pass2.wgsl",
+  "category": "image",
+  "description": "Image displacement and compositing pass: applies spectrogram-driven displacement to the input image, blends with spectrogram colors, and applies frequency-based color grading and vignette.",
+  "tags": ["spectrogram", "displacement", "compositing", "multi-pass"],
+  "features": ["multi-pass-2", "mouse-driven"],
+  "multipass": { "pass": 2, "totalPasses": 2 },
+  "params": [
+    { "id": "param1", "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param2", "name": "Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param3", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param4", "name": "Detail", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ]
+}

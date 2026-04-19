@@ -117,4 +117,4 @@ Agents review each other's outputs for combo opportunities:
 
 **Status:** 📋 Ready for Launch  
 **Prerequisites:** Phase B completion  
-**Next Step:** Launch all 4 agents in parallel
+**Next Step:** Phase C complete. See `phase-c-qa-report.md` for details.

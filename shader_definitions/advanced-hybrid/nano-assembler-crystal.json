@@ -1,0 +1,15 @@
+{
+  "id": "nano-assembler-crystal",
+  "name": "Nano Assembler Crystal",
+  "url": "shaders/nano-assembler-crystal.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Grid-based nanobots assemble into crystalline structures using phase-field dynamics. RGBA stores assembly phase, temperature, crystal orientation, and impurity. Mouse disrupts assembly causing scatter; ripples trigger nucleation. Displays nanobot glow when disassembled and orientation-dependent crystal color when assembled.",
+  "tags": ["nano-assembler", "crystal", "growth", "phase-field", "grid", "simulation", "rgba-state-machine", "interactive", "mouse-driven", "temporal"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "assemblyProgress", "name": "Assembly Progress", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "particleDensity", "name": "Grid Density", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "scatterForce", "name": "Disruption", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "rebuildSpeed", "name": "Rebuild Speed", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

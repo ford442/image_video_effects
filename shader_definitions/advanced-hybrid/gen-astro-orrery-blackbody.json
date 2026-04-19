@@ -1,0 +1,43 @@
+{
+  "id": "gen-astro-orrery-blackbody",
+  "name": "Astro Orrery Blackbody",
+  "url": "shaders/gen-astro-orrery-blackbody.wgsl",
+  "category": "advanced-hybrid",
+  "description": "A kinetic astronomical orrery where each ring's thermal energy determines its blackbody color. Rotating rings glow with physically accurate star temperatures from cool red dwarfs to blazing blue giants.",
+  "tags": ["astronomical", "blackbody", "thermal", "orrery", "space", "physical", "HDR"],
+  "features": ["audio-reactive", "mouse-driven", "raymarched", "temporal"],
+  "params": [
+    {
+      "id": "complexity",
+      "name": "Ring Complexity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Orbital Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "audio",
+      "name": "Audio Reactivity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

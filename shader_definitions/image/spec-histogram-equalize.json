@@ -1,0 +1,56 @@
+{
+  "id": "spec-histogram-equalize",
+  "name": "Histogram Equalize",
+  "url": "shaders/spec-histogram-equalize.wgsl",
+  "category": "image",
+  "description": "Real-time CLAHE histogram equalization using workgroup cooperative histogram building. Computes local histogram per 8x8 tile and remaps intensities via CDF for dramatic adaptive contrast enhancement.",
+  "tags": [
+    "histogram",
+    "equalization",
+    "CLAHE",
+    "contrast",
+    "cooperative",
+    "workgroup"
+  ],
+  "features": [
+    "cooperative-workgroup",
+    "histogram",
+    "CLAHE",
+    "contrast-enhancement"
+  ],
+  "params": [
+    {
+      "id": "clip_limit",
+      "name": "Clip Limit",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "strength",
+      "name": "Effect Strength",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "tile_blend",
+      "name": "Tile Blend",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "color_preserve",
+      "name": "Color Preserve",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.6
+}

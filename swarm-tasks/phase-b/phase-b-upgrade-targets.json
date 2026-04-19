@@ -1,0 +1,1462 @@
+{
+  "phase": "b",
+  "generated": "2026-04-18",
+  "total_targets": 211,
+  "categories": {
+    "mouse_response": [
+      {
+        "id": "glass_refraction_alpha",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 8733 bytes",
+        "priority": 1,
+        "size_bytes": 8733,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "gravitational-lensing",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 8327 bytes",
+        "priority": 2,
+        "size_bytes": 8327,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "hybrid-spectral-sorting",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 7690 bytes",
+        "priority": 3,
+        "size_bytes": 7690,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "spectral-flow-sorting",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 7655 bytes",
+        "priority": 4,
+        "size_bytes": 7655,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "audio-voronoi-displacement",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 7057 bytes",
+        "priority": 5,
+        "size_bytes": 7057,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "hybrid-chromatic-liquid",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 6993 bytes",
+        "priority": 6,
+        "size_bytes": 6993,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "liquid_crystal_birefringence",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 6648 bytes",
+        "priority": 7,
+        "size_bytes": 6648,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "hybrid-voronoi-glass",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 6303 bytes",
+        "priority": 8,
+        "size_bytes": 6303,
+        "status": "completed",
+        "completed_by": "6B"
+      },
+      {
+        "id": "sim-heat-haze-field",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 5768 bytes",
+        "priority": 9,
+        "size_bytes": 5768
+      },
+      {
+        "id": "temporal_echo",
+        "category": "distortion",
+        "rationale": "Non-generative distortion shader without mouse-driven interactivity; size 3922 bytes",
+        "priority": 10,
+        "size_bytes": 3922
+      },
+      {
+        "id": "artistic_painterly_oil",
+        "category": "artistic",
+        "rationale": "Non-generative artistic shader without mouse-driven interactivity; size 9401 bytes",
+        "priority": 11,
+        "size_bytes": 9401
+      },
+      {
+        "id": "chromatic-reaction-diffusion",
+        "category": "artistic",
+        "rationale": "Non-generative artistic shader without mouse-driven interactivity; size 7186 bytes",
+        "priority": 12,
+        "size_bytes": 7186
+      },
+      {
+        "id": "sim-decay-system",
+        "category": "artistic",
+        "rationale": "Non-generative artistic shader without mouse-driven interactivity; size 6986 bytes",
+        "priority": 13,
+        "size_bytes": 6986
+      },
+      {
+        "id": "sim-ink-diffusion",
+        "category": "artistic",
+        "rationale": "Non-generative artistic shader without mouse-driven interactivity; size 6822 bytes",
+        "priority": 14,
+        "size_bytes": 6822
+      },
+      {
+        "id": "ink_dispersion_alpha",
+        "category": "liquid-effects",
+        "rationale": "Non-generative liquid-effects shader without mouse-driven interactivity; size 6993 bytes",
+        "priority": 15,
+        "size_bytes": 6993
+      },
+      {
+        "id": "parallax_depth_layers",
+        "category": "visual-effects",
+        "rationale": "Non-generative visual-effects shader without mouse-driven interactivity; size 9865 bytes",
+        "priority": 16,
+        "size_bytes": 9865
+      },
+      {
+        "id": "gen-velocity-bloom",
+        "category": "lighting-effects",
+        "rationale": "Non-generative lighting-effects shader without mouse-driven interactivity; size 7068 bytes",
+        "priority": 17,
+        "size_bytes": 7068
+      },
+      {
+        "id": "underwater_caustics",
+        "category": "lighting-effects",
+        "rationale": "Non-generative lighting-effects shader without mouse-driven interactivity; size 6738 bytes",
+        "priority": 18,
+        "size_bytes": 6738
+      },
+      {
+        "id": "sim-volumetric-fake",
+        "category": "lighting-effects",
+        "rationale": "Non-generative lighting-effects shader without mouse-driven interactivity; size 5859 bytes",
+        "priority": 19,
+        "size_bytes": 5859
+      },
+      {
+        "id": "atmos_volumetric_fog",
+        "category": "lighting-effects",
+        "rationale": "Non-generative lighting-effects shader without mouse-driven interactivity; size 5025 bytes",
+        "priority": 20,
+        "size_bytes": 5025
+      },
+      {
+        "id": "holographic_interference",
+        "category": "lighting-effects",
+        "rationale": "Non-generative lighting-effects shader without mouse-driven interactivity; size 4273 bytes",
+        "priority": 21,
+        "size_bytes": 4273
+      },
+      {
+        "id": "parallax-glow-compositor",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 9865 bytes",
+        "priority": 22,
+        "size_bytes": 9865
+      },
+      {
+        "id": "liquid-v1",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 9698 bytes",
+        "priority": 23,
+        "size_bytes": 9698
+      },
+      {
+        "id": "gemstone-fractures",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 7543 bytes",
+        "priority": 24,
+        "size_bytes": 7543
+      },
+      {
+        "id": "gen-temporal-motion-smear",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 6689 bytes",
+        "priority": 25,
+        "size_bytes": 6689
+      },
+      {
+        "id": "liquid-viscous-grokcf1",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 6677 bytes",
+        "priority": 26,
+        "size_bytes": 6677
+      },
+      {
+        "id": "digital-waves",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 6018 bytes",
+        "priority": 27,
+        "size_bytes": 6018
+      },
+      {
+        "id": "rain-ripples",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 5479 bytes",
+        "priority": 28,
+        "size_bytes": 5479
+      },
+      {
+        "id": "fractal-kaleidoscope",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 4962 bytes",
+        "priority": 29,
+        "size_bytes": 4962
+      },
+      {
+        "id": "gen-feedback-echo-chamber",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 4869 bytes",
+        "priority": 30,
+        "size_bytes": 4869
+      },
+      {
+        "id": "cyber-halftone-scanner",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 3758 bytes",
+        "priority": 31,
+        "size_bytes": 3758
+      },
+      {
+        "id": "alucinate",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 3674 bytes",
+        "priority": 32,
+        "size_bytes": 3674
+      },
+      {
+        "id": "kaleidoscope",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 3460 bytes",
+        "priority": 33,
+        "size_bytes": 3460
+      },
+      {
+        "id": "xerox-degrade",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 3425 bytes",
+        "priority": 34,
+        "size_bytes": 3425
+      },
+      {
+        "id": "phantom-lag",
+        "category": "image",
+        "rationale": "Non-generative image shader without mouse-driven interactivity; size 3412 bytes",
+        "priority": 35,
+        "size_bytes": 3412
+      },
+      {
+        "id": "quantum-foam-bilateral",
+        "category": "advanced-hybrid",
+        "size_bytes": 10261,
+        "rationale": "advanced-hybrid shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "matrix_digital_rain",
+        "category": "retro-glitch",
+        "size_bytes": 9865,
+        "rationale": "retro-glitch shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "pp-tone-map",
+        "category": "post-processing",
+        "size_bytes": 7783,
+        "rationale": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "pp-bloom",
+        "category": "post-processing",
+        "size_bytes": 7551,
+        "rationale": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "audio_geometric_pulse",
+        "category": "geometric",
+        "size_bytes": 7530,
+        "rationale": "geometric shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "retro_phosphor_dream",
+        "category": "retro-glitch",
+        "size_bytes": 6206,
+        "rationale": "retro-glitch shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "pp-ssao",
+        "category": "post-processing",
+        "size_bytes": 5518,
+        "rationale": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "pp-vignette",
+        "category": "post-processing",
+        "size_bytes": 5496,
+        "rationale": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "pp-sharpen",
+        "category": "post-processing",
+        "size_bytes": 5496,
+        "rationale": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "spec-histogram-equalize",
+        "category": "image",
+        "size_bytes": 4259,
+        "rationale": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "galaxy-compute",
+        "category": "image",
+        "size_bytes": 3253,
+        "rationale": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "chrono-slit-scan",
+        "category": "image",
+        "size_bytes": 3242,
+        "rationale": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "texture",
+        "category": "image",
+        "size_bytes": 2423,
+        "rationale": "image shader sampling readTexture without mouse interactivity"
+      }
+    ],
+    "multipass": [
+      {
+        "id": "liquid-optimized",
+        "category": "liquid-effects",
+        "rationale": "Large monolithic shader (22466 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 1,
+        "size_bytes": 22466,
+        "status": "completed",
+        "completed_by": "1BR"
+      },
+      {
+        "id": "spectrogram-displace",
+        "category": "image",
+        "rationale": "Large monolithic shader (21828 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 2,
+        "size_bytes": 21828,
+        "status": "completed",
+        "completed_by": "1BR"
+      },
+      {
+        "id": "digital-glitch",
+        "category": "image",
+        "rationale": "Large monolithic shader (20712 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 3,
+        "size_bytes": 20712,
+        "status": "completed",
+        "completed_by": "1BR"
+      },
+      {
+        "id": "liquid",
+        "category": "image",
+        "rationale": "Large monolithic shader (18928 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 4,
+        "size_bytes": 18928,
+        "status": "completed",
+        "completed_by": "1BR"
+      },
+      {
+        "id": "rgb-glitch-displacement",
+        "category": "retro-glitch",
+        "rationale": "Large monolithic shader (18507 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 5,
+        "size_bytes": 18507
+      },
+      {
+        "id": "vortex",
+        "category": "image",
+        "rationale": "Large monolithic shader (18015 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 6,
+        "size_bytes": 18015,
+        "status": "completed",
+        "completed_by": "1BR"
+      },
+      {
+        "id": "gen-quantum-superposition",
+        "category": "generative",
+        "rationale": "Large monolithic shader (17911 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 7,
+        "size_bytes": 17911
+      },
+      {
+        "id": "recursion-mirror-vortex",
+        "category": "artistic",
+        "rationale": "Large monolithic shader (16968 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 8,
+        "size_bytes": 16968
+      },
+      {
+        "id": "chromatic-phase-inversion",
+        "category": "artistic",
+        "rationale": "Large monolithic shader (16926 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 9,
+        "size_bytes": 16926
+      },
+      {
+        "id": "spectral-bleed-confinement",
+        "category": "artistic",
+        "rationale": "Large monolithic shader (16910 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 10,
+        "size_bytes": 16910
+      },
+      {
+        "id": "tensor-flow-sculpting",
+        "category": "image",
+        "rationale": "Large monolithic shader (16512 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 11,
+        "size_bytes": 16512
+      },
+      {
+        "id": "gen-gravitational-strain",
+        "category": "generative",
+        "rationale": "Large monolithic shader (16338 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 12,
+        "size_bytes": 16338
+      },
+      {
+        "id": "gen-inverse-mandelbrot",
+        "category": "generative",
+        "rationale": "Large monolithic shader (16275 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 13,
+        "size_bytes": 16275
+      },
+      {
+        "id": "gen-hyperbolic-tessellation",
+        "category": "generative",
+        "rationale": "Large monolithic shader (16186 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 14,
+        "size_bytes": 16186
+      },
+      {
+        "id": "gen-chromatic-metamorphosis",
+        "category": "generative",
+        "rationale": "Large monolithic shader (15772 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 15,
+        "size_bytes": 15772
+      },
+      {
+        "id": "chromatic-crawler",
+        "category": "image",
+        "rationale": "Large monolithic shader (15391 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 16,
+        "size_bytes": 15391
+      },
+      {
+        "id": "neural-resonance",
+        "category": "image",
+        "rationale": "Large monolithic shader (14900 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 17,
+        "size_bytes": 14900
+      },
+      {
+        "id": "quantum-smear",
+        "category": "image",
+        "rationale": "Large monolithic shader (14754 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 18,
+        "size_bytes": 14754
+      },
+      {
+        "id": "rainbow-cloud",
+        "category": "image",
+        "rationale": "Large monolithic shader (14547 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 19,
+        "size_bytes": 14547
+      },
+      {
+        "id": "gen-holographic-data-core",
+        "category": "generative",
+        "rationale": "Large monolithic shader (14476 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 20,
+        "size_bytes": 14476
+      },
+      {
+        "id": "gen-chronos-labyrinth",
+        "category": "generative",
+        "rationale": "Large monolithic shader (14430 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 21,
+        "size_bytes": 14430
+      },
+      {
+        "id": "chromatic-folds",
+        "category": "image",
+        "rationale": "Large monolithic shader (14268 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 22,
+        "size_bytes": 14268
+      },
+      {
+        "id": "crt-tv",
+        "category": "retro-glitch",
+        "rationale": "Large monolithic shader (14080 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 23,
+        "size_bytes": 14080
+      },
+      {
+        "id": "vhs-tracking",
+        "category": "image",
+        "rationale": "Large monolithic shader (13823 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 24,
+        "size_bytes": 13823
+      },
+      {
+        "id": "gen-art-deco-sky",
+        "category": "generative",
+        "rationale": "Large monolithic shader (13722 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 25,
+        "size_bytes": 13722
+      },
+      {
+        "id": "pixel-sort-glitch",
+        "category": "distortion",
+        "rationale": "Large monolithic shader (13671 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 26,
+        "size_bytes": 13671
+      },
+      {
+        "id": "chromatic-folds-2",
+        "category": "image",
+        "rationale": "Large monolithic shader (13491 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 27,
+        "size_bytes": 13491
+      },
+      {
+        "id": "stella-orbit",
+        "category": "image",
+        "rationale": "Large monolithic shader (13475 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 28,
+        "size_bytes": 13475
+      },
+      {
+        "id": "scan-distort",
+        "category": "image",
+        "rationale": "Large monolithic shader (13228 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 29,
+        "size_bytes": 13228
+      },
+      {
+        "id": "infinite-zoom",
+        "category": "image",
+        "rationale": "Large monolithic shader (13189 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 30,
+        "size_bytes": 13189
+      },
+      {
+        "id": "quantum-foam",
+        "category": "image",
+        "size_bytes": 20544,
+        "rationale": "Large shader (20544 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-ethereal-anemone-bloom",
+        "category": "generative",
+        "size_bytes": 12595,
+        "rationale": "Large shader (12595 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-bioluminescent-abyss",
+        "category": "generative",
+        "size_bytes": 12270,
+        "rationale": "Large shader (12270 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "chromatic-focus",
+        "category": "artistic",
+        "size_bytes": 11905,
+        "rationale": "Large shader (11905 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "neural-raymarcher-gabor",
+        "category": "advanced-hybrid",
+        "size_bytes": 11873,
+        "rationale": "Large shader (11873 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-celestial-forge",
+        "category": "generative",
+        "size_bytes": 11861,
+        "rationale": "Large shader (11861 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "chromatic-manifold-2",
+        "category": "image",
+        "size_bytes": 11688,
+        "rationale": "Large shader (11688 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "wolfram-data-demo",
+        "category": "generative",
+        "size_bytes": 11568,
+        "rationale": "Large shader (11568 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-biomechanical-hive",
+        "category": "generative",
+        "size_bytes": 11505,
+        "rationale": "Large shader (11505 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "ethereal-swirl",
+        "category": "image",
+        "size_bytes": 11497,
+        "rationale": "Large shader (11497 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "nebulous-dream",
+        "category": "image",
+        "size_bytes": 11444,
+        "rationale": "Large shader (11444 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-isometric-city",
+        "category": "generative",
+        "size_bytes": 11292,
+        "rationale": "Large shader (11292 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-liquid-crystal-hive-mind",
+        "category": "generative",
+        "size_bytes": 11069,
+        "rationale": "Large shader (11069 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-celestial-prism-orchid",
+        "category": "generative",
+        "size_bytes": 11027,
+        "rationale": "Large shader (11027 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "liquid-viscous",
+        "category": "image",
+        "size_bytes": 10894,
+        "rationale": "Large shader (10894 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "glitch-pixel-sort",
+        "category": "image",
+        "size_bytes": 10774,
+        "rationale": "Large shader (10774 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "aurora-rift",
+        "category": "image",
+        "size_bytes": 10679,
+        "rationale": "Large shader (10679 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "fabric-step",
+        "category": "simulation",
+        "size_bytes": 10551,
+        "rationale": "Large shader (10551 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "chromatic-infection",
+        "category": "image",
+        "size_bytes": 10492,
+        "rationale": "Large shader (10492 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "neural-dreamscape",
+        "category": "image",
+        "size_bytes": 10459,
+        "rationale": "Large shader (10459 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "liquid-zoom",
+        "category": "image",
+        "size_bytes": 10423,
+        "rationale": "Large shader (10423 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "predator-prey",
+        "category": "generative",
+        "size_bytes": 10325,
+        "rationale": "Large shader (10325 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "aurora-rift-gemini",
+        "category": "image",
+        "size_bytes": 10300,
+        "rationale": "Large shader (10300 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "quantum-foam-bilateral",
+        "category": "advanced-hybrid",
+        "size_bytes": 10261,
+        "rationale": "Large shader (10261 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "chromatic-manifold",
+        "category": "image",
+        "size_bytes": 10256,
+        "rationale": "Large shader (10256 bytes) candidate for multi-pass decomposition"
+      }
+    ],
+    "advanced_alpha": [
+      {
+        "id": "spectral-bleed-confinement",
+        "category": "artistic",
+        "rationale": "artistic shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 1,
+        "size_bytes": 16910,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "photonic-caustics",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 2,
+        "size_bytes": 10204,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "crystal-refraction",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 3,
+        "size_bytes": 5906,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "gen-feedback-echo-chamber",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 4,
+        "size_bytes": 4869,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "neon-edge-pulse",
+        "category": "visual-effects",
+        "rationale": "visual-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 5,
+        "size_bytes": 9865,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "glass_refraction_alpha",
+        "category": "distortion",
+        "rationale": "distortion shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 6,
+        "size_bytes": 8733,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "volumetric-depth-zoom",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 7,
+        "size_bytes": 8224,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "crystal-facets",
+        "category": "distortion",
+        "rationale": "distortion shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 8,
+        "size_bytes": 7964,
+        "status": "completed",
+        "completed_by": "2B"
+      },
+      {
+        "id": "cosmic-flow",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 9,
+        "size_bytes": 7797
+      },
+      {
+        "id": "gen-velocity-bloom",
+        "category": "lighting-effects",
+        "rationale": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 10,
+        "size_bytes": 7068
+      },
+      {
+        "id": "gen-temporal-motion-smear",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 11,
+        "size_bytes": 6689
+      },
+      {
+        "id": "green-tracer",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 12,
+        "size_bytes": 6538
+      },
+      {
+        "id": "sim-volumetric-fake",
+        "category": "lighting-effects",
+        "rationale": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 13,
+        "size_bytes": 5859
+      },
+      {
+        "id": "atmos_volumetric_fog",
+        "category": "lighting-effects",
+        "rationale": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 14,
+        "size_bytes": 5025
+      },
+      {
+        "id": "prismatic-feedback-loop",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 15,
+        "size_bytes": 4092
+      },
+      {
+        "id": "neon-warp",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 16,
+        "size_bytes": 4034
+      },
+      {
+        "id": "temporal_echo",
+        "category": "distortion",
+        "rationale": "distortion shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 17,
+        "size_bytes": 3922
+      },
+      {
+        "id": "chromatic-phase-inversion",
+        "category": "artistic",
+        "rationale": "artistic shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 18,
+        "size_bytes": 16926
+      },
+      {
+        "id": "astral-veins",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 19,
+        "size_bytes": 10589
+      },
+      {
+        "id": "bioluminescent",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 20,
+        "size_bytes": 9950
+      },
+      {
+        "id": "parallax-glow-compositor",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 21,
+        "size_bytes": 9865
+      },
+      {
+        "id": "wave-equation",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 22,
+        "size_bytes": 8374
+      },
+      {
+        "id": "volumetric-rainbow-clouds",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 23,
+        "size_bytes": 8245
+      },
+      {
+        "id": "gemstone-fractures",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 24,
+        "size_bytes": 7543
+      },
+      {
+        "id": "aerogel-smoke",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 25,
+        "size_bytes": 7247
+      },
+      {
+        "id": "lidar",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 26,
+        "size_bytes": 7193
+      },
+      {
+        "id": "hybrid-chromatic-liquid",
+        "category": "distortion",
+        "rationale": "distortion shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 27,
+        "size_bytes": 6993
+      },
+      {
+        "id": "underwater_caustics",
+        "category": "lighting-effects",
+        "rationale": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 28,
+        "size_bytes": 6738
+      },
+      {
+        "id": "pp-chromatic",
+        "category": "post-processing",
+        "rationale": "post-processing shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 29,
+        "size_bytes": 5378
+      },
+      {
+        "id": "neon-contour-drag",
+        "category": "image",
+        "rationale": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 30,
+        "size_bytes": 5377
+      },
+      {
+        "id": "quantum-foam",
+        "category": "image",
+        "size_bytes": 20544,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "datamosh",
+        "category": "image",
+        "size_bytes": 12369,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "chromatic-focus",
+        "category": "artistic",
+        "size_bytes": 11905,
+        "rationale": "artistic shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "chromatic-manifold-2",
+        "category": "image",
+        "size_bytes": 11688,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "ethereal-swirl",
+        "category": "image",
+        "size_bytes": 11497,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "nebulous-dream",
+        "category": "image",
+        "size_bytes": 11444,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "liquid-viscous",
+        "category": "image",
+        "size_bytes": 10894,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "glitch-pixel-sort",
+        "category": "image",
+        "size_bytes": 10774,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "aurora-rift",
+        "category": "image",
+        "size_bytes": 10679,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "chromatic-infection",
+        "category": "image",
+        "size_bytes": 10492,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "neural-dreamscape",
+        "category": "image",
+        "size_bytes": 10459,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "liquid-zoom",
+        "category": "image",
+        "size_bytes": 10423,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "aurora-rift-gemini",
+        "category": "image",
+        "size_bytes": 10300,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "chromatic-manifold",
+        "category": "image",
+        "size_bytes": 10256,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "holographic-projection-gpt52",
+        "category": "visual-effects",
+        "size_bytes": 10241,
+        "rationale": "visual-effects shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "neon-edges",
+        "category": "image",
+        "size_bytes": 9865,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "prismatic-mosaic",
+        "category": "image",
+        "size_bytes": 9865,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "phase-shift",
+        "category": "image",
+        "size_bytes": 9865,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "liquid-volumetric-zoom",
+        "category": "image",
+        "size_bytes": 9810,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "byte-mosh",
+        "category": "image",
+        "size_bytes": 9692,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "iridescent-oil-slick",
+        "category": "artistic",
+        "size_bytes": 9288,
+        "rationale": "artistic shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "quantum-wormhole",
+        "category": "image",
+        "size_bytes": 8915,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "anisotropic-kuwahara",
+        "category": "artistic",
+        "size_bytes": 8875,
+        "rationale": "artistic shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "astral-kaleidoscope",
+        "category": "image",
+        "size_bytes": 8861,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "astral-kaleidoscope-gemini",
+        "category": "image",
+        "size_bytes": 8800,
+        "rationale": "image shader would benefit from sophisticated alpha compositing"
+      }
+    ],
+    "audio_reactive": [
+      {
+        "id": "rgb-glitch-displacement",
+        "category": "retro-glitch",
+        "rationale": "retro-glitch shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 1,
+        "size_bytes": 18507,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "temporal_echo",
+        "category": "distortion",
+        "rationale": "distortion shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 2,
+        "size_bytes": 3922,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "chromatic-phase-inversion",
+        "category": "artistic",
+        "rationale": "artistic shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 3,
+        "size_bytes": 16926,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "hybrid-magnetic-field",
+        "category": "generative",
+        "rationale": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 4,
+        "size_bytes": 7098,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "hybrid-chromatic-liquid",
+        "category": "distortion",
+        "rationale": "distortion shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 5,
+        "size_bytes": 6993,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "liquid-prism",
+        "category": "distortion",
+        "rationale": "distortion shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 6,
+        "size_bytes": 6835,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "liquid-optimized",
+        "category": "liquid-effects",
+        "rationale": "liquid-effects shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 7,
+        "size_bytes": 22466,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "spectral-bleed-confinement",
+        "category": "artistic",
+        "rationale": "artistic shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 8,
+        "size_bytes": 16910,
+        "status": "completed",
+        "completed_by": "4BR"
+      },
+      {
+        "id": "volumetric-cloud-nebula",
+        "category": "generative",
+        "rationale": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 9,
+        "size_bytes": 8284
+      },
+      {
+        "id": "hybrid-particle-fluid",
+        "category": "simulation",
+        "rationale": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 10,
+        "size_bytes": 7346
+      },
+      {
+        "id": "hybrid-sdf-plasma",
+        "category": "generative",
+        "rationale": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 11,
+        "size_bytes": 6993
+      },
+      {
+        "id": "aurora_borealis",
+        "category": "generative",
+        "rationale": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 12,
+        "size_bytes": 6509
+      },
+      {
+        "id": "hybrid-noise-kaleidoscope",
+        "category": "generative",
+        "rationale": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 13,
+        "size_bytes": 6252
+      },
+      {
+        "id": "hex-circuit",
+        "category": "visual-effects",
+        "rationale": "visual-effects shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 14,
+        "size_bytes": 5096
+      },
+      {
+        "id": "spectral-glitch-sort",
+        "category": "retro-glitch",
+        "rationale": "retro-glitch shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 15,
+        "size_bytes": 4428
+      },
+      {
+        "id": "prismatic-feedback-loop",
+        "category": "image",
+        "rationale": "image shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 16,
+        "size_bytes": 4092
+      },
+      {
+        "id": "quantum-field-visualizer",
+        "category": "visual-effects",
+        "rationale": "visual-effects shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 17,
+        "size_bytes": 3438
+      },
+      {
+        "id": "liquid-displacement",
+        "category": "liquid-effects",
+        "rationale": "liquid-effects shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 20,
+        "size_bytes": 17361
+      },
+      {
+        "id": "scanline-tear",
+        "category": "retro-glitch",
+        "rationale": "retro-glitch shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 21,
+        "size_bytes": 15523
+      },
+      {
+        "id": "crt-tv",
+        "category": "retro-glitch",
+        "rationale": "retro-glitch shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 22,
+        "size_bytes": 14080
+      },
+      {
+        "id": "pixel-sort-glitch",
+        "category": "distortion",
+        "rationale": "distortion shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 23,
+        "size_bytes": 13671
+      },
+      {
+        "id": "photonic-caustics",
+        "category": "image",
+        "rationale": "image shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 24,
+        "size_bytes": 10204
+      },
+      {
+        "id": "crystal-facets",
+        "category": "distortion",
+        "rationale": "distortion shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 25,
+        "size_bytes": 7964
+      },
+      {
+        "id": "physarum-grokcf1",
+        "category": "simulation",
+        "rationale": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 26,
+        "size_bytes": 7694
+      },
+      {
+        "id": "physarum-gemini",
+        "category": "simulation",
+        "rationale": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 27,
+        "size_bytes": 7662
+      },
+      {
+        "id": "hybrid-reaction-diffusion-glass",
+        "category": "simulation",
+        "rationale": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 28,
+        "size_bytes": 7034
+      },
+      {
+        "id": "liquid-prism-cascade",
+        "category": "artistic",
+        "rationale": "artistic shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 29,
+        "size_bytes": 6993
+      },
+      {
+        "id": "hybrid-cyber-organic",
+        "category": "generative",
+        "rationale": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 30,
+        "size_bytes": 6981
+      },
+      {
+        "id": "chromatic-focus",
+        "category": "artistic",
+        "size_bytes": 11905,
+        "rationale": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "wolfram-data-demo",
+        "category": "generative",
+        "size_bytes": 11568,
+        "rationale": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "fabric-step",
+        "category": "simulation",
+        "size_bytes": 10551,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "predator-prey",
+        "category": "generative",
+        "size_bytes": 10325,
+        "rationale": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "matrix_digital_rain",
+        "category": "retro-glitch",
+        "size_bytes": 9865,
+        "rationale": "retro-glitch shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "iridescent-oil-slick",
+        "category": "artistic",
+        "size_bytes": 9288,
+        "rationale": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "sim-fluid-feedback-coupled",
+        "category": "simulation",
+        "size_bytes": 9159,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "anisotropic-kuwahara",
+        "category": "artistic",
+        "size_bytes": 8875,
+        "rationale": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "kimi_flock_symphony",
+        "category": "generative",
+        "size_bytes": 8701,
+        "rationale": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "gen_mandelbulb_3d",
+        "category": "generative",
+        "size_bytes": 8642,
+        "rationale": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "multi-turing",
+        "category": "simulation",
+        "size_bytes": 8410,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "steamy-glass",
+        "category": "simulation",
+        "size_bytes": 8308,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "gen-neuro-cosmos",
+        "category": "generative",
+        "size_bytes": 8217,
+        "rationale": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "magnetic-dipole",
+        "category": "simulation",
+        "size_bytes": 8164,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-em-field-simulation",
+        "category": "simulation",
+        "size_bytes": 8082,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "boids",
+        "category": "simulation",
+        "size_bytes": 7738,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "gen-obsidian-echo-chamber",
+        "category": "generative",
+        "size_bytes": 7641,
+        "rationale": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "sim-slime-mold-growth",
+        "category": "simulation",
+        "size_bytes": 7311,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-multi-state-ecosystem",
+        "category": "simulation",
+        "size_bytes": 7263,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-paint-thickness",
+        "category": "artistic",
+        "size_bytes": 7185,
+        "rationale": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "spec-quaternion-julia",
+        "category": "generative",
+        "size_bytes": 7008,
+        "rationale": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-fluid-simulation-paint",
+        "category": "simulation",
+        "size_bytes": 6952,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-multi-layer-glass",
+        "category": "visual-effects",
+        "size_bytes": 6949,
+        "rationale": "visual-effects shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-spectral-decompose",
+        "category": "visual-effects",
+        "size_bytes": 6911,
+        "rationale": "visual-effects shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "sim-sand-dunes",
+        "category": "simulation",
+        "size_bytes": 6638,
+        "rationale": "simulation shader with rhythmic/pulsing potential"
+      }
+    ]
+  }
+}

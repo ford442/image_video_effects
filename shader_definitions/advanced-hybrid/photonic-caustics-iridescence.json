@@ -1,0 +1,15 @@
+{
+  "id": "photonic-caustics-iridescence",
+  "name": "Photonic Caustics Iridescence",
+  "url": "shaders/photonic-caustics-iridescence.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Backward photon-traced caustics combined with thin-film interference iridescence. Caustic intensity modulates film thickness, creating soap-bubble colors on light concentrations. Features chromatic dispersion, Fresnel reflections, and temporal accumulation.",
+  "tags": ["caustics", "iridescence", "thin-film", "interference", "spectral", "refraction", "dispersion", "photon-tracing", "temporal"],
+  "features": ["depth-aware", "temporal", "spectral-render", "mouse-driven", "HDR"],
+  "params": [
+    { "id": "ior", "name": "Index of Refraction", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "lightSize", "name": "Light Size", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "dispersion", "name": "Chromatic Dispersion", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "intensity", "name": "Intensity", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

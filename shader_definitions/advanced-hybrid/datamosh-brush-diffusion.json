@@ -1,0 +1,72 @@
+{
+  "id": "datamosh-brush-diffusion",
+  "name": "Datamosh Brush Diffusion",
+  "url": "shaders/datamosh-brush-diffusion.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Interactive datamoshing brush with anisotropic diffusion. Paint to freeze or corrupt pixels while Perona-Malik diffusion smooths along edges, creating oil-painted MPEG artifact trails with temporal persistence.",
+  "features": [
+    "advanced-hybrid",
+    "datamosh",
+    "anisotropic-diffusion",
+    "mouse-driven",
+    "temporal",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "brush_size",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Datamosh brush radius"
+    },
+    {
+      "id": "kappa",
+      "name": "Edge Sensitivity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Perona-Malik edge stopping threshold"
+    },
+    {
+      "id": "diffusion_rate",
+      "name": "Diffusion Rate",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Anisotropic diffusion time step"
+    },
+    {
+      "id": "ghosting",
+      "name": "Ghost Intensity",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Alpha ghost trail intensity"
+    }
+  ],
+  "chunks_used": [
+    "Datamosh brush, block corruption, alpha ghosting (datamosh-brush.wgsl)",
+    "Perona-Malik diffusion, edge coefficients (conv-anisotropic-diffusion.wgsl)"
+  ],
+  "performance_target": "40 FPS (GTX 1060)",
+  "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
+  "created_date": "2026-04-18",
+  "tags": [
+    "datamosh",
+    "glitch",
+    "diffusion",
+    "mouse-driven",
+    "oil-paint",
+    "temporal"
+  ]
+}

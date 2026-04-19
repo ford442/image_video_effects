@@ -1,0 +1,80 @@
+{
+  "id": "hyper-tensor-fluid-coupled",
+  "name": "Hyper Tensor Fluid + Mouse Coupling",
+  "url": "shaders/hyper-tensor-fluid-coupled.wgsl",
+  "category": "simulation",
+  "description": "Tensor-field fluid dynamics with viscous mouse stirring. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
+  "features": [
+    "advanced-hybrid",
+    "tensor-field",
+    "navier-stokes",
+    "mouse-driven",
+    "fluid-coupling",
+    "interactive",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "tensor_strength",
+      "name": "Tensor Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Strength of tensor field influence on flow"
+    },
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Fluid viscosity and mouse radius"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "FBM turbulence and fluid influence"
+    },
+    {
+      "id": "advection_speed",
+      "name": "Advection Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Fluid advection speed and vortex strength"
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "physics",
+    "fluid",
+    "tensor",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "fbm2 (gen_grid.wgsl)",
+    "Structure tensor eigendecomposition",
+    "Velocity advection",
+    "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
+  ],
+  "performance_target": "40-55 FPS (GTX 1060)",
+  "created_by": "Agent CB-4 - Mouse Physics Injector",
+  "created_date": "2026-04-18"
+}

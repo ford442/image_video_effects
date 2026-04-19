@@ -59,6 +59,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dispersion = u.zoom_params.z * 0.1;                // z: Chromatic dispersion
     let glassThickness = mix(0.1, 1.0, u.zoom_params.w);   // w: Glass thickness
     
+    // Mouse interaction
+    let mousePos = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w > 0.5;
+    let distToMouse = length(uv - mousePos);
+    let mouseGravity = 1.0 - smoothstep(0.0, 0.3, distToMouse);
+    let clickPulse = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 30.0 - time * 6.0) * exp(-distToMouse * 4.0);
+    
     let aspect = resolution.x / resolution.y;
     let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
     
@@ -79,6 +86,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             
             // Animate point
             point = 0.5 + 0.5 * sin(time * 0.5 + 6.2831 * point);
+            let cellCenterWorld = (i_st + neighbor + point) / cellDensity / vec2<f32>(aspect, 1.0);
+            let toCursor = mousePos - cellCenterWorld;
+            let cursorPull = mouseGravity * 0.15 / (length(toCursor) + 0.05);
+            point += normalize(toCursor + vec2<f32>(0.001)) * cursorPull;
             
             let diff = neighbor + point - f_st;
             let dist = length(diff);
@@ -103,15 +114,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let normal = normalize(vec3<f32>(toCenter, 0.5));
     
     // Chromatic dispersion - different IOR per channel
-    let iorR = ior - dispersion;
-    let iorG = ior;
-    let iorB = ior + dispersion;
+    let localIOR = ior + mouseGravity * 0.4;
+    let iorR = localIOR - dispersion;
+    let iorG = localIOR;
+    let iorB = localIOR + dispersion;
     
     // Refraction for each channel
     let refractStrength = (ior - 1.0) * 0.1;
-    let rUV = uv + normal.xy * refractStrength * (1.0 / iorR);
-    let gUV = uv + normal.xy * refractStrength * (1.0 / iorG);
-    let bUV = uv + normal.xy * refractStrength * (1.0 / iorB);
+    let rUV = uv + normal.xy * refractStrength * (1.0 / iorR) + clickPulse * 0.02;
+    let gUV = uv + normal.xy * refractStrength * (1.0 / iorG) + clickPulse * 0.02;
+    let bUV = uv + normal.xy * refractStrength * (1.0 / iorB) + clickPulse * 0.02;
     
     // Sample with refraction
     let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
@@ -126,6 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Glass edge highlight
     color += vec3<f32>(0.9, 0.95, 1.0) * isEdge * fresnel * 0.5;
+    color += vec3<f32>(0.7, 0.8, 1.0) * mouseGravity * 0.3;
     
     // Cell interior color variation
     let cellColor = hash22(i_st + m_neighbor);

@@ -1,0 +1,57 @@
+{
+  "id": "black-hole-iridescence",
+  "name": "Black Hole Iridescence",
+  "url": "shaders/black-hole-iridescence.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Gravitational lensing black hole with iridescent accretion disk. The warped background and glowing disk receive thin-film interference coloring based on viewing angle, producing soap-bubble chromatic effects around the event horizon.",
+  "tags": [
+    "black-hole",
+    "iridescence",
+    "gravitational-lensing",
+    "thin-film",
+    "interference",
+    "space"
+  ],
+  "features": [
+    "gravitational-lensing",
+    "thin-film-interference",
+    "accretion-disk",
+    "mouse-driven",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "gravity",
+      "name": "Lens Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "radius",
+      "name": "Event Horizon",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Disk Glow",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.9
+}

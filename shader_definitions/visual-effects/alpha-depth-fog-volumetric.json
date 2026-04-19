@@ -1,0 +1,15 @@
+{
+  "id": "alpha-depth-fog-volumetric",
+  "name": "Alpha Depth Fog Volumetric",
+  "url": "shaders/alpha-depth-fog-volumetric.wgsl",
+  "category": "visual-effects",
+  "description": "Physically-motivated volumetric fog using depth texture. Alpha stores optical depth / transmittance via Beer-Lambert law. Fog density varies with 3D noise, depth, and height. Mouse clears local fog; ripples create swirling disturbances.",
+  "tags": ["volumetric", "fog", "depth-aware", "interactive", "mouse-driven", "rgba-state-machine", "atmospheric"],
+  "features": ["mouse-driven", "depth-aware", "rgba-state-machine"],
+  "params": [
+    { "id": "fogDensity", "name": "Fog Density", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "fogHeight", "name": "Fog Height", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "turbulence", "name": "Turbulence", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "colorTemp", "name": "Color Temperature", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

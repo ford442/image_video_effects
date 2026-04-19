@@ -6,6 +6,7 @@
     "category": "distortion",
     "description": "Audio-reactive Voronoi cells that displace the image. Image fractured into cells that pulse with music.",
     "features": [
+      "mouse-driven",
       "advanced-hybrid",
       "voronoi",
       "audio-fft",
@@ -66,6 +67,8 @@
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22",
     "tags": [
+      "interactive",
+      "cursor",
       "audio",
       "music",
       "reactive"
@@ -78,6 +81,7 @@
     "category": "distortion",
     "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
     "features": [
+      "mouse-driven",
       "advanced-hybrid",
       "schwarzschild-metric",
       "geodesic-raytracing",
@@ -137,6 +141,8 @@
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22",
     "tags": [
+      "interactive",
+      "cursor",
       "audio",
       "music",
       "reactive"
@@ -149,6 +155,7 @@
     "category": "distortion",
     "description": "Optical flow-based pixel sorting with spectral analysis. Pixels flow and sort along motion vectors.",
     "features": [
+      "mouse-driven",
       "advanced-hybrid",
       "pixel-sorting",
       "optical-flow",
@@ -208,6 +215,8 @@
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22",
     "tags": [
+      "interactive",
+      "cursor",
       "audio",
       "music",
       "reactive"
@@ -276,20 +285,26 @@
     "category": "distortion",
     "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
     "tags": [
+      "interactive",
+      "cursor",
       "glass",
       "refraction",
       "dispersion",
       "fresnel",
       "raymarch",
-      "transparent"
+      "transparent",
+      "alpha",
+      "physical-transmittance"
     ],
     "features": [
+      "mouse-driven",
       "rgba",
       "ray-marching",
       "refraction",
       "fresnel",
       "chromatic",
-      "glass"
+      "glass",
+      "advanced-alpha"
     ],
     "params": [
       {
@@ -474,7 +489,8 @@
     "features": [
       "mouse-driven",
       "alpha-transmission",
-      "physical-refraction"
+      "physical-refraction",
+      "advanced-alpha"
     ],
     "tags": [
       "crystal",
@@ -482,7 +498,9 @@
       "transmission",
       "fresnel",
       "dispersion",
-      "physical"
+      "physical",
+      "alpha",
+      "physical-transmittance"
     ]
   },
   {
@@ -728,9 +746,10 @@
     "url": "shaders/liquid-prism.wgsl",
     "category": "distortion",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
-    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens.",
+    "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens. Audio reactivity pulses ripple strength and prism highlights with the beat.",
     "params": [
       {
         "id": "strength",
@@ -768,7 +787,9 @@
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "transform",
+      "audio",
+      "music"
     ],
     "name": "Liquid Prism"
   },
@@ -1216,6 +1237,62 @@
     ]
   },
   {
+    "id": "spec-bicubic-crystal",
+    "name": "Bicubic Crystal",
+    "url": "shaders/spec-bicubic-crystal.wgsl",
+    "category": "distortion",
+    "description": "Bicubic Catmull-Rom crystalline distortion. Full 16-sample bicubic interpolation for perfectly smooth magnification, applied to prismatic crystalline faceting with chromatic separation.",
+    "tags": [
+      "bicubic",
+      "catmull-rom",
+      "crystalline",
+      "distortion",
+      "prismatic",
+      "high-order-sampling"
+    ],
+    "features": [
+      "bicubic",
+      "catmull-rom",
+      "crystalline",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "crystal_scale",
+        "name": "Crystal Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "facet_sharp",
+        "name": "Facet Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Sep",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
     "id": "temporal-distortion-field",
     "name": "Temporal Distortion Field",
     "url": "shaders/temporal-distortion-field.wgsl",
@@ -1360,12 +1437,129 @@
     ]
   },
   {
+    "id": "vortex-pass1",
+    "name": "Clean Vortex (Pass 1)",
+    "url": "shaders/vortex-pass1.wgsl",
+    "category": "distortion",
+    "description": "Vortex dynamics pass: four animated vortex centers, Biot-Savart velocity field, vorticity confinement, and turbulent FBM noise. Outputs velocity and vorticity field to dataTextureA.",
+    "tags": [
+      "vortex",
+      "fluid-dynamics",
+      "vorticity",
+      "multi-pass",
+      "audio-reactive"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "vortex-pass2"
+    },
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "vortex-pass2",
+    "name": "Clean Vortex (Pass 2)",
+    "url": "shaders/vortex-pass2.wgsl",
+    "category": "distortion",
+    "description": "Distortion rendering pass: UV displacement by velocity field, swirling rotation, texture warping, vorticity-based color grading, velocity glow, and turbulent alpha compositing. Reads velocity field from dataTextureC.",
+    "tags": [
+      "vortex",
+      "distortion",
+      "warp",
+      "multi-pass",
+      "audio-reactive"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "liquid_crystal_birefringence",
     "name": "Liquid Crystal",
     "url": "shaders/liquid_crystal_birefringence.wgsl",
     "category": "distortion",
     "description": "Liquid crystal optical effects with birefringent double refraction, twisted nematic polarization rotation, and Schlieren texture",
     "tags": [
+      "interactive",
+      "cursor",
       "liquid-crystal",
       "birefringence",
       "polarization",
@@ -1373,6 +1567,7 @@
       "lcd"
     ],
     "features": [
+      "mouse-driven",
       "rgba",
       "birefringence",
       "polarization",
@@ -1420,14 +1615,16 @@
     "name": "Hybrid Chromatic Liquid",
     "url": "shaders/hybrid-chromatic-liquid.wgsl",
     "category": "distortion",
-    "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field",
+    "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field. Audio reactivity pulses dot size and ink density with the music.",
     "features": [
+      "mouse-driven",
       "hybrid",
       "liquid-distortion",
       "chromatic-aberration",
       "flow-field",
       "fresnel",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1471,6 +1668,12 @@
         "description": "Animation speed of flow field"
       }
     ],
+    "tags": [
+      "interactive",
+      "cursor",
+      "audio",
+      "music"
+    ],
     "chunks_used": [
       "fbm2 (gen_grid.wgsl)",
       "fresnelSchlick (crystal-facets.wgsl)",
@@ -1486,6 +1689,7 @@
     "category": "distortion",
     "description": "Audio-reactive pixel sorting with frequency-based color shifts and displacement based on spectral analysis",
     "features": [
+      "mouse-driven",
       "hybrid",
       "pixel-sorting",
       "spectral-analysis",
@@ -1535,6 +1739,10 @@
         "description": "Color shift based on frequency band"
       }
     ],
+    "tags": [
+      "interactive",
+      "cursor"
+    ],
     "chunks_used": [
       "pixel sorting pattern (bitonic-sort)",
       "spectral analysis (spectrogram-displace)",
@@ -1553,6 +1761,7 @@
     "category": "distortion",
     "description": "Voronoi diagram rendered as glass blocks with chromatic dispersion and physically-inspired refraction",
     "features": [
+      "mouse-driven",
       "hybrid",
       "voronoi",
       "glass-refraction",
@@ -1602,6 +1811,10 @@
         "description": "Virtual thickness of glass blocks"
       }
     ],
+    "tags": [
+      "interactive",
+      "cursor"
+    ],
     "chunks_used": [
       "hash22 (voronoi-glass.wgsl)",
       "fresnelSchlick (crystal-facets.wgsl)",
@@ -1615,14 +1828,16 @@
     "name": "Temporal Echo",
     "url": "shaders/temporal_echo.wgsl",
     "category": "distortion",
-    "description": "Time-warp effect with multi-frame temporal accumulation, RGB channel time offsets, ghost trails, and motion-based displacement",
+    "description": "Time-warp effect with multi-frame temporal accumulation, RGB channel time offsets, ghost trails, motion-based displacement, and audio-reactive feedback pulses",
     "tags": [
       "temporal",
       "echo",
       "time",
       "ghost",
       "trail",
-      "warp"
+      "warp",
+      "audio",
+      "music"
     ],
     "features": [
       "rgba",
@@ -1630,7 +1845,8 @@
       "echo",
       "motion",
       "feedback",
-      "time-warp"
+      "time-warp",
+      "audio-reactive"
     ],
     "params": [
       {

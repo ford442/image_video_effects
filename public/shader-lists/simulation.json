@@ -1,5 +1,86 @@
 [
   {
+    "id": "fractal-boids-field-coupled",
+    "name": "Fractal Boids Field + Fluid Coupling",
+    "url": "shaders/fractal-boids-field-coupled.wgsl",
+    "category": "simulation",
+    "description": "Flocking behavior on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples spawn shockwaves through the flock.",
+    "features": [
+      "advanced-hybrid",
+      "boids",
+      "fractal-flow-field",
+      "mouse-driven",
+      "fluid-coupling",
+      "interactive",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "boid_count",
+        "name": "Boid Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of simulated boids and ripple force"
+      },
+      {
+        "id": "flow_strength",
+        "name": "Flow Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Fractal flow field strength and mouse radius"
+      },
+      {
+        "id": "fluid_influence",
+        "name": "Fluid Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How much mouse fluid pushes boids"
+      },
+      {
+        "id": "separation",
+        "name": "Separation Distance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Boid separation distance and vortex strength"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "boids",
+      "flocking",
+      "fluid",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp",
+      "Boids separation/alignment/cohesion",
+      "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
+    ],
+    "performance_target": "40-55 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
+  },
+  {
     "id": "fractal-boids-field",
     "name": "Fractal Boids Field",
     "url": "shaders/fractal-boids-field.wgsl",
@@ -70,6 +151,86 @@
       "music",
       "reactive"
     ]
+  },
+  {
+    "id": "hyper-tensor-fluid-coupled",
+    "name": "Hyper Tensor Fluid + Mouse Coupling",
+    "url": "shaders/hyper-tensor-fluid-coupled.wgsl",
+    "category": "simulation",
+    "description": "Tensor-field fluid dynamics with viscous mouse stirring. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
+    "features": [
+      "advanced-hybrid",
+      "tensor-field",
+      "navier-stokes",
+      "mouse-driven",
+      "fluid-coupling",
+      "interactive",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "tensor_strength",
+        "name": "Tensor Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Strength of tensor field influence on flow"
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Fluid viscosity and mouse radius"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "FBM turbulence and fluid influence"
+      },
+      {
+        "id": "advection_speed",
+        "name": "Advection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Fluid advection speed and vortex strength"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "fluid",
+      "tensor",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "Structure tensor eigendecomposition",
+      "Velocity advection",
+      "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
+    ],
+    "performance_target": "40-55 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
   },
   {
     "id": "hyper-tensor-fluid",
@@ -1084,6 +1245,543 @@
     ]
   },
   {
+    "id": "alpha-crystal-growth-phase",
+    "name": "Alpha Crystal Growth Phase",
+    "url": "shaders/alpha-crystal-growth-phase.wgsl",
+    "category": "simulation",
+    "description": "Phase-field model of crystal growth with RGBA-packed state. Phase (solid/liquid), temperature, crystal orientation, and impurity concentration evolve together. Creates dendritic crystal patterns with orientation-dependent color. Mouse seeds new crystals; ripples trigger nucleation.",
+    "tags": [
+      "crystal",
+      "growth",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "dendritic"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "supercooling",
+        "name": "Supercooling",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "anisotropy",
+        "name": "Anisotropy",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "growthRate",
+        "name": "Growth Rate",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "impurity",
+        "name": "Impurity Level",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-em-field-simulation",
+    "name": "Alpha EM Field Simulation",
+    "url": "shaders/alpha-em-field-simulation.wgsl",
+    "category": "simulation",
+    "description": "Electromagnetic field simulation using RGBA32FLOAT as four data channels: R=E-field X, G=E-field Y, B=magnetic potential, A=charge density. Mouse and ripples inject alternating positive/negative charges. Wave equation propagation with damping.",
+    "tags": [
+      "electromagnetic",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "field",
+      "wave",
+      "rgba-state-machine"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "damping",
+        "name": "Field Damping",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chargeIntensity",
+        "name": "Charge Intensity",
+        "type": "float",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bFieldVis",
+        "name": "B-Field Visibility",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "waveSpeed",
+        "name": "Wave Speed",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-erosion-terrain",
+    "name": "Alpha Erosion Terrain",
+    "url": "shaders/alpha-erosion-terrain.wgsl",
+    "category": "simulation",
+    "description": "Hydraulic erosion simulation with RGBA-packed terrain state. Height from image luminance is eroded by flowing water that picks up sediment and deposits it in flat areas. Mouse creates rainstorms; ripples trigger flash floods. Alpha tracks cumulative erosion history.",
+    "tags": [
+      "erosion",
+      "terrain",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "hydraulic"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "rainRate",
+        "name": "Rain Rate",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "erosionRate",
+        "name": "Erosion Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "depositionRate",
+        "name": "Deposition Rate",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "sedimentCapacity",
+        "name": "Sediment Capacity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-fire-temperature",
+    "name": "Alpha Fire Temperature",
+    "url": "shaders/alpha-fire-temperature.wgsl",
+    "category": "simulation",
+    "description": "Fire simulation with RGBA-packed state: fuel, temperature, smoke density, and combustion age. Temperature drives blackbody radiation color. Fuel burns, generates smoke, and heat rises via convection. Mouse injects fuel; ripples create sparks.",
+    "tags": [
+      "fire",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "blackbody",
+      "smoke"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "burnRate",
+        "name": "Burn Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "convection",
+        "name": "Convection",
+        "type": "float",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "smokeDensity",
+        "name": "Smoke Density",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "emberGlow",
+        "name": "Ember Glow",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-fluid-simulation-paint",
+    "name": "Alpha Fluid Simulation Paint",
+    "url": "shaders/alpha-fluid-simulation-paint.wgsl",
+    "category": "simulation",
+    "description": "Full 2D incompressible fluid simulation packed into a single RGBA32FLOAT texture. R=velocity.x, G=velocity.y, B=pressure, A=dye density. Mouse creates vortices and injects dye. Requires f32 for signed velocity and pressure fields.",
+    "tags": [
+      "fluid",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "navier-stokes",
+      "psychedelic",
+      "colorful",
+      "rgba-state-machine"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dyeBrightness",
+        "name": "Dye Brightness",
+        "type": "float",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "vorticity",
+        "name": "Vorticity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decayRate",
+        "name": "Decay Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-multi-state-ecosystem",
+    "name": "Alpha Multi-State Ecosystem",
+    "url": "shaders/alpha-multi-state-ecosystem.wgsl",
+    "category": "simulation",
+    "description": "Continuous multi-species ecosystem simulation packed into RGBA32FLOAT. Two species compete for shared resources while producing toxins. Species diffuse, grow, compete, and die. Mouse nurtures by adding resources.",
+    "tags": [
+      "ecosystem",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "cellular-automata",
+      "pattern",
+      "rgba-state-machine"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "growthRate1",
+        "name": "Species 1 Growth",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "growthRate2",
+        "name": "Species 2 Growth",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion Rate",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "toxinStrength",
+        "name": "Toxin Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-reaction-diffusion-rgba",
+    "name": "Alpha Reaction Diffusion RGBA",
+    "url": "shaders/alpha-reaction-diffusion-rgba.wgsl",
+    "category": "simulation",
+    "description": "Four-species reaction-diffusion simulation packed into RGBA32FLOAT. A feeds B, C feeds D, with cross-inhibition between pairs. Creates complex multi-color patterns impossible in 2-species systems.",
+    "tags": [
+      "reaction-diffusion",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "pattern",
+      "rgba-state-machine",
+      "colorful"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "feed",
+        "name": "Feed Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "kill",
+        "name": "Kill Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "crossInhibit",
+        "name": "Cross Inhibition",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "sourceMix",
+        "name": "Source Mix",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "cellular-automata-rgba",
+    "name": "Cellular Automata RGBA",
+    "url": "shaders/cellular-automata-rgba.wgsl",
+    "category": "simulation",
+    "description": "2D ecosystem cellular automaton with four interacting species packed into RGBA. Plants grow from nutrients, herbivores eat plants, predators eat herbivores, and all dead matter cycles back to soil nutrients. Continuous densities enable stable predator-prey oscillations.",
+    "tags": [
+      "simulation",
+      "cellular-automata",
+      "ecosystem",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "organic",
+      "predator-prey"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "growthRate",
+        "name": "Plant Growth",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "herbivoreEff",
+        "name": "Herbivore Efficiency",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "predatorEff",
+        "name": "Predator Efficiency",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decayRate",
+        "name": "Decay Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-reaction-diffusion-rgba",
+    "name": "Chromatic Reaction Diffusion RGBA",
+    "url": "shaders/chromatic-reaction-diffusion-rgba.wgsl",
+    "category": "simulation",
+    "description": "Four-species reaction-diffusion with chromatic cross-coupling. Activators A/C and inhibitors B/D form warm/cool tone pairs that suppress each other at boundaries, creating iridescent fringe patterns. RGBA packs full simulation state.",
+    "tags": [
+      "reaction-diffusion",
+      "simulation",
+      "interactive",
+      "mouse-driven",
+      "pattern",
+      "rgba-state-machine",
+      "chromatic",
+      "colorful"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "feed",
+        "name": "Feed Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "kill",
+        "name": "Kill Rate",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromaticSep",
+        "name": "Chromatic Separation",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "crossCouple",
+        "name": "Cross Coupling",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "luma-flow-field",
     "category": "simulation",
     "url": "shaders/luma-flow-field.wgsl",
@@ -1343,6 +2041,139 @@
     ]
   },
   {
+    "id": "sim-decay-system-rgba",
+    "name": "Sim: Decay System RGBA",
+    "url": "shaders/sim-decay-system-rgba.wgsl",
+    "category": "simulation",
+    "description": "Four-layer material decay simulation with cross-coupling. Paint integrity, metal corrosion, organic rot, and structural integrity each decay at different rates. When one layer fails, others decay faster. Mouse interaction can restore/repair.",
+    "tags": [
+      "simulation",
+      "decay",
+      "corrosion",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "rust",
+      "aging"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "baseDecay",
+        "name": "Base Decay",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "edgeVuln",
+        "name": "Edge Vulnerability",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "moisture",
+        "name": "Moisture",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "recovery",
+        "name": "Recovery Rate",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "sim-fluid-feedback-coupled",
+    "name": "Fluid Feedback Coupled",
+    "url": "shaders/sim-fluid-feedback-coupled.wgsl",
+    "category": "simulation",
+    "description": "Mouse-steerable coupled fluid simulation combining Navier-Stokes feedback fields with viscous fluid stirring. Mouse drags fluid creating vortex streets; click ripples inject bursts. Fluid thickness drives color absorption, blur, and glow.",
+    "features": [
+      "simulation",
+      "mouse-driven",
+      "temporal",
+      "navier-stokes",
+      "fluid-coupling",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Fluid viscosity / damping"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Curl noise turbulence amount"
+      },
+      {
+        "id": "fade_rate",
+        "name": "Fade Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Density fade rate over time"
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Glow intensity from fluid density"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "curlNoise (sim-fluid-feedback-field)",
+      "velocity advection (sim-fluid-feedback-field)",
+      "mouse stirring (mouse-fluid-coupling)",
+      "vortex force (mouse-fluid-coupling)"
+    ],
+    "tags": [
+      "fluid",
+      "simulation",
+      "mouse-driven",
+      "interactive",
+      "temporal"
+    ],
+    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+    "created_date": "2026-04-18"
+  },
+  {
     "id": "sim-fluid-feedback-field",
     "name": "Fluid Feedback Field",
     "url": "shaders/sim-fluid-feedback-field-pass1.wgsl",
@@ -1431,6 +2262,126 @@
     "created_date": "2026-03-22"
   },
   {
+    "id": "sim-ink-diffusion-rgba",
+    "name": "Sim: Ink Diffusion RGBA",
+    "url": "shaders/sim-ink-diffusion-rgba.wgsl",
+    "category": "simulation",
+    "description": "Four-ink wet diffusion simulation on paper texture. RGB channels hold cyan, magenta, and yellow pigment concentrations; alpha holds water saturation that drives all diffusion. Pigments mix subtractively on wet paper.",
+    "tags": [
+      "simulation",
+      "ink",
+      "diffusion",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "artistic",
+      "paper"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "wetness",
+        "name": "Wetness",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion",
+        "name": "Pigment Diffusion",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorMixing",
+        "name": "Color Mixing",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "evaporation",
+        "name": "Evaporation Rate",
+        "type": "float",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "sim-sand-dunes-rgba",
+    "name": "Sim: Sand Dunes RGBA",
+    "url": "shaders/sim-sand-dunes-rgba.wgsl",
+    "category": "simulation",
+    "description": "Four-grain-type sand physics with distinct behaviors. Fine sand blows easily in wind, coarse sand is stable with high angle of repose, moist sand clumps together, and dust rises on updrafts. RGBA packs all grain fractions per cell.",
+    "tags": [
+      "simulation",
+      "sand",
+      "physics",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "wind",
+      "erosion"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "gravity",
+        "name": "Gravity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "wind",
+        "name": "Wind",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "moisture",
+        "name": "Moisture",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dustiness",
+        "name": "Dustiness",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "sim-sand-dunes",
     "name": "Sand Dunes",
     "url": "shaders/sim-sand-dunes.wgsl",
@@ -1493,6 +2444,82 @@
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22"
+  },
+  {
+    "id": "sim-slime-mold-growth-em",
+    "name": "Slime Mold Growth + EM Field",
+    "url": "shaders/sim-slime-mold-growth-em.wgsl",
+    "category": "simulation",
+    "description": "Physarum slime mold simulation with mouse electromagnetic field interaction. Agents steer along electric field lines; click ripples spawn secondary charges.",
+    "features": [
+      "simulation",
+      "agent-based",
+      "mouse-driven",
+      "electromagnetic",
+      "interactive",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "sensor_angle",
+        "name": "Sensor Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Steering sensitivity and EM charge strength"
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Trail decay rate and field visualization"
+      },
+      {
+        "id": "em_influence",
+        "name": "EM Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How much EM field steers agents"
+      },
+      {
+        "id": "ripple_charge",
+        "name": "Ripple Charge",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Secondary charge strength from clicks"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "slime",
+      "electromagnetic",
+      "agents"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash22 (gen_grid.wgsl)",
+      "hueShift (stellar-plasma.wgsl)",
+      "electricField (mouse-electromagnetic-aurora.wgsl)",
+      "magneticField (mouse-electromagnetic-aurora.wgsl)",
+      "Physarum agent simulation"
+    ],
+    "performance_target": "25-40 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
   },
   {
     "id": "sim-slime-mold-growth",
@@ -1624,6 +2651,64 @@
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22"
+  },
+  {
+    "id": "spec-runge-kutta-advection",
+    "name": "Runge-Kutta Advection",
+    "url": "shaders/spec-runge-kutta-advection.wgsl",
+    "category": "simulation",
+    "description": "4th-order Runge-Kutta fluid advection. Dramatically more accurate than Euler method, preserving fine dye structures 10x longer. Mouse creates counter-rotating vortex pairs.",
+    "tags": [
+      "runge-kutta",
+      "RK4",
+      "fluid",
+      "advection",
+      "simulation",
+      "vortex",
+      "temporal"
+    ],
+    "features": [
+      "runge-kutta",
+      "RK4",
+      "fluid-advection",
+      "mouse-driven",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "dt",
+        "name": "Time Step",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "vortex",
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedback",
+        "name": "Temporal Feedback",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.8
   },
   {
     "id": "steamy-glass",

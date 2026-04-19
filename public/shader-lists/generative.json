@@ -144,6 +144,87 @@
     ]
   },
   {
+    "id": "multi-fractal-compositor-lens",
+    "name": "Multi-Fractal Compositor + Gravitational Lens",
+    "url": "shaders/multi-fractal-compositor-lens.wgsl",
+    "category": "generative",
+    "description": "Multi-layer fractal compositor with mouse-controlled gravitational lensing. Mouse mass bends UV coordinates; ripples create temporary mass concentrations with Einstein ring glow.",
+    "features": [
+      "advanced-hybrid",
+      "mandelbrot",
+      "julia",
+      "mouse-driven",
+      "gravitational-lens",
+      "interactive",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "lens_mass",
+        "name": "Lens Mass",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Mouse gravitational mass and zoom level"
+      },
+      {
+        "id": "ring_glow",
+        "name": "Ring Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Einstein ring glow strength and iteration count"
+      },
+      {
+        "id": "ripple_mass",
+        "name": "Ripple Mass",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Temporary mass from clicks and domain warp"
+      },
+      {
+        "id": "chroma_boost",
+        "name": "Chroma Boost",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Lens-driven chromatic aberration and fractal blend"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "gravitational",
+      "lens",
+      "fractal",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "ping_pong wrapping",
+      "Depth compositing",
+      "gravitationalBend (gravitational-lensing.wgsl)"
+    ],
+    "performance_target": "40-55 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
+  },
+  {
     "id": "multi-fractal-compositor",
     "name": "Multi-Fractal Compositor",
     "url": "shaders/multi-fractal-compositor.wgsl",
@@ -6150,6 +6231,174 @@
     ]
   },
   {
+    "id": "spec-analytic-noise-flow",
+    "name": "Analytic Noise Flow",
+    "url": "shaders/spec-analytic-noise-flow.wgsl",
+    "category": "generative",
+    "description": "Perlin noise with analytic derivatives for ultra-smooth flow fields. Gradient computed alongside noise value in single evaluation, eliminating finite-difference jitter for perfectly parallel streamlines.",
+    "tags": [
+      "analytic-derivatives",
+      "flow-field",
+      "noise",
+      "perlin",
+      "streamlines",
+      "curl"
+    ],
+    "features": [
+      "analytic-derivatives",
+      "flow-field",
+      "noise",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "flow_scale",
+        "name": "Flow Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "advection",
+        "name": "Advection",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "curl",
+        "name": "Curl Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "spec-distance-field-text",
+    "name": "Distance Field Text",
+    "url": "shaders/spec-distance-field-text.wgsl",
+    "category": "generative",
+    "description": "SDF-based procedural glyph overlay. Generates abstract runes and symbols as signed distance fields with infinitely smooth scaling, glowing edges, drop shadows, and chromatic cycling.",
+    "tags": [
+      "SDF",
+      "distance-field",
+      "procedural-text",
+      "glyph",
+      "overlay",
+      "runes"
+    ],
+    "features": [
+      "SDF",
+      "procedural-text",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "glyph_scale",
+        "name": "Glyph Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glyph_width",
+        "name": "Glyph Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "overlay",
+        "name": "Overlay Mix",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.5
+  },
+  {
+    "id": "spec-quaternion-julia",
+    "name": "Quaternion Julia",
+    "url": "shaders/spec-quaternion-julia.wgsl",
+    "category": "generative",
+    "description": "4D quaternion Julia set raymarched in real-time. The 4th dimension animates over time creating organic morphing fractal forms with orbit-trap coloring and physically-based lighting.",
+    "tags": [
+      "quaternion",
+      "julia",
+      "fractal",
+      "4D",
+      "raymarching",
+      "morphing"
+    ],
+    "features": [
+      "quaternion",
+      "4D",
+      "raymarched",
+      "mouse-driven",
+      "HDR"
+    ],
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Fractal Zoom",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "morph_speed",
+        "name": "Morph Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_cycles",
+        "name": "Color Cycles",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "detail",
+        "name": "Detail Level",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.9
+  },
+  {
     "id": "stellar-plasma",
     "name": "Stellar Plasma",
     "url": "shaders/stellar-plasma.wgsl",
@@ -6467,14 +6716,15 @@
     "name": "Hybrid Magnetic Field",
     "url": "shaders/hybrid-magnetic-field.wgsl",
     "category": "generative",
-    "description": "Magnetic field line visualization with flowing particles and FBM-varied field distortion",
+    "description": "Magnetic field line visualization with flowing particles and FBM-varied field distortion. Audio reactivity makes field lines pulse and glow with the beat.",
     "features": [
       "hybrid",
       "vector-field",
       "particle-trails",
       "magnetic-distortion",
       "glow",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -6517,6 +6767,15 @@
         "mapping": "zoom_params.w",
         "description": "FBM noise influence on field"
       }
+    ],
+    "tags": [
+      "audio",
+      "music",
+      "magnetic",
+      "field",
+      "particles",
+      "trails",
+      "glow"
     ],
     "chunks_used": [
       "magnetic field calculation",

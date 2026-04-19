@@ -1,0 +1,43 @@
+{
+  "id": "cross-spec-alpha-spectral-bloom",
+  "name": "Spectral Bloom HDR",
+  "url": "shaders/cross-spec-alpha-spectral-bloom.wgsl",
+  "category": "visual-effects",
+  "description": "Crossover shader combining spectral dispersion with HDR bloom using RGBA as independent spectral bands. Decomposes the image into wavelength channels and applies per-band bloom with exposure control in alpha.",
+  "tags": ["crossover", "spectral", "bloom", "hdr", "rgba-as-data", "chromatic"],
+  "features": ["crossover", "spectral-rendering", "rgba32float-exploiting"],
+  "params": [
+    {
+      "id": "bloomRadius",
+      "name": "Bloom Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "exposure",
+      "name": "Exposure",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chromaticShift",
+      "name": "Chromatic Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "conv-morphological-erosion-dilation",
+  "name": "Morphological Erosion Dilation",
+  "description": "Mathematical morphology on images — erosion shrinks bright regions, dilation expands them. RGBA32FLOAT packs erosion (R), dilation (G), gradient (B), and top-hat (A) into one pass. Mouse controls directional structuring element.",
+  "url": "shaders/conv-morphological-erosion-dilation.wgsl",
+  "category": "image",
+  "features": [
+    "advanced-convolution",
+    "rgba32float-exploiting",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "kernel_radius",
+      "name": "Kernel Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "erode_dilate_blend",
+      "name": "Erosion / Dilation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "gradient_boost",
+      "name": "Gradient Boost",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouse_influence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "morphological",
+    "convolution",
+    "erosion",
+    "dilation",
+    "edge-detection",
+    "filter",
+    "image-processing"
+  ]
+}

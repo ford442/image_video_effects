@@ -5,6 +5,8 @@
   "category": "distortion",
   "description": "Liquid crystal optical effects with birefringent double refraction, twisted nematic polarization rotation, and Schlieren texture",
   "tags": [
+    "interactive",
+    "cursor",
     "liquid-crystal",
     "birefringence",
     "polarization",
@@ -12,6 +14,7 @@
     "lcd"
   ],
   "features": [
+    "mouse-driven",
     "rgba",
     "birefringence",
     "polarization",

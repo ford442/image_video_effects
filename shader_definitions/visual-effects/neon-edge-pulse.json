@@ -6,7 +6,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "advanced-alpha"
   ],
   "description": "Detects edges and highlights them with pulsing neon colors. Mouse proximity increases intensity.",
   "params": [
@@ -45,6 +46,8 @@
     "glow",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "alpha",
+    "edge-preserve"
   ]
 }

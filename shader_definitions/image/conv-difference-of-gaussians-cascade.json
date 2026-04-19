@@ -1,0 +1,59 @@
+{
+  "id": "conv-difference-of-gaussians-cascade",
+  "name": "Difference of Gaussians Cascade",
+  "description": "Multi-scale Difference-of-Gaussians at 4 scales with signed response storage. Creates neural-edge glow where edges at different scales colorize differently. RGBA32FLOAT stores signed bipolar responses in all channels. Mouse controls scale emphasis.",
+  "url": "shaders/conv-difference-of-gaussians-cascade.wgsl",
+  "category": "image",
+  "features": [
+    "advanced-convolution",
+    "rgba32float-exploiting",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "scale_base",
+      "name": "Scale Base",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "contrast",
+      "name": "Edge Contrast",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouse_influence",
+      "name": "Mouse Focus",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "difference-of-gaussians",
+    "multi-scale",
+    "edge-detection",
+    "convolution",
+    "psychedelic",
+    "filter",
+    "image-processing"
+  ]
+}

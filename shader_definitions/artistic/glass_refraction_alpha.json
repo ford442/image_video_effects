@@ -5,20 +5,26 @@
   "category": "distortion",
   "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
   "tags": [
+    "interactive",
+    "cursor",
     "glass",
     "refraction",
     "dispersion",
     "fresnel",
     "raymarch",
-    "transparent"
+    "transparent",
+    "alpha",
+    "physical-transmittance"
   ],
   "features": [
+    "mouse-driven",
     "rgba",
     "ray-marching",
     "refraction",
     "fresnel",
     "chromatic",
-    "glass"
+    "glass",
+    "advanced-alpha"
   ],
   "params": [
     {

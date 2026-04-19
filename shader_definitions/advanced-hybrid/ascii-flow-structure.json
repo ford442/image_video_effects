@@ -1,0 +1,57 @@
+{
+  "id": "ascii-flow-structure",
+  "name": "ASCII Flow + Structure Tensor",
+  "url": "shaders/ascii-flow-structure.wgsl",
+  "category": "advanced-hybrid",
+  "description": "ASCII glyph rendering driven by structure tensor flow field. Glyphs align with image edges and orientations instead of random noise. Line Integral Convolution modulates brightness.",
+  "tags": [
+    "ascii",
+    "structure-tensor",
+    "flow-field",
+    "glyphs",
+    "edge-aligned",
+    "convolution",
+    "stylize"
+  ],
+  "features": [
+    "advanced-convolution",
+    "upgraded-rgba",
+    "mouse-driven",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Grid Density",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Coherency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "LIC Blend",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.5
+}

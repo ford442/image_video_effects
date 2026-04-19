@@ -654,3 +654,224 @@ let scale = 1.0 / (u.zoom_params.x + 0.001);
 ---
 
 *End of Chunk Library - 42 Functions Documented*
+
+## 9. Agent 3C — Spectral Computation Pioneer Chunks
+
+### 9.1 Tone Mapping
+
+#### `toneMapACES` — ACES Filmic Tone Mapper
+**Source:** `spec-blackbody-thermal.wgsl`, `spec-temporal-path-tracer.wgsl`
+
+```wgsl
+fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
+}
+```
+
+#### `toneMapFilmic` — Hejl-Richardson Filmic Tone Mapper
+**Source:** Agent 3C specification
+
+```wgsl
+fn toneMapFilmic(x: vec3<f32>) -> vec3<f32> {
+    let a = max(vec3(0.0), x - 0.004);
+    return (a * (6.2 * a + 0.5)) / (a * (6.2 * a + 1.7) + 0.06);
+}
+```
+
+---
+
+### 9.2 Bicubic Sampling
+
+#### `catmullRom` — Catmull-Rom Weights
+**Source:** `spec-bicubic-crystal.wgsl`
+
+```wgsl
+fn catmullRom(t: f32) -> vec4<f32> {
+    let t2 = t * t;
+    let t3 = t2 * t;
+    return vec4<f32>(
+        -0.5*t3 + t2 - 0.5*t,
+        1.5*t3 - 2.5*t2 + 1.0,
+        -1.5*t3 + 2.0*t2 + 0.5*t,
+        0.5*t3 - 0.5*t2
+    );
+}
+```
+
+#### `sampleBicubic` — Bicubic Catmull-Rom Texture Sampling
+**Source:** `spec-bicubic-crystal.wgsl`
+
+```wgsl
+fn sampleBicubic(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>, texSize: vec2<f32>) -> vec4<f32> {
+    let pixel = uv * texSize - 0.5;
+    let f = fract(pixel);
+    let base = floor(pixel);
+
+    let wx = catmullRom(f.x);
+    let wy = catmullRom(f.y);
+
+    var result = vec4<f32>(0.0);
+    for (var j = -1; j <= 2; j = j + 1) {
+        for (var i = -1; i <= 2; i = i + 1) {
+            let coord = (base + vec2<f32>(f32(i), f32(j)) + 0.5) / texSize;
+            let s = textureSampleLevel(tex, samp, coord, 0.0);
+            let weight = wx[i + 1] * wy[j + 1];
+            result += s * weight;
+        }
+    }
+    return result;
+}
+```
+
+---
+
+### 9.3 Analytic Derivative Noise
+
+#### `noiseWithDerivative` — Perlin Noise with Analytic Gradient
+**Source:** `spec-analytic-noise-flow.wgsl`
+
+```wgsl
+fn noiseWithDerivative(p: vec2<f32>) -> vec3<f32> {
+    let i = floor(p);
+    let f = fract(p);
+
+    let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    let du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
+
+    let a = hash2(i + vec2<f32>(0.0, 0.0));
+    let b = hash2(i + vec2<f32>(1.0, 0.0));
+    let c = hash2(i + vec2<f32>(0.0, 1.0));
+    let d = hash2(i + vec2<f32>(1.0, 1.0));
+
+    let k0 = a;
+    let k1 = b - a;
+    let k2 = c - a;
+    let k4 = a - b - c + d;
+
+    let value = k0 + k1 * u.x + k2 * u.y + k4 * u.x * u.y;
+    let derivative = vec2<f32>(
+        (k1 + k4 * u.y) * du.x,
+        (k2 + k4 * u.x) * du.y
+    );
+
+    return vec3<f32>(value, derivative);
+}
+```
+
+---
+
+### 9.4 Quaternion Math
+
+#### `quaternionMul` — Quaternion Multiplication
+**Source:** `spec-quaternion-julia.wgsl`
+
+```wgsl
+fn quaternionMul(a: vec4<f32>, b: vec4<f32>) -> vec4<f32> {
+    return vec4<f32>(
+        a.x*b.x - a.y*b.y - a.z*b.z - a.w*b.w,
+        a.x*b.y + a.y*b.x + a.z*b.w - a.w*b.z,
+        a.x*b.z - a.y*b.w + a.z*b.x + a.w*b.y,
+        a.x*b.w + a.y*b.z - a.z*b.y + a.w*b.x
+    );
+}
+```
+
+#### `quaternionJuliaDE` — Quaternion Julia Distance Estimator
+**Source:** `spec-quaternion-julia.wgsl`
+
+```wgsl
+fn quaternionJuliaDE(p: vec3<f32>, c: vec4<f32>) -> f32 {
+    var q = vec4<f32>(p, 0.0);
+    var dq = vec4<f32>(1.0, 0.0, 0.0, 0.0);
+
+    for (var i: i32 = 0; i < 12; i = i + 1) {
+        dq = 2.0 * quaternionMul(q, dq);
+        q = quaternionMul(q, q) + c;
+        if (dot(q, q) > 256.0) { break; }
+    }
+
+    let r = length(q);
+    let dr = length(dq);
+    return 0.5 * r * log(r) / max(dr, 0.001);
+}
+```
+
+---
+
+### 9.5 Spectral Rendering
+
+#### `cauchyIOR` — Cauchy's Equation for Refractive Index
+**Source:** `spec-prismatic-dispersion.wgsl`
+
+```wgsl
+fn cauchyIOR(wavelengthNm: f32, A: f32, B: f32) -> f32 {
+    let lambdaUm = wavelengthNm * 0.001;
+    return A + B / (lambdaUm * lambdaUm);
+}
+```
+
+#### `wavelengthToRGB` — Simplified CIE Color Matching
+**Source:** `spec-prismatic-dispersion.wgsl`, `spec-iridescence-engine.wgsl`
+
+```wgsl
+fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
+    let t = clamp((lambda - 440.0) / (680.0 - 440.0), 0.0, 1.0);
+    let r = smoothstep(0.5, 0.8, t) + smoothstep(0.0, 0.15, t) * 0.3;
+    let g = 1.0 - abs(t - 0.4) * 3.0;
+    let b = 1.0 - smoothstep(0.0, 0.4, t);
+    return max(vec3<f32>(r, g, b), vec3<f32>(0.0));
+}
+```
+
+---
+
+### 9.6 Runge-Kutta Advection
+
+#### `advectRK4` — 4th-Order Runge-Kutta Position Advection
+**Source:** `spec-runge-kutta-advection.wgsl`
+
+```wgsl
+fn advectRK4(pos: vec2<f32>, dt: f32, time: f32,
+             sampleVelocity: fn(vec2<f32>, f32) -> vec2<f32>) -> vec2<f32> {
+    let k1 = sampleVelocity(pos, time);
+    let k2 = sampleVelocity(pos + k1 * dt * 0.5, time);
+    let k3 = sampleVelocity(pos + k2 * dt * 0.5, time);
+    let k4 = sampleVelocity(pos + k3 * dt, time);
+    return pos + (k1 + 2.0*k2 + 2.0*k3 + k4) * dt / 6.0;
+}
+```
+
+---
+
+## Updated Chunk Sources Index
+
+| Shader File | Chunks Extracted |
+|-------------|-----------------|
+| `gen_grid.wgsl` | hash12, hash22, hash33, valueNoise, fbm2, domainWarp |
+| `stellar-plasma.wgsl` | hash, noise (value), fbm, hueShift |
+| `gen-xeno-botanical-synth-flora.wgsl` | hash3, noise3, fbm3, palette, sdCappedCone, sdCylinder, sdSphere, calcNormal |
+| `kaleidoscope.wgsl` | kaleidoscope logic |
+| `hyperbolic-dreamweaver.wgsl` | mobiusTransform, chromatic aberration |
+| `liquid-metal.wgsl` | hsl2rgb, schlickFresnel, specular calculation |
+| `chromatic-manifold.wgsl` | rgb2hsv, wavelength-based alpha |
+| `anamorphic-flare.wgsl` | glow, centralGlow, volumetricRays, hexagonAperture |
+| `crystal-facets.wgsl` | fresnelSchlick, path length calculation |
+| `hex-circuit.wgsl` | hex grid calculation, edge detection |
+| `voronoi-glass.wgsl` | voronoi pattern, hash22 usage |
+| `spec-blackbody-thermal.wgsl` | toneMapACES |
+| `spec-temporal-path-tracer.wgsl` | toneMapACES |
+| `spec-bicubic-crystal.wgsl` | catmullRom, sampleBicubic |
+| `spec-analytic-noise-flow.wgsl` | noiseWithDerivative |
+| `spec-quaternion-julia.wgsl` | quaternionMul, quaternionJuliaDE |
+| `spec-prismatic-dispersion.wgsl` | cauchyIOR, wavelengthToRGB |
+| `spec-iridescence-engine.wgsl` | wavelengthToRGB |
+| `spec-runge-kutta-advection.wgsl` | advectRK4 |
+
+---
+
+*End of Chunk Library - 48 Functions Documented*

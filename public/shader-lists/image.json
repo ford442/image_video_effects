@@ -2072,6 +2072,118 @@
     ]
   },
   {
+    "id": "spectrogram-displace-pass1",
+    "name": "Spectrogram Displace (Pass 1)",
+    "url": "shaders/spectrogram-displace-pass1.wgsl",
+    "category": "image",
+    "description": "Spectrogram field generation: synthetic audio analysis, frequency bin calculation, perceptual color mapping, and displacement vector computation. Outputs spectrogram data to dataTextureA.",
+    "tags": [
+      "spectrogram",
+      "audio",
+      "frequency-analysis",
+      "multi-pass",
+      "displacement"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "spectrogram-displace-pass2"
+    },
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "spectrogram-displace-pass2",
+    "name": "Spectrogram Displace (Pass 2)",
+    "url": "shaders/spectrogram-displace-pass2.wgsl",
+    "category": "image",
+    "description": "Image displacement and compositing pass: applies spectrogram-driven displacement to the input image, blends with spectrogram colors, and applies frequency-based color grading and vignette.",
+    "tags": [
+      "spectrogram",
+      "displacement",
+      "compositing",
+      "multi-pass"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "spectrogram-displace",
     "name": "Spectrogram Displace",
     "url": "shaders/spectrogram-displace.wgsl",
@@ -3932,13 +4044,16 @@
       "ghosting",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "alpha",
+      "accumulative"
     ],
     "features": [
       "temporal",
       "multi-pass",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "advanced-alpha"
     ],
     "params": [
       {
@@ -4950,6 +5065,935 @@
       "audio",
       "music",
       "reactive"
+    ]
+  },
+  {
+    "id": "conv-anisotropic-diffusion",
+    "name": "Anisotropic Diffusion",
+    "description": "Perona-Malik anisotropic diffusion that smooths along edges but not across them. Creates oil-painting simplification into flat colored regions. Alpha stores per-pixel diffusion coefficient as a process map. Mouse acts as heat source accelerating diffusion.",
+    "url": "shaders/conv-anisotropic-diffusion.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "kappa",
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "dt",
+        "name": "Diffusion Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Heat",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "anisotropic-diffusion",
+      "perona-malik",
+      "oil-painting",
+      "convolution",
+      "edge-aware",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-bilateral-dream",
+    "name": "Bilateral Dream",
+    "description": "Edge-preserving bilateral smoothing with psychedelic color preservation. Uses RGBA32FLOAT alpha channel to store accumulated weight for deferred normalization. Mouse controls varying sharpness region.",
+    "url": "shaders/conv-bilateral-dream.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "spatial_sigma",
+        "name": "Spatial Sigma",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "color_sigma",
+        "name": "Color Sigma",
+        "default": 0.3,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "hue_shift",
+        "name": "Psychedelic Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "bilateral",
+      "convolution",
+      "edge-preserving",
+      "painterly",
+      "psychedelic",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-bilateral-grid-splat",
+    "name": "Bilateral Grid Splat",
+    "description": "Fast approximate bilateral filter using 3D grid splatting (spatial x, y + intensity). Achieves edge-preserving smoothing at O(1) per pixel. RGBA32FLOAT stores HDR accumulated color and weight. Mouse creates high-resolution detail zone.",
+    "url": "shaders/conv-bilateral-grid-splat.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "spatial_sigma",
+        "name": "Spatial Sigma",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "intensity_sigma",
+        "name": "Intensity Sigma",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "grid_resolution",
+        "name": "Grid Resolution",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Detail Zone",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "bilateral-grid",
+      "fast-bilateral",
+      "edge-preserving",
+      "convolution",
+      "splatting",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-difference-of-gaussians-cascade",
+    "name": "Difference of Gaussians Cascade",
+    "description": "Multi-scale Difference-of-Gaussians at 4 scales with signed response storage. Creates neural-edge glow where edges at different scales colorize differently. RGBA32FLOAT stores signed bipolar responses in all channels. Mouse controls scale emphasis.",
+    "url": "shaders/conv-difference-of-gaussians-cascade.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "scale_base",
+        "name": "Scale Base",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "contrast",
+        "name": "Edge Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Focus",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "difference-of-gaussians",
+      "multi-scale",
+      "edge-detection",
+      "convolution",
+      "psychedelic",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-fractal-kernel",
+    "name": "Fractal Kernel",
+    "description": "Convolution kernel shaped by Mandelbrot set membership. Pixels inside the fractal are sampled, creating alien mathematically beautiful blur patterns. Alpha stores fractal iteration depth. Mouse warps the Mandelbrot center live.",
+    "url": "shaders/conv-fractal-kernel.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "kernel_radius",
+        "name": "Kernel Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "fractal_zoom",
+        "name": "Fractal Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "iterations",
+        "name": "Fractal Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "fractal",
+      "mandelbrot",
+      "convolution",
+      "kernel",
+      "psychedelic",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-frequency-domain-notch",
+    "name": "Frequency Domain Notch",
+    "description": "Spatial-domain approximation of frequency notch filtering using tuned sinusoidal convolution kernels. Removes moire patterns or creates frequency painting. Alpha stores spectral response magnitude. Mouse selects target frequency band.",
+    "url": "shaders/conv-frequency-domain-notch.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "num_bands",
+        "name": "Frequency Bands",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "bandwidth",
+        "name": "Notch Bandwidth",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "boost_cut",
+        "name": "Boost / Cut",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "frequency-notch",
+      "spectral",
+      "convolution",
+      "moire-removal",
+      "frequency-painting",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-gabor-texture-analyzer",
+    "name": "Gabor Texture Analyzer",
+    "description": "Gabor filter bank detecting oriented texture patterns at 0, 45, 90, and 135 degrees. RGBA32FLOAT stores signed bipolar responses in all four channels. Mouse rotates the filter bank for swirling texture segmentation.",
+    "url": "shaders/conv-gabor-texture-analyzer.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "frequency",
+        "name": "Gabor Frequency",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "sigma",
+        "name": "Gaussian Sigma",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "response_scale",
+        "name": "Response Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "gabor",
+      "convolution",
+      "texture-analysis",
+      "orientation",
+      "psychedelic",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-guided-filter-depth",
+    "name": "Guided Filter Depth",
+    "description": "Guided filter using depth texture as guide for edge-aware filtering. Creates depth-of-field blur that perfectly respects object boundaries. Alpha stores filtering confidence coefficient. Mouse creates localized focus aperture.",
+    "url": "shaders/conv-guided-filter-depth.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "depth-aware",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "radius",
+        "name": "Filter Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "epsilon",
+        "name": "Edge Sensitivity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "depth_influence",
+        "name": "Depth Influence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Focus",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "guided-filter",
+      "convolution",
+      "depth-aware",
+      "edge-preserving",
+      "depth-of-field",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-morphological-erosion-dilation",
+    "name": "Morphological Erosion Dilation",
+    "description": "Mathematical morphology on images — erosion shrinks bright regions, dilation expands them. RGBA32FLOAT packs erosion (R), dilation (G), gradient (B), and top-hat (A) into one pass. Mouse controls directional structuring element.",
+    "url": "shaders/conv-morphological-erosion-dilation.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "kernel_radius",
+        "name": "Kernel Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "erode_dilate_blend",
+        "name": "Erosion / Dilation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gradient_boost",
+        "name": "Gradient Boost",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "morphological",
+      "convolution",
+      "erosion",
+      "dilation",
+      "edge-detection",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-non-local-means",
+    "name": "Non-Local Means",
+    "description": "Gold-standard denoising that averages similar patches across the image. Cranked to artistic overdrive for hallucinatory double-exposure effects. Alpha stores self-similarity importance map. Mouse controls focus zone precision.",
+    "url": "shaders/conv-non-local-means.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "patch_radius",
+        "name": "Patch Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "search_radius",
+        "name": "Search Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "filter_strength",
+        "name": "Filter Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "overdrive",
+        "name": "Artistic Overdrive",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "non-local-means",
+      "convolution",
+      "denoising",
+      "patch-similarity",
+      "artistic",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-reaction-convolution",
+    "name": "Reaction Convolution",
+    "url": "shaders/conv-reaction-convolution.wgsl",
+    "category": "image",
+    "description": "Gray-Scott reaction-diffusion applied as a convolution filter on the input image. Uses image luminance to seed chemical concentrations and mouse interaction to inject patterns.",
+    "tags": [
+      "convolution",
+      "reaction-diffusion",
+      "gray-scott",
+      "mouse-driven",
+      "interactive",
+      "rgba-as-data"
+    ],
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "diffA",
+        "name": "Diffusion A",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffB",
+        "name": "Diffusion B",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedRate",
+        "name": "Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "conv-spiral-blur",
+    "name": "Spiral Blur",
+    "description": "Logarithmic spiral convolution creating rotational motion blur along golden ratio spirals. RGBA32FLOAT stores HDR accumulated color and spiral coverage factor. Mouse controls spiral center and tightness for vortex-like effects.",
+    "url": "shaders/conv-spiral-blur.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "tightness",
+        "name": "Spiral Tightness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "num_arms",
+        "name": "Spiral Arms",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "samples",
+        "name": "Sample Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Center",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "spiral",
+      "logarithmic",
+      "golden-ratio",
+      "convolution",
+      "motion-blur",
+      "vortex",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-steerable-pyramid",
+    "name": "Steerable Pyramid",
+    "description": "Decomposes image into oriented sub-bands at 0, 45, 90, and 135 degrees using steerable filters. RGBA32FLOAT stores full-precision signed sub-band coefficients for lossless reconstruction or artistic boosting. Mouse steers the decomposition angle.",
+    "url": "shaders/conv-steerable-pyramid.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "sigma",
+        "name": "Filter Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "response_scale",
+        "name": "Response Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "color_boost",
+        "name": "Color Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Steer",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "steerable-pyramid",
+      "orientation",
+      "sub-band",
+      "convolution",
+      "wavelet",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-stochastic-stipple",
+    "name": "Stochastic Stipple",
+    "description": "Blue-noise dithered weighted Voronoi stippling creating pointillist art from any image. Each dot represents a local neighborhood sized by average luminance. Alpha stores continuous stipple density for downstream dot-size variation. Mouse creates higher-resolution stipple zone.",
+    "url": "shaders/conv-stochastic-stipple.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "cell_size",
+        "name": "Cell Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "threshold",
+        "name": "Stipple Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "saturation",
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Resolution",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "stipple",
+      "pointillism",
+      "blue-noise",
+      "dithering",
+      "convolution",
+      "artistic",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "conv-structure-tensor-flow",
+    "name": "Structure Tensor Flow",
+    "description": "Computes structure tensor, extracts eigenvectors for dominant texture orientation, and visualizes flow via Line Integral Convolution. RGBA32FLOAT packs eigenvector components, coherency, and LIC intensity. Mouse creates vortices in the flow field.",
+    "url": "shaders/conv-structure-tensor-flow.wgsl",
+    "category": "image",
+    "features": [
+      "advanced-convolution",
+      "rgba32float-exploiting",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "lic_steps",
+        "name": "LIC Steps",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "coherency_boost",
+        "name": "Coherency Boost",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Vortex",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "structure-tensor",
+      "LIC",
+      "flow-visualization",
+      "convolution",
+      "texture-analysis",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "cross-conv-mouse-bilateral",
+    "name": "Bilateral Paint",
+    "url": "shaders/cross-conv-mouse-bilateral.wgsl",
+    "category": "image",
+    "description": "Crossover shader combining bilateral convolution with mouse-driven painting. The cursor acts as a brush that applies edge-preserving smoothing — stronger near the cursor, with click boosting the effect.",
+    "tags": [
+      "crossover",
+      "convolution",
+      "bilateral",
+      "mouse-driven",
+      "paint",
+      "interactive"
+    ],
+    "features": [
+      "crossover",
+      "mouse-driven",
+      "advanced-convolution"
+    ],
+    "params": [
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "edgePreserve",
+        "name": "Edge Preservation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "strength",
+        "name": "Effect Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -6407,6 +7451,118 @@
     ]
   },
   {
+    "id": "spec-cooperative-edge-linking",
+    "name": "Cooperative Edge Linking",
+    "url": "shaders/spec-cooperative-edge-linking.wgsl",
+    "category": "image",
+    "description": "Workgroup-cooperative edge detection and chain tracing. Uses shared memory union-find to link connected edges within each tile, assigning unique edge IDs for downstream segmentation and flow effects.",
+    "tags": [
+      "edge-detection",
+      "edge-linking",
+      "cooperative",
+      "workgroup",
+      "segmentation",
+      "union-find"
+    ],
+    "features": [
+      "cooperative-workgroup",
+      "edge-linking",
+      "segmentation",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "link_radius",
+        "name": "Link Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_mode",
+        "name": "Color Mode",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Edge Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "spec-histogram-equalize",
+    "name": "Histogram Equalize",
+    "url": "shaders/spec-histogram-equalize.wgsl",
+    "category": "image",
+    "description": "Real-time CLAHE histogram equalization using workgroup cooperative histogram building. Computes local histogram per 8x8 tile and remaps intensities via CDF for dramatic adaptive contrast enhancement.",
+    "tags": [
+      "histogram",
+      "equalization",
+      "CLAHE",
+      "contrast",
+      "cooperative",
+      "workgroup"
+    ],
+    "features": [
+      "cooperative-workgroup",
+      "histogram",
+      "CLAHE",
+      "contrast-enhancement"
+    ],
+    "params": [
+      {
+        "id": "clip_limit",
+        "name": "Clip Limit",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "strength",
+        "name": "Effect Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "tile_blend",
+        "name": "Tile Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_preserve",
+        "name": "Color Preserve",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
     "id": "spectral-mesh",
     "name": "Spectral Mesh",
     "url": "shaders/spectral-mesh.wgsl",
@@ -7855,7 +9011,8 @@
       "chromatic-aberration",
       "physical-refraction",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "advanced-alpha"
     ],
     "tags": [
       "crystal",
@@ -7866,7 +9023,9 @@
       "fresnel",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "alpha",
+      "physical-transmittance"
     ]
   },
   {
@@ -15351,11 +16510,14 @@
       "multi-pass",
       "volumetric",
       "depth",
-      "mouse-driven"
+      "mouse-driven",
+      "advanced-alpha"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "alpha",
+      "depth-layered"
     ]
   },
   {
@@ -16441,6 +17603,118 @@
     ]
   },
   {
+    "id": "liquid-pass1",
+    "name": "Liquid (Pass 1)",
+    "url": "shaders/liquid-pass1.wgsl",
+    "category": "image",
+    "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Outputs persistent height field to dataTextureA.",
+    "tags": [
+      "liquid",
+      "capillary-waves",
+      "physics",
+      "multi-pass"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "liquid-pass2"
+    },
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-pass2",
+    "name": "Liquid (Pass 2)",
+    "url": "shaders/liquid-pass2.wgsl",
+    "category": "image",
+    "description": "Fluid rendering pass: surface normal calculation, Snell's law refraction, Fresnel reflection, Beer-Lambert wavelength-dependent absorption, specular highlights, and physics-based alpha blending.",
+    "tags": [
+      "liquid",
+      "refraction",
+      "fresnel",
+      "beer-lambert",
+      "multi-pass"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "liquid-perspective",
     "name": "Liquid Perspective",
     "url": "shaders/liquid-perspective.wgsl",
@@ -17226,6 +18500,118 @@
     ],
     "features": [
       "mouse-driven"
+    ]
+  },
+  {
+    "id": "digital-glitch-pass1",
+    "name": "Digital Glitch (Pass 1)",
+    "url": "shaders/digital-glitch-pass1.wgsl",
+    "category": "image",
+    "description": "Glitch field generation: block displacement, scanline tearing, bitwise corruption seeds, and per-pixel corruption masks. Outputs glitch field to dataTextureA.",
+    "tags": [
+      "glitch",
+      "bitwise",
+      "corruption",
+      "multi-pass",
+      "digital"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "digital-glitch-pass2"
+    },
+    "params": [
+      {
+        "id": "corruption_intensity",
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bit_manipulation",
+        "name": "Bit Manipulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "error_propagation",
+        "name": "Error Propagation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "digital-glitch-pass2",
+    "name": "Digital Glitch (Pass 2)",
+    "url": "shaders/digital-glitch-pass2.wgsl",
+    "category": "image",
+    "description": "Error propagation and compositing pass: neighbor error spreading, digital decay with bit-depth reduction, chromatic aberration, scanline artifacts, and block inversion. Reads glitch field from dataTextureC.",
+    "tags": [
+      "glitch",
+      "decay",
+      "chromatic-aberration",
+      "multi-pass"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "corruption_intensity",
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bit_manipulation",
+        "name": "Bit Manipulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "error_propagation",
+        "name": "Error Propagation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -18191,11 +19577,14 @@
       "temporal-persistence",
       "interactive",
       "chromatic-aberration",
-      "mouse-driven"
+      "mouse-driven",
+      "advanced-alpha"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "alpha",
+      "luminance-key"
     ]
   },
   {

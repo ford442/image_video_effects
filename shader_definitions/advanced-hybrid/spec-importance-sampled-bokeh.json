@@ -1,0 +1,56 @@
+{
+  "id": "spec-importance-sampled-bokeh",
+  "name": "Importance Sampled Bokeh",
+  "url": "shaders/spec-importance-sampled-bokeh.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Bokeh blur guided by image brightness using importance sampling. Bright pixels act as point light sources creating crisp bokeh highlights with smooth backgrounds via golden angle spiral distribution.",
+  "tags": [
+    "bokeh",
+    "importance-sampling",
+    "blur",
+    "depth-of-field",
+    "golden-angle",
+    "HDR"
+  ],
+  "features": [
+    "importance-sampling",
+    "bokeh",
+    "mouse-driven",
+    "HDR"
+  ],
+  "params": [
+    {
+      "id": "radius",
+      "name": "Bokeh Radius",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "shape",
+      "name": "Highlight Shape",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "brightness",
+      "name": "Brightness Boost",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic Aberration",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

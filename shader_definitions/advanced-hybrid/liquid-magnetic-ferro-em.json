@@ -1,0 +1,74 @@
+{
+  "id": "liquid-magnetic-ferro-em",
+  "name": "Liquid Magnetic Ferro EM",
+  "url": "shaders/liquid-magnetic-ferro-em.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Ferrofluid simulation coupled with electromagnetic wave propagation. Rosensweig instability spikes are driven by both static magnetic dipoles and time-varying EM waves, with metallic iridescence colored by field direction.",
+  "features": [
+    "advanced-hybrid",
+    "ferrofluid",
+    "em-simulation",
+    "wave-propagation",
+    "mouse-driven",
+    "temporal",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "field_strength",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base magnetic field strength"
+    },
+    {
+      "id": "spike_sharpness",
+      "name": "Spike Sharpness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Ferrofluid peak sharpness"
+    },
+    {
+      "id": "em_coupling",
+      "name": "EM Coupling",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How much EM wave affects the fluid"
+    },
+    {
+      "id": "dipoles",
+      "name": "Dipole Count",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Number of orbiting magnetic dipoles"
+    }
+  ],
+  "chunks_used": [
+    "Magnetic dipole field, Rosensweig spikes (liquid_magnetic_ferro.wgsl)",
+    "EM wave propagation, charge injection (alpha-em-field-simulation.wgsl)",
+    "Value noise, fbm2 (alpha-em-field-simulation.wgsl)"
+  ],
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
+  "created_date": "2026-04-18",
+  "tags": [
+    "ferrofluid",
+    "magnetic",
+    "em-field",
+    "waves",
+    "metallic",
+    "simulation"
+  ]
+}

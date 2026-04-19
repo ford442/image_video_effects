@@ -1,0 +1,50 @@
+{
+  "id": "chromatic-focus-coupled",
+  "name": "Chromatic Focus Coupled",
+  "url": "shaders/chromatic-focus-coupled.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid that twists and blurs chromatic channels. Click ripples inject fluid bursts.",
+  "features": [
+    "mouse-driven",
+    "fluid-simulation",
+    "chromatic",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "x",
+      "name": "Aberration",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "y",
+      "name": "Blur",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "z",
+      "name": "Focus Radius",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 0.8
+    },
+    {
+      "id": "w",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "fluid",
+    "chromatic",
+    "depth-of-field",
+    "interactive"
+  ]
+}

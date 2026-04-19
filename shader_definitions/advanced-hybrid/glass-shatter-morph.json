@@ -1,0 +1,56 @@
+{
+  "id": "glass-shatter-morph",
+  "name": "Glass Shatter Morph",
+  "url": "shaders/glass-shatter-morph.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Interactive shattered glass where Voronoi shards are sculpted by morphological erosion/dilation on edges. Combines physical glass transmission with mathematical morphology for cracked-edge detail.",
+  "tags": [
+    "glass",
+    "shatter",
+    "morphological",
+    "voronoi",
+    "erosion",
+    "dilation",
+    "mouse-driven"
+  ],
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration",
+    "advanced-convolution"
+  ],
+  "params": [
+    {
+      "id": "shard_scale",
+      "name": "Shard Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "displacement",
+      "name": "Displacement",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "morph_blend",
+      "name": "Morph Blend",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "edge_width",
+      "name": "Edge Width",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

@@ -1,0 +1,43 @@
+{
+  "id": "conv-reaction-convolution",
+  "name": "Reaction Convolution",
+  "url": "shaders/conv-reaction-convolution.wgsl",
+  "category": "image",
+  "description": "Gray-Scott reaction-diffusion applied as a convolution filter on the input image. Uses image luminance to seed chemical concentrations and mouse interaction to inject patterns.",
+  "tags": ["convolution", "reaction-diffusion", "gray-scott", "mouse-driven", "interactive", "rgba-as-data"],
+  "features": ["advanced-convolution", "rgba32float-exploiting", "mouse-driven"],
+  "params": [
+    {
+      "id": "diffA",
+      "name": "Diffusion A",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "diffB",
+      "name": "Diffusion B",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "feedRate",
+      "name": "Feed Rate",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "mouseInfluence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

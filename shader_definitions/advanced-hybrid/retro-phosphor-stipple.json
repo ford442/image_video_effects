@@ -1,0 +1,73 @@
+{
+  "id": "retro-phosphor-stipple",
+  "name": "Retro Phosphor Stipple",
+  "url": "shaders/retro-phosphor-stipple.wgsl",
+  "category": "advanced-hybrid",
+  "description": "CRT phosphor simulation with blue-noise stippled dot triads. Authentic barrel distortion, scanlines, and temporal persistence combined with perceptually optimal blue-noise dot placement for each RGB channel.",
+  "features": [
+    "advanced-hybrid",
+    "crt-simulation",
+    "blue-noise",
+    "stippling",
+    "temporal-persistence",
+    "audio-reactive",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "curvature",
+      "name": "Screen Curvature",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Barrel distortion strength"
+    },
+    {
+      "id": "phosphor_scale",
+      "name": "Phosphor Scale",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Size of blue-noise phosphor dots"
+    },
+    {
+      "id": "scanlines",
+      "name": "Scanline Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "CRT scanline darkness"
+    },
+    {
+      "id": "flicker",
+      "name": "Flicker Intensity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Interlaced field flicker"
+    }
+  ],
+  "chunks_used": [
+    "Barrel distortion, scanlines, persistence (retro_phosphor_dream.wgsl)",
+    "Blue-noise offset, golden angle disk (spec-blue-noise-stipple.wgsl)"
+  ],
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
+  "created_date": "2026-04-18",
+  "tags": [
+    "crt",
+    "retro",
+    "phosphor",
+    "blue-noise",
+    "stipple",
+    "vintage"
+  ]
+}

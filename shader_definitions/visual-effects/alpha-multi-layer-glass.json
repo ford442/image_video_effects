@@ -1,0 +1,15 @@
+{
+  "id": "alpha-multi-layer-glass",
+  "name": "Alpha Multi-Layer Glass",
+  "url": "shaders/alpha-multi-layer-glass.wgsl",
+  "category": "visual-effects",
+  "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
+  "tags": ["glass", "refraction", "chromatic", "interactive", "mouse-driven", "rgba-state-machine", "fresnel"],
+  "features": ["mouse-driven", "rgba-state-machine"],
+  "params": [
+    { "id": "ior", "name": "Index of Refraction", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "thickness", "name": "Glass Thickness", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "chromatic", "name": "Chromatic Aberration", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "roughness", "name": "Surface Roughness", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

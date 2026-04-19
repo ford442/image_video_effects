@@ -1,0 +1,15 @@
+{
+  "id": "alpha-fluid-simulation-paint",
+  "name": "Alpha Fluid Simulation Paint",
+  "url": "shaders/alpha-fluid-simulation-paint.wgsl",
+  "category": "simulation",
+  "description": "Full 2D incompressible fluid simulation packed into a single RGBA32FLOAT texture. R=velocity.x, G=velocity.y, B=pressure, A=dye density. Mouse creates vortices and injects dye. Requires f32 for signed velocity and pressure fields.",
+  "tags": ["fluid", "simulation", "interactive", "mouse-driven", "navier-stokes", "psychedelic", "colorful", "rgba-state-machine"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "viscosity", "name": "Viscosity", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "dyeBrightness", "name": "Dye Brightness", "type": "float", "default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "vorticity", "name": "Vorticity", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "decayRate", "name": "Decay Rate", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

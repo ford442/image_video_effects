@@ -121,6 +121,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blackHoleMass = mix(1.0, 5.0, u.zoom_params.x);    // x: Black hole mass
     let diskBrightness = mix(0.5, 3.0, u.zoom_params.y);   // y: Accretion brightness
     let cameraOrbit = u.zoom_params.z * 6.28;              // z: Camera orbit
+    let mousePos = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w > 0.5;
     let redshiftIntensity = u.zoom_params.w;               // w: Redshift intensity
     
     // Black hole position
@@ -174,8 +176,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Ray bending: acceleration toward black hole
         let accel = -normalize(toCenter) * blackHoleMass / (r * r);
         
+        // Cursor singularity
+        let cursorPos3D = vec3<f32>((mousePos.x - 0.5) * 6.0 * aspect, (mousePos.y - 0.5) * 6.0, 0.0);
+        let toCursor = cursorPos3D - rayPos;
+        let rCursor = length(toCursor);
+        let cursorMass = blackHoleMass * 0.25 * (1.0 + select(0.0, 2.0, isMouseDown));
+        let cursorAccel = -normalize(toCursor) * cursorMass / (rCursor * rCursor + 0.1);
+        
         // Update ray direction
-        rayDir = normalize(rayDir + accel * DT);
+        rayDir = normalize(rayDir + (accel + cursorAccel) * DT);
         
         // Step forward
         rayPos += rayDir * DT * r * 0.5; // Adaptive step size
@@ -193,6 +202,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let toCenter = length(uv);
     let ringGlow = smoothstep(0.5, 0.0, abs(toCenter - 0.3)) * 0.5;
     color += vec3<f32>(0.9, 0.8, 0.6) * ringGlow;
+    
+    // Cursor glow
+    let cursorScreen = vec2<f32>((mousePos.x - 0.5) * 2.0 * aspect, (mousePos.y - 0.5) * 2.0);
+    let distToCursor = length(uv - cursorScreen);
+    let cursorGlow = (1.0 - smoothstep(0.0, 0.8, distToCursor)) * 0.3 * (1.0 + select(0.0, 1.0, isMouseDown));
+    color += vec3<f32>(0.6, 0.7, 1.0) * cursorGlow;
     
     let alpha = mix(0.9, 1.0, diskBrightness * 0.3);
     

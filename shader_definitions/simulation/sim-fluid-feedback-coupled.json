@@ -1,0 +1,60 @@
+{
+  "id": "sim-fluid-feedback-coupled",
+  "name": "Fluid Feedback Coupled",
+  "url": "shaders/sim-fluid-feedback-coupled.wgsl",
+  "category": "simulation",
+  "description": "Mouse-steerable coupled fluid simulation combining Navier-Stokes feedback fields with viscous fluid stirring. Mouse drags fluid creating vortex streets; click ripples inject bursts. Fluid thickness drives color absorption, blur, and glow.",
+  "features": ["simulation", "mouse-driven", "temporal", "navier-stokes", "fluid-coupling", "randomization-safe"],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Fluid viscosity / damping"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Curl noise turbulence amount"
+    },
+    {
+      "id": "fade_rate",
+      "name": "Fade Rate",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Density fade rate over time"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Glow intensity from fluid density"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "curlNoise (sim-fluid-feedback-field)",
+    "velocity advection (sim-fluid-feedback-field)",
+    "mouse stirring (mouse-fluid-coupling)",
+    "vortex force (mouse-fluid-coupling)"
+  ],
+  "tags": ["fluid", "simulation", "mouse-driven", "interactive", "temporal"],
+  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+  "created_date": "2026-04-18"
+}

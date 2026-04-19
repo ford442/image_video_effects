@@ -1,0 +1,57 @@
+{
+  "id": "thermal-vision-blackbody",
+  "name": "Thermal Vision Blackbody",
+  "url": "shaders/thermal-vision-blackbody.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Physically-correct thermal vision camera using blackbody radiation via Planck's law. Image luminance maps to real temperature colors, with mouse acting as a localized heat source and configurable sensor contrast.",
+  "tags": [
+    "thermal",
+    "blackbody",
+    "physics",
+    "spectral",
+    "HDR",
+    "mouse-driven"
+  ],
+  "features": [
+    "blackbody-radiation",
+    "thermal-vision",
+    "mouse-driven",
+    "HDR",
+    "physical-color"
+  ],
+  "params": [
+    {
+      "id": "temp_low",
+      "name": "Temperature Low",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "temp_high",
+      "name": "Temperature High",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "contrast",
+      "name": "Sensor Contrast",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "shift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

@@ -1,0 +1,15 @@
+{
+  "id": "bio-lenia-rgba",
+  "name": "Bio Lenia RGBA",
+  "url": "shaders/bio-lenia-rgba.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Four-species continuous cellular automata with Lenia-style smooth growth functions applied to each RGBA channel. Combines reaction-diffusion chemistry with biological emergence patterns. Cross-inhibition between species pairs creates complex multi-color morphologies.",
+  "tags": ["lenia", "cellular-automata", "reaction-diffusion", "biological", "emergence", "simulation", "rgba-state-machine", "continuous-ca", "colorful"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine", "audio-reactive"],
+  "params": [
+    { "id": "radius", "name": "Kernel Radius", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "growthCenter", "name": "Growth Center", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "crossInhibit", "name": "Cross Inhibition", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "timeStep", "name": "Time Step", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

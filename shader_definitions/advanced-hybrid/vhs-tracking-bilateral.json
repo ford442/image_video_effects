@@ -1,0 +1,72 @@
+{
+  "id": "vhs-tracking-bilateral",
+  "name": "VHS Tracking Bilateral",
+  "url": "shaders/vhs-tracking-bilateral.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Full VHS signal chain physics with edge-preserving bilateral smoothing. Timebase jitter, chroma noise, and control track dropouts are filtered through a bilateral dream, creating a soft analog degradation while preserving edges.",
+  "features": [
+    "advanced-hybrid",
+    "vhs-simulation",
+    "bilateral-filter",
+    "chroma-noise",
+    "temporal",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "tracking",
+      "name": "Tracking Error",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "VHS tracking error intensity"
+    },
+    {
+      "id": "chroma_noise",
+      "name": "Chroma Noise",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Chroma channel noise amount"
+    },
+    {
+      "id": "spatial_sigma",
+      "name": "Spatial Sigma",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Bilateral spatial spread"
+    },
+    {
+      "id": "color_sigma",
+      "name": "Color Sigma",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Bilateral color range sensitivity"
+    }
+  ],
+  "chunks_used": [
+    "VHS jitter, chroma noise, dropouts, quantization (vhs-tracking.wgsl)",
+    "Bilateral filter core (conv-bilateral-dream.wgsl)"
+  ],
+  "performance_target": "45 FPS (GTX 1060)",
+  "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
+  "created_date": "2026-04-18",
+  "tags": [
+    "vhs",
+    "retro",
+    "bilateral",
+    "analog",
+    "noise",
+    "smoothing"
+  ]
+}

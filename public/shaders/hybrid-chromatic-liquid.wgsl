@@ -50,7 +50,7 @@ fn hash12_(p: vec2<f32>) -> f32 {
     return fract(((_e18 + _e20) * _e23));
 }
 
-@compute @workgroup_size(16, 16, 1) 
+@compute @workgroup_size(8, 8, 1) 
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv: vec2<f32>;
     var mousePos: vec2<f32>;
@@ -74,13 +74,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _e20 = u.zoom_config;
     mousePos = _e20.yz;
     let time = u.config.x;
+    
+    // ═══ AUDIO INPUT ═══
+    let audioOverall = u.config.y;
+    let audioBass = audioOverall * 1.2;
+    let audioPulse = 1.0 + audioBass * 0.3;
+    
+    let isMouseDown = u.zoom_config.w > 0.5;
+    let distToMouse = length(uv - mousePos);
+    let clickRipple = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 40.0 - time * 8.0) * exp(-distToMouse * 4.0) * (1.0 + audioBass * 0.5);
+    let cursorGravity = 1.0 - smoothstep(0.0, 0.3, distToMouse);
+    uv = uv + normalize(uv - mousePos + 0.001) * (clickRipple * 0.05 + cursorGravity * 0.02);
     let _e30 = u.zoom_params.x;
-    let dotSize = ((_e30 * 20.0) + 2.0);
+    let dotSize = (((_e30 * 20.0) + 2.0) * audioPulse);
     let _e40 = u.zoom_params.y;
     let edgeThresh = max(0.01, ((1.0 - _e40) * 0.5));
     let _e48 = u.zoom_params.z;
     let levels = (floor((_e48 * 10.0)) + 2.0);
-    let inkDensity = u.zoom_params.w;
+    let inkDensity = (u.zoom_params.w * (1.0 + audioOverall * 0.4));
     let pixelSize = (vec2(1.0) / resolution);
     loop {
         let _e69 = i;
@@ -203,7 +214,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let _e254 = d;
         let vignette = smoothstep(0.8, 0.2, (_e254 * 0.5));
         let _e258 = finalColor;
-        finalColor = (_e258 * vignette);
+        let cursorGlow = cursorGravity * 0.4;
+        finalColor = (_e258 * vignette) + vec3<f32>(cursorGlow * 0.2, cursorGlow * 0.15, cursorGlow * 0.3);
         let _e260 = ink_alpha;
         let _e262 = ink_alpha;
         ink_alpha = mix(_e260, min(1.0, (_e262 * 1.2)), (vignette * 0.5));

@@ -1,0 +1,57 @@
+{
+  "id": "aerogel-smoke-hdr",
+  "name": "Aerogel Smoke HDR",
+  "url": "shaders/aerogel-smoke-hdr.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Ethereal aerogel volumetric smoke with HDR bloom enhancement. Silica nanoparticle scattering combines with an HDR bloom kernel that amplifies overbright regions, creating luminous glow around dense scattering zones.",
+  "tags": [
+    "volumetric",
+    "HDR",
+    "bloom",
+    "scattering",
+    "aerogel",
+    "atmospheric"
+  ],
+  "features": [
+    "volumetric-scattering",
+    "HDR-bloom",
+    "rayleigh-mie",
+    "rgba-data-channel",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "scattering",
+      "name": "Blue Scatter",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Light Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "id": "bloom",
+      "name": "HDR Bloom",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.8
+}

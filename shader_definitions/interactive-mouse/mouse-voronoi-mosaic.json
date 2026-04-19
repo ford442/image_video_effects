@@ -1,0 +1,47 @@
+{
+  "id": "mouse-voronoi-mosaic",
+  "name": "Voronoi Mosaic",
+  "url": "shaders/mouse-voronoi-mosaic.wgsl",
+  "category": "interactive-mouse",
+  "features": [
+    "mouse-driven"
+  ],
+  "description": "Click positions seed Voronoi cells that rotate, shift, and scale independently. Stained-glass edge effects with per-cell color tinting create an evolving mosaic.",
+  "params": [
+    {
+      "id": "shatterStrength",
+      "name": "Shatter Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "edgeThickness",
+      "name": "Edge Thickness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "glassOpacity",
+      "name": "Glass Opacity",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "voronoi",
+    "mosaic",
+    "stained-glass"
+  ]
+}

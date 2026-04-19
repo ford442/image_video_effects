@@ -3,9 +3,9 @@
   "name": "Spectral Bleed & Confinement",
   "url": "shaders/spectral-bleed-confinement.wgsl",
   "category": "artistic",
-  "description": "Specific color bands leak outward from image edges while being electromagnetically confined by competing channels, creating glowing halos that feel physically constrained.",
-  "tags": ["spectral", "bleed", "halo", "edge", "glow", "chromatic", "electromagnetic"],
-  "features": ["mouse-driven"],
+  "description": "Specific color bands leak outward from image edges while being electromagnetically confined by competing channels, creating glowing halos that feel physically constrained. Audio reactivity pulses bleed radius and adds beat-synchronized flashes.",
+  "tags": ["spectral", "bleed", "halo", "edge", "glow", "chromatic", "electromagnetic", "alpha", "luminance-key", "audio", "music"],
+  "features": ["mouse-driven", "advanced-alpha", "audio-reactive"],
   "author": "AI",
   "params": [
     {

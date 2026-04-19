@@ -1,0 +1,48 @@
+{
+  "id": "mouse-chromatic-explosion",
+  "name": "Chromatic Explosion",
+  "url": "shaders/mouse-chromatic-explosion.wgsl",
+  "category": "interactive-mouse",
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration"
+  ],
+  "description": "The mouse acts as a prism separating R, G, B channels by wavelength. Click ripples launch chromatic shockwaves. Creates rainbow halos and spectral fan-outs.",
+  "params": [
+    {
+      "id": "prismStrength",
+      "name": "Prism Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rippleStrength",
+      "name": "Ripple Chromatics",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "saturationBoost",
+      "name": "Saturation Boost",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "chromatic",
+    "prism",
+    "psychedelic"
+  ]
+}

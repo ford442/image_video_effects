@@ -1,0 +1,59 @@
+{
+  "id": "spectral-flow-structure",
+  "name": "Spectral Flow Structure",
+  "url": "shaders/spectral-flow-structure.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Structure-tensor-guided pixel sorting with Line Integral Convolution. Eigenvectors from the structure tensor drive sort direction; coherency modulates blend strength. LIC adds flow-line texture. Audio-reactive with mouse vortices.",
+  "features": ["advanced-hybrid", "pixel-sorting", "structure-tensor", "LIC", "audio-reactive", "mouse-driven", "randomization-safe", "audio-driven"],
+  "params": [
+    {
+      "id": "lic_steps",
+      "name": "LIC Steps",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Line Integral Convolution step count"
+    },
+    {
+      "id": "coherency_boost",
+      "name": "Coherency Boost",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Structure tensor coherency influence"
+    },
+    {
+      "id": "sort_threshold",
+      "name": "Sort Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Pixel sorting luminance threshold"
+    },
+    {
+      "id": "smoothing",
+      "name": "Temporal Smoothing",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Sort blend smoothing amount"
+    }
+  ],
+  "chunks_used": [
+    "structureTensor (conv-structure-tensor-flow)",
+    "LIC (conv-structure-tensor-flow)",
+    "pixel sorting (spectral-flow-sorting)",
+    "frequency analysis (spectral-flow-sorting)"
+  ],
+  "tags": ["structure-tensor", "LIC", "pixel-sorting", "flow", "texture-analysis", "audio"],
+  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+  "created_date": "2026-04-18"
+}

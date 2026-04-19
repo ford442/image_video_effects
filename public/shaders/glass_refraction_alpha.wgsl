@@ -111,7 +111,7 @@ fn refractChromatic(I: vec3<f32>, N: vec3<f32>, eta: f32, dispersion: f32) -> ve
     );
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);
@@ -125,12 +125,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Parameters
     let transparency = 0.3 + u.zoom_params.x * 0.5; // 0.3-0.8
-    let dispersion = u.zoom_params.y * 0.1; // Chromatic aberration
+    let dispersion = u.zoom_params.y * 0.1 * (1.0 + mouseGravity * 2.0); // Chromatic aberration
     let thicknessScale = 0.5 + u.zoom_params.z; // Absorption thickness
     let roughness = u.zoom_params.w * 0.1; // Surface roughness
     
     let mousePos = (u.zoom_config.yz - 0.5) * 2.0;
     let audioPulse = u.zoom_config.w;
+    let isMouseDown = audioPulse > 0.5;
+    let mouseUV = u.zoom_config.yz;
+    let distToMouse = length(uv - mouseUV);
+    let mouseGravity = 1.0 - smoothstep(0.0, 0.35, distToMouse);
+    let clickRipple = sin(distToMouse * 40.0 - time * 8.0) * exp(-distToMouse * 4.0) * select(0.0, 1.0, isMouseDown);
     
     // Camera ray
     let ro = vec3<f32>(mousePos.x * 0.5, mousePos.y * 0.5, -1.5);
@@ -203,7 +208,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.5));
         let halfDir = normalize(lightDir - rd);
         let specAngle = max(dot(normal, halfDir), 0.0);
-        let specular = pow(specAngle, 128.0) * (1.0 - roughness);
+        let specular = pow(specAngle, 128.0) * (1.0 - roughness) * (1.0 + mouseGravity * 2.0);
         finalRGB += vec3<f32>(1.0) * specular;
         
         // Alpha based on Fresnel and transparency setting
@@ -215,7 +220,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     // Add caustic-like glow at edges
-    let edgeGlow = smoothstep(0.02, 0.0, map(ro + rd * enterT, time)) * audioPulse;
+    var edgeGlow = smoothstep(0.02, 0.0, map(ro + rd * enterT, time)) * audioPulse;
+    edgeGlow = edgeGlow + mouseGravity * 0.3;
     finalRGB += vec3<f32>(0.8, 0.9, 1.0) * edgeGlow * 0.5;
     finalAlpha = max(finalAlpha, edgeGlow * 0.5);
     
@@ -225,9 +231,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
     
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB * vignette, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(finalAlpha, 0.0, 0.0, 1.0));
+    // Advanced Alpha: Physical Transmittance
+    let alpha = calculateAdvancedAlpha(finalRGB, finalAlpha, enterT, normal, hit);
+    
+    textureStore(writeTexture, coord, vec4<f32>(finalRGB * vignette, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(alpha, 0.0, 0.0, 1.0));
     
     // Store normal and alpha for potential feedback
-    textureStore(dataTextureA, coord, vec4<f32>(normal * 0.5 + 0.5, finalAlpha));
+    textureStore(dataTextureA, coord, vec4<f32>(normal * 0.5 + 0.5, alpha));
+}
+
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, baseAlpha: f32, enterT: f32, normal: vec3<f32>, hit: bool) -> f32 {
+    // Tunable parameters from zoom_params
+    let transparency = 0.3 + u.zoom_params.x * 0.5; // Transparency
+    let dispersion = u.zoom_params.y * 0.1;         // Dispersion
+    let thicknessScale = 0.5 + u.zoom_params.z;     // Thickness
+    let roughness = u.zoom_params.w * 0.1;          // Roughness
+    
+    if (!hit) {
+        return 0.0;
+    }
+    
+    // Beer's Law absorption
+    let absorptionCoeff = vec3<f32>(0.12, 0.06, 0.18) * (1.0 + dispersion * 2.0);
+    let opticalDepth = thicknessScale * enterT * 0.5;
+    let absorption = exp(-absorptionCoeff * opticalDepth);
+    
+    // Fresnel factor from normal
+    let viewDotNormal = abs(normal.z);
+    let F0 = pow((1.5 - 1.0) / (1.5 + 1.0), 2.0);
+    let fresnel = F0 + (1.0 - F0) * pow(1.0 - viewDotNormal, 5.0);
+    
+    // Volumetric alpha from optical thickness
+    let density = (1.0 - transparency) * thicknessScale;
+    let volumetricAlpha = 1.0 - exp(-density * opticalDepth * 3.0);
+    
+    // Base alpha modulated by absorption and Fresnel
+    let transmittanceAlpha = baseAlpha * dot(absorption, vec3<f32>(0.333)) * (1.0 - fresnel * 0.5);
+    
+    // Combine physical transmittance with volumetric density
+    let alpha = mix(transmittanceAlpha, volumetricAlpha, 0.5) + roughness * 0.1;
+    
+    return clamp(alpha, 0.0, 0.98);
 }

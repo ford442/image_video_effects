@@ -1,0 +1,15 @@
+{
+  "id": "boids-rgba-ecosystem",
+  "name": "Boids RGBA Ecosystem",
+  "url": "shaders/boids-rgba-ecosystem.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Boids-inspired flow-field flocking combined with continuous multi-species ecosystem simulation. RGBA channels store species densities that advect, flock, and compete. Species 1 (flockers) and Species 2 (predators) consume resources, produce toxins, and exhibit emergent flocking behavior through neighborhood vector fields.",
+  "tags": ["boids", "flocking", "ecosystem", "simulation", "rgba-state-machine", "predator-prey", "emergent", "interactive", "mouse-driven", "temporal"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "flockCohesion", "name": "Flock Cohesion", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "predationRate", "name": "Predation Rate", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "diffusion", "name": "Diffusion Rate", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "toxinStrength", "name": "Toxin Strength", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

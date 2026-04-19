@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid Prism Shader with Alpha Physics
+//  Liquid Prism Shader with Alpha Physics + Audio Reactivity
 //  Category: liquid-effects
-//  Features: chromatic aberration, ripple refraction, transparent crystal
+//  Features: chromatic aberration, ripple refraction, transparent crystal, audio-reactive
 //
 //  ALPHA PHYSICS:
 //  - Prism/crystal transparency with refraction
@@ -46,17 +46,17 @@ fn calculatePrismAlpha(
   // Glass F0 ≈ 0.04 (similar to water but slightly higher)
   let F0 = 0.04;
   let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
-  
+
   // More distortion = thicker glass = less transparent
   let thicknessFactor = smoothstep(0.0, 0.1, distortionMag);
-  
+
   // Base transparency from parameter
   let baseAlpha = mix(0.3, 0.85, baseTransparency);
-  
+
   // Fresnel adds reflection at edges, reducing transmission
   // Thicker areas = more opaque
   let alpha = baseAlpha * (1.0 - thicknessFactor * 0.3) * (1.0 - fresnel * 0.25);
-  
+
   return clamp(alpha, 0.0, 1.0);
 }
 
@@ -74,14 +74,14 @@ fn calculatePrismColor(
       g,
       b * (1.0 - distortionMag * 0.1)
   );
-  
+
   // Add prism highlight (caustic-like)
   let caustic = vec3<f32>(0.15, 0.18, 0.2) * highlight;
-  
+
   return dispersion + caustic;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -91,12 +91,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
 
-    // Parameters
-    let strength = u.zoom_params.x * 0.1; // Distortion Strength
-    let frequency = u.zoom_params.y * 20.0 + 5.0; // Ripple Frequency
-    let speed = u.zoom_params.z * 5.0; // Ripple Speed
-    let aberration = u.zoom_params.w * 0.05; // RGB Split Amount
-    let baseTransparency = u.zoom_params.w; // Also controls base transparency
+    // ═══ AUDIO INPUT ═══
+    let audioOverall = u.config.y;
+    let audioBass = audioOverall * 1.2;
+    let audioPulse = 1.0 + audioBass * 0.6;
+
+    // Parameters - audio modulated
+    let strength = u.zoom_params.x * 0.1 * audioPulse;
+    let frequency = (u.zoom_params.y * 20.0 + 5.0) * (1.0 + audioOverall * 0.3);
+    let speed = u.zoom_params.z * 5.0 * (1.0 + audioBass * 0.2);
+    let aberration = u.zoom_params.w * 0.05 * (1.0 + audioOverall * 0.2);
+    let baseTransparency = u.zoom_params.w;
 
     // Mouse Interaction
     var mousePos = u.zoom_config.yz;
@@ -104,8 +109,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distVec = diff * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 
-    // Calculate Ripple
-    // Radial sine wave emanating from mouse
+    // Calculate Ripple - audio drives amplitude
     let wavePhase = dist * frequency - time * speed;
     let wave = sin(wavePhase);
 
@@ -113,8 +117,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let decay = 1.0 / (1.0 + dist * 5.0);
 
     // Distortion vector
-    // We displace along the vector from mouse (or gradient of wave)
-    var dir = normalize(diff + vec2<f32>(0.0001, 0.0001)); // Avoid div by zero
+    var dir = normalize(diff + vec2<f32>(0.0001, 0.0001));
     let displace = dir * wave * strength * decay;
 
     // Aberration: Sample RGB at different offsets
@@ -122,24 +125,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gUV = uv + displace;
     let bUV = uv + displace * (1.0 - aberration);
 
-    // Edge handling (clamp to 0-1 implicitly by sampler, or explicitly?)
-    // Sampler usually repeats or clamps. Let's trust sampler.
-
     let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
-    // Add some "Prism" brightness boost at the wave peaks
-    let highlight = smoothstep(0.8, 1.0, wave) * decay * strength * 10.0;
+    // Add some "Prism" brightness boost at the wave peaks - audio reactive
+    let highlight = smoothstep(0.8, 1.0, wave) * decay * strength * 10.0 * (1.0 + audioBass);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // ALPHA CALCULATION
     // ═══════════════════════════════════════════════════════════════════════════════
-    
-    // Distortion magnitude for thickness estimation
+
     let distortionMag = length(displace);
-    
-    // Approximate normal from displacement
+
     let normal = normalize(vec3<f32>(
         -displace.x * 50.0,
         -displace.y * 50.0,
@@ -147,14 +145,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ));
     let viewDir = vec3<f32>(0.0, 0.0, 1.0);
     let viewDotNormal = dot(viewDir, normal);
-    
-    // Calculate prism color
+
     let prismColor = calculatePrismColor(r, g, b, distortionMag, highlight);
-    
-    // Calculate alpha
+
     let alpha = calculatePrismAlpha(distortionMag, viewDotNormal, baseTransparency);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(prismColor, alpha));
+    // Beat flash on strong beats
+    let isBeat = step(0.7, audioBass);
+    let finalColor = prismColor + vec3<f32>(0.2, 0.15, 0.1) * isBeat * 0.3;
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

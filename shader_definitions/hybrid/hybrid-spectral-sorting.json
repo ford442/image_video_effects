@@ -4,7 +4,7 @@
   "url": "shaders/hybrid-spectral-sorting.wgsl",
   "category": "distortion",
   "description": "Audio-reactive pixel sorting with frequency-based color shifts and displacement based on spectral analysis",
-  "features": ["hybrid", "pixel-sorting", "spectral-analysis", "audio-reactive", "hue-shift", "randomization-safe"],
+  "features": ["mouse-driven", "hybrid", "pixel-sorting", "spectral-analysis", "audio-reactive", "hue-shift", "randomization-safe"],
   "params": [
     {
       "id": "sort_threshold",
@@ -47,6 +47,7 @@
       "description": "Color shift based on frequency band"
     }
   ],
+  "tags": ["interactive", "cursor"],
   "chunks_used": [
     "pixel sorting pattern (bitonic-sort)",
     "spectral analysis (spectrogram-displace)",

@@ -165,8 +165,8 @@ cat phase-b/README.md
 ## Phase C: Advanced Compute Shader Artistry (NEW)
 
 **Timeline:** Weeks 9-14  
-**Total Agents:** 4  
-**Target Shaders:** ~60  
+**Total Agents:** 5  
+**Target Shaders:** ~60 (+ crossovers)  
 **Focus:** Novel techniques not yet in the library
 
 ### Phase C Agents
@@ -177,6 +177,7 @@ cat phase-b/README.md
 | 2C | `phase-c/agent-2c-psychedelic-mouse-sculptor.md` | Physically-inspired mouse interactions (EM fields, gravity lensing, quantum tunneling) | 15 mouse-interactive shaders |
 | 3C | `phase-c/agent-3c-spectral-computation-pioneer.md` | Spectral rendering, Monte Carlo, quaternion math, cooperative workgroup | 15 computation shaders |
 | 4C | `phase-c/agent-4c-alpha-artistry-specialist.md` | RGBA as 4 simulation fields, HDR, alpha-as-data | 15 alpha artistry shaders |
+| 5C | *(spawned after Wave 1)* | Phase C QA + Cross-pollination | QA report + 3-5 crossover shaders |
 
 ### Phase C Key Innovations
 - **Convolutions never implemented:** Bilateral, Gabor, non-local means, guided filter, morphological operators
@@ -191,7 +192,7 @@ See `phase-c/README.md` for full details.
 ## Updated Project Summary
 
 **Total Phases:** 3  
-**Total Agents:** 14 (5 + 5 + 4)  
+**Total Agents:** 15 (5 + 5 + 5)  
 **Target Shaders:** ~310 (Phase A: 81, Phase B: 170, Phase C: 60)  
 **Final Library Size:** ~770+ shaders  
 **Timeline:** 14 weeks
@@ -210,5 +211,5 @@ For questions about:
 
 ---
 
-**Status:** Ready for launch  
-**Next Step:** Launch Phase A agents
+**Status:** ✅ Phase A Complete | ✅ Phase B Complete | ✅ Phase C Complete  
+**Next Step:** Launch Agents 1C, 2C, 3C, 4C in parallel

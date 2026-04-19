@@ -1,0 +1,57 @@
+{
+  "id": "charcoal-rub-diffusion",
+  "name": "Charcoal Rub + Anisotropic Diffusion",
+  "url": "shaders/charcoal-rub-diffusion.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Physical charcoal media simulation with Perona-Malik anisotropic diffusion preprocessing. Diffusion creates smooth tonal regions before charcoal conversion, with diffusion coefficient modulating charcoal density.",
+  "tags": [
+    "charcoal",
+    "anisotropic-diffusion",
+    "physical-media",
+    "drawing",
+    "edge-preserving",
+    "convolution"
+  ],
+  "features": [
+    "advanced-convolution",
+    "upgraded-rgba",
+    "mouse-driven",
+    "temporal",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Hardness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Texture Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Reveal Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Diffusion Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.5
+}

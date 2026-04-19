@@ -1,0 +1,47 @@
+{
+  "id": "mouse-wormhole-lens",
+  "name": "Wormhole Lens",
+  "url": "shaders/mouse-wormhole-lens.wgsl",
+  "category": "interactive-mouse",
+  "features": [
+    "mouse-driven"
+  ],
+  "description": "A wormhole portal at the mouse position inverts, spirals, and color-shifts the image inside. Dragging stretches the portal. Event-horizon glow and gravitational lensing at the edge.",
+  "params": [
+    {
+      "id": "portalRadius",
+      "name": "Portal Radius",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "spiralStrength",
+      "name": "Spiral Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorShiftAmt",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "lensStrength",
+      "name": "Lens Strength",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "portal",
+    "wormhole",
+    "psychedelic"
+  ]
+}

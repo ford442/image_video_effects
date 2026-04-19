@@ -1,0 +1,60 @@
+{
+  "id": "stellar-plasma-blackbody",
+  "name": "Stellar Plasma Blackbody",
+  "url": "shaders/stellar-plasma-blackbody.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Cosmic nebula domain-warped FBM blended with Planck's law blackbody thermal coloring. Energy intensity drives temperature mapping — cool voids glow ember-red, hot plasma cores burn blue-white with physically-correct radiance scaling.",
+  "tags": [
+    "blackbody",
+    "thermal",
+    "plasma",
+    "nebula",
+    "procedural",
+    "cosmic",
+    "HDR",
+    "physics"
+  ],
+  "features": [
+    "generative",
+    "blackbody-radiation",
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "HDR"
+  ],
+  "params": [
+    {
+      "id": "temp_shift",
+      "name": "Temperature Shift",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Evolution Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "zoom_scale",
+      "name": "Zoom Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "thermal_intensity",
+      "name": "Thermal Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.8
+}

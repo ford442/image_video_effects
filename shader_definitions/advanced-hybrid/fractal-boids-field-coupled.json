@@ -1,0 +1,81 @@
+{
+  "id": "fractal-boids-field-coupled",
+  "name": "Fractal Boids Field + Fluid Coupling",
+  "url": "shaders/fractal-boids-field-coupled.wgsl",
+  "category": "simulation",
+  "description": "Flocking behavior on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples spawn shockwaves through the flock.",
+  "features": [
+    "advanced-hybrid",
+    "boids",
+    "fractal-flow-field",
+    "mouse-driven",
+    "fluid-coupling",
+    "interactive",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "boid_count",
+      "name": "Boid Count",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Number of simulated boids and ripple force"
+    },
+    {
+      "id": "flow_strength",
+      "name": "Flow Field Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Fractal flow field strength and mouse radius"
+    },
+    {
+      "id": "fluid_influence",
+      "name": "Fluid Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How much mouse fluid pushes boids"
+    },
+    {
+      "id": "separation",
+      "name": "Separation Distance",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Boid separation distance and vortex strength"
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "physics",
+    "boids",
+    "flocking",
+    "fluid",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "fbm2 (gen_grid.wgsl)",
+    "domainWarp",
+    "Boids separation/alignment/cohesion",
+    "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
+  ],
+  "performance_target": "40-55 FPS (GTX 1060)",
+  "created_by": "Agent CB-4 - Mouse Physics Injector",
+  "created_date": "2026-04-18"
+}

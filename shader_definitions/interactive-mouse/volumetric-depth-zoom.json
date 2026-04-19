@@ -38,10 +38,13 @@
     "multi-pass",
     "volumetric",
     "depth",
-    "mouse-driven"
+    "mouse-driven",
+    "advanced-alpha"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "alpha",
+    "depth-layered"
   ]
 }

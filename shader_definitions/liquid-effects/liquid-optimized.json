@@ -3,9 +3,9 @@
   "name": "Liquid Surface Tension (Optimized)",
   "url": "shaders/liquid-optimized.wgsl",
   "category": "liquid-effects",
-  "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement.",
-  "tags": ["liquid", "surface-tension", "capillary-waves", "optimized", "shared-memory"],
-  "features": ["mouse-driven"],
+  "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
+  "tags": ["liquid", "surface-tension", "capillary-waves", "optimized", "shared-memory", "audio", "music"],
+  "features": ["mouse-driven", "audio-reactive"],
   "params": [
     {
       "id": "surfaceTension",

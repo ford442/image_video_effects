@@ -1,0 +1,16 @@
+{
+  "id": "digital-glitch-pass2",
+  "name": "Digital Glitch (Pass 2)",
+  "url": "shaders/digital-glitch-pass2.wgsl",
+  "category": "image",
+  "description": "Error propagation and compositing pass: neighbor error spreading, digital decay with bit-depth reduction, chromatic aberration, scanline artifacts, and block inversion. Reads glitch field from dataTextureC.",
+  "tags": ["glitch", "decay", "chromatic-aberration", "multi-pass"],
+  "features": ["multi-pass-2", "mouse-driven"],
+  "multipass": { "pass": 2, "totalPasses": 2 },
+  "params": [
+    { "id": "corruption_intensity", "name": "Corruption Intensity", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "bit_manipulation", "name": "Bit Manipulation", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "error_propagation", "name": "Error Propagation", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "decay_rate", "name": "Decay Rate", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

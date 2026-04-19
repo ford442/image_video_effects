@@ -120,6 +120,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let twistAngle = u.zoom_params.y * PI * 2.0; // 0-2π twist
     let birefringence = 0.1 + u.zoom_params.z * 0.2; // 0.1-0.3
     let voltage = u.zoom_params.w; // Electric field effect
+    let isMouseDown = u.zoom_config.w > 0.5;
+    let distToMouse = length(uv - mousePos);
+    let mouseGravity = 1.0 - smoothstep(0.0, 0.3, distToMouse);
+    let clickPulse = select(0.0, 1.0, isMouseDown) * exp(-distToMouse * 5.0);
     
     let mousePos = u.zoom_config.yz;
     let audioPulse = u.zoom_config.w;
@@ -128,21 +132,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let director = directorField(uv, time, mousePos);
     
     // Effective thickness varies with voltage (Frederiks transition)
-    let effectiveThickness = cellThickness * (1.0 - voltage * 0.7);
+    let effectiveVoltage = voltage + mouseGravity * 0.3 + clickPulse * 0.5;
+    let effectiveThickness = cellThickness * (1.0 - effectiveVoltage * 0.7);
     
     // Phase retardation for RGB (different wavelengths)
     let wavelengthR = 650.0;
     let wavelengthG = 530.0;
     let wavelengthB = 460.0;
     
+    let localBirefringence = birefringence * (1.0 + mouseGravity);
     let retardation = vec3<f32>(
-        phaseRetardation(effectiveThickness, birefringence, wavelengthR * 0.001),
-        phaseRetardation(effectiveThickness, birefringence, wavelengthG * 0.001),
-        phaseRetardation(effectiveThickness, birefringence, wavelengthB * 0.001)
+        phaseRetardation(effectiveThickness, localBirefringence, wavelengthR * 0.001),
+        phaseRetardation(effectiveThickness, localBirefringence, wavelengthG * 0.001),
+        phaseRetardation(effectiveThickness, localBirefringence, wavelengthB * 0.001)
     );
     
     // Twist angle varies across cell
-    let localTwist = twistAngle * uv.x + audioPulse * sin(time * 5.0 + uv.y * 10.0);
+    let localTwist = twistAngle * uv.x + audioPulse * sin(time * 5.0 + uv.y * 10.0) + mouseGravity * 2.0 + clickPulse * 3.0;
     
     // Sample background
     let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;

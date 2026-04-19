@@ -99,6 +99,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displacement = mix(0.0, 0.2, u.zoom_params.z);     // z: Spectral displacement
     let hueShiftAmount = u.zoom_params.w * 3.14159;        // w: Color shift
     
+    // Mouse interaction
+    let mousePos = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w > 0.5;
+    let distToMouse = length(uv - mousePos);
+    let mouseGravity = 1.0 - smoothstep(0.0, 0.3, distToMouse);
+    let clickPulse = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 30.0 - time * 6.0) * exp(-distToMouse * 4.0);
+    
     // Spectral analysis bands
     let band = floor(uv.y * spectralBands);
     let bandPhase = band / spectralBands;
@@ -112,7 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sortDir = vec2<f32>(0.0, 1.0); // Vertical sort
     
     // Compare current pixel with neighbor in sort direction
-    let neighborDist = 2.0 + bandEnergy * 10.0;
+    let neighborDist = (2.0 + bandEnergy * 10.0) * (1.0 + mouseGravity * 2.0);
     let neighborUV = uv + sortDir * neighborDist / resolution.y;
     
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -129,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displacementVec = vec2<f32>(
         sin(bandPhase * 6.28318 + time) * bandEnergy,
         cos(bandPhase * 6.28318 + time * 0.7) * bandEnergy
-    ) * displacement;
+    ) * displacement * (1.0 + mouseGravity * 2.0) + normalize(uv - mousePos + 0.001) * clickPulse * 0.05;
     
     // Sample with displacement
     let displacedUV = uv + displacementVec * bassPulse;
@@ -165,6 +172,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Audio-reactive glow
     let glow = bandEnergy * audio * 0.5;
     color += spectralColor * glow;
+    color += spectralColor * mouseGravity * 0.3;
     
     // Glitch effect on beat
     let beat = step(0.7, audio);

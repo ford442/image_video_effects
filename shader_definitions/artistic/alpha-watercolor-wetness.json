@@ -1,0 +1,15 @@
+{
+  "id": "alpha-watercolor-wetness",
+  "name": "Alpha Watercolor Wetness",
+  "url": "shaders/alpha-watercolor-wetness.wgsl",
+  "category": "artistic",
+  "description": "Watercolor simulation with wetness map in alpha. Pigment flows with water gradients via capillary action. Wet areas allow bleeding; dry areas lock pigment. Mouse drops colored water; ripples add water drops. Authentic dark-edge effects at wet boundaries.",
+  "tags": ["watercolor", "paint", "artistic", "interactive", "mouse-driven", "temporal", "rgba-state-machine", "wetness"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "dryRate", "name": "Drying Rate", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "pigmentDeposit", "name": "Pigment Deposit", "type": "float", "default": 0.6, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "waterCapacity", "name": "Water Capacity", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "flowStrength", "name": "Flow Strength", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

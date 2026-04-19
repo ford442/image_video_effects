@@ -1,0 +1,58 @@
+{
+  "id": "anisotropic-kuwahara-nlm",
+  "name": "Anisotropic Kuwahara + NLM",
+  "url": "shaders/anisotropic-kuwahara-nlm.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Painterly anisotropic Kuwahara filter enhanced with Non-Local Means patch-similarity denoising. Structure tensor guides brush stroke direction while NLM preserves edges and creates an importance map.",
+  "tags": [
+    "painterly",
+    "kuwahara",
+    "non-local-means",
+    "denoising",
+    "artistic",
+    "edge-aware",
+    "convolution"
+  ],
+  "features": [
+    "advanced-convolution",
+    "upgraded-rgba",
+    "depth-aware",
+    "mouse-driven",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Window Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Anisotropy",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "NLM Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Flow Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.5
+}
