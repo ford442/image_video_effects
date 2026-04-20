@@ -168,6 +168,77 @@ H. Notes & Constraints
 
 ---
 
+VI. Phase C — Advanced Compute Techniques (Mouse-Responsive)
+  - Spec: `swarm-tasks/phase-c/` (5 agent files, README) — executable work packages for the swarm.
+  - Goal: close the remaining gaps in the compute-shader toolkit — frequency-domain, jump-flood, true incompressible fluids, atomic voting, complex-valued fields, and multi-pass edge-preserving convolutions.
+  - 14 new shaders, all mouse-driven, each introducing a technique currently absent from `public/shaders/`.
+  - Every shader obeys the immutable 13-binding contract (no new bind groups), and documents its `rgba32float` packing scheme in a WGSL header.
+
+  Techniques introduced (and the shader that introduces each):
+
+  1. **2D Fast Fourier Transform (Cooley-Tukey butterfly)** — `spectral-mirror`
+     - Mouse sculpts magnitude/phase in log-polar frequency space; IFFT back to spatial.
+     - RGBA32FLOAT packs `(Re, Im, |F|, arg(F))` in `dataTextureA`.
+     - Bit-reversal permutation precomputed in `extraBuffer`.
+
+  2. **Oriented Gabor wavelet bank** — `gabor-wavelet-kaleidoscope`
+     - 4 scales × 3 orientations = 12 channels across `dataTextureA/B/C`.
+     - Mouse orientation + radial-distance selects which resonance to amplify.
+
+  3. **Jump-Flood Algorithm (JFA)** — `jfa-aurora-voronoi`
+     - log₂(N)-pass Voronoi/distance field from up to 64 mouse-placed seeds.
+     - Gradient-of-distance shaded with aurora palette.
+     - RGBA32FLOAT packs `(seed.x, seed.y, dist², seed_id)`.
+
+  4. **CSG SDF sculpting with raymarched soft shadows** — `sdf-field-sculptor`
+     - Persistent SDF in `writeDepthTexture`; mouse unions/subtracts smooth-min primitives.
+     - Finite-difference gradient + short-ray AO + halo glow.
+
+  5. **Eikonal fast-sweeping wavefront** — `eikonal-lantern`
+     - Mouse is a lantern source; `|∇T|=1/speed(x,y)` solved in 4 diagonal sweeps.
+     - Speed map modulated by image luminance → light "refracts" through the photo.
+
+  6. **Full Stable-Fluids with Jacobi pressure projection** — `stable-fluid-painter`
+     - 7-pass pipeline: advect → force → divergence → Jacobi×N → project → advect-dye → render.
+     - RGBA32FLOAT packs `(vx, vy, ∇·v, p)`; proper incompressibility instead of advection only.
+     - Mouse velocity decoded from `u.ripples` history as momentum splats.
+
+  7. **Vorticity confinement smoke** — `vorticity-smoke`
+     - Curl `ω_z` computed; `f = ε·h·(N × ω_z)` re-injects small-scale detail.
+     - RGBA32FLOAT packs `(vx, vy, ω, ρ)`; produces real vortex rings & Kelvin-Helmholtz.
+
+  8. **Separable cross-bilateral filter** — `bilateral-glow-forest`
+     - 1D horizontal + 1D vertical pass (σ_space, σ_range) → edge-preserving glow.
+     - Localized to a mouse-painted brush disk; rest of image untouched.
+
+  9. **Perona-Malik anisotropic diffusion (PDE)** — `anisotropic-perona-malik`
+     - `g(|∇I|) = exp(-(|∇I|/K)²)` — heat flow that stops at edges.
+     - Iterated each frame; mouse locally boosts `dt` → oil-painting wherever you drag.
+
+ 10. **Workgroup-shared atomic mean-shift** — `mean-shift-painter`
+     - `var<workgroup> hist: array<atomic<u32>, 64>` — FIRST production shader using `atomicAdd`.
+     - Per-tile 8×8 HS histogram → mean-shift toward dominant mode.
+
+ 11. **Hough transform voting in parameter space** — `hough-cathedral`
+     - Atomic accumulator (180 θ-bins × 200 ρ-bins) in `extraBuffer`.
+     - Mouse (ρ, θ) selection turns detected lines into godrays; stained-glass cathedral look.
+
+ 12. **Diffusion-Limited Aggregation (multi-walker)** — `dla-crystal-garden`
+     - 8192 Brownian walkers in `extraBuffer` (pos, PCG rng, seed_id).
+     - Mouse clicks drop crystallization seeds; branches grow over seconds.
+
+ 13. **Marching-Squares iso-line extraction** — `metaball-lava-lamp`
+     - 16-case lookup, anti-aliased contour stroke, metaball scalar field with mouse as primary attractor.
+
+ 14. **Complex-valued Schrödinger wavefunction** — `schrodinger-conductor`
+     - FIRST complex-field shader: `dataTextureA.rg = (Re, Im)` of ψ.
+     - Mouse drops Gaussian wave packets with momentum from drag velocity; split-step evolution.
+     - Phase-hue + |ψ|² render.
+
+  Execution: drive via `swarm-tasks/phase-c/README.md`; gate via the existing QA pipeline
+  (`bindgroup_checker.py`, `naga-scan-report.json`, `param_validation_report.json`).
+  Expected completion: 3-4 weeks with 5 parallel swarm agents.
+
 If you want, I can now: a) create skeleton WGSL files and `shader-list.json` entries for the Phase A prototypes, or b) implement one full feature (e.g., Fabric of Reality). Which do you prefer? 
 
 ---
