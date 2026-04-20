@@ -136,7 +136,7 @@ fn calculateVolumetricAlpha(layerDepth: f32, fogDensity: f32, viewDotNormal: f32
     return clamp(alpha, 0.0, 1.0);
 }
 
-@compute @workgroup_size(16, 16, 1) 
+@compute @workgroup_size(8, 8, 1) 
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var resolution: vec2<f32>;
     var uv: vec2<f32>;
@@ -259,7 +259,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let outColor = mix(finalColor, fogColor, (1.0 - fog));
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, _e284));
+    
+    // Advanced Alpha: Edge-Preserve
+    let alpha = calculateAdvancedAlpha(outColor, uv, baseDepth, depthGrad, _e284);
+    
+    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, alpha));
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
     return;
+}
+
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>, depth: f32, depthGrad: f32, baseAlpha: f32) -> f32 {
+    // Tunable parameters from zoom_params
+    let edgeThreshold = u.zoom_params.x;   // Edge Threshold
+    let pulseSpeed = u.zoom_params.y;      // Pulse Speed
+    let glowIntensity = u.zoom_params.z;   // Glow Intensity
+    let colorShift = u.zoom_params.w;      // Color Shift
+    
+    // Edge magnitude from depth gradient
+    let edgeMask = smoothstep(edgeThreshold * 0.5, edgeThreshold, depthGrad);
+    
+    // Glow-driven alpha: brighter glow = more opaque
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let glowAlpha = smoothstep(0.05, 0.3, luma) * glowIntensity;
+    
+    // Combine: edges are opaque, glow areas are opaque, smooth interiors transparent
+    let combinedAlpha = max(edgeMask * 0.9, glowAlpha) + baseAlpha * 0.2;
+    
+    // Depth influence: foreground edges more opaque
+    let depthAlpha = mix(0.25, 1.0, depth);
+    let alpha = mix(combinedAlpha, depthAlpha, 0.3);
+    
+    return clamp(alpha, 0.0, 1.0);
 }

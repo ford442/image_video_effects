@@ -3,3 +3,9 @@ node_modules
 build/
 venv/
 emsdk
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/

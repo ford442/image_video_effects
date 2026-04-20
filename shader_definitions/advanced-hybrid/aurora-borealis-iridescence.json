@@ -1,0 +1,58 @@
+{
+  "id": "aurora-borealis-iridescence",
+  "name": "Aurora Borealis Iridescence",
+  "url": "shaders/aurora-borealis-iridescence.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence. Each aurora ribbon shimmers with soap-bubble and oil-slick interference colors driven by ribbon intensity and animated turbulence.",
+  "tags": [
+    "aurora",
+    "iridescence",
+    "thin-film",
+    "interference",
+    "atmospheric",
+    "spectral"
+  ],
+  "features": [
+    "aurora-ribbons",
+    "thin-film-interference",
+    "curl-noise",
+    "mouse-driven",
+    "audio-reactive",
+    "atmospheric"
+  ],
+  "params": [
+    {
+      "id": "ribbons",
+      "name": "Ribbon Count",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "flow",
+      "name": "Flow Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "width",
+      "name": "Ribbon Width",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "intensity",
+      "name": "Iridescence",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.9
+}

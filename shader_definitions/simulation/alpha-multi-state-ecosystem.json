@@ -1,0 +1,15 @@
+{
+  "id": "alpha-multi-state-ecosystem",
+  "name": "Alpha Multi-State Ecosystem",
+  "url": "shaders/alpha-multi-state-ecosystem.wgsl",
+  "category": "simulation",
+  "description": "Continuous multi-species ecosystem simulation packed into RGBA32FLOAT. Two species compete for shared resources while producing toxins. Species diffuse, grow, compete, and die. Mouse nurtures by adding resources.",
+  "tags": ["ecosystem", "simulation", "interactive", "mouse-driven", "cellular-automata", "pattern", "rgba-state-machine"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "growthRate1", "name": "Species 1 Growth", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "growthRate2", "name": "Species 2 Growth", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "diffusion", "name": "Diffusion Rate", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "toxinStrength", "name": "Toxin Strength", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

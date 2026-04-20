@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 SHADERS_DIR = Path("public/shaders").resolve()
-REPORT_FILE = Path("naga-scan-report.json")
+REPORT_FILE = Path("reports/naga-scan-report.json")
 USE_KIMI = "--kimi" in sys.argv
 
 # Ensure cargo bin is on PATH so naga can be found

@@ -1,0 +1,15 @@
+{
+  "id": "alpha-crystal-growth-phase",
+  "name": "Alpha Crystal Growth Phase",
+  "url": "shaders/alpha-crystal-growth-phase.wgsl",
+  "category": "simulation",
+  "description": "Phase-field model of crystal growth with RGBA-packed state. Phase (solid/liquid), temperature, crystal orientation, and impurity concentration evolve together. Creates dendritic crystal patterns with orientation-dependent color. Mouse seeds new crystals; ripples trigger nucleation.",
+  "tags": ["crystal", "growth", "simulation", "interactive", "mouse-driven", "temporal", "rgba-state-machine", "dendritic"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "supercooling", "name": "Supercooling", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "anisotropy", "name": "Anisotropy", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "growthRate", "name": "Growth Rate", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "impurity", "name": "Impurity Level", "type": "float", "default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

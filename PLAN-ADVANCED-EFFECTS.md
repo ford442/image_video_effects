@@ -239,3 +239,54 @@ VI. Phase C — Advanced Compute Techniques (Mouse-Responsive)
   (`bindgroup_checker.py`, `naga-scan-report.json`, `param_validation_report.json`).
   Expected completion: 3-4 weeks with 5 parallel swarm agents.
 
+If you want, I can now: a) create skeleton WGSL files and `shader-list.json` entries for the Phase A prototypes, or b) implement one full feature (e.g., Fabric of Reality). Which do you prefer? 
+
+---
+
+## Phase C: Advanced Compute Shader Artistry (NEW)
+
+Phase C extends this plan with 60 new shaders organized into 4 specialist agents. Full details in `swarm-tasks/phase-c/`.
+
+### Agent 1C — RGBA Convolution Architect (15 shaders)
+Novel image convolutions exploiting RGBA32FLOAT precision:
+- Bilateral filter, morphological operators, Gabor filter bank, non-local means, guided filter (depth-guided)
+- Structure tensor flow with LIC, multi-scale DoG cascade, Perona-Malik anisotropic diffusion
+- Steerable pyramid decomposition, bilateral grid (fast O(1) bilateral)
+- Fractal-shaped kernels, spiral blur, reaction-convolution, frequency notch filter, stochastic stippling
+- **Key innovation:** Alpha channel stores convolution metadata (weights, confidence, similarity maps)
+
+### Agent 2C — Psychedelic Mouse Sculptor (15 shaders)
+Physically-inspired mouse interaction models:
+- Electromagnetic field visualization (mouse = moving charge)
+- General-relativistic gravitational lensing (Einstein rings)
+- Quantum tunneling probe (probability waves through image edges)
+- Viscous fluid coupling (Navier-Stokes with mouse as stirring rod)
+- Mandelbrot deep zoom portal, Julia set morpher, Poincaré disk navigator
+- Chromatic explosion (prism dispersion), kaleidoscope tunnel, paint splatter
+- Voronoi shattering (using all 50 ripple slots), magnetic pixel sand
+- Temporal crystal growth (DLA), wormhole portal, synesthetic sound painter
+- **Key innovation:** Mouse acts as physical force source, not just position input
+
+### Agent 3C — Spectral Computation Pioneer (15 shaders)
+Novel WGSL computation techniques:
+- 4-band spectral rendering (Cauchy dispersion, CIE color matching)
+- Thin-film interference (iridescence), blackbody radiation coloring
+- Temporal Monte Carlo path tracer (4-bounce, dataTextureC accumulation)
+- Blue-noise stippling, importance-sampled bokeh
+- Workgroup cooperative histogram equalization (CLAHE), edge linking
+- Quaternion Julia set (4D), hypercube projection, spherical harmonics lighting
+- Bicubic Catmull-Rom sampling, analytic noise derivatives
+- RK4 advection, SDF text rendering
+- **Key innovation:** Computation techniques impossible without GPU parallelism
+
+### Agent 4C — Alpha Artistry Specialist (15 shaders)
+RGBA as 4 independent simulation fields:
+- Full Navier-Stokes packed in RGBA (vel.xy, pressure, density)
+- 4-species reaction-diffusion, magnetic field simulation
+- Multi-state cellular automata, HDR bloom with alpha-as-exposure
+- Spectral decomposition (4-band image EQ), luminance history
+- Volumetric fog (depth-dependent), multi-layer glass refraction
+- Impasto paint thickness, fire temperature simulation
+- Watercolor wetness simulation, crystal growth phase field
+- Hydraulic erosion terrain, aurora borealis altitude layers
+- **Key innovation:** Alpha is NEVER 1.0 — it always stores simulation state

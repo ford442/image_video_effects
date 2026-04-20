@@ -60,7 +60,7 @@ fn pathLengthThroughCrystal(cosTheta: f32, thickness: f32) -> f32 {
     return thickness / max(abs(cosTheta), 0.01);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -168,11 +168,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let internalScatter = mix(vec3<f32>(1.0), vec3<f32>(0.9, 0.95, 1.0), fractureDensity);
     color = color * internalScatter;
 
-    // Output RGBA
-    let alpha = clamp(transmission, 0.0, 1.0);
+    // Advanced Alpha: Physical Transmittance
+    let alpha = calculateAdvancedAlpha(color, transmission, pathLength, fresnel, purity, falloff);
+
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+}
+
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, transmission: f32, pathLength: f32, fresnel: f32, purity: f32, falloff: f32) -> f32 {
+    // Tunable parameters from zoom_params
+    let facetCount = u.zoom_params.x;       // Facet Count
+    let iorMix = u.zoom_params.y;           // Refractive Index
+    let fractureDensity = u.zoom_params.z;  // Fracture Density
+    let crystalThickness = mix(0.1, 2.0, u.zoom_params.w); // Crystal Thickness
+    
+    // Beer's Law absorption
+    let absorptionCoeff = vec3<f32>(0.18, 0.12, 0.25) * (1.0 + fractureDensity * 3.0);
+    let opticalDepth = pathLength * crystalThickness;
+    let absorption = exp(-absorptionCoeff * opticalDepth);
+    
+    // Volumetric alpha from optical thickness
+    let density = falloff * (1.0 + iorMix) * (1.0 + fractureDensity);
+    let volumetricAlpha = 1.0 - exp(-density * opticalDepth * 1.5);
+    
+    // Transmittance alpha: path-through crystal
+    let transmittanceAlpha = transmission * dot(absorption, vec3<f32>(0.333)) * purity;
+    
+    // Fresnel edge boost
+    let fresnelBoost = fresnel * falloff * 0.4;
+    
+    // Combine physical transmittance with volumetric density
+    let alpha = mix(transmittanceAlpha, volumetricAlpha, 0.45) + fresnelBoost;
+    
+    return clamp(alpha, 0.0, 1.0);
 }

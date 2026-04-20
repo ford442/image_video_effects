@@ -1,0 +1,55 @@
+{
+  "id": "spec-distance-field-text",
+  "name": "Distance Field Text",
+  "url": "shaders/spec-distance-field-text.wgsl",
+  "category": "generative",
+  "description": "SDF-based procedural glyph overlay. Generates abstract runes and symbols as signed distance fields with infinitely smooth scaling, glowing edges, drop shadows, and chromatic cycling.",
+  "tags": [
+    "SDF",
+    "distance-field",
+    "procedural-text",
+    "glyph",
+    "overlay",
+    "runes"
+  ],
+  "features": [
+    "SDF",
+    "procedural-text",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "glyph_scale",
+      "name": "Glyph Scale",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "glyph_width",
+      "name": "Glyph Width",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow Radius",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "overlay",
+      "name": "Overlay Mix",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.5
+}

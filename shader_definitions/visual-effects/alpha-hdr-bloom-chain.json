@@ -1,0 +1,15 @@
+{
+  "id": "alpha-hdr-bloom-chain",
+  "name": "Alpha HDR Bloom Chain",
+  "url": "shaders/alpha-hdr-bloom-chain.wgsl",
+  "category": "visual-effects",
+  "description": "HDR bloom effect where alpha stores exposure/overexposure value. Identifies pixels above white point, radially blurs the excess brightness, and composites with ACES tone mapping. Mouse and ripples trigger localized flashes.",
+  "tags": ["hdr", "bloom", "tone-mapping", "interactive", "mouse-driven", "rgba-state-machine", "glow"],
+  "features": ["mouse-driven", "rgba-state-machine"],
+  "params": [
+    { "id": "bloomRadius", "name": "Bloom Radius", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "bloomIntensity", "name": "Bloom Intensity", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "exposure", "name": "Exposure", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "saturation", "name": "Saturation", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

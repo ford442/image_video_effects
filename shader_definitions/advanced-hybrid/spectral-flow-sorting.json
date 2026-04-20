@@ -5,6 +5,7 @@
   "category": "distortion",
   "description": "Optical flow-based pixel sorting with spectral analysis. Pixels flow and sort along motion vectors.",
   "features": [
+    "mouse-driven",
     "advanced-hybrid",
     "pixel-sorting",
     "optical-flow",
@@ -64,6 +65,8 @@
   "created_by": "Agent 3B - Advanced Hybrid Creator",
   "created_date": "2026-03-22",
   "tags": [
+    "interactive",
+    "cursor",
     "audio",
     "music",
     "reactive"

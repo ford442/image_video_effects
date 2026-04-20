@@ -1,0 +1,106 @@
+{
+  "id": "holographic-interferometry-bilateral",
+  "name": "Holographic Interferometry Bilateral",
+  "url": "shaders/holographic-interferometry-bilateral.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Simulated hologram with interference fringes and edge-preserving bilateral smoothing. Speckle noise is softly reduced while sharp interference fringe edges remain crisp.",
+  "features": [
+    "advanced-hybrid",
+    "holography",
+    "bilateral-filter",
+    "interference-patterns",
+    "speckle-reduction",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "fringe_density",
+      "name": "Fringe Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of interference fringes"
+    },
+    {
+      "id": "coherence",
+      "name": "Coherence Length",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Laser coherence (affects speckle size)"
+    },
+    {
+      "id": "reconstruction_angle",
+      "name": "Reconstruction Angle",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Hologram reconstruction angle"
+    },
+    {
+      "id": "saturation",
+      "name": "Color Saturation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Saturation of holographic colors"
+    }
+  ],
+  "advanced_params": [
+    {
+      "id": "bilateral_spatial",
+      "name": "Bilateral Spatial",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.x",
+      "description": "Spatial sigma of bilateral filter"
+    },
+    {
+      "id": "bilateral_color",
+      "name": "Bilateral Color",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.y",
+      "description": "Color sigma of bilateral filter"
+    },
+    {
+      "id": "bilateral_blend",
+      "name": "Bilateral Blend",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.z",
+      "description": "Blend between original hologram and smoothed result"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (holographic-interferometry.wgsl)",
+    "speckleNoise (holographic-interferometry.wgsl)",
+    "interferencePattern (holographic-interferometry.wgsl)",
+    "reconstructHologram (holographic-interferometry.wgsl)",
+    "bilateral filter (conv-bilateral-dream.wgsl)"
+  ],
+  "performance_target": "30-40 FPS (GTX 1060)",
+  "created_by": "Agent CB-3 — Convolution Post-Processor",
+  "created_date": "2026-04-18",
+  "tags": [
+    "hologram",
+    "interference",
+    "bilateral",
+    "speckle",
+    "rainbow"
+  ]
+}

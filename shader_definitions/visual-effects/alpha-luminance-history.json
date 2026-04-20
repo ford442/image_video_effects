@@ -1,0 +1,15 @@
+{
+  "id": "alpha-luminance-history",
+  "name": "Alpha Luminance History",
+  "url": "shaders/alpha-luminance-history.wgsl",
+  "category": "visual-effects",
+  "description": "Temporal luminance history with rolling average stored in alpha. Areas that were recently bright retain a warm glow. Creates light-painting and after-image effects. Mouse leaves persistent bright trails.",
+  "tags": ["temporal", "history", "luminance", "glow", "interactive", "mouse-driven", "rgba-state-machine", "light-painting"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "decay", "name": "Memory Decay", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "glowIntensity", "name": "Glow Intensity", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "colorShift", "name": "History Tint", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "diffusion", "name": "Trail Diffusion", "type": "float", "default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

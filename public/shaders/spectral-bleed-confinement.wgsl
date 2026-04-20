@@ -1,15 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  Spectral Bleed & Confinement
-//  Category: EFFECT
+//  Spectral Bleed & Confinement + Audio Reactive
+//  Category: artistic
 //  Complexity: HIGH
 //  Visual concept: Specific color bands leak outward from edges while being
 //    electromagnetically confined by competing channels, creating glowing
 //    halos that feel physically constrained — like color plasma trapped by
 //    invisible magnetic fields.
-//  Mathematical approach: Per-channel "bleed" is computed from luminance-edge
-//    maps; each channel's spread is convolved with a directional kernel;
-//    confinement is a cross-channel suppression term (R suppresses B bleed,
-//    G suppresses R bleed, etc.) modulated by a slow curl-noise vector field.
+//  Audio reactivity: Bleed radius pulses with bass; beat flashes intensify
+//    the electromagnetic confinement field.
 // ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,9 +24,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
-    zoom_params: vec4<f32>, // x=BleedRadius, y=ConfinementStrength, z=CurlSpeed, w=EdgeThreshold
+    config:      vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -49,7 +47,6 @@ fn vnoise(p: vec2<f32>) -> f32 {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Curl-noise 2-D vector field
-//  ∇⊥ of a scalar potential → divergence-free field
 // ─────────────────────────────────────────────────────────────────────────────
 fn curlNoise(p: vec2<f32>) -> vec2<f32> {
     let eps = 0.002;
@@ -83,7 +80,7 @@ fn sobelEdge(uv: vec2<f32>, tx: vec2<f32>, ch: i32) -> f32 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Directional bleed: sample average of channel along curl-field direction
+//  Directional bleed
 // ─────────────────────────────────────────────────────────────────────────────
 fn channelBleed(uv: vec2<f32>, dir: vec2<f32>, radius: f32, ch: i32) -> f32 {
     var accum = 0.0;
@@ -126,14 +123,14 @@ fn curlFBM(p: vec2<f32>) -> vec2<f32> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Electromagnetic field strength (channel interference pattern)
+//  Electromagnetic field strength
 // ─────────────────────────────────────────────────────────────────────────────
 fn emFieldStrength(p: vec2<f32>, t: f32, freq: f32) -> f32 {
     return sin(p.x * freq + t) * cos(p.y * freq * 0.87 - t * 1.1) * 0.5 + 0.5;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Spectral line broadening (convolution approximation)
+//  Spectral line broadening
 // ─────────────────────────────────────────────────────────────────────────────
 fn spectralBroadening(uv: vec2<f32>, dir: vec2<f32>, radius: f32, ch: i32) -> f32 {
     var accum = 0.0;
@@ -153,10 +150,9 @@ fn spectralBroadening(uv: vec2<f32>, dir: vec2<f32>, radius: f32, ch: i32) -> f3
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Plasma confinement potential (Lorentz-like cross-product force)
+//  Plasma confinement potential
 // ─────────────────────────────────────────────────────────────────────────────
 fn lorentzConfinement(bleedR: f32, bleedG: f32, bleedB: f32, strength: f32) -> vec3<f32> {
-    // v × B cross product in color space: R deflects G, G deflects B, B deflects R
     return vec3<f32>(
         exp(-bleedG * bleedB * strength),
         exp(-bleedB * bleedR * strength),
@@ -164,27 +160,45 @@ fn lorentzConfinement(bleedR: f32, bleedG: f32, bleedB: f32, strength: f32) -> v
     );
 }
 
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>, depthVal: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let intensity = u.zoom_params.x * 0.6 + 0.3;
+    let softness = u.zoom_params.y * 0.12 + 0.02;
+    let depthWeight = u.zoom_params.z * 0.5;
+    let threshold = u.zoom_params.w * 0.35 + 0.05;
+    let lumaAlpha = smoothstep(threshold - softness, threshold + softness, luma) * intensity;
+    let depthAlpha = mix(0.35, 1.0, depthVal);
+    let alpha = mix(lumaAlpha, depthAlpha, depthWeight);
+    return clamp(alpha, 0.0, 1.0);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res   = u.config.zw;
     let uv    = vec2<f32>(gid.xy) / res;
     let t     = u.config.x;
     let tx    = 1.0 / res;
 
-    // Parameters
-    let bleedRadius   = u.zoom_params.x * 0.025 + 0.004; // 0.004 – 0.029
-    let confinement   = u.zoom_params.y * 2.0 + 0.5;     // 0.5 – 2.5
-    let curlSpeed     = u.zoom_params.z * 0.4 + 0.05;    // 0.05 – 0.45
-    let edgeThresh    = u.zoom_params.w * 0.3 + 0.02;    // 0.02 – 0.32
+    // ═══ AUDIO INPUT ═══
+    let audioOverall = u.config.y;
+    let audioBass = audioOverall * 1.2;
+    let audioPulse = 1.0 + audioBass * 0.5;
+
+    // Parameters - audio modulated
+    let bleedRadius   = (u.zoom_params.x * 0.025 + 0.004) * audioPulse;
+    let confinement   = (u.zoom_params.y * 2.0 + 0.5) * (1.0 + audioOverall * 0.2);
+    let curlSpeed     = u.zoom_params.z * 0.4 + 0.05;
+    let edgeThresh    = u.zoom_params.w * 0.3 + 0.02;
 
     // ── Curl-noise field ──────────────────────────────────────────────────
     let curlUV  = uv * 2.5 + vec2<f32>(t * curlSpeed, t * curlSpeed * 0.6);
     let curl    = normalize(curlNoise(curlUV) + vec2<f32>(0.001));
 
-    // ── Per-channel bleed directions (120° apart, modulated by curl) ──────
+    // ── Per-channel bleed directions ──────────────────────────────────────
     let a0 = atan2(curl.y, curl.x);
     let dirR = vec2<f32>(cos(a0),               sin(a0));
     let dirG = vec2<f32>(cos(a0 + 2.094),       sin(a0 + 2.094));
@@ -203,7 +217,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Original color ────────────────────────────────────────────────────
     let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // ── Composite: original + confined bleed halo ─────────────────────────
+    // ── Composite ─────────────────────────────────────────────────────────
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // ── FBM curl for richer bleed direction ───────────────────────────────
@@ -214,38 +228,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dirGF = vec2<f32>(cos(a0fbm + 2.094),       sin(a0fbm + 2.094));
     let dirBF = vec2<f32>(cos(a0fbm + 4.189),       sin(a0fbm + 4.189));
 
-    // ── Spectral broadening (Gaussian-convolved bleed) ─────────────────────
+    // ── Spectral broadening ───────────────────────────────────────────────
     let broadR = spectralBroadening(uv, dirRF, bleedRadius * 0.6, 0) * edgeR;
     let broadG = spectralBroadening(uv, dirGF, bleedRadius * 0.6, 1) * edgeG;
     let broadB = spectralBroadening(uv, dirBF, bleedRadius * 0.6, 2) * edgeB;
 
-    // ── EM field modulation ────────────────────────────────────────────────
-    let emR = emFieldStrength(uv * 8.0, t, 4.0) * edgeR;
-    let emG = emFieldStrength(uv * 8.0 + vec2<f32>(2.1, 0.0), t, 5.0) * edgeG;
-    let emB = emFieldStrength(uv * 8.0 + vec2<f32>(0.0, 3.3), t, 3.7) * edgeB;
+    // ── EM field modulation - audio reactive ──────────────────────────────
+    let emR = emFieldStrength(uv * 8.0, t, 4.0) * edgeR * (1.0 + audioBass * 0.3);
+    let emG = emFieldStrength(uv * 8.0 + vec2<f32>(2.1, 0.0), t, 5.0) * edgeG * (1.0 + audioOverall * 0.2);
+    let emB = emFieldStrength(uv * 8.0 + vec2<f32>(0.0, 3.3), t, 3.7) * edgeB * (1.0 + audioBass * 0.3);
 
-    // ── Lorentz confinement (plasma physics-inspired) ──────────────────────
+    // ── Lorentz confinement ───────────────────────────────────────────────
     let lorentz = lorentzConfinement(bleedR + broadR, bleedG + broadG, bleedB + broadB, confinement);
 
-    // ── Confinement: each channel suppresses the next channel's bleed ─────
+    // ── Confinement ───────────────────────────────────────────────────────
     let confR = exp(-bleedG * confinement) * lorentz.r;
     let confG = exp(-bleedB * confinement) * lorentz.g;
     let confB = exp(-bleedR * confinement) * lorentz.b;
 
     let depthBoost = 0.5 + depth * 0.8;
 
-    let r = clamp(orig.r + (bleedR + broadR * 0.5) * confR * depthBoost + emR * bleedRadius * 0.3, 0.0, 1.0);
-    let g = clamp(orig.g + (bleedG + broadG * 0.5) * confG * depthBoost + emG * bleedRadius * 0.3, 0.0, 1.0);
-    let b = clamp(orig.b + (bleedB + broadB * 0.5) * confB * depthBoost + emB * bleedRadius * 0.3, 0.0, 1.0);
+    var r = clamp(orig.r + (bleedR + broadR * 0.5) * confR * depthBoost + emR * bleedRadius * 0.3, 0.0, 1.0);
+    var g = clamp(orig.g + (bleedG + broadG * 0.5) * confG * depthBoost + emG * bleedRadius * 0.3, 0.0, 1.0);
+    var b = clamp(orig.b + (bleedB + broadB * 0.5) * confB * depthBoost + emB * bleedRadius * 0.3, 0.0, 1.0);
 
-    // ── Saturation boost: keep bleed vivid against original ───────────────
-    // Amplify chroma slightly to counter the washing effect of bleed accumulation
+    // ── Saturation boost ──────────────────────────────────────────────────
     let lum   = r * 0.2126 + g * 0.7152 + b * 0.0722;
     let satBoost = 1.0 + confinement * 0.08;
-    let outR  = clamp(mix(lum, r, satBoost), 0.0, 1.0);
-    let outG  = clamp(mix(lum, g, satBoost), 0.0, 1.0);
-    let outB  = clamp(mix(lum, b, satBoost), 0.0, 1.0);
+    var outR  = clamp(mix(lum, r, satBoost), 0.0, 1.0);
+    var outG  = clamp(mix(lum, g, satBoost), 0.0, 1.0);
+    var outB  = clamp(mix(lum, b, satBoost), 0.0, 1.0);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, 1.0));
+    // Beat flash on strong beats
+    let isBeat = step(0.7, audioBass);
+    outR += isBeat * 0.12;
+    outG += isBeat * 0.08;
+    outB += isBeat * 0.04;
+
+    // ── Advanced Alpha: Luminance Key ─────────────────────────────────────
+    let alpha = calculateAdvancedAlpha(vec3<f32>(outR, outG, outB), uv, depth);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

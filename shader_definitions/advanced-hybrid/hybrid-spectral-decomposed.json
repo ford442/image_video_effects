@@ -1,0 +1,60 @@
+{
+  "id": "hybrid-spectral-decomposed",
+  "name": "Hybrid Spectral Decomposed",
+  "url": "shaders/hybrid-spectral-decomposed.wgsl",
+  "category": "advanced-hybrid",
+  "description": "4-band spectral decomposition combined with audio-reactive pixel sorting. Image decomposed into low/mid-low/mid-high/high frequencies. Each band sorted independently with unique spectral color tints, then recomposed with per-band gains.",
+  "features": ["advanced-hybrid", "pixel-sorting", "spectral-decomposition", "audio-reactive", "mouse-driven", "randomization-safe", "audio-driven"],
+  "params": [
+    {
+      "id": "sort_threshold",
+      "name": "Sort Sensitivity",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base luminance threshold for pixel sorting"
+    },
+    {
+      "id": "spectral_bands",
+      "name": "Spectral Bands",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Number of frequency bands for coloring"
+    },
+    {
+      "id": "displacement",
+      "name": "Spectral Displacement",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Displacement based on spectral energy"
+    },
+    {
+      "id": "hue_shift",
+      "name": "Hue Shift",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Color shift based on frequency band"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)",
+    "hueShift (stellar-plasma.wgsl)",
+    "4-band decomposition (alpha-spectral-decompose)",
+    "pixel sorting (hybrid-spectral-sorting)"
+  ],
+  "tags": ["spectral", "decomposition", "pixel-sorting", "audio", "frequency", "equalizer"],
+  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+  "created_date": "2026-04-18"
+}

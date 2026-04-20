@@ -34,7 +34,7 @@ fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -116,12 +116,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec3<f32>(r, g, b);
     color += vec3<f32>(edgeHighlight);
 
-    // Alpha based on transmission within lens area
-    let alpha = mix(1.0, transmission, falloff);
+    // Advanced Alpha: Physical Transmittance
+    let alpha = calculateAdvancedAlpha(color, transmission, falloff, pathLength, fresnel);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 
     // Update Depth (Pass-through)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+}
+
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, transmission: f32, falloff: f32, pathLength: f32, fresnel: f32) -> f32 {
+    // Tunable parameters from zoom_params
+    let thickness = mix(0.1, 1.5, u.zoom_params.w); // Crystal Thickness
+    let dispersion = u.zoom_params.y;                // IOR / Dispersion
+    let strength = u.zoom_params.z;                  // Refraction Strength
+    
+    // Beer's Law absorption
+    let absorptionCoeff = vec3<f32>(0.15, 0.08, 0.22) * (1.0 + dispersion);
+    let absorption = exp(-absorptionCoeff * pathLength * thickness);
+    
+    // Volumetric alpha from optical thickness
+    let density = falloff * (1.0 + strength);
+    let opticalDepth = density * pathLength * thickness;
+    let volumetricAlpha = 1.0 - exp(-opticalDepth * 2.0);
+    
+    // Combine Fresnel reflection with transmittance
+    let transmittanceAlpha = transmission * (1.0 - fresnel) * dot(absorption, vec3<f32>(0.333));
+    
+    // Final alpha blends physical transmittance with volumetric density
+    let alpha = mix(transmittanceAlpha, volumetricAlpha, 0.4);
+    
+    return clamp(alpha, 0.0, 1.0);
 }

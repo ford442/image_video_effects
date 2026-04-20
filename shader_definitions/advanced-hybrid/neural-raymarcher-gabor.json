@@ -1,0 +1,108 @@
+{
+  "id": "neural-raymarcher-gabor",
+  "name": "Neural Raymarcher Gabor",
+  "url": "shaders/neural-raymarcher-gabor.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Raymarched neural network visualization with Gabor oriented texture detection. Gabor responses highlight connection directions and layer boundaries with psychedelic color mapping.",
+  "features": [
+    "advanced-hybrid",
+    "neural-raymarching",
+    "gabor-texture",
+    "volumetric",
+    "randomization-safe",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "network_depth",
+      "name": "Network Depth",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Depth of neural network layers"
+    },
+    {
+      "id": "activation_vis",
+      "name": "Activation Visualization",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Visibility of Gabor activation patterns"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Volumetric glow intensity"
+    },
+    {
+      "id": "camera_rotation",
+      "name": "Camera Rotation",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Camera orbit position"
+    }
+  ],
+  "advanced_params": [
+    {
+      "id": "gabor_freq",
+      "name": "Gabor Frequency",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.x",
+      "description": "Gabor filter frequency"
+    },
+    {
+      "id": "gabor_sigma",
+      "name": "Gabor Sigma",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.y",
+      "description": "Gabor Gaussian envelope width"
+    },
+    {
+      "id": "gabor_scale",
+      "name": "Gabor Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_config.z",
+      "description": "Response scaling factor"
+    }
+  ],
+  "chunks_used": [
+    "ping_pong (neural-raymarcher.wgsl)",
+    "hash21 (neural-raymarcher.wgsl)",
+    "noise (neural-raymarcher.wgsl)",
+    "reconstruct_normal (neural-raymarcher.wgsl)",
+    "gaborResponse (conv-gabor-texture-analyzer.wgsl)",
+    "palette (conv-gabor-texture-analyzer.wgsl)"
+  ],
+  "performance_target": "20-30 FPS (GTX 1060)",
+  "created_by": "Agent CB-3 — Convolution Post-Processor",
+  "created_date": "2026-04-18",
+  "tags": [
+    "neural",
+    "raymarcher",
+    "gabor",
+    "texture",
+    "volumetric",
+    "psychedelic"
+  ]
+}

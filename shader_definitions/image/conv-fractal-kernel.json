@@ -1,0 +1,59 @@
+{
+  "id": "conv-fractal-kernel",
+  "name": "Fractal Kernel",
+  "description": "Convolution kernel shaped by Mandelbrot set membership. Pixels inside the fractal are sampled, creating alien mathematically beautiful blur patterns. Alpha stores fractal iteration depth. Mouse warps the Mandelbrot center live.",
+  "url": "shaders/conv-fractal-kernel.wgsl",
+  "category": "image",
+  "features": [
+    "advanced-convolution",
+    "rgba32float-exploiting",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "kernel_radius",
+      "name": "Kernel Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "fractal_zoom",
+      "name": "Fractal Zoom",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "iterations",
+      "name": "Fractal Iterations",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouse_influence",
+      "name": "Mouse Warp",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "fractal",
+    "mandelbrot",
+    "convolution",
+    "kernel",
+    "psychedelic",
+    "filter",
+    "image-processing"
+  ]
+}

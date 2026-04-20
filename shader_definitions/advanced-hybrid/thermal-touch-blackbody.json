@@ -1,0 +1,56 @@
+{
+  "id": "thermal-touch-blackbody",
+  "name": "Thermal Touch Blackbody",
+  "url": "shaders/thermal-touch-blackbody.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Mouse-driven thermal camera with blackbody radiation coloring. The cursor acts as a localized heat source and image brightness maps to physically-correct temperature via Planck's law.",
+  "tags": [
+    "thermal",
+    "blackbody",
+    "mouse-driven",
+    "physics",
+    "spectral",
+    "HDR"
+  ],
+  "features": [
+    "blackbody-radiation",
+    "mouse-heat-source",
+    "physical-color",
+    "HDR"
+  ],
+  "params": [
+    {
+      "id": "heat_intensity",
+      "name": "Heat Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "radius",
+      "name": "Heat Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "ambient",
+      "name": "Ambient Temperature",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "blend",
+      "name": "Original Blend",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

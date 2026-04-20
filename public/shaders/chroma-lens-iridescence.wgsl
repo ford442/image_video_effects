@@ -1,0 +1,136 @@
+// ═══════════════════════════════════════════════════════════════════
+//  chroma-lens-iridescence
+//  Category: advanced-hybrid
+//  Features: chroma-lens, thin-film-interference, depth-aware, mouse-driven
+//  Complexity: High
+//  Chunks From: chroma-lens, spec-iridescence-engine
+//  Created: 2026-04-18
+//  By: Agent CB-12 — Chroma & Spectral Enhancer
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic lens magnification fused with soap-bubble iridescence.
+//  The lens area shows true thin-film interference colors computed
+//  from depth-derived film thickness and viewing angle.
+// ═══════════════════════════════════════════════════════════════════
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
+
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 = p3 + dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
+    let t = clamp((lambda - 380.0) / (700.0 - 380.0), 0.0, 1.0);
+    let r = smoothstep(0.5, 0.85, t) + smoothstep(0.0, 0.2, t) * 0.2;
+    let g = 1.0 - abs(t - 0.45) * 2.5;
+    let b = 1.0 - smoothstep(0.0, 0.45, t);
+    return max(vec3<f32>(r, g, b), vec3<f32>(0.0));
+}
+
+fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
+    let sinTheta_t = sqrt(max(1.0 - cosTheta * cosTheta, 0.0)) / filmIOR;
+    let cosTheta_t = sqrt(max(1.0 - sinTheta_t * sinTheta_t, 0.0));
+    let opd = 2.0 * filmIOR * thicknessNm * cosTheta_t;
+    var color = vec3<f32>(0.0);
+    var sampleCount = 0.0;
+    for (var lambda = 380.0; lambda <= 700.0; lambda = lambda + 20.0) {
+        let phase = opd / lambda;
+        let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
+        color += wavelengthToRGB(lambda) * interference;
+        sampleCount = sampleCount + 1.0;
+    }
+    return color / max(sampleCount, 1.0);
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let res = u.config.zw;
+    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
+
+    let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+    let time = u.config.x;
+
+    let mag = u.zoom_params.x;
+    let aberration = u.zoom_params.y;
+    let radius = u.zoom_params.z;
+    let blurEdges = u.zoom_params.w;
+
+    let filmThicknessBase = mix(200.0, 800.0, u.zoom_params.x);
+    let filmIOR = mix(1.2, 2.4, u.zoom_params.y);
+    let intensity = mix(0.3, 1.5, u.zoom_params.z);
+    let turbulence = mix(0.0, 1.0, u.zoom_params.w);
+
+    var mouse = u.zoom_config.yz;
+    let aspect = res.x / res.y;
+    let aspectVec = vec2<f32>(aspect, 1.0);
+
+    let dVec = (uv - mouse) * aspectVec;
+    let dist = length(dVec);
+
+    var finalUV_R = uv;
+    var finalUV_G = uv;
+    var finalUV_B = uv;
+
+    // Lens effect
+    if (dist < radius) {
+        let ndist = dist / radius;
+        let lensCurve = 1.0 - (1.0 - ndist * ndist) * mag;
+        let abbStrength = aberration * 0.05 * ndist;
+        let factorR = lensCurve - abbStrength;
+        let factorG = lensCurve;
+        let factorB = lensCurve + abbStrength;
+        finalUV_R = mouse + (uv - mouse) * factorR;
+        finalUV_G = mouse + (uv - mouse) * factorG;
+        finalUV_B = mouse + (uv - mouse) * factorB;
+    }
+
+    let r = textureSampleLevel(readTexture, u_sampler, finalUV_R, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, finalUV_G, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, finalUV_B, 0.0).b;
+    var color = vec4<f32>(r, g, b, 1.0);
+
+    // Iridescence overlay inside lens radius
+    if (dist < radius) {
+        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        let toCenter = uv - vec2<f32>(0.5);
+        let dlen = length(toCenter);
+        let cosTheta = sqrt(max(1.0 - dlen * dlen * 0.5, 0.01));
+        let noiseVal = hash12(uv * 12.0 + time * 0.1) * 0.5
+                     + hash12(uv * 25.0 - time * 0.15) * 0.25;
+        var thickness = filmThicknessBase * (0.7 + depth * 0.6 + noiseVal * turbulence);
+        let iridescent = thinFilmColor(thickness, cosTheta, filmIOR) * intensity;
+        let fresnel = pow(1.0 - cosTheta, 3.0);
+        let lensColor = mix(color.rgb, iridescent, fresnel * 0.7 * (1.0 - ndist));
+        color = vec4<f32>(lensColor, 1.0);
+    }
+
+    if (dist < radius && dist > radius * 0.95) {
+        let rim = smoothstep(radius * 0.95, radius, dist);
+        color = mix(color, vec4<f32>(1.0), rim * 0.3 * blurEdges);
+    }
+
+    textureStore(writeTexture, gid.xy, color);
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+}

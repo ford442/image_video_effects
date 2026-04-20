@@ -41,7 +41,8 @@
   "features": [
     "mouse-driven",
     "alpha-transmission",
-    "physical-refraction"
+    "physical-refraction",
+    "advanced-alpha"
   ],
   "tags": [
     "crystal",
@@ -49,6 +50,8 @@
     "transmission",
     "fresnel",
     "dispersion",
-    "physical"
+    "physical",
+    "alpha",
+    "physical-transmittance"
   ]
 }

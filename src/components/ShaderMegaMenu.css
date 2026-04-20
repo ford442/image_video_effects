@@ -211,3 +211,12 @@
 .smm-item.selected .smm-item-coord {
   color: rgba(97, 218, 251, 0.5);
 }
+
+.smm-item .star-rating {
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.smm-item .star-rating .rating-text {
+  display: none; /* hide text count in compact menu items */
+}

@@ -4,7 +4,7 @@
   "url": "shaders/hybrid-voronoi-glass.wgsl",
   "category": "distortion",
   "description": "Voronoi diagram rendered as glass blocks with chromatic dispersion and physically-inspired refraction",
-  "features": ["hybrid", "voronoi", "glass-refraction", "chromatic-dispersion", "fresnel", "randomization-safe"],
+  "features": ["mouse-driven", "hybrid", "voronoi", "glass-refraction", "chromatic-dispersion", "fresnel", "randomization-safe"],
   "params": [
     {
       "id": "cell_density",
@@ -47,6 +47,7 @@
       "description": "Virtual thickness of glass blocks"
     }
   ],
+  "tags": ["interactive", "cursor"],
   "chunks_used": [
     "hash22 (voronoi-glass.wgsl)",
     "fresnelSchlick (crystal-facets.wgsl)",

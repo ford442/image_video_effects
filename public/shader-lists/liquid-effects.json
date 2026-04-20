@@ -227,20 +227,136 @@
     ]
   },
   {
+    "id": "liquid-optimized-pass1",
+    "name": "Liquid Optimized (Pass 1)",
+    "url": "shaders/liquid-optimized-pass1.wgsl",
+    "category": "liquid-effects",
+    "description": "Physics simulation pass: capillary wave dynamics, Laplace pressure, ripple propagation, and ambient micro-ripples. Outputs height field state to dataTextureA.",
+    "tags": [
+      "liquid",
+      "surface-tension",
+      "capillary-waves",
+      "multi-pass",
+      "physics"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "liquid-optimized-pass2"
+    },
+    "params": [
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-optimized-pass2",
+    "name": "Liquid Optimized (Pass 2)",
+    "url": "shaders/liquid-optimized-pass2.wgsl",
+    "category": "liquid-effects",
+    "description": "Fluid rendering pass: Fresnel reflection, Beer-Lambert absorption, specular highlights, and alpha blending. Reads physics state from dataTextureC.",
+    "tags": [
+      "liquid",
+      "fresnel",
+      "beer-lambert",
+      "multi-pass",
+      "rendering"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "liquid-optimized",
     "name": "Liquid Surface Tension (Optimized)",
     "url": "shaders/liquid-optimized.wgsl",
     "category": "liquid-effects",
-    "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement.",
+    "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
     "tags": [
       "liquid",
       "surface-tension",
       "capillary-waves",
       "optimized",
-      "shared-memory"
+      "shared-memory",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {

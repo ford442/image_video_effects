@@ -130,8 +130,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let freqInfluence = u.zoom_params.z;                      // z: Frequency influence
     let smoothing = mix(0.0, 0.9, u.zoom_params.w);          // w: Temporal smoothing
     
+    // Mouse interaction
+    let mousePos = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w > 0.5;
+    let distToMouse = length(uv - mousePos);
+    let mouseGravity = 1.0 - smoothstep(0.0, 0.35, distToMouse);
+    let clickPulse = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 25.0 - time * 5.0) * exp(-distToMouse * 3.0);
+    
     // Calculate optical flow
-    let flow = calculateOpticalFlow(uv, pixel) * flowSensitivity;
+    let mouseDir = normalize(uv - mousePos + 0.001);
+    let cursorFlow = mouseDir * mouseGravity * 3.0 * (1.0 + select(0.0, 3.0, isMouseDown));
+    let flow = calculateOpticalFlow(uv, pixel) * flowSensitivity + cursorFlow + clickPulse;
     let flowMag = length(flow);
     let flowDir = select(vec2<f32>(0.0), normalize(flow), flowMag > 0.001);
     
@@ -168,7 +177,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, id, vec4<f32>(baseColor, 1.0));
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.8, 1.0, flowMag * 0.5);
+    let alpha = mix(0.8, 1.0, flowMag * 0.5) + mouseGravity * 0.2;
     
     textureStore(writeTexture, id, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, id, vec4<f32>(depth, 0.0, 0.0, 0.0));

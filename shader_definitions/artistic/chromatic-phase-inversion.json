@@ -3,9 +3,9 @@
   "name": "Chromatic Phase Inversion",
   "url": "shaders/chromatic-phase-inversion.wgsl",
   "category": "artistic",
-  "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves.",
-  "tags": ["chromatic", "phase", "inversion", "ghost", "temporal", "color", "surreal"],
-  "features": ["mouse-driven"],
+  "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves. Audio reactivity pulses phase speed and ghost offset with the beat.",
+  "tags": ["chromatic", "phase", "inversion", "ghost", "temporal", "color", "surreal", "audio", "music"],
+  "features": ["mouse-driven", "audio-reactive"],
   "author": "AI",
   "params": [
     {

@@ -1,12 +1,15 @@
 import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom';
 import './ShaderMegaMenu.css';
+import { ShaderStarRating } from './ShaderStarRating';
 
 export interface ShaderMegaMenuOption {
   id: string;
   name: string;
   coordinate: number | null;
   category: string;
+  stars?: number;
+  ratingCount?: number;
 }
 
 export interface ShaderMegaMenuProps {
@@ -287,6 +290,16 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
                 {opt.coordinate !== null && (
                   <span className="smm-item-coord">#{opt.coordinate}</span>
                 )}
+                {(opt.stars !== undefined && opt.stars > 0) && (
+                  <ShaderStarRating
+                    shaderId={opt.id}
+                    stars={opt.stars}
+                    ratingCount={opt.ratingCount || 0}
+                    onRate={async () => {}}
+                    size="small"
+                    readonly
+                  />
+                )}
               </div>
             ))
           )}
@@ -311,6 +324,16 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
                   <span className="smm-item-name">{opt.name}</span>
                   {opt.coordinate !== null && (
                     <span className="smm-item-coord">#{opt.coordinate}</span>
+                  )}
+                  {(opt.stars !== undefined && opt.stars > 0) && (
+                    <ShaderStarRating
+                      shaderId={opt.id}
+                      stars={opt.stars}
+                      ratingCount={opt.ratingCount || 0}
+                      onRate={async () => {}}
+                      size="small"
+                      readonly
+                    />
                   )}
                 </div>
               ))}

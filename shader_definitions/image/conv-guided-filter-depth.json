@@ -1,0 +1,60 @@
+{
+  "id": "conv-guided-filter-depth",
+  "name": "Guided Filter Depth",
+  "description": "Guided filter using depth texture as guide for edge-aware filtering. Creates depth-of-field blur that perfectly respects object boundaries. Alpha stores filtering confidence coefficient. Mouse creates localized focus aperture.",
+  "url": "shaders/conv-guided-filter-depth.wgsl",
+  "category": "image",
+  "features": [
+    "advanced-convolution",
+    "rgba32float-exploiting",
+    "depth-aware",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "radius",
+      "name": "Filter Radius",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "epsilon",
+      "name": "Edge Sensitivity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "depth_influence",
+      "name": "Depth Influence",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouse_influence",
+      "name": "Mouse Focus",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "guided-filter",
+    "convolution",
+    "depth-aware",
+    "edge-preserving",
+    "depth-of-field",
+    "filter",
+    "image-processing"
+  ]
+}

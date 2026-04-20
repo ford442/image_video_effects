@@ -1,0 +1,56 @@
+{
+  "id": "glass-wipes-coupled",
+  "name": "Glass Wipes Coupled",
+  "url": "shaders/glass-wipes-coupled.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Rain on glass combined with viscous fluid coupling physics. Rain drops feed a fluid simulation that creates realistic water streaks, while the mouse wiper clears fluid with vortex dynamics.",
+  "tags": [
+    "glass",
+    "rain",
+    "fluid",
+    "simulation",
+    "water",
+    "temporal",
+    "mouse-driven"
+  ],
+  "features": [
+    "mouse-driven",
+    "fluid-simulation",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "rain_intensity",
+      "name": "Rain Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "viscosity",
+      "name": "Fluid Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "wiper_size",
+      "name": "Wiper Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "vortex_strength",
+      "name": "Vortex Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

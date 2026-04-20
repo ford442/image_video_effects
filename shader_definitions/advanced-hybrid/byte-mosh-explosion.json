@@ -1,0 +1,72 @@
+{
+  "id": "byte-mosh-explosion",
+  "name": "Byte Mosh Explosion",
+  "url": "shaders/byte-mosh-explosion.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Bitwise pixel corruption meets chromatic prism explosion. XOR, AND, shift and rotate operations are applied to spectrally displaced channels radiating from mouse and ripple shockwaves.",
+  "features": [
+    "advanced-hybrid",
+    "bitwise-glitch",
+    "chromatic-explosion",
+    "mouse-driven",
+    "ripple",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "operation_mix",
+      "name": "Operation Mix",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Bitwise operation variety"
+    },
+    {
+      "id": "bit_shift",
+      "name": "Bit Shift",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Bit shift amount"
+    },
+    {
+      "id": "error_rate",
+      "name": "Error Rate",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Glitch probability"
+    },
+    {
+      "id": "prism_strength",
+      "name": "Prism Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Chromatic dispersion strength"
+    }
+  ],
+  "chunks_used": [
+    "Bitwise pack/unpack, XOR/AND/shift/rotate (byte-mosh.wgsl)",
+    "Prism displacement, ripple shockwaves (mouse-chromatic-explosion.wgsl)"
+  ],
+  "performance_target": "45 FPS (GTX 1060)",
+  "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
+  "created_date": "2026-04-18",
+  "tags": [
+    "glitch",
+    "bitwise",
+    "chromatic",
+    "prism",
+    "explosion",
+    "corruption"
+  ]
+}

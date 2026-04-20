@@ -58,6 +58,299 @@
     "target_rating": 4.6
   },
   {
+    "id": "alpha-depth-fog-volumetric",
+    "name": "Alpha Depth Fog Volumetric",
+    "url": "shaders/alpha-depth-fog-volumetric.wgsl",
+    "category": "visual-effects",
+    "description": "Physically-motivated volumetric fog using depth texture. Alpha stores optical depth / transmittance via Beer-Lambert law. Fog density varies with 3D noise, depth, and height. Mouse clears local fog; ripples create swirling disturbances.",
+    "tags": [
+      "volumetric",
+      "fog",
+      "depth-aware",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "atmospheric"
+    ],
+    "features": [
+      "mouse-driven",
+      "depth-aware",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "fogDensity",
+        "name": "Fog Density",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fogHeight",
+        "name": "Fog Height",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorTemp",
+        "name": "Color Temperature",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-hdr-bloom-chain",
+    "name": "Alpha HDR Bloom Chain",
+    "url": "shaders/alpha-hdr-bloom-chain.wgsl",
+    "category": "visual-effects",
+    "description": "HDR bloom effect where alpha stores exposure/overexposure value. Identifies pixels above white point, radially blurs the excess brightness, and composites with ACES tone mapping. Mouse and ripples trigger localized flashes.",
+    "tags": [
+      "hdr",
+      "bloom",
+      "tone-mapping",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "glow"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "bloomRadius",
+        "name": "Bloom Radius",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloomIntensity",
+        "name": "Bloom Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "exposure",
+        "name": "Exposure",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-luminance-history",
+    "name": "Alpha Luminance History",
+    "url": "shaders/alpha-luminance-history.wgsl",
+    "category": "visual-effects",
+    "description": "Temporal luminance history with rolling average stored in alpha. Areas that were recently bright retain a warm glow. Creates light-painting and after-image effects. Mouse leaves persistent bright trails.",
+    "tags": [
+      "temporal",
+      "history",
+      "luminance",
+      "glow",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "light-painting"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "decay",
+        "name": "Memory Decay",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorShift",
+        "name": "History Tint",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion",
+        "name": "Trail Diffusion",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-multi-layer-glass",
+    "name": "Alpha Multi-Layer Glass",
+    "url": "shaders/alpha-multi-layer-glass.wgsl",
+    "category": "visual-effects",
+    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
+    "tags": [
+      "glass",
+      "refraction",
+      "chromatic",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "fresnel"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "ior",
+        "name": "Index of Refraction",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "thickness",
+        "name": "Glass Thickness",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic",
+        "name": "Chromatic Aberration",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "roughness",
+        "name": "Surface Roughness",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-spectral-decompose",
+    "name": "Alpha Spectral Decompose",
+    "url": "shaders/alpha-spectral-decompose.wgsl",
+    "category": "visual-effects",
+    "description": "Decomposes the image into 4 spectral frequency bands stored in RGBA. Low freq (R), mid-low (G), mid-high (B), high freq/detail (A). Recomposes with user-controlled per-band gain for frequency-equalizer style image manipulation.",
+    "tags": [
+      "spectral",
+      "frequency",
+      "decomposition",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "filter"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "gainLow",
+        "name": "Low Freq Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gainMidLow",
+        "name": "Mid-Low Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gainMidHigh",
+        "name": "Mid-High Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gainHigh",
+        "name": "High Freq Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "chroma-vortex",
     "url": "shaders/chroma-vortex.wgsl",
     "category": "visual-effects",
@@ -153,6 +446,60 @@
       "vfx",
       "particles",
       "glow"
+    ]
+  },
+  {
+    "id": "cross-spec-alpha-spectral-bloom",
+    "name": "Spectral Bloom HDR",
+    "url": "shaders/cross-spec-alpha-spectral-bloom.wgsl",
+    "category": "visual-effects",
+    "description": "Crossover shader combining spectral dispersion with HDR bloom using RGBA as independent spectral bands. Decomposes the image into wavelength channels and applies per-band bloom with exposure control in alpha.",
+    "tags": [
+      "crossover",
+      "spectral",
+      "bloom",
+      "hdr",
+      "rgba-as-data",
+      "chromatic"
+    ],
+    "features": [
+      "crossover",
+      "spectral-rendering",
+      "rgba32float-exploiting"
+    ],
+    "params": [
+      {
+        "id": "bloomRadius",
+        "name": "Bloom Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "exposure",
+        "name": "Exposure",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromaticShift",
+        "name": "Chromatic Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -548,7 +895,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "advanced-alpha"
     ],
     "description": "Detects edges and highlights them with pulsing neon colors. Mouse proximity increases intensity.",
     "params": [
@@ -587,7 +935,9 @@
       "glow",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "alpha",
+      "edge-preserve"
     ]
   },
   {

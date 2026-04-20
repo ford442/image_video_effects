@@ -1,0 +1,74 @@
+{
+  "id": "glass-refraction-prismatic",
+  "name": "Glass Refraction Prismatic",
+  "url": "shaders/glass-refraction-prismatic.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Raymarched glass blobs with 4-band spectral dispersion using Cauchy's equation and CIE color matching. Each wavelength refracts at a different angle through animated SDF glass surfaces.",
+  "features": [
+    "advanced-hybrid",
+    "raymarched",
+    "spectral-dispersion",
+    "physical-refraction",
+    "mouse-driven",
+    "depth-aware",
+    "randomization-safe"
+  ],
+  "params": [
+    {
+      "id": "transparency",
+      "name": "Transparency",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Glass transparency / thickness"
+    },
+    {
+      "id": "dispersion",
+      "name": "Cauchy B Coefficient",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Spectral dispersion strength via Cauchy's B parameter"
+    },
+    {
+      "id": "thickness",
+      "name": "Thickness Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Absorption thickness scale"
+    },
+    {
+      "id": "roughness",
+      "name": "Surface Roughness",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Surface roughness affecting specular highlights"
+    }
+  ],
+  "chunks_used": [
+    "sdSphere, smoothUnion, map, calcNormal (glass_refraction_alpha.wgsl)",
+    "fresnel, refractRay (glass_refraction_alpha.wgsl)",
+    "cauchyIOR, wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
+  ],
+  "performance_target": "60 FPS (GTX 1060)",
+  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
+  "created_date": "2026-04-18",
+  "tags": [
+    "glass",
+    "refraction",
+    "spectral",
+    "prismatic",
+    "physical",
+    "chromatic"
+  ]
+}

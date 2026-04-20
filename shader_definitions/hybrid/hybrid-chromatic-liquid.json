@@ -3,8 +3,8 @@
   "name": "Hybrid Chromatic Liquid",
   "url": "shaders/hybrid-chromatic-liquid.wgsl",
   "category": "distortion",
-  "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field",
-  "features": ["hybrid", "liquid-distortion", "chromatic-aberration", "flow-field", "fresnel", "randomization-safe"],
+  "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field. Audio reactivity pulses dot size and ink density with the music.",
+  "features": ["mouse-driven", "hybrid", "liquid-distortion", "chromatic-aberration", "flow-field", "fresnel", "randomization-safe", "audio-reactive"],
   "params": [
     {
       "id": "flow_scale",
@@ -47,6 +47,7 @@
       "description": "Animation speed of flow field"
     }
   ],
+  "tags": ["interactive", "cursor", "audio", "music"],
   "chunks_used": [
     "fbm2 (gen_grid.wgsl)",
     "fresnelSchlick (crystal-facets.wgsl)",

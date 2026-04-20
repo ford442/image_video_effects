@@ -1,0 +1,15 @@
+{
+  "id": "chromatic-reaction-diffusion-rgba",
+  "name": "Chromatic Reaction Diffusion RGBA",
+  "url": "shaders/chromatic-reaction-diffusion-rgba.wgsl",
+  "category": "simulation",
+  "description": "Four-species reaction-diffusion with chromatic cross-coupling. Activators A/C and inhibitors B/D form warm/cool tone pairs that suppress each other at boundaries, creating iridescent fringe patterns. RGBA packs full simulation state.",
+  "tags": ["reaction-diffusion", "simulation", "interactive", "mouse-driven", "pattern", "rgba-state-machine", "chromatic", "colorful"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "feed", "name": "Feed Rate", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "kill", "name": "Kill Rate", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "chromaticSep", "name": "Chromatic Separation", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "crossCouple", "name": "Cross Coupling", "type": "float", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

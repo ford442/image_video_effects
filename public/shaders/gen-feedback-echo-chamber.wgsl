@@ -45,9 +45,27 @@ fn accumulativeAlpha(
     return vec4<f32>(color, totalAlpha);
 }
 
-// Mode 5: Effect Intensity Alpha
-fn effectIntensityAlpha(intensity: f32, falloff: f32) -> f32 {
-    return mix(0.4, 1.0, intensity * falloff);
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, brightness: f32, intensity: f32, accumulationRate: f32) -> f32 {
+    // Tunable parameters from zoom_params
+    let echoCount = u.zoom_params.x;      // Echo Count
+    let decayRate = u.zoom_params.y;      // Decay Rate
+    let spacing = u.zoom_params.z;        // Echo Spacing
+    let colorShift = u.zoom_params.w;     // Color Shift
+    
+    // Effect intensity alpha: brighter = more opaque
+    let intensityAlpha = mix(0.3, 1.0, brightness * intensity);
+    
+    // Accumulation-driven alpha: more echoes = stronger alpha buildup
+    let accumBoost = echoCount * 0.3 + decayRate * 0.4;
+    
+    // Temporal persistence: spacing affects how quickly alpha decays
+    let persistence = 1.0 - spacing * 0.3;
+    
+    // Combine: base intensity + accumulation boost, modulated by persistence
+    let alpha = intensityAlpha * (1.0 + accumBoost) * persistence;
+    
+    return clamp(alpha, 0.1, 1.0);
 }
 
 // Noise
@@ -55,7 +73,7 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
     let uv = vec2<f32>(global_id.xy) / u.config.zw;
@@ -103,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // ═══ ADVANCED ALPHA CALCULATION ═══
     let brightness = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let newAlpha = effectIntensityAlpha(brightness, intensity);
+    let newAlpha = calculateAdvancedAlpha(finalColor, brightness, intensity, accumulationRate);
     
     let accumulated = accumulativeAlpha(
         finalColor,

@@ -167,6 +167,65 @@
     "target_rating": 4.6
   },
   {
+    "id": "alpha-aurora-bands",
+    "name": "Alpha Aurora Bands",
+    "url": "shaders/alpha-aurora-bands.wgsl",
+    "category": "lighting-effects",
+    "description": "Physically-motivated aurora borealis simulation with emission-line spectral decomposition. RGB stores oxygen green, oxygen red, and nitrogen blue emission intensities. Alpha tracks altitude layer index. Mouse controls solar wind direction; ripples trigger magnetic reconnection substorms.",
+    "tags": [
+      "aurora",
+      "borealis",
+      "lighting",
+      "spectral",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "atmospheric"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Aurora Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "curtainFreq",
+        "name": "Curtain Frequency",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Wind Speed",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
     "url": "shaders/aurora-rift-2-pass1.wgsl",
@@ -397,6 +456,81 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "sim-volumetric-fake-em",
+    "name": "Volumetric Fake + EM Field",
+    "url": "shaders/sim-volumetric-fake-em.wgsl",
+    "category": "lighting-effects",
+    "description": "God rays with mouse electromagnetic field distortion. Electric field bends light rays; magnetic field causes chromatic RGB separation. Click ripples spawn secondary light charges.",
+    "features": [
+      "simulation",
+      "fake-volumetrics",
+      "mouse-driven",
+      "electromagnetic",
+      "interactive",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "light_intensity",
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Light source intensity and EM charge strength"
+      },
+      {
+        "id": "em_distortion",
+        "name": "EM Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Electric field ray bending and dust density"
+      },
+      {
+        "id": "chromatic_split",
+        "name": "Chromatic Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Magnetic field RGB separation and scattering"
+      },
+      {
+        "id": "ripple_charge",
+        "name": "Ripple Charge",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Secondary charge strength from clicks and noise speed"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "volumetric",
+      "god-rays",
+      "electromagnetic"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "noise",
+      "Radial blur",
+      "electricField (mouse-electromagnetic-aurora.wgsl)",
+      "magneticField (mouse-electromagnetic-aurora.wgsl)"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
   },
   {
     "id": "underwater_caustics",

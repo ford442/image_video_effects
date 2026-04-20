@@ -20,6 +20,22 @@ Phase A and Phase B built out a strong foundation of reaction-diffusion, Lagrang
 - **Diffusion-Limited Aggregation** — missing from the generative catalog.
 
 All new shaders follow the existing **immutable 13-binding contract** (see `swarm-technical-reference.md`), reuse `u.zoom_config.yz` for mouse, and lean into `rgba32float` packing strategies documented in each agent file.
+# Phase C: Advanced Compute Shader Artistry — Swarm Launch
+
+**Phase Timeline:** Weeks 9-14  
+**Total New Shaders:** ~60 (15 convolution + 15 mouse-interactive + 15 spectral/computation + 15 alpha artistry)  
+**Goal:** Push WebGPU compute to its visual and computational limits with novel techniques not yet in the library
+
+---
+
+## Vision
+
+Phase C is about **techniques that don't exist yet** in the Pixelocity library. Where Phases A and B upgraded existing shaders and created hybrids from known patterns, Phase C introduces:
+
+- **Convolution methods never before implemented** (bilateral, morphological, Gabor, non-local means, guided filtering)
+- **Mouse-responsive shaders with physically-inspired interaction models** (fluid coupling, electromagnetic fields, gravity lensing, quantum tunneling)
+- **Novel WGSL computation patterns** (subgroup operations, cooperative matrix math, stochastic sampling, spectral rendering)
+- **RGBA32FLOAT as a creative medium** — not just "add alpha" but use the full 128-bit-per-pixel pipeline as 4 independent high-dynamic-range data channels for effects impossible in 8-bit pipelines
 
 ---
 

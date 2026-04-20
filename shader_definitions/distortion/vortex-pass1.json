@@ -1,0 +1,16 @@
+{
+  "id": "vortex-pass1",
+  "name": "Clean Vortex (Pass 1)",
+  "url": "shaders/vortex-pass1.wgsl",
+  "category": "distortion",
+  "description": "Vortex dynamics pass: four animated vortex centers, Biot-Savart velocity field, vorticity confinement, and turbulent FBM noise. Outputs velocity and vorticity field to dataTextureA.",
+  "tags": ["vortex", "fluid-dynamics", "vorticity", "multi-pass", "audio-reactive"],
+  "features": ["multi-pass-1", "mouse-driven", "audio-reactive"],
+  "multipass": { "pass": 1, "totalPasses": 2, "nextShader": "vortex-pass2" },
+  "params": [
+    { "id": "param1", "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param2", "name": "Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param3", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param4", "name": "Detail", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "alpha-fire-temperature",
+  "name": "Alpha Fire Temperature",
+  "url": "shaders/alpha-fire-temperature.wgsl",
+  "category": "simulation",
+  "description": "Fire simulation with RGBA-packed state: fuel, temperature, smoke density, and combustion age. Temperature drives blackbody radiation color. Fuel burns, generates smoke, and heat rises via convection. Mouse injects fuel; ripples create sparks.",
+  "tags": ["fire", "simulation", "interactive", "mouse-driven", "temporal", "rgba-state-machine", "blackbody", "smoke"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "burnRate", "name": "Burn Rate", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "convection", "name": "Convection", "type": "float", "default": 0.6, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "smokeDensity", "name": "Smoke Density", "type": "float", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "emberGlow", "name": "Ember Glow", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

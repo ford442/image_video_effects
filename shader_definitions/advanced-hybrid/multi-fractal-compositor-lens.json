@@ -1,0 +1,81 @@
+{
+  "id": "multi-fractal-compositor-lens",
+  "name": "Multi-Fractal Compositor + Gravitational Lens",
+  "url": "shaders/multi-fractal-compositor-lens.wgsl",
+  "category": "generative",
+  "description": "Multi-layer fractal compositor with mouse-controlled gravitational lensing. Mouse mass bends UV coordinates; ripples create temporary mass concentrations with Einstein ring glow.",
+  "features": [
+    "advanced-hybrid",
+    "mandelbrot",
+    "julia",
+    "mouse-driven",
+    "gravitational-lens",
+    "interactive",
+    "randomization-safe",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "lens_mass",
+      "name": "Lens Mass",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Mouse gravitational mass and zoom level"
+    },
+    {
+      "id": "ring_glow",
+      "name": "Ring Glow",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Einstein ring glow strength and iteration count"
+    },
+    {
+      "id": "ripple_mass",
+      "name": "Ripple Mass",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Temporary mass from clicks and domain warp"
+    },
+    {
+      "id": "chroma_boost",
+      "name": "Chroma Boost",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Lens-driven chromatic aberration and fractal blend"
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "physics",
+    "gravitational",
+    "lens",
+    "fractal",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "palette (gen-xeno-botanical-synth-flora.wgsl)",
+    "ping_pong wrapping",
+    "Depth compositing",
+    "gravitationalBend (gravitational-lensing.wgsl)"
+  ],
+  "performance_target": "40-55 FPS (GTX 1060)",
+  "created_by": "Agent CB-4 - Mouse Physics Injector",
+  "created_date": "2026-04-18"
+}

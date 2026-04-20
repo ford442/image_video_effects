@@ -1,0 +1,56 @@
+{
+  "id": "spec-hypercube-projection",
+  "name": "Hypercube Projection",
+  "url": "shaders/spec-hypercube-projection.wgsl",
+  "category": "geometric",
+  "description": "Animated 4D tesseract projected into 2D using double rotation in XW and YZ planes. 32 edges are rendered with depth-based glow and input image texture-mapped onto faces.",
+  "tags": [
+    "hypercube",
+    "tesseract",
+    "4D",
+    "projection",
+    "geometric",
+    "rotation"
+  ],
+  "features": [
+    "4D",
+    "hypercube",
+    "mouse-driven",
+    "geometric"
+  ],
+  "params": [
+    {
+      "id": "rot_xw",
+      "name": "XW Rotation",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "rot_yz",
+      "name": "YZ Rotation",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "edge_glow",
+      "name": "Edge Glow",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "face_opacity",
+      "name": "Face Opacity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

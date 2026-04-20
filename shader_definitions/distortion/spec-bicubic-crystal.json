@@ -1,0 +1,56 @@
+{
+  "id": "spec-bicubic-crystal",
+  "name": "Bicubic Crystal",
+  "url": "shaders/spec-bicubic-crystal.wgsl",
+  "category": "distortion",
+  "description": "Bicubic Catmull-Rom crystalline distortion. Full 16-sample bicubic interpolation for perfectly smooth magnification, applied to prismatic crystalline faceting with chromatic separation.",
+  "tags": [
+    "bicubic",
+    "catmull-rom",
+    "crystalline",
+    "distortion",
+    "prismatic",
+    "high-order-sampling"
+  ],
+  "features": [
+    "bicubic",
+    "catmull-rom",
+    "crystalline",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "crystal_scale",
+      "name": "Crystal Scale",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "facet_sharp",
+      "name": "Facet Sharpness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic Sep",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

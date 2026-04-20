@@ -1,0 +1,55 @@
+{
+  "id": "spec-spherical-harmonics-light",
+  "name": "Spherical Harmonics Light",
+  "url": "shaders/spec-spherical-harmonics-light.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Spherical harmonics lighting derived from image content. Computes SH coefficients from local image samples and applies them to depth-derived normals for realistic ambient lighting.",
+  "tags": [
+    "spherical-harmonics",
+    "SH-lighting",
+    "normal-mapping",
+    "depth-aware",
+    "ambient-lighting"
+  ],
+  "features": [
+    "spherical-harmonics",
+    "SH-lighting",
+    "depth-aware",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "sh_strength",
+      "name": "SH Strength",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "normal_scale",
+      "name": "Normal Scale",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "specular",
+      "name": "Specular Power",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "ambient",
+      "name": "Ambient Boost",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.7
+}

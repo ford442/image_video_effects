@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  Chromatic Phase Inversion
-//  Category: EFFECT
+//  Chromatic Phase Inversion + Audio Reactive
+//  Category: artistic
 //  Complexity: HIGH
 //  Visual concept: Individual color channels are inverted by a slowly evolving
 //    temporal phase, causing color to appear spatially offset from reality —
@@ -9,6 +9,8 @@
 //    sinusoidal phase function with distinct frequencies; spatial offset
 //    is computed from phase-gradient to keep coherence; depth controls
 //    how much phase each region accumulates over time.
+//  Audio reactivity: Phase speed and ghost offset pulse with the beat;
+//    hue shifts respond to overall audio energy.
 // ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,9 +27,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
-    zoom_params: vec4<f32>, // x=PhaseSpeed, y=GhostOffset, z=InversionDepth, w=SpatialCoherence
+    config:      vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -58,8 +60,7 @@ fn snoise(p: vec2<f32>) -> f32 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Phase function: returns inversion weight ∈ [0,1] for a channel
-//  phaseFreq: unique per channel; depthPhase: depth-accumulated extra phase
+//  Phase function
 // ─────────────────────────────────────────────────────────────────────────────
 fn invPhase(t: f32, freq: f32, depthPhase: f32, spatialPhase: f32) -> f32 {
     return sin(t * freq + depthPhase + spatialPhase) * 0.5 + 0.5;
@@ -106,7 +107,7 @@ fn lensDistort(uv: vec2<f32>, k1: f32) -> vec2<f32> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Temporal echo: blend current + previous phase positions
+//  Temporal echo
 // ─────────────────────────────────────────────────────────────────────────────
 fn temporalEcho(uv: vec2<f32>, off: vec2<f32>, t: f32, echoDelay: f32) -> vec2<f32> {
     let prevOff = off * cos(t * 0.5 - echoDelay);
@@ -129,7 +130,7 @@ fn scanlineOverlay(uv: vec2<f32>, resY: f32, strength: f32) -> f32 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Hue shift (rotate hue in HSV space)
+//  Hue shift
 // ─────────────────────────────────────────────────────────────────────────────
 fn hueShift(c: vec3<f32>, shift: f32) -> vec3<f32> {
     let hsv = rgb2hsv(c);
@@ -150,23 +151,28 @@ fn hueShift(c: vec3<f32>, shift: f32) -> vec3<f32> {
 // ─────────────────────────────────────────────────────────────────────────────
 //  Main
 // ─────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res    = u.config.zw;
     let uv     = vec2<f32>(gid.xy) / res;
     let t      = u.config.x;
 
-    // Parameters
-    let phaseSpeed  = u.zoom_params.x * 1.5 + 0.2;     // 0.2 – 1.7
-    let ghostOff    = u.zoom_params.y * 0.025;           // 0 – 0.025 UV units
-    let invDepth    = u.zoom_params.z * 6.28318;         // phase scale from depth (0 – 2π)
-    let coherence   = u.zoom_params.w * 0.8 + 0.1;      // 0.1 – 0.9 spatial mix
+    // ═══ AUDIO INPUT ═══
+    let audioOverall = u.config.y;
+    let audioBass = audioOverall * 1.2;
+    let audioPulse = 1.0 + audioBass * 0.4;
+
+    // Parameters - audio modulated
+    let phaseSpeed  = (u.zoom_params.x * 1.5 + 0.2) * audioPulse;
+    let ghostOff    = (u.zoom_params.y * 0.025) * (1.0 + audioOverall * 0.3);
+    let invDepth    = u.zoom_params.z * 6.28318;
+    let coherence   = u.zoom_params.w * 0.8 + 0.1;
 
     // ── Depth at this pixel ───────────────────────────────────────────────
     let depth     = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthPhase = depth * invDepth;
 
-    // ── Spatial phase field (smooth noise) ───────────────────────────────
+    // ── Spatial phase field ───────────────────────────────────────────────
     let noiseScale = 2.5;
     let spatialPh  = snoise(uv * noiseScale + vec2<f32>(t * 0.05, t * 0.04)) * 2.0;
 
@@ -181,8 +187,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Per-channel spatial offsets (ghost displacement) ─────────────────
     let angleR = t * freqR * 0.4 + depthPhase;
-    let angleG = t * freqG * 0.4 + depthPhase + 2.094; // +120°
-    let angleB = t * freqB * 0.4 + depthPhase + 4.189; // +240°
+    let angleG = t * freqG * 0.4 + depthPhase + 2.094;
+    let angleB = t * freqB * 0.4 + depthPhase + 4.189;
 
     let offR = vec2<f32>(cos(angleR), sin(angleR)) * ghostOff * phR;
     let offG = vec2<f32>(cos(angleG), sin(angleG)) * ghostOff * phG;
@@ -200,21 +206,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sampG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0);
     let sampB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
 
-    // ── Phase inversion: lerp between original and (1-channel) ────────────
+    // ── Phase inversion ───────────────────────────────────────────────────
     let r = mix(sampR.r, 1.0 - sampR.r, phR * 0.7);
     let g = mix(sampG.g, 1.0 - sampG.g, phG * 0.5);
     let b = mix(sampB.b, 1.0 - sampB.b, phB * 0.9);
 
-    // ── HSV-space saturation boost to keep colors vivid ───────────────────
+    // ── HSV-space saturation boost ────────────────────────────────────────
     let hsv  = rgb2hsv(vec3<f32>(r, g, b));
     let satBoost = clamp(hsv.y * 1.3, 0.0, 1.0);
-    // Reconstruct boosted RGB (simple saturation path)
     let gray = (r + g + b) / 3.0;
     let finalR = clamp(mix(gray, r, satBoost / max(hsv.y, 0.001)), 0.0, 1.0);
     let finalG = clamp(mix(gray, g, satBoost / max(hsv.y, 0.001)), 0.0, 1.0);
     let finalB = clamp(mix(gray, b, satBoost / max(hsv.y, 0.001)), 0.0, 1.0);
 
-    // ── Lens distortion (channel-dependent barrel/pincushion) ─────────────
+    // ── Lens distortion ───────────────────────────────────────────────────
     let k1R = phR * 0.06 - 0.03;
     let k1B = phB * 0.06 - 0.03;
     let lensUVR = lensDistort(uvR, k1R);
@@ -233,9 +238,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Scanline overlay ──────────────────────────────────────────────────
     let scanline = scanlineOverlay(uv, res.y, 0.06);
 
-    // ── Hue-shifted ghost layer ────────────────────────────────────────────
+    // ── Hue-shifted ghost layer - audio reactive hue shift ─────────────────
     let baseColor = vec3<f32>(haloR, haloG, haloB);
-    let ghostHue  = hueShift(baseColor, phG * 0.25);
+    let ghostHue  = hueShift(baseColor, phG * 0.25 + audioOverall * 0.1);
     let ghostBlend = (phR + phB) * 0.12;
 
     // ── Temporal echo on R and B ───────────────────────────────────────────
@@ -246,9 +251,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let echoB   = textureSampleLevel(readTexture, u_sampler,
         clamp(echoUVB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-    let outR = clamp(mix(haloR, lensR, 0.3) + echoR * 0.08 + ghostBlend * ghostHue.r, 0.0, 1.0) * scanline;
-    let outG = clamp(haloG + ghostBlend * ghostHue.g, 0.0, 1.0) * scanline;
-    let outB = clamp(mix(haloB, lensB, 0.3) + echoB * 0.08 + ghostBlend * ghostHue.b, 0.0, 1.0) * scanline;
+    var outR = clamp(mix(haloR, lensR, 0.3) + echoR * 0.08 + ghostBlend * ghostHue.r, 0.0, 1.0) * scanline;
+    var outG = clamp(haloG + ghostBlend * ghostHue.g, 0.0, 1.0) * scanline;
+    var outB = clamp(mix(haloB, lensB, 0.3) + echoB * 0.08 + ghostBlend * ghostHue.b, 0.0, 1.0) * scanline;
+
+    // Beat flash on strong beats
+    let isBeat = step(0.7, audioBass);
+    outR += isBeat * 0.08;
+    outG += isBeat * 0.05;
+    outB += isBeat * 0.03;
 
     textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));

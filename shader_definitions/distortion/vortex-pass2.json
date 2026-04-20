@@ -1,0 +1,16 @@
+{
+  "id": "vortex-pass2",
+  "name": "Clean Vortex (Pass 2)",
+  "url": "shaders/vortex-pass2.wgsl",
+  "category": "distortion",
+  "description": "Distortion rendering pass: UV displacement by velocity field, swirling rotation, texture warping, vorticity-based color grading, velocity glow, and turbulent alpha compositing. Reads velocity field from dataTextureC.",
+  "tags": ["vortex", "distortion", "warp", "multi-pass", "audio-reactive"],
+  "features": ["multi-pass-2", "mouse-driven", "audio-reactive"],
+  "multipass": { "pass": 2, "totalPasses": 2 },
+  "params": [
+    { "id": "param1", "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param2", "name": "Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param3", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "param4", "name": "Detail", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ]
+}

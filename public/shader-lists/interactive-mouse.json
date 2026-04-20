@@ -233,6 +233,61 @@
     "name": "Codebreaker Reveal"
   },
   {
+    "id": "cross-mouse-spec-dispersion-lens",
+    "name": "Prismatic Lens",
+    "url": "shaders/cross-mouse-spec-dispersion-lens.wgsl",
+    "category": "interactive-mouse",
+    "description": "Crossover shader combining mouse-driven lens interaction with physical spectral dispersion. The cursor becomes a prismatic lens that refracts RGB channels differently using Cauchy's equation.",
+    "tags": [
+      "crossover",
+      "mouse-driven",
+      "prismatic",
+      "dispersion",
+      "lens",
+      "refraction",
+      "chromatic"
+    ],
+    "features": [
+      "crossover",
+      "mouse-driven",
+      "spectral-rendering"
+    ],
+    "params": [
+      {
+        "id": "lensRadius",
+        "name": "Lens Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dispersionScale",
+        "name": "Dispersion Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "lensStrength",
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "crystal-illuminator",
     "name": "Crystal Illuminator",
     "url": "shaders/crystal-illuminator.wgsl",
@@ -1166,6 +1221,725 @@
     "tags": [
       "mouse-driven",
       "interactive"
+    ]
+  },
+  {
+    "id": "mouse-chromatic-explosion",
+    "name": "Chromatic Explosion",
+    "url": "shaders/mouse-chromatic-explosion.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "description": "The mouse acts as a prism separating R, G, B channels by wavelength. Click ripples launch chromatic shockwaves. Creates rainbow halos and spectral fan-outs.",
+    "params": [
+      {
+        "id": "prismStrength",
+        "name": "Prism Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rippleStrength",
+        "name": "Ripple Chromatics",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "saturationBoost",
+        "name": "Saturation Boost",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "chromatic",
+      "prism",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-electromagnetic-aurora",
+    "name": "Electromagnetic Aurora",
+    "url": "shaders/mouse-electromagnetic-aurora.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "multi-pass-1"
+    ],
+    "description": "The mouse acts as a moving electric charge generating flowing EM field lines that distort UVs and rotate hue. Click ripples spawn orbiting opposite-polarity charges.",
+    "params": [
+      {
+        "id": "chargeStrength",
+        "name": "Charge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fieldVis",
+        "name": "Field Visibility",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortionStrength",
+        "name": "Distortion Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorRotation",
+        "name": "Color Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "field-simulation",
+      "chromatic",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-fluid-coupling",
+    "name": "Fluid Coupling",
+    "url": "shaders/mouse-fluid-coupling.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal"
+    ],
+    "description": "The mouse drags a viscous fluid over the image, creating vortex streets and color absorption. Click ripples inject fluid bursts.",
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mouseRadius",
+        "name": "Stir Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Absorption",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "vortexStrength",
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "fluid-simulation",
+      "temporal",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-hyperbolic-navigator",
+    "name": "Hyperbolic Navigator",
+    "url": "shaders/mouse-hyperbolic-navigator.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Navigate an infinitely tiling hyperbolic plane via Möbius transformations driven by mouse position. The image maps onto a Poincaré disk with tiles shrinking toward the boundary.",
+    "params": [
+      {
+        "id": "navigationSpeed",
+        "name": "Navigation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "tileCount",
+        "name": "Tiling Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeGlow",
+        "name": "Boundary Glow",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoomFactor",
+        "name": "Zoom",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "geometric",
+      "hyperbolic",
+      "infinite",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-julia-morph",
+    "name": "Julia Morph",
+    "url": "shaders/mouse-julia-morph.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Mouse position controls the Julia set constant c for real-time fractal morphing. Click ripples pin configurations that blend together over the input image palette.",
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "maxIter",
+        "name": "Iteration Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "morphSpeed",
+        "name": "Auto Morph Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rippleInfluence",
+        "name": "Ripple Blend",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "fractal",
+      "psychedelic",
+      "morphing"
+    ]
+  },
+  {
+    "id": "mouse-kaleidoscope-tunnel",
+    "name": "Kaleidoscope Tunnel",
+    "url": "shaders/mouse-kaleidoscope-tunnel.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Infinite kaleidoscope tunnel centered on the mouse. Moving creates spiraling mirrors with perspective depth. Click ripples send kaleidoscope bursts through the tunnel.",
+    "params": [
+      {
+        "id": "tunnelSpeed",
+        "name": "Tunnel Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "segmentBase",
+        "name": "Mirror Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spiralTwist",
+        "name": "Spiral Twist",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoomDepth",
+        "name": "Tunnel Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "kaleidoscope",
+      "tunnel",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-magnetic-pixel-sand",
+    "name": "Magnetic Pixel Sand",
+    "url": "shaders/mouse-magnetic-pixel-sand.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Pixels behave as iron filings attracted or repelled by the mouse magnet based on their brightness. Creates flowing metallic grain patterns with ripple magnetic pulses.",
+    "params": [
+      {
+        "id": "magnetStrength",
+        "name": "Magnet Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "magneticRange",
+        "name": "Field Range",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "polarity",
+        "name": "Polarity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "grainSize",
+        "name": "Grain Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "magnetic",
+      "particles",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-mandelbrot-zoom-portal",
+    "name": "Mandelbrot Zoom Portal",
+    "url": "shaders/mouse-mandelbrot-zoom-portal.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "raymarched"
+    ],
+    "description": "Navigate the infinite Mandelbrot set with mouse position. Click to create nested zoom portals that reveal deeper fractal levels.",
+    "params": [
+      {
+        "id": "zoomLevel",
+        "name": "Zoom Level",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "maxIter",
+        "name": "Iteration Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "paletteSpeed",
+        "name": "Palette Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "portalBlend",
+        "name": "Portal Blend",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "fractal",
+      "psychedelic",
+      "zoom"
+    ]
+  },
+  {
+    "id": "mouse-neural-dreamscape",
+    "name": "Neural Dreamscape",
+    "url": "shaders/mouse-neural-dreamscape.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal"
+    ],
+    "description": "A virtual neural network grid activates around the mouse. Neurons glow and synapse connections pulse with activation. Click ripples send waves through the network.",
+    "params": [
+      {
+        "id": "networkDensity",
+        "name": "Network Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "activationRadius",
+        "name": "Activation Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "synapseStrength",
+        "name": "Synapse Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "neural",
+      "network",
+      "psychedelic",
+      "generative"
+    ]
+  },
+  {
+    "id": "mouse-paint-splatter",
+    "name": "Paint Splatter",
+    "url": "shaders/mouse-paint-splatter.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal"
+    ],
+    "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts.",
+    "params": [
+      {
+        "id": "splatterSize",
+        "name": "Brush Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dryRate",
+        "name": "Dry Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spreadAmount",
+        "name": "Paint Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorIntensity",
+        "name": "Color Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "paint",
+      "temporal",
+      "artistic"
+    ]
+  },
+  {
+    "id": "mouse-polarized-light-field",
+    "name": "Polarized Light Field",
+    "url": "shaders/mouse-polarized-light-field.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Mouse controls polarization angle and birefringence over the image. Creates interference fringes, Malus-law filtering, and moiré patterns. Click ripples spawn polarization vortices.",
+    "params": [
+      {
+        "id": "polarizationAngle",
+        "name": "Polarization Angle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "birefringence",
+        "name": "Birefringence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fringeDensity",
+        "name": "Fringe Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorMode",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "polarization",
+      "interference",
+      "optics",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-synesthetic-sound-paint",
+    "name": "Synesthetic Sound Paint",
+    "url": "shaders/mouse-synesthetic-sound-paint.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
+    ],
+    "description": "Mouse becomes a conductor directing a visual orchestra. Screen regions map to bass blobs, mid waves, and treble sparkles. Without audio, falls back to mouse-driven generative color synthesis.",
+    "params": [
+      {
+        "id": "audioSensitivity",
+        "name": "Audio Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "patternScale",
+        "name": "Pattern Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "energyDecay",
+        "name": "Energy Decay",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorShiftSpeed",
+        "name": "Color Shift Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "audio-reactive",
+      "synesthesia",
+      "generative",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-time-crystal",
+    "name": "Time Crystal",
+    "url": "shaders/mouse-time-crystal.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "temporal"
+    ],
+    "description": "Mouse clicks seed crystal growth via diffusion-limited aggregation. Crystals grow along image gradients, aging and cooling over time. Creates organic mineral formations.",
+    "params": [
+      {
+        "id": "growthRate",
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "crystalDensity",
+        "name": "Crystal Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ageColorSpeed",
+        "name": "Age Color Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "crystal",
+      "temporal",
+      "growth",
+      "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-voronoi-mosaic",
+    "name": "Voronoi Mosaic",
+    "url": "shaders/mouse-voronoi-mosaic.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Click positions seed Voronoi cells that rotate, shift, and scale independently. Stained-glass edge effects with per-cell color tinting create an evolving mosaic.",
+    "params": [
+      {
+        "id": "shatterStrength",
+        "name": "Shatter Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeThickness",
+        "name": "Edge Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glassOpacity",
+        "name": "Glass Opacity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "voronoi",
+      "mosaic",
+      "stained-glass"
+    ]
+  },
+  {
+    "id": "mouse-wormhole-lens",
+    "name": "Wormhole Lens",
+    "url": "shaders/mouse-wormhole-lens.wgsl",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "A wormhole portal at the mouse position inverts, spirals, and color-shifts the image inside. Dragging stretches the portal. Event-horizon glow and gravitational lensing at the edge.",
+    "params": [
+      {
+        "id": "portalRadius",
+        "name": "Portal Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spiralStrength",
+        "name": "Spiral Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorShiftAmt",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "lensStrength",
+        "name": "Lens Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "portal",
+      "wormhole",
+      "psychedelic"
     ]
   },
   {

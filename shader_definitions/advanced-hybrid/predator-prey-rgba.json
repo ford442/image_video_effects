@@ -1,0 +1,15 @@
+{
+  "id": "predator-prey-rgba",
+  "name": "Predator-Prey RGBA",
+  "url": "shaders/predator-prey-rgba.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Continuous-density predator-prey ecosystem simulation packed into RGBA32FLOAT. Plants photosynthesize using source image luminance, herbivores graze, carnivores hunt, and toxins accumulate from overpopulation. Species diffuse across the grid creating emergent spatial waves.",
+  "tags": ["predator-prey", "ecosystem", "simulation", "food-chain", "rgba-state-machine", "emergent", "interactive", "mouse-driven", "temporal"],
+  "features": ["mouse-driven", "temporal", "rgba-state-machine"],
+  "params": [
+    { "id": "eatProbability", "name": "Eat Probability", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "deathRate", "name": "Death Rate", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "plantGrowth", "name": "Plant Growth", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "toxinStrength", "name": "Toxin Strength", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

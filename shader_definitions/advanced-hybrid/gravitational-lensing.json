@@ -5,6 +5,7 @@
   "category": "distortion",
   "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
   "features": [
+    "mouse-driven",
     "advanced-hybrid",
     "schwarzschild-metric",
     "geodesic-raytracing",
@@ -64,6 +65,8 @@
   "created_by": "Agent 3B - Advanced Hybrid Creator",
   "created_date": "2026-03-22",
   "tags": [
+    "interactive",
+    "cursor",
     "audio",
     "music",
     "reactive"

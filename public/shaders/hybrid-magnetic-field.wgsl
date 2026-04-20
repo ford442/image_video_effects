@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Hybrid Magnetic Field
+//  Hybrid Magnetic Field + Audio Reactive
 //  Category: generative
-//  Features: hybrid, vector-field, particle-trails, magnetic-distortion
+//  Features: hybrid, vector-field, particle-trails, magnetic-distortion, audio-reactive
 //  Chunks From: magnetic-field.wgsl (vector field), particle-swarm.wgsl (trails),
 //               fbm noise for field variation
 //  Created: 2026-03-22
@@ -76,98 +76,104 @@ fn rot2(a: f32) -> mat2x2<f32> {
 }
 
 // ═══ HYBRID LOGIC: Magnetic Field Visualization ═══
-// Magnetic dipole field calculation
 fn magneticField(pos: vec2<f32>, dipolePos: vec2<f32>, strength: f32) -> vec2<f32> {
     let r = pos - dipolePos;
     let dist = length(r);
-    let dist3 = dist * dist * dist + 0.001; // Avoid division by zero
-    
-    // Dipole field: 3(m·r̂)r̂ - m
-    // Simplified for 2D: radial component falls as 1/r^3
+    let dist3 = dist * dist * dist + 0.001;
     let radial = r / dist;
     let field = radial * strength / dist3;
-    
-    return vec2<f32>(-field.y, field.x); // Perpendicular for field lines
+    return vec2<f32>(-field.y, field.x);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    
+
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
-    
-    // Parameters
-    let fieldStrength = mix(0.5, 3.0, u.zoom_params.x);    // x: Field intensity
-    let lineDensity = mix(5.0, 30.0, u.zoom_params.y);     // y: Line density
-    let trailPersistence = u.zoom_params.z * 0.95;         // z: Trail fade
-    let noiseInfluence = u.zoom_params.w * 2.0;            // w: Field distortion
-    
+
+    // ═══ AUDIO INPUT ═══
+    let audioOverall = u.config.y;
+    let audioBass = audioOverall * 1.2;
+    let audioPulse = 1.0 + audioBass * 0.5;
+
+    // Parameters - audio modulated
+    let fieldStrength = mix(0.5, 3.0, u.zoom_params.x) * audioPulse;
+    let lineDensity = mix(5.0, 30.0, u.zoom_params.y) * (1.0 + audioOverall * 0.3);
+    let trailPersistence = u.zoom_params.z * 0.95;
+    let noiseInfluence = u.zoom_params.w * 2.0 * (1.0 + audioOverall * 0.4);
+
     // Mouse as magnetic source
     var mouse = u.zoom_config.yz;
     mouse.x *= aspect;
     var p = uv;
     p.x *= aspect;
-    
+
     // Multiple magnetic sources
     let source1 = vec2<f32>(mouse.x, mouse.y);
     let source2 = vec2<f32>(0.5 * aspect + sin(time * 0.5) * 0.2, 0.5 + cos(time * 0.3) * 0.2);
-    
+
     // Calculate magnetic field vector
     var field = vec2<f32>(0.0);
     field += magneticField(p, source1, fieldStrength);
     field += magneticField(p, source2, fieldStrength * 0.5);
-    
+
     // Add FBM noise variation to field
     let noiseField = vec2<f32>(
         fbm2(uv * 5.0 + time * 0.1, 4),
         fbm2(uv * 5.0 + vec2<f32>(5.2, 1.3), 4)
     ) * noiseInfluence;
     field += noiseField;
-    
+
     // Normalize field for visualization
     let fieldMag = length(field);
     let fieldDir = field / (fieldMag + 0.001);
-    
+
     // Field line pattern
     let fieldAngle = atan2(fieldDir.y, fieldDir.x);
     let linePattern = sin(fieldAngle * lineDensity + fieldMag * 10.0);
     let isFieldLine = smoothstep(0.8, 1.0, linePattern);
-    
+
     // Particle trails along field lines
     let flowUV = uv + fieldDir * 0.01;
     let prevFrame = textureSampleLevel(dataTextureC, u_sampler, flowUV, 0.0).rgb;
-    
-    // Color based on field strength and direction
+
+    // Color based on field strength and direction - audio reactive tint
     let fieldColor = palette(fieldAngle * 0.5 + time * 0.1,
         vec3<f32>(0.5),
         vec3<f32>(0.5),
         vec3<f32>(1.0, 1.0, 0.5),
         vec3<f32>(0.8, 0.9, 0.3)
     );
-    
+    // Tint by audio frequency
+    let audioTint = vec3<f32>(audioBass * 0.3, audioOverall * 0.15, 0.0);
+
     // Combine field lines with trails
     var color = prevFrame * trailPersistence;
-    color += fieldColor * isFieldLine * (0.5 + fieldMag * 0.3);
-    
-    // Glow around magnetic sources
+    color += (fieldColor + audioTint) * isFieldLine * (0.5 + fieldMag * 0.3);
+
+    // Glow around magnetic sources - audio boosted
     let dist1 = length(p - source1);
     let dist2 = length(p - source2);
     let glow = exp(-dist1 * 3.0) + exp(-dist2 * 3.0) * 0.5;
-    color += vec3<f32>(1.0, 0.8, 0.3) * glow * 0.5;
-    
+    color += vec3<f32>(1.0, 0.8, 0.3) * glow * 0.5 * audioPulse;
+
     // Vortex visualization at source
     let vortex = sin(atan2(p.y - source1.y, p.x - source1.x) * 10.0 + dist1 * 20.0);
-    color += vec3<f32>(0.3, 0.6, 1.0) * vortex * exp(-dist1 * 2.0) * 0.3;
-    
+    color += vec3<f32>(0.3, 0.6, 1.0) * vortex * exp(-dist1 * 2.0) * 0.3 * (1.0 + audioBass * 0.3);
+
+    // Beat flash
+    let isBeat = step(0.7, audioBass);
+    color += vec3<f32>(0.1, 0.08, 0.05) * isBeat * glow;
+
     // Alpha based on field activity
     let alpha = mix(0.4, 1.0, isFieldLine + glow * 0.5);
-    
+
     // Store for feedback
     textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
-    
+
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(fieldMag * 0.5, 0.0, 0.0, 0.0));
 }

@@ -1,0 +1,57 @@
+{
+  "id": "spec-temporal-path-tracer",
+  "name": "Temporal Path Tracer",
+  "url": "shaders/spec-temporal-path-tracer.wgsl",
+  "category": "advanced-hybrid",
+  "description": "2D path tracer with temporal accumulation. Casts light rays that bounce off image edges, accumulating Monte Carlo samples over time for soft global illumination and color bleeding.",
+  "tags": [
+    "path-tracing",
+    "temporal",
+    "monte-carlo",
+    "global-illumination",
+    "ray-marching"
+  ],
+  "features": [
+    "temporal-accumulation",
+    "path-tracing",
+    "Monte-Carlo",
+    "mouse-driven",
+    "HDR",
+    "multi-pass-1"
+  ],
+  "params": [
+    {
+      "id": "bounces",
+      "name": "Max Bounces",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "edge_threshold",
+      "name": "Edge Threshold",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "radiance",
+      "name": "Radiance Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "roughness",
+      "name": "Surface Roughness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.9
+}

@@ -1,0 +1,57 @@
+{
+  "id": "spec-quaternion-julia",
+  "name": "Quaternion Julia",
+  "url": "shaders/spec-quaternion-julia.wgsl",
+  "category": "generative",
+  "description": "4D quaternion Julia set raymarched in real-time. The 4th dimension animates over time creating organic morphing fractal forms with orbit-trap coloring and physically-based lighting.",
+  "tags": [
+    "quaternion",
+    "julia",
+    "fractal",
+    "4D",
+    "raymarching",
+    "morphing"
+  ],
+  "features": [
+    "quaternion",
+    "4D",
+    "raymarched",
+    "mouse-driven",
+    "HDR"
+  ],
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Fractal Zoom",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "morph_speed",
+      "name": "Morph Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "color_cycles",
+      "name": "Color Cycles",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "detail",
+      "name": "Detail Level",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "target_rating": 4.9
+}

@@ -5,6 +5,8 @@ import { AIStatus } from '../AutoDJ';
 import shaderCoordinates from '../shader_coordinates.json';
 import { ShaderMegaMenu } from './ShaderMegaMenu';
 import type { ShaderMegaMenuOption } from './ShaderMegaMenu';
+import { ShaderStarRating } from './ShaderStarRating';
+import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
@@ -148,6 +150,16 @@ const Controls: React.FC<ControlsProps> = ({
     const [showNumberOverlay, setShowNumberOverlay] = useState(false);
     const numberTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
+    // --- Star Ratings ---
+    const { shaders: ratedShaders, rateShader } = useShaderRatings();
+    const ratingMap = useMemo(() => {
+        const map = new Map<string, { stars: number; ratingCount: number }>();
+        for (const s of ratedShaders) {
+            map.set(s.id, { stars: s.stars, ratingCount: s.ratingCount });
+        }
+        return map;
+    }, [ratedShaders]);
+
     // Prepare coordinate data
     const coordMap = useMemo(() => shaderCoordinates as Record<string, ShaderCoordData>, []);
     
@@ -246,25 +258,35 @@ const Controls: React.FC<ControlsProps> = ({
     const currentParams = slotParams[activeSlot];
 
     const slotMenuOptions = useMemo(
-        () => currentModes.map((m): ShaderMegaMenuOption => ({
-            id: m.id,
-            name: m.name,
-            coordinate: coordMap[m.id]?.coordinate ?? null,
-            category: coordMap[m.id]?.category ?? m.category,
-        })),
-        [currentModes, coordMap]
+        () => currentModes.map((m): ShaderMegaMenuOption => {
+            const rating = ratingMap.get(m.id);
+            return {
+                id: m.id,
+                name: m.name,
+                coordinate: coordMap[m.id]?.coordinate ?? null,
+                category: coordMap[m.id]?.category ?? m.category,
+                stars: rating?.stars,
+                ratingCount: rating?.ratingCount,
+            };
+        }),
+        [currentModes, coordMap, ratingMap]
     );
 
     const generativeMenuOptions = useMemo(
         () => availableModes
             .filter(m => m.category === 'generative')
-            .map((m): ShaderMegaMenuOption => ({
-                id: m.id,
-                name: m.name,
-                coordinate: coordMap[m.id]?.coordinate ?? null,
-                category: coordMap[m.id]?.category ?? m.category,
-            })),
-        [availableModes, coordMap]
+            .map((m): ShaderMegaMenuOption => {
+                const rating = ratingMap.get(m.id);
+                return {
+                    id: m.id,
+                    name: m.name,
+                    coordinate: coordMap[m.id]?.coordinate ?? null,
+                    category: coordMap[m.id]?.category ?? m.category,
+                    stars: rating?.stars,
+                    ratingCount: rating?.ratingCount,
+                };
+            }),
+        [availableModes, coordMap, ratingMap]
     );
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
     const currentCoordinate = getShaderCoordinate(currentMode);
@@ -702,6 +724,19 @@ const Controls: React.FC<ControlsProps> = ({
                     <div style={{ fontSize: '13px', color: '#f0f0f5', marginTop: '6px', fontWeight: 500 }}>
                         {currentShaderEntry?.name}
                     </div>
+                    {currentMode && (
+                        <div style={{ marginTop: '8px' }}>
+                            <ShaderStarRating
+                                shaderId={currentMode}
+                                stars={ratingMap.get(currentMode)?.stars || 0}
+                                ratingCount={ratingMap.get(currentMode)?.ratingCount || 0}
+                                onRate={async (id, stars) => {
+                                    await rateShader(id, stars);
+                                }}
+                                size="small"
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 

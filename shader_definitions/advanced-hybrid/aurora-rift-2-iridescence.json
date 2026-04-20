@@ -1,0 +1,59 @@
+{
+  "id": "aurora-rift-2-iridescence",
+  "name": "Aurora Rift 2 Iridescence",
+  "url": "shaders/aurora-rift-2-iridescence.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Iridescent aurora curtains combining volumetric aurora simulation with thin-film interference. Each aurora layer gets soap-bubble/oil-slick coloring from optical path difference. Optical depth modulates film thickness; viewing angle drives color shift. Beer's Law transmittance composites physically.",
+  "features": ["thin-film-interference", "aurora", "volumetric", "depth-aware", "spectral-render", "mouse-driven", "HDR", "randomization-safe"],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Overall aurora and iridescence intensity"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Aurora curtain drift speed"
+    },
+    {
+      "id": "depth_weight",
+      "name": "Depth Weight",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Depth influence on alpha layering"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Noise turbulence for film thickness variation"
+    }
+  ],
+  "chunks_used": [
+    "fbm (aurora-rift-2)",
+    "physicalTransmittance / Beer's Law (aurora-rift-2)",
+    "thinFilmColor (spec-iridescence-engine)",
+    "wavelengthToRGB (spec-iridescence-engine)"
+  ],
+  "tags": ["aurora", "iridescence", "thin-film", "interference", "volumetric", "spectral", "atmospheric"],
+  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+  "created_date": "2026-04-18"
+}

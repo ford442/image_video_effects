@@ -1,0 +1,59 @@
+{
+  "id": "conv-gabor-texture-analyzer",
+  "name": "Gabor Texture Analyzer",
+  "description": "Gabor filter bank detecting oriented texture patterns at 0, 45, 90, and 135 degrees. RGBA32FLOAT stores signed bipolar responses in all four channels. Mouse rotates the filter bank for swirling texture segmentation.",
+  "url": "shaders/conv-gabor-texture-analyzer.wgsl",
+  "category": "image",
+  "features": [
+    "advanced-convolution",
+    "rgba32float-exploiting",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "frequency",
+      "name": "Gabor Frequency",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "sigma",
+      "name": "Gaussian Sigma",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "response_scale",
+      "name": "Response Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouse_influence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "gabor",
+    "convolution",
+    "texture-analysis",
+    "orientation",
+    "psychedelic",
+    "filter",
+    "image-processing"
+  ]
+}

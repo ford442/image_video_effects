@@ -104,7 +104,7 @@ fn refractRay(incident: vec3<f32>, normal: vec3<f32>, eta: f32) -> vec3<f32> {
   return incident * eta + normal * (eta * cosi - cost);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
   let coord = gid.xy;
@@ -242,7 +242,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let specular = pow(max(dot(reflectDir, lightDir), 0.0), 64.0);
   finalColor = finalColor + vec3<f32>(specular * 0.5);
   
+  // Advanced Alpha: Luminance Key
+  let alpha = calculateAdvancedAlpha(finalColor, uv);
+  
   // Output
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
+}
+
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    
+    // Tunable parameters from zoom_params
+    let intensity = u.zoom_params.w * 0.5 + 0.4;    // Intensity
+    let threshold = u.zoom_params.y * 0.15 + 0.05;  // LightSize
+    let softness = u.zoom_params.z * 0.1 + 0.02;    // Dispersion
+    let depthWeight = u.zoom_params.x * 0.5;        // IOR
+    
+    // Luminance key: caustic highlights opaque, dark areas transparent
+    let lumaAlpha = smoothstep(threshold - softness, threshold + softness, luma) * intensity;
+    
+    // Depth-layered blend
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthAlpha = mix(0.3, 1.0, depth);
+    let alpha = mix(lumaAlpha, depthAlpha, depthWeight);
+    
+    return clamp(alpha, 0.0, 1.0);
 }

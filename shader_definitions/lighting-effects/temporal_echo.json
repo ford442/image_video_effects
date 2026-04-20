@@ -3,14 +3,16 @@
   "name": "Temporal Echo",
   "url": "shaders/temporal_echo.wgsl",
   "category": "distortion",
-  "description": "Time-warp effect with multi-frame temporal accumulation, RGB channel time offsets, ghost trails, and motion-based displacement",
+  "description": "Time-warp effect with multi-frame temporal accumulation, RGB channel time offsets, ghost trails, motion-based displacement, and audio-reactive feedback pulses",
   "tags": [
     "temporal",
     "echo",
     "time",
     "ghost",
     "trail",
-    "warp"
+    "warp",
+    "audio",
+    "music"
   ],
   "features": [
     "rgba",
@@ -18,7 +20,8 @@
     "echo",
     "motion",
     "feedback",
-    "time-warp"
+    "time-warp",
+    "audio-reactive"
   ],
   "params": [
     {

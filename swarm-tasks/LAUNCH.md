@@ -270,6 +270,79 @@ Total: 8 weeks
 
 ---
 
-**Status:** ✅ Ready for Phase A Launch
+---
 
-**Next Action:** Launch Agents 1A, 2A, and 4A in parallel
+## Phase C Launch (Weeks 9-14)
+
+### Pre-Launch
+```bash
+cd projects/image_video_effects/swarm-tasks
+
+# Review Phase C
+cat phase-c/README.md
+
+# Read deduplication brief (critical)
+cat swarm-outputs/phase-c-dedup-brief.md
+```
+
+### Wave 1: Parallel Development (Days 1-7)
+
+Launch these agents simultaneously after reading the dedup brief:
+
+```yaml
+Agent 1C: RGBA Convolution Architect
+  Task: Create 15 novel convolution shaders
+  Start with: conv-bilateral-dream, conv-morphological-erosion-dilation
+  Output: conv-*.wgsl + JSON files
+  Deduplication: Read swarm-outputs/phase-c-dedup-brief.md first
+  
+Agent 2C: Psychedelic Mouse Sculptor
+  Task: Create 15 physically-inspired mouse shaders
+  Start with: mouse-electromagnetic-aurora, mouse-fluid-coupling
+  Output: mouse-*.wgsl + JSON files
+  Deduplication: Read swarm-outputs/phase-c-dedup-brief.md first
+  
+Agent 3C: Spectral Computation Pioneer
+  Task: Create 15 novel computation shaders
+  Start with: spec-prismatic-dispersion, spec-iridescence-engine
+  Output: spec-*.wgsl + JSON files
+  Deduplication: Read swarm-outputs/phase-c-dedup-brief.md first
+
+Agent 4C: Alpha Artistry Specialist
+  Task: Create 15 RGBA-as-data shaders
+  Start with: alpha-navier-stokes-paint, alpha-reaction-diffusion-rgba
+  Output: alpha-*.wgsl + JSON files
+  Deduplication: Read swarm-outputs/phase-c-dedup-brief.md first
+```
+
+### Wave 2: QA + Cross-Pollination (Days 7-14)
+
+```yaml
+Agent 5C: Phase C Integration & QA
+  Task: Review all Phase C outputs, create crossover shaders
+  Input: All outputs from Agents 1C-4C
+  Output: phase-c-qa-report.md + 3-5 crossover shaders
+```
+
+---
+
+## Updated Success Metrics
+
+### Phase C
+- 60 new shaders (15 per agent, accounting for deduplication skips)
+- 3-5 crossover shaders from Agent 5C
+- Zero duplicate IDs with existing library
+- All compile without errors
+- Performance: 30+ FPS at 2048×2048
+
+### Total Project
+- ~770+ total shaders in library
+- All compile without errors
+- Performance targets met
+- Final integration report complete
+
+---
+
+**Status:** ✅ Phase A Complete | ✅ Phase B Complete | ✅ Phase C Complete
+
+**Next Action:** Phase C QA report delivered. All deliverables complete.

@@ -1,0 +1,60 @@
+{
+  "id": "audio-voronoi-gabor",
+  "name": "Audio Voronoi Gabor",
+  "url": "shaders/audio-voronoi-gabor.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Audio-reactive Voronoi displacement modulated by Gabor texture analysis. Gabor filter banks detect local texture orientation and strength, rotating and scaling cell displacement. Edges and textured regions displace differently than smooth areas.",
+  "features": ["audio-reactive", "voronoi", "gabor-texture", "displacement-mapping", "mouse-driven", "depth-aware", "randomization-safe", "audio-driven"],
+  "params": [
+    {
+      "id": "cell_count",
+      "name": "Cell Count",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Number of Voronoi cells"
+    },
+    {
+      "id": "audio_reactivity",
+      "name": "Audio Reactivity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How much audio affects the cells"
+    },
+    {
+      "id": "displacement",
+      "name": "Displacement Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Strength of displacement effect"
+    },
+    {
+      "id": "gabor_influence",
+      "name": "Texture Influence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How much Gabor texture affects displacement"
+    }
+  ],
+  "chunks_used": [
+    "hash12 (gen_grid.wgsl)",
+    "hash22 (gen_grid.wgsl)",
+    "gaborResponse (conv-gabor-texture-analyzer)",
+    "Voronoi pattern (audio-voronoi-displacement)",
+    "Audio band simulation (audio-voronoi-displacement)"
+  ],
+  "tags": ["audio", "music", "reactive", "texture", "gabor", "voronoi", "displacement"],
+  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+  "created_date": "2026-04-18"
+}

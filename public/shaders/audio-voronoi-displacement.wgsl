@@ -127,6 +127,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displacement = mix(0.0, 0.1, u.zoom_params.z);   // z: Displacement strength
     let colorIntensity = mix(0.3, 1.5, u.zoom_params.w); // w: Color intensity
     
+    // Mouse interaction
+    let mousePos = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w > 0.5;
+    let distToMouse = length(uv - mousePos);
+    let mouseGravity = 1.0 - smoothstep(0.0, 0.25, distToMouse);
+    let clickPulse = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 35.0 - time * 7.0) * exp(-distToMouse * 5.0);
+    
     // Get simulated audio bands
     let audioBands = getAudioBands(uv, time);
     
@@ -144,8 +151,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let toCenter = vec2<f32>(cos(cellHash * 6.28), sin(cellHash * 6.28));
     let audioDisplacement = toCenter * audioBands.x * displacement;
     
-    // Displace UV based on cell and audio
-    let displacedUV = clamp(uv + audioDisplacement, vec2<f32>(0.0), vec2<f32>(1.0));
+    // Displace UV based on cell, audio, and cursor
+    let cursorDisplacement = normalize(uv - mousePos + 0.001) * mouseGravity * 0.05 + clickPulse * 0.03;
+    let displacedUV = clamp(uv + audioDisplacement + cursorDisplacement, vec2<f32>(0.0), vec2<f32>(1.0));
     
     // Sample image at displaced position
     var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
@@ -160,10 +168,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Blend based on audio intensity
     color = mix(color, color * (1.0 + freqColor), audioReact * 0.5);
     color *= colorIntensity;
+    color *= (1.0 + mouseGravity * 0.5);
     
     // Add cell edge glow
     let edgeGlow = (1.0 - edge) * audioBands.y * 0.5;
     color += vec3<f32>(edgeGlow * 0.8, edgeGlow * 0.6, edgeGlow);
+    color += vec3<f32>(mouseGravity * 0.3, mouseGravity * 0.2, mouseGravity * 0.4);
     
     // Treble sparkle
     let sparkle = step(0.95, hash12(vec2<f32>(voronoi.z + time * 0.1))) * audioBands.z;

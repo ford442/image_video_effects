@@ -71,6 +71,126 @@
     ]
   },
   {
+    "id": "alpha-paint-thickness",
+    "name": "Alpha Paint Thickness",
+    "url": "shaders/alpha-paint-thickness.wgsl",
+    "category": "artistic",
+    "description": "Impasto paint thickness simulation where alpha tracks paint depth. Thin paint creates transparent washes, medium shows full color, thick paint catches specular highlights and casts micro-shadows. Mouse paints with color-cycling brush; ripples create splatters.",
+    "tags": [
+      "paint",
+      "impasto",
+      "artistic",
+      "interactive",
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "texture"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "paintSaturation",
+        "name": "Paint Saturation",
+        "type": "float",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "specularPower",
+        "name": "Specular Power",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dryingRate",
+        "name": "Drying Rate",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-watercolor-wetness",
+    "name": "Alpha Watercolor Wetness",
+    "url": "shaders/alpha-watercolor-wetness.wgsl",
+    "category": "artistic",
+    "description": "Watercolor simulation with wetness map in alpha. Pigment flows with water gradients via capillary action. Wet areas allow bleeding; dry areas lock pigment. Mouse drops colored water; ripples add water drops. Authentic dark-edge effects at wet boundaries.",
+    "tags": [
+      "watercolor",
+      "paint",
+      "artistic",
+      "interactive",
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "wetness"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "dryRate",
+        "name": "Drying Rate",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "pigmentDeposit",
+        "name": "Pigment Deposit",
+        "type": "float",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "waterCapacity",
+        "name": "Water Capacity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowStrength",
+        "name": "Flow Strength",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "anisotropic-kuwahara",
     "name": "Van Gogh Flow",
     "url": "shaders/anisotropic-kuwahara.wgsl",
@@ -221,7 +341,7 @@
     "name": "Chromatic Phase Inversion",
     "url": "shaders/chromatic-phase-inversion.wgsl",
     "category": "artistic",
-    "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves.",
+    "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves. Audio reactivity pulses phase speed and ghost offset with the beat.",
     "tags": [
       "chromatic",
       "phase",
@@ -229,10 +349,13 @@
       "ghost",
       "temporal",
       "color",
-      "surreal"
+      "surreal",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "author": "AI",
     "params": [
@@ -825,11 +948,67 @@
     ]
   },
   {
+    "id": "spec-blue-noise-stipple",
+    "name": "Blue Noise Stipple",
+    "url": "shaders/spec-blue-noise-stipple.wgsl",
+    "category": "artistic",
+    "description": "Blue-noise dithered pointillism rendering. Uses golden-ratio low-discrepancy sequences for perceptually optimal, uniformly-spaced dot distributions with smooth gradients and no aliasing.",
+    "tags": [
+      "pointillism",
+      "blue-noise",
+      "stipple",
+      "artistic",
+      "dithering",
+      "seurat"
+    ],
+    "features": [
+      "blue-noise",
+      "pointillism",
+      "stochastic-sampling",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "dot_scale",
+        "name": "Dot Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dot_size",
+        "name": "Dot Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_var",
+        "name": "Color Variation",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Dot Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
     "id": "spectral-bleed-confinement",
     "name": "Spectral Bleed & Confinement",
     "url": "shaders/spectral-bleed-confinement.wgsl",
     "category": "artistic",
-    "description": "Specific color bands leak outward from image edges while being electromagnetically confined by competing channels, creating glowing halos that feel physically constrained.",
+    "description": "Specific color bands leak outward from image edges while being electromagnetically confined by competing channels, creating glowing halos that feel physically constrained. Audio reactivity pulses bleed radius and adds beat-synchronized flashes.",
     "tags": [
       "spectral",
       "bleed",
@@ -837,10 +1016,16 @@
       "edge",
       "glow",
       "chromatic",
-      "electromagnetic"
+      "electromagnetic",
+      "alpha",
+      "luminance-key",
+      "audio",
+      "music"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "advanced-alpha",
+      "audio-reactive"
     ],
     "author": "AI",
     "params": [

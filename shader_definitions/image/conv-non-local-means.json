@@ -1,0 +1,59 @@
+{
+  "id": "conv-non-local-means",
+  "name": "Non-Local Means",
+  "description": "Gold-standard denoising that averages similar patches across the image. Cranked to artistic overdrive for hallucinatory double-exposure effects. Alpha stores self-similarity importance map. Mouse controls focus zone precision.",
+  "url": "shaders/conv-non-local-means.wgsl",
+  "category": "image",
+  "features": [
+    "advanced-convolution",
+    "rgba32float-exploiting",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "patch_radius",
+      "name": "Patch Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "search_radius",
+      "name": "Search Radius",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "filter_strength",
+      "name": "Filter Strength",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "overdrive",
+      "name": "Artistic Overdrive",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "non-local-means",
+    "convolution",
+    "denoising",
+    "patch-similarity",
+    "artistic",
+    "filter",
+    "image-processing"
+  ]
+}

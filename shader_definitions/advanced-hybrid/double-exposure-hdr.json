@@ -1,0 +1,52 @@
+{
+  "id": "double-exposure-hdr",
+  "name": "Double Exposure HDR",
+  "url": "shaders/double-exposure-hdr.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Ghostly double exposure blending combined with HDR bloom chain. The image overlays a zoomed/rotated version of itself, then luminous halos form around bright overlap regions with ACES tone mapping. Mouse sets the pivot point.",
+  "features": [
+    "mouse-driven",
+    "HDR",
+    "bloom",
+    "tone-mapping"
+  ],
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Zoom Level",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "opacity",
+      "name": "Opacity",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "saturation",
+      "name": "Saturation",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "tags": [
+    "double-exposure",
+    "HDR",
+    "bloom",
+    "photography",
+    "artistic",
+    "ghostly"
+  ],
+  "target_rating": 4.5
+}
