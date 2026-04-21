@@ -3013,6 +3013,46 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Useful for underwater atmospheric scattering, murky water textures, and rusting metal materials.
 
+### Agent Suggestion: Neon-Soaked Cyberpunk Noodle Stand — @gemini-agent — 2026-04-20
+- **Prompt:** "A tight, eye-level shot of a cramped cyberpunk noodle stand at night. The stall is illuminated by harsh, flickering neon signs in vibrant pink and cyan, casting long, stark shadows. Steam billows from boiling pots, partially obscuring the worn, metallic surfaces and glowing buttons of the cooking equipment. The mood is gritty, cinematic, and atmospheric. Shot on a 35mm lens, high contrast, shallow depth of field."
+- **Negative prompt:** "daytime, clean, pristine, cartoon, low-res, empty"
+- **Tags:** cyberpunk, neon, urban, cinematic, gritty
+- **Ref image:** `public/images/suggestions/20260420_cyberpunk-noodle.jpg`
+- **Notes / agent context:** Ideal for testing volumetric fog, bloom from neon lights, and high-contrast ambient occlusion.
+- **Status:** proposed
+
+### Agent Suggestion: Bioluminescent Deep-Sea Leviathan — @gemini-agent — 2026-04-20
+- **Prompt:** "A majestic, macro-style underwater photograph of an enormous, mythical deep-sea leviathan gliding through the abyssal zone. The creature's scales emit pulsating patterns of bioluminescent blue and green light. The surrounding water is pitch black but speckled with glowing marine snow. The lighting is entirely diegetic, originating from the creature itself. The mood is mysterious, ancient, and awe-inspiring. Photorealistic, 8k resolution, volumetric light rays."
+- **Negative prompt:** "sunlight, surface water, bright, shallow, unrealistic, messy"
+- **Tags:** underwater, bioluminescence, monster, photorealistic, mysterious
+- **Ref image:** `public/images/suggestions/20260420_bioluminescent-leviathan.jpg`
+- **Notes / agent context:** Excellent for evaluating subsurface scattering, particle effects (marine snow), and localized glowing light sources.
+- **Status:** proposed
+
+### Agent Suggestion: Solarpunk Rooftop Garden — @gemini-agent — 2026-04-20
+- **Prompt:** "A wide-angle, sun-drenched view of a lush solarpunk rooftop garden high above a utopian, eco-friendly metropolis. Lush greenery, vibrant flowers, and intricate, organic-looking solar panels intertwine seamlessly. The lighting is bright, natural midday sunlight casting soft, dappled shadows. The mood is optimistic, peaceful, and harmonious. Architectural photography style, hyper-detailed, vibrant colors."
+- **Negative prompt:** "dystopian, pollution, dark, gloomy, brutalist, sparse"
+- **Tags:** solarpunk, architecture, nature, utopian, bright
+- **Ref image:** `public/images/suggestions/20260420_solarpunk-garden.jpg`
+- **Notes / agent context:** Perfect for testing global illumination, soft shadows, and complex organic foliage rendering.
+- **Status:** proposed
+
+### Agent Suggestion: Ethereal Ghost Ship in the Fog — @gemini-agent — 2026-04-20
+- **Prompt:** "A haunting, atmospheric shot of an ancient, dilapidated galleon drifting silently through a dense, glowing mist. The ship is partially transparent, emitting a faint, spectral teal aura. The lighting is diffuse and eerie, with no clear directional source, only the ambient glow of the fog and the ship. The mood is melancholic, spooky, and supernatural. Cinematic lighting, low contrast, muted color palette."
+- **Negative prompt:** "sunny, bright, sharp, modern, colorful, active"
+- **Tags:** spooky, ethereal, ghost-ship, fog, atmospheric
+- **Ref image:** `public/images/suggestions/20260420_ethereal-ghost-ship.jpg`
+- **Notes / agent context:** Useful for testing dense volumetric fog, alpha blending, and soft, ambient atmospheric lighting.
+- **Status:** proposed
+
+### Agent Suggestion: Clockwork Celestial Astrolabe — @gemini-agent — 2026-04-20
+- **Prompt:** "An extremely close-up, macro photography shot of a hyper-detailed, magical astrolabe constructed of glowing, iridescent metal and intricate clockwork gears. Miniature, luminous planets orbit within its rings, casting tiny, sharp shadows across the brushed brass surfaces. The lighting is a mix of warm, incandescent spotlighting and cool, magical emission from the planets. The mood is wondrous, intellectual, and precise. High sharpness, 100mm macro lens, rich textures."
+- **Negative prompt:** "flat, simple, large scale, blurry, modern"
+- **Tags:** steampunk, magical, intricate, macro, celestial
+- **Ref image:** `public/images/suggestions/20260420_clockwork-astrolabe.jpg`
+- **Notes / agent context:** Great for evaluating metallic reflections (PBR), depth of field, and intricate geometric details.
+- **Status:** proposed
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
