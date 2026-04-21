@@ -3141,11 +3141,12 @@
   {
     "id": "gen-liquid-neon-cyber-metropolis",
     "name": "Liquid-Neon Cyber-Metropolis",
-    "coordinate": 865,
-    "type": "shader",
+    "type": "compute",
     "category": "generative",
+    "coordinate": 866,
     "url": "shaders/gen-liquid-neon-cyber-metropolis.wgsl",
-    "description": "An infinite, gravity-defying cyberpunk cityscape constructed from rivers of hyper-luminescent liquid neon and dark matter concrete, where architectural monoliths dynamically extrude, twist, and warp their geometry to the rhythm of heavy audio frequencies.",
+    "author": "Jules",
+    "description": "An infinite, gravity-defying cyberpunk cityscape constructed from rivers of hyper-luminescent liquid neon and dark matter concrete.",
     "tags": [
       "cyberpunk",
       "neon",
@@ -3153,11 +3154,6 @@
       "audio-reactive",
       "raymarching",
       "kifs"
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "raymarched"
     ],
     "sliders": [
       {
