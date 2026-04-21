@@ -3013,6 +3013,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Useful for underwater atmospheric scattering, murky water textures, and rusting metal materials.
 
+### Suggestion: Bioluminescent Deep Sea Leviathan
+- **Date:** 2026-05-18
+- **Prompt:** "A photorealistic, majestic deep-sea leviathan swimming through pitch-black water, its massive serpentine body illuminated by pulsating, intricate bioluminescent patterns in neon blue and deep purple. Microscopic glowing plankton swirl around it like stars. Cinematic volumetric lighting filtering through the murky depths, mysterious and awe-inspiring mood. Shot on a wide-angle lens."
+- **Negative prompt:** "daylight, surface, bright, ugly, lowres, blurry, cartoon, 2d"
+- **Tags:** fantasy, sci-fi, underwater, creature, photorealistic
+- **Style / Reference:** photorealistic, cinematic
+- **Composition:** wide shot
+- **Color palette:** neon blue, deep purple, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_deep-sea-leviathan.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing subsurface scattering, bioluminescence, and dark water murk effects.
+
+### Suggestion: Solarpunk Rooftop Garden
+- **Date:** 2026-05-18
+- **Prompt:** "A lush, thriving solarpunk rooftop garden on a futuristic skyscraper at golden hour. Verdant vines drape over high-tech solar panels and wind turbines, blending nature with sleek eco-technology. Warm, golden sunlight casts long shadows, creating a serene and hopeful mood. Shot with a 35mm lens, shallow depth of field focusing on a blooming exotic flower in the foreground while the futuristic eco-city fades into the background blur."
+- **Negative prompt:** "dystopian, smog, pollution, cyberpunk, dark, lowres, bleak"
+- **Tags:** solarpunk, architecture, nature, futuristic, golden hour
+- **Style / Reference:** architectural visualization, photorealistic
+- **Composition:** close-up foreground, wide background
+- **Color palette:** warm golds, vibrant greens, soft blues
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_solarpunk-rooftop.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing foliage rendering, warm lighting, and depth of field.
+
+### Suggestion: Neon Samurai in Cyber-Tokyo
+- **Date:** 2026-05-18
+- **Prompt:** "A hyper-detailed, low-angle shot of a lone samurai wearing a highly advanced cybernetic suit, standing in a rain-slicked alleyway of a sprawling neon cyberpunk metropolis. The samurai holds a glowing crimson energy katana. Vivid reflections of neon signs (kanji) bounce off wet pavement and polished armor. High contrast, gritty, and dramatic mood. Cinematic lighting, rain drops frozen in mid-air."
+- **Negative prompt:** "daylight, clean, historical, traditional, flat, lowres, anime"
+- **Tags:** cyberpunk, samurai, neon, rain, gritty
+- **Style / Reference:** hyper-detailed 3d render, cinematic
+- **Composition:** low-angle shot
+- **Color palette:** crimson red, cyan, magenta, deep blacks
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20260518_neon-samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing reflections, bloom, emission, and high-contrast environments.
+
+### Suggestion: Steampunk Observatory
+- **Date:** 2026-05-18
+- **Prompt:** "The intricate interior of a grand steampunk observatory perched on a mountain peak, filled with colossal brass telescopes, complex gear mechanisms, and glowing astrolabes. A massive glass dome reveals a breathtaking, hyper-detailed galaxy swirling with nebulae and stardust. Warm candlelight and ambient ethereal starlight illuminate the ornate wooden floors and brass instruments. Sense of wonder and discovery. Wide-angle lens, extremely detailed."
+- **Negative prompt:** "modern, sleek, digital, minimalist, lowres, bright daylight"
+- **Tags:** steampunk, interior, astronomy, space, intricate
+- **Style / Reference:** highly detailed illustration, concept art
+- **Composition:** wide shot
+- **Color palette:** warm brass, mahogany, deep space blues, vibrant purple nebula
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_steampunk-observatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating fine details, metallic textures, and warm/cool contrast lighting.
+
+### Suggestion: Crystal Cave of Echoes
+- **Date:** 2026-05-18
+- **Prompt:** "A vast, subterranean cavern completely filled with colossal, semi-translucent geometric crystals jutting from the floor and ceiling. The crystals softly emit a pale, iridescent glow, casting refractive rainbow patterns on the cavern walls. A pristine, mirror-like underground lake reflects the crystals perfectly. Ethereal, tranquil, and mysterious mood. Long exposure photography style to capture the soft light."
+- **Negative prompt:** "sunlight, plants, people, messy, chaotic, flat, matte"
+- **Tags:** nature, fantasy, underground, crystals, glowing
+- **Style / Reference:** long exposure photography, photorealistic
+- **Composition:** symmetrical, wide shot
+- **Color palette:** pale blue, iridescent rainbow, dark grey rock
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_crystal-cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Superb for testing refraction, translucency, global illumination, and caustics.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
