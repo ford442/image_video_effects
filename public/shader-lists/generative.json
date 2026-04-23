@@ -4852,6 +4852,7 @@
       "audio-reactive",
       "raymarching"
     ],
+    "author": "Jules",
     "sliders": [
       {
         "name": "Network Density",
