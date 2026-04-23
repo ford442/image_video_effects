@@ -2,9 +2,17 @@
 // Xeno-Mycelial Resonance-Web
 // Category: generative
 // ----------------------------------------------------------------
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+
+struct Uniforms {
+    config: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
+    ripples: array<vec4<f32>, 50>
+}
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
@@ -15,13 +23,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Network Density, y=Branch Thickness, z=Bioluminescence Hue, w=Pulse Speed
-    ripples: array<vec4<f32>, 50>,
-};
 
 // --- SHADER LOGIC ---
 
@@ -88,8 +89,6 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coords = vec2<i32>(id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
-
-    // Boundary check
     if (coords.x >= i32(res.x) || coords.y >= i32(res.y)) { return; }
 
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
@@ -102,17 +101,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mouseX = (u.zoom_config.y - 0.5) * 6.28;
     let mouseY = (u.zoom_config.z - 0.5) * 3.14;
 
-    let roYZ = rot2(-mouseY) * vec2<f32>(ro.y, ro.z);
+    let roYZ = rot2(-mouseY) * ro.yz;
     ro.y = roYZ.x;
     ro.z = roYZ.y;
-    let rdYZ = rot2(-mouseY) * vec2<f32>(rd.y, rd.z);
+    let rdYZ = rot2(-mouseY) * rd.yz;
     rd.y = rdYZ.x;
     rd.z = rdYZ.y;
 
-    let roXZ = rot2(mouseX) * vec2<f32>(ro.x, ro.z);
+    let roXZ = rot2(mouseX) * ro.xz;
     ro.x = roXZ.x;
     ro.z = roXZ.y;
-    let rdXZ = rot2(mouseX) * vec2<f32>(rd.x, rd.z);
+    let rdXZ = rot2(mouseX) * rd.xz;
     rd.x = rdXZ.x;
     rd.z = rdXZ.y;
 

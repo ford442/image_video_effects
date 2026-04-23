@@ -4839,10 +4839,10 @@
   {
     "id": "gen-xeno-mycelial-resonance-web",
     "name": "Xeno-Mycelial Resonance-Web",
+    "coordinate": 867,
     "type": "compute",
     "category": "generative",
     "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
-    "coordinate": 867,
     "description": "An infinite, subterranean expanse of bioluminescent, hyper-dimensional mycelium that rhythmically pulses, grows, and interconnects its glowing neural networks in response to audio frequencies.",
     "tags": [
       "organic",
