@@ -1,0 +1,44 @@
+{
+  "id": "gen-xeno-mycelial-resonance-web",
+  "name": "Xeno-Mycelial Resonance-Web",
+  "coordinate": 867,
+  "type": "compute",
+  "category": "generative",
+  "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
+  "description": "An infinite, subterranean expanse of bioluminescent, hyper-dimensional mycelium that rhythmically pulses, grows, and interconnects its glowing neural networks in response to audio frequencies.",
+  "tags": ["organic", "mycelium", "fractal", "bioluminescent", "audio-reactive", "raymarching"],
+  "sliders": [
+    {
+      "name": "Network Density",
+      "param": "zoom_params.x",
+      "default": 2.0,
+      "min": 0.5,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "name": "Branch Thickness",
+      "param": "zoom_params.y",
+      "default": 0.15,
+      "min": 0.05,
+      "max": 0.5,
+      "step": 0.01
+    },
+    {
+      "name": "Bioluminescence Hue",
+      "param": "zoom_params.z",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "name": "Pulse Speed",
+      "param": "zoom_params.w",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    }
+  ]
+}
