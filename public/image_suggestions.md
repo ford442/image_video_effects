@@ -3117,6 +3117,131 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Superb for testing refraction, translucency, global illumination, and caustics.
 
+### Suggestion: Holographic Desert Oasis
+- **Date:** 2026-05-20
+- **Prompt:** "A futuristic desert oasis at twilight, where palm trees are made of glowing holographic hard-light projections. A crystal-clear pool reflects the twin setting moons. Soft, diffused neon lighting blending with natural sunset colors. Ethereal, tranquil mood, high detail."
+- **Negative prompt:** "people, noisy, messy, daytime, simple, flat"
+- **Tags:** cyberpunk, desert, holographic, oasis, sci-fi
+- **Style / Reference:** 3D render, photorealistic, cinematic lighting
+- **Composition:** wide landscape shot, rule of thirds
+- **Color palette:** neon pink, cyan, deep orange, indigo
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_holographic-oasis.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing emission, reflections, and contrast between organic shapes and digital textures.
+
+### Suggestion: Steampunk Botanist's Greenhouse
+- **Date:** 2026-05-20
+- **Prompt:** "Inside a massive Victorian greenhouse constructed of ornate wrought iron and curved glass. Exotic, giant alien plants with bioluminescent veins grow uncontrollably. Steam-powered brass sprinklers emit a fine mist. Shafts of afternoon sunlight pierce through the hazy atmosphere. Warm, mysterious mood."
+- **Negative prompt:** "modern architecture, characters, dark, gloomy, low detail"
+- **Tags:** steampunk, botanical, greenhouse, fantasy, atmospheric
+- **Style / Reference:** highly detailed illustration, Victorian aesthetic
+- **Composition:** interior wide shot, deep depth of field
+- **Color palette:** brass, emerald green, warm amber, soft teal
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260520_steampunk-greenhouse.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating volumetric lighting, atmospheric scattering, and complex overlapping geometry.
+
+### Suggestion: Deep Space Dyson Sphere Construction
+- **Date:** 2026-05-20
+- **Prompt:** "A colossal, incomplete Dyson Sphere surrounding a hyper-active blue giant star. Millions of geometric solar panels are being assembled by swarm-like constructor ships. Brilliant, harsh stellar lighting creating stark shadows on the metallic structures. Epic, awe-inspiring mood, monumental scale."
+- **Negative prompt:** "planets, organic, smooth, dark, blurry"
+- **Tags:** sci-fi, space, megastructure, star, engineering
+- **Style / Reference:** sci-fi concept art, hyper-realistic
+- **Composition:** epic wide shot, high contrast
+- **Color palette:** blinding electric blue, dark grey, stark white
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_dyson-sphere.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests handling of extreme brightness, sharp shadows, and vast scale differences.
+
+### Suggestion: Bioluminescent Deep Sea Leviathan
+- **Date:** 2026-05-20
+- **Prompt:** "A massive, ancient deep-sea leviathan swimming gracefully through an abyssal trench. The creature's scales emit a pulsing, complex pattern of bioluminescent light. The surrounding water is pitch black, illuminated only by the creature's glow and tiny, glowing marine snow. Mystical, terrifying yet beautiful mood."
+- **Negative prompt:** "shallow water, daylight, brightly colored coral, human divers"
+- **Tags:** underwater, monster, bioluminescence, abyssal, creature
+- **Style / Reference:** underwater photography, national geographic style
+- **Composition:** side profile, macro to medium shot
+- **Color palette:** pitch black, neon blue, seafoam green, ultra-violet
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_abyssal-leviathan.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for subsurface scattering, soft volumetric glows, and deep sea atmosphere.
+
+### Suggestion: Cyber-Renaissance Clockwork City
+- **Date:** 2026-05-20
+- **Prompt:** "A sprawling renaissance-era city built entirely from brass, copper, and glowing quartz clockwork mechanisms. Giant gears serve as bridges. The city is bathed in the golden hour light of a massive, close-orbiting gas giant planet filling the sky. Majestic, intricate, surreal mood."
+- **Negative prompt:** "nature, plants, modern technology, dirty, rusty"
+- **Tags:** clockwork, city, renaissance, surreal, fantasy
+- **Style / Reference:** fantasy landscape, intricate 3D environment
+- **Composition:** aerial cityscape, dynamic angle
+- **Color palette:** gold, polished copper, warm amber, pale quartz
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_clockwork-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests highly detailed repeating patterns, metallic reflections, and golden hour lighting.
+
+### Suggestion: Holographic Cyber-Moth
+- **Date:** 2026-11-25
+- **Prompt:** "A highly detailed macro shot of a delicate cybernetic moth resting on a rain-slicked neon street sign. The moth's wings are made of semi-translucent, glowing holographic hard-light projections displaying shifting data streams. The subject is illuminated by the intense, colorful ambient light of a bustling cyberpunk city at night, reflecting off its polished chrome body. The mood is serene yet technologically advanced. Captured with a 100mm macro lens, shallow depth of field, rendering the distant city lights into beautiful, large bokeh."
+- **Negative prompt:** "organic wings, daylight, bright sky, cartoon, low resolution, messy, blurry"
+- **Tags:** macro, cyberpunk, cybernetic, holographic, insect
+- **Style / Reference:** photorealistic macro photography, sci-fi concept art
+- **Composition:** extreme close-up, rule of thirds, beautiful bokeh background
+- **Color palette:** neon magenta, glowing cyan, polished chrome, dark rain-slicked black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261125_holographic-cyber-moth.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Clockwork Solar System Armillary Sphere
+- **Date:** 2026-11-25
+- **Prompt:** "A mesmerizing, intricate clockwork armillary sphere depicting the solar system, resting on an old, mahogany desk in a dimly lit Victorian study. The mechanical subject is constructed of gleaming brass rings, intricate copper gears, and small, glowing gemstones representing planets. The lighting is warm and cinematic, emanating from a single flickering candle just out of frame, casting long, dancing shadows and sharp specular glints across the polished metal surfaces. The mood is intellectual, antique, and wondrous. Captured with a 50mm lens, deep focus to capture the layered complexity of the intersecting brass rings."
+- **Negative prompt:** "modern, plastic, daylight, flat lighting, blurry, out of focus, simple"
+- **Tags:** steampunk, still-life, brass, mechanical, astronomy
+- **Style / Reference:** photorealistic still-life photography, steampunk aesthetic
+- **Composition:** centered subject, eye-level perspective, dramatic lighting
+- **Color palette:** warm brass, polished copper, deep mahogany brown, glowing amber and sapphire accents
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261125_clockwork-armillary-sphere.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Biopunk Crystal Cavern
+- **Date:** 2026-11-25
+- **Prompt:** "An expansive, surreal view deep inside a biopunk subterranean cavern. The cave walls are lined with colossal, bioluminescent amethyst crystals that are seamlessly fused with organic, pulsating, fleshy veins and cybernetic tubes. The lighting is low-key, entirely dependent on the eerie, glowing purple light of the crystals and the sickly neon green fluids pumping through the translucent tubes. The mood is alien, toxic, and dangerously beautiful. Captured with a wide 14mm lens to emphasize the massive, overwhelming scale of the biomechanical crystal environment."
+- **Negative prompt:** "sunlight, daylight, dry rock, clean metal, realistic cave, bright, cheerful"
+- **Tags:** biopunk, fantasy, underground, glowing, crystal
+- **Style / Reference:** biopunk concept art, dark sci-fi environmental visualization
+- **Composition:** wide angle, deep perspective, immersive environment
+- **Color palette:** glowing amethyst purple, toxic neon green, deep fleshy reds, pitch black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261125_biopunk-crystal-cavern.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Retro-Futuristic Hover Diner
+- **Date:** 2026-11-25
+- **Prompt:** "A nostalgic, sweeping exterior shot of a classic 1950s retro diner, but it is hovering majestically thousands of feet in the air amidst a dense, pink sunset cloudscape. The sleek, chrome-plated subject features glowing neon signage and anti-gravity repulsor engines emitting a soft blue thrust. The lighting is a vibrant, golden-hour sunset, casting warm orange light on the polished chrome exterior and contrasting beautifully with the bright turquoise and pink neon lights of the diner. The mood is optimistic, nostalgic, and adventurous. Captured with an aerial wide-angle perspective to emphasize the dizzying height and beautiful sky."
+- **Negative prompt:** "ground, road, gritty, dystopian, dark, rainy, modern architecture"
+- **Tags:** retro-futuristic, sci-fi, aerial, neon, diner
+- **Style / Reference:** retro-futurism, 1950s atompunk aesthetic, cinematic lighting
+- **Composition:** wide aerial shot, subject off-center, dramatic cloudscape background
+- **Color palette:** polished chrome silver, vibrant sunset orange, neon turquoise, pastel pink clouds
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261125_hover-diner.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Solarpunk Wind-Powered Skyship
+- **Date:** 2026-11-25
+- **Prompt:** "A breathtaking, dynamic shot of an elegant solarpunk skyship sailing through a clear blue sky. The vessel is constructed of polished white composite materials and gleaming bamboo, featuring massive, intricate wind-turbine sails and lush hanging gardens spilling over the hull. The lighting is brilliant, unattenuated midday sunlight, creating crisp, clean shadows and highlighting the vibrant greens of the foliage against the pristine white hull. The mood is uplifting, eco-friendly, and majestic. Captured with a telephoto lens from a parallel flying perspective, keeping the entire ship in sharp focus against a soft, fluffy cloud."
+- **Negative prompt:** "smoke, pollution, dystopian, dark, night, gritty, rusted metal"
+- **Tags:** solarpunk, vehicle, sky, majestic, eco-friendly
+- **Style / Reference:** solarpunk concept art, bright utopian visualization
+- **Composition:** dynamic angled profile, tight framing on the ship, leading lines
+- **Color palette:** pristine white, warm bamboo yellow, lush forest green, clear sky blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261125_solarpunk-skyship.jpg`
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
