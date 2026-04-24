@@ -270,6 +270,12 @@
       "title": "Xeno-Mycelial Resonance-Web",
       "added": "2026-04-21T15:55:37.022732",
       "completed": "2026-04-23T08:07:44.631143"
+    },
+    {
+      "filename": "2026-04-22_photonic-crystal-brain.md",
+      "title": "Photonic Crystal-Brain",
+      "added": "2026-04-22T15:34:57.537389",
+      "completed": "2026-04-24T08:18:20.871715"
     }
   ],
   "rejected": [],
@@ -384,11 +390,6 @@
       "filename": "2026-04-21_xeno-mycelial-resonance-web.md",
       "title": "Xeno-Mycelial Resonance-Web",
       "added": "2026-04-21T15:55:37.022732"
-    },
-    {
-      "filename": "2026-04-22_photonic-crystal-brain.md",
-      "title": "Photonic Crystal-Brain",
-      "added": "2026-04-22T15:34:57.537389"
     }
   ],
   "in_progress": null
