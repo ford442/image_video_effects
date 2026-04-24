@@ -3743,6 +3743,58 @@
     ]
   },
   {
+    "id": "gen-photonic-crystal-brain",
+    "name": "Photonic Crystal-Brain",
+    "author": "Jules",
+    "description": "An infinite, glowing network of hyper-refractive crystal neurons that fire iridescent plasma pulses in sync with audio frequencies, generating volumetric glowing synapses within a dark cosmic void.",
+    "category": "generative",
+    "type": "wgsl",
+    "coordinate": 868,
+    "url": "shaders/gen-photonic-crystal-brain.wgsl",
+    "tags": [
+      "neural",
+      "crystal",
+      "plasma",
+      "organic",
+      "audio-reactive",
+      "raymarching"
+    ],
+    "sliders": [
+      {
+        "name": "Synapse Density",
+        "param": "zoom_params.x",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Pulse Speed",
+        "param": "zoom_params.y",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Crystal Distortion",
+        "param": "zoom_params.z",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "name": "Glow Intensity",
+        "param": "zoom_params.w",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-prismatic-aether-loom",
     "name": "Prismatic Aether-Loom",
     "url": "shaders/gen-prismatic-aether-loom.wgsl",
@@ -4852,7 +4904,6 @@
       "audio-reactive",
       "raymarching"
     ],
-    "author": "Jules",
     "sliders": [
       {
         "name": "Network Density",
