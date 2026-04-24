@@ -3242,6 +3242,67 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20261125_solarpunk-skyship.jpg`
 - **License / Attribution:** CC0
 
+### Suggestion: Ashcan School Orbital Ring
+- **Date:** 2024-05-30
+- **Prompt:** "A gritty, realistic view of a colossal orbital ring under construction, seen from a smog-choked, early 20th-century industrial town. Depicted in the raw, documentary style of the Ashcan School. The colossal structure dominates the hazy, overcast sky above soot-stained tenement buildings and crowded, muddy streets. The lighting is bleak and muted, casting soft, indistinct shadows that emphasize the urban decay contrasted with the incomprehensible scale of the space megastructure. The mood is authentic, oppressive, and historically dissonant. Captured with an eye-level, documentary-style perspective."
+- **Negative prompt:** "modern, bright colors, sunny, cheerful, photorealistic, 3d render, sci-fi sleekness"
+- **Tags:** art, sci-fi, historical, ashcan school, orbital ring, gritty
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** eye-level, chaotic framing, imposing sky structure
+- **Color palette:** murky greens, muted greys, rusted browns, dull ochre
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240530_ashcan-orbital-ring.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Tweed Exoplanet Core
+- **Date:** 2024-05-30
+- **Prompt:** "An ultra-macro, surreal visualization deep within the core of an exoplanet, where the extreme pressure has formed the geological layers entirely out of soft, interwoven threads of warm brown herringbone tweed fabric. The subject features dense, folded waves of yarn glowing with intense internal heat. The lighting is harsh and directional from deep within the folds, causing the fibrous texture of the tweed to glow brilliantly with sub-surface scattering, contrasting with deep, dark shadows. The mood is bizarre, tactile, and claustrophobic. Captured with a 100mm macro lens, utilizing a incredibly shallow depth of field to emphasize the soft yarn texture against the intense core heat."
+- **Negative prompt:** "rock, magma, liquid, hard surface, realistic core, bright daylight, wide angle"
+- **Tags:** macro, surreal, exoplanet, core, tweed
+- **Style / Reference:** surreal macro photography, hyper-detailed material swap
+- **Composition:** dense folded patterns, tight close-up, shallow depth of field
+- **Color palette:** earthy brown tweed, glowing molten orange, deep shadow black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20240530_tweed-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Damascus Steel Tsunami
+- **Date:** 2024-05-30
+- **Prompt:** "A towering, apocalyptic tsunami wave frozen mid-crash, where the colossal volume of water is inexplicably composed of solid, heavily rippled Damascus steel. The metallic subject features intricate, flowing wave patterns of dark and light grey metal across its curved surface. The lighting is intensely cinematic, with a single break in the stormy clouds casting a blinding spotlight on the crest of the metallic wave, creating sharp specular highlights along the forged ridges while the base remains in deep shadow. The mood is terrifying, heavy, and monumental. Captured from a low angle on the doomed shoreline, utilizing a wide 14mm lens to emphasize the massive, overhanging scale of the metal wave."
+- **Negative prompt:** "liquid water, blue, foam, daylight, sunny, soft, calm, organic, smooth"
+- **Tags:** disaster, surreal, tsunami, damascus steel, metallic
+- **Style / Reference:** cinematic disaster visualization, hyper-detailed material swap
+- **Composition:** wide angle, low perspective, towering wave dominating the frame
+- **Color palette:** dark metallic greys, blinding silver highlights, stormy sky blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240530_damascus-tsunami.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Graphene Fireworks
+- **Date:** 2024-05-30
+- **Prompt:** "A surreal nighttime display where exploding fireworks are inexplicably composed of perfect, light-absorbing geometric shards of matte graphene. The subjects expand outward in sharp, aggressive bursts that absorb the ambient light rather than emitting it. The lighting is highly contrasted, with the deep black explosions silhouetted against a violently bright, neon-lit cyberpunk cityscape background. The mood is abstract, paradoxical, and futuristic. Captured with a wide-angle lens, utilizing a fast shutter speed to freeze the sharp, light-devouring fragmentation of the graphene bursts."
+- **Negative prompt:** "bright flashes, glowing sparks, colorful fire, smoke, realistic fireworks, daylight"
+- **Tags:** surreal, night, fireworks, graphene, cyberpunk, geometric
+- **Style / Reference:** surreal 3D render, high contrast silhouette
+- **Composition:** expansive sky view, explosive centers, sharp geometric fragmentation
+- **Color palette:** pitch black matte graphene, vibrant neon pink, electric cyan background
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240530_graphene-fireworks.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Italian Futurism Beaver Dam
+- **Date:** 2024-05-30
+- **Prompt:** "A dynamic, chaotic scene of a river crashing through a massive beaver dam, depicted in the harsh, fragmented style of Italian Futurism. The organic subject of woven branches and mud is deconstructed into aggressive, jagged diagonal lines and overlapping geometric planes that capture the kinetic energy of the rushing water and the relentless industry of nature. The lighting is intense and directional, casting stark, jagged shadows that enhance the splintered geometry of the composition. The mood is energetic, aggressive, and highly stylized. Captured with a tilted perspective to emphasize raw motion and the violent interplay of wood and water."
+- **Negative prompt:** "calm, realistic, photography, smooth curves, gentle, peaceful nature, photorealistic"
+- **Tags:** abstract, art, italian futurism, nature, beaver dam, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** rusted wood browns, steel greys, harsh stark white water, chaotic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240530_futurism-beaver-dam.jpg`
+- **License / Attribution:** CC0
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
