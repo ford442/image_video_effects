@@ -1,8 +1,8 @@
 # image_video_effects — Weekly Plan
 
 ## Today's focus
-**2026-04-18 — Multi-slot shader stacking stability audit + regression harness.**
-Foundation work: stabilize N-slot composition (bind groups, format negotiation, layer chain ordering) before layering AI VJ Mode or further shader authoring on top. Ties together recent `LAYER_CHAIN_FIX_SUMMARY.md`, `fix_multipass_chain.json`, `SHADER_PIPELINE_ENHANCEMENT.md` threads.
+**2026-04-25 — AI VJ Mode: expand Alucinate to the full 961-shader library + add param suggestion.**
+Extend `src/AutoDJ.ts` (`Alucinate` class) to (1) build a unified cross-category shader manifest from all 15 category JSON files at runtime instead of a filtered generative-only subset, (2) add LLM-driven param suggestion alongside shader ID selection so each slot gets tuned params, and (3) wire a vibe-prompt text input in the Controls UI that fires a one-shot generation without waiting for the 25-second auto-loop cycle.
 
 ## Ideas
 <!--
@@ -11,7 +11,7 @@ Routine prioritizes these over generated ideas.
 Format: - [ ] Short description (optional: more context on next line indented)
 Routine will mark picked items as "[in progress — YYYY-MM-DD]".
 -->
-- [ ] AI VJ Mode — prompt-to-shader-stack generation via in-browser Gemma-2-2b
+- [in progress — 2026-04-25] AI VJ Mode — prompt-to-shader-stack generation via in-browser Gemma-2-2b
   Feed user vibe prompt → LLM picks N shaders + params from the 700+ library → renders a live VJ stack. Half-day prototype, multi-day polish.
 - [ ] Shader metadata normalization + full-text search over 700+ library
   Reconcile `params_missing.md`, `SHADER_PARAMETER_AUDIT.md`, and `shader_params_extracted.json` into a single canonical metadata schema so the scanner/rating/AI-VJ paths share one source of truth. Full-day.
@@ -27,6 +27,7 @@ Routine maintains this automatically — you can add items too.
 - [ ] Follow-up on immutable-let auto-fix scan — `IMMUTABLE_LET_FIX_REPORT.md` still has outstanding entries per scan logs
 - [ ] Bind-group compatibility report (`bindgroup_compatibility_report.json`) lists shaders flagged for mismatched layouts — unresolved
 - [ ] Runtime-error report (`runtime_errors_report.json`) needs triage pass
+- [ ] Multi-slot regression harness still unbuilt — `slotOrchestrator.ts`, `multipassRegistry.ts`, `bindGroupValidator.ts` exist but no Jest test suite covers them; last week's focus did not land
 
 ## Done
 <!--
@@ -42,7 +43,7 @@ Prune occasionally when this gets long.
 
 ## Last run
 <!-- Routine writes summary here each run. Overwrites previous. -->
-Date: 2026-04-18
-Mode: New Idea
-Focus: Multi-slot shader stacking stability audit + regression harness
+Date: 2026-04-25
+Mode: User Idea
+Focus: AI VJ Mode — Alucinate full-library + param suggestion + vibe-prompt UI
 Outcome: pending
