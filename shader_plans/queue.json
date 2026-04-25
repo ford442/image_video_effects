@@ -276,6 +276,12 @@
       "title": "Photonic Crystal-Brain",
       "added": "2026-04-22T15:34:57.537389",
       "completed": "2026-04-24T08:18:20.871715"
+    },
+    {
+      "filename": "2026-04-24_celestial-yggdrasil-matrix.md",
+      "title": "Celestial Yggdrasil-Matrix",
+      "added": "2026-04-24T08:20:42.751653",
+      "completed": "2026-04-25T07:41:52.548207"
     }
   ],
   "rejected": [],
@@ -395,11 +401,6 @@
       "filename": "2026-04-22_photonic-crystal-brain.md",
       "title": "Photonic Crystal-Brain",
       "added": "2026-04-22T15:34:57.537389"
-    },
-    {
-      "filename": "2026-04-24_celestial-yggdrasil-matrix.md",
-      "title": "Celestial Yggdrasil-Matrix",
-      "added": "2026-04-24T08:20:42.751653"
     }
   ],
   "in_progress": null
