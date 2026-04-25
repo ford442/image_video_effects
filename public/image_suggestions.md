@@ -3303,6 +3303,67 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 
 
+### Suggestion: Neon Cybernetic Angel
+- **Date:** 2024-10-31
+- **Prompt:** "A hyper-detailed portrait of a majestic cybernetic angel hovering in a neon-drenched cyberpunk cityscape. The subject features delicate, glowing holographic wings and pristine white armor laced with glowing pink circuitry. The lighting is harsh, directional neon from below, highlighting the futuristic materials. The mood is awe-inspiring and powerful. Captured with a 50mm portrait lens, sharp focus on the metallic faceplate and glowing eyes."
+- **Negative prompt:** "organic wings, feathers, bright daylight, natural, blurry, messy background"
+- **Tags:** cyberpunk, portrait, cybernetic, angel, neon
+- **Style / Reference:** photorealistic, dark sci-fi
+- **Composition:** centered portrait, dynamic low angle
+- **Color palette:** glowing pink, bright cyan, stark white, pitch black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20241031_cyber-angel.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Crystal Golem in a Magical Forest
+- **Date:** 2024-10-31
+- **Prompt:** "A colossal, lumbering golem constructed entirely from jagged, glowing amethyst crystals, walking through an ancient, bioluminescent forest. The subject radiates a soft, purple light that illuminates the surrounding giant ferns. The lighting is ethereal and low-key, heavily dependent on the glowing crystals and ambient forest spores. The mood is mystical, peaceful, and magical. Captured with a wide 35mm lens, showcasing the scale of the golem against the towering ancient trees."
+- **Negative prompt:** "city, metal, robot, modern, daylight, scary, fast"
+- **Tags:** fantasy, creature, crystal, forest, magical
+- **Style / Reference:** high fantasy concept art, photorealistic rendering
+- **Composition:** wide shot, rule of thirds, grand scale
+- **Color palette:** glowing purple amethyst, deep forest greens, soft bioluminescent cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20241031_crystal-golem.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Steampunk Submarine in a Coral Reef
+- **Date:** 2024-10-31
+- **Prompt:** "A highly detailed, intricate steampunk submarine exploring a vibrant underwater coral reef. The subject is made of polished brass and copper, with large glass portholes and spinning propellers. The lighting is bright, dappled sunlight piercing through the clear blue ocean water, causing specular highlights on the metallic hull. The mood is adventurous, wondrous, and Jules Verne-inspired. Captured with a wide-angle lens, keeping both the submarine and the colorful foreground coral in sharp focus."
+- **Negative prompt:** "dark, scary, murky water, modern submarine, plain metal, blurry"
+- **Tags:** steampunk, underwater, vehicle, coral, adventure
+- **Style / Reference:** steampunk concept art, photorealistic underwater photography
+- **Composition:** dynamic angle, wide perspective, detailed foreground
+- **Color palette:** warm brass, vibrant coral pinks, deep ocean blue, bright sunlight white
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20241031_steampunk-sub.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Post-Apocalyptic Neon Diner
+- **Date:** 2024-10-31
+- **Prompt:** "An overgrown, abandoned 1950s retro diner sitting in a post-apocalyptic desert wasteland. The subject features rusted chrome siding and a flickering neon 'OPEN' sign. The lighting is a dramatic, fiery sunset that casts long, moody shadows across the dusty landscape, contrasting with the bright pink glow of the failing neon sign. The mood is lonely, nostalgic, and cinematic. Captured with a 24mm wide-angle lens, emphasizing the vast emptiness surrounding the structure."
+- **Negative prompt:** "clean, bustling, city, daylight, pristine, people, modern"
+- **Tags:** post-apocalyptic, landscape, neon, diner, desert
+- **Style / Reference:** cinematic wasteland photography, retro-futurism
+- **Composition:** wide landscape, subject off-center, low horizon line
+- **Color palette:** dusty orange, rusted browns, neon pink, fiery sunset reds
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20241031_neon-diner.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Ethereal Floating Jellyfish City
+- **Date:** 2024-10-31
+- **Prompt:** "A breathtaking view of a futuristic city where the buildings resemble gigantic, translucent jellyfish floating in a sea of pink and orange clouds. The subjects are suspended in the sky, trailing glowing, bioluminescent tentacles. The lighting is soft and omnidirectional from the surrounding sunset clouds, creating thousands of internal refractions within the glass-like structures. The mood is utopian, surreal, and serene. Captured with an aerial wide-angle perspective, showing the vastness of the cloudscape and floating city."
+- **Negative prompt:** "ground, dark, gritty, cyberpunk, realistic architecture, harsh shadows"
+- **Tags:** sci-fi, surreal, city, floating, ethereal
+- **Style / Reference:** utopian concept art, ethereal 3D render
+- **Composition:** expansive aerial view, floating subjects, balanced framing
+- **Color palette:** translucent soft blue, pastel pink clouds, glowing golden orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20241031_jellyfish-city.jpg`
+- **License / Attribution:** CC0
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
