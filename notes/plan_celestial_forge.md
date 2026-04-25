@@ -43,7 +43,7 @@ Evaluates the scene geometry:
 - Keeps track of material IDs (core vs. metal vs. glowing panel).
 
 ### Main Compute Shader (`main`)
-- **Workgroup Size:** `@workgroup_size(8, 8, 1)`
+- **Workgroup Size:** `@workgroup_size(16, 16, 1)`
 - **Ray Setup:** Calculates normalized device coordinates (NDC) and ray direction (`rd`). Integrates `u.zoom_config.yz` for mouse camera orbit.
 - **Raymarching Loop:** Marches along `rd` until a hit or maximum distance.
 - **Lighting & Shading:**

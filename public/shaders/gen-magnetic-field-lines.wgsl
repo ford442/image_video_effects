@@ -204,7 +204,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Field strength visualization (subtle background)
     let fieldMag = length(totalField);
     let bgCol = vec3<f32>(0.05, 0.05, 0.1) * (1.0 + fieldMag * 0.1);
-    col = col + bgCol * (1.0 - saturate(length(col)));
+    col = col + bgCol * (1.0 - clamp(length(col), 0.0, 1.0));
     
     // Trails from previous frame
     let prev = textureLoad(dataTextureC, global_id.xy, 0).rgb;

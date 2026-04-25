@@ -1,6 +1,95 @@
 {
   "current": null,
-  "queue": [],
+  "queue": [
+    {
+      "id": "physarum-sacred-geometry",
+      "date": "2026-04-25",
+      "file": "2026-04-25_physarum-sacred-geometry.md",
+      "title": "Physarum (Slime Mold) Sacred Geometry",
+      "status": "approved",
+      "created_at": "2026-04-25T12:00:00Z"
+    },
+    {
+      "id": "depth-refracted-liquid-stained-glass",
+      "date": "2026-04-25",
+      "file": "2026-04-25_depth-refracted-liquid-stained-glass.md",
+      "title": "Depth-Refracted Liquid Stained Glass",
+      "status": "approved",
+      "created_at": "2026-04-25T12:05:00Z"
+    },
+    {
+      "id": "cellular-automata-tapestry",
+      "date": "2026-04-25",
+      "file": "2026-04-25_cellular-automata-tapestry.md",
+      "title": "Cellular Automata Tapestry (Reaction-Diffusion)",
+      "status": "approved",
+      "created_at": "2026-04-25T12:20:00Z"
+    },
+    {
+      "id": "bioluminescent-reaction-diffusion",
+      "date": "2026-04-25",
+      "file": "2026-04-25_bioluminescent-reaction-diffusion.md",
+      "title": "Bioluminescent Reaction-Diffusion",
+      "status": "approved",
+      "created_at": "2026-04-25T12:40:00Z"
+    },
+    {
+      "id": "psychedelic-time-warp-kaleidoscope",
+      "date": "2026-04-25",
+      "file": "2026-04-25_psychedelic-time-warp-kaleidoscope.md",
+      "title": "Psychedelic Time-Warp Kaleidoscope",
+      "status": "approved",
+      "created_at": "2026-04-25T12:45:00Z"
+    },
+    {
+      "id": "neural-network-glow-synaptic-pulse",
+      "date": "2026-04-25",
+      "file": "2026-04-25_neural-network-glow-synaptic-pulse.md",
+      "title": "Neural Network Glow (Synaptic Pulse)",
+      "status": "approved",
+      "created_at": "2026-04-25T12:50:00Z"
+    },
+    {
+      "id": "dynamic-tessellation-ornate-fractal-tiles",
+      "date": "2026-04-25",
+      "file": "2026-04-25_dynamic-tessellation-ornate-fractal-tiles.md",
+      "title": "Dynamic Tessellation (Ornate Fractal Tiles)",
+      "status": "approved",
+      "created_at": "2026-04-25T12:55:00Z"
+    },
+    {
+      "id": "holographic-lens-flare-matrix",
+      "date": "2026-04-25",
+      "file": "2026-04-25_holographic-lens-flare-matrix.md",
+      "title": "Holographic Lens-Flare Matrix",
+      "status": "approved",
+      "created_at": "2026-04-25T13:00:00Z"
+    },
+    {
+      "id": "magnetic-field-warp",
+      "date": "2026-04-25",
+      "file": "2026-04-25_magnetic-field-warp.md",
+      "title": "Magnetic Field Warp (Quadratic Distortion + Spectral Modulation)",
+      "status": "approved",
+      "created_at": "2026-04-25T13:10:00Z"
+    },
+    {
+      "id": "psychedelic-layered-time-stamps",
+      "date": "2026-04-25",
+      "file": "2026-04-25_psychedelic-layered-time-stamps.md",
+      "title": "Psychedelic Layered Time-Stamps",
+      "status": "approved",
+      "created_at": "2026-04-25T13:15:00Z"
+    },
+    {
+      "id": "aurora-borealis-synthesis",
+      "date": "2026-04-25",
+      "file": "2026-04-25_aurora-borealis-synthesis.md",
+      "title": "Aurora Borealis Synthesis",
+      "status": "approved",
+      "created_at": "2026-04-25T13:20:00Z"
+    }
+  ],
   "completed": [
     {
       "id": "chronos-labyrinth",
@@ -282,6 +371,42 @@
       "title": "Celestial Yggdrasil-Matrix",
       "added": "2026-04-24T08:20:42.751653",
       "completed": "2026-04-25T07:41:52.548207"
+    },
+    {
+      "filename": "shader_plans/2026-04-25_gen-chromatic-vortex.md",
+      "title": "gen-chromatic-vortex",
+      "added": "2026-04-25T16:49:46.262667",
+      "completed": "2026-04-25T16:49:46.262667"
+    },
+    {
+      "filename": "shader_plans/2026-04-25_gen-nebula-light-trail-swarm.md",
+      "title": "gen-nebula-light-trail-swarm",
+      "added": "2026-04-25T16:49:46.262667",
+      "completed": "2026-04-25T16:49:46.262667"
+    },
+    {
+      "filename": "shader_plans/2026-04-25_gen-chrono-erosion-feedback-melting.md",
+      "title": "gen-chrono-erosion-feedback-melting",
+      "added": "2026-04-25T16:49:46.262667",
+      "completed": "2026-04-25T16:49:46.262667"
+    },
+    {
+      "filename": "2026-04-25_audiovisual-mandelbulb-raymarcher.md",
+      "title": "Audiovisual Mandelbulb Raymarcher",
+      "added": "2026-04-25T12:15:00Z",
+      "completed": "2026-04-25T14:56:15.153887+00:00"
+    },
+    {
+      "filename": "2026-04-25_glass-mosaic-liquid-refraction.md",
+      "title": "Glass Mosaic + Liquid Refraction",
+      "added": "2026-04-25T12:35:00Z",
+      "completed": "2026-04-25T14:56:15.153887+00:00"
+    },
+    {
+      "filename": "2026-04-25_sonic-lava-flow.md",
+      "title": "Sonic Lava Flow (Real-time Fluid + Feedback)",
+      "added": "2026-04-25T13:05:00Z",
+      "completed": "2026-04-25T14:56:15.153887+00:00"
     }
   ],
   "rejected": [],

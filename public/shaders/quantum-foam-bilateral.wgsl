@@ -107,7 +107,7 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
   return rgb + vec3<f32>(v - c);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
   if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }

@@ -50,7 +50,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract(n * 43758.5453);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (f32(gid.x) >= resolution.x || f32(gid.y) >= resolution.y) { return; }

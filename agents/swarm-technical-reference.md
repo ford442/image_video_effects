@@ -287,7 +287,7 @@ fn calcNormal(p: vec3<f32>, mapFn: fn(vec3<f32>) -> f32) -> vec3<f32> {
 
 ```wgsl
 // File: my-shader-pass1.wgsl
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(gid.xy) / u.config.zw;
     
@@ -312,7 +312,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
 ```wgsl
 // File: my-shader-pass2.wgsl
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(gid.xy) / u.config.zw;
     
@@ -394,7 +394,7 @@ color = color + vec3<f32>(flash);
 - [ ] Header comment with name, category, features
 - [ ] All 13 bindings declared in correct order
 - [ ] Uniforms struct matches specification
-- [ ] `@compute @workgroup_size(8, 8, 1)` present
+- [ ] `@compute @workgroup_size(...)` present (16×16 recommended default; do NOT change sizes on shaders using `var<workgroup>` or `local_invocation_id`)
 - [ ] Both `writeTexture` AND `writeDepthTexture` written
 - [ ] Alpha is calculated (not hardcoded to 1.0)
 - [ ] Parameters use safe patterns (no div by zero, etc.)

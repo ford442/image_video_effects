@@ -207,7 +207,7 @@ Multi-pass simulations create "small visual worlds" that evolve over time, with 
 
 ```wgsl
 // PASS 1: Advect velocity
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn advectVelocity(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(gid.xy) / u.config.zw;
     let pixel = 1.0 / u.config.zw;
@@ -232,7 +232,7 @@ fn advectVelocity(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 
 // PASS 2: Advect density (ink/dye)
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn advectDensity(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(gid.xy) / u.config.zw;
     let pixel = 1.0 / u.config.zw;
@@ -277,7 +277,7 @@ fn curlNoise(p: vec2<f32>) -> vec2<f32> {
 Cellular automata simulation of granular materials.
 
 ```wgsl
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn sandSimulation(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(gid.xy) / u.config.zw;
     let pixel = 1.0 / u.config.zw;

@@ -1,0 +1,15 @@
+{
+  "id": "gen-sonic-lava-flow",
+  "name": "Sonic Lava Flow",
+  "url": "/shaders/gen-sonic-lava-flow.wgsl",
+  "category": "artistic",
+  "description": "Navier-Stokes-style fluid solver with decayed feedback creating a molten lava overlay, audio-reactive heat and chromatic shimmer.",
+  "tags": ["lava", "fluid", "fire", "audio-reactive", "molten", "heat", "temporal", "organic"],
+  "features": ["audio-reactive", "mouse-driven", "temporal"],
+  "params": [
+    { "id": "viscosity", "name": "Viscosity", "default": 0.6, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "turbulence", "name": "Turbulence", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "decay", "name": "Decay", "default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "id": "heatGlow", "name": "Heat Glow", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
+  ]
+}

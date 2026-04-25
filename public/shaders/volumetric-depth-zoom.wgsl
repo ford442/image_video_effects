@@ -106,7 +106,32 @@ fn sample_layer(uv: vec2<f32>, zoom_center: vec2<f32>, layer_depth: f32) -> vec4
     return vec4<f32>(color.rgb, depth);
 }
 
-@compute @workgroup_size(8, 8, 1)
+// ═══ ADVANCED ALPHA FUNCTION (moved before main for WGSL compatibility) ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, finalDepth: f32, totalWeight: f32) -> f32 {
+    // Tunable parameters from zoom_params
+    let fgSpeed = u.zoom_params.x;        // Foreground Speed
+    let bgSpeed = u.zoom_params.y;        // Background Speed
+    let parallaxStr = u.zoom_params.z;    // Parallax
+    let fogDensity = u.zoom_params.w;     // Fog Density
+    
+    // Luminance factor: brighter = more opaque
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaAlpha = mix(0.25, 1.0, luma);
+    
+    // Depth factor: farther pixels more transparent (atmospheric perspective)
+    let depthFade = exp(-finalDepth * fogDensity * 2.0);
+    let depthAlpha = mix(0.95, 0.25, depthFade);
+    
+    // Volumetric weight influence: more accumulated weight = denser = more opaque
+    let weightAlpha = smoothstep(0.0, 2.0, totalWeight) * 0.3 + 0.7;
+    
+    // Combine depth and luminance
+    let combinedAlpha = mix(lumaAlpha, depthAlpha, 0.6) * weightAlpha;
+    
+    return clamp(combinedAlpha, 0.0, 1.0);
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     var uv = vec2<f32>(global_id.xy) / resolution;
@@ -192,29 +217,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(fogged_color, alpha));
     textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(final_depth, 0.0, 0.0, 0.0));
-}
-
-// ═══ ADVANCED ALPHA FUNCTION ═══
-fn calculateAdvancedAlpha(color: vec3<f32>, finalDepth: f32, totalWeight: f32) -> f32 {
-    // Tunable parameters from zoom_params
-    let fgSpeed = u.zoom_params.x;        // Foreground Speed
-    let bgSpeed = u.zoom_params.y;        // Background Speed
-    let parallaxStr = u.zoom_params.z;    // Parallax
-    let fogDensity = u.zoom_params.w;     // Fog Density
-    
-    // Luminance factor: brighter = more opaque
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let lumaAlpha = mix(0.25, 1.0, luma);
-    
-    // Depth factor: farther pixels more transparent (atmospheric perspective)
-    let depthFade = exp(-finalDepth * fogDensity * 2.0);
-    let depthAlpha = mix(0.95, 0.25, depthFade);
-    
-    // Volumetric weight influence: more accumulated weight = denser = more opaque
-    let weightAlpha = smoothstep(0.0, 2.0, totalWeight) * 0.3 + 0.7;
-    
-    // Combine depth and luminance
-    let combinedAlpha = mix(lumaAlpha, depthAlpha, 0.6) * weightAlpha;
-    
-    return clamp(combinedAlpha, 0.0, 1.0);
 }

@@ -33,8 +33,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-var<workgroup> edgeFlags: array<u32, 64>;
-var<workgroup> edgeIds: array<u32, 64>;
+var<workgroup> edgeFlags: array<u32, 256>;
+var<workgroup> edgeIds: array<u32, 256>;
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -42,7 +42,7 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(
     @builtin(global_invocation_id) gid: vec3<u32>,
     @builtin(local_invocation_id) lid: vec3<u32>,
@@ -91,13 +91,13 @@ fn main(
             // Check neighbors
             let r = lidx + 1u;
             let l = lidx - 1u;
-            let u_idx = lidx - 8u;
-            let d = lidx + 8u;
+            let u_idx = lidx - 16u;
+            let d = lidx + 16u;
 
-            if (lx < 7u && edgeFlags[r] == 1u) { minId = min(minId, edgeIds[r]); }
+            if (lx < 15u && edgeFlags[r] == 1u) { minId = min(minId, edgeIds[r]); }
             if (lx > 0u && edgeFlags[l] == 1u) { minId = min(minId, edgeIds[l]); }
-            if (ly > 0u && lidx >= 8u && edgeFlags[u_idx] == 1u) { minId = min(minId, edgeIds[u_idx]); }
-            if (ly < 7u && lidx < 56u && edgeFlags[d] == 1u) { minId = min(minId, edgeIds[d]); }
+            if (ly > 0u && lidx >= 16u && edgeFlags[u_idx] == 1u) { minId = min(minId, edgeIds[u_idx]); }
+            if (ly < 15u && lidx < 240u && edgeFlags[d] == 1u) { minId = min(minId, edgeIds[d]); }
 
             edgeIds[lidx] = minId;
         }
@@ -111,7 +111,7 @@ fn main(
     var outColor: vec3<f32>;
     if (colorMode < 0.33) {
         // Edge-ID rainbow
-        let hue = f32(myEdgeId) / 64.0 + time * 0.05;
+        let hue = f32(myEdgeId) / 256.0 + time * 0.05;
         let edgeColor = vec3<f32>(
             0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
             0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
@@ -144,6 +144,6 @@ fn main(
     }
 
     // Alpha stores edge ID / chain identifier
-    textureStore(writeTexture, gid.xy, vec4<f32>(outColor, f32(myEdgeId) / 64.0));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(gradMag, f32(myEdgeId) / 64.0, f32(isEdge), 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(outColor, f32(myEdgeId) / 256.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(gradMag, f32(myEdgeId) / 256.0, f32(isEdge), 1.0));
 }

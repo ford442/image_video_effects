@@ -62,7 +62,7 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
   return vec3<f32>(r, g, b) * radiance;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let id = vec2<u32>(global_id.xy);
   let coord = vec2<i32>(i32(id.x), i32(id.y));

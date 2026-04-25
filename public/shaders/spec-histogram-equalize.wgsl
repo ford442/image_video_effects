@@ -35,7 +35,7 @@ struct Uniforms {
 
 var<workgroup> localHistogram: array<atomic<u32>, 256>;
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(
     @builtin(global_invocation_id) gid: vec3<u32>,
     @builtin(local_invocation_id) lid: vec3<u32>,
@@ -50,7 +50,7 @@ fn main(
     let colorPreserve = mix(0.0, 1.0, u.zoom_params.w);
 
     // Phase 1: Clear histogram (cooperative clear)
-    for (var i = lidx; i < 256u; i = i + 64u) {
+    for (var i = lidx; i < 256u; i = i + 256u) {
         atomicStore(&localHistogram[i], 0u);
     }
     workgroupBarrier();
@@ -71,7 +71,7 @@ fn main(
     }
 
     // CLAHE: clip histogram and redistribute
-    let totalPixels = 64u; // 8x8 workgroup
+    let totalPixels = 256u; // 16x16 workgroup
     let clippedCount = min(atomicLoad(&localHistogram[bin]), u32(clipLimit));
 
     // Phase 4: Remap using CDF

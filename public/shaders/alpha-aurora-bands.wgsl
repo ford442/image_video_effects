@@ -74,7 +74,7 @@ fn auroraEmission(altitude: f32, particleEnergy: f32) -> vec3<f32> {
     return vec3<f32>(redLine, greenLine, blueLine);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }

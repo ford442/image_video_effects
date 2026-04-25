@@ -85,7 +85,7 @@ fn reconstructHologram(uv: vec2<f32>, depth: f32, intensity: f32, phase: f32, an
   return rgb + vec3<f32>(val - c);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }

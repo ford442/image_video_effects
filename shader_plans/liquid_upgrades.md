@@ -516,7 +516,7 @@ Repeat 20-40 times:
 ## Notes for Implementation
 
 ### WGSL Considerations
-- All shaders use `@workgroup_size(8, 8, 1)`—maintain this for consistency
+- All shaders use `@workgroup_size(16, 16, 1)`—maintain this for consistency
 - Texture coordinates use `uv` naming convention—preserve for readability
 - Time is in `u.config.x`—consistent across all shaders
 - Depth texture provides foreground/background masking

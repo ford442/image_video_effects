@@ -1,0 +1,56 @@
+{
+  "id": "gen-chrono-erosion-feedback-melting",
+  "name": "Chrono Erosion",
+  "url": "shaders/gen-chrono-erosion-feedback-melting.wgsl",
+  "category": "artistic",
+  "description": "Datamosh-like flow effect where video melts along a curl-noise vector field with feedback decay and audio-driven turbulence.",
+  "features": [
+    "audio-reactive",
+    "temporal",
+    "mouse-driven",
+    "feedback"
+  ],
+  "tags": [
+    "erosion",
+    "melt",
+    "datamosh",
+    "feedback",
+    "curl-noise",
+    "audio",
+    "artistic"
+  ],
+  "params": [
+    {
+      "id": "decay",
+      "name": "Trail Decay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "flowIntensity",
+      "name": "Flow Intensity",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "feedbackMix",
+      "name": "Feedback Mix",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

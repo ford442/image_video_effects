@@ -326,12 +326,35 @@ struct Uniforms {
 ```
 
 ### Workgroup Size
-All compute shaders MUST use:
-```wgsl
-@compute @workgroup_size(8, 8, 1)
+
+The renderer **dynamically parses** `@workgroup_size` from each shader's WGSL source and dispatches accordingly:
+
+```typescript
+// WebGPURenderer.ts — dynamic dispatch
+pass.dispatchWorkgroups(
+  Math.ceil(this.scaledW / wg.x),
+  Math.ceil(this.scaledH / wg.y),
+  1
+);
 ```
 
-This matches the dispatch: `dispatchWorkgroups(Math.ceil(width/8), Math.ceil(height/8), 1)`
+Because of this, **shaders are NOT required to use a fixed size**, but the library standardizes on **`(16, 16, 1)`** for maximum GPU occupancy.
+
+| Workgroup Size | Count | Typical Use |
+|----------------|------:|-------------|
+| `(16, 16, 1)` | ~950 | **Standard** — all image/generative/distortion shaders |
+| `(64, 1, 1)` | 2 | 1D particle systems (boids, flock) |
+| `(256, 1, 1)` | 1 | Histogram / atomic templates |
+
+#### Rules
+1. **Default for new shaders:** Use `@workgroup_size(16, 16, 1)`.
+2. **NEVER change** the workgroup size of a shader that uses:
+   - `var<workgroup>` (shared memory)
+   - `@builtin(local_invocation_id)` (size-dependent indexing)
+   - `workgroupBarrier()` (tiled algorithms)
+   
+   These shaders have their workgroup size baked into array dimensions and thread math. Changing it silently breaks them.
+3. **The renderer handles all valid sizes automatically** — do not change Renderer.ts to "fix" this.
 
 ---
 

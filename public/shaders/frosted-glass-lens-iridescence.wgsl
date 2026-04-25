@@ -63,7 +63,7 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
     return color / max(sampleCount, 1.0);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }

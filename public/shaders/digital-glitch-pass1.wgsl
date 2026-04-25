@@ -131,7 +131,7 @@ fn corruptByte(b: u32, corruptionType: f32, seed: f32, intensity: f32) -> u32 {
   return result & 0xFFu;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let texelCoord = vec2<i32>(global_id.xy);

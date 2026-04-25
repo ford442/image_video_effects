@@ -50,7 +50,7 @@ fn hash12_(p: vec2<f32>) -> f32 {
     return fract(((_e18 + _e20) * _e23));
 }
 
-@compute @workgroup_size(8, 8, 1) 
+@compute @workgroup_size(16, 16, 1) 
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv: vec2<f32>;
     var mousePos: vec2<f32>;

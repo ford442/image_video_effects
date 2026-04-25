@@ -63,7 +63,7 @@
 
 | # | Check | Points | How to Verify |
 |---|-------|--------|---------------|
-| 1 | `@compute @workgroup_size(8, 8, 1)` exact | 5 | Regex search |
+| 1 | `@compute @workgroup_size` is valid and declared | 5 | Any valid (x, y, z); warn if shared-memory shader's size mismatches array dims |
 | 2 | All loops bounded with fixed iteration counts | 5 | No `while` with dynamic exit only |
 | 3 | No redundant texture samples in loops | 4 | Sample cached in variable before loop if reused |
 | 4 | Early exits where applicable | 3 | `if (condition) { textureStore(...); return; }` |

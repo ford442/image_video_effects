@@ -57,7 +57,7 @@ fn evaluateSH(normal: vec3<f32>, coeffs: array<vec3<f32>, 9>) -> vec3<f32> {
     return result;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;

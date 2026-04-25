@@ -40,7 +40,7 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
   return fract((p3.xx+p3.yz)*p3.zy);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
   if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }

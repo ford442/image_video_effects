@@ -201,7 +201,7 @@ select.dispatchEvent(new Event('change'));
 cat public/shaders/your-shader.wgsl | head -50
 
 # Check for common issues:
-# - @workgroup_size(8, 8, 1) - correct size
+# - @workgroup_size(16, 16, 1) - correct size
 # - fn main(@builtin(global_invocation_id) global_id: vec3<u32>) - correct signature
 # - textureStore(writeTexture, ...) - output present
 ```

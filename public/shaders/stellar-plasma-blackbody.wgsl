@@ -100,7 +100,7 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b) * radiance;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
     if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) {

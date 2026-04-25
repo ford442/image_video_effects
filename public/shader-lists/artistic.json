@@ -498,6 +498,173 @@
     ]
   },
   {
+    "id": "gen-chrono-erosion-feedback-melting",
+    "name": "Chrono Erosion",
+    "url": "shaders/gen-chrono-erosion-feedback-melting.wgsl",
+    "category": "artistic",
+    "description": "Datamosh-like flow effect where video melts along a curl-noise vector field with feedback decay and audio-driven turbulence.",
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "erosion",
+      "melt",
+      "datamosh",
+      "feedback",
+      "curl-noise",
+      "audio",
+      "artistic"
+    ],
+    "params": [
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowIntensity",
+        "name": "Flow Intensity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedbackMix",
+        "name": "Feedback Mix",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-glass-mosaic-liquid-refraction",
+    "name": "Glass Mosaic Refraction",
+    "url": "/shaders/gen-glass-mosaic-liquid-refraction.wgsl",
+    "category": "artistic",
+    "description": "Stained-glass polygon mosaic with pseudo-depth height-field refraction, audio-reactive ripples, and depth output.",
+    "tags": [
+      "glass",
+      "mosaic",
+      "refraction",
+      "stained-glass",
+      "audio-reactive",
+      "ornate",
+      "caustics"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "facets",
+        "name": "Facet Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bevel",
+        "name": "Bevel Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ripple",
+        "name": "Ripple Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-sonic-lava-flow",
+    "name": "Sonic Lava Flow",
+    "url": "/shaders/gen-sonic-lava-flow.wgsl",
+    "category": "artistic",
+    "description": "Navier-Stokes-style fluid solver with decayed feedback creating a molten lava overlay, audio-reactive heat and chromatic shimmer.",
+    "tags": [
+      "lava",
+      "fluid",
+      "fire",
+      "audio-reactive",
+      "molten",
+      "heat",
+      "temporal",
+      "organic"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "heatGlow",
+        "name": "Heat Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "holographic-contour",
     "name": "Holographic Contour",
     "url": "shaders/holographic-contour.wgsl",

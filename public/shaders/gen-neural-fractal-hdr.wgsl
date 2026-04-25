@@ -114,7 +114,7 @@ fn evalFractal(uv: vec2<f32>, resolution: vec2<f32>, time: f32, zoom: f32, color
   return col;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }

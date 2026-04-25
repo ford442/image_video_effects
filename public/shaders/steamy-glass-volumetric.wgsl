@@ -68,7 +68,7 @@ const SIGMA_T_STEAM: f32 = 1.5;
 const SIGMA_S_STEAM: f32 = 1.3;
 const STEP_SIZE: f32 = 0.025;
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }

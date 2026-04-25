@@ -86,7 +86,7 @@ describe('Bind-group validation', () => {
       @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
       @group(0) @binding(3) var<uniform> u: Uniforms;
       struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50> };
-      @compute @workgroup_size(8, 8, 1)
+      @compute @workgroup_size(16, 16, 1)
       fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {}
     `;
 

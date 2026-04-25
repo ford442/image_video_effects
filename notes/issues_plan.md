@@ -69,7 +69,7 @@ struct Uniforms {
    - `zoom_config: vec4<f32>` - MouseX (y), MouseY (z), MouseDown (w)
    - `zoom_params: vec4<f32>` - Shader-specific parameters
    - `ripples: array<vec4<f32>, 50>` - Ripple data
-3. Changed `@fragment` to `@compute @workgroup_size(8, 8, 1)`
+3. Changed `@fragment` to `@compute @workgroup_size(16, 16, 1)`
 4. Changed entry point to use `global_id: vec3<u32>`
 5. Added bounds checking: `if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }`
 6. Changed `textureSample()` to `textureSampleLevel(..., 0.0)`
