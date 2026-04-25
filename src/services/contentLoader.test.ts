@@ -53,7 +53,7 @@ describe('fetchContentManifest', () => {
                 description: 'Neon Grid',
             },
         ]);
-        expect(result.videos).toEqual([`${BUCKET_BASE_URL}/clips/demo.mp4`]);
+        expect(result.videos).toEqual([{ url: `${BUCKET_BASE_URL}/clips/demo.mp4` }]);
     });
 
     it('falls back to the local manifest and bundled defaults when needed', async () => {
@@ -84,7 +84,7 @@ describe('fetchContentManifest', () => {
                 description: 'pulse, glow',
             },
         ]);
-        expect(result.videos).toEqual(FALLBACK_VIDEOS);
+        expect(result.videos).toEqual(FALLBACK_VIDEOS.map(url => ({ url })));
     });
 
     it('uses bundled image and video fallbacks when both manifests fail', async () => {
@@ -98,7 +98,7 @@ describe('fetchContentManifest', () => {
             tags: ['fallback', 'unsplash', 'demo'],
             description: 'Demo Image',
         });
-        expect(result.videos).toEqual(FALLBACK_VIDEOS);
+        expect(result.videos).toEqual(FALLBACK_VIDEOS.map(url => ({ url })));
     });
 
     it('falls back to the local manifest when the API returns a non-array', async () => {

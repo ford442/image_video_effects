@@ -30,6 +30,8 @@ interface WebGPUCanvasProps {
     liveStreamUrl?: string; // NEW: HLS live stream URL
     // Expose the canvas element to the parent (e.g. for recording)
     onCanvasRef?: (canvas: HTMLCanvasElement | null) => void;
+    // B3HD segment
+    segment?: { start: number; end: number } | null;
 }
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
@@ -41,7 +43,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     isWebcamActive = false,
     webcamVideoElement,
     liveStreamUrl,
-    onCanvasRef
+    onCanvasRef,
+    segment,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -303,6 +306,20 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         playPromise.catch(e => console.log("Video play failed:", e));
                     }
                 }
+
+                // Handle B3HD segment seeking
+                if (segment && videoRef.current) {
+                    const seek = () => {
+                        if (videoRef.current) {
+                            videoRef.current.currentTime = segment.start;
+                        }
+                    };
+                    if (videoRef.current.readyState >= 1) {
+                        seek();
+                    } else {
+                        videoRef.current.addEventListener('loadedmetadata', seek, { once: true });
+                    }
+                }
             } else {
                 // Image or Generative mode: pause video to save resources
                 videoRef.current!.pause();
@@ -318,7 +335,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
         }
 
-    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement, rendererRef]);
+    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement, rendererRef, segment]);
 
     // Handle Mute
     useEffect(() => {

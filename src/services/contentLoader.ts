@@ -1,10 +1,12 @@
 import { ImageRecord } from '../AutoDJ';
+import { VideoRecord } from '../syncTypes';
 import {
     BUCKET_BASE_URL,
     FALLBACK_IMAGES,
     FALLBACK_VIDEOS,
     IMAGE_MANIFEST_URL,
     LOCAL_MANIFEST_URL,
+    VIDEO_MANIFEST_URL,
 } from '../config/appConfig';
 
 interface ApiManifestItem {
@@ -24,13 +26,14 @@ interface LocalManifestResponse {
 
 export interface LoadedContent {
     manifest: ImageRecord[];
-    videos: string[];
+    videos: VideoRecord[];
 }
 
 export async function fetchContentManifest(): Promise<LoadedContent> {
     let manifest: ImageRecord[] = [];
-    let videos: string[] = [];
+    let videos: VideoRecord[] = [];
 
+    // 1. Fetch images from API
     try {
         const response = await fetch(IMAGE_MANIFEST_URL);
         if (response.ok) {
@@ -48,6 +51,36 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
         console.warn('Backend API failed, trying local manifest...', error);
     }
 
+    // 2. Fetch videos from API
+    try {
+        const response = await fetch(VIDEO_MANIFEST_URL);
+        if (response.ok) {
+            const data = await response.json() as any[];
+            if (Array.isArray(data) && data.length > 0) {
+                videos = data
+                    .filter((item) => {
+                        // Server-side filtering may not be active yet;
+                        // only accept entries that look like videos.
+                        if (item.type === 'video') return true;
+                        const name = (item.name || item.title || item.filename || item.url || '').toLowerCase();
+                        return /\.(mp4|webm|mov|m4v)(\?.*)?$/.test(name);
+                    })
+                    .map((item) => ({
+                        id: item.id,
+                        url: item.url || item.filename,
+                        title: item.title || item.name,
+                        description: item.description,
+                        tags: item.tags,
+                        duration: typeof item.duration === 'number' ? item.duration : undefined,
+                    }));
+                console.log(`Loaded ${videos.length} video(s) from ${VIDEO_MANIFEST_URL}`);
+            }
+        }
+    } catch (error) {
+        console.warn('Video manifest API failed, will try local manifest...', error);
+    }
+
+    // 3. Try Local Manifest (Bucket Images & Videos) if API Empty OR Videos Missing
     if (manifest.length === 0 || videos.length === 0) {
         try {
             const response = await fetch(LOCAL_MANIFEST_URL);
@@ -68,7 +101,9 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
                 if (videos.length === 0) {
                     videos = (data.videos || []).map((item) => {
                         const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
-                        return item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`;
+                        return {
+                            url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`,
+                        };
                     });
                 }
 
@@ -79,6 +114,7 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
         }
     }
 
+    // 4. Last Resort: Fallbacks for images and videos
     if (manifest.length === 0) {
         console.warn('Image manifest empty. Using robust Unsplash fallback.');
         manifest = FALLBACK_IMAGES.map((url) => ({
@@ -90,7 +126,7 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
 
     if (videos.length === 0) {
         console.warn('No videos found. Using sample videos.');
-        videos = FALLBACK_VIDEOS;
+        videos = FALLBACK_VIDEOS.map((url) => ({ url }));
     }
 
     return { manifest, videos };

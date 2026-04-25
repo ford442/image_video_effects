@@ -8,12 +8,16 @@ import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
-import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
-import { 
+import {
     STORAGE_API_URL,
-    IMAGE_MANIFEST_URL as VPS_IMAGE_MANIFEST_URL 
+    IMAGE_MANIFEST_URL as VPS_IMAGE_MANIFEST_URL,
+    DEFAULT_B3HD_SEGMENT_LENGTH,
+    DEFAULT_B3HD_INTERVAL_SECONDS,
 } from './config/appConfig';
+import { fetchContentManifest, LoadedContent } from './services/contentLoader';
+import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -228,7 +232,7 @@ function MainApp() {
 
     // --- State: Content ---
     const [imageManifest, setImageManifest] = useState<ImageRecord[]>([]);
-    const [videoList, setVideoList] = useState<string[]>([]); // New Video List State
+    const [videoList, setVideoList] = useState<VideoRecord[]>([]); // Video List with metadata
     const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>();
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
     const [inputSource, setInputSource] = useState<InputSource>('image');
@@ -237,6 +241,10 @@ function MainApp() {
     const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined);
     const [isMuted, setIsMuted] = useState(true);
     const [selectedVideo, setSelectedVideo] = useState<string>("");
+    const [videoB3hdMode, setVideoB3hdMode] = useState(false);
+    const [b3hdSegmentLength, setB3hdSegmentLength] = useState(DEFAULT_B3HD_SEGMENT_LENGTH);
+    const [b3hdIntervalSeconds, setB3hdIntervalSeconds] = useState(DEFAULT_B3HD_INTERVAL_SECONDS);
+    const [currentSegment, setCurrentSegment] = useState<VideoSegment | null>(null);
 
     // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
@@ -410,98 +418,45 @@ function MainApp() {
         const controller = new AbortController();
         const signal = controller.signal;
 
-        // Fetch the dynamic image manifest from the backend on startup
-        const fetchImageManifest = async () => {
-            let manifest: ImageRecord[] = [];
-            let videos: string[] = [];
-
-            // 1. Try API
+        // Fetch the dynamic image and video manifests from the backend on startup
+        const fetchManifests = async () => {
+            let content: LoadedContent;
             try {
-                const response = await fetch(IMAGE_MANIFEST_URL, { signal });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (!Array.isArray(data)) {
-                        throw new TypeError(`API response is not an array, received: ${typeof data}`);
-                    }
-                    manifest = data.map((item: any) => ({
-                        url: item.url,
-                        tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],
-                        description: item.description || ''
-                    }));
-                }
+                content = await fetchContentManifest();
             } catch (error) {
                 if ((error as Error).name === 'AbortError') return;
-                console.warn("Backend API failed, trying local manifest...", error);
+                console.warn("Failed to fetch manifests:", error);
+                content = {
+                    manifest: FALLBACK_IMAGES.map(url => ({
+                        url,
+                        tags: ['fallback', 'unsplash', 'demo'],
+                        description: 'Demo Image'
+                    })),
+                    videos: FALLBACK_VIDEOS.map(url => ({ url })),
+                };
             }
 
-            // 2. Try Local Manifest (Bucket Images & Videos) if API Empty OR Videos Missing
-            if (manifest.length === 0 || videos.length === 0) {
-                try {
-                    const response = await fetch(LOCAL_MANIFEST_URL, { signal });
-                    if (response.ok) {
-                        const data = await response.json();
+            setImageManifest(content.manifest);
+            setVideoList(content.videos);
+            setStatus(`Loaded ${content.manifest.length} images, ${content.videos.length} videos`);
 
-                        // Process Images (only if API failed to provide them)
-                        if (manifest.length === 0) {
-                            manifest = (data.images || []).map((item: any) => {
-                                // Fix double bucket names if they exist in the manifest already
-                                const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
-                                return {
-                                    url: item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`,
-                                    tags: item.tags || [],
-                                    description: item.tags ? item.tags.join(', ') : ''
-                                };
-                            });
-                        }
-
-                        // Process Videos (if missing)
-                        if (videos.length === 0) {
-                            videos = (data.videos || []).map((item: any) => {
-                                const cleanUrl = item.url.replace('my-sd35-space-images-2025/', '');
-                                return item.url.startsWith('http') ? item.url : `${BUCKET_BASE_URL}/${cleanUrl}`;
-                            });
-                        }
-
-                        console.log("Loaded local manifest. Total:", manifest.length, "images,", videos.length, "videos");
-                    }
-                } catch (e) {
-                    if ((e as Error).name === 'AbortError') return;
-                    console.warn("Failed to load local manifest:", e);
-                }
+            // Hydrate durations in the background so B3HD mode can use them
+            if (content.videos.length > 0) {
+                hydrateDurations(content.videos).then((hydrated) => {
+                    setVideoList(hydrated);
+                }).catch((e) => {
+                    console.warn("Failed to hydrate video durations:", e);
+                });
             }
 
-            // 3. Last Resort: Fallbacks for images and videos
-            if (manifest.length === 0) {
-                console.warn("Image manifest empty. Using robust Unsplash fallback.");
-                manifest = FALLBACK_IMAGES.map(url => ({
-                    url,
-                    tags: ['fallback', 'unsplash', 'demo'],
-                    description: 'Demo Image'
-                }));
-                setStatus('Using fallback images - manifest unavailable');
-            } else {
-                setStatus(`Loaded ${manifest.length} images, ${videos.length} videos`);
-            }
-
-            // Video fallback
-            if (videos.length === 0) {
-                console.warn("No videos found. Using sample videos.");
-                videos = FALLBACK_VIDEOS;
-            }
-
-            setImageManifest(manifest);
-            setVideoList(videos); // Update Video List State
-
-            // Push to Renderer
+            // Push images to Renderer
             if (rendererRef.current) {
                 if (rendererRef.current.setImageList) {
-                    rendererRef.current.setImageList(manifest.map(m => m.url));
+                    rendererRef.current.setImageList(content.manifest.map(m => m.url));
                 }
-                // If the renderer has a setVideoList method, call it here.
-                // Currently assuming Controls handles the selection via `selectedVideo` prop.
             }
         };
-        fetchImageManifest();
+        fetchManifests();
         return () => controller.abort();
     }, []);
 
@@ -891,6 +846,60 @@ function MainApp() {
             }
         };
     }, []);
+
+    // --- B3HD Video Rotation Mode ---
+    const b3hdTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const b3hdRecentHistoryRef = useRef<string[]>([]);
+    const videoListRef = useRef<VideoRecord[]>(videoList);
+    videoListRef.current = videoList;
+
+    useEffect(() => {
+        // Clear any existing timer when mode changes
+        if (b3hdTimerRef.current) {
+            clearTimeout(b3hdTimerRef.current);
+            b3hdTimerRef.current = null;
+        }
+
+        if (!videoB3hdMode || inputSource !== 'video' || videoList.length === 0) {
+            setCurrentSegment(null);
+            return;
+        }
+
+        const playNextSegment = () => {
+            const segment = pickRandomSegment(
+                videoListRef.current,
+                b3hdSegmentLength,
+                b3hdRecentHistoryRef.current
+            );
+            if (!segment) {
+                console.warn("B3HD: No valid segment found");
+                return;
+            }
+
+            setCurrentSegment(segment);
+            setSelectedVideo(segment.video.url);
+
+            // Update history
+            b3hdRecentHistoryRef.current.push(segment.video.id || segment.video.url);
+            if (b3hdRecentHistoryRef.current.length > 5) {
+                b3hdRecentHistoryRef.current.shift();
+            }
+
+            // Schedule next segment
+            const totalCycle = (b3hdSegmentLength + b3hdIntervalSeconds) * 1000;
+            b3hdTimerRef.current = setTimeout(playNextSegment, totalCycle);
+        };
+
+        // Start immediately
+        playNextSegment();
+
+        return () => {
+            if (b3hdTimerRef.current) {
+                clearTimeout(b3hdTimerRef.current);
+                b3hdTimerRef.current = null;
+            }
+        };
+    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds]);
 
     // --- Roulette / Chaos Mode Functions ---
     const getRandomShader = useCallback((): ShaderEntry | null => {
@@ -1384,7 +1393,12 @@ function MainApp() {
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
                         onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
                         inputSource={inputSource} setInputSource={setInputSource} videoList={videoList}
-                        selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo} isMuted={isMuted} setIsMuted={setIsMuted}
+                        selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo}
+                        videoB3hdMode={videoB3hdMode} setVideoB3hdMode={setVideoB3hdMode}
+                        b3hdSegmentLength={b3hdSegmentLength} setB3hdSegmentLength={setB3hdSegmentLength}
+                        b3hdIntervalSeconds={b3hdIntervalSeconds} setB3hdIntervalSeconds={setB3hdIntervalSeconds}
+                        currentSegment={currentSegment}
+                        isMuted={isMuted} setIsMuted={setIsMuted}
                         activeGenerativeShader={activeGenerativeShader} setActiveGenerativeShader={setActiveGenerativeShader}
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                         onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
@@ -1425,6 +1439,7 @@ function MainApp() {
                         activeSlot={activeSlot}
                         activeGenerativeShader={activeGenerativeShader}
                         selectedVideo={selectedVideo}
+                        segment={currentSegment ? { start: currentSegment.start, end: currentSegment.end } : null}
                         apiBaseUrl={STORAGE_API_URL}
                         isWebcamActive={isWebcamActive}
                         webcamVideoElement={videoElementRef.current}

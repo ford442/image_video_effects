@@ -27,6 +27,15 @@ export interface SyncMessage {
     payload?: any;
 }
 
+export interface VideoRecord {
+    id?: string;
+    url: string;
+    title?: string;
+    description?: string;
+    tags?: string[];
+    duration?: number;
+}
+
 export interface FullState {
     modes: RenderMode[];
     activeSlot: number;
@@ -38,7 +47,7 @@ export interface FullState {
     autoChangeDelay: number;
     isModelLoaded: boolean;
     availableModes: ShaderEntry[];
-    videoList: string[];
+    videoList: VideoRecord[];
     selectedVideo: string;
     isMuted: boolean;
 }

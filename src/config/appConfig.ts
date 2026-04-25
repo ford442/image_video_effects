@@ -129,6 +129,9 @@ export const STORAGE_CONFIG = {
 //  Feature Flags
 // ═══════════════════════════════════════════════════════════════════════════════
 
+export const DEFAULT_B3HD_SEGMENT_LENGTH = 10;
+export const DEFAULT_B3HD_INTERVAL_SECONDS = 0;
+
 export const FEATURES = {
     enableVPSStorage: true,
     enableRatings: true,

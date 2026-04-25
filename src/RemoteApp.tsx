@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Controls from './components/Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
-import { SyncMessage, FullState, SYNC_CHANNEL_NAME } from './syncTypes';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
 const DEFAULT_SLOT_PARAMS: SlotParams = {
@@ -25,7 +25,7 @@ const RemoteApp: React.FC = () => {
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
     const [isModelLoaded, setIsModelLoaded] = useState(false);
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
-    const [videoList, setVideoList] = useState<string[]>([]);
+    const [videoList, setVideoList] = useState<VideoRecord[]>([]);
     const [selectedVideo, setSelectedVideo] = useState<string>('');
     const [isMuted, setIsMuted] = useState(true);
 
