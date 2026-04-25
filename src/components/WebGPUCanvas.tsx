@@ -206,14 +206,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         return () => observer.disconnect();
     }, [canvasReady, displaySize.width]); // Add displaySize.width to re-run if needed
 
-    // Sync video element to renderer
-    useEffect(() => {
-        if (rendererRef.current && videoRef.current) {
-            if ('setVideo' in rendererRef.current) {
-                (rendererRef.current as any).setVideo(videoRef.current);
-            }
-        }
-    }, [rendererRef]);
+
 
     // Sync inputSource to renderer
     useEffect(() => {
@@ -318,7 +311,14 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
         handleVideoSource();
 
-    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement]);
+        // Ensure the renderer is aware of the video element whenever source changes
+        if (rendererRef.current && videoRef.current) {
+            if ('setVideo' in rendererRef.current) {
+                (rendererRef.current as any).setVideo(videoRef.current);
+            }
+        }
+
+    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement, rendererRef]);
 
     // Handle Mute
     useEffect(() => {
@@ -358,6 +358,13 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                 // Resolution: Use the stacking render signature from 'main'
                 // AND pass display dimensions
+
+                // Extra safety: repeatedly ensure the renderer has the video reference
+                // (in case the renderer was instantiated after the effect ran)
+                if ('setVideo' in rendererRef.current) {
+                    (rendererRef.current as any).setVideo(videoRef.current);
+                }
+
                 (rendererRef.current as any).render(
                     modes,
                     slotParams,
