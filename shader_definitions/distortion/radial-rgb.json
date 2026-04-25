@@ -1,0 +1,52 @@
+{
+  "id": "radial-rgb",
+  "name": "Radial RGB",
+  "url": "shaders/radial-rgb.wgsl",
+  "category": "distortion",
+  "description": "Spectral chromatic aberration with lens distortion, anamorphic stretch, 7-wavelength sampling, and vignette.",
+  "params": [
+    {
+      "id": "k1",
+      "name": "Barrel / Pincushion",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "k2",
+      "name": "Lens Curvature",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "anamorphic",
+      "name": "Anamorphic Stretch",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration"
+  ],
+  "tags": [
+    "lens",
+    "chromatic",
+    "spectral",
+    "distortion",
+    "anamorphic"
+  ]
+}

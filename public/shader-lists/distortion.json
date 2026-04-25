@@ -1248,6 +1248,58 @@
     "name": "Prism Lens"
   },
   {
+    "id": "radial-rgb",
+    "name": "Radial RGB",
+    "url": "shaders/radial-rgb.wgsl",
+    "category": "distortion",
+    "description": "Spectral chromatic aberration with lens distortion, anamorphic stretch, 7-wavelength sampling, and vignette.",
+    "params": [
+      {
+        "id": "k1",
+        "name": "Barrel / Pincushion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "k2",
+        "name": "Lens Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "anamorphic",
+        "name": "Anamorphic Stretch",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "lens",
+      "chromatic",
+      "spectral",
+      "distortion",
+      "anamorphic"
+    ]
+  },
+  {
     "id": "sonic-boom",
     "name": "Sonic Boom",
     "url": "shaders/sonic-boom.wgsl",
@@ -1877,6 +1929,60 @@
     ],
     "created_by": "Agent 2A - Shader Surgeon",
     "created_date": "2026-03-22"
+  },
+  {
+    "id": "chroma-shift-grid",
+    "name": "Chroma Shift Grid",
+    "url": "shaders/chroma-shift-grid.wgsl",
+    "category": "distortion",
+    "description": "Grid-based multi-mode chromatic aberration with temporal animation, per-cell lens distortion, and depth awareness.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "mode",
+        "name": "Chroma Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "animationSpeed",
+        "name": "Animation Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "distortionStrength",
+        "name": "Lens Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chromaStrength",
+        "name": "Chroma Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "chromatic",
+      "lens",
+      "grid",
+      "distortion"
+    ]
   },
   {
     "id": "temporal_echo",

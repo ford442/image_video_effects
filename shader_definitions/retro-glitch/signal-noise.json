@@ -2,47 +2,50 @@
   "id": "signal-noise",
   "name": "Signal Noise",
   "url": "shaders/signal-noise.wgsl",
-  "category": "image",
+  "category": "retro-glitch",
+  "description": "Multi-octave analog noise with VHS head-switching bands, DCT block artifacts, datamoshing smear, and directional chromatic aberration with YUV chroma noise.",
   "features": [
-    "mouse-driven"
+    "temporal"
   ],
-  "description": "Interactive signal noise and scanline displacement controlled by mouse position.",
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "id": "vhsIntensity",
+      "name": "VHS Intensity",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "id": "artifactStrength",
+      "name": "Artifact Strength",
+      "default": 0.3,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "id": "smearAmount",
+      "name": "Smear Amount",
+      "default": 0.3,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "id": "chromaStrength",
+      "name": "Chroma Strength",
+      "default": 0.3,
       "min": 0,
       "max": 1,
       "step": 0.01
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "glitch",
+    "retro",
+    "vhs",
+    "noise",
+    "analog"
   ]
 }

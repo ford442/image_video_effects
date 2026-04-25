@@ -2,43 +2,53 @@
   "id": "temporal-slit-paint",
   "name": "Temporal Slit Paint",
   "url": "shaders/temporal-slit-paint.wgsl",
-  "category": "image",
-  "description": "Paint with time: Reveals the current video frame on top of a frozen history canvas.",
-  "params": [
-    {
-      "id": "brush",
-      "name": "Brush Size",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "decay",
-      "name": "Trace Decay",
-      "default": 0.9,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "jitter",
-      "name": "Edge Jitter",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "mode",
-      "name": "Mode",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
-    }
-  ],
+  "category": "artistic",
+  "description": "Parametric brush painting with shape selection, velocity-aware smearing, and diffusion-based color bleeding onto a temporal canvas.",
   "features": [
     "mouse-driven"
   ],
+  "params": [
+    {
+      "id": "brushSize",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "shapeType",
+      "name": "Brush Shape",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "softness",
+      "name": "Brush Softness",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "diffusionStrength",
+      "name": "Diffusion",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "tags": [
-    "filter",
-    "image-processing"
+    "paint",
+    "brush",
+    "artistic",
+    "temporal"
   ]
 }

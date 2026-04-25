@@ -115,6 +115,62 @@
     ]
   },
   {
+    "id": "synthwave-grid-warp",
+    "name": "Synthwave Grid Warp",
+    "url": "shaders/synthwave-grid-warp.wgsl",
+    "category": "retro-glitch",
+    "description": "3D perspective-projected synthwave floor with atmospheric fog, sun, and mountain silhouettes.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "camY",
+        "name": "Camera Height",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "fogDensity",
+        "name": "Fog Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fogFalloff",
+        "name": "Fog Falloff",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mountainScale",
+        "name": "Mountain Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "retro",
+      "synthwave",
+      "3d",
+      "fog",
+      "atmospheric"
+    ]
+  },
+  {
     "id": "matrix_digital_rain",
     "name": "Matrix Digital Rain",
     "url": "shaders/matrix_digital_rain.wgsl",
@@ -612,6 +668,57 @@
     ]
   },
   {
+    "id": "signal-noise",
+    "name": "Signal Noise",
+    "url": "shaders/signal-noise.wgsl",
+    "category": "retro-glitch",
+    "description": "Multi-octave analog noise with VHS head-switching bands, DCT block artifacts, datamoshing smear, and directional chromatic aberration with YUV chroma noise.",
+    "features": [
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "vhsIntensity",
+        "name": "VHS Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "artifactStrength",
+        "name": "Artifact Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "smearAmount",
+        "name": "Smear Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromaStrength",
+        "name": "Chroma Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vhs",
+      "noise",
+      "analog"
+    ]
+  },
+  {
     "id": "spectral-glitch-sort",
     "name": "Spectral Glitch Sort",
     "url": "shaders/spectral-glitch-sort.wgsl",
@@ -655,6 +762,56 @@
       "glitch",
       "retro",
       "vintage"
+    ]
+  },
+  {
+    "id": "waveform-glitch",
+    "name": "Waveform Glitch",
+    "url": "shaders/waveform-glitch.wgsl",
+    "category": "retro-glitch",
+    "description": "VHS tracking jitter, block corruption, and datamoshing-style motion smear with wave-displaced RGB channels.",
+    "features": [
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "vhsJitter",
+        "name": "VHS Jitter",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "intensity",
+        "name": "Block Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "smearScale",
+        "name": "Smear Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flickerSpeed",
+        "name": "Flicker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "glitch",
+      "retro",
+      "vhs",
+      "datamosh"
     ]
   }
 ]

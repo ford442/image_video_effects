@@ -1,49 +1,56 @@
 {
   "id": "synthwave-grid-warp",
-  "name": "Synthwave Grid",
+  "name": "Synthwave Grid Warp",
   "url": "shaders/synthwave-grid-warp.wgsl",
-  "category": "image",
-  "description": "A retro synthwave grid that warps around the cursor.",
-  "params": [
-    {
-      "id": "scale",
-      "name": "Grid Scale",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "warp",
-      "name": "Warp Amount",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "glow",
-      "name": "Glow",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "speed",
-      "name": "Scroll Speed",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
-    }
-  ],
+  "category": "retro-glitch",
+  "description": "3D perspective-projected synthwave floor with atmospheric fog, sun, and mountain silhouettes.",
   "features": [
     "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "camY",
+      "name": "Camera Height",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "fogDensity",
+      "name": "Fog Density",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "fogFalloff",
+      "name": "Fog Falloff",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mountainScale",
+      "name": "Mountain Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ],
   "tags": [
-    "filter",
-    "image-processing",
-    "audio",
-    "music",
-    "reactive"
+    "retro",
+    "synthwave",
+    "3d",
+    "fog",
+    "atmospheric"
   ]
 }

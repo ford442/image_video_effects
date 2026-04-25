@@ -2,43 +2,53 @@
   "id": "chroma-shift-grid",
   "name": "Chroma Shift Grid",
   "url": "shaders/chroma-shift-grid.wgsl",
-  "category": "image",
-  "description": "Grid-based RGB shift effect controlled by mouse proximity.",
-  "params": [
-    {
-      "id": "gridSize",
-      "name": "Grid Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "shift",
-      "name": "Shift Amount",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "falloff",
-      "name": "Effect Radius",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "angle",
-      "name": "Shift Angle",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
-    }
-  ],
+  "category": "distortion",
+  "description": "Grid-based multi-mode chromatic aberration with temporal animation, per-cell lens distortion, and depth awareness.",
   "features": [
     "mouse-driven"
   ],
+  "params": [
+    {
+      "id": "mode",
+      "name": "Chroma Mode",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "animationSpeed",
+      "name": "Animation Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "distortionStrength",
+      "name": "Lens Distortion",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "chromaStrength",
+      "name": "Chroma Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "tags": [
-    "filter",
-    "image-processing"
+    "chromatic",
+    "lens",
+    "grid",
+    "distortion"
   ]
 }

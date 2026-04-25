@@ -1,49 +1,55 @@
 {
   "id": "time-slit-scan",
-  "category": "visual-effects",
+  "name": "Time Slit Scan",
   "url": "shaders/time-slit-scan.wgsl",
+  "category": "artistic",
+  "description": "Multi-slit temporal scan with curved parametric slits, polar drift, and time-warp color tinting.",
   "features": [
     "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+    "audio-reactive"
   ],
   "params": [
     {
-      "id": "param1",
+      "id": "slitCount",
+      "name": "Slit Count",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "slitShape",
+      "name": "Slit Shape",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "driftSpeed",
       "name": "Drift Speed",
-      "default": 0.01,
+      "default": 0.3,
       "min": 0.0,
-      "max": 0.05
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "id": "param2",
+      "id": "slitWidth",
       "name": "Slit Width",
-      "default": 0.02,
-      "min": 0.001,
-      "max": 0.2
-    },
-    {
-      "id": "param3",
-      "name": "Time Scale",
-      "default": 1.0,
+      "default": 0.2,
       "min": 0.0,
-      "max": 2.0
-    },
-    {
-      "id": "param4",
-      "name": "Decay",
-      "default": 0.99,
-      "min": 0.9,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "tags": [
-    "vfx",
-    "particles",
-    "glow",
-    "audio",
-    "music",
-    "reactive"
-  ],
-  "name": "Time Slit Scan"
+    "slit-scan",
+    "temporal",
+    "artistic",
+    "time-warp"
+  ]
 }

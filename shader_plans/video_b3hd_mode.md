@@ -34,7 +34,20 @@ Create a new rotating video mode in `image_video_effects` that sources its video
 - Update any video upload/update flows so they can write `duration` into the video metadata and `videos/_videos.json`.
 - If a video is ingested as raw file + JSON metadata, make sure `duration` is stored and preserved.
 
-### 4. Streaming route compatibility
+### 4. Admin upload UI
+- Add a new upload button in the storage manager admin UI at `https://storage.noahcohn.com/admin`.
+- The button should open a modal or page where users can upload a new video file and enter metadata such as:
+  - `name`
+  - `description`
+  - `tags`
+  - `duration` (optional, if not available from the file)
+  - `rating`
+  - `date`
+- If `duration` is not supplied, the backend should extract it automatically from the uploaded file, or the UI should optionally load the video metadata client-side and fill the field.
+- After upload, the admin workflow should update `videos/_videos.json` and make the new entry available via `/api/songs?type=video` immediately.
+- The upload flow should also support editing metadata after upload via the existing `/api/songs/{item_id}` update route.
+
+### 5. Streaming route compatibility
 - Confirm `/api/videos/{video_id}` supports range requests and `Accept-Ranges: bytes`.
 - This matters for seeking to arbitrary start offsets in long videos and for efficient segment playback.
 - If not already supported, add range-header handling in the streaming response.
@@ -120,9 +133,9 @@ Create a new rotating video mode in `image_video_effects` that sources its video
 
 ## Deliverables
 - `image_video_effects/shader_plans/video_b3hd_mode.md`
-- `image_video_effects/shader_plans/queue.json` updated with an `approved` entry for `video_b3hd_mode`
-- `contabo_storage_manager` changes to preserve `duration` in video metadata
+- `contabo_storage_manager` changes to preserve `duration` in video metadata and expose it via `/api/songs?type=video`
 - `image_video_effects` changes to fetch `VIDEO_MANIFEST_URL`, cache `duration`, and randomly select safe segments from available videos
+- storage admin UI changes to add a video upload button at `https://storage.noahcohn.com/admin` with metadata entry support
 
 ## Success Criteria
 - `contentLoader` loads a video catalog including `duration`.

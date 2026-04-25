@@ -8551,50 +8551,6 @@
     ]
   },
   {
-    "id": "chroma-shift-grid",
-    "name": "Chroma Shift Grid",
-    "url": "shaders/chroma-shift-grid.wgsl",
-    "category": "image",
-    "description": "Grid-based RGB shift effect controlled by mouse proximity.",
-    "params": [
-      {
-        "id": "gridSize",
-        "name": "Grid Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "shift",
-        "name": "Shift Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "falloff",
-        "name": "Effect Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "angle",
-        "name": "Shift Angle",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "chromatic-mosaic-projector",
     "name": "Chromatic Mosaic",
     "url": "shaders/chromatic-mosaic-projector.wgsl",
@@ -14298,55 +14254,6 @@
     ]
   },
   {
-    "id": "radial-blur",
-    "name": "Radial Blur",
-    "url": "shaders/radial-blur.wgsl",
-    "category": "image",
-    "description": "Strong radial blur emanating from the mouse cursor with non-linear sampling and audio reactivity.",
-    "params": [
-      {
-        "id": "strength",
-        "name": "Blur Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "decay",
-        "name": "Sample Decay",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "glow",
-        "name": "Glow Boost",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "exponent",
-        "name": "Sample Exponent",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
     "id": "radial-hex-lens",
     "name": "Radial Hex Lens",
     "url": "shaders/radial-hex-lens.wgsl",
@@ -15970,55 +15877,6 @@
     ]
   },
   {
-    "id": "synthwave-grid-warp",
-    "name": "Synthwave Grid",
-    "url": "shaders/synthwave-grid-warp.wgsl",
-    "category": "image",
-    "description": "A retro synthwave grid that warps around the cursor.",
-    "params": [
-      {
-        "id": "scale",
-        "name": "Grid Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "warp",
-        "name": "Warp Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "glow",
-        "name": "Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Scroll Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
     "id": "temporal-rift",
     "name": "Temporal Rift",
     "url": "shaders/temporal-rift.wgsl",
@@ -16050,50 +15908,6 @@
         "id": "mix",
         "name": "Echo Intensity",
         "default": 0.8,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "temporal-slit-paint",
-    "name": "Temporal Slit Paint",
-    "url": "shaders/temporal-slit-paint.wgsl",
-    "category": "image",
-    "description": "Paint with time: Reveals the current video frame on top of a frozen history canvas.",
-    "params": [
-      {
-        "id": "brush",
-        "name": "Brush Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "decay",
-        "name": "Trace Decay",
-        "default": 0.9,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "jitter",
-        "name": "Edge Jitter",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "mode",
-        "name": "Mode",
-        "default": 0,
         "min": 0,
         "max": 1
       }
@@ -16795,50 +16609,6 @@
       "image-processing",
       "audio",
       "music"
-    ]
-  },
-  {
-    "id": "waveform-glitch",
-    "name": "Waveform Glitch",
-    "category": "image",
-    "url": "shaders/waveform-glitch.wgsl",
-    "description": "Horizontal wave distortion controlled by mouse position (X=Freq, Y=Amp).",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "name": "Base Amp",
-        "id": "baseAmp",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Speed",
-        "id": "speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "RGB Split",
-        "id": "rgbSplit",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Content React",
-        "id": "contentReact",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -19115,54 +18885,6 @@
         "mapping": "zoom_params.w",
         "description": "Frequency of glitch pulses"
       }
-    ]
-  },
-  {
-    "id": "signal-noise",
-    "name": "Signal Noise",
-    "url": "shaders/signal-noise.wgsl",
-    "category": "image",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "Interactive signal noise and scanline displacement controlled by mouse position.",
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {

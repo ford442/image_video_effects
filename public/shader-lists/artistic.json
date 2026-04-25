@@ -1283,6 +1283,60 @@
     ]
   },
   {
+    "id": "temporal-slit-paint",
+    "name": "Temporal Slit Paint",
+    "url": "shaders/temporal-slit-paint.wgsl",
+    "category": "artistic",
+    "description": "Parametric brush painting with shape selection, velocity-aware smearing, and diffusion-based color bleeding onto a temporal canvas.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "shapeType",
+        "name": "Brush Shape",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "softness",
+        "name": "Brush Softness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "diffusionStrength",
+        "name": "Diffusion",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "paint",
+      "brush",
+      "artistic",
+      "temporal"
+    ]
+  },
+  {
     "id": "sim-decay-system",
     "name": "Decay System",
     "url": "shaders/sim-decay-system.wgsl",
@@ -1416,5 +1470,60 @@
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22"
+  },
+  {
+    "id": "time-slit-scan",
+    "name": "Time Slit Scan",
+    "url": "shaders/time-slit-scan.wgsl",
+    "category": "artistic",
+    "description": "Multi-slit temporal scan with curved parametric slits, polar drift, and time-warp color tinting.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "slitCount",
+        "name": "Slit Count",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "slitShape",
+        "name": "Slit Shape",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "driftSpeed",
+        "name": "Drift Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "slitWidth",
+        "name": "Slit Width",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "tags": [
+      "slit-scan",
+      "temporal",
+      "artistic",
+      "time-warp"
+    ]
   }
 ]
