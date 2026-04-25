@@ -101,10 +101,17 @@ function buildUnifiedManifest(): void {
         continue;
       }
 
-      // Normalise: some legacy entries use "label" instead of "name"
-      if (!entry.name || typeof entry.name !== 'string' || entry.name.trim() === '') {
+      // Normalise name — trim whitespace and fall back to "label" for legacy entries
+      if (typeof entry.name === 'string') {
+        entry.name = entry.name.trim();
+      }
+      if (!entry.name || typeof entry.name !== 'string' || entry.name === '') {
         const label = (entry as Record<string, unknown>)['label'];
         if (label && typeof label === 'string' && label.trim() !== '') {
+          // Compatibility layer: some older list files use "label" instead of "name"
+          console.warn(
+            `⚠️  Entry "${entry.id}" in ${file} uses "label" instead of "name" — consider migrating the source file`
+          );
           entry.name = label.trim();
         } else {
           console.error(
