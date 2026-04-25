@@ -9,3 +9,6 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+
+# Auto-generated unified shader manifest (generated during prestart/prebuild via build:manifest script)
+public/shader-manifest-unified.json

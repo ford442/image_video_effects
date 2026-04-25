@@ -23,10 +23,11 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "prestart": "node scripts/generate_shader_lists.js",
+    "prestart": "node scripts/generate_shader_lists.js && npm run build:manifest",
     "start": "react-scripts start",
-    "prebuild": "(npm run wasm:build 2>/dev/null || echo '⚠️ WASM build skipped (emscripten not available)') && node scripts/generate_shader_lists.js",
+    "prebuild": "(npm run wasm:build 2>/dev/null || echo '⚠️ WASM build skipped (emscripten not available)') && node scripts/generate_shader_lists.js && npm run build:manifest",
     "build": "npm run wasm:build && react-scripts build",
+    "build:manifest": "tsx --tsconfig scripts/tsconfig.scripts.json scripts/build-unified-manifest.ts",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "wasm:build": "bash wasm_renderer/build.sh",
@@ -61,6 +62,7 @@
     "@playwright/test": "^1.58.2",
     "@types/hls.js": "^0.13.3",
     "react-scripts": "^5.0.1",
+    "tsx": "^4.21.0",
     "xml2js": "^0.6.2",
     "yaml": "^2.8.2"
   }
