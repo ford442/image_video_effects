@@ -52,6 +52,8 @@ interface ControlsProps {
     isAiVjMode: boolean;
     onToggleAiVj: () => void;
     aiVjStatus: AIStatus;
+    aiVjMessage?: string;
+    onGenerateFromVibe?: (vibe: string) => void;
     // Webcam Props
     isWebcamActive?: boolean;
     onStartWebcam?: () => void;
@@ -122,6 +124,8 @@ const Controls: React.FC<ControlsProps> = ({
     isAiVjMode,
     onToggleAiVj,
     aiVjStatus,
+    aiVjMessage,
+    onGenerateFromVibe,
     isWebcamActive = false,
     onStartWebcam,
     onStopWebcam,
@@ -149,6 +153,9 @@ const Controls: React.FC<ControlsProps> = ({
     const [typedNumber, setTypedNumber] = useState('');
     const [showNumberOverlay, setShowNumberOverlay] = useState(false);
     const numberTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    // --- Vibe Prompt State ---
+    const [vibeInput, setVibeInput] = useState('');
 
     // --- Star Ratings ---
     const { shaders: ratedShaders, rateShader } = useShaderRatings();
@@ -773,6 +780,44 @@ const Controls: React.FC<ControlsProps> = ({
                             {getAiVjButtonText()}
                         </button>
                     </div>
+
+                    {onGenerateFromVibe && (
+                        <div className="control-group glass-panel" style={{padding: '12px', marginTop: '10px'}}>
+                            <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Vibe Prompt</div>
+                            <div style={{display: 'flex', gap: '8px', marginTop: '8px'}}>
+                                <input
+                                    type="text"
+                                    className="glass-input"
+                                    placeholder="Describe the vibe..."
+                                    value={vibeInput}
+                                    onChange={(e) => setVibeInput(e.target.value)}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter' && vibeInput.trim()) {
+                                            onGenerateFromVibe(vibeInput.trim());
+                                        }
+                                    }}
+                                    disabled={aiVjStatus === 'loading-models' || aiVjStatus === 'generating'}
+                                    style={{flex: 1}}
+                                />
+                                <button
+                                    className="gold-outline-btn"
+                                    onClick={() => {
+                                        if (vibeInput.trim()) {
+                                            onGenerateFromVibe(vibeInput.trim());
+                                        }
+                                    }}
+                                    disabled={aiVjStatus === 'loading-models' || aiVjStatus === 'generating' || !vibeInput.trim()}
+                                >
+                                    Generate
+                                </button>
+                            </div>
+                            {aiVjMessage && (
+                                <div style={{fontSize: '11px', color: '#a0a0b0', marginTop: '8px', fontStyle: 'italic'}}>
+                                    {aiVjMessage}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="control-group" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                         <label htmlFor="auto-change-toggle" style={{marginBottom: 0, color: isAiVjMode ? '#606070' : '#a0a0b0' }} title={isAiVjMode ? 'Disabled while AI VJ is active' : ''}>Manual Auto-Switch</label>

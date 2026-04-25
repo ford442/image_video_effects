@@ -16,8 +16,10 @@ export interface ImageRecord {
 export interface ShaderRecord {
   id: string;
   name: string;
+  category: string;
   tags: string[];
   description?: string;
+  params?: Array<{ id: string; name: string; default: number; min: number; max: number; step?: number }>;
 }
 
 export type AIStatus = 'idle' | 'loading-models' | 'ready' | 'generating' | 'error';
@@ -44,6 +46,7 @@ export class Alucinate {
   private onNextImage: (url: string) => void;
   // UPDATED: Now accepts an array of strings for the stack
   private onUpdateStack: (ids: string[]) => void;
+  public onUpdateParams?: (params: Record<string, number>[]) => void;
   public getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null };
 
   constructor(
@@ -66,7 +69,7 @@ export class Alucinate {
     }
   }
 
-  public async initialize(imageManifest: ImageRecord[], shaderDefs: any[], imageSuggestionsUrl: string) {
+  public async initialize(imageManifest: ImageRecord[], imageSuggestionsUrl: string) {
     if (this.status === 'ready' || this.status === 'loading-models') return;
 
     this.setStatus('loading-models', 'Starting AI model initialization...');
@@ -84,14 +87,8 @@ export class Alucinate {
             this.imageThemes = ["abstract digital art", "neon geometric shapes", "fluid dynamics"];
         }
 
-        this.shaderManifest = shaderDefs
-            .filter(def => def.tags && def.tags.length > 0)
-            .map(def => ({
-                id: def.id,
-                name: def.name,
-                tags: def.tags || [],
-                description: def.description || '' 
-            }));
+        this.setStatus('loading-models', 'Loading shader manifest...');
+        this.shaderManifest = await Alucinate.buildShaderManifest();
 
         this.setStatus('loading-models', 'Loading image captioning model...');
         this.captioner = await pipeline('image-to-text', CAPTIONER_ID, {
@@ -134,6 +131,57 @@ export class Alucinate {
       return suggestions.length > 0 ? suggestions : ["vibrant colorful patterns"];
   }
 
+  public static async buildShaderManifest(): Promise<ShaderRecord[]> {
+      const files = [
+          'advanced-hybrid.json', 'artistic.json', 'distortion.json',
+          'generative.json', 'geometric.json', 'image.json',
+          'interactive-mouse.json', 'interactive.json', 'lighting-effects.json',
+          'liquid-effects.json', 'liquid.json', 'post-processing.json',
+          'retro-glitch.json', 'simulation.json', 'visual-effects.json'
+      ];
+
+      const responses = await Promise.all(
+          files.map(f => fetch(`./shader-lists/${f}`).catch(() => null))
+      );
+
+      const arrays = await Promise.all(
+          responses.map(async (res, idx) => {
+              if (!res || !res.ok) {
+                  console.warn(`[Alucinate] Failed to load ${files[idx]}`);
+                  return [];
+              }
+              try {
+                  return await res.json();
+              } catch {
+                  console.warn(`[Alucinate] Invalid JSON in ${files[idx]}`);
+                  return [];
+              }
+          })
+      );
+
+      const seen = new Set<string>();
+      const manifest: ShaderRecord[] = [];
+
+      for (const arr of arrays) {
+          if (!Array.isArray(arr)) continue;
+          for (const def of arr) {
+              if (!def || !def.id || seen.has(def.id)) continue;
+              seen.add(def.id);
+              manifest.push({
+                  id: def.id,
+                  name: def.name || def.id,
+                  category: def.category || 'image',
+                  tags: Array.isArray(def.tags) ? def.tags : [],
+                  description: def.description || '',
+                  params: Array.isArray(def.params) ? def.params : []
+              });
+          }
+      }
+
+      console.log(`[Alucinate] Loaded unified manifest: ${manifest.length} shaders`);
+      return manifest;
+  }
+
   public start(): boolean {
     if (this.isRunning) return false;
     if (this.status !== 'ready') {
@@ -156,6 +204,34 @@ export class Alucinate {
     this.loopInterval = null;
     if (this.status === 'generating') {
         this.setStatus('ready', 'AI VJ stopped.');
+    }
+  }
+
+  public async generateFromVibe(vibeText: string): Promise<boolean> {
+    if (!this.llm || this.status === 'loading-models') return false;
+    try {
+        this.setStatus('generating', `Vibe: "${vibeText}"`);
+        const result = await this.selectShadersFromLLM(vibeText, vibeText);
+        if (result) {
+            const ids = result.map(r => r.id);
+            const params = result.map(r => r.params);
+            const readableStack = ids.map(id => {
+                const s = this.shaderManifest.find(m => m.id === id);
+                return s ? s.name : id;
+            }).join(' + ');
+            this.setStatus('generating', `Mixing stack: ${readableStack}`);
+            this.onUpdateStack(ids);
+            if (this.onUpdateParams) {
+                this.onUpdateParams(params);
+            }
+            return true;
+        }
+        return false;
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.setStatus('error', `Vibe generation failed: ${errorMessage}`);
+        console.error('[Alucinate] generateFromVibe error:', error);
+        return false;
     }
   }
 
@@ -182,17 +258,22 @@ export class Alucinate {
         }
         this.setStatus('generating', `Image caption: "${caption}"`);
 
-        // NEW: Get a full stack instead of a single shader
-        const shaderStack = await this.getShaderStackFromLLM(caption);
+        // NEW: Get a full stack with params instead of just IDs
+        const shaderStack = await this.selectShadersFromLLM(caption, caption);
         
         if (shaderStack && this.isRunning) {
-            const readableStack = shaderStack.map(id => {
+            const ids = shaderStack.map(s => s.id);
+            const params = shaderStack.map(s => s.params);
+            const readableStack = ids.map(id => {
                 const s = this.shaderManifest.find(m => m.id === id);
                 return s ? s.name : id;
             }).join(' + ');
             
             this.setStatus('generating', `Mixing stack: ${readableStack}`);
-            this.onUpdateStack(shaderStack);
+            this.onUpdateStack(ids);
+            if (this.onUpdateParams) {
+                this.onUpdateParams(params);
+            }
         } else if (this.isRunning) {
             // Fallback
             const random = this.shaderManifest[Math.floor(Math.random() * this.shaderManifest.length)];
@@ -204,7 +285,7 @@ export class Alucinate {
 
         this.setStatus('generating', 'Dreaming up the next scene...');
         // Use the first shader in the stack for context
-        const primaryShaderName = this.shaderManifest.find(s => s.id === (shaderStack ? shaderStack[0] : ''))?.name || 'effect';
+        const primaryShaderName = this.shaderManifest.find(s => s.id === (shaderStack ? shaderStack[0].id : ''))?.name || 'effect';
         
         const nextTheme = await this.getNextImageThemeFromLLM(caption, primaryShaderName);
         if (!nextTheme) return; // Keep current image if theme fails
@@ -239,72 +320,110 @@ export class Alucinate {
     }
   }
   
-  // NEW: Optimized prompt for multi-slot control
-  private async getShaderStackFromLLM(caption: string): Promise<string[] | null> {
+  private buildCandidateShortlist(caption: string, vibe: string): ShaderRecord[] {
+    const text = `${caption} ${vibe}`.toLowerCase();
+    const words = new Set(text.split(/\W+/).filter(w => w.length > 2));
+
+    const scored = this.shaderManifest.map(s => {
+        let score = 0;
+        const tags = s.tags.map(t => t.toLowerCase());
+        const desc = (s.description || '').toLowerCase();
+        for (const word of words) {
+            if (tags.some(t => t.includes(word))) score += 2;
+            if (desc.includes(word)) score += 1;
+        }
+        return { shader: s, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, 40).map(x => x.shader);
+  }
+
+  private async selectShadersFromLLM(caption: string, vibe: string): Promise<Array<{id: string, params: Record<string, number>}> | null> {
     if (!this.llm) return null;
     
-    // Provide a simplified list to save context window, focusing on names and tags
-    const shaderOptions = this.shaderManifest
-        .map(s => `"${s.id}" (${s.tags.slice(0,2).join(',')})`)
-        .slice(0, 50) // Limit to 50 options to prevent overflow
+    const candidates = this.buildCandidateShortlist(caption, vibe);
+
+    const shaderOptions = candidates
+        .map(s => {
+            const paramInfo = (s.params || [])
+                .map(p => `${p.id}:${p.min}-${p.max}(${p.default})`)
+                .join(',');
+            return `"${s.id}" (${s.tags.slice(0,2).join(',')})${paramInfo ? ' params:[' + paramInfo + ']' : ''}`;
+        })
         .join(', ');
 
     const prompt = `
 You are an expert VJ creating a 3-layer visual effect stack for an image described as: "${caption}".
-Your goal is to choose 3 shader IDs (or "none") to combine into a coherent visual style.
+Your goal is to choose 3 shader IDs (or "none") to combine into a coherent visual style, and suggest parameter values for each.
 
 Roles:
 1. Base: The primary effect.
 2. Modifier: Distorts or changes the base.
 3. Overlay: Adds texture, glitch, or lighting.
 
-Available IDs: ${shaderOptions}
+Candidate shaders (pick from these): ${shaderOptions}
 
-Respond with a JSON array of 3 strings. Use "none" for empty slots.
-Example: ["neon-pulse", "liquid-warp", "none"]
+Respond with a JSON array of 3 objects. Use "none" for empty slots and empty params.
+Example: [{"id":"neon-pulse","params":{"speed":0.8,"intensity":0.3}},{"id":"liquid-warp","params":{}},{"id":"none","params":{}}]
 Your Selection:
 `;
 
     try {
         const reply = await this.llm.chat.completions.create({ 
             messages: [{ role: "user", content: prompt }],
-            temperature: 0.7 // slightly creative but deterministic format
+            temperature: 0.7
         });
         
         const content = reply.choices[0].message.content || "";
         console.log("[Alucinate] LLM Raw Reply:", content);
 
-        // Robust parsing: Try to find a JSON array in the text
-        const jsonMatch = content.match(/\[.*?\]/s);
+        // Try object array format first
+        const jsonMatch = content.match(/\[.*\]/s);
         if (jsonMatch) {
             try {
-                // Sanitize quotes to ensure valid JSON
                 const jsonStr = jsonMatch[0].replace(/'/g, '"');
                 const parsed = JSON.parse(jsonStr);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    // Normalize to 3 slots, validating IDs
-                    const result = ['none', 'none', 'none'];
-                    for(let i=0; i<3; i++) {
-                        if (parsed[i] && (parsed[i] === 'none' || this.shaderManifest.some(s => s.id === parsed[i]))) {
-                            result[i] = parsed[i];
+                    const result: Array<{id: string, params: Record<string, number>}> = [];
+                    for (let i = 0; i < 3; i++) {
+                        const item = parsed[i];
+                        if (item && typeof item === 'object' && item.id) {
+                            const id = item.id;
+                            if (id === 'none' || this.shaderManifest.some(s => s.id === id)) {
+                                const params: Record<string, number> = {};
+                                if (item.params && typeof item.params === 'object') {
+                                    for (const [k, v] of Object.entries(item.params)) {
+                                        if (typeof v === 'number') params[k] = v;
+                                    }
+                                }
+                                result.push({ id, params });
+                            } else {
+                                result.push({ id: 'none', params: {} });
+                            }
+                        } else if (typeof item === 'string') {
+                            // Fallback: old string array format
+                            result.push({ id: item === 'none' || this.shaderManifest.some(s => s.id === item) ? item : 'none', params: {} });
+                        } else {
+                            result.push({ id: 'none', params: {} });
                         }
                     }
-                    return result;
+                    if (result.length > 0) return result;
                 }
             } catch (e) {
-                console.warn("[Alucinate] Failed to parse LLM array, falling back to regex.");
+                console.warn("[Alucinate] Failed to parse LLM object array, falling back to string array.");
             }
         }
 
         // Fallback: Grab the first 3 valid IDs found in the text
         const allIds = this.shaderManifest.map(s => s.id);
-        const foundIds = content.split(/[\s,"]+/).filter(word => allIds.includes(word));
+        const foundIds = content.split(/[\s,"\[\]{}:]+/).filter(word => allIds.includes(word) || word === 'none');
         
         if (foundIds.length > 0) {
             return [
-                foundIds[0] || 'none',
-                foundIds[1] || 'none',
-                foundIds[2] || 'none'
+                { id: foundIds[0] || 'none', params: {} },
+                { id: foundIds[1] || 'none', params: {} },
+                { id: foundIds[2] || 'none', params: {} }
             ];
         }
 

@@ -719,6 +719,7 @@ function MainApp() {
                     const shaderRecord: ShaderRecord | null = shaderEntry ? {
                         id: shaderEntry.id,
                         name: shaderEntry.name,
+                        category: shaderEntry.category || 'image',
                         description: shaderEntry.description,
                         tags: shaderEntry.tags || [],
                     } : null;
@@ -726,9 +727,27 @@ function MainApp() {
                 }
             );
             vj.onStatusChange = (s, m) => { setAiVjStatus(s); setAiVjMessage(m); };
+            vj.onUpdateParams = (paramsList) => {
+                paramsList.forEach((slotParams, slotIndex) => {
+                    const shaderId = modes[slotIndex];
+                    const shaderEntry = availableModes.find(m => m.id === shaderId);
+                    if (!shaderEntry || !shaderEntry.params) return;
+                    const updates: Partial<SlotParams> = {};
+                    for (const [key, value] of Object.entries(slotParams)) {
+                        const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
+                        if (paramIndex === 0) updates.zoomParam1 = value;
+                        else if (paramIndex === 1) updates.zoomParam2 = value;
+                        else if (paramIndex === 2) updates.zoomParam3 = value;
+                        else if (paramIndex === 3) updates.zoomParam4 = value;
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        updateSlotParam(slotIndex, updates);
+                    }
+                });
+            };
             setAiVj(vj);
             setIsAiVjMode(true);
-            await vj.initialize(imageManifest, availableModes, IMAGE_SUGGESTIONS_URL);
+            await vj.initialize(imageManifest, IMAGE_SUGGESTIONS_URL);
             if (vj.status === 'ready') {
                 vj.start();
             }
@@ -742,7 +761,7 @@ function MainApp() {
                         setIsAiVjMode(true);
                     }
                 } else { // Re-initialize if it failed or hasn't been run
-                    await aiVj.initialize(imageManifest, availableModes, IMAGE_SUGGESTIONS_URL);
+                    await aiVj.initialize(imageManifest, IMAGE_SUGGESTIONS_URL);
                     if (aiVj.start()) {
                         setIsAiVjMode(true);
                     }
@@ -750,6 +769,14 @@ function MainApp() {
             }
         }
     }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl]);
+
+    const handleGenerateFromVibe = useCallback(async (vibe: string) => {
+        if (!aiVj) {
+            setStatus('AI VJ not initialized. Please start AI VJ first.');
+            return;
+        }
+        await aiVj.generateFromVibe(vibe);
+    }, [aiVj]);
     
     const onInitCanvas = useCallback(() => {
         if (rendererRef.current) {
@@ -1362,6 +1389,7 @@ function MainApp() {
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                         onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
+                        aiVjMessage={aiVjMessage} onGenerateFromVibe={handleGenerateFromVibe}
                         isWebcamActive={isWebcamActive}
                         onStartWebcam={startWebcam}
                         onStopWebcam={stopWebcam}
