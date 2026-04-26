@@ -3364,6 +3364,66 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 
 
+### Suggestion: Holographic Desert Oasis
+- **Date:** 2024-05-20
+- **Prompt:** "A futuristic desert oasis at twilight, where palm trees are made of glowing holographic hard-light projections. A crystal-clear pool reflects the twin setting moons. Soft, diffused neon lighting blending with natural sunset colors. Ethereal, tranquil mood, high detail."
+- **Negative prompt:** "people, noisy, messy, daytime, simple, flat"
+- **Tags:** cyberpunk, desert, holographic, oasis, sci-fi
+- **Style / Reference:** 3D render, photorealistic, cinematic lighting
+- **Composition:** wide landscape shot, rule of thirds
+- **Color palette:** neon pink, cyan, deep orange, indigo
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_holographic-oasis.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Steampunk Botanist's Greenhouse
+- **Date:** 2024-05-20
+- **Prompt:** "Inside a massive Victorian greenhouse constructed of ornate wrought iron and curved glass. Exotic, giant alien plants with bioluminescent veins grow uncontrollably. Steam-powered brass sprinklers emit a fine mist. Shafts of afternoon sunlight pierce through the hazy atmosphere. Warm, mysterious mood."
+- **Negative prompt:** "modern architecture, characters, dark, gloomy, low detail"
+- **Tags:** steampunk, botanical, greenhouse, fantasy, atmospheric
+- **Style / Reference:** highly detailed illustration, Victorian aesthetic
+- **Composition:** interior wide shot, deep depth of field
+- **Color palette:** brass, emerald green, warm amber, soft teal
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260520_steampunk-greenhouse.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Deep Space Dyson Sphere Construction
+- **Date:** 2024-05-20
+- **Prompt:** "A colossal, incomplete Dyson Sphere surrounding a hyper-active blue giant star. Millions of geometric solar panels are being assembled by swarm-like constructor ships. Brilliant, harsh stellar lighting creating stark shadows on the metallic structures. Epic, awe-inspiring mood, monumental scale."
+- **Negative prompt:** "planets, organic, smooth, dark, blurry"
+- **Tags:** sci-fi, space, megastructure, star, engineering
+- **Style / Reference:** sci-fi concept art, hyper-realistic
+- **Composition:** epic wide shot, high contrast
+- **Color palette:** blinding electric blue, dark grey, stark white
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_dyson-sphere.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Bioluminescent Deep Sea Leviathan
+- **Date:** 2024-05-20
+- **Prompt:** "A massive, ancient deep-sea leviathan swimming gracefully through an abyssal trench. The creature's scales emit a pulsing, complex pattern of bioluminescent light. The surrounding water is pitch black, illuminated only by the creature's glow and tiny, glowing marine snow. Mystical, terrifying yet beautiful mood."
+- **Negative prompt:** "shallow water, daylight, brightly colored coral, human divers"
+- **Tags:** underwater, monster, bioluminescence, abyssal, creature
+- **Style / Reference:** underwater photography, national geographic style
+- **Composition:** side profile, macro to medium shot
+- **Color palette:** pitch black, neon blue, seafoam green, ultra-violet
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_abyssal-leviathan.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Cyber-Renaissance Clockwork City
+- **Date:** 2024-05-20
+- **Prompt:** "A sprawling renaissance-era city built entirely from brass, copper, and glowing quartz clockwork mechanisms. Giant gears serve as bridges. The city is bathed in the golden hour light of a massive, close-orbiting gas giant planet filling the sky. Majestic, intricate, surreal mood."
+- **Negative prompt:** "nature, plants, modern technology, dirty, rusty"
+- **Tags:** clockwork, city, renaissance, surreal, fantasy
+- **Style / Reference:** fantasy landscape, intricate 3D environment
+- **Composition:** aerial cityscape, dynamic angle
+- **Color palette:** gold, polished copper, warm amber, pale quartz
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_clockwork-city.jpg`
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
