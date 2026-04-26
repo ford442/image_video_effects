@@ -899,7 +899,7 @@ function MainApp() {
                 b3hdTimerRef.current = null;
             }
         };
-    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds]);
+    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds, videoList.length]);
 
     // --- Roulette / Chaos Mode Functions ---
     const getRandomShader = useCallback((): ShaderEntry | null => {
