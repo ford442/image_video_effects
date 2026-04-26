@@ -157,8 +157,11 @@ env.backends.onnx.logLevel = 'warning';
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 // Use VPS Storage API instead of HuggingFace
 const SHADER_WGSL_URL = `${STORAGE_API_URL}/api/shaders`;
+const IMAGE_MANIFEST_URL = VPS_IMAGE_MANIFEST_URL;
+const LOCAL_MANIFEST_URL = `./image_manifest.json`;
 
 // UPDATED: Pointing directly to your bucket
+const BUCKET_BASE_URL = `https://storage.googleapis.com/my-sd35-space-images-2025`;
 const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
 
 const FALLBACK_IMAGES = [
@@ -388,7 +391,7 @@ function MainApp() {
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
             }
         }
-    }, [availableModes, rendererRef]); // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [availableModes, rendererRef]);
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
         setSlotParams(prev => {
@@ -406,12 +409,14 @@ function MainApp() {
             setInputSource('generative');
             setStatus('Switched to Generative Input');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shaderCategory]); // Only depend on shaderCategory, not inputSource
 
     // --- Effects & Initializers ---
     
     useEffect(() => {
         const controller = new AbortController();
+        const signal = controller.signal;
 
         // Fetch the dynamic image and video manifests from the backend on startup
         const fetchManifests = async () => {
@@ -894,7 +899,7 @@ function MainApp() {
                 b3hdTimerRef.current = null;
             }
         };
-    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds, videoList.length]
+    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds, videoList.length]);
 
     // --- Roulette / Chaos Mode Functions ---
     const getRandomShader = useCallback((): ShaderEntry | null => {
@@ -1327,7 +1332,7 @@ function MainApp() {
                 heartbeatIntervalRef.current = null;
             }
         };
-   ); // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Intentionally empty — channel lifecycle should not depend on state
 
     // Send state updates to remote when key state changes
