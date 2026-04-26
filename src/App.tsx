@@ -12,7 +12,7 @@ import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTy
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
 import {
     STORAGE_API_URL,
-    IMAGE_MANIFEST_URL as VPS_IMAGE_MANIFEST_URL,
+
     DEFAULT_B3HD_SEGMENT_LENGTH,
     DEFAULT_B3HD_INTERVAL_SECONDS,
 } from './config/appConfig';
