@@ -417,6 +417,7 @@ Your Selection:
 
         // Fallback: Grab the first 3 valid IDs found in the text
         const allIds = this.shaderManifest.map(s => s.id);
+        // eslint-disable-next-line no-useless-escape
         const foundIds = content.split(/[\s,"\[\]{}:]+/).filter(word => allIds.includes(word) || word === 'none');
         
         if (foundIds.length > 0) {
