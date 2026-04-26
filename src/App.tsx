@@ -157,11 +157,7 @@ env.backends.onnx.logLevel = 'warning';
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 // Use VPS Storage API instead of HuggingFace
 const SHADER_WGSL_URL = `${STORAGE_API_URL}/api/shaders`;
-const IMAGE_MANIFEST_URL = VPS_IMAGE_MANIFEST_URL;
-const LOCAL_MANIFEST_URL = `./image_manifest.json`;
-
-// UPDATED: Pointing directly to your bucket
-const BUCKET_BASE_URL = `https://storage.googleapis.com/my-sd35-space-images-2025`;
+// URL vars removed for unused variables warning
 const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
 
 const FALLBACK_IMAGES = [
@@ -416,7 +412,7 @@ function MainApp() {
     
     useEffect(() => {
         const controller = new AbortController();
-        const signal = controller.signal;
+
 
         // Fetch the dynamic image and video manifests from the backend on startup
         const fetchManifests = async () => {
@@ -723,7 +719,7 @@ function MainApp() {
                 }
             }
         }
-    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl]);
+    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, updateSlotParam]);
 
     const handleGenerateFromVibe = useCallback(async (vibe: string) => {
         if (!aiVj) {
