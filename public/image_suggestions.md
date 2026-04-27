@@ -3364,6 +3364,65 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 
 
+### Suggestion: Italian Futurism Supernova
+- **Date:** 2024-06-01
+- **Prompt:** "A cataclysmic supernova explosion depicted in the harsh, fragmented style of Italian Futurism. The cosmic subject is deconstructed into aggressive, jagged diagonal lines and overlapping geometric planes that capture the kinetic energy and overwhelming speed of the expanding stellar material. The lighting is intense and directional, casting stark, jagged shadows that enhance the splintered geometry of the composition. The mood is energetic, destructive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion and the violent impact of the fragmented star."
+- **Negative prompt:** "calm, realistic, photography, smooth curves, gentle, peaceful nature, photorealistic, circular"
+- **Tags:** abstract, art, italian futurism, space, supernova, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** blazing orange, steel greys, harsh stark white, chaotic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240601_futurism-supernova.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Brass Volcanic Eruption
+- **Date:** 2024-06-01
+- **Prompt:** "A terrifying, surreal landscape of a massive volcano erupting, where the mountain and the flying debris are composed entirely of intricate, polished brass clockwork and gears. The mechanical subject spews rivers of blindingly bright, super-heated white plasma instead of lava. The lighting is intensely harsh, emanating entirely from the plasma rivers and explosive core, creating a stark interplay of blinding white-hot streaks against the reflective brass machinery. The mood is apocalyptic, alien, and unfathomably powerful. Captured with a wide-angle lens from a safe distance, freezing the dynamic flow of plasma against the rigid brass structure."
+- **Negative prompt:** "red lava, orange, fire, realistic volcano, smoke, messy, blurry, soft lighting, daylight, stone"
+- **Tags:** sci-fi, landscape, volcano, brass, plasma, steampunk
+- **Style / Reference:** surreal sci-fi landscape, steampunk aesthetic
+- **Composition:** wide landscape, explosive center, sharp contrast
+- **Color palette:** polished warm brass, blinding white-hot plasma, deep metallic shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240601_brass-volcanic-eruption.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Mother of Pearl Bioluminescent Reef
+- **Date:** 2024-06-01
+- **Prompt:** "A breathtaking, macro underwater photograph of a sprawling coral reef where the coral formations are composed entirely of shimmering, iridescent mother of pearl (nacre). The geometric subjects are populated by tiny, intensely glowing bioluminescent sea life that illuminates the reef from within. The lighting is exclusively from the bioluminescence, creating a stark, high-contrast interplay of blinding neon cyan and magenta streaks against the pearlescent pastels of the nacre. The mood is luxurious, alien, and deeply serene. Captured with a 50mm macro lens, utilizing a shallow depth of field to isolate a single glowing polyp against the iridescent background."
+- **Negative prompt:** "bright sunlight, surface, muddy water, opaque coral, realistic fish, soft lighting, dull"
+- **Tags:** underwater, sci-fi, macro, mother of pearl, bioluminescent, iridescent
+- **Style / Reference:** photorealistic underwater photography, surreal material swap
+- **Composition:** macro close-up, sharp contrast, beautiful soft bokeh
+- **Color palette:** pearlescent pinks, glowing neon cyan, vibrant magenta, shimmering silver
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240601_mother-of-pearl-reef.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Damascus Steel Orbital Ring
+- **Date:** 2024-06-01
+- **Prompt:** "An epic, sweeping view of a colossal Orbital Ring megastructure encircling a dark, terrestrial planet, constructed entirely from perfectly forged, heavily rippled Damascus steel. The sleek, dark, metallic subject features intricate, flowing wave patterns of dark and light grey metal across its massive surface. The lighting is a dramatic sunrise cresting over the planet's horizon, casting a blinding white glare that highlights the forged ridges of the ring while the base remains in deep shadow. The mood is silent, awe-inspiring, and technologically supreme. Captured with an extreme wide-angle cinematic lens from low Earth orbit, emphasizing planetary scale and the vast, patterned ring."
+- **Negative prompt:** "smooth metal, reflective, bright structure, rusted, broken, dystopian, small scale, matte"
+- **Tags:** sci-fi, megastructure, space, orbital ring, damascus steel
+- **Style / Reference:** hard sci-fi environment design, cinematic space art
+- **Composition:** curved horizon, extreme wide angle, massive scale
+- **Color palette:** dark metallic greys, blinding solar white, vibrant earth greens and blues
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20240601_damascus-orbital-ring.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Graphene Supernova
+- **Date:** 2024-06-01
+- **Prompt:** "A surreal cosmic display where a cataclysmic supernova explosion is inexplicably composed of perfect, light-absorbing geometric shards of matte graphene. The subjects expand outward in sharp, aggressive bursts that absorb the ambient starlight rather than emitting it. The lighting is highly contrasted, with the deep black explosions silhouetted against a violently bright, glowing magenta and cyan nebula background. The mood is abstract, paradoxical, and futuristic. Captured with a wide-angle lens, utilizing a fast shutter speed to freeze the sharp, light-devouring fragmentation of the graphene bursts."
+- **Negative prompt:** "bright flashes, glowing sparks, colorful fire, smoke, realistic supernova, soft"
+- **Tags:** surreal, space, supernova, graphene, geometric
+- **Style / Reference:** surreal 3D render, high contrast silhouette
+- **Composition:** expansive sky view, explosive centers, sharp geometric fragmentation
+- **Color palette:** pitch black matte graphene, vibrant neon magenta, electric cyan background
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240601_graphene-supernova.jpg`
+- **License / Attribution:** CC0
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
