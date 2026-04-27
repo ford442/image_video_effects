@@ -2277,6 +2277,46 @@
     ]
   },
   {
+    "id": "gen-depth-refracted-liquid-stained-glass",
+    "coordinate": 858,
+    "type": "wgsl",
+    "url": "shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+    "category": "generative",
+    "name": "Depth-Refracted Liquid Stained Glass",
+    "description": "Transform the input video into a shattering, ornate cathedral window that feels tactile, refractive, and symmetrically kaleidoscopic.",
+    "tags": [
+      "kaleidoscope",
+      "refraction",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-input"
+    ],
+    "sliders": [
+      {
+        "id": "facetCount",
+        "name": "Facet Count",
+        "default": 6,
+        "min": 3,
+        "max": 24,
+        "step": 1,
+        "param": "zoom_params.x"
+      },
+      {
+        "id": "bevelWidth",
+        "name": "Bevel Width",
+        "default": 2,
+        "min": 0.1,
+        "max": 10,
+        "step": 0.1,
+        "param": "zoom_params.y"
+      }
+    ]
+  },
+  {
     "id": "gen-ethereal-anemone-bloom",
     "name": "Ethereal Anemone Bloom",
     "url": "shaders/gen-ethereal-anemone-bloom.wgsl",

@@ -1,0 +1,40 @@
+{
+  "id": "gen-depth-refracted-liquid-stained-glass",
+  "coordinate": 858,
+  "type": "wgsl",
+  "url": "shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+  "category": "generative",
+  "name": "Depth-Refracted Liquid Stained Glass",
+  "description": "Transform the input video into a shattering, ornate cathedral window that feels tactile, refractive, and symmetrically kaleidoscopic.",
+  "tags": [
+    "kaleidoscope",
+    "refraction",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-input"
+  ],
+  "sliders": [
+    {
+      "id": "facetCount",
+      "name": "Facet Count",
+      "default": 6.0,
+      "min": 3.0,
+      "max": 24.0,
+      "step": 1.0,
+      "param": "zoom_params.x"
+    },
+    {
+      "id": "bevelWidth",
+      "name": "Bevel Width",
+      "default": 2.0,
+      "min": 0.1,
+      "max": 10.0,
+      "step": 0.1,
+      "param": "zoom_params.y"
+    }
+  ]
+}
