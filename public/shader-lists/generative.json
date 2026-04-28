@@ -1696,6 +1696,21 @@
     ]
   },
   {
+    "id": "gen-cellular-automata-tapestry",
+    "name": "Cellular Automata Tapestry",
+    "author": "Jules",
+    "description": "Convert the video feed into a living reaction-diffusion tapestry.",
+    "category": "generative",
+    "type": "wgsl",
+    "coordinate": 870,
+    "url": "shaders/gen-cellular-automata-tapestry.wgsl",
+    "tags": [
+      "reaction-diffusion",
+      "cellular-automata",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "gen-chromatic-metamorphosis",
     "name": "Chromatic Metamorphosis",
     "url": "shaders/gen-chromatic-metamorphosis.wgsl",
