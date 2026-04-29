@@ -6,16 +6,18 @@
       "date": "2026-04-25",
       "file": "2026-04-25_physarum-sacred-geometry.md",
       "title": "Physarum (Slime Mold) Sacred Geometry",
-      "status": "approved",
-      "created_at": "2026-04-25T12:00:00Z"
+      "status": "completed",
+      "created_at": "2026-04-25T12:00:00Z",
+      "completed_at": "2026-04-29T20:58:37.037485"
     },
     {
       "id": "depth-refracted-liquid-stained-glass",
       "date": "2026-04-25",
       "file": "2026-04-25_depth-refracted-liquid-stained-glass.md",
       "title": "Depth-Refracted Liquid Stained Glass",
-      "status": "approved",
-      "created_at": "2026-04-25T12:05:00Z"
+      "status": "completed",
+      "created_at": "2026-04-25T12:05:00Z",
+      "completed_at": "2026-04-29T20:56:44.916295"
     },
     {
       "id": "cellular-automata-tapestry",
