@@ -3423,6 +3423,66 @@ To help organize prompts, please use tags from the following categories:
 - **Aspect ratio:** 16:9
 - **Reference images:** `public/images/suggestions/20240601_graphene-supernova.jpg`
 - **License / Attribution:** CC0
+### Suggestion: Graphene Cybernetic Cheetah
+- **Date:** 2024-06-02
+- **Prompt:** "A hyper-detailed, macro shot of a cybernetic cheetah mid-sprint, where its sleek armor plating is entirely forged from light-absorbing, matte graphene. The robotic subject features glowing neon cyan optic sensors and exposed brushed steel joints. The lighting is harsh, directional, and high-contrast, casting stark shadows that highlight the pitch-black, geometric carbon surface against a blurry, futuristic savanna background. The mood is predatory, advanced, and sleek. Captured with a 100mm telephoto lens, utilizing motion blur panning to keep the cheetah sharp while blurring the environment."
+- **Negative prompt:** "organic fur, slow, stationary, bright daylight, realistic animal, plain metal"
+- **Tags:** sci-fi, cybernetic, animal, graphene, macro
+- **Style / Reference:** sci-fi wildlife photography, hyper-detailed material swap
+- **Composition:** dynamic horizontal motion, tight framing, panning blur
+- **Color palette:** pitch black matte graphene, glowing neon cyan, blurred warm savanna colors
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240602_graphene-cheetah.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Mother of Pearl Volcanic Eruption
+- **Date:** 2024-06-02
+- **Prompt:** "A terrifying, surreal landscape of a massive volcano erupting, where the mountain and the flying debris are composed entirely of shimmering, iridescent mother of pearl. The organic-looking subject spews rivers of blindingly bright, super-heated white plasma instead of lava. The lighting is intensely harsh, emanating entirely from the plasma rivers and explosive core, creating a stark interplay of blinding white-hot streaks against the pearlescent pastels of the nacre structure. The mood is apocalyptic, alien, and unfathomably beautiful. Captured with a wide-angle lens from a safe distance, freezing the dynamic flow of plasma against the iridescent shell material."
+- **Negative prompt:** "red lava, orange, fire, realistic volcano, smoke, messy, blurry, soft lighting, daylight, stone, dark"
+- **Tags:** sci-fi, landscape, volcano, mother of pearl, plasma, surreal
+- **Style / Reference:** surreal sci-fi landscape, hyper-detailed material swap
+- **Composition:** wide landscape, explosive center, sharp contrast
+- **Color palette:** pearlescent pinks and blues, blinding white-hot plasma, shimmering silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240602_mother-of-pearl-volcano.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Bismuth City in the Clouds
+- **Date:** 2024-06-02
+- **Prompt:** "An epic, sweeping aerial view of a massive utopian city suspended high in a bright blue sky, constructed entirely from gigantic, naturally forming hopper crystals of iridescent bismuth. The intricate, stair-stepped geometric buildings reflect a dazzling array of rainbow colors—pinks, greens, golds, and blues. The lighting is bright, clear midday sunlight that catches the sharp, right-angled crystal edges, casting deep, sharp shadows and brilliant metallic reflections across the floating metropolis. The mood is majestic, advanced, and visually overwhelming. Captured with a wide-angle drone perspective to showcase the architectural elegance against a backdrop of fluffy white clouds."
+- **Negative prompt:** "concrete, dark, night, dystopia, smooth curves, organic, dull, soft lighting"
+- **Tags:** sci-fi, architecture, city, floating, bismuth, iridescent
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** highly iridescent rainbow, metallic pinks and blues, stark white clouds, deep blue sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240602_bismuth-city.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Brass Steampunk Beehive
+- **Date:** 2024-06-02
+- **Prompt:** "An incredibly detailed, macro view deep inside a gigantic, mechanical beehive where the entire honeycomb structure is constructed from polished brass and complex clockwork gears. The mechanical subject features perfectly repeating hexagonal cells, filled with glowing, viscous synthetic amber oil instead of honey. The lighting is warm and directional from an internal glowing core, causing the metallic brass surfaces to shine brilliantly with sharp specular highlights against deep, dark shadows. The mood is industrious, mechanical, and mathematically precise. Captured with a 100mm macro lens, deep depth of field to emphasize the endless geometric repetition of the metallic honeycomb."
+- **Negative prompt:** "wax, yellow honey, plastic, natural, organic, soft curves, daylight, wide angle"
+- **Tags:** macro, steampunk, beehive, brass, mechanical, geometric
+- **Style / Reference:** steampunk concept art, hyper-detailed macro photography
+- **Composition:** full frame repeating pattern, deep perspective
+- **Color palette:** polished warm brass, glowing synthetic amber, deep metallic shadows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20240602_brass-beehive.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Ashcan School Cyberpunk Alley
+- **Date:** 2024-06-02
+- **Prompt:** "A bustling, gritty night scene of a neon-lit cyberpunk alleyway, depicted in the raw, documentary style of the Ashcan School. The subject features weary, augmented pedestrians and dense, decaying, futuristic tenement buildings adorned with flickering holographic signs. The lighting is bleak and moody, casting soft, indistinct shadows that emphasize the dirt and texture of the urban decay, contrasting with the muted, sickly glow of the neon lights. The mood is authentic, raw, and oppressive. Captured with an eye-level, documentary-style perspective, focusing on the unglamorous reality of the high-tech, low-life metropolis."
+- **Negative prompt:** "clean, pristine, cheerful, photorealistic, 3d render, highly saturated, smooth"
+- **Tags:** cyberpunk, art, urban, historical, ashcan school, gritty
+- **Style / Reference:** Ashcan School painting, Robert Henri inspired, thick brushstrokes
+- **Composition:** eye-level, crowded street, naturalistic framing, dense architecture
+- **Color palette:** muted greys, rusted browns, dull neon cyan and magenta, sickly yellow
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240602_ashcan-cyberpunk-alley.jpg`
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
