@@ -40,15 +40,14 @@ def add(filename, title):
 
 def complete(filename):
     queue = load_queue()
-    for item in queue["pending"]:
-        if item["filename"] == filename:
-            queue["pending"].remove(item)
-            item["completed"] = datetime.now().isoformat()
-            queue["completed"].append(item)
+    for item in queue.get("queue", []):
+        if item.get("file") == filename or item.get("id") == filename.replace(".md", ""):
+            item["status"] = "completed"
+            item["completed_at"] = datetime.now().isoformat()
             save_queue(queue)
-            print(f"✅ Completed: {item['title']}")
+            print(f"✅ Completed: {item.get('title', 'Unknown Title')}")
             return
-    print(f"⚠️ Item not found in pending: {filename}")
+    print(f"❌ Item not found: {filename}")
 
 def status():
     queue = load_queue()
