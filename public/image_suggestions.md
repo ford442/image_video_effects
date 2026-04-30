@@ -3483,6 +3483,72 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20240602_ashcan-cyberpunk-alley.jpg`
 - **License / Attribution:** CC0
 
+
+### Suggestion: Bioluminescent Quartz Geode
+- **Date:** 2024-06-15
+- **Prompt:** "A highly detailed, macro photograph of a cracked quartz geode revealing a chaotic interior of glowing, bioluminescent cyan crystals. The subject emits a soft, pulsing light that illuminates the rough, dark grey exterior of the rock. The lighting is low-key, strictly internal from the glowing crystals, creating stark contrasts and deep shadows within the rocky exterior crust. The mood is mysterious and magical. Captured with a 100mm macro lens, ultra-detailed focus on the sharp edges and light refraction."
+- **Negative prompt:** "flat, cartoon, brightly lit, blurry, low resolution, daylight"
+- **Tags:** macro, nature, crystals, glowing, magical
+- **Style / Reference:** photorealistic, macro photography, geological marvel
+- **Composition:** close-up, rule of thirds, sharp center focus
+- **Color palette:** glowing cyan, dark rocky greys, deep blacks
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240615_bioluminescent-quartz.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing sub-surface scattering, refraction, and emissive materials on sharp geometric shapes.
+
+### Suggestion: Clockwork Steampunk Owl
+- **Date:** 2024-06-15
+- **Prompt:** "An intricately crafted mechanical owl made of polished brass, copper, and glowing gears, perched atop an old, leather-bound book in a dimly lit Victorian study. Steam softly escapes from tiny vents on its wings. The lighting is warm and cinematic, coming from a nearby flickering candle, casting long, dancing shadows and sharp specular glints across the metallic surfaces. The mood is wondrous, intellectual, and antique. Captured with a 50mm lens, shallow depth of field focusing on the glowing amber eyes of the owl."
+- **Negative prompt:** "flesh, feathers, simple, modern, plastic, flat lighting"
+- **Tags:** steampunk, macro, mechanical, animal, victorian
+- **Style / Reference:** photorealistic still-life photography, steampunk aesthetic
+- **Composition:** centered subject, eye-level perspective, dramatic lighting
+- **Color palette:** warm brass, polished copper, deep mahogany brown, glowing amber
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20240615_clockwork-owl.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests metallic surfaces, depth of field, and intricate geometric details.
+
+### Suggestion: Ethereal Floating Castle
+- **Date:** 2024-06-15
+- **Prompt:** "A breathtaking, wide-angle landscape of a majestic, ancient stone castle floating serenely in a sea of pink and orange sunset clouds. The subject is draped in luminescent green vines and features glowing blue waterfalls cascading into the abyss below. The lighting is a vibrant, golden-hour sunset, casting warm light on the stone walls and creating soft, ethereal shadows. The mood is utopian, surreal, and serene. Captured with an aerial drone perspective to showcase the architectural elegance against the soft cloudscape."
+- **Negative prompt:** "ground, dark, gritty, cyberpunk, realistic architecture, harsh shadows, modern"
+- **Tags:** fantasy, architecture, floating, surreal, majestic
+- **Style / Reference:** high fantasy concept art, ethereal 3D render
+- **Composition:** wide expansive view, floating subject, rule of thirds
+- **Color palette:** warm golden sunlight, pastel pink clouds, deep stone grey, bioluminescent blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240615_floating-castle.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing soft volumetric lighting and majestic, floating architectural elements.
+
+### Suggestion: Cyberpunk Neon Rain Forest
+- **Date:** 2024-06-15
+- **Prompt:** "A dense, overgrown tropical rainforest fused with advanced cyberpunk technology. The organic subject features towering banyan trees wrapped in glowing neon fiber optic cables and holographic foliage. The lighting is a striking mix of natural moonlight piercing through the canopy and the harsh, vibrant magenta and cyan glow from the cybernetic implants on the plants. The mood is atmospheric, mysterious, and highly advanced. Captured with a wide 35mm lens, deep depth of field to capture the intricate blending of nature and machine."
+- **Negative prompt:** "daylight, dry, barren, city, vehicles, plain nature"
+- **Tags:** cyberpunk, nature, neon, forest, atmospheric
+- **Style / Reference:** cyberpunk environment design, photorealistic dark nature
+- **Composition:** wide angle, dense overlapping elements, immersive
+- **Color palette:** lush dark greens, neon magenta, electric cyan, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240615_cyber-forest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of dense organic foliage with harsh, multi-colored neon emission and dark shadows.
+
+### Suggestion: Art Deco Marble Spaceship Interior
+- **Date:** 2024-06-15
+- **Prompt:** "A grand, symmetrical view of the main corridor of a luxury passenger spaceship designed entirely in an opulent Art Deco style. The massive walls and floors are made of polished black and white marble, accented with sweeping geometric gold inlays. The lighting is soft and ambient, emanating from elegant, frosted glass fixtures, casting a warm, majestic glow over the highly reflective marble surfaces. The mood is intellectual, wealthy, and futuristic. Captured with a wide-angle 16mm lens to encompass the perfect symmetry and luxurious scale."
+- **Negative prompt:** "dystopian, utilitarian, grey, messy, dark, gritty, steampunk"
+- **Tags:** sci-fi, architecture, interior, art deco, opulent
+- **Style / Reference:** architectural visualization, retro-futuristic
+- **Composition:** perfectly symmetrical, one-point perspective, deep corridor
+- **Color palette:** polished black marble, stark white, brilliant gold, soft warm white light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240615_artdeco-spaceship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating highly polished, reflective materials (marble, gold) and perfectly symmetrical geometric architecture.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
