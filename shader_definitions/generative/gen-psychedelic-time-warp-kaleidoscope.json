@@ -1,0 +1,18 @@
+{
+    "id": "gen-psychedelic-time-warp-kaleidoscope",
+    "name": "Psychedelic Time-Warp Kaleidoscope",
+    "type": "compute",
+    "category": "generative",
+    "coordinate": 872,
+    "url": "shaders/gen-psychedelic-time-warp-kaleidoscope.wgsl",
+    "description": "Mirror the image around a dynamic axis with a time-varying mirror count. Reflection vectors are distorted by a 3D noise field for a shimmering kaleidoscope.",
+    "tags": [
+        "psychedelic",
+        "kaleidoscope",
+        "time-warp",
+        "noise",
+        "audio-reactive"
+    ],
+    "author": "Jules",
+    "parameters": []
+}
