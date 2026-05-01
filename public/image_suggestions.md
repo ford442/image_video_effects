@@ -3549,6 +3549,66 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating highly polished, reflective materials (marble, gold) and perfectly symmetrical geometric architecture.
 
+### Suggestion: Ethereal Glass Cathedral
+- **Date:** 2024-07-01
+- **Prompt:** "A breathtaking, wide-angle interior shot of a colossal cathedral constructed entirely from semi-translucent, ethereal glass. The massive vaulted ceilings and sweeping arches reflect a soft, omnidirectional glowing light. The lighting is mystical and diffuse, filtering through the glass architecture to create a serene, magical atmosphere. The mood is tranquil, awe-inspiring, and silent. Captured with a 14mm lens to emphasize the massive, soaring architecture and the delicate, transparent nature of the structure."
+- **Negative prompt:** "stone, wood, dark, gloomy, messy, daylight, realistic church"
+- **Tags:** fantasy, architecture, interior, glass, majestic
+- **Style / Reference:** ethereal architectural visualization, hyper-detailed 3D render
+- **Composition:** symmetrical, wide angle, low angle looking up
+- **Color palette:** soft pearlescent whites, pale cyan, glowing silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240701_glass-cathedral.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Bioluminescent Jungle Canopy
+- **Date:** 2024-07-01
+- **Prompt:** "A dense, ancient jungle canopy viewed from below, illuminated entirely by thousands of glowing, bioluminescent vines and giant luminous orchids. The organic subjects pulse with vibrant, ethereal light, casting intricate, colorful shadows. The lighting is low-key and magical, relying completely on the vibrant emission from the flora against the dark night sky. The mood is mysterious, enchanted, and teeming with alien life. Captured with a wide 24mm lens looking straight up, utilizing a deep focus to capture the layered complexity of the canopy."
+- **Negative prompt:** "daylight, sun, bright sky, dead trees, barren, plain green"
+- **Tags:** fantasy, nature, jungle, bioluminescent, glowing
+- **Style / Reference:** photorealistic dark nature photography, bioluminescent concept art
+- **Composition:** looking up, dense overlapping elements, immersive
+- **Color palette:** glowing neon green, vibrant magenta, ethereal cyan, deep dark blues
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240701_bioluminescent-jungle.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Steampunk Clockwork Scorpion Macro
+- **Date:** 2024-07-01
+- **Prompt:** "An incredibly detailed, extreme macro photograph of a mechanical scorpion constructed from polished brass, copper wires, and tiny ticking watch gears. The mechanical subject rests on a piece of dark, aged parchment. The lighting is warm, directional studio lighting that grazes the metallic surface, creating sharp specular highlights on the brass edges and deep, dark shadows between the gears. The mood is intricate, menacing, and antique. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the glowing amber glass eye of the scorpion."
+- **Negative prompt:** "organic, flesh, real insect, modern metal, bright daylight, soft lighting"
+- **Tags:** macro, steampunk, mechanical, insect, brass
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** extreme close-up, diagonal leading line, shallow depth of field
+- **Color palette:** warm brass, polished copper, deep mahogany brown, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240701_steampunk-scorpion.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Graphene Cyberpunk Monolith
+- **Date:** 2024-07-01
+- **Prompt:** "A towering, colossal monolith made of perfectly matte, light-absorbing graphene, standing ominously in the center of a rainy cyberpunk metropolis. The geometric, black subject devours the surrounding light, contrasting sharply with the chaotic, vibrant neon signs reflecting in the wet pavement below. The lighting is high-contrast and dramatic, with the harsh neon lights of the city emphasizing the terrifying, light-absorbing void of the monolith. The mood is oppressive, alien, and highly advanced. Captured with a wide 24mm lens from a low angle on the street, emphasizing the staggering scale and the stark material contrast."
+- **Negative prompt:** "shiny metal, reflective, daytime, sunny, natural, soft, organic"
+- **Tags:** sci-fi, cyberpunk, monolith, graphene, contrast
+- **Style / Reference:** cinematic sci-fi visualization, high contrast city photography
+- **Composition:** low angle, towering subject, symmetrical
+- **Color palette:** pitch black matte graphene, neon magenta, electric cyan, rainy greys
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20240701_graphene-monolith.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Art Deco Underwater Lounge
+- **Date:** 2024-07-01
+- **Prompt:** "A luxurious, symmetrical interior of an underwater lounge designed in an opulent Art Deco style. The subject features grand, arched glass windows revealing a dark, deep-sea environment filled with glowing jellyfish. Inside, the floor is polished black marble and the columns are decorated with geometric gold inlays. The lighting is a blend of the soft, ambient cyan glow from the deep sea outside and the warm, elegant incandescent light from ornate brass chandeliers inside. The mood is wealthy, isolated, and sophisticated. Captured with a wide-angle lens to capture the perfect symmetry and the juxtaposition of the opulent interior with the mysterious ocean."
+- **Negative prompt:** "messy, dirty, dystopian, bright sunlight, surface water, plain architecture"
+- **Tags:** architecture, interior, art deco, underwater, luxurious
+- **Style / Reference:** opulent architectural visualization, retro-futuristic
+- **Composition:** perfectly symmetrical, deep perspective, framed by arches
+- **Color palette:** polished black marble, brilliant gold, deep oceanic blue, glowing cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240701_art-deco-underwater.jpg`
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
