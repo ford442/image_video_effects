@@ -492,7 +492,7 @@
     "name": "Data Slicer",
     "url": "shaders/data-slicer-interactive.wgsl",
     "category": "interactive-mouse",
-    "description": "Glitchy horizontal slicing controlled by mouse vertical position.",
+    "description": "Glitchy horizontal slicing with gravity wells, audio reactivity, click shockwaves, and temporal feedback.",
     "params": [
       {
         "id": "slice_height",
@@ -525,11 +525,17 @@
     ],
     "features": [
       "mouse-driven",
-      "glitch"
+      "glitch",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "glitch",
+      "feedback",
+      "temporal"
     ]
   },
   {

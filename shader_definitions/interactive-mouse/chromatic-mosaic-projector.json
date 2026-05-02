@@ -3,7 +3,7 @@
   "name": "Chromatic Mosaic",
   "url": "shaders/chromatic-mosaic-projector.wgsl",
   "category": "image",
-  "description": "Projects the image onto a mosaic grid with chromatic aberration controlled by the mouse light source.",
+  "description": "Projects the image onto a reactive mosaic grid with chromatic aberration, audio-reactive cell pulsing, mouse gravity wells, click shockwaves, depth parallax, and temporal feedback trails.",
   "params": [
     {
       "id": "cells",
@@ -35,10 +35,18 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "mosaic",
+    "chromatic",
+    "audio-reactive",
+    "interactive",
+    "feedback"
   ]
 }

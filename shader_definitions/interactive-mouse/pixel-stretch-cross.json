@@ -3,9 +3,11 @@
   "name": "Pixel Stretch Cross",
   "url": "shaders/pixel-stretch-cross.wgsl",
   "category": "image",
-  "description": "Stretches pixels from the mouse position to the screen edges in a cross pattern.",
+  "description": "HDR pixel stretch from mouse position in a cross pattern with atmospheric glow, chromatic aberration, ACES tone mapping, and split-tone color grading.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware"
   ],
   "params": [
     {
@@ -39,6 +41,10 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "hdr",
+    "chromatic",
+    "glow",
+    "color-grading"
   ]
 }

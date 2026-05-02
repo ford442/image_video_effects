@@ -3,7 +3,7 @@
   "name": "Digital Lens",
   "url": "shaders/digital-lens.wgsl",
   "category": "image",
-  "description": "A lens that pixelates the image and adds a digital grid under the cursor.",
+  "description": "A lens that pixelates the image and adds a digital grid under the cursor. Upgraded with early-exit optimization, named constants, helper functions, and HDR-ready output.",
   "params": [
     {
       "id": "block",
@@ -35,10 +35,14 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "expects-pp-tone-map"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "pixelate",
+    "lens",
+    "digital"
   ]
 }

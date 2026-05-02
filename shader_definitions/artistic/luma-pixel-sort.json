@@ -2,10 +2,11 @@
   "id": "luma-pixel-sort",
   "category": "artistic",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "hdr-ready"
   ],
   "url": "shaders/luma-pixel-sort.wgsl",
-  "description": "Glitchy pixel sorting based on luminance and mouse height.",
+  "description": "Glitchy pixel sorting based on luminance and mouse height. HDR-ready with early-exit optimization.",
   "params": [
     {
       "id": "threshold",
@@ -38,7 +39,8 @@
   ],
   "tags": [
     "stylized",
-    "artistic"
+    "artistic",
+    "glitch"
   ],
   "name": "Luma Pixel Sort"
 }

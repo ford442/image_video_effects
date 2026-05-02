@@ -769,9 +769,11 @@
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
     "category": "retro-glitch",
-    "description": "VHS tracking jitter, block corruption, and datamoshing-style motion smear with wave-displaced RGB channels.",
+    "description": "VHS tracking jitter with domain-warped FBM, Worley-cellular block corruption, curl-noise datamoshing, digital bit-crush, and depth-aware audio-reactive glitch intensity.",
     "features": [
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "depth-aware"
     ],
     "params": [
       {
@@ -811,7 +813,9 @@
       "glitch",
       "retro",
       "vhs",
-      "datamosh"
+      "datamosh",
+      "noise",
+      "fractal"
     ]
   }
 ]

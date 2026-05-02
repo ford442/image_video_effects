@@ -6132,7 +6132,7 @@
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
     "category": "image",
-    "description": "A lens that pixelates the image and adds a digital grid under the cursor.",
+    "description": "A lens that pixelates the image and adds a digital grid under the cursor. Upgraded with early-exit optimization, named constants, helper functions, and HDR-ready output.",
     "params": [
       {
         "id": "block",
@@ -6164,11 +6164,15 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "expects-pp-tone-map"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "pixelate",
+      "lens",
+      "digital"
     ]
   },
   {
@@ -8562,7 +8566,7 @@
     "name": "Chromatic Mosaic",
     "url": "shaders/chromatic-mosaic-projector.wgsl",
     "category": "image",
-    "description": "Projects the image onto a mosaic grid with chromatic aberration controlled by the mouse light source.",
+    "description": "Projects the image onto a reactive mosaic grid with chromatic aberration, audio-reactive cell pulsing, mouse gravity wells, click shockwaves, depth parallax, and temporal feedback trails.",
     "params": [
       {
         "id": "cells",
@@ -8594,11 +8598,19 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "depth-aware"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "mosaic",
+      "chromatic",
+      "audio-reactive",
+      "interactive",
+      "feedback"
     ]
   },
   {
@@ -8835,7 +8847,7 @@
     "name": "CRT Magnet",
     "url": "shaders/crt-magnet.wgsl",
     "category": "image",
-    "description": "Simulates a CRT monitor with a magnetic distortion field controlled by the mouse.",
+    "description": "Simulates a CRT monitor with a magnetically distorted field driven by the mouse. Features FBM-perturbed falloff, curl-noise field lines, Worley phosphor grain, depth-aware attenuation, and audio reactivity.",
     "params": [
       {
         "id": "strength",
@@ -8867,11 +8879,18 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "temporal",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "noise",
+      "curl",
+      "fractal",
+      "crt"
     ]
   },
   {
@@ -11383,7 +11402,7 @@
     "name": "Magnetic Ripple",
     "url": "shaders/interactive-magnetic-ripple.wgsl",
     "category": "image",
-    "description": "Magnetic field distortion combined with ripples.",
+    "description": "Magnetic field distortion with FBM domain warping, curl-noise velocity fields, multi-octave Worley ripple modulation, and audio-reactive pulse.",
     "params": [
       {
         "id": "field_strength",
@@ -11416,11 +11435,17 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion"
+      "distortion",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "fbm",
+      "curl-noise",
+      "worley",
+      "domain-warp",
+      "fractal"
     ]
   },
   {
@@ -13426,7 +13451,7 @@
     "name": "Pixel Depth Sort",
     "url": "shaders/pixel-depth-sort.wgsl",
     "category": "image",
-    "description": "Simulates 3D depth by displacing pixels based on their brightness. Mouse controls the viewing perspective.",
+    "description": "Simulates 3D depth by displacing pixels based on brightness. Features HDR gold rim lighting, ACES tone mapping, atmospheric fog, and depth-aware parallax. Mouse controls viewing perspective.",
     "params": [
       {
         "id": "depth",
@@ -13440,13 +13465,13 @@
       },
       {
         "id": "shadows",
-        "name": "Shadow Strength",
+        "name": "Atmosphere",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Strength of layer rim shadows"
+        "description": "Atmospheric fog density and shadow strength"
       },
       {
         "id": "layers",
@@ -13460,21 +13485,25 @@
       },
       {
         "id": "shadow_threshold",
-        "name": "Shadow Threshold",
+        "name": "Rim Intensity",
         "default": 0.2,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Threshold for applying rim shadowing"
+        "description": "Strength of gold rim lighting on silhouette edges"
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "depth-aware",
+      "atmospheric",
+      "HDR"
     ]
   },
   {
@@ -13703,9 +13732,11 @@
     "name": "Pixel Stretch Cross",
     "url": "shaders/pixel-stretch-cross.wgsl",
     "category": "image",
-    "description": "Stretches pixels from the mouse position to the screen edges in a cross pattern.",
+    "description": "HDR pixel stretch from mouse position in a cross pattern with atmospheric glow, chromatic aberration, ACES tone mapping, and split-tone color grading.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
     ],
     "params": [
       {
@@ -13739,7 +13770,11 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "hdr",
+      "chromatic",
+      "glow",
+      "color-grading"
     ]
   },
   {
@@ -18798,7 +18833,7 @@
     "name": "Scan Distort Matrix gpt52",
     "url": "shaders/scan-distort-gpt52.wgsl",
     "category": "image",
-    "description": "High-density scanlines with rolling jitter, curvature, and chromatic tearing.",
+    "description": "High-density scanlines with rolling jitter, curvature, and chromatic tearing. Upgraded with HDR scanline peaks, ACES tone mapping, depth-aware atmospheric haze, split-tone color grading, and cinematic vignette.",
     "params": [
       {
         "id": "lineDensity",
@@ -18832,11 +18867,16 @@
     "features": [
       "mouse-driven",
       "glitch",
-      "animated"
+      "animated",
+      "depth-aware",
+      "hdr"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "cinematic",
+      "vintage",
+      "atmospheric"
     ]
   },
   {
@@ -19273,18 +19313,26 @@
     "name": "Pixel Sand",
     "url": "shaders/pixel-sand.wgsl",
     "category": "image",
-    "description": "Falling granular automata with RGB gravity and diagonal movement.",
+    "description": "Falling granular automata with mouse gravity wells, audio-reactive spawn colours, luma-keyed video-to-sand, depth shading and diagonal piling.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "temporal"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "sand",
+      "granular",
+      "falling",
+      "interactive",
+      "audio-reactive",
+      "particles",
+      "simulation"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
+        "name": "Gravity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -19300,7 +19348,7 @@
       },
       {
         "id": "param3",
-        "name": "Scale",
+        "name": "Mouse Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -19308,7 +19356,7 @@
       },
       {
         "id": "param4",
-        "name": "Detail",
+        "name": "Video Spawn",
         "default": 0.5,
         "min": 0,
         "max": 1,

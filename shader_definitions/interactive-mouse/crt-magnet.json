@@ -3,7 +3,7 @@
   "name": "CRT Magnet",
   "url": "shaders/crt-magnet.wgsl",
   "category": "image",
-  "description": "Simulates a CRT monitor with a magnetic distortion field controlled by the mouse.",
+  "description": "Simulates a CRT monitor with a magnetically distorted field driven by the mouse. Features FBM-perturbed falloff, curl-noise field lines, Worley phosphor grain, depth-aware attenuation, and audio reactivity.",
   "params": [
     {
       "id": "strength",
@@ -35,10 +35,17 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "temporal",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "noise",
+    "curl",
+    "fractal",
+    "crt"
   ]
 }

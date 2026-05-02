@@ -3,18 +3,26 @@
   "name": "Pixel Sand",
   "url": "shaders/pixel-sand.wgsl",
   "category": "image",
-  "description": "Falling granular automata with RGB gravity and diagonal movement.",
+  "description": "Falling granular automata with mouse gravity wells, audio-reactive spawn colours, luma-keyed video-to-sand, depth shading and diagonal piling.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "temporal"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "sand",
+    "granular",
+    "falling",
+    "interactive",
+    "audio-reactive",
+    "particles",
+    "simulation"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
+      "name": "Gravity",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -30,7 +38,7 @@
     },
     {
       "id": "param3",
-      "name": "Scale",
+      "name": "Mouse Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -38,7 +46,7 @@
     },
     {
       "id": "param4",
-      "name": "Detail",
+      "name": "Video Spawn",
       "default": 0.5,
       "min": 0,
       "max": 1,

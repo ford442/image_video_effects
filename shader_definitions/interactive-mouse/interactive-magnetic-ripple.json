@@ -3,7 +3,7 @@
   "name": "Magnetic Ripple",
   "url": "shaders/interactive-magnetic-ripple.wgsl",
   "category": "image",
-  "description": "Magnetic field distortion combined with ripples.",
+  "description": "Magnetic field distortion with FBM domain warping, curl-noise velocity fields, multi-octave Worley ripple modulation, and audio-reactive pulse.",
   "params": [
     {
       "id": "field_strength",
@@ -36,10 +36,16 @@
   ],
   "features": [
     "mouse-driven",
-    "distortion"
+    "distortion",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "fbm",
+    "curl-noise",
+    "worley",
+    "domain-warp",
+    "fractal"
   ]
 }

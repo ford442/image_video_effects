@@ -3,7 +3,7 @@
   "name": "Scan Distort Matrix gpt52",
   "url": "shaders/scan-distort-gpt52.wgsl",
   "category": "image",
-  "description": "High-density scanlines with rolling jitter, curvature, and chromatic tearing.",
+  "description": "High-density scanlines with rolling jitter, curvature, and chromatic tearing. Upgraded with HDR scanline peaks, ACES tone mapping, depth-aware atmospheric haze, split-tone color grading, and cinematic vignette.",
   "params": [
     {
       "id": "lineDensity",
@@ -37,10 +37,15 @@
   "features": [
     "mouse-driven",
     "glitch",
-    "animated"
+    "animated",
+    "depth-aware",
+    "hdr"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "cinematic",
+    "vintage",
+    "atmospheric"
   ]
 }

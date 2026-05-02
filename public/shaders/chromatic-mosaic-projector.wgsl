@@ -23,59 +23,93 @@ struct Uniforms {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
+    let time = u.config.x;
 
-    // Params
-    let cellSize = mix(10.0, 100.0, u.zoom_params.x); // Cells
-    let spread = u.zoom_params.y * 2.0;
-    let aberration = u.zoom_params.z * 0.1;
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Parameters
+    let cellSizeBase = mix(10.0, 100.0, u.zoom_params.x);
+    let cellSize = cellSizeBase * (1.0 + bass * 0.3);
+    let spread = u.zoom_params.y * 2.0 * (1.0 + mids * 0.4);
+    let aberration = u.zoom_params.z * 0.1 * (1.0 + treble * 0.5);
     let tint = u.zoom_params.w;
 
-    // Grid coordinates
-    let gridUV = floor(uv * cellSize) / cellSize;
+    // Mouse state
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w > 0.5;
+    let clickCount = u.config.y;
+
+    // Gravity well: pull UV toward mouse
+    let toMouse = (mouse - uv) * vec2<f32>(aspect, 1.0);
+    let mouseDist = length(toMouse);
+    let gravity = select(0.12, 0.35, mouseDown);
+    let warp = normalize(toMouse) * gravity / (1.0 + mouseDist * 3.0);
+    let warpedUV = uv + warp * 0.025;
+
+    // Mosaic grid with audio jitter
+    let gridUV = floor(warpedUV * cellSize) / cellSize;
     let cellCenter = gridUV + (0.5 / cellSize);
+    let jitter = vec2<f32>(
+        sin(time * 3.0 + gridUV.y * 12.0),
+        cos(time * 2.5 + gridUV.x * 12.0)
+    ) * mids * 0.015;
+    let sampleCenter = cellCenter + jitter;
 
-    var mouse = u.zoom_config.yz;
-
-    // Vector from mouse to cell (Projector light direction)
-    // Correct for aspect
-    let vecToCell = (cellCenter - mouse) * vec2(aspect, 1.0);
+    // Projector direction from mouse to cell
+    let vecToCell = (sampleCenter - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(vecToCell);
     var dir = normalize(vecToCell);
+    if (dist < 0.0001) { dir = vec2<f32>(1.0, 0.0); }
 
-    // Calculate sample offset based on light direction (Shadow casting logic)
-    // Actually, let's just use the direction to shift RGB channels
-
-    // Sample texture at cell center (Mosaic effect)
-    // Add offset based on direction * spread
+    // Chromatic offsets with FFT multi-band splitting
     let baseOffset = dir * dist * spread * 0.1;
+    let rOff = baseOffset + dir * aberration * (1.0 + bass);
+    let gOff = baseOffset + dir * aberration * 0.3 * mids;
+    let bOff = baseOffset - dir * aberration * (1.0 + treble * 0.6);
 
-    // Chromatic Aberration
-    let rOffset = baseOffset + (dir * aberration);
-    let gOffset = baseOffset;
-    let bOffset = baseOffset - (dir * aberration);
-
-    let r = textureSampleLevel(readTexture, u_sampler, cellCenter + rOffset, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, cellCenter + gOffset, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, cellCenter + bOffset, 0.0).b;
-
+    let r = textureSampleLevel(readTexture, u_sampler, sampleCenter + rOff, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, sampleCenter + gOff, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, sampleCenter + bOff, 0.0).b;
     var color = vec3<f32>(r, g, b);
 
-    // Vignette per cell
-    let cellUV = fract(uv * cellSize); // 0-1 within cell
-    let cellDist = distance(cellUV, vec2(0.5));
-    // Soft circle
-    let shape = smoothstep(0.5, 0.4, cellDist);
-
+    // Cell vignette pulsing with bass
+    let cellUV = fract(warpedUV * cellSize);
+    let cellDist = distance(cellUV, vec2<f32>(0.5));
+    let shape = smoothstep(0.5, 0.4 - bass * 0.06, cellDist);
     color = color * shape;
 
-    // Tint based on mouse distance (light falloff)
-    let lightFalloff = 1.0 / (1.0 + dist * 2.0);
-    color = color * lightFalloff;
+    // Light falloff + click shockwave
+    let falloff = 1.0 / (1.0 + dist * 2.0);
+    let shock = sin(mouseDist * 25.0 - clickCount * 1.5) * 0.5 + 0.5;
+    let shockFade = exp(-mouseDist * 3.5);
+    let light = falloff * (1.0 + shock * shockFade * 0.6);
+    color = color * light;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
+    // Tint and audio brightness boost
+    let tintColor = vec3<f32>(1.0, 0.85, 0.6) * tint;
+    color = mix(color, color * tintColor + vec3<f32>(bass * 0.15, mids * 0.08, treble * 0.05), tint);
+    color = color * (1.0 + bass * 0.25);
 
+    // Depth parallax separation
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
+    let depthShift = (1.0 - depth) * 0.025;
+    let depthOffset = dir * depthShift;
+    let depthSample = textureSampleLevel(readTexture, u_sampler, sampleCenter + depthOffset, 0.0).rgb;
+    color = mix(color, depthSample * shape * light, depth * 0.25);
+
+    // Temporal feedback trail
+    let feedbackUV = uv + warp * 0.008;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, feedbackUV, 0.0).rgb;
+    let feedbackAmt = 0.12 + bass * 0.08;
+    color = mix(color, prev * 0.96, feedbackAmt);
+
+    let out = vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.5)), 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), out);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, out);
 }

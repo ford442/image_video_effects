@@ -25,6 +25,23 @@ fn hash(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(41.7, 289.3))) * 43758.5453);
 }
 
+fn to_linear(c: vec3<f32>) -> vec3<f32> {
+  return pow(c, vec3<f32>(2.2));
+}
+
+fn to_srgb(c: vec3<f32>) -> vec3<f32> {
+  return pow(c, vec3<f32>(1.0 / 2.2));
+}
+
+fn aces_tm(c: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let cc = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((c * (a * c + b)) / (c * (cc * c + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -54,7 +71,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let linePhase = (warped.y + roll) * lines;
   let scan = sin(linePhase) * 0.5 + 0.5;
-  let scanBoost = 0.85 + 0.15 * scan;
+  // HDR scanline boost: peaks exceed 1.0 for tone mapping
+  let scanBoost = 0.65 + 0.75 * scan;
 
   let lineId = floor(warped.y * lines * 0.05);
   let jitter = (hash(vec2<f32>(lineId, floor(time * 24.0))) - 0.5) * glitch;
@@ -70,11 +88,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = textureSampleLevel(readTexture, u_sampler, warped + offset, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, warped + offset - vec2<f32>(aberr, 0.0), 0.0).b;
 
-  var color = vec3<f32>(r, g, b) * scanBoost;
-  color += vec3<f32>(0.02, 0.01, 0.03) * (hash(uv * resolution + time) - 0.5) * glitchParam;
+  // Linear HDR workflow
+  var color = to_linear(vec3<f32>(r, g, b)) * scanBoost;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+  // Cinematic film grain
+  let grain = (hash(uv * resolution + time) - 0.5) * 0.03
+            + (hash(uv * resolution * 1.3 - time * 0.7) - 0.5) * 0.015;
+  color += vec3<f32>(grain) * glitchParam;
 
+  // Depth-based atmospheric haze
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let fogAmount = smoothstep(0.0, 1.0, depth * 0.5 + radius * 0.35) * 0.4;
+  let fogColor = vec3<f32>(0.08, 0.06, 0.04); // warm amber atmospheric haze
+  color = mix(color, fogColor * 1.5, fogAmount);
+
+  // Split-tone: cool shadows / warm gold highlights
+  let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  let shadowTint = vec3<f32>(0.6, 0.75, 1.0);
+  let highlightTint = vec3<f32>(1.15, 0.95, 0.7);
+  let shadowMask = 1.0 - smoothstep(0.0, 0.25, lum);
+  let highlightMask = smoothstep(0.5, 1.0, lum);
+  color = color * mix(vec3<f32>(1.0), shadowTint, shadowMask * 0.3);
+  color = color * mix(vec3<f32>(1.0), highlightTint, highlightMask * 0.25);
+
+  // Fresnel rim glow on barrel distortion edges
+  let rim = pow(radius * 1.6, 3.0);
+  let rimColor = vec3<f32>(1.0, 0.85, 0.5);
+  color += rimColor * rim * 0.6 * (1.0 - bendParam * 0.3);
+
+  // Vignette for cinematic focus
+  let vignette = 1.0 - smoothstep(0.4, 1.2, radius);
+  color = color * (0.55 + 0.45 * vignette);
+
+  // ACES tone map + sRGB output
+  color = aces_tm(color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(to_srgb(color), 1.0));
+
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
