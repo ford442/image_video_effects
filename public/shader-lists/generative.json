@@ -3806,6 +3806,26 @@
     ]
   },
   {
+    "id": "gen-neural-network-glow-synaptic-pulse",
+    "name": "Neural Network Glow",
+    "url": "/shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
+    "category": "generative",
+    "coordinate": 873,
+    "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers.",
+    "tags": [
+      "neural",
+      "glow",
+      "audio-reactive",
+      "network",
+      "mesh"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": []
+  },
+  {
     "id": "gen-neuro-cosmos",
     "name": "Neuro-Cosmos",
     "url": "shaders/gen-neuro-cosmos.wgsl",
