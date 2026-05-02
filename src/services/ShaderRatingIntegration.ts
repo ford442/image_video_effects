@@ -6,6 +6,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import shaderCoordinates from '../shader_coordinates.json';
 import { STORAGE_API_URL } from '../config/appConfig';
+import {
+  setRating as cacheSetRating,
+  markSynced,
+  getDirtyRatings,
+  initOfflineSync,
+} from './ratingCache';
 
 const STORAGE_MANAGER_URL = STORAGE_API_URL;
 
@@ -68,8 +74,9 @@ export class ShaderRatingService {
       
       return ratings;
     } catch (error) {
-      console.error('ShaderRatingService.fetchAllRatings:', error);
-      return [];
+      console.warn('[ShaderRatingService] fetchAllRatings: using in-memory cache (offline?)');
+      // Return whatever we have in the in-memory cache from this session
+      return [...this.cache.values()];
     }
   }
 
@@ -86,9 +93,18 @@ export class ShaderRatingService {
   }
 
   /**
-   * Submit a star rating
+   * Submit a star rating.
+   *
+   * Offline-first: the rating is persisted to localStorage immediately so it
+   * survives page reloads and is flushed automatically on reconnect.  If the
+   * network request succeeds the entry is marked as synced and the API
+   * aggregate is returned.  If it fails an optimistic result is returned so
+   * the UI can update immediately without waiting for connectivity.
    */
   async rateShader(shaderId: string, stars: number): Promise<ShaderRating | null> {
+    // Persist locally first (offline-first guarantee)
+    cacheSetRating(shaderId, stars);
+
     try {
       const formData = new FormData();
       formData.append('stars', stars.toString());
@@ -99,7 +115,10 @@ export class ShaderRatingService {
       );
       
       if (!response.ok) throw new Error('Failed to submit rating');
-      const updated = await response.json();
+      const updated: ShaderRating = await response.json();
+
+      // POST succeeded — mark the cached entry as synced
+      markSynced(shaderId);
 
       // Update the individual cache entry and invalidate the list timestamp so
       // the next enrichWithRatings() / getRating() call fetches fresh data.
@@ -108,17 +127,47 @@ export class ShaderRatingService {
 
       return updated;
     } catch (error) {
-      console.error('ShaderRatingService.rateShader:', error);
-      return null;
+      console.warn('[ShaderRatingService] rateShader: offline, queued for sync:', shaderId);
+
+      // Return an optimistic result so the UI reflects the user's choice
+      const cached = this.cache.get(shaderId);
+      return {
+        id: shaderId,
+        stars,
+        rating_count: cached?.rating_count ?? 0,
+        play_count: cached?.play_count,
+        description: cached?.description,
+        author: cached?.author,
+        date: cached?.date,
+      };
     }
   }
 
   /**
-   * Enrich coordinate data with ratings
+   * Enrich coordinate data with ratings.
+   *
+   * API ratings are the authoritative aggregate, but any locally-dirty entry
+   * (user voted while offline) is overlaid on top so the UI always reflects
+   * the user's most recent gesture, even before it has been synced.
    */
   async enrichWithRatings(): Promise<EnrichedShader[]> {
     const ratings = await this.fetchAllRatings();
     const ratingMap = new Map(ratings.map(r => [r.id, r]));
+
+    // Overlay dirty localStorage ratings so offline votes are shown immediately
+    const dirty = getDirtyRatings();
+    for (const [id, cached] of Object.entries(dirty)) {
+      const existing = ratingMap.get(id);
+      ratingMap.set(id, {
+        id,
+        stars: cached.rating,          // user's pending vote (optimistic)
+        rating_count: existing?.rating_count ?? 0,
+        play_count: existing?.play_count,
+        description: existing?.description,
+        author: existing?.author,
+        date: existing?.date,
+      });
+    }
     
     return Object.entries(shaderCoordinates).map(([id, coordData]) => {
       const rating = ratingMap.get(id);
@@ -129,11 +178,11 @@ export class ShaderRatingService {
         coordinate: coord,
         name: (coordData as ShaderCoordData).name,
         category: (coordData as ShaderCoordData).category,
-        stars: rating?.stars || 0,
-        ratingCount: rating?.rating_count || 0,
-        playCount: rating?.play_count || 0,
-        features: (coordData as ShaderCoordData).features || [],
-        tags: (coordData as ShaderCoordData).tags || [],
+        stars: rating?.stars ?? 0,
+        ratingCount: rating?.rating_count ?? 0,
+        playCount: rating?.play_count ?? 0,
+        features: (coordData as ShaderCoordData)?.features ?? [],
+        tags: (coordData as ShaderCoordData)?.tags ?? [],
         zone: this.getZoneFromCoordinate(coord),
       };
     });
@@ -261,6 +310,12 @@ export function useShaderRatings() {
       setLoading(false);
     });
   }, [service]);
+
+  // Flush any dirty (offline) ratings whenever the browser comes back online
+  useEffect(() => {
+    const cleanup = initOfflineSync(STORAGE_MANAGER_URL);
+    return cleanup;
+  }, []);
 
   const rateShader = useCallback(async (id: string, stars: number) => {
     const updated = await service.rateShader(id, stars);
