@@ -1,5 +1,6 @@
 import { pipeline, env } from '@xenova/transformers';
 import * as webllm from "@mlc-ai/web-llm";
+import { buildCatalog, CatalogShader } from './services/shaderCatalog';
 
 // --- Configuration ---
 env.allowLocalModels = false;
@@ -132,51 +133,22 @@ export class Alucinate {
   }
 
   public static async buildShaderManifest(): Promise<ShaderRecord[]> {
-      const files = [
-          'advanced-hybrid.json', 'artistic.json', 'distortion.json',
-          'generative.json', 'geometric.json', 'image.json',
-          'interactive-mouse.json', 'interactive.json', 'lighting-effects.json',
-          'liquid-effects.json', 'liquid.json', 'post-processing.json',
-          'retro-glitch.json', 'simulation.json', 'visual-effects.json'
-      ];
-
-      const responses = await Promise.all(
-          files.map(f => fetch(`./shader-lists/${f}`).catch(() => null))
-      );
-
-      const arrays = await Promise.all(
-          responses.map(async (res, idx) => {
-              if (!res || !res.ok) {
-                  console.warn(`[Alucinate] Failed to load ${files[idx]}`);
-                  return [];
-              }
-              try {
-                  return await res.json();
-              } catch {
-                  console.warn(`[Alucinate] Invalid JSON in ${files[idx]}`);
-                  return [];
-              }
-          })
-      );
-
-      const seen = new Set<string>();
-      const manifest: ShaderRecord[] = [];
-
-      for (const arr of arrays) {
-          if (!Array.isArray(arr)) continue;
-          for (const def of arr) {
-              if (!def || !def.id || seen.has(def.id)) continue;
-              seen.add(def.id);
-              manifest.push({
-                  id: def.id,
-                  name: def.name || def.id,
-                  category: def.category || 'image',
-                  tags: Array.isArray(def.tags) ? def.tags : [],
-                  description: def.description || '',
-                  params: Array.isArray(def.params) ? def.params : []
-              });
-          }
-      }
+      const catalog = await buildCatalog();
+      const manifest: ShaderRecord[] = catalog.map((s: CatalogShader) => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          tags: s.tags,
+          description: s.description,
+          params: s.params.map(p => ({
+              id: p.id,
+              name: p.name,
+              default: p.default,
+              min: p.min,
+              max: p.max,
+              step: p.step,
+          })),
+      }));
 
       console.log(`[Alucinate] Loaded unified manifest: ${manifest.length} shaders`);
       return manifest;

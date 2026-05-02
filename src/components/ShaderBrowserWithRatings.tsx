@@ -3,9 +3,10 @@
 //  Coordinate-based shader browser with star ratings integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import { ShaderStarRating } from './ShaderStarRating';
+import { buildCatalog, searchCatalog, CatalogShader } from '../services/shaderCatalog';
 import './ShaderBrowserWithRatings.css';
 
 interface ShaderBrowserWithRatingsProps {
@@ -23,40 +24,57 @@ export const ShaderBrowserWithRatings: React.FC<ShaderBrowserWithRatingsProps> =
   const [activeView, setActiveView] = useState<MenuView>('zone');
   const [searchQuery, setSearchQuery] = useState('');
   const [minRating, setMinRating] = useState(0);
+  const [catalog, setCatalog] = useState<CatalogShader[]>([]);
 
-  // Filter shaders by search and minimum rating
+  // Load canonical catalog once on mount
+  useEffect(() => {
+    buildCatalog().then(setCatalog).catch(err => {
+      console.error('[ShaderBrowser] Failed to load catalog:', err);
+    });
+  }, []);
+
+  // Filter shaders by search (via canonical catalog) and minimum rating
   const filteredShaders = useMemo(() => {
     let filtered = shaders;
-    
+
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(s => 
-        s.name.toLowerCase().includes(q) ||
-        s.tags.some(t => t.toLowerCase().includes(q))
-      );
+      const matches = searchCatalog(catalog, searchQuery);
+      const matchIds = new Set(matches.map(s => s.id));
+      filtered = filtered.filter(s => matchIds.has(s.id));
     }
-    
+
     if (minRating > 0) {
       filtered = filtered.filter(s => s.stars >= minRating);
     }
-    
-    return filtered;
-  }, [shaders, searchQuery, minRating]);
 
-  // Get current menu groups based on view
+    return filtered;
+  }, [shaders, searchQuery, minRating, catalog]);
+
+  // Get current menu groups based on view, narrowed by search + rating filters
   const menuGroups = useMemo(() => {
-    const builder = { buildByZone: () => menus.byZone, buildByRating: () => menus.byRating, buildByPopularity: () => menus.byPopularity };
-    
+    const filteredIds = new Set(filteredShaders.map(s => s.id));
+
     switch (activeView) {
-      case 'zone': return menus.byZone;
-      case 'rating': return menus.byRating;
-      case 'popularity': return menus.byPopularity;
+      case 'zone':
+        return menus.byZone
+          .map(g => ({ ...g, shaders: g.shaders.filter(s => filteredIds.has(s.id)) }))
+          .filter(g => g.shaders.length > 0);
+      case 'rating':
+        return menus.byRating
+          .map(g => ({ ...g, shaders: g.shaders.filter(s => filteredIds.has(s.id)) }))
+          .filter(g => g.shaders.length > 0);
+      case 'popularity':
+        return menus.byPopularity
+          .map(g => ({ ...g, shaders: g.shaders.filter(s => filteredIds.has(s.id)) }))
+          .filter(g => g.shaders.length > 0);
       case 'coordinate':
-        // Flat list sorted by coordinate
-        return [{ label: 'All Shaders by Coordinate', shaders: [...shaders].sort((a, b) => a.coordinate - b.coordinate) }];
-      default: return menus.byZone;
+        return [{ label: 'All Shaders by Coordinate', shaders: [...filteredShaders].sort((a, b) => a.coordinate - b.coordinate) }];
+      default:
+        return menus.byZone
+          .map(g => ({ ...g, shaders: g.shaders.filter(s => filteredIds.has(s.id)) }))
+          .filter(g => g.shaders.length > 0);
     }
-  }, [activeView, menus, shaders]);
+  }, [activeView, menus, filteredShaders]);
 
   if (loading) {
     return (

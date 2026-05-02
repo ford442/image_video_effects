@@ -65,3 +65,14 @@ export {
 } from './contentLoader';
 
 export type { LoadedContent } from './contentLoader';
+
+// Shader Catalog (canonical metadata + search)
+export {
+  buildCatalog,
+  searchCatalog,
+} from './shaderCatalog';
+
+export type {
+  CatalogShader,
+  CatalogParam,
+} from './shaderCatalog';
