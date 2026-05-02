@@ -597,3 +597,84 @@ This upgrade plan provides a comprehensive roadmap for evolving 30+ small WGSL s
 4. **Geometric Complexity**: Add SDFs, ray marching, conformal maps, topology
 
 **Estimated Total Impact**: 30+ upgraded shaders, ~5,000 new lines of WGSL code, significant visual quality improvement across the entire shader library.
+
+---
+
+## Appendix C: External Project Shader Compatibility
+
+> **Scope:** The following external projects have weather/lighting shaders that should be upgraded and kept compatible with the image_video_effects WGSL compute pipeline so they can share binding layouts, uniform structs, and compositor integration.
+
+| Project | Shader(s) | Current Format | Compatibility Action |
+|---------|-----------|----------------|----------------------|
+| `webgpu_streetview` | `weather-post.wgsl` | WGSL render pipeline | Convert to compute pipeline with standard 13-binding header; map `WeatherParams` → `extraBuffer` |
+| `weather_clock` | `shaders.js` (rain, splash, clouds, stars) | GLSL (Three.js) | Port to WGSL compute shaders using standard header; keep GLSL for WebGL fallback |
+| `harborglow` | `lightShowNodes.ts` (god rays) | GLSL/TSL (Three.js) | Port to WGSL compute volumetric shaft shader using standard header; keep GLSL for WebGL fallback |
+
+### Binding Standard for Ported Shaders
+
+All ported shaders MUST use the exact 13-binding header:
+
+```wgsl
+// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+// ---------------------------------------------------
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=Generic1, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
+```
+
+### Parameter Overflow Strategy
+
+Project-specific parameters that exceed the 3 vec4 uniform capacity (e.g., `WeatherParams` with 40 fields) MUST be packed into `extraBuffer` (`@binding(10)`) as a structured float array. **Do NOT extend the `Uniforms` struct**, as this breaks cross-shader compatibility.
+
+**Example `extraBuffer` layout for weather params:**
+```wgsl
+// extraBuffer[0..39] = WeatherParams mapping
+// 0:  vibrance          1:  saturation        2:  contrast
+// 3:  exposure          4:  temperature       5:  tint
+// 6:  time              7:  rainIntensity     8:  snowIntensity
+// 9:  wind              10: speed             11: nightIntensity
+// 12: headlightsOn      13: highBeam          14: headlightHeading
+// 15: headlightPitch    16: domeLightOn       17: domeLightIntensity
+// 18: sunAzimuth        19: sunAltitude       20: moonAzimuth
+// 21: moonAltitude      22: fogIntensity      23: fogDensity
+// 24: fogHeight         25: fogColorIndex     26: lightShaftsIntensity
+// 27: heatShimmerIntensity  28: lensFlareIntensity  29: chromaticAberration
+// 30: dustIntensity     31: humidityHaze      32: shaderEffectsEnabled
+// 33: cameraHeading     34: cameraPitch       35: sunrise
+// 36: anamorphicStreak
+```
+
+### Re-use Existing Shaders
+
+Before writing new weather shaders from scratch, check the image_video_effects library for existing equivalents and extend those:
+
+- **Rain:** `rain.wgsl`, `cyber-rain.wgsl`, `cyber-rain-interactive.wgsl`, `gen_fluffy_raincloud.wgsl`, `rain-lens-wipe.wgsl`, `raindrop-ripples.wgsl`, `rain-ripples.wgsl`
+- **Snow:** `snow.wgsl`, `frost-reveal.wgsl`, `frosty-window.wgsl`, `crystal-freeze.wgsl`
+- **Fog:** `atmos-fog-volumetric.wgsl`, `atmos_volumetric_fog.wgsl`, `alpha-depth-fog-volumetric.wgsl`, `digital-haze.wgsl`, `vaporwave-horizon.wgsl`
+- **God rays / Light shafts:** `volumetric-god-rays.wgsl`, `volumetric-light-shafts.wgsl`, `divine-light.wgsl`, `lighthouse-reveal.wgsl`
+- **Dust / Particles:** `pixel-sand.wgsl`, `cymatic-sand.wgsl`, `particle-swarm.wgsl`
+- **Lens effects:** `lens-flare-brush.wgsl`, `dynamic-lens-flares.wgsl`, `glass-lens.wgsl`
+- **Night / Stars:** `night-vision-scope.wgsl`, `gen-nebula-light-trail-swarm.wgsl`
+
+### Porting Roadmap
+
+1. **Phase A (Immediate):** Port `webgpu_streetview/weather-post.wgsl` → `weather-post-compute.wgsl` using compute pipeline + extraBuffer mapping.
+2. **Phase B (Next):** Port `weather_clock` rain/snow/splash to procedural compute shaders; keep GLSL for WebGL fallback.
+3. **Phase C (Future):** Port `harborglow` god rays to compute volumetric post-process; keep GLSL/TSL for WebGL fallback.
