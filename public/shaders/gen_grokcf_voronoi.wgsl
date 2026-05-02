@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Worley Noise with FBM Layering and Edge Detection
+//  Worley Cellular v2 - Audio-reactive cellular fields
 //  Category: generative
-//  Features: upgraded-rgba, depth-aware, procedural, animated, organic-cellular
-//  Scientific: Worley Noise - based on distance to random feature points
-//  Upgraded: 2026-03-22
-//  By: Agent 1A - Alpha Channel Specialist
+//  Features: upgraded-rgba, depth-aware, audio-reactive, procedural,
+//            organic-cellular, animated
+//  Scientific: Worley noise (F1, F2) with FBM layering
+//  Upgraded: 2026-05-02 (Tier-1 integration pass)
+//  Creative additions: micro-cosmic starfields inside cells,
+//                      thin-film interference (oil-slick) edge glow
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,9 +30,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Hash Functions
 fn hash2(p: vec2<f32>) -> vec2<f32> {
-    var h = vec2<f32>(
+    let h = vec2<f32>(
         dot(p, vec2<f32>(127.1, 311.7)),
         dot(p, vec2<f32>(269.5, 183.3))
     );
@@ -38,7 +39,7 @@ fn hash2(p: vec2<f32>) -> vec2<f32> {
 }
 
 fn hash3(p: vec2<f32>) -> vec3<f32> {
-    var h = vec3<f32>(
+    let h = vec3<f32>(
         dot(p, vec2<f32>(127.1, 311.7)),
         dot(p, vec2<f32>(269.5, 183.3)),
         dot(p, vec2<f32>(419.2, 371.9))
@@ -50,23 +51,23 @@ fn hash1(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-// Worley Noise Result
 struct WorleyResult {
     f1: f32,
     f2: f32,
     cell_id: vec2<f32>,
+    cell_index: vec2<f32>,
 };
 
-// Worley Noise
 fn worley_noise(uv: vec2<f32>, scale: f32, time: f32, drift_speed: f32) -> WorleyResult {
     let st = uv * scale;
     let cell = floor(st);
     let frac = fract(st);
-    
+
     var f1 = 1e10;
     var f2 = 1e10;
     var cell_id = vec2<f32>(0.0);
-    
+    var cell_index = cell;
+
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
             let neighbor = vec2<f32>(f32(x), f32(y));
@@ -79,46 +80,43 @@ fn worley_noise(uv: vec2<f32>, scale: f32, time: f32, drift_speed: f32) -> Worle
             let feature_point = neighbor + hash_val + drift;
             let diff = feature_point - frac;
             let dist = length(diff);
-            
-            if dist < f1 {
+
+            if (dist < f1) {
                 f2 = f1;
                 f1 = dist;
                 cell_id = hash_val;
-            } else if dist < f2 {
+                cell_index = current_cell;
+            } else if (dist < f2) {
                 f2 = dist;
             }
         }
     }
-    return WorleyResult(f1, f2, cell_id);
+    return WorleyResult(f1, f2, cell_id, cell_index);
 }
 
-// FBM Worley
 fn fbm_worley(uv: vec2<f32>, time: f32, base_scale: f32, octaves: i32) -> vec3<f32> {
     var total_f1: f32 = 0.0;
     var total_f2: f32 = 0.0;
     var amplitude: f32 = 1.0;
     var frequency: f32 = 1.0;
     var max_value: f32 = 0.0;
-    var cell_color = vec3<f32>(0.0);
-    
-    for (var i: i32 = 0; i < octaves; i = i + 1) {
+
+    for (var i: i32 = 0; i < 4; i = i + 1) {
+        if (i >= octaves) { break; }
         let worley = worley_noise(uv, base_scale * frequency, time, 0.5 + f32(i) * 0.2);
         total_f1 = total_f1 + worley.f1 * amplitude;
         total_f2 = total_f2 + worley.f2 * amplitude;
         max_value = max_value + amplitude;
-        cell_color = cell_color + hash3(worley.cell_id + f32(i)) * amplitude;
         amplitude = amplitude * 0.5;
         frequency = frequency * 2.0;
     }
-    
+
     total_f1 = total_f1 / max_value;
     total_f2 = total_f2 / max_value;
-    cell_color = cell_color / max_value;
     let edge_value = total_f2 - total_f1;
     return vec3<f32>(total_f1, total_f2, edge_value);
 }
 
-// Color Palettes
 fn get_inner_color(cell_hash: vec2<f32>) -> vec3<f32> {
     let palette = array<vec3<f32>, 5>(
         vec3<f32>(0.15, 0.08, 0.12),
@@ -127,20 +125,27 @@ fn get_inner_color(cell_hash: vec2<f32>) -> vec3<f32> {
         vec3<f32>(0.18, 0.12, 0.08),
         vec3<f32>(0.10, 0.12, 0.15)
     );
-    let idx = i32(cell_hash.x * 4.99);
+    let idx = i32(clamp(cell_hash.x * 4.99, 0.0, 4.0));
     return palette[idx];
 }
 
-fn get_edge_color(cell_hash: vec2<f32>, time: f32) -> vec3<f32> {
-    let glow = 0.5 + 0.5 * sin(time * 0.5 + cell_hash.y * 6.28);
-    let palette = array<vec3<f32>, 4>(
-        vec3<f32>(0.9, 0.3, 0.5),
-        vec3<f32>(0.3, 0.8, 0.6),
-        vec3<f32>(0.6, 0.4, 0.9),
-        vec3<f32>(0.9, 0.7, 0.3)
+// Thin-film interference edge color (oil-slick / soap-bubble)
+fn get_edge_color(cell_hash: vec2<f32>, time: f32, edgeT: f32) -> vec3<f32> {
+    let phase = edgeT * 14.0 + cell_hash.x * 6.28 + time * 0.7;
+    return vec3<f32>(
+        0.5 + 0.5 * cos(phase),
+        0.5 + 0.5 * cos(phase + 2.094),
+        0.5 + 0.5 * cos(phase + 4.188)
     );
-    let idx = i32(cell_hash.x * 3.99);
-    return palette[idx] * (0.7 + glow * 0.3);
+}
+
+fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -149,68 +154,94 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
     let time = u.config.x;
-    
-    // Parameters
-    let cell_density = u.zoom_params.x;
-    let edge_intensity = u.zoom_params.y;
-    let color_shift = u.zoom_params.z;
-    let parallax = u.zoom_params.w;
-    
-    let density = mix(3.0, 12.0, cell_density);
-    let edges = mix(0.3, 1.5, edge_intensity);
-    
-    // Layer 1: Base organic pattern
+
+    // Audio
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Domain-specific params
+    let cellDensityP = u.zoom_params.x;   // Cell Density (bass-pulse)
+    let edgeGlowP = u.zoom_params.y;      // Edge Glow (mids)
+    let colorShift = u.zoom_params.z;     // Color Shift
+    let parallax = u.zoom_params.w;       // Parallax
+
+    let density = mix(3.0, 12.0, cellDensityP) * (1.0 + bass * 0.35);
+    let edges = mix(0.3, 1.5, edgeGlowP) * (1.0 + mids * 0.6);
+
     let uv1 = uv + vec2<f32>(sin(time * 0.05), cos(time * 0.03)) * parallax * 0.02;
     let worley1 = fbm_worley(uv1, time * 0.1, density, 3);
-    
-    // Layer 2: Mid detail
     let uv2 = uv - vec2<f32>(sin(time * 0.07), cos(time * 0.05)) * parallax * 0.03;
     let worley2 = fbm_worley(uv2, time * 0.15 + 100.0, density * 1.5, 2);
-    
-    // Layer 3: Fine detail
     let uv3 = uv + vec2<f32>(cos(time * 0.1), sin(time * 0.08)) * parallax * 0.01;
     let worley3 = fbm_worley(uv3, time * 0.2 + 200.0, density * 3.0, 2);
-    
-    // Combine layers
+
     let combined_f1 = worley1.x * 0.5 + worley2.x * 0.3 + worley3.x * 0.2;
     let combined_f2 = worley1.y * 0.5 + worley2.y * 0.3 + worley3.y * 0.2;
     let combined_edge = worley1.z * 0.5 + worley2.z * 0.3 + worley3.z * 0.2;
-    
+
     let edge_value = combined_edge * edges;
-    let cell_hash = hash2(floor(uv * density));
-    let inner_color = get_inner_color(cell_hash + color_shift);
-    let edge_color = get_edge_color(cell_hash + color_shift, time);
+    // Need primary cell index for stable per-cell features
+    let primary = worley_noise(uv1, density, time * 0.1, 0.5);
+    let cell_hash = primary.cell_id;
+    let cell_index = primary.cell_index;
+
+    let inner_color = get_inner_color(cell_hash + colorShift);
+    let edge_color = get_edge_color(cell_hash + colorShift, time, edge_value);
     let depth_shading = 1.0 - combined_f1 * 0.5;
-    
+
     let edge_mask = smoothstep(0.0, 0.15, edge_value);
     var final_color = mix(inner_color * depth_shading, edge_color, edge_mask);
-    let glow = pow(edge_value, 2.0) * edge_intensity * 0.5;
+    let glow = pow(edge_value, 2.0) * edgeGlowP * 0.5;
     final_color = final_color + edge_color * glow;
-    
+
+    // ─── Creative: micro-cosmic starfield inside each cell ───
+    // Independent rotation per cell, hashed offset
+    let cellRot = cell_hash.y * 6.28 + time * (0.1 + cell_hash.x * 0.4);
+    let cR = cos(cellRot);
+    let sR = sin(cellRot);
+    let localFrac = fract(uv1 * density) - 0.5;
+    let starUV = vec2<f32>(localFrac.x * cR - localFrac.y * sR, localFrac.x * sR + localFrac.y * cR);
+    let starGrid = floor(starUV * 30.0);
+    let starHash = hash1(starGrid + cell_index * 13.0);
+    let starThresh = 0.97 - bass * 0.04;
+    let inCell = 1.0 - edge_mask;
+    var starField = step(starThresh, starHash) * inCell;
+    // Treble flicker
+    let flicker = step(1.0 - treble * 0.4, hash1(starGrid + vec2<f32>(time * 12.0, cell_index.x)));
+    starField = starField * (0.5 + flicker * 0.5);
+    final_color = final_color + vec3<f32>(starField) * (0.6 + cell_hash.x * 0.4);
+
     // Vignette
     let vignette = 1.0 - length((uv - 0.5) * 1.2);
     final_color = final_color * smoothstep(0.0, 0.7, vignette);
-    
-    // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
+
+    // Tone map
+    final_color = acesToneMapping(final_color);
+
+    // Sample input
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    // Opacity control
+
     let opacity = 0.9;
-    
-    // Calculate alpha
     let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
     let edgeAlpha = mix(0.6, 1.0, edge_mask);
-    let generatedAlpha = edgeAlpha;
-    
-    // Blend with input
+    let generatedAlpha = max(edgeAlpha, smoothstep(0.05, 0.5, luma));
+
     let finalColor = mix(inputColor.rgb, final_color, generatedAlpha * opacity);
     let finalAlpha = max(inputColor.a, generatedAlpha * opacity);
-    
-    // Output RGBA
+
     textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
-    
-    // Output depth
-    let depth_out = mix(inputDepth, 1.0 - combined_f1 * 0.8 + edge_value * 0.2, generatedAlpha * opacity);
+
+    // Depth uses combined_f1 (Worley F1) for interesting depth-aware downstream
+    let depth_out = mix(inputDepth, combined_f1, generatedAlpha * opacity);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth_out, 0.0, 0.0, 0.0));
+
+    // dataTextureA: cell ID (R, G), edge mask (B), F1 distance (A)
+    textureStore(dataTextureA, coord, vec4<f32>(
+        cell_hash.x,
+        cell_hash.y,
+        edge_mask,
+        combined_f1
+    ));
 }

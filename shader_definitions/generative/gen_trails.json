@@ -3,23 +3,30 @@
   "name": "Boids Flocking",
   "url": "shaders/gen_trails.wgsl",
   "category": "generative",
-  "description": "Craig Reynolds' boids flocking simulation with alpha scattering and RGBA depth-aware rendering.",
+  "description": "Audio-reactive Reynolds boids flocking with bass-driven panic, mids cohesion, treble flash bursts, mouse attraction, motion-blur streaks, and pheromone trails.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "upgraded-rgba",
-    "particles"
+    "particles",
+    "audio-reactive",
+    "temporal",
+    "flocking"
   ],
   "tags": [
     "procedural",
     "generative",
     "flocking",
-    "particles"
+    "particles",
+    "boids",
+    "trails",
+    "audio-reactive",
+    "vj"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
+      "name": "Separation",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -27,7 +34,7 @@
     },
     {
       "id": "param2",
-      "name": "Speed",
+      "name": "Alignment",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -35,7 +42,7 @@
     },
     {
       "id": "param3",
-      "name": "Scale",
+      "name": "Cohesion",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -43,8 +50,8 @@
     },
     {
       "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "name": "Max Speed",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01

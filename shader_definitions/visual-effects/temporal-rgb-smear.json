@@ -3,7 +3,7 @@
   "name": "Temporal RGB Smear",
   "category": "image",
   "url": "shaders/temporal-rgb-smear.wgsl",
-  "description": "Separates RGB channels in time. Red is instant, Green and Blue trail behind with variable lag.",
+  "description": "Separates RGB channels in time with gravity wells, motion trails, audio reactivity, and temporal feedback.",
   "params": [
     {
       "id": "green_lag",
@@ -33,24 +33,30 @@
       "max": 0.99,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Feedback amount for temporal smearing"
+      "description": "Temporal feedback amount for recursive smearing"
     },
     {
       "id": "mouse_influence",
-      "name": "Mouse Influence Radius",
+      "name": "Gravity Well",
       "default": 0.5,
       "min": 0.1,
       "max": 0.6,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Radius of mouse influence on lag reduction"
+      "description": "Strength of mouse gravity well and motion trail distortion"
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio-reactive",
+    "interactive",
+    "temporal",
+    "feedback"
   ]
 }

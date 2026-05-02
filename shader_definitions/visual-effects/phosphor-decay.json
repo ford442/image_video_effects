@@ -3,7 +3,7 @@
   "name": "Phosphor Decay",
   "url": "shaders/phosphor-decay.wgsl",
   "category": "visual-effects",
-  "description": "Simulates CRT phosphor persistence. Bright areas leave trails. Mouse acts as an electron beam.",
+  "description": "CRT phosphor persistence with HDR trails, ACES tone mapping, split-tone color grading, atmospheric depth haze, and audio-reactive electron beam.",
   "params": [
     {
       "name": "Persistence",
@@ -30,7 +30,7 @@
       "id": "beam_size"
     },
     {
-      "name": "Color Drift",
+      "name": "Atmosphere",
       "type": "f32",
       "min": 0.0,
       "max": 1.0,
@@ -39,11 +39,16 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "vfx",
     "particles",
-    "glow"
+    "glow",
+    "hdr",
+    "crt",
+    "tone-mapped"
   ]
 }

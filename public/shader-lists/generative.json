@@ -376,52 +376,53 @@
     "name": "Galaxy Simulation",
     "url": "shaders/galaxy.wgsl",
     "category": "generative",
-    "description": "Animated galaxy simulation with spiral arms and starfield with RGBA depth-aware rendering.",
+    "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow.",
     "features": [
       "depth-aware",
       "upgraded-rgba",
       "animated",
       "audio-reactive",
-      "audio-driven"
+      "mouse-driven"
     ],
     "tags": [
       "procedural",
       "generative",
       "galaxy",
       "space",
-      "audio",
-      "music",
-      "reactive"
+      "stars",
+      "spiral",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "name": "Opacity",
+        "default": 0.85,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "name": "Arm Count",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "name": "Rotation Speed",
+        "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Arm Spread",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -5409,31 +5410,37 @@
     "name": "Domain-Warped FBM Grid",
     "url": "shaders/gen_grid.wgsl",
     "category": "generative",
-    "description": "Organic flowing grid using domain warping and FBM noise with RGBA depth-aware rendering.",
+    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "upgraded-rgba",
-      "domain-warping"
+      "domain-warping",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "procedural",
       "generative",
       "noise",
-      "grid"
+      "grid",
+      "domain-warp",
+      "moire",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "name": "Warp Amount",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Grid Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5441,16 +5448,16 @@
       },
       {
         "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "name": "Line Thickness",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Palette Shift",
+        "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -5462,22 +5469,29 @@
     "name": "Buddhabrot Nebula",
     "url": "shaders/gen_grok41_mandelbrot.wgsl",
     "category": "generative",
-    "description": "Orbit accumulation rendering creating nebula-like fractal patterns with RGBA depth-aware rendering.",
+    "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation.",
     "features": [
       "mouse-driven",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "temporal",
+      "fractal"
     ],
     "tags": [
       "procedural",
       "generative",
       "fractal",
-      "mandelbrot"
+      "mandelbrot",
+      "buddhabrot",
+      "nebula",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
+        "name": "Center X",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5485,7 +5499,7 @@
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Center Y",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5493,16 +5507,16 @@
       },
       {
         "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "name": "Zoom Scale",
+        "default": 0.6,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Evolution Speed",
+        "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -5514,31 +5528,38 @@
     "name": "Spherical Harmonics Plasma",
     "url": "shaders/gen_grok41_plasma.wgsl",
     "category": "generative",
-    "description": "3D gas giant atmosphere using spherical harmonics with RGBA depth-aware rendering.",
+    "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "upgraded-rgba",
-      "3d"
+      "3d",
+      "audio-reactive",
+      "spherical-harmonics",
+      "animated"
     ],
     "tags": [
       "procedural",
       "generative",
       "sphere",
-      "atmosphere"
+      "atmosphere",
+      "spherical-harmonics",
+      "gas-giant",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "name": "L1 Coefficient",
+        "default": 0.55,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "L2 Coefficient",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5546,16 +5567,16 @@
       },
       {
         "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "name": "L3 Coefficient",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Hue Shift",
+        "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -5666,39 +5687,46 @@
     "name": "Chladni Plate Cymatics",
     "url": "shaders/gen_grokcf_interference.wgsl",
     "category": "generative",
-    "description": "Sand patterns from vibrating plate standing waves with RGBA depth-aware rendering.",
+    "description": "Audio-reactive Chladni cymatics with modal synthesis, iridescent oil-slick interference, and Fibonacci spiral self-organization at high audio energy.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "upgraded-rgba",
-      "audio-reactive"
+      "audio-reactive",
+      "procedural",
+      "organic",
+      "animated"
     ],
     "tags": [
       "procedural",
       "generative",
       "cymatics",
-      "interference"
+      "interference",
+      "audio-reactive",
+      "stained-glass",
+      "vibration",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "name": "Sweep Speed",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "name": "Mode Count",
+        "default": 0.6,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param3",
-        "name": "Scale",
+        "name": "Pattern Sharpness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5706,8 +5734,8 @@
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Sand Density",
+        "default": 0.55,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -5716,26 +5744,33 @@
   },
   {
     "id": "gen-grokcf-voronoi",
-    "name": "Worley Noise Cellular",
+    "name": "Worley Cellular",
     "url": "shaders/gen_grokcf_voronoi.wgsl",
     "category": "generative",
-    "description": "Organic cellular patterns using Worley noise with FBM layering and RGBA depth-aware rendering.",
+    "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "upgraded-rgba",
-      "animated"
+      "animated",
+      "audio-reactive",
+      "procedural",
+      "organic-cellular"
     ],
     "tags": [
       "procedural",
       "generative",
       "voronoi",
-      "cellular"
+      "cellular",
+      "worley",
+      "audio-reactive",
+      "thin-film",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
+        "name": "Cell Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -5743,24 +5778,24 @@
       },
       {
         "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "name": "Edge Glow",
+        "default": 0.55,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "name": "Color Shift",
+        "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Parallax",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -6032,30 +6067,38 @@
     "name": "Lorenz Strange Attractor",
     "url": "shaders/gen_orb.wgsl",
     "category": "generative",
-    "description": "Chaotic particle system visualization based on the Lorenz attractor with RGBA depth-aware rendering.",
+    "description": "Audio-reactive Lorenz strange attractor (σ, ρ, β) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
     "features": [
       "mouse-driven",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "temporal",
+      "mathematical-art",
+      "particles"
     ],
     "tags": [
       "procedural",
       "generative",
       "particles",
-      "mathematical-art"
+      "mathematical-art",
+      "chaos",
+      "attractor",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "name": "Sigma (σ)",
+        "default": 0.45,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Rho (ρ)",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6063,16 +6106,16 @@
       },
       {
         "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "name": "Beta (β)",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Trail Persistence",
+        "default": 0.7,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -6288,23 +6331,30 @@
     "name": "Boids Flocking",
     "url": "shaders/gen_trails.wgsl",
     "category": "generative",
-    "description": "Craig Reynolds' boids flocking simulation with alpha scattering and RGBA depth-aware rendering.",
+    "description": "Audio-reactive Reynolds boids flocking with bass-driven panic, mids cohesion, treble flash bursts, mouse attraction, motion-blur streaks, and pheromone trails.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "upgraded-rgba",
-      "particles"
+      "particles",
+      "audio-reactive",
+      "temporal",
+      "flocking"
     ],
     "tags": [
       "procedural",
       "generative",
       "flocking",
-      "particles"
+      "particles",
+      "boids",
+      "trails",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
+        "name": "Separation",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6312,7 +6362,7 @@
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Alignment",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6320,7 +6370,7 @@
       },
       {
         "id": "param3",
-        "name": "Scale",
+        "name": "Cohesion",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6328,8 +6378,8 @@
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Max Speed",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01

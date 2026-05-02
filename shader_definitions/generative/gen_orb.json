@@ -3,30 +3,38 @@
   "name": "Lorenz Strange Attractor",
   "url": "shaders/gen_orb.wgsl",
   "category": "generative",
-  "description": "Chaotic particle system visualization based on the Lorenz attractor with RGBA depth-aware rendering.",
+  "description": "Audio-reactive Lorenz strange attractor (σ, ρ, β) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
   "features": [
     "mouse-driven",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive",
+    "temporal",
+    "mathematical-art",
+    "particles"
   ],
   "tags": [
     "procedural",
     "generative",
     "particles",
-    "mathematical-art"
+    "mathematical-art",
+    "chaos",
+    "attractor",
+    "audio-reactive",
+    "vj"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "name": "Sigma (σ)",
+      "default": 0.45,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Speed",
+      "name": "Rho (ρ)",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -34,16 +42,16 @@
     },
     {
       "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "name": "Beta (β)",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "name": "Trail Persistence",
+      "default": 0.7,
       "min": 0,
       "max": 1,
       "step": 0.01

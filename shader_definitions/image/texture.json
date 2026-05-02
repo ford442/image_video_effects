@@ -1,47 +1,54 @@
 {
   "id": "texture",
-  "name": "Texture Display",
+  "name": "Procedural Texture Analyzer",
   "url": "shaders/texture.wgsl",
   "category": "image",
-  "description": "Basic image/video texture display with RGBA depth-aware processing.",
+  "description": "Multi-scale texture analyzer with Laplacian edge enhancement, unsharp mask, temporal smoothing, golden-ratio vignette, and audio-reactive sparkle/glitch.",
   "features": [
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive",
+    "temporal"
   ],
   "tags": [
     "image",
     "video",
-    "basic"
+    "edge-enhance",
+    "unsharp",
+    "temporal",
+    "vignette",
+    "audio-reactive",
+    "vj"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "name": "Edge Enhance",
+      "default": 0.35,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "name": "Unsharp Mask",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "name": "Temporal Smooth",
+      "default": 0.25,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "name": "Audio Reactivity",
+      "default": 0.7,
       "min": 0,
       "max": 1,
       "step": 0.01

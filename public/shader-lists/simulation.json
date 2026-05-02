@@ -1662,6 +1662,59 @@
     ]
   },
   {
+    "id": "bitonic-sort",
+    "name": "Bitonic Pixel Sort",
+    "url": "shaders/bitonic-sort.wgsl",
+    "category": "simulation",
+    "description": "Workgroup bitonic pixel sort with FBM curl-noise domain warping, SDF smooth-union masks, and multi-scale luminance reordering.",
+    "features": [
+      "mouse-driven",
+      "temporal"
+    ],
+    "tags": [
+      "simulation",
+      "filter",
+      "glitch",
+      "algorithmic",
+      "sort",
+      "noise"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "cellular-automata-rgba",
     "name": "Cellular Automata RGBA",
     "url": "shaders/cellular-automata-rgba.wgsl",

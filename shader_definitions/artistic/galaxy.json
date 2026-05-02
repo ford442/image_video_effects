@@ -3,52 +3,53 @@
   "name": "Galaxy Simulation",
   "url": "shaders/galaxy.wgsl",
   "category": "generative",
-  "description": "Animated galaxy simulation with spiral arms and starfield with RGBA depth-aware rendering.",
+  "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow.",
   "features": [
     "depth-aware",
     "upgraded-rgba",
     "animated",
     "audio-reactive",
-    "audio-driven"
+    "mouse-driven"
   ],
   "tags": [
     "procedural",
     "generative",
     "galaxy",
     "space",
-    "audio",
-    "music",
-    "reactive"
+    "stars",
+    "spiral",
+    "audio-reactive",
+    "vj"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "name": "Opacity",
+      "default": 0.85,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "name": "Arm Count",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "name": "Rotation Speed",
+      "default": 0.3,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "name": "Arm Spread",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01

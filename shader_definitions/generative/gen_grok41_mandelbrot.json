@@ -3,22 +3,29 @@
   "name": "Buddhabrot Nebula",
   "url": "shaders/gen_grok41_mandelbrot.wgsl",
   "category": "generative",
-  "description": "Orbit accumulation rendering creating nebula-like fractal patterns with RGBA depth-aware rendering.",
+  "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation.",
   "features": [
     "mouse-driven",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive",
+    "temporal",
+    "fractal"
   ],
   "tags": [
     "procedural",
     "generative",
     "fractal",
-    "mandelbrot"
+    "mandelbrot",
+    "buddhabrot",
+    "nebula",
+    "audio-reactive",
+    "vj"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
+      "name": "Center X",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -26,7 +33,7 @@
     },
     {
       "id": "param2",
-      "name": "Speed",
+      "name": "Center Y",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -34,16 +41,16 @@
     },
     {
       "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "name": "Zoom Scale",
+      "default": 0.6,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "name": "Evolution Speed",
+      "default": 0.3,
       "min": 0,
       "max": 1,
       "step": 0.01

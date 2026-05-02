@@ -7818,48 +7818,55 @@
   },
   {
     "id": "texture",
-    "name": "Texture Display",
+    "name": "Procedural Texture Analyzer",
     "url": "shaders/texture.wgsl",
     "category": "image",
-    "description": "Basic image/video texture display with RGBA depth-aware processing.",
+    "description": "Multi-scale texture analyzer with Laplacian edge enhancement, unsharp mask, temporal smoothing, golden-ratio vignette, and audio-reactive sparkle/glitch.",
     "features": [
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "image",
       "video",
-      "basic"
+      "edge-enhance",
+      "unsharp",
+      "temporal",
+      "vignette",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "name": "Edge Enhance",
+        "default": 0.35,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "name": "Unsharp Mask",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "name": "Temporal Smooth",
+        "default": 0.25,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "name": "Audio Reactivity",
+        "default": 0.7,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -19071,54 +19078,6 @@
     ]
   },
   {
-    "id": "bitonic-sort",
-    "name": "Bitonic Pixel Sort",
-    "url": "shaders/bitonic-sort.wgsl",
-    "category": "image",
-    "description": "Workgroup bitonic sort skeleton for pixel sorting and glitch effects.",
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
     "id": "digital-moss",
     "name": "Digital Moss",
     "category": "image",
@@ -19672,9 +19631,12 @@
     "name": "Elastic Chromatic",
     "url": "shaders/elastic-chromatic.wgsl",
     "category": "image",
-    "description": "Simulates color channel lag (ghosting) that responds to mouse proximity.",
+    "description": "Chromatic channel lag with depth-aware modulation, mouse proximity influence, and optional audio reactivity. HDR-ready for downstream tone-mapping.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "temporal",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -19682,33 +19644,41 @@
         "name": "Red Lag",
         "default": 0.8,
         "min": 0,
-        "max": 0.99
+        "max": 0.99,
+        "step": 0.01
       },
       {
         "id": "lagB",
         "name": "Blue Lag",
         "default": 0.6,
         "min": 0,
-        "max": 0.99
+        "max": 0.99,
+        "step": 0.01
       },
       {
         "id": "influence",
         "name": "Mouse Drag",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "unused",
-        "name": "Unused",
+        "id": "lagG",
+        "name": "Green Lag",
         "default": 0,
         "min": 0,
-        "max": 1
+        "max": 0.99,
+        "step": 0.01
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ghosting",
+      "chromatic",
+      "lag",
+      "temporal"
     ]
   },
   {
@@ -20209,7 +20179,7 @@
     "name": "Temporal RGB Smear",
     "category": "image",
     "url": "shaders/temporal-rgb-smear.wgsl",
-    "description": "Separates RGB channels in time. Red is instant, Green and Blue trail behind with variable lag.",
+    "description": "Separates RGB channels in time with gravity wells, motion trails, audio reactivity, and temporal feedback.",
     "params": [
       {
         "id": "green_lag",
@@ -20239,25 +20209,31 @@
         "max": 0.99,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Feedback amount for temporal smearing"
+        "description": "Temporal feedback amount for recursive smearing"
       },
       {
         "id": "mouse_influence",
-        "name": "Mouse Influence Radius",
+        "name": "Gravity Well",
         "default": 0.5,
         "min": 0.1,
         "max": 0.6,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Radius of mouse influence on lag reduction"
+        "description": "Strength of mouse gravity well and motion trail distortion"
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio-reactive",
+      "interactive",
+      "temporal",
+      "feedback"
     ]
   },
   {

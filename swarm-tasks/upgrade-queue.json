@@ -1,0 +1,128 @@
+{
+  "version": "1.0",
+  "created": "2026-05-02",
+  "description": "Active queue of shaders targeted for upgrade. Sourced from weekly_upgrade_swarm.md candidate pool.",
+  "batch_size": 4,
+  "items": [
+    {
+      "id": "phosphor-decay",
+      "size": 3215,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 130
+    },
+    {
+      "id": "bitonic-sort",
+      "size": 3025,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 130
+    },
+    {
+      "id": "temporal-rgb-smear",
+      "size": 3065,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Interactivist",
+      "target_lines": 130
+    },
+    {
+      "id": "elastic-chromatic",
+      "size": 3089,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Optimizer",
+      "target_lines": 130
+    },
+    {
+      "id": "waveform-glitch",
+      "size": 3117,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 140
+    },
+    {
+      "id": "data-slicer-interactive",
+      "size": 3163,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Interactivist",
+      "target_lines": 140
+    },
+    {
+      "id": "pixel-stretch-cross",
+      "size": 3163,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 140
+    },
+    {
+      "id": "interactive-magnetic-ripple",
+      "size": 3166,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 140
+    },
+    {
+      "id": "luma-pixel-sort",
+      "size": 3192,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Optimizer",
+      "target_lines": 140
+    },
+    {
+      "id": "pixel-depth-sort",
+      "size": 3195,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 140
+    },
+    {
+      "id": "pixel-sand",
+      "size": 3208,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Interactivist",
+      "target_lines": 140
+    },
+    {
+      "id": "crt-magnet",
+      "size": 3230,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 140
+    },
+    {
+      "id": "scan-distort-gpt52",
+      "size": 3236,
+      "status": "pending",
+      "priority": 4,
+      "agent_role": "Visualist",
+      "target_lines": 140
+    },
+    {
+      "id": "digital-lens",
+      "size": 3238,
+      "status": "pending",
+      "priority": 4,
+      "agent_role": "Optimizer",
+      "target_lines": 140
+    },
+    {
+      "id": "chromatic-mosaic-projector",
+      "size": 3242,
+      "status": "pending",
+      "priority": 4,
+      "agent_role": "Interactivist",
+      "target_lines": 140
+    }
+  ]
+}

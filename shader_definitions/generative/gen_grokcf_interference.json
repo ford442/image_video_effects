@@ -3,39 +3,46 @@
   "name": "Chladni Plate Cymatics",
   "url": "shaders/gen_grokcf_interference.wgsl",
   "category": "generative",
-  "description": "Sand patterns from vibrating plate standing waves with RGBA depth-aware rendering.",
+  "description": "Audio-reactive Chladni cymatics with modal synthesis, iridescent oil-slick interference, and Fibonacci spiral self-organization at high audio energy.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "upgraded-rgba",
-    "audio-reactive"
+    "audio-reactive",
+    "procedural",
+    "organic",
+    "animated"
   ],
   "tags": [
     "procedural",
     "generative",
     "cymatics",
-    "interference"
+    "interference",
+    "audio-reactive",
+    "stained-glass",
+    "vibration",
+    "vj"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "name": "Sweep Speed",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "name": "Mode Count",
+      "default": 0.6,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param3",
-      "name": "Scale",
+      "name": "Pattern Sharpness",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -43,8 +50,8 @@
     },
     {
       "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "name": "Sand Density",
+      "default": 0.55,
       "min": 0,
       "max": 1,
       "step": 0.01

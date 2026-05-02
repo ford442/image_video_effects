@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Temporal RGB Smear — Interactivist Upgrade
+//  Category: image
+//  Features: mouse-driven, audio-reactive, temporal, click-burst
+//  Complexity: Medium
+//  Chunks From: temporal-rgb-smear (original)
+//  Created: 2026-05-02
+//  By: Interactivist Agent
+// ═══════════════════════════════════════════════════════════════════
+
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -16,59 +26,97 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=GreenLag, y=BlueLag, z=Feedback, w=unused
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=GreenLag, y=BlueLag, z=Feedback, w=Gravity
   ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w;
 
-  // Params
-  // x: Green Channel Lag (0.0 - 1.0)
-  // y: Blue Channel Lag (0.0 - 1.0)
-  // z: Feedback amount (0.0 - 0.99)
+  // Audio input: bass, mids, treble
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  // Parameters
   let greenLag = mix(0.1, 0.95, u.zoom_params.x);
   let blueLag = mix(0.2, 0.98, u.zoom_params.y);
   let feedback = u.zoom_params.z;
+  let gravity = u.zoom_params.w;
 
-  // Mouse influence - reduce lag near mouse
-  var mouse = u.zoom_config.yz;
-  let dist = distance(uv, mouse);
-  let mouseFactor = smoothstep(0.0, mix(0.1, 0.6, u.zoom_params.w), dist); // 0 near mouse, 1 far
+  // Mouse velocity tracking via extraBuffer
+  let prevMouse = vec2<f32>(extraBuffer[0], extraBuffer[1]);
+  let mouseVel = mouse - prevMouse;
+  let mouseSpeed = length(mouseVel);
+  extraBuffer[0] = mouse.x;
+  extraBuffer[1] = mouse.y;
 
-  // Modulate lag with mouse
-  let gLag = greenLag * (0.5 + 0.5 * mouseFactor);
-  let bLag = blueLag * (0.5 + 0.5 * mouseFactor);
+  // Gravity well — UVs pulled toward mouse, intensified by bass
+  let toMouse = mouse - uv;
+  let distMouse = length(toMouse);
+  let gravStrength = gravity * 0.05 * (1.0 + bass * 2.0);
+  let gravityUV = uv + toMouse * gravStrength / (distMouse + 0.15);
 
-  // Read current frame
-  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Motion trail — UV offset opposite to fast mouse movement
+  let trailUV = uv - mouseVel * mouseSpeed * 3.0;
 
-  // Read history (R=GreenHistory, G=BlueHistory)
+  // Blend UVs: gravity dominates near mouse, trail when moving fast
+  let gravWeight = smoothstep(0.5, 0.0, distMouse);
+  let trailWeight = smoothstep(0.0, 0.12, mouseSpeed);
+  var sampleUV = mix(uv, gravityUV, gravWeight);
+  sampleUV = mix(sampleUV, trailUV, trailWeight);
+
+  // Ripple shockwaves from mouse clicks
+  let rippleCount = u32(u.config.y);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let r = u.ripples[i];
+    let rPos = r.xy;
+    let rAge = time - r.z;
+    let rDist = distance(uv, rPos);
+    let wave = sin(rDist * 50.0 - rAge * 10.0) * exp(-rAge * 3.0) * exp(-rDist * 4.0);
+    sampleUV += vec2<f32>(wave) * 0.03 * (1.0 + mouseDown);
+  }
+
+  // Depth-based parallax — foreground smears less than background
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthFactor = mix(1.0, 0.3, depth);
+
+  // Audio-modulated lag with depth factor
+  let gLag = clamp(greenLag * (0.7 + mids * 0.4) * depthFactor, 0.0, 0.99);
+  let bLag = clamp(blueLag * (0.7 + bass * 0.4) * depthFactor, 0.0, 0.99);
+
+  // Sample current frame at displaced UV
+  let current = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+
+  // Read history: R=greenHistory, G=blueHistory, B=prevOutG, A=prevOutB
   let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
 
-  // Calculate new history values
-  // We want: NewHistory = mix(Current, OldHistory, Lag)
+  // Temporal accumulation
   let newGreenHistory = mix(current.g, history.r, gLag);
   let newBlueHistory = mix(current.b, history.g, bLag);
 
-  // Output color
-  // R = Instant
-  // G = Green History
-  // B = Blue History
-  let outputColor = vec4<f32>(current.r, newGreenHistory, newBlueHistory, current.a);
+  // Feedback loop — blend with previous output, driven by bass
+  let fb = feedback * (1.0 + bass * 0.3);
+  let finalG = mix(newGreenHistory, history.b, fb * 0.6);
+  let finalB = mix(newBlueHistory, history.a, fb * 0.6);
 
-  // Store new history
-  // Store G history in R, B history in G
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(newGreenHistory, newBlueHistory, 0.0, 1.0));
+  // Treble sparkle near mouse
+  let sparkle = treble * 0.25 * smoothstep(0.4, 0.0, distMouse);
+  let outputColor = vec4<f32>(current.r + sparkle, finalG, finalB, current.a);
+
+  // Store history + feedback state for next frame
+  textureStore(dataTextureA, global_id.xy,
+    vec4<f32>(newGreenHistory, newBlueHistory, finalG, finalB));
 
   // Write to screen
   textureStore(writeTexture, vec2<i32>(global_id.xy), outputColor);
 
   // Pass through depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

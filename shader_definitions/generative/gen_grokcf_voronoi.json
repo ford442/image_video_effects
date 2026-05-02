@@ -1,25 +1,32 @@
 {
   "id": "gen-grokcf-voronoi",
-  "name": "Worley Noise Cellular",
+  "name": "Worley Cellular",
   "url": "shaders/gen_grokcf_voronoi.wgsl",
   "category": "generative",
-  "description": "Organic cellular patterns using Worley noise with FBM layering and RGBA depth-aware rendering.",
+  "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "upgraded-rgba",
-    "animated"
+    "animated",
+    "audio-reactive",
+    "procedural",
+    "organic-cellular"
   ],
   "tags": [
     "procedural",
     "generative",
     "voronoi",
-    "cellular"
+    "cellular",
+    "worley",
+    "audio-reactive",
+    "thin-film",
+    "vj"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
+      "name": "Cell Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -27,24 +34,24 @@
     },
     {
       "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "name": "Edge Glow",
+      "default": 0.55,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "name": "Color Shift",
+      "default": 0.0,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "name": "Parallax",
+      "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
