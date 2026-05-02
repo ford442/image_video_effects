@@ -578,7 +578,8 @@ export class WebGPURenderer implements Renderer {
     // Source texture: uploaded from CPU, sampled by shaders, copied from
     const USAGE_SOURCE = GPUTextureUsage.TEXTURE_BINDING |
                          GPUTextureUsage.COPY_DST |
-                         GPUTextureUsage.COPY_SRC;
+                         GPUTextureUsage.COPY_SRC |
+                         GPUTextureUsage.RENDER_ATTACHMENT;
     
     // Standard compute texture: sampled, written as storage, copied to/from
     const USAGE_STANDARD = GPUTextureUsage.TEXTURE_BINDING |
