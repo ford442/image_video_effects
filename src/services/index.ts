@@ -59,6 +59,18 @@ export type {
   EnrichedShader,
 } from './ShaderRatingIntegration';
 
+// Offline-first Rating Cache
+export {
+  getRating,
+  setRating,
+  getDirtyRatings,
+  markSynced,
+  flushDirtyRatings,
+  initOfflineSync,
+} from './ratingCache';
+
+export type { CachedRating } from './ratingCache';
+
 // Content Loader
 export {
   fetchContentManifest,
