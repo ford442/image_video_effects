@@ -181,8 +181,8 @@ export class ShaderRatingService {
         stars: rating?.stars ?? 0,
         ratingCount: rating?.rating_count ?? 0,
         playCount: rating?.play_count ?? 0,
-        features: (coordData as ShaderCoordData).features ?? [],
-        tags: (coordData as ShaderCoordData).tags ?? [],
+        features: (coordData as ShaderCoordData)?.features ?? [],
+        tags: (coordData as ShaderCoordData)?.tags ?? [],
         zone: this.getZoneFromCoordinate(coord),
       };
     });

@@ -18,7 +18,6 @@ const CB_COOLDOWN_MAX_MS = 5 * 60_000; // 5 minutes cap
 
 // Backoff config for jittered delays between reconnect retries (in initOfflineSync)
 const RECONNECT_JITTER_MIN_MS = 200;
-const RECONNECT_JITTER_MAX_MS = 1_800;
 const BACKOFF_BASE_MS = 1_000;
 const BACKOFF_CAP_MS = 30_000;
 
@@ -128,13 +127,19 @@ function recordFailure(): void {
   }
 }
 
-/** Full-jitter backoff: uniform(0, min(cap, base * 2^retryCount)) */
+/**
+ * Jittered full-backoff delay for reconnect retries.
+ * Both the initial flush and retries use the same formula — uniform(min, min + cap)
+ * — so delays only grow monotonically with retryCount and there is no discontinuity
+ * between the first and second attempt.
+ *
+ *   retryCount=0: uniform(200, 1200) ms
+ *   retryCount=1: uniform(200, 2200) ms
+ *   retryCount=2: uniform(200, 4200) ms  …  capped at uniform(200, 30200) ms
+ */
 function jitteredReconnectDelayMs(retryCount: number): number {
-  if (retryCount === 0) {
-    return RECONNECT_JITTER_MIN_MS + Math.random() * RECONNECT_JITTER_MAX_MS;
-  }
-  const exp = Math.min(BACKOFF_BASE_MS * Math.pow(2, retryCount), BACKOFF_CAP_MS);
-  return Math.random() * exp;
+  const cap = Math.min(BACKOFF_BASE_MS * Math.pow(2, retryCount), BACKOFF_CAP_MS);
+  return RECONNECT_JITTER_MIN_MS + Math.random() * cap;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -230,7 +235,8 @@ export async function flushDirtyRatings(apiUrl: string): Promise<void> {
       } else {
         recordFailure();
       }
-    } catch {
+    } catch (err: unknown) {
+      console.warn(`[ratingCache] flush error for "${shaderId}":`, err);
       recordFailure();
     }
   }
