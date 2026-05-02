@@ -13,14 +13,19 @@ const DIRTY_LIST_KEY = 'px_dirty_list';
 
 // Circuit-breaker thresholds
 const CB_FAILURE_THRESHOLD = 3;
-const CB_COOLDOWN_BASE_MS = 30_000;   // 30 s base cooldown, doubles per tier
-const CB_COOLDOWN_MAX_MS = 5 * 60_000; // 5 min cap
+const CB_COOLDOWN_BASE_MS = 30_000;   // 30 seconds base cooldown, doubles per tier
+const CB_COOLDOWN_MAX_MS = 5 * 60_000; // 5 minutes cap
 
 // Backoff config for jittered delays between reconnect retries (in initOfflineSync)
 const RECONNECT_JITTER_MIN_MS = 200;
 const RECONNECT_JITTER_MAX_MS = 1_800;
 const BACKOFF_BASE_MS = 1_000;
 const BACKOFF_CAP_MS = 30_000;
+
+// Length (in chars) of the random suffix appended to idempotency keys.
+// 7 base-36 chars give ~78 bits of randomness — enough to prevent accidental
+// collision without storing a full UUID.
+const IDEMPOTENCY_KEY_RANDOM_LENGTH = 7;
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -33,9 +38,8 @@ export interface CachedRating {
 }
 
 // ─── Module-level circuit-breaker state ───────────────────────────────────────
-// Exported as a plain object so tests can inspect and reset it.
-// Consumers must treat its fields as read-only outside of tests.
-export const _circuitBreaker = {
+// Exported for unit-testing only — consumers outside of tests must not mutate it.
+export const circuitBreakerState = {
   consecutiveFailures: 0,
   openUntilMs: 0,
 };
@@ -96,31 +100,31 @@ function writeEntry(shaderId: string, entry: CachedRating): void {
 }
 
 function isCircuitOpen(): boolean {
-  if (_circuitBreaker.openUntilMs === 0) return false;
-  if (Date.now() >= _circuitBreaker.openUntilMs) {
+  if (circuitBreakerState.openUntilMs === 0) return false;
+  if (Date.now() >= circuitBreakerState.openUntilMs) {
     // Transition to half-open: reset the timer so one probe is allowed through
-    _circuitBreaker.openUntilMs = 0;
+    circuitBreakerState.openUntilMs = 0;
     return false;
   }
   return true;
 }
 
 function recordSuccess(): void {
-  _circuitBreaker.consecutiveFailures = 0;
-  _circuitBreaker.openUntilMs = 0;
+  circuitBreakerState.consecutiveFailures = 0;
+  circuitBreakerState.openUntilMs = 0;
 }
 
 function recordFailure(): void {
-  _circuitBreaker.consecutiveFailures += 1;
-  if (_circuitBreaker.consecutiveFailures >= CB_FAILURE_THRESHOLD) {
+  circuitBreakerState.consecutiveFailures += 1;
+  if (circuitBreakerState.consecutiveFailures >= CB_FAILURE_THRESHOLD) {
     const tier = Math.floor(
-      _circuitBreaker.consecutiveFailures / CB_FAILURE_THRESHOLD,
+      circuitBreakerState.consecutiveFailures / CB_FAILURE_THRESHOLD,
     );
     const cooldown = Math.min(
       CB_COOLDOWN_BASE_MS * Math.pow(2, tier - 1),
       CB_COOLDOWN_MAX_MS,
     );
-    _circuitBreaker.openUntilMs = Date.now() + cooldown;
+    circuitBreakerState.openUntilMs = Date.now() + cooldown;
   }
 }
 
@@ -149,7 +153,7 @@ export function getRating(shaderId: string): number | null {
  */
 export function setRating(shaderId: string, rating: number): void {
   const idempotencyKey =
-    `${shaderId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    `${shaderId}-${Date.now()}-${Math.random().toString(36).slice(2, 2 + IDEMPOTENCY_KEY_RANDOM_LENGTH)}`;
   const entry: CachedRating = {
     rating,
     dirty: true,
@@ -270,7 +274,10 @@ export function initOfflineSync(apiUrl: string): () => void {
           }
         })
         .catch((err: unknown) => {
-          console.warn('[ratingCache] flush error:', err);
+          console.warn(
+            `[ratingCache] flush error (dirty count: ${dirtyCountBefore}):`,
+            err,
+          );
         });
     }, delay);
   };

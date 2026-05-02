@@ -5,7 +5,7 @@ import {
   markSynced,
   flushDirtyRatings,
   initOfflineSync,
-  _circuitBreaker,
+  circuitBreakerState,
 } from './ratingCache';
 
 const API_URL = 'https://storage.noahcohn.com';
@@ -15,8 +15,8 @@ describe('ratingCache', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    _circuitBreaker.consecutiveFailures = 0;
-    _circuitBreaker.openUntilMs = 0;
+    circuitBreakerState.consecutiveFailures = 0;
+    circuitBreakerState.openUntilMs = 0;
     fetchMock.mockReset();
     global.fetch = fetchMock as unknown as typeof fetch;
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -169,7 +169,7 @@ describe('ratingCache', () => {
 
     it('skips the flush entirely when the circuit breaker is open', async () => {
       setRating('shader-a', 4);
-      _circuitBreaker.openUntilMs = Date.now() + 60_000;
+      circuitBreakerState.openUntilMs = Date.now() + 60_000;
 
       await flushDirtyRatings(API_URL);
 
@@ -187,13 +187,13 @@ describe('ratingCache', () => {
       // One flush processes all three shaders, recording three failures
       await flushDirtyRatings(API_URL);
 
-      expect(_circuitBreaker.openUntilMs).toBeGreaterThan(Date.now());
+      expect(circuitBreakerState.openUntilMs).toBeGreaterThan(Date.now());
     });
 
     it('resets the circuit breaker after a successful flush', async () => {
       setRating('shader-a', 4);
       // Simulate an earlier failure that hasn't yet tripped the breaker
-      _circuitBreaker.consecutiveFailures = 2;
+      circuitBreakerState.consecutiveFailures = 2;
 
       fetchMock.mockResolvedValueOnce({
         ok: true,
@@ -202,8 +202,8 @@ describe('ratingCache', () => {
 
       await flushDirtyRatings(API_URL);
 
-      expect(_circuitBreaker.consecutiveFailures).toBe(0);
-      expect(_circuitBreaker.openUntilMs).toBe(0);
+      expect(circuitBreakerState.consecutiveFailures).toBe(0);
+      expect(circuitBreakerState.openUntilMs).toBe(0);
     });
 
     it('flushes multiple dirty shaders in one call', async () => {

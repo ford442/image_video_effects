@@ -134,7 +134,7 @@ export class ShaderRatingService {
       return {
         id: shaderId,
         stars,
-        rating_count: cached !== undefined ? cached.rating_count : 0,
+        rating_count: cached?.rating_count ?? 0,
         play_count: cached?.play_count,
         description: cached?.description,
         author: cached?.author,
