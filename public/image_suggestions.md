@@ -3609,6 +3609,66 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20240701_art-deco-underwater.jpg`
 - **License / Attribution:** CC0
 
+### Suggestion: Biomechanical Dragonfly Macro
+- **Date:** 2024-06-25
+- **Prompt:** "A highly detailed macro photograph of a biomechanical dragonfly resting on a giant, dew-covered fern leaf. The subject is composed of polished chrome, carbon fiber, and glowing neon-blue fiber optics. The lighting is an ethereal, dappled morning sunlight filtering through the canopy, highlighting the water droplets and reflecting sharply off the chrome. The mood is peaceful yet strangely advanced. Captured with a 100mm macro lens, ultra-shallow depth of field creating a lush, dark green bokeh background."
+- **Negative prompt:** "blurry, lowres, organic wings, cartoon, flat lighting, daylight"
+- **Tags:** macro, cyberpunk, insect, biomechanical, nature
+- **Style / Reference:** photorealistic macro photography, high-detail sci-fi rendering
+- **Composition:** extreme close-up, rule of thirds, sharp center focus
+- **Color palette:** lush dark green, polished chrome silver, glowing neon blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240625_biomech-dragonfly.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Dieselpunk Subterranean City
+- **Date:** 2024-06-25
+- **Prompt:** "A massive, awe-inspiring view of a sprawling subterranean city built entirely in a gritty dieselpunk style. The massive cavern is filled with towering, soot-stained concrete structures, riveted steel walkways, and giant, smoke-belching exhaust pipes. The lighting is harsh and warm, emanating from thousands of flickering tungsten bulbs and open blast furnaces, casting deep, oppressive shadows. The mood is industrial, claustrophobic, and majestic. Captured with a wide 14mm lens to emphasize the cavernous scale and vertical depth of the city."
+- **Negative prompt:** "clean, modern, bright, sunny, sky, natural, trees"
+- **Tags:** dieselpunk, architecture, underground, industrial, gritty
+- **Style / Reference:** dieselpunk concept art, cinematic lighting, hyper-detailed
+- **Composition:** wide expansive view, deep vertical perspective, dramatic scale
+- **Color palette:** soot-stained greys, rusted iron, warm tungsten orange, deep black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240625_dieselpunk-city.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Glass Blowing Studio at Midnight
+- **Date:** 2024-06-25
+- **Prompt:** "A dramatic, cinematic shot inside a traditional Venetian glass-blowing studio late at night. The central subject is a master artisan shaping a massive, intricate vase of molten, glowing orange glass. The lighting is entirely diegetic, with the intense, blinding heat of the furnace and the molten glass illuminating the artisan's face and the surrounding tools, leaving the edges of the room in deep, inky blackness. The mood is intense, focused, and passionate. Captured with a 50mm lens, utilizing a fast shutter speed to freeze the flying sparks."
+- **Negative prompt:** "daylight, fluorescent lights, modern factory, blurry, cold, empty"
+- **Tags:** interior, craft, glassblowing, fire, dramatic
+- **Style / Reference:** cinematic documentary photography, tenebrism
+- **Composition:** eye-level medium shot, centered action, strong chiaroscuro
+- **Color palette:** blinding molten orange, warm amber, deep shadowy black
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20240625_glass-studio.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Synthetic Emerald Glacier
+- **Date:** 2024-06-25
+- **Prompt:** "A breathtaking, wide-angle landscape of a colossal glacier, but the ice is entirely replaced by massive, perfectly faceted synthetic emeralds. The jagged, towering crystalline structures reflect and refract light in brilliant shades of deep green. The lighting is a crisp, bright Arctic morning sun, piercing through the translucent gems to create complex, glowing internal refractions and scattering vibrant green light onto the surrounding dark, rocky moraine. The mood is surreal, pristine, and majestic. Captured with an ultra-wide cinematic lens, showcasing the sheer scale of the geometric formation."
+- **Negative prompt:** "white ice, snow, water, soft edges, blurry, dark, moody"
+- **Tags:** landscape, fantasy, surreal, emerald, glacier
+- **Style / Reference:** surreal landscape photography, hyper-detailed material swap
+- **Composition:** wide landscape, sweeping curves, sharp geometric details
+- **Color palette:** vibrant emerald green, crisp sunlight white, dark slate grey rock
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20240625_emerald-glacier.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Baroque Astral Observatory
+- **Date:** 2024-06-25
+- **Prompt:** "The lavish interior of a grand observatory designed in an ornate, over-the-top Baroque style. The room features sweeping marble staircases, heavily gilded gold trim, and a massive, intricately painted domed ceiling that opens to a swirling, hyper-realistic purple and gold nebula. In the center stands a colossal, brass telescope adorned with angelic sculptures. The lighting is a majestic mix of the vibrant cosmic glow from the nebula and hundreds of floating, magical candles. The mood is opulent, magical, and awe-inspiring. Captured with a 24mm wide-angle lens, perfectly symmetrical."
+- **Negative prompt:** "modern, minimalist, sterile, dark, simple, sci-fi sleekness"
+- **Tags:** architecture, fantasy, baroque, observatory, space
+- **Style / Reference:** opulent fantasy concept art, highly detailed 3D environment
+- **Composition:** perfectly symmetrical, grand scale, low angle looking up
+- **Color palette:** polished white marble, brilliant gold, glowing nebula purple, warm candle amber
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240625_baroque-observatory.jpg`
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
