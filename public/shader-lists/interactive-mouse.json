@@ -2373,9 +2373,11 @@
     "url": "shaders/scanline-wave.wgsl",
     "category": "interactive-mouse",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "depth-aware"
     ],
-    "description": "Applies a sine-wave distortion to horizontal scanlines, with frequency and amplitude controlled by the mouse.",
+    "description": "Sine-wave horizontal scanline distortion with HDR bloom, atmospheric depth fog, and warm highlight grading. Mouse modulates wave intensity by vertical proximity.",
     "params": [
       {
         "id": "frequency",
@@ -2408,7 +2410,12 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "distortion",
+      "scanlines",
+      "hdr",
+      "bloom",
+      "atmospheric"
     ]
   },
   {

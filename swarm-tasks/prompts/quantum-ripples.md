@@ -1,3 +1,187 @@
+# Shader Upgrade Task: `quantum-ripples`
+
+## Metadata
+- **Shader ID**: quantum-ripples
+- **Agent Role**: Algorithmist
+- **Current Size**: 3331 bytes
+- **Target Line Count**: ~120 lines
+- **Status**: pending
+
+## Immutable Rules
+The following MUST NOT be changed:
+1. The 13-binding contract header (copy exactly).
+2. The `Uniforms` struct definition.
+3. `@workgroup_size` unless the shader already uses shared memory or explicit local_invocation_id math.
+4. Do NOT install new npm packages.
+5. Do NOT modify Renderer.ts, types.ts, or bind groups.
+
+// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
+
+---
+
+## Current WGSL Source
+```wgsl
+// ---------------------------------------------------------------
+//  Quantum Ripples – Mouse-driven wave simulation
+// ---------------------------------------------------------------
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
+  zoom_config: vec4<f32>,       // x=time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,       // x=Freq, y=Speed, z=Amp, w=Color
+  ripples:     array<vec4<f32>, 50>,
+};
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let resolution = u.config.zw;
+    var uv = vec2<f32>(gid.xy) / resolution;
+    let time = u.config.x;
+
+    // Mouse Interaction
+    var mousePos = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w; // 1.0 if down
+
+    // Params
+    let freq = u.zoom_params.x * 20.0 + 2.0; // 2 to 22
+    let speed = u.zoom_params.y * 5.0;       // 0 to 5
+    let amp = u.zoom_params.z * 0.1;         // 0 to 0.1
+    let colorShift = u.zoom_params.w;
+
+    // Calculate distance from mouse, corrected for aspect ratio
+    let aspect = resolution.x / resolution.y;
+    let dx = (uv.x - mousePos.x) * aspect;
+    let dy = uv.y - mousePos.y;
+    let dist = sqrt(dx*dx + dy*dy);
+
+    // Wave calculation
+    // Continuous waves radiating from mouse
+    let wave = sin(dist * freq - time * speed);
+    let waveFalloff = 1.0 / (1.0 + dist * 5.0); // Decay with distance
+
+    // Displacement
+    var dir = normalize(vec2<f32>(dx, dy));
+    // If very close to center, dir might be NaN, but dist is small so displacement small.
+    // Safe normalize:
+    let safeDir = select(dir, vec2<f32>(0.0, 0.0), dist < 0.001);
+
+    let displacement = safeDir * wave * amp * waveFalloff;
+
+    // Boost effect if mouse is down
+    let activeAmp = select(1.0, 2.0, mouseDown > 0.5);
+    let finalDisplacement = displacement * activeAmp;
+
+    let srcUV = uv - finalDisplacement;
+
+    // Sample texture
+    let color = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0);
+
+    // Color shift based on wave
+    var outCol = color.rgb;
+    if (colorShift > 0.0) {
+        let shift = wave * colorShift * waveFalloff;
+        outCol.r += shift;
+        outCol.b -= shift;
+    }
+
+    // Store
+    textureStore(writeTexture, gid.xy, vec4<f32>(outCol, 1.0));
+
+    // Passthrough depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+}
+
+```
+
+## Current JSON Definition
+```json
+{
+  "id": "quantum-ripples",
+  "name": "Quantum Ripples",
+  "url": "shaders/quantum-ripples.wgsl",
+  "category": "image",
+  "description": "Mouse-driven quantum interference waves that displace the image.",
+  "params": [
+    {
+      "id": "waveFreq",
+      "name": "Wave Freq",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "waveSpeed",
+      "name": "Propagate Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "distortionStr",
+      "name": "Distortion",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "interactive"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}
+```
+
+---
+
+## Agent Specialization
 # Agent Role: The Algorithmist
 
 ## Identity
@@ -155,3 +339,24 @@ fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) 
 
 ## Performance Constraint
 This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. Prefer quasi-random (Halton/gold noise) over pseudo-random for sampling loops — same cost, better results. If adding features, keep total line count within the target specified in the task metadata.
+
+
+---
+
+## Your Task
+1. Analyze the current shader and identify its biggest weaknesses in your domain.
+2. Apply 2-3 upgrade techniques from your toolkit above.
+3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
+4. Ensure the upgraded shader is roughly 120 lines (±20%).
+5. Write a brief upgrade rationale (2-3 sentences).
+
+## Output Format
+Return exactly two code blocks:
+1. ```wgsl
+[upgraded shader source]
+```
+2. ```json
+[updated shader definition]
+```
+
+If the JSON does not need changes, return the original JSON unchanged.

@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Spiral Lens — Interactivist Upgrade
+//  Category: image
+//  Features: mouse-driven, audio-reactive, temporal, depth-aware
+//  Chunks From: spiral-lens (original)
+//  Created: 2026-05-03
+//  By: Interactivist Agent
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +20,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
@@ -23,59 +30,61 @@ struct Uniforms {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
+    let res = u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / res;
+    let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let md = u.zoom_config.w;
+    let audio = plasmaBuffer[0];
+    let bass = audio.x;
+    let treble = audio.z;
 
-    let radius = u.zoom_params.x * 0.5; // Scale radius
-    let magnification = u.zoom_params.y * 3.0 + 0.1; // 0.1 to 3.1
-    let twist = (u.zoom_params.z - 0.5) * 20.0; // -10 to 10
-    let aberration = u.zoom_params.w * 0.05;
+    let r = u.zoom_params.x * 0.5 * (1.0 + bass * 0.4);
+    let mag = u.zoom_params.y * 3.0 + 0.1 + bass * 0.5;
+    let tw = (u.zoom_params.z - 0.5) * 20.0 * (1.0 + bass * 0.3);
+    let ab = u.zoom_params.w * 0.05 * (1.0 + treble * 0.5);
 
-    let aspect = resolution.x / resolution.y;
-    let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(dist_vec);
+    let asp = res.x / res.y;
+    let dvec = (uv - mouse) * vec2<f32>(asp, 1.0);
+    let dist = length(dvec);
+    let mask = smoothstep(r, 0.0, dist);
 
-    var finalUV = uv;
+    let wave = sin(dist * 40.0 - time * 10.0) * 0.03 * md * smoothstep(r * 1.5, 0.0, dist);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Smooth falloff
-    let mask = smoothstep(radius, 0.0, dist);
+    let a = tw * mask * mask * (1.0 + depth * 0.5);
+    let s = sin(a);
+    let c = cos(a);
+    let rot = mat2x2<f32>(c, -s, s, c);
 
-    if (mask > 0.0) {
-        // Twist
-        let angle = twist * mask * mask;
-        let s = sin(angle);
-        let c = cos(angle);
-        let rot = mat2x2<f32>(c, -s, s, c);
+    var p = (uv - mouse) * vec2<f32>(asp, 1.0);
+    p = rot * p;
+    p = p / vec2<f32>(asp, 1.0);
+    p = p * mix(1.0, 1.0 / mag, mask);
 
-        let offset = uv - mouse;
-        // Correct to square space for rotation
-        var p = offset * vec2<f32>(aspect, 1.0);
-        p = rot * p;
-        // Back to UV space
-        p = p / vec2<f32>(aspect, 1.0);
+    let dir = select(vec2<f32>(0.0), dvec / max(dist, 0.0001), dist > 0.0001);
+    let fuv = mouse + p + dir * wave;
 
-        // Magnification (Spherize)
-        // If mag > 1, we want to sample closer to center.
-        let zoom_factor = 1.0 / magnification;
-        let current_zoom = mix(1.0, zoom_factor, mask);
+    let drift = vec2<f32>(sin(time * 0.7 + uv.y * 4.0), cos(time * 0.5 + uv.x * 4.0)) * 0.003 * bass;
+    let ruv = fuv + (mouse - fuv) * ab * mask + drift;
+    let buv = fuv - (mouse - fuv) * ab * mask - drift;
 
-        p = p * current_zoom;
+    let col = vec3<f32>(
+        textureSampleLevel(readTexture, u_sampler, ruv, 0.0).r,
+        textureSampleLevel(readTexture, u_sampler, fuv + drift * 0.5, 0.0).g,
+        textureSampleLevel(readTexture, u_sampler, buv, 0.0).b
+    );
 
-        finalUV = mouse + p;
-    }
+    let spark = 1.0 + treble * mask * 0.4;
+    var out = col * spark;
 
-    // Chromatic Aberration
-    let r_uv = finalUV + (mouse - finalUV) * aberration * mask;
-    let b_uv = finalUV - (mouse - finalUV) * aberration * mask;
+    let fb = 0.15 * bass * mask;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv + drift * 0.3, 0.0).rgb;
+    out = mix(out, prev, fb);
 
-    let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(out, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(out, 1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
-
-    // Depth pass-through (using center UV for simplicity)
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    let dep = textureSampleLevel(readDepthTexture, non_filtering_sampler, fuv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(dep, 0.0, 0.0, 0.0));
 }

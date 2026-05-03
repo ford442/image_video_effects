@@ -3,7 +3,7 @@
   "name": "Tesseract Fold",
   "url": "shaders/tesseract-fold.wgsl",
   "category": "image",
-  "description": "A 4D kaleidoscopic folding effect centered on the mouse.",
+  "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, and bloom-weight alpha for chained rendering.",
   "params": [
     {
       "id": "folds",
@@ -39,6 +39,11 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "kaleidoscope",
+    "geometric",
+    "folding",
+    "iridescent",
+    "atmospheric"
   ]
 }

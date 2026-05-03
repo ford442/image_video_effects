@@ -3,13 +3,16 @@
   "name": "Mosaic Reveal",
   "url": "shaders/mosaic-reveal.wgsl",
   "category": "image",
-  "description": "A low-resolution mosaic filter that clarifies into high-resolution video near the mouse cursor.",
+  "description": "A low-resolution mosaic filter that clarifies into high-resolution video near the mouse cursor. Features HDR tile bevel lighting, atmospheric depth haze, split-tone grading, and ACES tone mapping.",
   "features": [
     "upgraded-rgba",
     "depth-aware",
     "mosaic",
     "interactive-reveal",
-    "mouse-driven"
+    "mouse-driven",
+    "hdr",
+    "tone-mapped",
+    "atmospheric"
   ],
   "params": [
     {
@@ -34,15 +37,18 @@
       "max": 1.0
     },
     {
-      "id": "unused",
-      "name": "Unused",
-      "default": 0.0,
+      "id": "atmosphere",
+      "name": "Atmosphere",
+      "default": 0.3,
       "min": 0.0,
       "max": 1.0
     }
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "hdr",
+    "atmospheric",
+    "golden"
   ]
 }

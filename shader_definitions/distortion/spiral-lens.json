@@ -3,7 +3,10 @@
   "category": "image",
   "url": "shaders/spiral-lens.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
   ],
   "params": [
     {
@@ -37,7 +40,12 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio-reactive",
+    "feedback",
+    "interactive",
+    "lens",
+    "distortion"
   ],
   "name": "Spiral Lens"
 }

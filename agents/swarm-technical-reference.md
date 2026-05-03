@@ -4,6 +4,22 @@ Quick reference for agents working on shader upgrades.
 
 ---
 
+## Mathematical Constants
+
+```wgsl
+const PI     = 3.14159265358979323846;
+const TAU    = 6.28318530717958647692;
+const PHI    = 1.61803398874989484820;   // golden ratio
+const SQRT2  = 1.41421356237309504880;
+const SQRT3  = 1.73205080756887729352;
+const LN2    = 0.69314718055994530941;
+const INV_PI = 0.31830988618379067154;
+```
+
+**Rule:** Replace all magic numbers with these constants. `6.28318` → `TAU`, `3.14159` → `PI`, `0.618` → `1.0/PHI`.
+
+---
+
 ## RGB → RGBA Upgrade Patterns
 
 ### Pattern 1: Simple Alpha from Luminance
@@ -385,6 +401,134 @@ color = hueShift(color, hueShift);
 let isBeat = step(0.7, audio);
 let flash = isBeat * 0.3;
 color = color + vec3<f32>(flash);
+```
+
+---
+
+## RGBA Semantic Encoding Guide
+
+The alpha channel is wasted at `1.0`. Every shader should encode one of:
+
+| Convention | Alpha formula | When to use |
+|------------|---------------|-------------|
+| Bloom mask | `pow(max(0, luma - 0.6), 2) * 3.0` | Generative / HDR shaders |
+| Depth passthrough | read from `readDepthTexture` and store verbatim | Whenever depth is available |
+| Effect strength | `effectMagnitude` (0–1) | Distortion / overlay shaders |
+| Trail age | `prev_alpha * 0.97` (decay each frame) | Temporal / particle shaders |
+| Material ID | `0.0`=organic `0.5`=metal `1.0`=emissive | Multi-material scenes |
+| Fresnel | `pow(1.0 - cosTheta, 5.0)` | Glass / water / chrome |
+
+### Pattern 4: Bloom-Weight Alpha (recommended default)
+
+```wgsl
+let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+// Only pixels brighter than 0.6 contribute to bloom
+let bloomWeight = pow(max(0.0, luma - 0.6), 2.0) * 3.0;
+textureStore(writeTexture, coord, vec4<f32>(color, bloomWeight));
+```
+
+### Pattern 5: Simulation State Encoding (full RGBA as data)
+
+```wgsl
+// Store 4 simulation channels — color is derived at display time
+let density  = computeDensity(uv);   // R
+let velocity = computeVelocity(uv);  // G  (or pack vx,vy in RG)
+let age      = prevAge + dt;          // B
+let energy   = computeEnergy(uv);    // A
+textureStore(writeTexture, coord, vec4<f32>(density, velocity, age, energy));
+```
+
+---
+
+## Advanced Algorithm Reference
+
+### Voronoi F2-F1 (ridge/vein patterns)
+```wgsl
+fn voronoiRidge(p: vec2<f32>) -> f32 {
+    var F1 = 9.0; var F2 = 9.0;
+    let ip = floor(p);
+    for (var i = -2; i <= 2; i++) { for (var j = -2; j <= 2; j++) {
+        let n = ip + vec2<f32>(f32(i), f32(j));
+        let d = length(p - n - fract(sin(vec2<f32>(dot(n,vec2<f32>(127.1,311.7)),dot(n,vec2<f32>(269.5,183.3))))*43758.5));
+        if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+    }}
+    return F2 - F1;  // ridge value — use for mountain ranges, skin texture, cracks
+}
+```
+
+### Curl Noise (divergence-free vector field)
+```wgsl
+fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
+    let eps = 0.001;
+    let dx = fbm(p + vec2<f32>(eps, 0.0), 4) - fbm(p - vec2<f32>(eps, 0.0), 4);
+    let dy = fbm(p + vec2<f32>(0.0, eps), 4) - fbm(p - vec2<f32>(0.0, eps), 4);
+    return vec2<f32>(dy, -dx) / (2.0 * eps);  // perpendicular gradient = divergence-free
+}
+```
+
+### Complex Number Operations (for Mandelbrot / Möbius)
+```wgsl
+fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
+}
+fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let d = dot(b,b) + 1e-6;
+    return vec2<f32>(dot(a,b), a.y*b.x - a.x*b.y) / d;
+}
+// Möbius transform f(z) = (az+b)/(cz+d)
+fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
+    return cdiv(cmul(a,z)+b, cmul(c,z)+d);
+}
+```
+
+### OkLab Color Mixing (perceptually uniform)
+```wgsl
+fn linear_to_oklab(c: vec3<f32>) -> vec3<f32> {
+    let l=pow(0.4122214708*c.r+0.5363325363*c.g+0.0514459929*c.b,1./3.);
+    let m=pow(0.2119034982*c.r+0.6806995451*c.g+0.1073969566*c.b,1./3.);
+    let s=pow(0.0883024619*c.r+0.2817188376*c.g+0.6299787005*c.b,1./3.);
+    return vec3<f32>(0.2104542553*l+0.7936177850*m-0.0040720468*s,
+                     1.9779984951*l-2.4285922050*m+0.4505937099*s,
+                     0.0259040371*l+0.7827717662*m-0.8086757660*s);
+}
+fn oklab_to_linear(c: vec3<f32>) -> vec3<f32> {
+    let l=(c.x+0.3963377774*c.y+0.2158037573*c.z); let lc=l*l*l;
+    let m=(c.x-0.1055613458*c.y-0.0638541728*c.z); let mc=m*m*m;
+    let s=(c.x-0.0894841775*c.y-1.2914855480*c.z); let sc=s*s*s;
+    return vec3<f32>(4.0767416621*lc-3.3077115913*mc+0.2309699292*sc,
+                    -1.2684380046*lc+2.6097574011*mc-0.3413193965*sc,
+                    -0.0041960863*lc-0.7034186147*mc+1.7076147010*sc);
+}
+fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+    return oklab_to_linear(mix(linear_to_oklab(a), linear_to_oklab(b), t));
+}
+```
+
+### Halton Quasi-Random Sequence (better than hash for sampling)
+```wgsl
+fn halton2(i: u32) -> f32 {  // base-2
+    var f = 1.0; var r = 0.0; var n = i;
+    loop { if (n == 0u) { break; } f *= 0.5; r += f * f32(n & 1u); n >>= 1u; }
+    return r;
+}
+fn halton3(i: u32) -> f32 {  // base-3
+    var f = 1.0; var r = 0.0; var n = i;
+    loop { if (n == 0u) { break; } f /= 3.0; r += f * f32(n % 3u); n /= 3u; }
+    return r;
+}
+// Use: vec2(halton2(sampleIdx), halton3(sampleIdx)) for 2D jitter
+```
+
+### Blackbody Color Temperature
+```wgsl
+fn blackbody(T: f32) -> vec3<f32> {
+    let t = clamp(T, 1000.0, 40000.0) / 100.0;
+    let r = select(clamp(329.698727*pow(t-60.0,-0.1332)/255.0,0.0,1.0), 1.0, t<=66.0);
+    let g = select(clamp(288.1221695*pow(t-60.0,-0.0755)/255.0,0.0,1.0),
+                   clamp((99.4708*log(t)-161.1196)/255.0,0.0,1.0), t<=66.0);
+    let b = select(1.0, select(0.0, clamp((138.5177*log(t-10.0)-305.0448)/255.0,0.0,1.0), t>19.0), t>=66.0);
+    return vec3<f32>(r,g,b);
+}
 ```
 
 ---

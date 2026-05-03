@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Polar Warp Interactive
+//  Category: image
+//  Features: mouse-driven
+//  Complexity: Low
+//  Chunks From: original polar-warp-interactive
+//  Created: 2026-05-03
+//  By: Optimizer
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -19,79 +29,60 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Polar Warp Interactive
-// Param 1: Zoom
-// Param 2: Spiral Twist
-// Param 3: Repeats
-// Param 4: Radial Offset
-
-fn get_mouse() -> vec2<f32> {
-    var mouse = u.zoom_config.yz;
-    if (mouse.x < 0.0) { return vec2<f32>(0.5, 0.5); }
-    return mouse;
-}
+const PI: f32 = 3.14159265;
+const TAU: f32 = 6.2831853;
+const EPS: f32 = 1e-3;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    let res = u.config.zw;
+    let gid = vec2<i32>(global_id.xy);
+    if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = get_mouse();
+    let uv = vec2<f32>(global_id.xy) / res;
+    let aspect = res.x / res.y;
 
-    // Center coordinates on mouse
-    // Adjust for aspect to keep circular symmetry
+    // Branchless mouse fallback to center when unavailable
+    let mouseRaw = u.zoom_config.yz;
+    let mouse = select(mouseRaw, vec2<f32>(0.5), mouseRaw.x < 0.0);
+
+    // Aspect-corrected polar coordinates centered on mouse
     var diff = uv - mouse;
     diff.x *= aspect;
 
-    // To Polar
-    var radius = length(diff);
-    var angle = atan2(diff.y, diff.x);
+    let radius = length(diff);
+    let angle = atan2(diff.y, diff.x);
 
-    let zoom = 0.1 + u.zoom_params.x * 2.0; // Avoid division by zero
+    // Tunable params
+    let zoom = 0.1 + u.zoom_params.x * 2.0;
     let spiral = u.zoom_params.y * 5.0;
     let repeats = max(1.0, u.zoom_params.z);
     let offset = u.zoom_params.w;
 
-    // Distort Polar
-    // New Radius mapping
-    var r_new = pow(radius, 1.0/zoom);
-    r_new = r_new - offset;
+    // Early exit: hide center singularity
+    if (radius < EPS) {
+        textureStore(writeTexture, gid, vec4<f32>(0.0));
+        return;
+    }
 
-    // Spiral: add angle based on radius
-    angle = angle + (radius * spiral);
+    // Polar distortion
+    let r_new = pow(radius, 1.0 / zoom) - offset;
+    let a_new = angle + radius * spiral;
 
-    // Repeat texture radially
-    // We map polar (r, theta) back to Cartesian (u, v) for texture lookup?
-    // Actually, "Polar Warp" usually means mapping the image *as if* it were polar.
-    // Standard effect: UV.x = angle, UV.y = radius
-    // Let's implement the tunnel effect:
+    // Map polar back to UV space with time rotation
+    let tunnel_u = (a_new / PI) * repeats + u.config.x * 0.1;
+    let tunnel_v = 1.0 / (r_new + EPS);
 
-    let tunnel_u = (angle / 3.14159265) * repeats + u.config.x * 0.1; // Rotate over time
-    let tunnel_v = 1.0 / (r_new + 0.001); // Perspective
+    // Mirrored-repeat UV sampling for seamless edges
+    let fuv = fract(vec2<f32>(tunnel_u, tunnel_v));
+    let sampleUV = abs(fuv * 2.0 - 1.0);
 
-    // Let's try a different approach: Coordinate Remapping
-    // Map (r, theta) back to (x, y) but distorted.
+    // Single texture sample
+    let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
-    let distorted_uv = vec2<f32>(
-        tunnel_u,
-        tunnel_v
-    );
-
-    // Wrap UVs
-    let final_uv = fract(distorted_uv);
-
-    // Use mirrored repeat for smoother edges
-    let mirror_uv = abs(final_uv * 2.0 - 1.0); // 0..1..0 triangle wave
-    // Actually fract is fine for tunnel.
-
-    let col = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
-
-    // Fade out center singularity
+    // Radial fade at the singularity
     let fade = smoothstep(0.0, 0.1, radius);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), col * fade);
+    // HDR-ready output: explicit alpha for clean slot chaining
+    textureStore(writeTexture, gid, vec4<f32>(col.rgb * fade, 1.0));
 }

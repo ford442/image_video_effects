@@ -1,3 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Quad Mirror
+//  Category: image
+//  Features: mouse-driven, geometry
+//  Complexity: Low
+//  Created: 2026-05-03
+//  By: Optimizer
+// ═══════════════════════════════════════════════════════════════════
+// 4-way kaleidoscope mirror centered on mouse with rotation and zoom.
+// Pipeline-ready: HDR preserved, single texture sample, slot-chainable.
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -19,74 +30,43 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+const MIN_ZOOM: f32 = 0.1;
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+  let res = u.config.zw;
+  let px = vec2<i32>(global_id.xy);
+  if (any(global_id.xy >= vec2<u32>(res))) {
     return;
   }
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  var mouse = u.zoom_config.yz;
+  let uv = vec2<f32>(global_id.xy) / res;
+  let mouse = u.zoom_config.yz;
 
-  // Quad Mirror Logic
-  // The mouse position defines the center of the coordinate system.
-  // We reflect everything around the X and Y axes defined by the mouse.
-
-  // Relative coordinates
+  // --- Mirror transform ---
   let rel = uv - mouse;
-  let rot = mix(0.0, 6.283, u.zoom_params.z);
+  let rot = u.zoom_params.z * TAU;
   let c = cos(rot);
   let s = sin(rot);
-  let rel_rot = vec2<f32>(rel.x * c - rel.y * s, rel.x * s + rel.y * c);
+  let rx = rel.x * c - rel.y * s;
+  let ry = rel.x * s + rel.y * c;
 
-  // Reflect: absolute distance from center
-  let abs_x = abs(rel_rot.x);
-  let abs_y = abs(rel_rot.y);
+  let zoom = max(MIN_ZOOM, u.zoom_params.y);
+  let sample_uv = mouse - vec2<f32>(abs(rx), abs(ry)) / zoom;
 
-  // Sample Coordinate
-  // We want to sample from the "positive" quadrant (or whatever quadrant the source image is best in)
-  // relative to the mouse?
-  // Let's make it so that the image is mirrored around the mouse lines.
+  // Single texture sample — minimal cost for 3-slot chaining
+  var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
 
-  // Simple Kaleidoscope:
-  // sample_uv = mouse + vec2(abs_x, abs_y);
-  // This mirrors the bottom-right quadrant to all others.
+  // --- Edge softness (branchless) ---
+  let edgeAmt = u.zoom_params.w;
+  let edgeMask = smoothstep(0.0, 0.1, min(abs(rx), abs(ry)));
+  color = color * mix(1.0, edgeMask, edgeAmt);
 
-  // Params
-  let mode = u.zoom_params.x; // 0 = Mirror, 1 = Repeat?
-  let zoom = u.zoom_params.y; // Zoom into the center? 1.0 = Normal
+  // HDR-ready output (no clamp)
+  textureStore(writeTexture, px, color);
 
-  // Adjust zoom (avoid divide by zero)
-  let z = max(0.1, zoom);
-
-  // Scaled offsets
-  let off_x = abs_x / z;
-  let off_y = abs_y / z;
-
-  // We need to map these back to valid UV space.
-  // If we just use mouse + off, we might sample out of bounds.
-  // u_sampler usually repeats or clamps. If repeat, we get tiling.
-
-  // Let's try to make a "Quad Mirror" where the image looks symmetrical.
-  // We sample at: mouse - offset (to look "inwards"?) or mouse + offset?
-
-  // Let's try:
-  let sample_uv = vec2<f32>(
-      mouse.x - off_x,
-      mouse.y - off_y
-  );
-
-  // If we want 4-way symmetry, we just use the calculated sample_uv.
-  // The sign of (uv - mouse) determined which quadrant we are in, but we took abs(), so now we are always sampling from top-left relative to mouse.
-
-  let color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
-
-  let edge_softness = mix(1.0, smoothstep(0.0, 0.1, min(abs_x, abs_y)), u.zoom_params.w);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color * edge_softness);
-
-  // Pass depth
+  // --- Depth pass-through ---
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

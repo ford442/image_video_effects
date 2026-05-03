@@ -1,3 +1,183 @@
+# Shader Upgrade Task: `tile-twist`
+
+## Metadata
+- **Shader ID**: tile-twist
+- **Agent Role**: Algorithmist
+- **Current Size**: 3267 bytes
+- **Target Line Count**: ~115 lines
+- **Status**: pending
+
+## Immutable Rules
+The following MUST NOT be changed:
+1. The 13-binding contract header (copy exactly).
+2. The `Uniforms` struct definition.
+3. `@workgroup_size` unless the shader already uses shared memory or explicit local_invocation_id math.
+4. Do NOT install new npm packages.
+5. Do NOT modify Renderer.ts, types.ts, or bind groups.
+
+// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
+
+---
+
+## Current WGSL Source
+```wgsl
+// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
+// ---------------------------------------------------
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  ripples: array<vec4<f32>, 50>,
+};
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  let aspect = resolution.x / resolution.y;
+  var mouse = u.zoom_config.yz;
+
+  // Params
+  let tileSizeParam = max(0.01, u.zoom_params.x); // 0.0 to 1.0
+  let tileSizeY = 0.05 + tileSizeParam * 0.15; // Range 0.05 to 0.2
+  let tileSizeX = tileSizeY / aspect; // Square tiles
+
+  let rotationStrength = u.zoom_params.y * 6.28; // Full circle range
+  let influenceRadius = u.zoom_params.z; // 0 to 1
+
+  // Grid calculations
+  let tileGrid = vec2<f32>(1.0/tileSizeX, 1.0/tileSizeY);
+  let tileIndex = floor(uv * tileGrid);
+  let tileCenterUV = (tileIndex + 0.5) / tileGrid;
+
+  // Distance from tile center to mouse (aspect corrected)
+  let diff = tileCenterUV - mouse;
+  let dist = length(diff * vec2<f32>(aspect, 1.0));
+
+  // Rotation angle based on distance
+  let angle = (1.0 - smoothstep(0.0, influenceRadius, dist)) * rotationStrength;
+
+  // Rotate pixel relative to tile center
+  let relUV = uv - tileCenterUV;
+
+  // Correct aspect for rotation to keep square shape
+  let relUV_corr = vec2<f32>(relUV.x * aspect, relUV.y);
+
+  let cosA = cos(angle);
+  let sinA = sin(angle);
+
+  let rotated_corr = vec2<f32>(
+    relUV_corr.x * cosA - relUV_corr.y * sinA,
+    relUV_corr.x * sinA + relUV_corr.y * cosA
+  );
+
+  // Restore aspect
+  let rotatedUV = vec2<f32>(rotated_corr.x / aspect, rotated_corr.y);
+
+  let finalUV = tileCenterUV + rotatedUV;
+
+  // Edge clamping? Texture sampler usually clamps or repeats.
+  // For twist effect, we might want to clamp to tile?
+  // Or just let it sample neighbors (cooler).
+
+  let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+}
+
+```
+
+## Current JSON Definition
+```json
+{
+  "id": "tile-twist",
+  "name": "Tile Twist",
+  "url": "shaders/tile-twist.wgsl",
+  "category": "image",
+  "description": "Grid tiles twist and rotate based on mouse proximity.",
+  "params": [
+    {
+      "id": "tileSize",
+      "name": "Tile Size",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "twist",
+      "name": "Twist Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "radius",
+      "name": "Influence Radius",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "edge_smoothness",
+      "name": "Edge Smoothness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Smoothness of tile edges"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "geometry"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}
+```
+
+---
+
+## Agent Specialization
 # Agent Role: The Algorithmist
 
 ## Identity
@@ -155,3 +335,24 @@ fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) 
 
 ## Performance Constraint
 This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. Prefer quasi-random (Halton/gold noise) over pseudo-random for sampling loops — same cost, better results. If adding features, keep total line count within the target specified in the task metadata.
+
+
+---
+
+## Your Task
+1. Analyze the current shader and identify its biggest weaknesses in your domain.
+2. Apply 2-3 upgrade techniques from your toolkit above.
+3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
+4. Ensure the upgraded shader is roughly 115 lines (±20%).
+5. Write a brief upgrade rationale (2-3 sentences).
+
+## Output Format
+Return exactly two code blocks:
+1. ```wgsl
+[upgraded shader source]
+```
+2. ```json
+[updated shader definition]
+```
+
+If the JSON does not need changes, return the original JSON unchanged.

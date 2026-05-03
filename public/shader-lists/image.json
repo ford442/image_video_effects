@@ -1237,13 +1237,16 @@
     "name": "Mosaic Reveal",
     "url": "shaders/mosaic-reveal.wgsl",
     "category": "image",
-    "description": "A low-resolution mosaic filter that clarifies into high-resolution video near the mouse cursor.",
+    "description": "A low-resolution mosaic filter that clarifies into high-resolution video near the mouse cursor. Features HDR tile bevel lighting, atmospheric depth haze, split-tone grading, and ACES tone mapping.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
       "mosaic",
       "interactive-reveal",
-      "mouse-driven"
+      "mouse-driven",
+      "hdr",
+      "tone-mapped",
+      "atmospheric"
     ],
     "params": [
       {
@@ -1268,16 +1271,19 @@
         "max": 1
       },
       {
-        "id": "unused",
-        "name": "Unused",
-        "default": 0,
+        "id": "atmosphere",
+        "name": "Atmosphere",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "hdr",
+      "atmospheric",
+      "golden"
     ]
   },
   {
@@ -3840,7 +3846,10 @@
     "category": "image",
     "url": "shaders/spiral-lens.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "depth-aware"
     ],
     "params": [
       {
@@ -3874,7 +3883,12 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio-reactive",
+      "feedback",
+      "interactive",
+      "lens",
+      "distortion"
     ],
     "name": "Spiral Lens"
   },
@@ -4887,7 +4901,7 @@
     "name": "Chrono Slit Scan",
     "url": "shaders/chrono-slit-scan.wgsl",
     "category": "image",
-    "description": "Accumulates time slices of the video into a static image.",
+    "description": "Accumulates time slices of the video into a static image via FBM-warped SDF slits with spatially-varying temporal decay.",
     "params": [
       {
         "id": "speed",
@@ -4919,11 +4933,17 @@
       }
     ],
     "features": [
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "fbm-warp",
+      "sdf-composition"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "noise",
+      "fractal",
+      "temporal"
     ]
   },
   {
@@ -6960,9 +6980,12 @@
     "category": "image",
     "url": "shaders/page-curl-interactive.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "depth-aware"
     ],
-    "description": "Interactive page curl effect. Drag from the right to curl the page.",
+    "description": "Interactive page curl with audio-reactive RGB splitting, click shockwaves, depth-aware shadows, and temporal feedback trails.",
     "params": [
       {
         "id": "param1",
@@ -6980,22 +7003,24 @@
       },
       {
         "id": "param3",
-        "name": "Unused",
+        "name": "Feedback Amount",
         "default": 0,
         "min": 0,
         "max": 1
       },
       {
         "id": "param4",
-        "name": "Unused",
-        "default": 0,
+        "name": "Depth Influence",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "interactive",
+      "audio-reactive"
     ]
   },
   {
@@ -7781,7 +7806,7 @@
     "name": "Tesseract Fold",
     "url": "shaders/tesseract-fold.wgsl",
     "category": "image",
-    "description": "A 4D kaleidoscopic folding effect centered on the mouse.",
+    "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, and bloom-weight alpha for chained rendering.",
     "params": [
       {
         "id": "folds",
@@ -7817,7 +7842,12 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "kaleidoscope",
+      "geometric",
+      "folding",
+      "iridescent",
+      "atmospheric"
     ]
   },
   {
@@ -9817,7 +9847,7 @@
     "name": "Echo Ripple",
     "url": "shaders/echo-ripple.wgsl",
     "category": "image",
-    "description": "Mouse movement creates expanding ripples that echo and persist in time.",
+    "description": "Mouse movement creates expanding ripples that echo and persist in time. Audio reactivity drives ripple amplitude and color splitting, while depth-aware parallax separates foreground and background distortion.",
     "params": [
       {
         "id": "freq",
@@ -9850,11 +9880,17 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio-reactive",
+      "ripple",
+      "feedback",
+      "interactive"
     ]
   },
   {
@@ -14161,7 +14197,7 @@
     "name": "Quantum Ripples",
     "url": "shaders/quantum-ripples.wgsl",
     "category": "image",
-    "description": "Mouse-driven quantum interference waves that displace the image.",
+    "description": "Mouse-driven quantum interference waves with FBM turbulence, multi-source superposition, and audio reactivity.",
     "params": [
       {
         "id": "waveFreq",
@@ -14194,11 +14230,15 @@
     ],
     "features": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "waves",
+      "interference",
+      "turbulence"
     ]
   },
   {
@@ -16011,7 +16051,7 @@
     "name": "Tile Twist",
     "url": "shaders/tile-twist.wgsl",
     "category": "image",
-    "description": "Grid tiles twist and rotate based on mouse proximity.",
+    "description": "Grid tiles twist and rotate based on mouse proximity, enhanced with FBM domain warping, hash-jittered organic tiling, and SDF edge masking.",
     "params": [
       {
         "id": "tileSize",
@@ -16042,16 +16082,19 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Smoothness of tile edges"
+        "description": "SDF edge softness for tile boundary alpha mask"
       }
     ],
     "features": [
       "mouse-driven",
-      "geometry"
+      "geometry",
+      "temporal"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "organic",
+      "abstract"
     ]
   },
   {

@@ -1,0 +1,20 @@
+{
+  "version": "2.0",
+  "created": "2026-05-02",
+  "description": "Performance-conscious upgrade queue. Targets capped to avoid 3-slot framerate crawl.",
+  "batch_size": 4,
+  "items": [
+    { "id": "chrono-slit-scan", "size": 3242, "status": "pending", "priority": 1, "agent_role": "Algorithmist", "target_lines": 115 },
+    { "id": "mosaic-reveal", "size": 3247, "status": "pending", "priority": 1, "agent_role": "Visualist", "target_lines": 115 },
+    { "id": "quad-mirror", "size": 3256, "status": "pending", "priority": 1, "agent_role": "Optimizer", "target_lines": 110 },
+    { "id": "spiral-lens", "size": 3266, "status": "pending", "priority": 1, "agent_role": "Interactivist", "target_lines": 115 },
+    { "id": "tile-twist", "size": 3267, "status": "pending", "priority": 2, "agent_role": "Algorithmist", "target_lines": 115 },
+    { "id": "page-curl-interactive", "size": 3284, "status": "pending", "priority": 2, "agent_role": "Interactivist", "target_lines": 120 },
+    { "id": "tesseract-fold", "size": 3286, "status": "pending", "priority": 2, "agent_role": "Visualist", "target_lines": 115 },
+    { "id": "polar-warp-interactive", "size": 3287, "status": "pending", "priority": 2, "agent_role": "Optimizer", "target_lines": 115 },
+    { "id": "echo-ripple", "size": 3307, "status": "pending", "priority": 3, "agent_role": "Interactivist", "target_lines": 120 },
+    { "id": "scanline-wave", "size": 3315, "status": "pending", "priority": 3, "agent_role": "Visualist", "target_lines": 115 },
+    { "id": "quantum-ripples", "size": 3331, "status": "pending", "priority": 3, "agent_role": "Algorithmist", "target_lines": 120 },
+    { "id": "oscilloscope-overlay", "size": 3340, "status": "pending", "priority": 3, "agent_role": "Optimizer", "target_lines": 115 }
+  ]
+}

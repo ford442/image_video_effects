@@ -3,7 +3,7 @@
   "name": "Echo Ripple",
   "url": "shaders/echo-ripple.wgsl",
   "category": "image",
-  "description": "Mouse movement creates expanding ripples that echo and persist in time.",
+  "description": "Mouse movement creates expanding ripples that echo and persist in time. Audio reactivity drives ripple amplitude and color splitting, while depth-aware parallax separates foreground and background distortion.",
   "params": [
     {
       "id": "freq",
@@ -36,10 +36,16 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio-reactive",
+    "ripple",
+    "feedback",
+    "interactive"
   ]
 }

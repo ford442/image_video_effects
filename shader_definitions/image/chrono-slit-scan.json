@@ -3,7 +3,7 @@
   "name": "Chrono Slit Scan",
   "url": "shaders/chrono-slit-scan.wgsl",
   "category": "image",
-  "description": "Accumulates time slices of the video into a static image.",
+  "description": "Accumulates time slices of the video into a static image via FBM-warped SDF slits with spatially-varying temporal decay.",
   "params": [
     {
       "id": "speed",
@@ -35,10 +35,16 @@
     }
   ],
   "features": [
-    "temporal-persistence"
+    "temporal-persistence",
+    "audio-reactive",
+    "fbm-warp",
+    "sdf-composition"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "noise",
+    "fractal",
+    "temporal"
   ]
 }

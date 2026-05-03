@@ -3,7 +3,7 @@
   "name": "Quantum Ripples",
   "url": "shaders/quantum-ripples.wgsl",
   "category": "image",
-  "description": "Mouse-driven quantum interference waves that displace the image.",
+  "description": "Mouse-driven quantum interference waves with FBM turbulence, multi-source superposition, and audio reactivity.",
   "params": [
     {
       "id": "waveFreq",
@@ -36,10 +36,14 @@
   ],
   "features": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "waves",
+    "interference",
+    "turbulence"
   ]
 }
