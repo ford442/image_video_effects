@@ -1,0 +1,9 @@
+{
+  "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
+  "name": "Dynamic Tessellation (Ornate Fractal Tiles)",
+  "category": "generative",
+  "type": "compute",
+  "coordinate": 874,
+  "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes.",
+  "parameters": []
+}
