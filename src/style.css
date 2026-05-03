@@ -30,7 +30,7 @@ body {
 
 /* Header - Gold & Dark Glass Theme */
 .header {
-    height: 60px;
+    height: 80px;
     background: linear-gradient(180deg, rgba(25, 25, 32, 0.98) 0%, rgba(18, 18, 24, 0.99) 100%);
     border-bottom: 1px solid rgba(255, 215, 0, 0.15);
     display: flex;
@@ -76,7 +76,7 @@ body {
     flex: 1;
     overflow: hidden;
     position: relative;
-    height: calc(100vh - 60px); /* Full height minus header */
+    height: calc(100vh - 80px); /* Full height minus header */
 }
 
 /* Sidebar - Gold & Dark Glass Theme */

@@ -1343,12 +1343,14 @@ function MainApp() {
         <div className="App">
             <header className="header">
                 <div className="logo-section">
-                    <img
-                        src="https://test.1ink.us/image_video_effects/static/media/pixelocity_title_logo_glitch.gif"
-                        alt="Pixelocity"
-                        className="logo-img"
-                        style={{ height: '42px', width: 'auto', objectFit: 'contain' }}
-                    />
+                    <div style={{ height: '80px', overflow: 'hidden', display: 'flex', alignItems: 'flex-start' }}>
+                        <img
+                            src="https://test.1ink.us/image_video_effects/static/media/pixelocity_title_logo_glitch.gif"
+                            alt="Pixelocity"
+                            className="logo-img"
+                            style={{ height: '120px', width: 'auto', objectFit: 'contain', marginTop: '0px' }}
+                        />
+                    </div>
                     <div className="subtitle-text">Image Playpen</div>
                 </div>
                 <div className="header-controls">
