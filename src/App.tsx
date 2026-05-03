@@ -1343,8 +1343,13 @@ function MainApp() {
         <div className="App">
             <header className="header">
                 <div className="logo-section">
-                    <div className="logo-text">Pixelocity</div>
-                    <div className="subtitle-text">AI VJ Image Playground</div>
+                    <img
+                        src="https://test.1ink.us/image_video_effects/static/media/pixelocity_title_logo_glitch.gif"
+                        alt="Pixelocity"
+                        className="logo-img"
+                        style={{ height: '42px', width: 'auto', objectFit: 'contain' }}
+                    />
+                    <div className="subtitle-text">Image Playpen</div>
                 </div>
                 <div className="header-controls">
                     <button
