@@ -1,9 +1,9 @@
 {
   "id": "selective-color",
-  "name": "Selective Color",
+  "name": "Voronoi Multi-Focal Selective",
   "url": "shaders/selective-color.wgsl",
   "category": "image",
-  "description": "Desaturates the image except for a circular region around the mouse.",
+  "description": "Voronoi multi-focal selective desaturation with chromatic aberration, fractal noise masking, polar sectors, SDF shapes, ripple propagation, and depth-aware edge detection.",
   "params": [
     {
       "id": "radius",
@@ -38,7 +38,9 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "temporal"
   ],
   "tags": [
     "filter",

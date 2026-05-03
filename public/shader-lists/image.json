@@ -3384,7 +3384,7 @@
   },
   {
     "id": "kaleidoscope",
-    "name": "Kaleidoscope",
+    "name": "Rose FBM Kaleidoscope",
     "url": "shaders/kaleidoscope.wgsl",
     "category": "image",
     "tags": [
@@ -4736,11 +4736,16 @@
     "name": "Alucinate",
     "url": "shaders/alucinate.wgsl",
     "category": "image",
+    "description": "Reaction-Diffusion Psychedelia with Gray-Scott Turing patterns, domain-warped FBM, kaleidoscopic IFS fractals, conformal mapping, and audio-reactive color science.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
-      "chromatic-aberration",
-      "warping"
+      "reaction-diffusion",
+      "fbm-warping",
+      "kaleidoscopic-ifs",
+      "conformal-mapping",
+      "audio-reactive",
+      "chromatic-aberration"
     ],
     "tags": [
       "psychedelic",
@@ -4749,7 +4754,10 @@
       "organic",
       "fluid",
       "filter",
-      "image-processing"
+      "image-processing",
+      "fractal",
+      "reaction-diffusion",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -10698,7 +10706,7 @@
     "name": "Hyper-Chromatic Delay",
     "url": "shaders/hyper-chromatic-delay.wgsl",
     "category": "image",
-    "description": "RGB channels separate and leave temporal trails, reacting to mouse proximity.",
+    "description": "Spectral Multi-Tap Echo with wavelength-dependent refraction, per-channel lens distortion, motion-aware temporal blur, and audio-reverb-inspired feedback echoes.",
     "params": [
       {
         "id": "sepStrength",
@@ -10732,11 +10740,21 @@
     "features": [
       "mouse-driven",
       "temporal-persistence",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "spectral-dispersion",
+      "multi-tap-temporal",
+      "lens-distortion",
+      "motion-trails",
+      "audio-reverb"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "spectral",
+      "echo",
+      "reverb",
+      "distortion",
+      "audio-reactive"
     ]
   },
   {
@@ -12683,14 +12701,14 @@
   },
   {
     "id": "neon-cursor-trace",
-    "name": "Neon Cursor Trace",
+    "name": "Particle Physics Trace",
     "url": "shaders/neon-cursor-trace.wgsl",
     "category": "image",
-    "description": "Persistent neon light trail that follows the cursor.",
+    "description": "Spring-mass cursor physics with persistent phosphor trails, electric arc jitter, audio-reactive particle spawning, and multi-point neon glow along a velocity-smoothed trajectory.",
     "params": [
       {
-        "id": "decay",
-        "name": "Trace Decay",
+        "id": "intensity",
+        "name": "Trace Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -12703,16 +12721,16 @@
         "max": 1
       },
       {
-        "id": "intensity",
-        "name": "Neon Intensity",
+        "id": "spring",
+        "name": "Spring Stiffness",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "satBoost",
-        "name": "Sat Boost",
-        "default": 0.5,
+        "id": "chaos",
+        "name": "Electric Chaos",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
@@ -12721,14 +12739,23 @@
       "mouse-driven",
       "temporal-persistence",
       "audio-reactive",
-      "audio-driven"
+      "spring-physics",
+      "phosphor-decay",
+      "electric-arc",
+      "multi-point-trail",
+      "particle-spawn",
+      "velocity-smear",
+      "ripple-spark"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "neon",
+      "particles",
+      "physics"
     ]
   },
   {
@@ -15094,10 +15121,10 @@
   },
   {
     "id": "selective-color",
-    "name": "Selective Color",
+    "name": "Voronoi Multi-Focal Selective",
     "url": "shaders/selective-color.wgsl",
     "category": "image",
-    "description": "Desaturates the image except for a circular region around the mouse.",
+    "description": "Voronoi multi-focal selective desaturation with chromatic aberration, fractal noise masking, polar sectors, SDF shapes, ripple propagation, and depth-aware edge detection.",
     "params": [
       {
         "id": "radius",
@@ -15132,7 +15159,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -15453,7 +15482,7 @@
     "name": "Sonic Distortion",
     "url": "shaders/sonic-distortion.wgsl",
     "category": "image",
-    "description": "Visualizes high-frequency sound waves emitting from the cursor, distorting the image.",
+    "description": "Superellipse-masked sonic distortion with Lissajous wave interference, FBM domain warping, rose curve modulation, and alpha-ghosted echo trails.",
     "params": [
       {
         "id": "freq",
@@ -15486,7 +15515,12 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion"
+      "distortion",
+      "superellipse",
+      "lissajous",
+      "fbm",
+      "temporal",
+      "echo-trails"
     ],
     "tags": [
       "filter",
@@ -19260,7 +19294,7 @@
     "name": "Galaxy Compute",
     "url": "shaders/galaxy-compute.wgsl",
     "category": "image",
-    "description": "N-body galaxy simulation with gravitational physics.",
+    "description": "Volumetric spiral galaxy with logarithmic spiral SDF, procedural nebula clouds, Keplerian orbital mechanics, and stellar particle glow.",
     "params": [
       {
         "id": "gravity",
@@ -19293,7 +19327,9 @@
     ],
     "features": [
       "simulation",
-      "physics"
+      "procedural",
+      "volumetric",
+      "spiral-galaxy"
     ],
     "tags": [
       "filter",

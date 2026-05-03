@@ -1,0 +1,2816 @@
+{
+  "generated": "2026-05-03T03:37:06.962Z",
+  "totalWgslFiles": 964,
+  "totalCandidates": 326,
+  "smallShaders": {
+    "count": 170,
+    "shaders": [
+      {
+        "id": "galaxy-compute",
+        "lines": 70,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "simulation",
+          "physics"
+        ],
+        "phaseBTrack": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "selective-color",
+        "lines": 71,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "alucinate",
+        "lines": 71,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "upgraded-rgba",
+          "depth-aware",
+          "chromatic-aberration",
+          "warping"
+        ],
+        "phaseBTrack": "Non-generative image shader without mouse-driven interactivity; size 3674 bytes"
+      },
+      {
+        "id": "gen-neural-network-glow-synaptic-pulse",
+        "lines": 71,
+        "algoScore": 6,
+        "category": "generative",
+        "features": [
+          "audio-reactive",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "hyper-chromatic-delay",
+        "lines": 72,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence",
+          "chromatic-aberration"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spectrogram-displace-pass2",
+        "lines": 73,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "multi-pass-2",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-cursor-trace",
+        "lines": 73,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "quad-mirror",
+        "lines": 73,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "geometry"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "interactive-fisheye",
+        "lines": 74,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "geometry",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "polka-dot-reveal",
+        "lines": 74,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "velocity-field-paint",
+        "lines": 74,
+        "algoScore": 6,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-strings",
+        "lines": 76,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "vortex-pass2",
+        "lines": 76,
+        "algoScore": 6,
+        "category": "distortion",
+        "features": [
+          "multi-pass-2",
+          "mouse-driven",
+          "audio-reactive"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "double-exposure-zoom",
+        "lines": 77,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "entropy-grid",
+        "lines": 77,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "kaleidoscope",
+        "lines": 77,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": "Non-generative image shader without mouse-driven interactivity; size 3460 bytes"
+      },
+      {
+        "id": "magnetic-interference",
+        "lines": 77,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "chromatic-aberration"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "sonic-distortion",
+        "lines": 77,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "distortion"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "holographic-edge-ripple",
+        "lines": 78,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-slice-interactive",
+        "lines": 78,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "glitch"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-topology",
+        "lines": 78,
+        "algoScore": 5,
+        "category": "visual-effects",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "echo-trace",
+        "lines": 78,
+        "algoScore": 6,
+        "category": "artistic",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "phantom-lag",
+        "lines": 78,
+        "algoScore": 6,
+        "category": "image",
+        "features": [],
+        "phaseBTrack": "Non-generative image shader without mouse-driven interactivity; size 3412 bytes"
+      },
+      {
+        "id": "neon-ripple-split",
+        "lines": 79,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "sonic-boom",
+        "lines": 79,
+        "algoScore": 5,
+        "category": "distortion",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "swirling-void",
+        "lines": 79,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "voronoi",
+        "lines": 79,
+        "algoScore": 6,
+        "category": "geometric",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixel-focus",
+        "lines": 80,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "filter"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "quantized-ripples",
+        "lines": 80,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "holographic-projection-failure",
+        "lines": 80,
+        "algoScore": 6,
+        "category": "retro-glitch",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-echo-warp",
+        "lines": 80,
+        "algoScore": 7,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "holographic-sticker",
+        "lines": 81,
+        "algoScore": 5,
+        "category": "visual-effects",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "interactive-fresnel",
+        "lines": 81,
+        "algoScore": 5,
+        "category": "visual-effects",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "ion-stream",
+        "lines": 81,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "upgraded-rgba",
+          "depth-aware",
+          "displacement",
+          "turbulence",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "melting-oil",
+        "lines": 81,
+        "algoScore": 5,
+        "category": "simulation",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "cyber-ripples",
+        "lines": 81,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "wave",
+          "neon"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-flow-field",
+        "lines": 81,
+        "algoScore": 6,
+        "category": "simulation",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixel-drag-smear",
+        "lines": 81,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixel-sort-radial",
+        "lines": 81,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixel-sorter",
+        "lines": 81,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "glitch",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "concentric-spin",
+        "lines": 82,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "cyber-lattice",
+        "lines": 82,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixel-repel",
+        "lines": 82,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "thermal-touch",
+        "lines": 82,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "cyber-halftone-scanner",
+        "lines": 82,
+        "algoScore": 6,
+        "category": "image",
+        "features": [],
+        "phaseBTrack": "Non-generative image shader without mouse-driven interactivity; size 3758 bytes"
+      },
+      {
+        "id": "scan-slice",
+        "lines": 82,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "scanline-wave",
+        "lines": 82,
+        "algoScore": 6,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "upgraded-rgba",
+          "depth-aware"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "vertical-slice-wave",
+        "lines": 82,
+        "algoScore": 6,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "kinetic-dispersion",
+        "lines": 82,
+        "algoScore": 7,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "halftone",
+        "lines": 83,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-magnetism",
+        "lines": 83,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spectral-waves",
+        "lines": 83,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "image"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "cursor-aura",
+        "lines": 83,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "glow"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "magnetic-field",
+        "lines": 83,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "animated",
+          "physics",
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "rgb-glitch-trail",
+        "lines": 83,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "chromatic",
+          "trail"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "circular-pixelate",
+        "lines": 84,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "kaleido-scope-grokcf1",
+        "lines": 84,
+        "algoScore": 5,
+        "category": "geometric",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "mirror-drag",
+        "lines": 84,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "sonar-reveal",
+        "lines": 84,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "frosty-window",
+        "lines": 84,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "upgraded-rgba",
+          "depth-aware",
+          "animated",
+          "crystalline",
+          "interactive",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixel-scattering",
+        "lines": 84,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "signal-tuner",
+        "lines": 84,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "static-reveal",
+        "lines": 84,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "ascii-glyph",
+        "lines": 85,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "crt-clear-zone",
+        "lines": 85,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-flashlight",
+        "lines": 85,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "liquid-metal",
+        "lines": 85,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "scanline-sorting",
+        "lines": 85,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "sorting"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spectral-brush",
+        "lines": 85,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "stereoscopic-3d",
+        "lines": 85,
+        "algoScore": 6,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "heat-haze-gpt52",
+        "lines": 85,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "animated",
+          "atmospheric",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-pulse-stream",
+        "lines": 86,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "digital-mold",
+        "lines": 86,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "dynamic-halftone",
+        "lines": 86,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "holographic-shatter",
+        "lines": 86,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-melt-interactive",
+        "lines": 86,
+        "algoScore": 6,
+        "category": "liquid-effects",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spectral-distortion",
+        "lines": 86,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence",
+          "glitch"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "focal-pixelate",
+        "lines": 87,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixelate-blast",
+        "lines": 87,
+        "algoScore": 5,
+        "category": "retro-glitch",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "hypnotic-spiral",
+        "lines": 87,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "interactive",
+          "spiral",
+          "visual",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "quantum-field-visualizer",
+        "lines": 87,
+        "algoScore": 6,
+        "category": "visual-effects",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": "visual-effects shader with rhythmic/pulsing potential; not yet audio-reactive"
+      },
+      {
+        "id": "stipple-render",
+        "lines": 87,
+        "algoScore": 6,
+        "category": "artistic",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "thermal-vision",
+        "lines": 87,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "color-remap",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "glitch-slice-mirror",
+        "lines": 87,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "data-scanner",
+        "lines": 88,
+        "algoScore": 5,
+        "category": "visual-effects",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "gen_wave_equation",
+        "lines": 88,
+        "algoScore": 5,
+        "category": "generative",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "prismatic-feedback-loop",
+        "lines": 88,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "multi-pass",
+          "feedback",
+          "chromatic",
+          "mouse-driven"
+        ],
+        "phaseBTrack": "image shader with rhythmic/pulsing potential; not yet audio-reactive"
+      },
+      {
+        "id": "sonar-pulse",
+        "lines": 88,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "contour-flow",
+        "lines": 89,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "lighthouse-reveal",
+        "lines": 89,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-force",
+        "lines": 89,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "distortion"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "magnetic-edge",
+        "lines": 89,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-edge-radar",
+        "lines": 89,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "virtual-lens",
+        "lines": 89,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "chromatic-aberration"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "electric-contours",
+        "lines": 89,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "hex-mosaic",
+        "lines": 89,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "kimi_spotlight",
+        "lines": 89,
+        "algoScore": 6,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "interactive",
+          "spotlight",
+          "reveal"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "navier-stokes-dye",
+        "lines": 89,
+        "algoScore": 6,
+        "category": "simulation",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "polar-warp-interactive",
+        "lines": 89,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "blueprint-reveal",
+        "lines": 90,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "chroma-depth-tunnel",
+        "lines": 90,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "prism-displacement",
+        "lines": 90,
+        "algoScore": 5,
+        "category": "distortion",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "directional-glitch",
+        "lines": 90,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "glitch"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-echo",
+        "lines": 90,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "heat-haze",
+        "lines": 90,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "animated",
+          "atmospheric",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "kimi_ripple_touch",
+        "lines": 91,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "interactive",
+          "ripple",
+          "water"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "data-moshing",
+        "lines": 91,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "glitch"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "motion-revealer",
+        "lines": 91,
+        "algoScore": 6,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neon-warp",
+        "lines": 91,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending"
+      },
+      {
+        "id": "pixel-stretch-interactive",
+        "lines": 91,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spectral-slit-scan",
+        "lines": 91,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spiral-lens",
+        "lines": 91,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "temporal",
+          "depth-aware"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "xerox-degrade",
+        "lines": 91,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "glitch",
+          "texture"
+        ],
+        "phaseBTrack": "Non-generative image shader without mouse-driven interactivity; size 3425 bytes"
+      },
+      {
+        "id": "fractal-noise-dissolve",
+        "lines": 91,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "quantum-tunnel-interactive",
+        "lines": 92,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "double-exposure",
+        "lines": 92,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "interactive-rgb-split",
+        "lines": 92,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "interactive-zoom-blur",
+        "lines": 92,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "magnetic-pixels",
+        "lines": 92,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "refraction-tunnel",
+        "lines": 92,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "animated",
+          "3d",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spectral-smear",
+        "lines": 92,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "history"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "velvet-vortex",
+        "lines": 92,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "sim-fluid-feedback-field-pass1",
+        "lines": 92,
+        "algoScore": 9,
+        "category": "unknown",
+        "features": [],
+        "phaseBTrack": null
+      },
+      {
+        "id": "neural-nexus",
+        "lines": 93,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "interactive",
+          "organic",
+          "network",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "wave-halftone",
+        "lines": 93,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "laser-burn",
+        "lines": 93,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "volumetric-god-rays",
+        "lines": 93,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "temporal-distortion-field",
+        "lines": 93,
+        "algoScore": 7,
+        "category": "distortion",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "elastic-strip",
+        "lines": 94,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "pixel-reveal",
+        "lines": 94,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spirograph-reveal",
+        "lines": 94,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "interactive"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "cyber-rain",
+        "lines": 94,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "data-stream",
+        "lines": 94,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "glitch"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "gen_cyclic_automaton",
+        "lines": 95,
+        "algoScore": 5,
+        "category": "generative",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "moire-interference",
+        "lines": 95,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "quantum-cursor",
+        "lines": 95,
+        "algoScore": 5,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven",
+          "distortion"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "steampunk-gear-lens",
+        "lines": 95,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "voxel-grid",
+        "lines": 95,
+        "algoScore": 5,
+        "category": "visual-effects",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "interactive-glitch-brush",
+        "lines": 95,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "glitch"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spectral-rain",
+        "lines": 95,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "fluid-grid",
+        "lines": 95,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "animated",
+          "grid",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "liquid-warp-interactive",
+        "lines": 95,
+        "algoScore": 7,
+        "category": "distortion",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luminance-wind",
+        "lines": 95,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "sim-fluid-feedback-field-pass2",
+        "lines": 95,
+        "algoScore": 7,
+        "category": "unknown",
+        "features": [],
+        "phaseBTrack": null
+      },
+      {
+        "id": "chroma-kinetic",
+        "lines": 96,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "gen_reaction_diffusion",
+        "lines": 96,
+        "algoScore": 6,
+        "category": "generative",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "mouse-gravity",
+        "lines": 96,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "chromatic-aberration"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "optical-feedback",
+        "lines": 96,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "oscilloscope-overlay",
+        "lines": 96,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "overlay"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "psychedelic-noise-flow",
+        "lines": 96,
+        "algoScore": 6,
+        "category": "interactive-mouse",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "holographic-glitch",
+        "lines": 96,
+        "algoScore": 7,
+        "category": "image",
+        "features": [
+          "depth-aware",
+          "temporal-persistence",
+          "chromatic-aberration",
+          "sci-fi",
+          "audio-reactive",
+          "audio-driven",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "divine-light-gpt52",
+        "lines": 97,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "volumetric",
+          "atmospheric"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "fiber-optic-weave",
+        "lines": 97,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-velocity-melt",
+        "lines": 97,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "mouse-pixel-sort",
+        "lines": 97,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "scanline-drift",
+        "lines": 97,
+        "algoScore": 6,
+        "category": "retro-glitch",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "vhs-tracking-mouse",
+        "lines": 97,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "liquid-lens",
+        "lines": 98,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "distortion"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "magnetic-ring",
+        "lines": 98,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "polka-wave",
+        "lines": 98,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "ripple-blocks",
+        "lines": 98,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "chronos-brush",
+        "lines": 98,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "mouse-driven",
+          "temporal-persistence"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "hybrid-fractal-feedback",
+        "lines": 98,
+        "algoScore": 6,
+        "category": "generative",
+        "features": [
+          "hybrid",
+          "julia-set",
+          "temporal-feedback",
+          "rgb-delay",
+          "fractal",
+          "randomization-safe"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "luma-glass",
+        "lines": 98,
+        "algoScore": 6,
+        "category": "distortion",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "spec-histogram-equalize",
+        "lines": 98,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "cooperative-workgroup",
+          "histogram",
+          "CLAHE",
+          "contrast-enhancement"
+        ],
+        "phaseBTrack": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "chroma-vortex",
+        "lines": 99,
+        "algoScore": 5,
+        "category": "visual-effects",
+        "features": [
+          "mouse-driven",
+          "audio-reactive",
+          "audio-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "interactive-emboss",
+        "lines": 99,
+        "algoScore": 5,
+        "category": "image",
+        "features": [
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "elastic-surface",
+        "lines": 99,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "animated",
+          "wave",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "fire_smoke_volumetric",
+        "lines": 99,
+        "algoScore": 6,
+        "category": "simulation",
+        "features": [
+          "rgba",
+          "volumetric",
+          "fire",
+          "smoke",
+          "blackbody",
+          "curl-noise"
+        ],
+        "phaseBTrack": null
+      },
+      {
+        "id": "prismatic-3d-compositor",
+        "lines": 99,
+        "algoScore": 6,
+        "category": "image",
+        "features": [
+          "multi-pass",
+          "volumetric",
+          "depth",
+          "lighting",
+          "mouse-driven"
+        ],
+        "phaseBTrack": null
+      }
+    ]
+  },
+  "mediumShaders": {
+    "count": 0,
+    "shaders": []
+  },
+  "phaseBPending": {
+    "count": 143,
+    "shaders": [
+      {
+        "id": "galaxy-compute",
+        "lines": 70,
+        "algoScore": 6,
+        "track": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "alucinate",
+        "lines": 71,
+        "algoScore": 6,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 3674 bytes",
+        "priority": 32
+      },
+      {
+        "id": "kaleidoscope",
+        "lines": 77,
+        "algoScore": 5,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 3460 bytes",
+        "priority": 33
+      },
+      {
+        "id": "phantom-lag",
+        "lines": 78,
+        "algoScore": 6,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 3412 bytes",
+        "priority": 35
+      },
+      {
+        "id": "cyber-halftone-scanner",
+        "lines": 82,
+        "algoScore": 6,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 3758 bytes",
+        "priority": 31
+      },
+      {
+        "id": "quantum-field-visualizer",
+        "lines": 87,
+        "algoScore": 6,
+        "track": "visual-effects shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 17
+      },
+      {
+        "id": "prismatic-feedback-loop",
+        "lines": 88,
+        "algoScore": 6,
+        "track": "image shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 16
+      },
+      {
+        "id": "neon-warp",
+        "lines": 91,
+        "algoScore": 6,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 16
+      },
+      {
+        "id": "xerox-degrade",
+        "lines": 91,
+        "algoScore": 6,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 3425 bytes",
+        "priority": 34
+      },
+      {
+        "id": "spec-histogram-equalize",
+        "lines": 98,
+        "algoScore": 6,
+        "track": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "holographic_interference",
+        "lines": 103,
+        "algoScore": 5,
+        "track": "Non-generative lighting-effects shader without mouse-driven interactivity; size 4273 bytes",
+        "priority": 21
+      },
+      {
+        "id": "spectral-glitch-sort",
+        "lines": 105,
+        "algoScore": 6,
+        "track": "retro-glitch shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 15
+      },
+      {
+        "id": "chrono-slit-scan",
+        "lines": 115,
+        "algoScore": 8,
+        "track": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "rain-ripples",
+        "lines": 120,
+        "algoScore": 6,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 5479 bytes",
+        "priority": 28
+      },
+      {
+        "id": "neon-contour-drag",
+        "lines": 121,
+        "algoScore": 7,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 30
+      },
+      {
+        "id": "hex-circuit",
+        "lines": 126,
+        "algoScore": 5,
+        "track": "visual-effects shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 14
+      },
+      {
+        "id": "pp-ssao",
+        "lines": 128,
+        "algoScore": 7,
+        "track": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "sim-heat-haze-field",
+        "lines": 131,
+        "algoScore": 6,
+        "track": "Non-generative distortion shader without mouse-driven interactivity; size 5768 bytes",
+        "priority": 9
+      },
+      {
+        "id": "fractal-kaleidoscope",
+        "lines": 132,
+        "algoScore": 5,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 4962 bytes",
+        "priority": 29
+      },
+      {
+        "id": "pp-chromatic",
+        "lines": 136,
+        "algoScore": 5,
+        "track": "post-processing shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 29
+      },
+      {
+        "id": "pp-sharpen",
+        "lines": 137,
+        "algoScore": 5,
+        "track": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "green-tracer",
+        "lines": 137,
+        "algoScore": 6,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 12
+      },
+      {
+        "id": "atmos_volumetric_fog",
+        "lines": 140,
+        "algoScore": 7,
+        "track": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 14
+      },
+      {
+        "id": "sim-volumetric-fake",
+        "lines": 144,
+        "algoScore": 7,
+        "track": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 13
+      },
+      {
+        "id": "hybrid-noise-kaleidoscope",
+        "lines": 146,
+        "algoScore": 7,
+        "track": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 13
+      },
+      {
+        "id": "pp-vignette",
+        "lines": 148,
+        "algoScore": 6,
+        "track": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "liquid-viscous-grokcf1",
+        "lines": 149,
+        "algoScore": 7,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 6677 bytes",
+        "priority": 26
+      },
+      {
+        "id": "chromatic-reaction-diffusion",
+        "lines": 155,
+        "algoScore": 6,
+        "track": "Non-generative artistic shader without mouse-driven interactivity; size 7186 bytes",
+        "priority": 12
+      },
+      {
+        "id": "sim-sand-dunes",
+        "lines": 156,
+        "algoScore": 5,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "sim-decay-system",
+        "lines": 156,
+        "algoScore": 6,
+        "track": "Non-generative artistic shader without mouse-driven interactivity; size 6986 bytes",
+        "priority": 13
+      },
+      {
+        "id": "alpha-fluid-simulation-paint",
+        "lines": 156,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "steamy-glass",
+        "lines": 156,
+        "algoScore": 8,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-spectral-decompose",
+        "lines": 157,
+        "algoScore": 6,
+        "track": "visual-effects shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "gen-temporal-motion-smear",
+        "lines": 160,
+        "algoScore": 6,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 11
+      },
+      {
+        "id": "alpha-multi-layer-glass",
+        "lines": 164,
+        "algoScore": 7,
+        "track": "visual-effects shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-paint-thickness",
+        "lines": 165,
+        "algoScore": 7,
+        "track": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "aerogel-smoke",
+        "lines": 166,
+        "algoScore": 8,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 25
+      },
+      {
+        "id": "sim-slime-mold-growth",
+        "lines": 167,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "ethereal-swirl",
+        "lines": 168,
+        "algoScore": 8,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "digital-waves",
+        "lines": 169,
+        "algoScore": 6,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 6018 bytes",
+        "priority": 27
+      },
+      {
+        "id": "gen-velocity-bloom",
+        "lines": 170,
+        "algoScore": 6,
+        "track": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 10
+      },
+      {
+        "id": "sim-ink-diffusion",
+        "lines": 172,
+        "algoScore": 6,
+        "track": "Non-generative artistic shader without mouse-driven interactivity; size 6822 bytes",
+        "priority": 14
+      },
+      {
+        "id": "hybrid-cyber-organic",
+        "lines": 173,
+        "algoScore": 7,
+        "track": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 30
+      },
+      {
+        "id": "hybrid-reaction-diffusion-glass",
+        "lines": 174,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 28
+      },
+      {
+        "id": "quantum-smear",
+        "lines": 174,
+        "algoScore": 8,
+        "track": "Large monolithic shader (14754 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 18
+      },
+      {
+        "id": "lidar",
+        "lines": 176,
+        "algoScore": 8,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 26
+      },
+      {
+        "id": "retro_phosphor_dream",
+        "lines": 176,
+        "algoScore": 8,
+        "track": "retro-glitch shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "gemstone-fractures",
+        "lines": 179,
+        "algoScore": 7,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 24
+      },
+      {
+        "id": "hybrid-particle-fluid",
+        "lines": 179,
+        "algoScore": 9,
+        "track": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 10
+      },
+      {
+        "id": "quantum-wormhole",
+        "lines": 180,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "alpha-multi-state-ecosystem",
+        "lines": 181,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "underwater_caustics",
+        "lines": 181,
+        "algoScore": 7,
+        "track": "lighting-effects shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 28
+      },
+      {
+        "id": "texture",
+        "lines": 181,
+        "algoScore": 9,
+        "track": "image shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "volumetric-rainbow-clouds",
+        "lines": 183,
+        "algoScore": 7,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 23
+      },
+      {
+        "id": "neural-resonance",
+        "lines": 186,
+        "algoScore": 9,
+        "track": "Large monolithic shader (14900 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 17
+      },
+      {
+        "id": "aurora_borealis",
+        "lines": 187,
+        "algoScore": 8,
+        "track": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 12
+      },
+      {
+        "id": "physarum-gemini",
+        "lines": 188,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 27
+      },
+      {
+        "id": "physarum-grokcf1",
+        "lines": 188,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 26
+      },
+      {
+        "id": "liquid-v1",
+        "lines": 189,
+        "algoScore": 6,
+        "track": "Non-generative image shader without mouse-driven interactivity; size 9698 bytes",
+        "priority": 23
+      },
+      {
+        "id": "pp-tone-map",
+        "lines": 189,
+        "algoScore": 6,
+        "track": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "pp-bloom",
+        "lines": 192,
+        "algoScore": 6,
+        "track": "post-processing shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "chromatic-folds",
+        "lines": 193,
+        "algoScore": 7,
+        "track": "Large monolithic shader (14268 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 22
+      },
+      {
+        "id": "boids",
+        "lines": 194,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "spec-quaternion-julia",
+        "lines": 194,
+        "algoScore": 7,
+        "track": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "cosmic-flow",
+        "lines": 199,
+        "algoScore": 10,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 9
+      },
+      {
+        "id": "nebulous-dream",
+        "lines": 200,
+        "algoScore": 8,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "chromatic-focus",
+        "lines": 204,
+        "algoScore": 5,
+        "track": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "gen-obsidian-echo-chamber",
+        "lines": 207,
+        "algoScore": 7,
+        "track": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "alpha-em-field-simulation",
+        "lines": 208,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "rainbow-cloud",
+        "lines": 208,
+        "algoScore": 9,
+        "track": "Large monolithic shader (14547 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 19
+      },
+      {
+        "id": "wave-equation",
+        "lines": 209,
+        "algoScore": 5,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 22
+      },
+      {
+        "id": "crystal-facets",
+        "lines": 209,
+        "algoScore": 6,
+        "track": "distortion shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 25
+      },
+      {
+        "id": "audio_geometric_pulse",
+        "lines": 212,
+        "algoScore": 8,
+        "track": "geometric shader sampling readTexture without mouse interactivity"
+      },
+      {
+        "id": "chromatic-manifold-2",
+        "lines": 213,
+        "algoScore": 6,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "magnetic-dipole",
+        "lines": 215,
+        "algoScore": 6,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "liquid-volumetric-zoom",
+        "lines": 216,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "astral-kaleidoscope-gemini",
+        "lines": 217,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "astral-kaleidoscope",
+        "lines": 218,
+        "algoScore": 5,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "hybrid-sdf-plasma",
+        "lines": 219,
+        "algoScore": 5,
+        "track": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 11
+      },
+      {
+        "id": "ink_dispersion_alpha",
+        "lines": 219,
+        "algoScore": 5,
+        "track": "Non-generative liquid-effects shader without mouse-driven interactivity; size 6993 bytes",
+        "priority": 15
+      },
+      {
+        "id": "liquid-prism-cascade",
+        "lines": 219,
+        "algoScore": 5,
+        "track": "artistic shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 29
+      },
+      {
+        "id": "astral-veins",
+        "lines": 220,
+        "algoScore": 8,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 19
+      },
+      {
+        "id": "chromatic-manifold",
+        "lines": 220,
+        "algoScore": 8,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "sim-fluid-feedback-coupled",
+        "lines": 222,
+        "algoScore": 9,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "bioluminescent",
+        "lines": 225,
+        "algoScore": 7,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 20
+      },
+      {
+        "id": "quantum-foam-bilateral",
+        "lines": 231,
+        "algoScore": 11,
+        "track": "Large shader (10261 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "holographic-projection-gpt52",
+        "lines": 234,
+        "algoScore": 6,
+        "track": "visual-effects shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "neural-dreamscape",
+        "lines": 235,
+        "algoScore": 6,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "multi-turing",
+        "lines": 235,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "volumetric-cloud-nebula",
+        "lines": 235,
+        "algoScore": 9,
+        "track": "generative shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 9
+      },
+      {
+        "id": "chromatic-crawler",
+        "lines": 236,
+        "algoScore": 6,
+        "track": "Large monolithic shader (15391 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 16
+      },
+      {
+        "id": "aurora-rift-gemini",
+        "lines": 238,
+        "algoScore": 11,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "byte-mosh",
+        "lines": 239,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "artistic_painterly_oil",
+        "lines": 242,
+        "algoScore": 6,
+        "track": "Non-generative artistic shader without mouse-driven interactivity; size 9401 bytes",
+        "priority": 11
+      },
+      {
+        "id": "gen-neuro-cosmos",
+        "lines": 244,
+        "algoScore": 7,
+        "track": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "anisotropic-kuwahara",
+        "lines": 245,
+        "algoScore": 6,
+        "track": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "vhs-tracking",
+        "lines": 245,
+        "algoScore": 6,
+        "track": "Large monolithic shader (13823 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 24
+      },
+      {
+        "id": "neural-raymarcher-gabor",
+        "lines": 245,
+        "algoScore": 8,
+        "track": "Large shader (11873 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "scan-distort",
+        "lines": 248,
+        "algoScore": 6,
+        "track": "Large monolithic shader (13228 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 29
+      },
+      {
+        "id": "chromatic-infection",
+        "lines": 250,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "glitch-pixel-sort",
+        "lines": 250,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "kimi_flock_symphony",
+        "lines": 251,
+        "algoScore": 8,
+        "track": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "recursion-mirror-vortex",
+        "lines": 251,
+        "algoScore": 8,
+        "track": "Large monolithic shader (16968 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 8
+      },
+      {
+        "id": "iridescent-oil-slick",
+        "lines": 252,
+        "algoScore": 7,
+        "track": "artistic shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "chromatic-folds-2",
+        "lines": 253,
+        "algoScore": 5,
+        "track": "Large monolithic shader (13491 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 27
+      },
+      {
+        "id": "liquid-zoom",
+        "lines": 253,
+        "algoScore": 6,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "gen-hyperbolic-tessellation",
+        "lines": 257,
+        "algoScore": 7,
+        "track": "Large monolithic shader (16186 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 14
+      },
+      {
+        "id": "wolfram-data-demo",
+        "lines": 260,
+        "algoScore": 5,
+        "track": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "gen_mandelbulb_3d",
+        "lines": 261,
+        "algoScore": 7,
+        "track": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "matrix_digital_rain",
+        "lines": 266,
+        "algoScore": 7,
+        "track": "retro-glitch shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "neon-edges",
+        "lines": 266,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "parallax-glow-compositor",
+        "lines": 266,
+        "algoScore": 7,
+        "track": "image shader with glow/light/distortion characteristics; alpha compositing would enhance blending",
+        "priority": 21
+      },
+      {
+        "id": "parallax_depth_layers",
+        "lines": 266,
+        "algoScore": 7,
+        "track": "Non-generative visual-effects shader without mouse-driven interactivity; size 9865 bytes",
+        "priority": 16
+      },
+      {
+        "id": "phase-shift",
+        "lines": 266,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "prismatic-mosaic",
+        "lines": 266,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "gen-quantum-superposition",
+        "lines": 273,
+        "algoScore": 7,
+        "track": "Large monolithic shader (17911 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 7
+      },
+      {
+        "id": "photonic-caustics",
+        "lines": 273,
+        "algoScore": 9,
+        "track": "image shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 24
+      },
+      {
+        "id": "gen-chromatic-metamorphosis",
+        "lines": 275,
+        "algoScore": 8,
+        "track": "Large monolithic shader (15772 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 15
+      },
+      {
+        "id": "pixel-sort-glitch",
+        "lines": 276,
+        "algoScore": 7,
+        "track": "distortion shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 23
+      },
+      {
+        "id": "aurora-rift",
+        "lines": 276,
+        "algoScore": 11,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "liquid-viscous",
+        "lines": 277,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "gen-gravitational-strain",
+        "lines": 279,
+        "algoScore": 7,
+        "track": "Large monolithic shader (16338 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 12
+      },
+      {
+        "id": "gen-inverse-mandelbrot",
+        "lines": 283,
+        "algoScore": 7,
+        "track": "Large monolithic shader (16275 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 13
+      },
+      {
+        "id": "crt-tv",
+        "lines": 294,
+        "algoScore": 6,
+        "track": "retro-glitch shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 22
+      },
+      {
+        "id": "fabric-step",
+        "lines": 297,
+        "algoScore": 7,
+        "track": "simulation shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "datamosh",
+        "lines": 300,
+        "algoScore": 7,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "scanline-tear",
+        "lines": 301,
+        "algoScore": 8,
+        "track": "retro-glitch shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 21
+      },
+      {
+        "id": "gen-isometric-city",
+        "lines": 306,
+        "algoScore": 7,
+        "track": "Large shader (11292 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "liquid-displacement",
+        "lines": 309,
+        "algoScore": 8,
+        "track": "liquid-effects shader with rhythmic/pulsing potential; not yet audio-reactive",
+        "priority": 20
+      },
+      {
+        "id": "infinite-zoom",
+        "lines": 311,
+        "algoScore": 6,
+        "track": "Large monolithic shader (13189 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 30
+      },
+      {
+        "id": "quantum-foam",
+        "lines": 322,
+        "algoScore": 11,
+        "track": "image shader would benefit from sophisticated alpha compositing"
+      },
+      {
+        "id": "predator-prey",
+        "lines": 324,
+        "algoScore": 6,
+        "track": "generative shader with rhythmic/pulsing potential"
+      },
+      {
+        "id": "gen-biomechanical-hive",
+        "lines": 326,
+        "algoScore": 7,
+        "track": "Large shader (11505 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-liquid-crystal-hive-mind",
+        "lines": 327,
+        "algoScore": 10,
+        "track": "Large shader (11069 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "tensor-flow-sculpting",
+        "lines": 330,
+        "algoScore": 9,
+        "track": "Large monolithic shader (16512 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 11
+      },
+      {
+        "id": "gen-celestial-prism-orchid",
+        "lines": 346,
+        "algoScore": 10,
+        "track": "Large shader (11027 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-ethereal-anemone-bloom",
+        "lines": 361,
+        "algoScore": 8,
+        "track": "Large shader (12595 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-holographic-data-core",
+        "lines": 362,
+        "algoScore": 8,
+        "track": "Large monolithic shader (14476 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 20
+      },
+      {
+        "id": "gen-bioluminescent-abyss",
+        "lines": 364,
+        "algoScore": 7,
+        "track": "Large shader (12270 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "stella-orbit",
+        "lines": 375,
+        "algoScore": 7,
+        "track": "Large monolithic shader (13475 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 28
+      },
+      {
+        "id": "gen-art-deco-sky",
+        "lines": 375,
+        "algoScore": 8,
+        "track": "Large monolithic shader (13722 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 25
+      },
+      {
+        "id": "gen-celestial-forge",
+        "lines": 383,
+        "algoScore": 10,
+        "track": "Large shader (11861 bytes) candidate for multi-pass decomposition"
+      },
+      {
+        "id": "gen-chronos-labyrinth",
+        "lines": 407,
+        "algoScore": 9,
+        "track": "Large monolithic shader (14430 bytes) not yet multi-pass; good candidate for decomposition",
+        "priority": 21
+      }
+    ]
+  }
+}

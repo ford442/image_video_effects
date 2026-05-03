@@ -3,7 +3,7 @@
   "name": "Galaxy Compute",
   "url": "shaders/galaxy-compute.wgsl",
   "category": "image",
-  "description": "N-body galaxy simulation with gravitational physics.",
+  "description": "Volumetric spiral galaxy with logarithmic spiral SDF, procedural nebula clouds, Keplerian orbital mechanics, and stellar particle glow.",
   "params": [
     {
       "id": "gravity",
@@ -36,7 +36,9 @@
   ],
   "features": [
     "simulation",
-    "physics"
+    "procedural",
+    "volumetric",
+    "spiral-galaxy"
   ],
   "tags": [
     "filter",

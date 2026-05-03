@@ -1,13 +1,13 @@
 {
   "id": "neon-cursor-trace",
-  "name": "Neon Cursor Trace",
+  "name": "Particle Physics Trace",
   "url": "shaders/neon-cursor-trace.wgsl",
   "category": "image",
-  "description": "Persistent neon light trail that follows the cursor.",
+  "description": "Spring-mass cursor physics with persistent phosphor trails, electric arc jitter, audio-reactive particle spawning, and multi-point neon glow along a velocity-smoothed trajectory.",
   "params": [
     {
-      "id": "decay",
-      "name": "Trace Decay",
+      "id": "intensity",
+      "name": "Trace Intensity",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
@@ -20,16 +20,16 @@
       "max": 1.0
     },
     {
-      "id": "intensity",
-      "name": "Neon Intensity",
+      "id": "spring",
+      "name": "Spring Stiffness",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "satBoost",
-      "name": "Sat Boost",
-      "default": 0.5,
+      "id": "chaos",
+      "name": "Electric Chaos",
+      "default": 0.3,
       "min": 0.0,
       "max": 1.0
     }
@@ -38,13 +38,22 @@
     "mouse-driven",
     "temporal-persistence",
     "audio-reactive",
-    "audio-driven"
+    "spring-physics",
+    "phosphor-decay",
+    "electric-arc",
+    "multi-point-trail",
+    "particle-spawn",
+    "velocity-smear",
+    "ripple-spark"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "neon",
+    "particles",
+    "physics"
   ]
 }

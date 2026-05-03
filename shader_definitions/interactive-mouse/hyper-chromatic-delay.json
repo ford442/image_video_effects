@@ -3,7 +3,7 @@
   "name": "Hyper-Chromatic Delay",
   "url": "shaders/hyper-chromatic-delay.wgsl",
   "category": "image",
-  "description": "RGB channels separate and leave temporal trails, reacting to mouse proximity.",
+  "description": "Spectral Multi-Tap Echo with wavelength-dependent refraction, per-channel lens distortion, motion-aware temporal blur, and audio-reverb-inspired feedback echoes.",
   "params": [
     {
       "id": "sepStrength",
@@ -37,10 +37,20 @@
   "features": [
     "mouse-driven",
     "temporal-persistence",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "spectral-dispersion",
+    "multi-tap-temporal",
+    "lens-distortion",
+    "motion-trails",
+    "audio-reverb"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "spectral",
+    "echo",
+    "reverb",
+    "distortion",
+    "audio-reactive"
   ]
 }

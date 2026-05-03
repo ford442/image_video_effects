@@ -399,11 +399,10 @@
   },
   {
     "id": "echo-trace",
-    "name": "Echo Trace",
+    "name": "Structure Tensor Echo Field",
     "url": "shaders/echo-trace.wgsl",
-    "features": [
-      "mouse-driven"
-    ],
+    "category": "artistic",
+    "description": "Anisotropic echo smearing via structure tensor analysis, flow-field advection with curl noise, multi-octave temporal feedback, audio-driven hue rotation, and luminance-gradient feedback displacement.",
     "params": [
       {
         "id": "decay",
@@ -427,18 +426,31 @@
         "max": 0.2
       },
       {
-        "id": "mode",
-        "name": "Mode",
-        "default": 0,
+        "id": "flow",
+        "name": "Flow Strength",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
-    "description": "Leaves a decaying, color-shifting trail of the live video feed following the mouse.",
-    "category": "artistic",
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "audio-reactive",
+      "structure-tensor",
+      "flow-advection",
+      "multi-octave-echo",
+      "velocity-sensing",
+      "feedback-displacement",
+      "curl-noise"
+    ],
     "tags": [
       "stylized",
-      "artistic"
+      "artistic",
+      "echo",
+      "flow",
+      "anisotropic",
+      "audio-reactive"
     ]
   },
   {

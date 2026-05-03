@@ -3,7 +3,7 @@
   "name": "Sonic Distortion",
   "url": "shaders/sonic-distortion.wgsl",
   "category": "image",
-  "description": "Visualizes high-frequency sound waves emitting from the cursor, distorting the image.",
+  "description": "Superellipse-masked sonic distortion with Lissajous wave interference, FBM domain warping, rose curve modulation, and alpha-ghosted echo trails.",
   "params": [
     {
       "id": "freq",
@@ -36,7 +36,12 @@
   ],
   "features": [
     "mouse-driven",
-    "distortion"
+    "distortion",
+    "superellipse",
+    "lissajous",
+    "fbm",
+    "temporal",
+    "echo-trails"
   ],
   "tags": [
     "filter",

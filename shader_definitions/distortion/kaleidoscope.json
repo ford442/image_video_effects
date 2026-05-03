@@ -1,6 +1,6 @@
 {
   "id": "kaleidoscope",
-  "name": "Kaleidoscope",
+  "name": "Rose FBM Kaleidoscope",
   "url": "shaders/kaleidoscope.wgsl",
   "category": "image",
   "tags": [
