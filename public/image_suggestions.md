@@ -3669,6 +3669,67 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20240625_baroque-observatory.jpg`
 - **License / Attribution:** CC0
 
+
+### Suggestion: Bioluminescent Neoclassical Library
+- **Date:** 2026-06-25
+- **Prompt:** "A grand, symmetrical interior of a Neoclassical library, overgrown with vibrant, glowing bioluminescent vines and giant luminous mushrooms. The majestic marble columns and vaulted ceiling are illuminated entirely by the ethereal cyan and magenta glow of the magical flora. Ancient, dusty books rest on intricately carved stone shelves. The lighting is low-key, heavily contrasting the glowing vegetation with deep, mysterious shadows in the corners. The mood is ancient, enchanted, and scholarly. Captured with a 14mm wide-angle lens, perfectly symmetrical composition emphasizing the grand scale."
+- **Negative prompt:** "daylight, modern, clean, people, artificial lighting, simple, lowres, blurry"
+- **Tags:** fantasy, architecture, bioluminescent, library, neoclassical
+- **Style / Reference:** fantasy architectural visualization, photorealistic 3D environment
+- **Composition:** perfectly symmetrical, grand scale, deep perspective
+- **Color palette:** glowing cyan, vibrant magenta, pale marble white, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260625_bioluminescent-neoclassical-library.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Steampunk Bonsai Garden
+- **Date:** 2026-06-25
+- **Prompt:** "A highly detailed, macro photograph of a delicate bonsai tree constructed entirely of polished brass, copper wire, and tiny ticking watch gears, sitting in a shallow ceramic pot filled with rusted iron shavings. The metallic leaves catch the warm, directional studio lighting, creating sharp specular highlights and deep, dark shadows between the intricate gears. A faint mist of steam escapes from the base. The mood is meticulous, antique, and wondrous. Captured with a 100mm macro lens, utilizing a shallow depth of field to blur the dark background into smooth bokeh."
+- **Negative prompt:** "organic, real plant, green leaves, flat lighting, daylight, blurry"
+- **Tags:** macro, steampunk, mechanical, bonsai, brass
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** warm brass, polished copper, rusted iron, dark background
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260625_steampunk-bonsai.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Art Nouveau Spacesuit Portrait
+- **Date:** 2026-06-25
+- **Prompt:** "A majestic, surreal portrait of an astronaut wearing a highly ornate spacesuit designed in the sweeping, elegant curves and whiplash lines of the Art Nouveau style. The spacesuit is made of polished silver and translucent, fossilized amber panels. The subject stands against the backdrop of a distant, swirling purple galaxy. The lighting is cinematic, with harsh, dramatic rim lighting from a nearby star catching the polished silver, contrasting with the soft cosmic glow of the galaxy. The mood is elegant, adventurous, and highly stylized. Captured with an 85mm portrait lens, sharp focus on the helmet's amber visor."
+- **Negative prompt:** "standard spacesuit, realistic, dull, messy, blurry, simple, flat"
+- **Tags:** sci-fi, portrait, art nouveau, spacesuit, elegant
+- **Style / Reference:** surreal fashion photography, sci-fi concept art
+- **Composition:** centered portrait, dynamic lighting, beautiful cosmic background
+- **Color palette:** polished silver, warm amber, glowing nebula purple, deep cosmic black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260625_art-nouveau-spacesuit.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Dieselpunk Arctic Icebreaker
+- **Date:** 2026-06-25
+- **Prompt:** "A colossal, soot-stained dieselpunk icebreaker ship violently crashing through a massive, frozen glacier. The heavy, riveted steel ship belches thick, black smoke from towering exhaust pipes, contrasting with the pristine, blinding white ice of the Arctic landscape. The lighting is harsh, freezing midday sunlight that casts sharp, deep shadows across the jagged ice and the rusted hull. The mood is aggressive, industrial, and overpowering. Captured with a wide-angle 24mm lens from a low perspective on the ice, emphasizing the imposing, monolithic scale of the ship."
+- **Negative prompt:** "clean, modern, bright colors, sunny, soft, peaceful, organic"
+- **Tags:** dieselpunk, vehicle, landscape, icebreaker, industrial
+- **Style / Reference:** dieselpunk concept art, cinematic landscape photography
+- **Composition:** wide angle, low perspective, dramatic scale, dynamic action
+- **Color palette:** rusted iron, soot-stained grey, blinding white ice, pale freezing blue
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260625_dieselpunk-icebreaker.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Cyberpunk Coral Reef Megastructure
+- **Date:** 2026-06-25
+- **Prompt:** "An underwater, wide-angle shot of a sprawling coral reef that has been fused with a massive, abandoned cyberpunk megastructure. Glowing neon fiber optic cables intertwine with organic sea anemones, and giant rusted metal pillars rise from the sea floor, covered in barnacles and glowing coral. The lighting is mysterious, blending the murky, deep ocean blue with harsh, flickering neon pink and cyan lights from the decaying technology. The mood is melancholic, advanced, and hauntingly beautiful. Captured with a 14mm lens, deep depth of field to capture the intricate blending of technology and nature."
+- **Negative prompt:** "daylight, surface, clean metal, realistic fish, soft lighting, sunny"
+- **Tags:** cyberpunk, underwater, nature, ruins, neon
+- **Style / Reference:** cyberpunk environment design, photorealistic dark nature
+- **Composition:** wide angle, dense overlapping elements, immersive deep perspective
+- **Color palette:** deep ocean blue, neon magenta, electric cyan, rusted metal browns
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260625_cyberpunk-coral-reef.jpg`
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
