@@ -236,8 +236,8 @@ export const ShaderBrowser: React.FC<{
               <div className="shader-header">
                 <h4>{shader.name}</h4>
                 <div className="shader-stars">
-                  {'★'.repeat(Math.round((shader.stars || shader.rating) || 0))}
-                  {'☆'.repeat(5 - Math.round((shader.stars || shader.rating) || 0))}
+                  {'★'.repeat(Math.round(shader.stars || shader.rating || 0))}
+                  {'☆'.repeat(5 - Math.round(shader.stars || shader.rating || 0))}
                 </div>
               </div>
               

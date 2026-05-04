@@ -256,7 +256,7 @@ const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, o
       <div className="card-actions">
         <div className="card-rating" onClick={e => e.stopPropagation()}>
           <StarRating 
-            rating={shader.stars ?? shader.rating} 
+            rating={shader.stars || shader.rating} 
             interactive 
             onRate={onRate}
           />

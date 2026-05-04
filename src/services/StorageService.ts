@@ -510,13 +510,11 @@ export class StorageService {
 
       const shaders: ShaderItem[] = await response.json();
       
-      // Add static URLs and normalise the `stars`→`rating` field
+      // Add static URLs and normalise the `stars`→`rating` field for backward compat
       shaders.forEach(shader => {
         shader.url = `${this.staticUrl}/image-effects/shaders/${shader.filename}`;
-        // Backend returns `stars` (aggregate average); surface it as `rating` for compat
-        if (shader.stars === undefined && (shader as any).stars !== undefined) {
-          shader.stars = (shader as any).stars;
-        }
+        // Backend returns `stars` (aggregate avg); surface it as `rating` for components
+        // that still reference the legacy field name.
         if (shader.rating === null || shader.rating === undefined) {
           shader.rating = shader.stars ?? null;
         }
