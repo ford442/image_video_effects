@@ -33,7 +33,14 @@ export interface ShaderItem {
   description: string;
   filename: string;
   tags: string[];
+  /** Legacy `rating` field (kept for backward compat). Populated from `stars` when fetching. */
   rating: number | null;
+  /** Aggregate star rating average (0–5). Comes from the backend's `stars` field. */
+  stars?: number;
+  /** Total number of ratings submitted. */
+  rating_count?: number;
+  /** Total play count. */
+  play_count?: number;
   source: string;
   format: string;
   has_errors: boolean;
@@ -503,9 +510,14 @@ export class StorageService {
 
       const shaders: ShaderItem[] = await response.json();
       
-      // Add static URLs to each shader
+      // Add static URLs and normalise the `stars`→`rating` field for backward compat
       shaders.forEach(shader => {
         shader.url = `${this.staticUrl}/image-effects/shaders/${shader.filename}`;
+        // Backend returns `stars` (aggregate avg); surface it as `rating` for components
+        // that still reference the legacy field name.
+        if (shader.rating === null || shader.rating === undefined) {
+          shader.rating = shader.stars ?? null;
+        }
       });
 
       this.updateOperation(opId, {
@@ -627,7 +639,8 @@ export class StorageService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Rate a shader (0-5 stars, 0 = has errors)
+   * Rate a shader (1–5 stars).
+   * Backend: POST /api/shaders/{id}/rate expects FormData with a `stars` field.
    */
   async rateShader(shaderId: string, rating: number, notes?: string): Promise<{
     success: boolean;
@@ -644,14 +657,12 @@ export class StorageService {
     });
 
     try {
-      const payload: RatingUpdate = { rating, notes };
+      const form = new FormData();
+      form.append('stars', String(rating));
       
       const response = await fetch(`${this.apiUrl}/api/shaders/${shaderId}/rate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        body: form,
       });
 
       if (!response.ok) {

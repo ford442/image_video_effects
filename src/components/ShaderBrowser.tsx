@@ -4,6 +4,7 @@ import {
   getShader,
   uploadShader,
   updateShaderMetadata,
+  rateShader,
   ShaderMetadata
 } from '../services/shaderApi';
 import './ShaderBrowser.css';
@@ -111,9 +112,8 @@ export const ShaderBrowser: React.FC<{
   const handleRate = async (shaderId: string, stars: number, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Note: Rating functionality needs backend support
-      await updateShaderMetadata(shaderId, { rating: stars });
-      // Fetch updated list to get the new rating
+      await rateShader(shaderId, stars);
+      // Refresh the list to reflect the new aggregate rating
       const newData = await listShaders();
       const updatedShader = newData.find(s => s.id === shaderId);
       if (updatedShader) {
@@ -236,8 +236,8 @@ export const ShaderBrowser: React.FC<{
               <div className="shader-header">
                 <h4>{shader.name}</h4>
                 <div className="shader-stars">
-                  {'★'.repeat(Math.round(shader.rating || 0))}
-                  {'☆'.repeat(5 - Math.round(shader.rating || 0))}
+                  {'★'.repeat(Math.round(shader.stars || shader.rating || 0))}
+                  {'☆'.repeat(5 - Math.round(shader.stars || shader.rating || 0))}
                 </div>
               </div>
               
@@ -295,7 +295,7 @@ export const ShaderBrowser: React.FC<{
                 Preview
               </button>
             </div>
-          ))}
+          ))
         )}
       </div>
       {previewOpen && previewShader && (

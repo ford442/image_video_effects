@@ -18,7 +18,14 @@ export interface ShaderMetadata {
   description: string;
   filename: string;
   tags: string[];
+  /** Deprecated: backend now uses `stars` (aggregate average). Kept for backward compat. */
   rating: number | null;
+  /** Aggregate star rating average (0–5) from the backend. */
+  stars?: number;
+  /** Number of ratings submitted. */
+  rating_count?: number;
+  /** Total play count. */
+  play_count?: number;
   thumbnail_url?: string;
   source: 'shadertoy' | 'upload' | 'created';
   original_id?: string;
@@ -188,23 +195,28 @@ export async function listShaders(): Promise<ShaderMetadata[]> {
 }
 
 /**
- * Get a shader by ID
+ * Get a shader's WGSL code by ID.
+ * Calls the `/code` endpoint which returns `{id, code, name}` and maps it
+ * to the legacy `ShaderContent` shape `{id, content, type}`.
  */
 export async function getShader(shaderId: string): Promise<ShaderContent> {
-  const res = await fetch(`${API_BASE}/api/shaders/${shaderId}`);
+  const res = await fetch(`${API_BASE}/api/shaders/${shaderId}/code`);
   if (!res.ok) throw new Error('Shader not found');
-  return res.json();
+  const { id, code } = await res.json() as { id: string; code: string; name?: string };
+  return { id, content: code, type: 'wgsl' };
 }
 
 /**
- * Upload a shader file
+ * Upload a shader file.
+ * Backend endpoint: POST /api/shaders/upload (multipart/form-data)
  */
 export async function uploadShader(
   file: File,
   name: string,
   author: string,
   description: string = '',
-  tags: string = ''
+  tags: string = '',
+  thumbnail?: File
 ): Promise<ShaderImportResult> {
   const form = new FormData();
   form.append('file', file);
@@ -212,8 +224,9 @@ export async function uploadShader(
   form.append('author', author);
   form.append('description', description);
   form.append('tags', tags);
+  if (thumbnail) form.append('thumbnail', thumbnail);
   
-  const res = await fetch(`${API_BASE}/api/shaders`, {
+  const res = await fetch(`${API_BASE}/api/shaders/upload`, {
     method: 'POST',
     body: form,
   });
@@ -223,24 +236,45 @@ export async function uploadShader(
 }
 
 /**
- * Update shader metadata
+ * Update shader metadata.
+ * Backend accepts a JSON body (MetaPatch model) via PUT /api/shaders/{id}.
  */
 export async function updateShaderMetadata(
   shaderId: string,
-  updates: Partial<Pick<ShaderMetadata, 'name' | 'description' | 'tags' | 'rating'>>
+  updates: Partial<Pick<ShaderMetadata, 'name' | 'description' | 'tags'>>
 ): Promise<{ success: boolean; id: string }> {
-  const form = new FormData();
-  if (updates.name) form.append('name', updates.name);
-  if (updates.description) form.append('description', updates.description);
-  if (updates.tags) form.append('tags', Array.isArray(updates.tags) ? updates.tags.join(',') : updates.tags);
-  if (updates.rating !== undefined && updates.rating !== null) form.append('rating', updates.rating.toString());
+  const body: Record<string, any> = {};
+  if (updates.name !== undefined) body.name = updates.name;
+  if (updates.tags !== undefined) body.tags = updates.tags;
   
   const res = await fetch(`${API_BASE}/api/shaders/${shaderId}`, {
     method: 'PUT',
-    body: form,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
   
   if (!res.ok) throw new Error('Update failed');
+  return res.json();
+}
+
+/**
+ * Rate a shader (1–5 stars).
+ * Backend accepts FormData with a `stars` field via POST /api/shaders/{id}/rate.
+ */
+export async function rateShader(
+  shaderId: string,
+  stars: number
+): Promise<{ id: string; stars: number; rating_count: number; your_rating: number }> {
+  if (stars < 1 || stars > 5) throw new RangeError('Stars must be between 1 and 5');
+  const form = new FormData();
+  form.append('stars', String(stars));
+  
+  const res = await fetch(`${API_BASE}/api/shaders/${shaderId}/rate`, {
+    method: 'POST',
+    body: form,
+  });
+  
+  if (!res.ok) throw new Error('Rating failed');
   return res.json();
 }
 
@@ -472,16 +506,17 @@ class ShaderApiService {
   }
 
   /**
-   * Get shader code from API or local
+   * Get shader code from API or local.
+   * Backend: GET /api/shaders/{id}/code → { id, code, name }
    */
   async getShaderCode(shaderId: string): Promise<string> {
     const cached = this.cache.get(`code:${shaderId}`);
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/shaders/${shaderId}/wgsl`);
+      const response = await fetch(`${this.baseUrl}/api/shaders/${shaderId}/code`);
       if (!response.ok) throw new Error('API error');
-      const code = await response.text();
+      const { code } = await response.json() as { id: string; code: string; name?: string };
       this.cache.set(`code:${shaderId}`, code);
       return code;
     } catch (error) {

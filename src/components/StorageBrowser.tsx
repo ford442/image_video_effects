@@ -256,7 +256,7 @@ const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, o
       <div className="card-actions">
         <div className="card-rating" onClick={e => e.stopPropagation()}>
           <StarRating 
-            rating={shader.rating} 
+            rating={shader.stars || shader.rating} 
             interactive 
             onRate={onRate}
           />
@@ -264,12 +264,6 @@ const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, o
         <button className="preview-btn small" onClick={e => { e.stopPropagation(); onPreview(); }}>
           Preview
         </button>
-      </div>
-        <StarRating 
-          rating={shader.rating} 
-          interactive 
-          onRate={onRate}
-        />
       </div>
       
       <button 
