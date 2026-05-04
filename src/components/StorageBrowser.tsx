@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStorage } from '../hooks/useStorage';
 import { ShaderItem, ImageItem, VideoItem } from '../services/StorageService';
-import { STORAGE_VPS_HOST, STORAGE_VPS_PORT, STATIC_NGINX_URL } from '../config/appConfig';
+import { STORAGE_VPS_HOST, STORAGE_VPS_PORT, STORAGE_API_URL, STATIC_NGINX_URL } from '../config/appConfig';
 import { DragDropUpload } from './DragDropUpload';
 import './StorageBrowser.css';
 
@@ -16,9 +16,21 @@ import './StorageBrowser.css';
 //  Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type TabType = 'shaders' | 'images' | 'videos' | 'audio' | 'operations';
+type TabType = 'shaders' | 'images' | 'videos' | 'audio' | 'library' | 'operations';
 type SortField = 'name' | 'date' | 'rating' | 'tags';
 type SortDirection = 'asc' | 'desc';
+
+interface LibraryItem {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  author?: string;
+  filename?: string;
+  tags?: string[];
+  updated_at?: string;
+  thumbnail_url?: string;
+}
 
 interface StorageBrowserProps {
   onSelectShader?: (shader: ShaderItem) => void;
@@ -189,13 +201,14 @@ const ConnectionStatus: React.FC<{
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface ShaderCardProps {
-  shader: ShaderItem;
+  shader: ShaderItem & { thumbnail_url?: string };
   isSelected: boolean;
   onSelect: () => void;
   onRate: (rating: number) => void;
+  onPreview: () => void;
 }
 
-const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, onRate }) => {
+const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, onRate, onPreview }) => {
   const [showDetails, setShowDetails] = useState(false);
   
   const formatDate = (dateStr: string) => {
@@ -212,6 +225,12 @@ const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, o
       className={`storage-card shader-card ${isSelected ? 'selected' : ''} ${shader.has_errors ? 'has-errors' : ''}`}
       onClick={onSelect}
     >
+      {shader.thumbnail_url ? (
+        <div className="shader-thumb-wrap">
+          <img src={shader.thumbnail_url} alt={shader.name} className="shader-thumb" />
+        </div>
+      ) : null}
+
       <div className="card-header">
         <h4 className="card-title">{shader.name}</h4>
         {shader.has_errors && <span className="error-badge" title="Has errors">⚠</span>}
@@ -234,7 +253,18 @@ const ShaderCard: React.FC<ShaderCardProps> = ({ shader, isSelected, onSelect, o
         )}
       </div>
       
-      <div className="card-rating" onClick={e => e.stopPropagation()}>
+      <div className="card-actions">
+        <div className="card-rating" onClick={e => e.stopPropagation()}>
+          <StarRating 
+            rating={shader.rating} 
+            interactive 
+            onRate={onRate}
+          />
+        </div>
+        <button className="preview-btn small" onClick={e => { e.stopPropagation(); onPreview(); }}>
+          Preview
+        </button>
+      </div>
         <StarRating 
           rating={shader.rating} 
           interactive 
@@ -467,10 +497,15 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
 }) => {
   const storage = useStorage();
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  const [libraryTypeFilter, setLibraryTypeFilter] = useState<'all' | 'song' | 'sample' | 'shader'>('all');
+  const [libraryError, setLibraryError] = useState<string | undefined>();
   
   // Load initial data
   useEffect(() => {
@@ -479,6 +514,30 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storage.isConnected]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (activeTab !== 'library') return;
+    setIsLoadingLibrary(true);
+    setLibraryError(undefined);
+
+    fetch(`${STORAGE_API_URL}/api/songs`)
+      .then(async res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((items: LibraryItem[]) => setLibraryItems(items))
+      .catch(error => {
+        setLibraryError(error instanceof Error ? error.message : 'Failed to load library');
+      })
+      .finally(() => setIsLoadingLibrary(false));
+  }, [activeTab]);
   
   // Filter and sort shaders
   const filteredShaders = useMemo(() => {
@@ -566,6 +625,7 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
   // Handle shader rate
   const handleShaderRate = async (shaderId: string, rating: number) => {
     await storage.rateShader(shaderId, rating);
+    storage.refreshShaders().catch(() => {});
   };
   
   // Handle file upload
@@ -574,8 +634,158 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
   };
   
   // Render tab content
+  const LibraryCard: React.FC<{ item: LibraryItem; onPreview: () => void }> = ({ item, onPreview }) => (
+    <div className="library-card">
+      <div className="library-thumb-wrap">
+        {item.thumbnail_url ? (
+          <img src={item.thumbnail_url} alt={item.name} className="library-thumb" />
+        ) : (
+          <div className="library-thumb-fallback">{item.type.toUpperCase()}</div>
+        )}
+      </div>
+      <div className="library-content">
+        <div className="library-title-row">
+          <h3>{item.name}</h3>
+          <span className="library-type-chip">{item.type}</span>
+        </div>
+        <p className="library-description">{item.description || 'No description available.'}</p>
+        <div className="library-meta-row">
+          {item.author && <span>{item.author}</span>}
+          {item.updated_at && <span>{new Date(item.updated_at).toLocaleDateString()}</span>}
+        </div>
+        <div className="library-tags">
+          {(item.tags || []).slice(0, 5).map(tag => (
+            <span key={tag} className="tag">{tag}</span>
+          ))}
+        </div>
+      </div>
+      <button className="preview-btn" onClick={onPreview}>Preview</button>
+    </div>
+  );
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewItem, setPreviewItem] = useState<LibraryItem | null>(null);
+
+  const renderPreviewModal = () => {
+    if (!isPreviewOpen || !previewItem) return null;
+    return (
+      <div className="preview-modal-backdrop" onClick={() => setIsPreviewOpen(false)}>
+        <div className="preview-modal" onClick={e => e.stopPropagation()}>
+          <button className="close-modal" onClick={() => setIsPreviewOpen(false)}>×</button>
+          <div className="preview-grid">
+            <div className="preview-panel preview-thumbnail">
+              <h3>{previewItem.name}</h3>
+              {previewItem.thumbnail_url ? (
+                <img src={previewItem.thumbnail_url} alt={previewItem.name} />
+              ) : (
+                <div className="thumbnail-fallback">No thumbnail available</div>
+              )}
+              <div className="preview-meta">
+                <span>{previewItem.type}</span>
+                {previewItem.author && <span>{previewItem.author}</span>}
+                {previewItem.updated_at && <span>{new Date(previewItem.updated_at).toLocaleDateString()}</span>}
+              </div>
+            </div>
+            <div className="preview-panel preview-webgpu">
+              <h3>Live WebGPU preview</h3>
+              <div className="webgpu-preview-placeholder">
+                <div className="preview-live-label">Live WebGPU renderer</div>
+                <div className="preview-placeholder-canvas" />
+              </div>
+              <p className="preview-copy">This preview is connected to the storage browser and can be used with the live canvas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const libraryTypes = useMemo(() => {
+    const counts = libraryItems.reduce((acc, item) => {
+      acc[item.type] = (acc[item.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return counts;
+  }, [libraryItems]);
+
+  const filteredLibrary = useMemo(() => {
+    return libraryItems.filter(item => {
+      const matchesType = libraryTypeFilter === 'all' || item.type === libraryTypeFilter;
+      const normalizedSearch = searchQuery.trim().toLowerCase();
+      const matchesSearch = normalizedSearch.length === 0 || [item.name, item.description, item.author, item.filename]
+        .filter(Boolean)
+        .some(value => value?.toLowerCase().includes(normalizedSearch));
+      return matchesType && matchesSearch;
+    });
+  }, [libraryItems, libraryTypeFilter, searchQuery]);
+
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'library':
+        return (
+          <div className="library-panel">
+            <div className="library-header">
+              <div className="library-filters">
+                <div className="filter-badges">
+                  {(['all', 'song', 'sample', 'shader'] as const).map(type => (
+                    <button
+                      key={type}
+                      className={`filter-chip ${libraryTypeFilter === type ? 'active' : ''}`}
+                      onClick={() => setLibraryTypeFilter(type)}
+                    >
+                      {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
+                      {type !== 'all' && libraryTypes[type] ? ` (${libraryTypes[type]})` : ''}
+                    </button>
+                  ))}
+                </div>
+                <div className="library-summary">
+                  {isLoadingLibrary ? (
+                    <span>Loading library…</span>
+                  ) : (
+                    <span>{filteredLibrary.length} items matched</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="library-actions">
+                <button onClick={() => setSearchInput('')} className="secondary-btn">Clear Search</button>
+              </div>
+            </div>
+
+            {libraryError && <div className="error-text">{libraryError}</div>}
+
+            {isLoadingLibrary ? (
+              <div className="cards-grid library">
+                {Array.from({ length: 8 }, (_, index) => (
+                  <div key={index} className="library-card skeleton">
+                    <div className="card-thumb skeleton-box" />
+                    <div className="card-body">
+                      <div className="skeleton-line short" />
+                      <div className="skeleton-line" />
+                      <div className="skeleton-tags" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredLibrary.length === 0 ? (
+              <div className="empty-state">No library items found</div>
+            ) : (
+              <div className="cards-grid library">
+                {filteredLibrary.map(item => (
+                  <LibraryCard
+                    key={item.id}
+                    item={item}
+                    onPreview={() => {
+                      setPreviewItem(item);
+                      setIsPreviewOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
       case 'shaders':
         return (
           <div className="tab-content">
@@ -630,6 +840,19 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
                     isSelected={selectedItem === shader.id}
                     onSelect={() => handleShaderSelect(shader)}
                     onRate={(rating) => handleShaderRate(shader.id, rating)}
+                    onPreview={() => {
+                      setPreviewItem({
+                        id: shader.id,
+                        name: shader.name,
+                        type: 'shader',
+                        description: shader.description,
+                        author: shader.author,
+                        filename: shader.filename,
+                        tags: shader.tags,
+                        thumbnail_url: shader.thumbnail_url,
+                      });
+                      setIsPreviewOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -826,6 +1049,12 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
             Videos ({storage.videos.length})
           </button>
           <button 
+            className={activeTab === 'library' ? 'active' : ''}
+            onClick={() => setActiveTab('library')}
+          >
+            Library ({libraryItems.length})
+          </button>
+          <button 
             className={activeTab === 'audio' ? 'active' : ''}
             onClick={() => setActiveTab('audio')}
           >
@@ -846,11 +1075,11 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
           <input
             type="text"
             placeholder={`Search ${activeTab}...`}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
           />
-          {searchQuery && (
-            <button className="clear-search" onClick={() => setSearchQuery('')}>
+          {searchInput && (
+            <button className="clear-search" onClick={() => setSearchInput('')}>
               ×
             </button>
           )}
@@ -869,6 +1098,7 @@ export const StorageBrowser: React.FC<StorageBrowserProps> = ({
       {/* Content */}
       <div className="browser-content">
         {renderTabContent()}
+        {renderPreviewModal()}
       </div>
       
       {/* Footer */}

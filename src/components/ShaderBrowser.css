@@ -78,6 +78,130 @@
   background: #0f3460;
 }
 
+.shader-card-thumb-wrap {
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  min-height: 140px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(233, 69, 96, 0.12);
+}
+
+.shader-card-thumb {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.shader-preview-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #e94560;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.shader-preview-btn:hover {
+  background: #d63b55;
+  transform: translateY(-1px);
+}
+
+.shader-detail-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.shader-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 25, 0.88);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.shader-preview-modal {
+  width: min(100%, 980px);
+  background: #11162f;
+  border: 1px solid rgba(233, 69, 96, 0.18);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.3rem;
+}
+
+.shader-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.preview-card {
+  background: rgba(20, 20, 40, 0.95);
+  border: 1px solid rgba(233, 69, 96, 0.14);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.shader-thumb-placeholder,
+.live-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.96), rgba(15, 15, 25, 0.96));
+  border-radius: 16px;
+  color: #a0a0a0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+  padding: 16px;
+  text-align: center;
+}
+
+.preview-card img {
+  width: 100%;
+  border-radius: 16px;
+  max-height: 320px;
+  object-fit: cover;
+}
+
+.preview-card p {
+  color: #c0c0d0;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .shader-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .shader-header {
   display: flex;
   justify-content: space-between;

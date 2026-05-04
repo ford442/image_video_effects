@@ -19,6 +19,7 @@ export interface ShaderMetadata {
   filename: string;
   tags: string[];
   rating: number | null;
+  thumbnail_url?: string;
   source: 'shadertoy' | 'upload' | 'created';
   original_id?: string;
   format?: 'glsl' | 'wgsl';

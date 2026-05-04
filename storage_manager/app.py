@@ -18,9 +18,11 @@ from enum import Enum
 import io
 from ftplib import FTP
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import StreamingResponse, PlainTextResponse, HTMLResponse, JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
 from aiocache import Cache
 
@@ -83,7 +85,51 @@ STORAGE_MAP = {
 gcs_client = None
 bucket = None
 io_executor = ThreadPoolExecutor(max_workers=20)
-cache = Cache(Cache.MEMORY)
+
+REDIS_URL = os.environ.get("REDIS_URL")
+REDIS_HOST = os.environ.get("REDIS_HOST")
+REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
+REDIS_DB = int(os.environ.get("REDIS_DB", "0"))
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
+
+RATE_LIMIT_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "120"))
+RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
+RATE_LIMIT_PATHS = [path.strip() for path in os.environ.get("RATE_LIMIT_PATHS", "/api").split(",") if path.strip()]
+RATE_LIMIT_IP_HEADER = os.environ.get("RATE_LIMIT_IP_HEADER", "X-Forwarded-For")
+
+
+def _create_cache_backend():
+    if REDIS_URL or REDIS_HOST:
+        try:
+            from urllib.parse import urlparse
+
+            if REDIS_URL:
+                parsed = urlparse(REDIS_URL)
+                host = parsed.hostname or "localhost"
+                port = parsed.port or 6379
+                password = parsed.password
+                db = int(parsed.path.lstrip("/") or 0)
+            else:
+                host = REDIS_HOST
+                port = REDIS_PORT
+                password = REDIS_PASSWORD
+                db = REDIS_DB
+
+            return Cache(
+                Cache.REDIS,
+                endpoint=host,
+                port=port,
+                password=password,
+                db=db,
+                namespace="storage_manager",
+                serializer={"class": "aiocache.serializers.JsonSerializer"},
+            )
+        except Exception as exc:
+            _log_event("redis_cache_init_failed", error=str(exc))
+
+    return Cache(Cache.MEMORY)
+
+cache = _create_cache_backend()
 
 # Per-resource asyncio locks (replace the former single global INDEX_LOCK).
 # Safe to initialise lazily in single-threaded asyncio; factory never yields.
@@ -95,6 +141,77 @@ def get_resource_lock(resource_type: str) -> asyncio.Lock:
     if resource_type not in RESOURCE_LOCKS:
         RESOURCE_LOCKS[resource_type] = asyncio.Lock()
     return RESOURCE_LOCKS[resource_type]
+
+
+async def clear_cache_for_type(item_type: Optional[str] = None) -> None:
+    """Invalidate cache entries for a specific asset type or clear everything."""
+    if item_type is None:
+        await cache.clear()
+        return
+
+    patterns = {"library:all"}
+    if item_type == "shader":
+        patterns.update({"shaders:list", "shader:", "library:shader"})
+    else:
+        patterns.add(f"library:{item_type}")
+
+    try:
+        keys = await cache.keys("*")
+    except Exception:
+        await cache.clear()
+        return
+
+    for key in keys:
+        if any(pattern in str(key) for pattern in patterns):
+            await cache.delete(key)
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, requests: int = RATE_LIMIT_REQUESTS, window: int = RATE_LIMIT_WINDOW, path_prefixes=None):
+        super().__init__(app)
+        self.requests = requests
+        self.window = window
+        self.path_prefixes = path_prefixes or RATE_LIMIT_PATHS
+        self.counters: Dict[str, List[float]] = {}
+        self.lock = asyncio.Lock()
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if not any(path.startswith(prefix) for prefix in self.path_prefixes):
+            return await call_next(request)
+
+        client_ip = request.headers.get(RATE_LIMIT_IP_HEADER, "")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        if not client_ip and request.client is not None:
+            client_ip = request.client.host
+        if not client_ip:
+            client_ip = "unknown"
+
+        key = f"{client_ip}:{request.method}:api"
+        now = time.time()
+
+        async with self.lock:
+            entry = self.counters.get(key)
+            if entry is None or entry[1] <= now:
+                self.counters[key] = [1, now + self.window]
+            else:
+                entry[0] += 1
+            count, reset = self.counters[key]
+
+        if count > self.requests:
+            retry_after = max(1, int(reset - now))
+            return PlainTextResponse(
+                "Too many requests",
+                status_code=429,
+                headers={"Retry-After": str(retry_after)},
+            )
+
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(self.requests)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, self.requests - count))
+        response.headers["X-RateLimit-Reset"] = str(int(reset))
+        return response
 
 
 # ========================= INTENT STORE =========================
@@ -259,6 +376,9 @@ if _OTEL_AVAILABLE:
     except Exception:
         pass
 
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
 # ========================= CORS =========================
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -310,6 +430,8 @@ class MetaData(BaseModel):
     stars: Optional[float] = None
     rating_count: Optional[int] = None
     play_count: Optional[int] = None
+    thumbnail: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
 # --- GCS I/O HELPERS ---
 def _read_json_sync(blob_path):
@@ -1254,6 +1376,9 @@ async def list_shaders(
             shader.setdefault("stars", 0.0)
             shader.setdefault("rating_count", 0)
             shader.setdefault("play_count", 0)
+            if shader.get("thumbnail"):
+                thumbnail_path = f"{config['folder']}{shader['thumbnail']}"
+                shader["thumbnail_url"] = bucket.blob(thumbnail_path).public_url
 
         await cache.set(cache_key, index, ttl=300)
         return index
@@ -1277,6 +1402,9 @@ async def get_shader_meta(shader_id: str):
     entry.setdefault("rating_count", 0)
     entry.setdefault("play_count", 0)
     entry.setdefault("coordinate", None)
+    if entry.get("thumbnail"):
+        thumbnail_path = f"{config['folder']}{entry['thumbnail']}"
+        entry["thumbnail_url"] = bucket.blob(thumbnail_path).public_url
     
     return entry
 
@@ -1310,8 +1438,7 @@ async def rate_shader(shader_id: str, stars: float = Form(...)):
             entry["rating_count"] = new_count
             
             await run_io(_write_json_sync, index_path, index)
-            await cache.delete(f"shader:{shader_id}")
-            await cache.delete("shaders:list")
+            await clear_cache_for_type("shader")
             
             return {
                 "id": shader_id,
@@ -1347,8 +1474,7 @@ async def record_shader_play(shader_id: str):
             entry["last_played"] = now
             
             await run_io(_write_json_sync, index_path, index)
-            await cache.delete(f"shader:{shader_id}")
-            await cache.delete("shaders:list")
+            await clear_cache_for_type("shader")
             
             return {
                 "success": True,
@@ -1366,6 +1492,7 @@ async def record_shader_play(shader_id: str):
 @app.post("/api/shaders/upload")
 async def upload_shader(
     file: UploadFile = File(...),
+    thumbnail: UploadFile = File(None),
     name: str = Form(...),
     description: str = Form(""),
     tags: str = Form(""),
@@ -1375,6 +1502,8 @@ async def upload_shader(
     """Upload a .wgsl shader file with metadata."""
     if not file.filename.endswith(".wgsl"):
         raise HTTPException(400, "Only .wgsl files allowed")
+    if thumbnail is not None and not thumbnail.filename.lower().endswith(".png"):
+        raise HTTPException(400, "Only .png thumbnails are supported")
     
     shader_id = str(uuid.uuid4())
     storage_filename = f"{shader_id}.wgsl"
@@ -1393,13 +1522,22 @@ async def upload_shader(
         "coordinate": coordinate,
         "stars": 0.0,
         "rating_count": 0,
-        "play_count": 0
+        "play_count": 0,
+        "thumbnail": None,
+        "thumbnail_url": None
     }
     
     async with get_resource_lock("shader"):
         try:
             blob = bucket.blob(full_path)
             await run_io(blob.upload_from_file, file.file, content_type="text/plain")
+
+            if thumbnail is not None:
+                thumb_path = f"{config['folder']}{shader_id}.png"
+                thumb_blob = bucket.blob(thumb_path)
+                await run_io(thumb_blob.upload_from_file, thumbnail.file, content_type="image/png")
+                meta["thumbnail"] = f"{shader_id}.png"
+                meta["thumbnail_url"] = thumb_blob.public_url
             
             # Add to index
             index = await run_io(_read_json_sync, config["index"])
@@ -1408,10 +1546,35 @@ async def upload_shader(
             index.insert(0, meta)
             await run_io(_write_json_sync, config["index"], index)
             
-            await cache.delete("shaders:list")
+            await clear_cache_for_type("shader")
             return {"success": True, "id": shader_id, "meta": meta}
         except Exception as e:
             raise HTTPException(500, f"Upload failed: {str(e)}")
+
+@app.get("/api/shaders/{shader_id}/thumbnail")
+async def get_shader_thumbnail(shader_id: str):
+    """Return the shader thumbnail image if available."""
+    config = STORAGE_MAP["shader"]
+    index = await run_io(_read_json_sync, config["index"])
+    if not isinstance(index, list):
+        raise HTTPException(500, "Shader index corrupted")
+
+    entry = next((s for s in index if s.get("id") == shader_id), None)
+    if not entry or not entry.get("thumbnail"):
+        raise HTTPException(404, "Thumbnail not found")
+
+    thumb_path = f"{config['folder']}{entry['thumbnail']}"
+    blob = bucket.blob(thumb_path)
+    if not await run_io(blob.exists):
+        raise HTTPException(404, "Thumbnail not found")
+
+    def iterfile():
+        with blob.open("rb") as f:
+            while chunk := f.read(1024 * 1024):
+                yield chunk
+
+    return StreamingResponse(iterfile(), media_type="image/png")
+
 
 @app.get("/api/shaders/{shader_id}/code")
 async def get_shader_code(shader_id: str):
@@ -1470,8 +1633,7 @@ async def update_shader_metadata(shader_id: str, payload: MetaPatch):
             
             if updated:
                 await run_io(_write_json_sync, index_path, index)
-                await cache.delete(f"shader:{shader_id}")
-                await cache.delete("shaders:list")
+                await clear_cache_for_type("shader")
             
             return {"success": True, "id": shader_id, "updated": updated}
             
@@ -1512,7 +1674,7 @@ async def sync_shader_coordinates(payload: CoordinateSyncPayload):
             
             if updated > 0:
                 await run_io(_write_json_sync, index_path, index)
-                await cache.delete("shaders:list")
+                await clear_cache_for_type("shader")
             
             return {
                 "success": True,
@@ -1548,6 +1710,12 @@ async def list_library(
         try:
             items = await run_io(_read_json_sync, config["index"])
             if isinstance(items, list):
+                if t == "shader":
+                    for item in items:
+                        if item.get("thumbnail"):
+                            item["thumbnail_url"] = bucket.blob(
+                                f"{STORAGE_MAP['shader']['folder']}{item['thumbnail']}"
+                            ).public_url
                 results.extend(items)
         except Exception as e:
             logging.error(f"Error listing {t}: {e}")
@@ -1597,7 +1765,7 @@ async def upload_item(payload: ItemPayload):
                 _write_json_sync(config["index"], current)
             
             await run_io(_update_index)
-            await cache.delete(f"{item_type}:list")
+            await clear_cache_for_type(item_type)
             return {"success": True, "id": item_id}
         except Exception as e:
             raise HTTPException(500, f"Upload failed: {str(e)}")
@@ -1638,7 +1806,7 @@ async def update_item(item_id: str, payload: ItemPayload):
                 _write_json_sync(config["index"], current)
             
             await run_io(_update_index_logic)
-            await cache.clear()
+            await clear_cache_for_type(item_type)
             return {"success": True, "id": item_id, "action": "updated"}
         except Exception as e:
             raise HTTPException(500, f"Update failed: {str(e)}")
@@ -1654,6 +1822,10 @@ async def get_item_metadata(item_id: str, type: Optional[str] = Query(None)):
         if isinstance(index_data, list):
             entry = next((item for item in index_data if item.get("id") == item_id), None)
             if entry:
+                if t == "shader" and entry.get("thumbnail"):
+                    entry["thumbnail_url"] = bucket.blob(
+                        f"{STORAGE_MAP['shader']['folder']}{entry['thumbnail']}"
+                    ).public_url
                 return entry
     raise HTTPException(404, "Item not found")
 
@@ -1698,7 +1870,7 @@ async def patch_song(item_id: str, patch: MetaPatch):
                 updated[field] = entry[field]
             
             await run_io(_write_json_sync, index_path, index)
-            await cache.clear()
+            await clear_cache_for_type("song")
             
             return {"status": "success", "item_id": item_id, "updated": updated}
         except Exception as e:
@@ -2496,7 +2668,7 @@ async def sync_gcs_storage():
         except Exception as e:
             report[item_type] = {"error": str(e)}
 
-    await cache.clear()
+    await clear_cache_for_type(None)
     return report
 
 @app.post("/api/admin/seed-test-samples")
@@ -2638,7 +2810,7 @@ async def upload_shader(
                 index = []
             index.insert(0, meta)
             await run_io(_write_json_sync, config["index"], index)
-            await cache.delete("shaders:list")
+            await clear_cache_for_type("shader")
         
         return {"success": True, "id": shader_id, "meta": meta}
     except Exception as e:
@@ -2740,7 +2912,7 @@ async def sync_ftp_to_gcs():
 
             if report["added"] > 0:
                 await run_io(_write_json_sync, config["index"], index)
-            await cache.clear()
+            await clear_cache_for_type(None)
         except Exception as e:
             raise HTTPException(500, f"FTP sync failed: {str(e)}")
 

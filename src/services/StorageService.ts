@@ -37,6 +37,7 @@ export interface ShaderItem {
   source: string;
   format: string;
   has_errors: boolean;
+  thumbnail_url?: string;
   url?: string;
 }
 

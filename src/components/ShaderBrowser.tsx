@@ -76,9 +76,13 @@ export const ShaderBrowser: React.FC<{
   selectedId?: string;
 }> = ({ onSelect, selectedId }) => {
   const [shaders, setShaders] = useState<ShaderMeta[]>([]);
+  const [searchText, setSearchText] = useState('');
   const [filter, setFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(true);
+  const [previewShader, setPreviewShader] = useState<ShaderMeta | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDesc, setEditDesc] = useState('');
   const [editTags, setEditTags] = useState('');
@@ -87,6 +91,11 @@ export const ShaderBrowser: React.FC<{
   useEffect(() => {
     loadShaders();
   }, [category]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearchQuery(searchText), 250);
+    return () => window.clearTimeout(timer);
+  }, [searchText]);
 
   const loadShaders = async () => {
     setLoading(true);
@@ -168,11 +177,14 @@ export const ShaderBrowser: React.FC<{
     }
   };
 
-  const filteredShaders = shaders.filter(s => 
-    s.name.toLowerCase().includes(filter.toLowerCase()) ||
-    s.description.toLowerCase().includes(filter.toLowerCase()) ||
-    s.tags.some(t => t.toLowerCase().includes(filter.toLowerCase()))
-  );
+  const filteredShaders = shaders.filter(s => {
+    const query = searchQuery || filter;
+    return (
+      s.name.toLowerCase().includes(query.toLowerCase()) ||
+      s.description.toLowerCase().includes(query.toLowerCase()) ||
+      s.tags.some(t => t.toLowerCase().includes(query.toLowerCase()))
+    );
+  });
 
   return (
     <div className="shader-browser">
@@ -180,8 +192,8 @@ export const ShaderBrowser: React.FC<{
         <input 
           type="text" 
           placeholder="Search shaders..." 
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
+          value={searchText}
+          onChange={e => setSearchText(e.target.value)}
           className="shader-search"
         />
         <select 
@@ -215,6 +227,12 @@ export const ShaderBrowser: React.FC<{
               className={`shader-card ${selectedId === shader.id ? 'selected' : ''}`}
               onClick={() => handleSelect(shader)}
             >
+              {shader.thumbnail_url ? (
+                <div className="shader-card-thumb-wrap">
+                  <img src={shader.thumbnail_url} alt={shader.name} className="shader-card-thumb" />
+                </div>
+              ) : null}
+
               <div className="shader-header">
                 <h4>{shader.name}</h4>
                 <div className="shader-stars">
@@ -270,10 +288,45 @@ export const ShaderBrowser: React.FC<{
                   </button>
                 ))}
               </div>
+              <button
+                className="shader-preview-btn"
+                onClick={e => { e.stopPropagation(); setPreviewShader(shader); setPreviewOpen(true); }}
+              >
+                Preview
+              </button>
             </div>
-          ))
+          ))}
         )}
       </div>
+      {previewOpen && previewShader && (
+        <PreviewModal shader={previewShader} onClose={() => setPreviewOpen(false)} />
+      )}
     </div>
   );
 };
+
+const PreviewModal: React.FC<{ shader: ShaderMeta; onClose: () => void }> = ({ shader, onClose }) => (
+  <div className="shader-preview-backdrop" onClick={onClose}>
+    <div className="shader-preview-modal" onClick={e => e.stopPropagation()}>
+      <button className="modal-close" onClick={onClose}>×</button>
+      <div className="shader-preview-grid">
+        <section className="preview-card preview-thumb">
+          <h3>{shader.name}</h3>
+          {shader.thumbnail_url ? (
+            <img src={shader.thumbnail_url} alt={shader.name} />
+          ) : (
+            <div className="shader-thumb-placeholder">No thumbnail available</div>
+          )}
+          <p>{shader.description}</p>
+        </section>
+        <section className="preview-card preview-live">
+          <h3>Live WebGPU renderer</h3>
+          <div className="live-preview-placeholder">
+            <span>Live preview canvas</span>
+          </div>
+          <p>Thumbnail and live preview are shown side-by-side to help evaluate shader art and performance.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+);
