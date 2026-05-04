@@ -3730,6 +3730,67 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20260625_cyberpunk-coral-reef.jpg`
 - **License / Attribution:** CC0
 
+
+### Suggestion: Neon Bioluminescent Forest
+- **Date:** 2026-05-18
+- **Prompt:** "A dense, ethereal forest illuminated entirely by neon bioluminescence. Giant, glowing blue fungi and iridescent ferns cast a cool light over the forest floor. The mood is mysterious and magical. Soft, volumetric fog rolls through the trees. Shot on a 35mm lens with shallow depth of field, highlighting a single glowing mushroom in the foreground while the background blurs smoothly into a mystical haze."
+- **Negative prompt:** "daylight, sun, photorealistic, modern, buildings, people"
+- **Tags:** fantasy, bioluminescent, nature, mystical, glowing
+- **Style / Reference:** digital art, fantasy concept art, highly detailed
+- **Composition:** ground level shot, rule of thirds, shallow depth of field
+- **Color palette:** neon blue, cyan, deep magenta, dark emerald green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_neon-forest.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Cybernetic Zen Garden
+- **Date:** 2026-05-18
+- **Prompt:** "A traditional Japanese zen garden reimagined in a cyberpunk aesthetic. The raked sand is made of glowing optical fibers, and the large rocks are polished obsidian with glowing circuitry patterns. A robotic cherry blossom tree drops holographic pink petals. Soft neon lighting from the tree illuminates the dark environment. Cinematic lighting, low angle shot, highly detailed, moody."
+- **Negative prompt:** "sunlight, natural, traditional, daytime, lowres, simple"
+- **Tags:** cyberpunk, zen, garden, futuristic, neon
+- **Style / Reference:** cyberpunk, photorealistic 3D render, octane render
+- **Composition:** wide shot, low angle, symmetrical balance
+- **Color palette:** obsidian black, neon pink, glowing cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_cyber-zen-garden.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Steampunk Astrolabe Room
+- **Date:** 2026-05-18
+- **Prompt:** "A grand, dimly lit study room filled with brass and copper steampunk machinery. In the center, a massive, intricate astrolabe glows with golden ethereal light, mapping out floating constellations. Warm, dusty light filters through a large gothic window, highlighting the dust motes in the air. Highly detailed, rich textures, volumetric lighting, shot with an 85mm lens for intimate focus."
+- **Negative prompt:** "modern, clean, daylight, messy, futuristic"
+- **Tags:** steampunk, interior, magic, brass, gears
+- **Style / Reference:** steampunk concept art, highly detailed illustration
+- **Composition:** eye-level, central focus, depth of field blurring the background
+- **Color palette:** warm gold, copper, brass, deep shadows, amber
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260518_steampunk-astrolabe.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Quantum Black Hole Accretion
+- **Date:** 2026-05-18
+- **Prompt:** "A close-up, dramatic view of a glowing, swirling accretion disk around a quantum black hole in deep space. Intense, fiery plasma streaks bend due to gravitational lensing. The mood is awe-inspiring and terrifying. High contrast, cinematic lighting, extreme detail on the glowing gas and dust, capturing the intense energy of the singularity."
+- **Negative prompt:** "earth, planets, cartoon, flat, stars, low quality"
+- **Tags:** space, sci-fi, cosmic, blackhole, quantum
+- **Style / Reference:** realistic astrophysics visualization, cinematic sci-fi
+- **Composition:** close-up, dynamic swirl, off-center singularity
+- **Color palette:** intense orange, bright yellow, deep violet, pure black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260518_quantum-blackhole.jpg`
+- **License / Attribution:** CC0
+
+### Suggestion: Crystal Cavern of Echoes
+- **Date:** 2026-05-18
+- **Prompt:** "An immense underground cavern entirely lined with gigantic, perfectly geometric quartz crystals. A subterranean river of glowing liquid silver flows through the center. The mood is serene and ancient. Soft, ethereal light reflects endlessly through the crystal facets. Wide angle lens, deep depth of field capturing the vast scale of the cavern, sharp focus on the reflections."
+- **Negative prompt:** "surface, sky, people, dirt, murky, noisy"
+- **Tags:** crystal, cave, subterranean, fantasy, serene
+- **Style / Reference:** epic fantasy landscape, hyper-detailed 3D environment
+- **Composition:** wide angle, deep depth of field, leading lines of the river
+- **Color palette:** silver, clear white, pale amethyst, deep subterranean blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_crystal-cavern.jpg`
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
