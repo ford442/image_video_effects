@@ -1,0 +1,10 @@
+{
+  "id": "gen-holographic-lens-flare-matrix",
+  "name": "Holographic Lens-Flare Matrix",
+  "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field.",
+  "author": "Jules",
+  "tags": ["generative", "holographic", "matrix"],
+  "coordinate": 875,
+  "category": "generative",
+  "parameters": []
+}
