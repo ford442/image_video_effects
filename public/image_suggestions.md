@@ -3791,6 +3791,67 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** `public/images/suggestions/20260518_crystal-cavern.jpg`
 - **License / Attribution:** CC0
 
+
+### Suggestion: Fractal Geode Core
+- **Date:** 2026-11-26
+- **Prompt:** "A hyper-detailed macro photograph of a shattered geode revealing an impossibly complex, fractal-patterned core made of glowing, iridescent quartz and deep purple amethyst. The core structure exhibits infinite recursive self-similarity, glowing faintly from within. The lighting is focused and dramatic, highlighting the sharp edges of the fractured outer stone shell while the inner fractal maze remains softly illuminated. The mood is ancient, magical, and mathematically perfect. Captured with a 100mm macro lens, ultra-sharp focus on the innermost crystalline structures."
+- **Negative prompt:** "smooth, dull, low resolution, flat lighting, organic, blurry"
+- **Tags:** macro, fractal, crystal, glowing, magical
+- **Style / Reference:** photorealistic macro photography, fractal art
+- **Composition:** close-up, sharp center focus, detailed foreground
+- **Color palette:** deep purple amethyst, glowing cyan, iridescent pastels, dark grey stone
+- **Aspect ratio:** 1:1
+- **Reference images:** none
+- **License / Attribution:** CC0
+
+### Suggestion: Biopunk Bioluminescent Swamp
+- **Date:** 2026-11-26
+- **Prompt:** "A dense, murky swamp scene heavily fused with overgrown biopunk elements. Massive, dripping mangrove roots are intertwined with pulsating, semi-translucent tubes carrying a glowing neon green fluid. Giant bioluminescent mushrooms and carnivorous flora emit a sickly magenta light. The lighting is completely dependent on the bioluminescent glow cutting through a thick, eerie fog. The mood is toxic, untamed, and alien. Captured with a wide-angle 24mm lens to emphasize the sprawling, chaotic ecosystem."
+- **Negative prompt:** "daylight, clean, modern technology, bright sun, peaceful, realistic nature"
+- **Tags:** biopunk, swamp, bioluminescent, alien, toxic
+- **Style / Reference:** biopunk concept art, dark sci-fi environment
+- **Composition:** wide angle, deep perspective, dense overlapping elements
+- **Color palette:** toxic neon green, vibrant magenta, murky brown, deep shadow black
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+
+### Suggestion: Steampunk Clockwork Hummingbird
+- **Date:** 2026-11-26
+- **Prompt:** "An incredibly intricate, macro shot of a mechanical hummingbird hovering mid-air near a wilted brass flower. The mechanical subject is constructed of polished copper wire, tiny ticking watch gears, and delicate stained-glass wings catching the light. The lighting is warm, directional studio lighting, creating sharp specular highlights on the brass edges and deep shadows between the gears. The mood is intricate, wondrous, and antique. Captured with a 100mm macro lens and a fast shutter speed to freeze the rapidly beating stained-glass wings."
+- **Negative prompt:** "organic, flesh, real bird, feathers, daylight, blurry"
+- **Tags:** macro, steampunk, mechanical, bird, brass
+- **Style / Reference:** photorealistic macro photography, steampunk aesthetic
+- **Composition:** extreme close-up, dynamic hovering pose, shallow depth of field
+- **Color palette:** warm brass, polished copper, deep amber, vibrant stained-glass colors
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+
+### Suggestion: Aerogel Cyberpunk High-Rise
+- **Date:** 2026-11-26
+- **Prompt:** "A towering cyberpunk high-rise building constructed entirely from massive, glowing blocks of weightless, translucent blue aerogel. The building is enveloped in thick, smoggy rain and surrounded by flying neon-lit vehicles. The lighting is a striking mix of the soft, internal glowing refractions of the aerogel and the harsh, bright neon pink and cyan signs attached to its exterior. The mood is dystopian yet highly advanced and ethereal. Captured from a low angle on the wet street, looking up at the colossal structure piercing the dark, stormy sky."
+- **Negative prompt:** "concrete, brick, daylight, clear sky, sunny, natural"
+- **Tags:** cyberpunk, architecture, aerogel, neon, dystopian
+- **Style / Reference:** cinematic sci-fi visualization, high-contrast city photography
+- **Composition:** low angle looking up, towering scale, atmospheric depth
+- **Color palette:** ghostly aerogel blue, neon magenta, electric cyan, rainy greys
+- **Aspect ratio:** 9:16
+- **Reference images:** none
+- **License / Attribution:** CC0
+
+### Suggestion: Italian Futurism Asteroid Impact
+- **Date:** 2026-11-26
+- **Prompt:** "A cataclysmic asteroid impact on a barren planet depicted in the harsh, fragmented style of Italian Futurism. The destructive event is deconstructed into aggressive, jagged diagonal lines and overlapping geometric planes that capture the kinetic energy and overwhelming speed of the collision. The lighting is intense and directional, casting stark, jagged shadows that enhance the splintered geometry of the composition. The mood is energetic, destructive, and modern. Captured with a dynamic, tilted perspective to emphasize raw motion and violent impact."
+- **Negative prompt:** "realistic space, soft curves, calm, photography, peaceful, organic, smooth"
+- **Tags:** abstract, art, italian futurism, space, asteroid, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** blazing orange, steel greys, harsh stark white, chaotic black
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
