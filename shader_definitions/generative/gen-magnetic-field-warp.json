@@ -1,0 +1,15 @@
+{
+  "id": "gen-magnetic-field-warp",
+  "name": "Magnetic Field Warp",
+  "author": "Jules",
+  "description": "Treat the image as charged particles warped by a magnetic field.",
+  "category": "generative",
+  "type": "wgsl",
+  "coordinate": 876,
+  "url": "shaders/gen-magnetic-field-warp.wgsl",
+  "tags": [
+    "magnetic",
+    "warp",
+    "audio-reactive"
+  ]
+}
