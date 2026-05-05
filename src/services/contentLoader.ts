@@ -37,10 +37,18 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
     try {
         const response = await fetch(IMAGE_MANIFEST_URL);
         if (response.ok) {
-            const data = await response.json() as ApiManifestItem[];
-            if (!Array.isArray(data)) {
-                throw new TypeError(`API response is not an array, received: ${typeof data}`);
+            const responseData = await response.json();
+            
+            // Handle both array and wrapped response formats
+            let data: ApiManifestItem[];
+            if (Array.isArray(responseData)) {
+                data = responseData;
+            } else if (responseData && typeof responseData === 'object' && Array.isArray(responseData.images)) {
+                data = responseData.images;
+            } else {
+                throw new TypeError(`API response is not an array or wrapped array, received: ${typeof responseData}`);
             }
+            
             manifest = data.map((item) => ({
                 url: item.url,
                 tags: item.description ? item.description.toLowerCase().split(/[\s,]+/) : [],

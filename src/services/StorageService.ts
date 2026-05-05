@@ -508,7 +508,17 @@ export class StorageService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const shaders: ShaderItem[] = await response.json();
+      const responseData = await response.json();
+      
+      // Handle both array and wrapped response formats
+      let shaders: ShaderItem[];
+      if (Array.isArray(responseData)) {
+        shaders = responseData;
+      } else if (responseData && typeof responseData === 'object' && Array.isArray(responseData.shaders)) {
+        shaders = responseData.shaders;
+      } else {
+        throw new Error('Invalid response format');
+      }
       
       // Add static URLs and normalise the `stars`→`rating` field for backward compat
       shaders.forEach(shader => {
@@ -573,7 +583,17 @@ export class StorageService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const images: ImageItem[] = await response.json();
+      const responseData = await response.json();
+      
+      // Handle both array and wrapped response formats
+      let images: ImageItem[];
+      if (Array.isArray(responseData)) {
+        images = responseData;
+      } else if (responseData && typeof responseData === 'object' && Array.isArray(responseData.images)) {
+        images = responseData.images;
+      } else {
+        throw new Error('Invalid response format');
+      }
 
       this.updateOperation(opId, {
         status: 'completed',

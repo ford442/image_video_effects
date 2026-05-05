@@ -66,7 +66,17 @@ export class ShaderRatingService {
     try {
       const response = await fetch(`${STORAGE_MANAGER_URL}/api/shaders?sort_by=rating`);
       if (!response.ok) throw new Error('Failed to fetch ratings');
-      const ratings: ShaderRating[] = await response.json();
+      const responseData = await response.json();
+      
+      // Handle both array and wrapped response formats
+      let ratings: ShaderRating[];
+      if (Array.isArray(responseData)) {
+        ratings = responseData;
+      } else if (responseData && typeof responseData === 'object' && Array.isArray(responseData.shaders)) {
+        ratings = responseData.shaders;
+      } else {
+        throw new Error('Invalid response format');
+      }
       
       // Update cache
       ratings.forEach(r => this.cache.set(r.id, r));
