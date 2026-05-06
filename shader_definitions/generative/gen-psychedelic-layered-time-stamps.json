@@ -1,0 +1,39 @@
+{
+    "id": "gen-psychedelic-layered-time-stamps",
+    "name": "Psychedelic Layered Time-Stamps",
+    "wgsl_code": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
+    "tags": [
+        "generative",
+        "psychedelic",
+        "time",
+        "layers",
+        "audio-reactive"
+    ],
+    "category": "generative",
+    "description": "Overlay multiple delayed copies of the video, each with a different color offset and evolving distortion.",
+    "coordinate": 877,
+    "source": "Jules",
+    "parameters": [
+        {
+            "name": "Layer Count",
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.01,
+            "default": 0.5
+        },
+        {
+            "name": "Delay Scale",
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.01,
+            "default": 0.5
+        },
+        {
+            "name": "Distortion Amp",
+            "min": 0.0,
+            "max": 0.1,
+            "step": 0.001,
+            "default": 0.02
+        }
+    ]
+}
