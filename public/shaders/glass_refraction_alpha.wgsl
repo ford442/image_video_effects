@@ -125,18 +125,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Parameters
     let transparency = 0.3 + u.zoom_params.x * 0.5; // 0.3-0.8
-    let dispersion = u.zoom_params.y * 0.1 * (1.0 + mouseGravity * 2.0); // Chromatic aberration
     let thicknessScale = 0.5 + u.zoom_params.z; // Absorption thickness
     let roughness = u.zoom_params.w * 0.1; // Surface roughness
-    
+
     let mousePos = (u.zoom_config.yz - 0.5) * 2.0;
     let audioPulse = u.zoom_config.w;
     let isMouseDown = audioPulse > 0.5;
     let mouseUV = u.zoom_config.yz;
     let distToMouse = length(uv - mouseUV);
     let mouseGravity = 1.0 - smoothstep(0.0, 0.35, distToMouse);
-    let clickRipple = sin(distToMouse * 40.0 - time * 8.0) * exp(-distToMouse * 4.0) * select(0.0, 1.0, isMouseDown);
-    
+    let dispersion = u.zoom_params.y * 0.1 * (1.0 + mouseGravity * 2.0); // Chromatic aberration
     // Camera ray
     let ro = vec3<f32>(mousePos.x * 0.5, mousePos.y * 0.5, -1.5);
     let rd = normalize(vec3<f32>(uv.x - 0.5, uv.y - 0.5, 1.0));
