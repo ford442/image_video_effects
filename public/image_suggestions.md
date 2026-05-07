@@ -3852,6 +3852,71 @@ To help organize prompts, please use tags from the following categories:
 - **Reference images:** none
 - **License / Attribution:** CC0
 
+### Suggestion: Bioluminescent Subterranean Lake
+- **Date:** 2026-11-27
+- **Prompt:** "A vast, utterly still subterranean lake hidden deep within an ancient limestone cavern. The water acts as a perfect mirror, reflecting thousands of glowing blue and green bioluminescent glowworms hanging from the ceiling like a starry night sky. The lighting is low-key, entirely dependent on the cold, ethereal glow of the worms, creating a serene, magical, and timeless mood. Captured with a wide-angle 14mm lens on a tripod, utilizing a long exposure to capture the faint light and perfectly smooth water surface."
+- **Negative prompt:** "daylight, sun, bright, ripples, people, modern, messy, blurry"
+- **Tags:** nature, underground, bioluminescent, serene, lake
+- **Style / Reference:** long-exposure nature photography, National Geographic style
+- **Composition:** perfectly symmetrical horizontal reflection, wide expansive view
+- **Color palette:** glowing cyan, soft neon green, deep cavernous black, pale limestone grey
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of large-scale horizontal reflections (water mirror) under extremely low-light, bioluminescent conditions.
+
+### Suggestion: Steampunk Clockwork Beetle Macro
+- **Date:** 2026-11-27
+- **Prompt:** "An incredibly detailed, extreme macro photograph of a mechanical rhinoceros beetle constructed from polished brass, copper wires, and tiny ticking watch gears. The mechanical subject rests on a piece of dark, aged parchment. The lighting is warm, directional studio lighting that grazes the metallic surface, creating sharp specular highlights on the brass edges and deep, dark shadows between the gears. The mood is intricate, menacing, and antique. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the glowing amber glass eye of the beetle."
+- **Negative prompt:** "organic, flesh, real insect, modern metal, bright daylight, soft lighting"
+- **Tags:** macro, steampunk, mechanical, insect, brass
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** extreme close-up, diagonal leading line, shallow depth of field
+- **Color palette:** warm brass, polished copper, deep mahogany brown, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Ideal for pushing the model's detailing capabilities on micro-mechanical parts and bokeh effects.
+
+### Suggestion: Art Nouveau Elven Archway
+- **Date:** 2026-11-27
+- **Prompt:** "A majestic, intricate archway deep in an ancient forest, designed with the sweeping, elegant curves and whiplash lines of the Art Nouveau style. The archway is carved from pale, pearlescent stone and overgrown with glowing, silver-leafed vines. The lighting is soft, magical twilight filtering through the dense canopy, catching the pearlescent surface of the stone and casting a gentle, ethereal glow. The mood is elegant, ancient, and enchanting. Captured with a 35mm lens, balancing the intricate architectural details with the surrounding magical forest."
+- **Negative prompt:** "straight lines, modern, harsh lighting, daylight, messy, chaotic, sci-fi"
+- **Tags:** fantasy, architecture, art nouveau, forest, magical
+- **Style / Reference:** high fantasy concept art, Alphonse Mucha inspired architecture
+- **Composition:** centered archway, leading lines, balanced asymmetry
+- **Color palette:** pearlescent white, glowing silver, deep forest greens, twilight purple
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests the AI's ability to naturally form specific architectural styles (Art Nouveau curves) out of stone and magical vegetation.
+
+### Suggestion: Cyberpunk Neon Hover-Taxi
+- **Date:** 2026-11-27
+- **Prompt:** "A sleek, battered hover-taxi speeding through the rain-slicked, neon-lit canyons of a towering cyberpunk megacity. The yellow taxi is heavily modified with glowing cyan repulsor engines and holographic advertisements. The lighting is a chaotic mix of harsh, vibrant neon signs reflecting off the wet metallic hull and the dark, smoggy atmosphere of the lower city levels. The mood is gritty, fast-paced, and cinematic. Captured with a dynamic, panning motion blur to convey extreme speed while keeping the taxi in sharp focus."
+- **Negative prompt:** "daylight, clean, modern, slow, bright sky, natural"
+- **Tags:** cyberpunk, vehicle, city, neon, rain, dynamic
+- **Style / Reference:** cinematic sci-fi photography, Blade Runner aesthetic
+- **Composition:** dynamic angled profile, tight framing, panning blur
+- **Color palette:** classic taxi yellow, neon magenta, electric cyan, dark rain-slicked greys
+- **Aspect ratio:** 21:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests motion blur panning effects combined with high-contrast neon reflections on wet metallic surfaces.
+
+### Suggestion: Crystal Chandelier in a Ruined Cathedral
+- **Date:** 2026-11-27
+- **Prompt:** "A massive, pristine crystal chandelier hanging miraculously intact from the shattered ceiling of a ruined, overgrown Gothic cathedral. The grand subject catches a single, dramatic shaft of midday sunlight piercing through the collapsed roof, sending thousands of brilliant, refractive rainbows dancing across the moss-covered stone walls. The lighting is high-contrast chiaroscuro, emphasizing the dazzling brilliance of the crystal against the dark, moody ruins. The mood is melancholic, beautiful, and striking. Captured with a wide 24mm lens to emphasize the grand scale and the juxtaposition of decay and pristine beauty."
+- **Negative prompt:** "clean, modern, whole, dark, artificial lights, simple, flat"
+- **Tags:** ruins, architecture, gothic, crystal, contrast
+- **Style / Reference:** romantic ruins photography, photorealistic 3D render
+- **Composition:** low angle looking up, dramatic lighting, sharp contrast
+- **Color palette:** dazzling white crystal rainbows, dark mossy greens, cold grey stone, warm sunlight
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Evaluates complex multi-faceted crystal refractions and dramatic god-ray lighting in a highly textured environment.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
