@@ -1,0 +1,9 @@
+{
+  "id": "gen-aurora-borealis-synthesis",
+  "name": "Aurora Borealis Synthesis",
+  "description": "Render a 3D volume of swirling aurora light and project it onto the 2D video surface, with audio-driven motion and depth-based mapping.",
+  "category": "generative",
+  "tags": ["aurora", "volumetric", "audio-reactive", "plasma"],
+  "coordinate": 878,
+  "parameters": []
+}
