@@ -3917,6 +3917,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Evaluates complex multi-faceted crystal refractions and dramatic god-ray lighting in a highly textured environment.
 
+### Suggestion: Macro Frost on Cybernetic Eye
+- **Date:** 2026-05-15
+- **Prompt:** "A hyper-detailed macro photograph of delicate, fractal frost crystals rapidly forming across the curved glass lens of a complex cybernetic eye. The subject is highly textured, showing microscopic scratches on the metallic iris beneath the glass. The lighting is harsh, cold, and directional, simulating a harsh winter dawn, casting sharp micro-shadows from the ice crystals. The mood is chilling, clinical, and precise. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the leading edge of the frost."
+- **Negative prompt:** "blurry, low resolution, organic eye, warm colors, cartoon"
+- **Tags:** macro, cyberpunk, frost, mechanical, detailed
+- **Style / Reference:** photorealistic macro photography, hyper-detailed
+- **Composition:** extreme close-up, asymmetrical
+- **Color palette:** icy blues, sterile silver, harsh white highlights
+- **Aspect ratio:** 1:1
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing micro-details, frost generation, and glass refraction.
+
+### Suggestion: Brutalist Void Temple
+- **Date:** 2026-05-15
+- **Prompt:** "A colossal, brutalist concrete temple suspended in an infinite, thick, and swirling grey fog. The architecture features harsh, geometric angles and massive inverted pyramids. At the center of the structure, a massive, glowing red portal emits a sinister, pulsing light that cuts through the mist. The lighting is oppressive and heavy, relying on ambient fog scattering and the harsh red directional light. The mood is ominous, monumental, and isolating. Captured with a 14mm ultra-wide lens to exaggerate the imposing scale."
+- **Negative prompt:** "bright, cheerful, nature, organic, ornate, detailed textures"
+- **Tags:** brutalism, architecture, sci-fi, ominous, fog
+- **Style / Reference:** architectural concept art, dystopian, massive scale
+- **Composition:** low angle, symmetrical, imposing
+- **Color palette:** concrete greys, deep blacks, piercing crimson red
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests volumetric fog density and dramatic single-point colored lighting against flat surfaces.
+
+### Suggestion: Bioluminescent Subterranean Canyon
+- **Date:** 2026-05-15
+- **Prompt:** "A sweeping, majestic vista of an immense subterranean canyon completely devoid of sunlight. Instead, the cavern is illuminated by a rushing river of glowing, neon-blue liquid plasma and colossal, tree-like fungal structures emitting a soft cyan light. Giant, translucent, bioluminescent jellyfish float gracefully through the dense, humid air. The lighting is purely emissive and magical, scattering through the atmospheric haze. The mood is awe-inspiring, alien, and tranquil. Captured with a sweeping panoramic view, deep focus."
+- **Negative prompt:** "sunlight, sky, surface, mundane, dry, sterile"
+- **Tags:** fantasy, landscape, glowing, alien, underground
+- **Style / Reference:** epic fantasy landscape, cinematic lighting
+- **Composition:** panoramic, sweeping curve of the river drawing the eye
+- **Color palette:** neon blues, cyan, deep cavernous purples, glowing green highlights
+- **Aspect ratio:** 21:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating complex multi-source emissive lighting and atmospheric perspective.
+
+### Suggestion: Alchemist's Transmutation Desk
+- **Date:** 2026-05-15
+- **Prompt:** "An incredibly cluttered and complex still-life of an ancient alchemist's wooden desk. The scene is filled with intricate brass astrolabes, bubbling alembics containing swirling iridescent liquids, and ancient leather-bound tomes. The primary light source is a localized, warm, flickering candlelight, augmented by the eerie, multicolored luminescence of the boiling potions. The mood is studious, mysterious, and chaotic. Captured with a 50mm prime lens, medium depth of field, focusing on the central bubbling flask."
+- **Negative prompt:** "modern, clean, empty, sterile, fluorescent lighting"
+- **Tags:** still-life, steampunk, alchemy, cluttered, magical
+- **Style / Reference:** classical chiaroscuro still-life, hyper-detailed props
+- **Composition:** cluttered, organic arrangement, rule of thirds
+- **Color palette:** warm amber, polished brass, glowing iridescent greens and purples
+- **Aspect ratio:** 4:3
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Highly effective for testing material properties like polished metal, aged paper, and liquid caustics.
+
+### Suggestion: Cosmic Entity Portrait
+- **Date:** 2026-05-15
+- **Prompt:** "A mesmerizing, surreal portrait of a sentient celestial entity. The subject's face and form are not solid, but entirely composed of swirling nebula gas, sparkling stardust, and microscopic galaxies. The lighting is internal and cosmic, with a brilliant, blinding white core at the center of their chest illuminating the surrounding gaseous form. The background is the deep, infinite void of space. The mood is transcendent, powerful, and ethereal. Captured as a standard bust portrait, sharp focus on the densest clusters of stars forming the eyes."
+- **Negative prompt:** "human skin, flesh, clothes, mundane, earthly, flat"
+- **Tags:** portrait, cosmic, surreal, entity, glowing
+- **Style / Reference:** surreal digital art, astrophotography integration
+- **Composition:** classic bust portrait, centered
+- **Color palette:** deep void black, vibrant magenta nebula, blinding stellar white
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Challenges the generation of cohesive forms from chaotic, particle-based volumetric materials.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
