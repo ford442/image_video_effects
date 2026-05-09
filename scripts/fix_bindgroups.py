@@ -22,6 +22,8 @@ import re
 import json
 import glob
 import shutil
+import importlib.util
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -189,10 +191,6 @@ def add_uniforms_ripples(content: str) -> tuple[str, bool]:
         return content, False
 
     # Append ripples before the closing brace
-    closing_brace_pos = m.start(1) + len(m.group(1))
-    # m.group(1) ends just before the '}'
-    # Insert just before the closing brace of the struct
-    struct_end = m.start() + content[m.start():].index("}") + 1
     # Find the closing brace inside the full match
     full_match = m.group(0)
     brace_idx = full_match.rindex("}")
@@ -248,7 +246,8 @@ def classify_shader(content: str, filename: str) -> dict:
     b12_type_m = b12_type_re.search(content)
     if b12_type_m:
         t = b12_type_m.group(1).strip().replace(" ", "").lower()
-        if "plasmabuffer" not in t and "array<vec4<f32>" not in t:
+        # Flag if the type is not the expected array<vec4<f32>> form
+        if "array<vec4<f32>" not in t:
             result["manual_flags"].append(
                 f"binding 12 wrong type: {b12_type_m.group(1).strip()!r}"
             )
@@ -361,25 +360,19 @@ def _run_checker_inline() -> dict:
     """
     Run the same logic as bindgroup_checker.py but without writing anything.
     Returns the report dict.
+    Imports bindgroup_checker via importlib so we get proper module isolation
+    instead of exec(); the checker's main() is not called.
     """
-    # Import checker logic by exec-ing the file
     checker_path = Path(__file__).parent / "bindgroup_checker.py"
     if not checker_path.exists():
         return {}
 
-    checker_code = checker_path.read_text()
-    # Patch hardcoded paths to work wherever the repo lives
-    checker_code = checker_code.replace(
-        "/root/image_video_effects",
-        str(REPO_ROOT),
-    )
-    namespace: dict = {"__name__": "module"}
-    exec(compile(checker_code, str(checker_path), "exec"), namespace)
+    # Load the checker module without executing its __main__ block
+    spec = importlib.util.spec_from_file_location("bindgroup_checker", checker_path)
+    checker_mod = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
+    spec.loader.exec_module(checker_mod)  # type: ignore[union-attr]
 
-    parse_shader_fn = namespace["parse_shader"]
-    EXPECTED_BINDINGS_cfg = namespace["EXPECTED_BINDINGS"]
-    TEMPLATE_FILES_cfg = namespace["TEMPLATE_FILES"]
-    RENDER_SHADERS_cfg = namespace["RENDER_SHADERS"]
+    parse_shader_fn = checker_mod.parse_shader
 
     shader_files = sorted(SHADERS_DIR.glob("*.wgsl"))
 
