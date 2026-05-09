@@ -5,21 +5,21 @@
 //  Features: advanced-alpha, volumetric, raymarching, beel-law
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -48,7 +48,7 @@ fn volumetricAlpha(density: f32, thickness: f32) -> f32 {
 
 // Mode 1: Depth-Layered Alpha for atmospheric perspective
 fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthAlpha = mix(0.3, 1.0, depth);
     return mix(1.0, depthAlpha, depthWeight);
 }
@@ -191,8 +191,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let emitThresh = u.zoom_config.z * 0.25 + 0.05;
     let chromaSpread = u.zoom_config.w * 0.5;
 
-    let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let srcCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // Curl flow field
     let curl = curlNoise(uv * scale + depth * depthParallax, time * flowSpeed);
@@ -240,9 +240,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gUV = clamp(uv + totalWarp * disp * 0.93 + curl * 0.012, vec2<f32>(0.0), vec2<f32>(1.0));
     let bUV = clamp(uv + totalWarp * disp * 1.07 - curl * 0.015, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let r = textureSampleLevel(videoTex, videoSampler, rUV, 0.0).r;
-    let g = textureSampleLevel(videoTex, videoSampler, gUV, 0.0).g;
-    let b = textureSampleLevel(videoTex, videoSampler, bUV, 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
     let dispersed = vec3<f32>(r, g, b);
 
     // Emissive plasma
@@ -252,7 +252,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Anisotropic diffusion
     let historyUV = clamp(uv + totalWarp * 0.28, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(historyTex, videoSampler, historyUV, 0.0).rgb;
+    let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
     let flowDir = normalize(totalWarp + curl + vec2<f32>(0.001));
     let anisotropy = 1.0 - abs(dot(flowDir, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.28;
     let diffused = mix(emissive, history, diffusionRate * anisotropy);
@@ -269,7 +269,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let opticalDepth = foamPattern * (1.0 + hyperMod);
     let alpha = calculateAtmosphericAlpha(uv, opticalDepth, density, u.zoom_params);
 
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, alpha));
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(diffused, alpha));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalCol, alpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(diffused, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

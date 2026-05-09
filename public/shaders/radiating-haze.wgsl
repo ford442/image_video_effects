@@ -1,21 +1,21 @@
 // ---------------------------------------------------------------
 //  Radiating Haze – with adjustable aura colour
 // ---------------------------------------------------------------
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var auraBuf:    texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTexC:   texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA:    texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC:   texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------------------
 
@@ -74,8 +74,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  1️⃣  Read source
     // -----------------------------------------------------------------
-    let src = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // -----------------------------------------------------------------
     //  2️⃣  Uniforms
@@ -141,9 +141,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  8️⃣  Temporal persistence (soft glow trail)
     // -----------------------------------------------------------------
-    let prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).r;
+    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
     let persist = max(prev * 0.92, aura);
-    textureStore(auraBuf, vec2<i32>(gid.xy), vec4<f32>(persist,0.0,0.0,1.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(persist,0.0,0.0,1.0));
 
     // -----------------------------------------------------------------
     //  9️⃣  Composite
@@ -151,6 +151,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var outCol = src + auraCol * aura;
     outCol = 1.0 - (1.0 - outCol) * (1.0 - vec3<f32>(persist * 0.3));
 
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
 }

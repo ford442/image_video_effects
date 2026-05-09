@@ -2,21 +2,21 @@
 //  Liquid Warp Interactive
 //  Fluid-like distortion driven by mouse flow and noise.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -78,17 +78,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let distUV = uv + flow * distortAmt;
 
     // Sample with distorted UV
-    let color = textureSampleLevel(videoTex, videoSampler, distUV, 0.0).rgb;
+    let color = textureSampleLevel(readTexture, u_sampler, distUV, 0.0).rgb;
 
     // Slight chromatic aberration based on flow intensity
-    let r = textureSampleLevel(videoTex, videoSampler, distUV + flow * 0.005, 0.0).r;
-    let b = textureSampleLevel(videoTex, videoSampler, distUV - flow * 0.005, 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, distUV + flow * 0.005, 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, distUV - flow * 0.005, 0.0).b;
 
     let finalColor = vec3<f32>(r, color.g, b);
 
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 
     // Write depth
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -3,21 +3,21 @@
 //  Chaotic color-swapping regions that crawl across the screen, rapidly
 //  exchanging colors between different areas with Voronoi-based patterns.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ────────────────────────────────────────────────────────────────────────────────
 
@@ -67,7 +67,7 @@ fn voronoiRegions(uv: vec2<f32>, time: f32, regionSize: f32) -> vec2<f32> {
             let dist = length(point - fuv);
             if (dist < minDist) {
                 minDist = dist;
-                minPoint = pointId + point / grid;
+                minPoint = pointId + point / max(grid, vec2<f32>(0.0001));
             }
         }
     }
@@ -179,8 +179,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthInf = u.zoom_config.w;                          // 0 - 1
 
     // Sample inputs
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    let inputColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
     // ──────────────────────────────────────────────────────────────────────────
     //  Create crawling regions
@@ -200,7 +200,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  Feedback from previous frame
     // ──────────────────────────────────────────────────────────────────────────
     let prevUV = createCrawlingRegions(uv, time - 0.016, crawlSpeed);
-    let prevColor = textureSampleLevel(feedbackTex, videoSampler, clamp(prevUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let prevColor = textureSampleLevel(dataTextureC, u_sampler, clamp(prevUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     
     // Animated feedback mixing
     let animatedMix = feedbackMix + sin(time * 3.0 + uv.x * 5.0) * 0.1;
@@ -229,7 +229,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Output
     // ──────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 }

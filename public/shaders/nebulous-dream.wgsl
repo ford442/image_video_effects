@@ -9,22 +9,22 @@
 //  - Flow-field warping with volumetric blending
 //  - Temporal accumulation with density-based trails
 // ═══════════════════════════════════════════════════════════════
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
 // Using the persistence buffer for "smoky trails"
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -98,7 +98,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let blendStrength = u.zoom_config.w * 0.5 + 0.3;        // 0.3 - 0.8
 
     // Sample depth for depth-aware effects
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // ═══════════════════════════════════════════════════════════════
     //  Create a swirling flow field
@@ -152,7 +152,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let baseHue = fract(distortedUV.x + distortedUV.y * 0.5 + time * colorSpeed);
     
     // Read the source video to influence the colors
-    let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
+    let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let luminance = dot(srcColor, vec3<f32>(0.299, 0.587, 0.114));
     
     // In bright areas, make clouds more saturated and brighter
@@ -180,8 +180,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ═══════════════════════════════════════════════════════════════
     //  Feedback Loop for Smoky Trails
     // ═══════════════════════════════════════════════════════════════
-    let prevFrame = textureSampleLevel(historyTex, depthSampler, uv, 0.0).rgb;
-    let prevAlpha = textureSampleLevel(historyTex, depthSampler, uv, 0.0).a;
+    let prevFrame = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+    let prevAlpha = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).a;
     
     // Blend the current frame with the dimmed previous frame
     let temporalBlend = 0.7 + persistence * 0.25;
@@ -189,11 +189,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalAlpha = mix(alpha, prevAlpha, persistence * 0.5);
     
     // Store this frame's result for the next frame
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
 
     // ═══════════════════════════════════════════════════════════════
     //  Output with Volumetric Alpha
     // ═══════════════════════════════════════════════════════════════
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, opticalDepth, 0.0, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, opticalDepth, 0.0, finalAlpha));
 }

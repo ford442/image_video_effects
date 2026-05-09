@@ -2,21 +2,21 @@
 //  Radiating Displacement – waves emanate from strong colours only
 //  Neutrals (browns, greys, blacks) are left untouched & sharp.
 // ---------------------------------------------------------------
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var persistBuf: texture_storage_2d<rgba32float, write>; // optional persistence
-@group(0) @binding(8) var normalBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTexC:   texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // optional persistence
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC:   texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------------------
 
@@ -65,8 +65,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  1️⃣  Read source
     // -----------------------------------------------------------------
-    let src = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // -----------------------------------------------------------------
     //  2️⃣  Uniforms
@@ -106,7 +106,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         if (age > 0.0 && age < 3.0) {
             var d = length(uv - ripple.xy);
             if (d > 0.0001) {
-                let rippleDepth = textureSampleLevel(depthTex, depthSampler, ripple.xy, 0.0).r;
+                let rippleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, ripple.xy, 0.0).r;
                 let depthFactor = 1.0 - rippleDepth;
                 let rippleSpeed = mix(1.0, 2.0, depthFactor);
                 let rippleAmp   = mix(0.005, 0.015, depthFactor);
@@ -139,10 +139,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  6️⃣  Sample & output (image stays sharp – no blur/haze overlay)
     // -----------------------------------------------------------------
-    let outCol = textureSampleLevel(videoTex, videoSampler, finalUV, 0.0).rgb;
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    let outCol = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
 
     // Depth is also displaced for consistency
-    let outD = textureSampleLevel(depthTex, depthSampler, uv + displacement, 0.0).r;
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(outD, 0.0, 0.0, 0.0));
+    let outD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + displacement, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outD, 0.0, 0.0, 0.0));
 }

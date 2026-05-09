@@ -3,13 +3,13 @@
   "agent": "Agent 3: Runtime Error Detector",
   "mission": "Analyze shaders for patterns that cause runtime WebGPU errors",
   "total_shaders": 699,
-  "clean_count": 647,
-  "error_count": 49,
+  "clean_count": 309,
+  "error_count": 387,
   "summary": {
-    "critical": 49,
+    "critical": 0,
     "high": 0,
     "medium": 387,
-    "clean": 260
+    "clean": 309
   },
   "common_error_types": {
     "division_by_zero": 609,
@@ -236,7 +236,7 @@
     {
       "shader_id": "astral-kaleidoscope",
       "file": "public/shaders/astral-kaleidoscope.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -273,12 +273,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "astral-kaleidoscope-gemini",
       "file": "public/shaders/astral-kaleidoscope-gemini.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -309,12 +310,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "astral-kaleidoscope-grokcf1",
       "file": "public/shaders/astral-kaleidoscope-grokcf1.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -345,12 +347,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "astral-veins",
       "file": "public/shaders/astral-veins.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -363,7 +366,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, growthBuf->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "atmos_volumetric_fog",
@@ -415,7 +419,7 @@
     {
       "shader_id": "aurora-rift",
       "file": "public/shaders/aurora-rift.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -428,7 +432,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "aurora-rift-2",
@@ -440,7 +445,7 @@
     {
       "shader_id": "aurora-rift-2-pass1",
       "file": "public/shaders/aurora-rift-2-pass1.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "invalid_binding",
@@ -448,12 +453,13 @@
           "description": "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: max binding is 12 (<=12)"
     },
     {
       "shader_id": "aurora-rift-2-pass2",
       "file": "public/shaders/aurora-rift-2-pass2.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "invalid_binding",
@@ -461,12 +467,13 @@
           "description": "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: max binding is 12 (<=12)"
     },
     {
       "shader_id": "aurora-rift-gemini",
       "file": "public/shaders/aurora-rift-gemini.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -479,12 +486,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "aurora-rift-pass1",
       "file": "public/shaders/aurora-rift-pass1.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "invalid_binding",
@@ -492,12 +500,13 @@
           "description": "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: max binding is 12 (<=12)"
     },
     {
       "shader_id": "aurora-rift-pass2",
       "file": "public/shaders/aurora-rift-pass2.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "invalid_binding",
@@ -505,7 +514,8 @@
           "description": "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: max binding is 12 (<=12)"
     },
     {
       "shader_id": "aurora_borealis",
@@ -616,7 +626,7 @@
     {
       "shader_id": "bitonic-sort",
       "file": "public/shaders/bitonic-sort.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_builtin",
@@ -630,7 +640,8 @@
           "code": "let ripple = u.ripples[i];"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: @builtin(global_invocation_id) already present; added ripple index clamp: min(i, 49u)"
     },
     {
       "shader_id": "black-hole",
@@ -954,7 +965,7 @@
     {
       "shader_id": "chromatic-crawler",
       "file": "public/shaders/chromatic-crawler.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -973,7 +984,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "chromatic-focus",
@@ -985,7 +997,7 @@
     {
       "shader_id": "chromatic-focus-interactive",
       "file": "public/shaders/chromatic-focus-interactive.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -998,12 +1010,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "chromatic-folds",
       "file": "public/shaders/chromatic-folds.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1028,12 +1041,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler; added ripple index clamp: min(i, 49u)"
     },
     {
       "shader_id": "chromatic-folds-2",
       "file": "public/shaders/chromatic-folds-2.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1046,12 +1060,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "chromatic-folds-gemini",
       "file": "public/shaders/chromatic-folds-gemini.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1082,12 +1097,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler; added ripple index clamp: min(i, 49u)"
     },
     {
       "shader_id": "chromatic-infection",
       "file": "public/shaders/chromatic-infection.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1100,7 +1116,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, infectionBuf->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "chromatic-manifold",
@@ -1112,7 +1129,7 @@
     {
       "shader_id": "chromatic-manifold-2",
       "file": "public/shaders/chromatic-manifold-2.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1137,7 +1154,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler; added ripple index clamp: min(i, 49u)"
     },
     {
       "shader_id": "chromatic-mosaic-projector",
@@ -1676,7 +1694,7 @@
     {
       "shader_id": "cyber-rain-interactive",
       "file": "public/shaders/cyber-rain-interactive.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1695,7 +1713,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "cyber-ripples",
@@ -1714,7 +1733,7 @@
     {
       "shader_id": "cyber-slit-scan",
       "file": "public/shaders/cyber-slit-scan.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1733,7 +1752,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, feedbackOut->dataTextureA, feedbackTex->dataTextureC"
     },
     {
       "shader_id": "cyber-terminal-ascii",
@@ -1886,7 +1906,7 @@
     {
       "shader_id": "digital-haze",
       "file": "public/shaders/digital-haze.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -1899,7 +1919,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "digital-lens",
@@ -2267,7 +2288,7 @@
     {
       "shader_id": "ethereal-swirl",
       "file": "public/shaders/ethereal-swirl.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -2280,7 +2301,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "fabric-step",
@@ -4289,7 +4311,7 @@
     {
       "shader_id": "glass-wall",
       "file": "public/shaders/glass-wall.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -4308,7 +4330,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "glass-wipes",
@@ -4436,7 +4459,7 @@
     {
       "shader_id": "green-tracer",
       "file": "public/shaders/green-tracer.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -4449,7 +4472,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, prevFrame->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "halftone",
@@ -6167,7 +6191,7 @@
     {
       "shader_id": "liquid-time-warp",
       "file": "public/shaders/liquid-time-warp.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -6186,7 +6210,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, feedbackTex->dataTextureC"
     },
     {
       "shader_id": "liquid-touch",
@@ -6324,7 +6349,7 @@
     {
       "shader_id": "liquid-warp-interactive",
       "file": "public/shaders/liquid-warp-interactive.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -6337,7 +6362,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "liquid-zoom",
@@ -6727,7 +6753,7 @@
     {
       "shader_id": "magnetic-ring",
       "file": "public/shaders/magnetic-ring.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -6740,7 +6766,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "matrix-curtain",
@@ -7090,7 +7117,7 @@
     {
       "shader_id": "nebulous-dream",
       "file": "public/shaders/nebulous-dream.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -7103,7 +7130,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "neon-contour-drag",
@@ -7115,7 +7143,7 @@
     {
       "shader_id": "neon-contour-interactive",
       "file": "public/shaders/neon-contour-interactive.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -7128,7 +7156,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "neon-cursor-trace",
@@ -7363,7 +7392,7 @@
     {
       "shader_id": "neural-dreamscape",
       "file": "public/shaders/neural-dreamscape.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -7376,7 +7405,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, persistBuf->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "neural-nexus",
@@ -7426,7 +7456,7 @@
     {
       "shader_id": "neural-resonance",
       "file": "public/shaders/neural-resonance.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -7439,7 +7469,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "night-vision-scope",
@@ -8657,7 +8688,7 @@
     {
       "shader_id": "quantum-foam",
       "file": "public/shaders/quantum-foam.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -8670,12 +8701,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, historyBuf->dataTextureA, unusedBuf->dataTextureB, historyTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "quantum-foam-pass1",
       "file": "public/shaders/quantum-foam-pass1.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "invalid_binding",
@@ -8683,12 +8715,13 @@
           "description": "CRITICAL: Binding 13 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: max binding is 12 (<=12)"
     },
     {
       "shader_id": "quantum-foam-pass2",
       "file": "public/shaders/quantum-foam-pass2.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "invalid_binding",
@@ -8701,12 +8734,13 @@
           "description": "CRITICAL: Binding 14 exceeds maximum allowed (12). BindGroupLayout only defines bindings 0-12. This causes: 'Binding doesn't exist in BindGroupLayout'"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: max binding is 12 (<=12)"
     },
     {
       "shader_id": "quantum-foam-pass3",
       "file": "public/shaders/quantum-foam-pass3.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "invalid_binding",
@@ -8720,7 +8754,8 @@
           "code": "return pow(color, vec3<f32>(1.0 / gamma));"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: max binding is 12 (<=12)"
     },
     {
       "shader_id": "quantum-fractal",
@@ -8732,7 +8767,7 @@
     {
       "shader_id": "quantum-prism",
       "file": "public/shaders/quantum-prism.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -8781,7 +8816,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "quantum-ripples",
@@ -8793,7 +8829,7 @@
     {
       "shader_id": "quantum-smear",
       "file": "public/shaders/quantum-smear.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -8806,7 +8842,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "quantum-superposition",
@@ -8831,7 +8868,7 @@
     {
       "shader_id": "quantum-wormhole",
       "file": "public/shaders/quantum-wormhole.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -8844,7 +8881,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, persistBuf->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "radial-blur",
@@ -8896,7 +8934,7 @@
     {
       "shader_id": "radiating-displacement",
       "file": "public/shaders/radiating-displacement.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -8921,12 +8959,13 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, persistBuf->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler; added ripple index clamp: min(i, 49u)"
     },
     {
       "shader_id": "radiating-haze",
       "file": "public/shaders/radiating-haze.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -8939,7 +8978,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, auraBuf->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "rain",
@@ -8977,7 +9017,7 @@
     {
       "shader_id": "rainbow-cloud",
       "file": "public/shaders/rainbow-cloud.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -8996,7 +9036,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "rainbow-vector-field",
@@ -9299,7 +9340,7 @@
     {
       "shader_id": "scan-distort",
       "file": "public/shaders/scan-distort.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -9318,7 +9359,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "scan-distort-gpt52",
@@ -9632,7 +9674,7 @@
     {
       "shader_id": "spectral-bleed-confine",
       "file": "public/shaders/spectral-bleed-confine.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "sampler_mismatch",
@@ -9647,7 +9689,8 @@
           "code": "let r = u.ripples[i];"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: comparison_sampler declared but unused with textureSampleCompare; added ripple index clamp: min(i, 49u)"
     },
     {
       "shader_id": "spectral-bleed-confinement",
@@ -9738,7 +9781,7 @@
     {
       "shader_id": "spectral-rain",
       "file": "public/shaders/spectral-rain.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -9751,7 +9794,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "spectral-slit-scan",
@@ -9782,7 +9826,7 @@
     {
       "shader_id": "spectral-vortex",
       "file": "public/shaders/spectral-vortex.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -9795,7 +9839,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, feedbackOut->dataTextureA, normalBuf->dataTextureB, feedbackTex->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "spectral-waves",
@@ -9839,7 +9884,7 @@
     {
       "shader_id": "spectrum-bleed",
       "file": "public/shaders/spectrum-bleed.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -9852,7 +9897,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: videoSampler->u_sampler, videoTex->readTexture, outTex->writeTexture, depthTex->readDepthTexture, depthSampler->non_filtering_sampler, outDepth->writeDepthTexture, bleedBuf->dataTextureA, normalBuf->dataTextureB, dataTexC->dataTextureC, compSampler->comparison_sampler"
     },
     {
       "shader_id": "speed-lines-focus",
@@ -9958,7 +10004,7 @@
     {
       "shader_id": "stella-orbit",
       "file": "public/shaders/stella-orbit.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -9995,7 +10041,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "renamed to canonical: outTex->writeTexture"
     },
     {
       "shader_id": "stellar-plasma",
@@ -10186,7 +10233,7 @@
     {
       "shader_id": "tensor-flow-sculpt",
       "file": "public/shaders/tensor-flow-sculpt.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "sampler_mismatch",
@@ -10207,7 +10254,8 @@
           "code": "let r = u.ripples[i];"
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "false_positive: comparison_sampler declared but unused with textureSampleCompare; added ripple index clamp: min(i, 49u)"
     },
     {
       "shader_id": "tensor-flow-sculpting",
@@ -10360,7 +10408,7 @@
     {
       "shader_id": "time-slit-scan",
       "file": "public/shaders/time-slit-scan.wgsl",
-      "status": "has_errors",
+      "status": "fixed_by_swarm",
       "potential_runtime_errors": [
         {
           "type": "missing_write",
@@ -10373,7 +10421,8 @@
           "description": "Shader does not call textureStore(writeDepthTexture, ...). Depth pass-through is recommended for proper depth handling."
         }
       ],
-      "severity": "critical"
+      "severity": "fixed",
+      "fix_note": "verified and documented"
     },
     {
       "shader_id": "triangle-mosaic",

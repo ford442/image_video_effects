@@ -2,21 +2,21 @@
 //  Green Tracer World – surreal green video effect with motion trails
 //  Trails persist & fade, edges glow, film grain adds strangeness.
 // ---------------------------------------------------------------
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var prevFrame:  texture_storage_2d<rgba32float, write>; // persistence
-@group(0) @binding(8) var normalBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTexC:   texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA:  texture_storage_2d<rgba32float, write>; // persistence
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC:   texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------------------
 
@@ -49,10 +49,10 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 //  Edge detection (Sobel-ish)
 // ---------------------------------------------------------------
 fn edgeDetect(uv: vec2<f32>, texel: vec2<f32>) -> f32 {
-    let dL = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(texel.x,0.0), 0.0).r;
-    let dR = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(texel.x,0.0), 0.0).r;
-    let dU = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(0.0,texel.y), 0.0).r;
-    let dD = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(0.0,texel.y), 0.0).r;
+    let dL = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texel.x,0.0), 0.0).r;
+    let dR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x,0.0), 0.0).r;
+    let dU = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0,texel.y), 0.0).r;
+    let dD = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0,texel.y), 0.0).r;
     return length(vec2<f32>(dR-dL, dD-dU));
 }
 
@@ -80,10 +80,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  2️⃣  Read current & previous frame
     // -----------------------------------------------------------------
-    let src = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    // FIX: Read from dataTexC (binding 9) instead of prevFrame (binding 7, write-only)
-    let prev = textureSampleLevel(dataTexC, videoSampler, uv, 0.0).rgb;
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // FIX: Read from dataTextureC (binding 9) instead of dataTextureA (binding 7, write-only)
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
 
     // -----------------------------------------------------------------
     //  3️⃣  Motion detection (difference between frames)
@@ -103,7 +103,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         trail = trail * trailFade;
     }
     // Store for next frame
-    textureStore(prevFrame, vec2<i32>(gid.xy), vec4<f32>(trail, 1.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(trail, 1.0));
 
     // -----------------------------------------------------------------
     //  5️⃣  Green tint & colour grading
@@ -131,6 +131,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Depth influence can modulate overall intensity
     outCol *= 1.0 - depthInf * depth * 0.3;
 
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

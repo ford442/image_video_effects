@@ -3,13 +3,13 @@
 //  Classic slit-scan effect where the scan line position is controlled by the mouse.
 //  Includes cyber-punk style color quantization and digital artifacts.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>; // Write to history
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>; // Read from history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Write to history
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // Read from history
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
@@ -81,7 +81,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Sample from the video at the slit position.
 
         let uvSource = vec2<f32>(f32(slitX) / dims.x, f32(gid.y) / dims.y);
-        var color = textureSampleLevel(videoTex, videoSampler, uvSource, 0.0);
+        var color = textureSampleLevel(readTexture, u_sampler, uvSource, 0.0);
 
         // --- CYBER EFFECTS ---
         // 1. Color Quantization / Bit Crush
@@ -114,14 +114,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         let uvHistory = vec2<f32>(f32(gid.x + speed) / dims.x, f32(gid.y) / dims.y);
 
-        // Sample from previous frame (feedbackTex)
-        outputColor = textureSampleLevel(feedbackTex, videoSampler, uvHistory, 0.0);
+        // Sample from previous frame (dataTextureC)
+        outputColor = textureSampleLevel(dataTextureC, u_sampler, uvHistory, 0.0);
 
         // Slight decay or color shift over time as it scrolls?
         // Let's keep it clean for a true slit-scan, maybe just a tiny bit of fade if desired.
         // outputColor *= 0.999;
     }
 
-    textureStore(feedbackOut, gid.xy, outputColor);
-    textureStore(outTex, gid.xy, outputColor);
+    textureStore(dataTextureA, gid.xy, outputColor);
+    textureStore(writeTexture, gid.xy, outputColor);
 }

@@ -4,21 +4,21 @@
 //  Depth acts as a curvature tensor, hue is a physical dimension that folds,
 //  and feedback creates silky trails like a living dreamscape.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -108,7 +108,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ────────────────────────────────────────────────────────────────────────
     //  3️⃣  Depth-based curvature
     // ────────────────────────────────────────────────────────────────────────
-    let depthVal = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     // Farther objects are pulled further into the color manifold
     let depthWarp = depthVal * depthWarpStr;
 
@@ -137,7 +137,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hue = fract(baseHue + cloudDensity * 0.2);
 
     // Saturation and value driven by source luminance
-    let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
+    let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let luminance = dot(srcColor, vec3<f32>(0.2126, 0.7152, 0.0722));
     let sat = mix(0.6, 1.0, luminance);
     let val = mix(0.4, 1.0, luminance);
@@ -153,15 +153,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ────────────────────────────────────────────────────────────────────────
     //  8️⃣  Feedback loop – create silky trails
     // ────────────────────────────────────────────────────────────────────────
-    let prevFrame = textureSampleLevel(historyTex, videoSampler, uv, 0.0).rgb;
+    let prevFrame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
     let finalColor = mix(blendedColor, prevFrame, persistence);
 
     // Store the current frame for the next pass
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 
     // ────────────────────────────────────────────────────────────────────────
     //  9️⃣  Output
     // ────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

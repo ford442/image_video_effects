@@ -2,21 +2,21 @@
 //  Magnetic Ring
 //  A distortion ring that follows the mouse, creating a lens-like pulse effect.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -80,18 +80,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gUV = uv + finalOffset;
     let bUV = uv + finalOffset * (1.0 - ringMask * 0.5);
 
-    let r = textureSampleLevel(videoTex, videoSampler, rUV, 0.0).r;
-    let g = textureSampleLevel(videoTex, videoSampler, gUV, 0.0).g;
-    let b = textureSampleLevel(videoTex, videoSampler, bUV, 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
     // Optional: Highlight the ring itself with brightness
     let highlight = ringMask * 0.2;
 
     var color = vec3<f32>(r, g, b) + highlight;
 
-    textureStore(outTex, gid.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(color, 1.0));
 
     // Pass through depth
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

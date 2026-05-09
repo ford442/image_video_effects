@@ -2,21 +2,21 @@
 //  Chromatic Folds Gemini – Fractalized Psychedelic Topology
 //  Multi-layered folding, vortex manipulation, and enhanced color dynamics.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ────────────────────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,8 @@ fn hash2(p: vec2<f32>) -> f32 {
 }
 
 fn wrapMod(x: f32, y: f32) -> f32 {
-  return x - y * floor(x / y);
+  if (y == 0.0) { return x; }
+    return x - y * floor(x / y);
 }
 
 // ✨ GEMINI UPGRADE: Vortex function
@@ -95,8 +96,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rippleStrength = u.zoom_config.z * 0.005;
   let vortexStrength = u.zoom_params.x * 0.1; // Tied to fold strength
 
-  let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-  let depthVal = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+  let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   // ✨ GEMINI UPGRADE: Apply vortex to UV
   var work_uv = applyVortex(uv, u.ripples[0].xy, vortexStrength, time);
@@ -107,11 +108,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let scale = pow(2.0, f32(i));
     let texel = 1.0 / (dims * scale);
     
-    let h = rgb2hsv(textureSampleLevel(videoTex, videoSampler, work_uv * scale, 0.0).rgb).x;
-    let hR = rgb2hsv(textureSampleLevel(videoTex, videoSampler, work_uv * scale + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
-    let hL = rgb2hsv(textureSampleLevel(videoTex, videoSampler, work_uv * scale - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
-    let hU = rgb2hsv(textureSampleLevel(videoTex, videoSampler, work_uv * scale + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
-    let hD = rgb2hsv(textureSampleLevel(videoTex, videoSampler, work_uv * scale - vec2<f32>(0.0, texel.y), 0.0).rgb).x;
+    let h = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale, 0.0).rgb).x;
+    let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
+    let hL = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
+    let hU = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
+    let hD = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale - vec2<f32>(0.0, texel.y), 0.0).rgb).x;
     
     let gradX = wrapMod(hR - hL + 1.5, 1.0) - 0.5;
     let gradY = wrapMod(hU - hD + 1.5, 1.0) - 0.5;
@@ -141,7 +142,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let displacedUV = clamp(work_uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
-  let displacedColor = textureSampleLevel(videoTex, videoSampler, displacedUV, 0.0).rgb;
+  let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
   
   var hsv = rgb2hsv(displacedColor);
   hsv.x = foldHue(hsv.x, pivotHue, foldStrength);
@@ -150,10 +151,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
   let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
-  let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
   let finalColor = mix(foldedColor, prev, feedbackStrength);
   
-  textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
-  textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 }

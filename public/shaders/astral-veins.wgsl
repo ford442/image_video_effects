@@ -5,21 +5,21 @@
 //  Upgraded: 2026-03-22
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;               // time, resolution, etc.
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var growthBuf:  texture_storage_2d<rgba32float, write>; // persistence
-@group(0) @binding(8) var normalBuf:  texture_storage_2d<rgba32float, write>; // optional normal visualisation
-@group(0) @binding(9) var dataTexC:   texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA:  texture_storage_2d<rgba32float, write>; // persistence
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>; // optional normal visualisation
+@group(0) @binding(9) var dataTextureC:   texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -89,10 +89,10 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 //  Surface normal from depth – used for depth‑aware warping
 // ---------------------------------------------------------------
 fn normalFromDepth(uv: vec2<f32>, texel: vec2<f32>) -> vec3<f32> {
-    let dL = textureSampleLevel(depthTex, depthSampler, uv - vec2<f32>(texel.x,0.0), 0.0).r;
-    let dR = textureSampleLevel(depthTex, depthSampler, uv + vec2<f32>(texel.x,0.0), 0.0).r;
-    let dU = textureSampleLevel(depthTex, depthSampler, uv - vec2<f32>(0.0,texel.y), 0.0).r;
-    let dD = textureSampleLevel(depthTex, depthSampler, uv + vec2<f32>(0.0,texel.y), 0.0).r;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(texel.x,0.0), 0.0).r;
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x,0.0), 0.0).r;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0,texel.y), 0.0).r;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0,texel.y), 0.0).r;
     let dx = (dR - dL) * 0.5;
     let dy = (dD - dU) * 0.5;
     return normalize(vec3<f32>(-dx, -dy, 1.0));
@@ -125,7 +125,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  3️⃣  Depth & normal (used for warping the flow field)
     // -----------------------------------------------------------------
     let texel = 1.0 / resolution;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let normal = normalFromDepth(uv, texel);
 
     // ---------------------------------------------------------------
@@ -188,12 +188,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  8️⃣  Temporal persistence (trailing glow)
     // ---------------------------------------------------------------
     // Read previous frame's growth buffer (stores a single‑channel "glow")
-    // MODIFIED: Use dataTexC (read-only) instead of growthBuf (write-only)
-    var prev = textureSampleLevel(dataTexC, depthSampler, uv, 0.0).r;
+    // MODIFIED: Use dataTextureC (read-only) instead of dataTextureA (write-only)
+    var prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
     // Fade out old glow and add the new one
     prev = prev * 0.94 + glow * 0.06;
     // Store for next frame
-    textureStore(growthBuf, vec2<i32>(gid.xy), vec4<f32>(prev,0.0,0.0,1.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(prev,0.0,0.0,1.0));
 
     // Use the persisted glow to give a soft halo around the veins
     let halo = prev * 0.4;
@@ -201,7 +201,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ---------------------------------------------------------------
     //  9️⃣  Composite over the original video frame
     // ---------------------------------------------------------------
-    let videoCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
+    let videoCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     // Additive blend for the bright veins + a subtle screen‑blend for the halo
     var outCol = videoCol + veinCol;
     outCol = 1.0 - (1.0 - outCol) * (1.0 - vec3<f32>(halo));
@@ -214,6 +214,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ---------------------------------------------------------------
     //  🔟  Write final colour & depth
     // ---------------------------------------------------------------
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(outCol, finalAlpha));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outCol, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
 }

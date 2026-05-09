@@ -3,21 +3,21 @@
 // Enhanced aurora with magnetic field simulation, shimmering
 // particle effects, and a dual-palette color system.
 // ===============================================================
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -161,8 +161,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let emitThresh = u.zoom_config.z * 0.25 + 0.05;
     let chromaSpread = u.zoom_config.w * 0.5;
 
-    let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let srcCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // ✨ GEMINI UPGRADE: Integrate magnetic field
     let magField = magneticField(uv, time);
@@ -201,9 +201,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gUV = clamp(uv + totalWarp * disp * 0.9 + curl * 0.015, vec2<f32>(0.0), vec2<f32>(1.0));
     let bUV = clamp(uv + totalWarp * disp * 1.1 - curl * 0.018, vec2<f32>(0.0), vec2<f32>(1.0));
     let dispersed = vec3<f32>(
-        textureSampleLevel(videoTex, videoSampler, rUV, 0.0).r,
-        textureSampleLevel(videoTex, videoSampler, gUV, 0.0).g,
-        textureSampleLevel(videoTex, videoSampler, bUV, 0.0).b
+        textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
+        textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
+        textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
     );
 
     let border = smoothstep(emitThresh, 1.0, smoothstep(0.08, 0.12, cellDist) * pattern * length(curl));
@@ -216,7 +216,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let emissive = mix(dispersed, plasma, border * 0.6);
 
     let historyUV = clamp(uv + totalWarp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(historyTex, videoSampler, historyUV, 0.0).rgb;
+    let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
     let flowDir = normalize(totalWarp + curl + 0.001);
     let anisotropy = 1.0 - abs(dot(flowDir, normalize(uv - 0.5 + 0.001))) * 0.3;
     let diffused = mix(emissive, history, diffusionRate * anisotropy);
@@ -231,7 +231,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let spectral = spectralPower(diffused, pattern);
     let finalCol = mix(srcCol, spectral, 1.0) + shimmer;
 
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(diffused, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalCol, 1.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(diffused, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

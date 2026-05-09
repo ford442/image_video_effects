@@ -3,21 +3,21 @@
 //  Color as a physical dimension: each pixel is a point in 4‑D (x, y, depth, hue).
 //  Warps image along local hue‑gradient, bends depth into curvature tensor.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ────────────────────────────────────────────────────────────────────────────────
 
@@ -81,7 +81,8 @@ fn hash2(p: vec2<f32>) -> f32 {
 //  Wrap-around modulo for hue gradients
 // ───────────────────────────────────────────────────────────────────────────────
 fn wrapMod(x: f32, y: f32) -> f32 {
-  return x - y * floor(x / y);
+  if (y == 0.0) { return x; }
+    return x - y * floor(x / y);
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -109,17 +110,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ──────────────────────────────────────────────────────────────────────────
   //  1. Read source color & depth
   // ──────────────────────────────────────────────────────────────────────────
-  let srcColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-  let depthVal = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+  let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   // ──────────────────────────────────────────────────────────────────────────
   //  2. Compute local hue gradient (finite differences)
   // ──────────────────────────────────────────────────────────────────────────
   let h = rgb2hsv(srcColor).x;
-  let hR = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
-  let hL = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
-  let hU = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
-  let hD = rgb2hsv(textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(0.0, texel.y), 0.0).rgb).x;
+  let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
+  let hL = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
+  let hU = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
+  let hD = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).rgb).x;
 
   // Wrap‑around gradient (handle hue discontinuity at 0/1)
   let gradX = wrapMod(hR - hL + 1.5, 1.0) - 0.5;
@@ -151,7 +152,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ──────────────────────────────────────────────────────────────────────────
   let rippleCount = u32(u.config.y);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let r = u.ripples[i];
+    let r = u.ripples[min(i, 49u)];
     let dist = distance(uv, r.xy);
     let t = time - r.z;
     if (t > 0.0 && t < 3.0) {
@@ -167,7 +168,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   //  6. Sample displaced UV for color
   // ──────────────────────────────────────────────────────────────────────────
   let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
-  let displacedColor = textureSampleLevel(videoTex, videoSampler, displacedUV, 0.0).rgb;
+  let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
   // ──────────────────────────────────────────────────────────────────────────
   //  7. Fold the hue of the sampled color
@@ -180,13 +181,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ──────────────────────────────────────────────────────────────────────────
   //  8. Feedback: blend with previous frame
   // ──────────────────────────────────────────────────────────────────────────
-  let prev = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
   let finalColor = mix(foldedColor, prev, feedbackStrength);
 
   // ──────────────────────────────────────────────────────────────────────────
   //  9. Write outputs
   // ──────────────────────────────────────────────────────────────────────────
-  textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
-  textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
 }

@@ -5,21 +5,21 @@
 //  Upgraded: 2026-03-22
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -35,6 +35,7 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 
 fn fmod(x: f32, y: f32) -> f32 {
+    if (y == 0.0) { return x; }
     return x - y * floor(x / y);
 }
 
@@ -132,7 +133,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  2️⃣  Depth-Aware & Warped Coordinates
     // -----------------------------------------------------------------
-    let staticDepth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let staticDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthFactor = 1.0 + (1.0 - staticDepth) * 2.5;
     
     let toPixel = uv - center;
@@ -174,9 +175,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uvG = sampleUV;
     let uvB = rotate(sampleUV - center, -chromaOffset * (1.0 + cos(time * 0.5) * 0.2)) + center;
     
-    let colR = textureSampleLevel(videoTex, videoSampler, clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let colG = textureSampleLevel(videoTex, videoSampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    let colB = textureSampleLevel(videoTex, videoSampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let colR = textureSampleLevel(readTexture, u_sampler, clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let colG = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let colB = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     var color = vec3<f32>(colR, colG, colB);
     
     // -----------------------------------------------------------------
@@ -192,14 +193,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  6️⃣  Enhanced Feedback Trails
     // -----------------------------------------------------------------
-    let prev = textureSampleLevel(historyTex, depthSampler, uv, 0.0).rgb;
+    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
     let decay = 0.88 + (trails * 0.11); // Map 0..1 to 0.88..0.99
     
     // ✨ GEMINI UPGRADE: Mix in a subtle noise shimmer into the feedback
     let shimmer = noise(uv * 10.0 + time) * 0.05;
     let feedback = max(color, prev * decay + shimmer);
     
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(feedback, 1.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(feedback, 1.0));
     
     // -----------------------------------------------------------------
     //  7️⃣  Final Output
@@ -211,6 +212,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alpha = mix(0.7, 1.0, luma);
     let finalAlpha = mix(alpha * 0.8, alpha, staticDepth);
     
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, finalAlpha));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalCol, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

@@ -7,21 +7,21 @@
 //  - Pixelation creates volumetric "cells" with depth
 //  - Mouse clears fog by locally reducing optical depth
 // ═══════════════════════════════════════════════════════════════
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -75,8 +75,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hazeUV = quantizedUV + noiseVal;
 
     // Sample colors
-    let colClear = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let colHaze = textureSampleLevel(videoTex, videoSampler, hazeUV, 0.0).rgb;
+    let colClear = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let colHaze = textureSampleLevel(readTexture, u_sampler, hazeUV, 0.0).rgb;
 
     // Apply a "digital" tint to the haze
     let greenTint = vec3<f32>(0.0, 0.1, 0.0) * noiseAmt;
@@ -113,5 +113,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Output with volumetric alpha
     // RGB: Combined in-scattered + transmitted light
     // A: Opacity based on optical depth
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
 }

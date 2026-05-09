@@ -7,21 +7,21 @@
 //    z: Motion vector visibility
 //    w: Glitch frequency
 // ═══════════════════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -152,11 +152,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let scanLine = smoothstep(0.0, 1.0, scanVal);
 
     let imgUV = uv + vec2<f32>(vOffset * 0.1, vOffset);
-    var color = textureSampleLevel(videoTex, videoSampler, imgUV, 0.0).rgb;
+    var color = textureSampleLevel(readTexture, u_sampler, imgUV, 0.0).rgb;
 
     // RGB split on distortion edges
-    let r = textureSampleLevel(videoTex, videoSampler, imgUV + vec2<f32>(vOffset * 0.05, 0.0), 0.0).r;
-    let b = textureSampleLevel(videoTex, videoSampler, imgUV - vec2<f32>(vOffset * 0.05, 0.0), 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, imgUV + vec2<f32>(vOffset * 0.05, 0.0), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, imgUV - vec2<f32>(vOffset * 0.05, 0.0), 0.0).b;
     color = vec3<f32>(r, color.g, b);
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -230,7 +230,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (iframeGlitch(uv, time, glitchFreq)) {
         let glitchPattern = hash3(vec3<f32>(uv * 20.0, floor(time * glitchFreq)));
         let shiftUV = uv + vec2<f32>(glitchPattern - 0.5, 0.0) * 0.1;
-        let shiftedColor = textureSampleLevel(videoTex, videoSampler, shiftUV, 0.0).rgb;
+        let shiftedColor = textureSampleLevel(readTexture, u_sampler, shiftUV, 0.0).rgb;
         color = mix(color, shiftedColor, 0.5) + vec3<f32>(glitchPattern * 0.2);
     }
 
@@ -239,9 +239,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ═══════════════════════════════════════════════════════════════════════════
     let finalColor = color * (0.8 + 0.2 * scanLine);
 
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
     
     // Pass through depth
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

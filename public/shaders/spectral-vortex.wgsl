@@ -1,18 +1,18 @@
 // Spectral Vortex - Psychedelic Feedback Shader
 // Accumulates "phase" in the depth buffer and uses it to distort and hue-shift the source image.
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex: texture_2d<f32>;
-@group(0) @binding(2) var outTex: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex: texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -72,10 +72,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colorShift = u.zoom_params.z;     // Default ~0.1
     
     // 1. Calculate Curl of Source Image Luminance
-    let l = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r;
-    let r = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
-    let t = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r;
-    let b = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
+    let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r;
+    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
+    let t = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
     
     let dx = (r - l) * 0.5;
     let dy = (b - t) * 0.5;
@@ -84,14 +84,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vel = vec2<f32>(dy, -dx) * mix(1.0, 20.0, u.zoom_params.w); // Amplify
     
     // 2. Accumulate Phase in Depth Buffer
-    let prevPhase = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let prevPhase = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
     // Update phase: rotate based on local curl magnitude
     let curlMag = length(vel);
     let newPhase = prevPhase + curlMag * 0.1 + 0.01; // Constant drift + curl-driven spin
     
     // Write new phase for next frame
-    textureStore(outDepth, vec2<i32>(global_id.xy), vec4<f32>(newPhase, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(newPhase, 0.0, 0.0, 0.0));
     
     // 3. Distort UVs based on Phase and Velocity
     // We use the accumulated phase to rotate the sampling vector
@@ -105,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distortedUV = uv + offset;
     
     // 4. Sample Source with Distortion
-    let srcCol = textureSampleLevel(videoTex, videoSampler, distortedUV, 0.0);
+    let srcCol = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
     
     // 5. Apply Hue Rotation
     var hsv = rgb2hsv(srcCol.rgb);
@@ -118,5 +118,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalRGB = 1.0 - finalRGB;
     }
     
-    textureStore(outTex, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, 1.0));
 }

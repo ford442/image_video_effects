@@ -5,7 +5,7 @@
 // 1. UNIFORMS & BINDINGS
 @group(0) @binding(0) var u_sampler : sampler;
 @group(0) @binding(1) var readTexture : texture_2d<f32>;
-@group(0) @binding(2) var outTex : texture_storage_2d<rgba32float, write>;
+@group(0) @binding(2) var writeTexture : texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u : Uniforms;
 @group(0) @binding(4) var readDepthTexture : texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler : sampler;
@@ -369,6 +369,6 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     // 5. Write to Storage Texture
     // Check output bounds to be safe
     if (gid.x < u32(u.config.z) && gid.y < u32(u.config.w)) {
-        textureStore(outTex, vec2<i32>(gid.xy), outColor);
+        textureStore(writeTexture, vec2<i32>(gid.xy), outColor);
     }
 }

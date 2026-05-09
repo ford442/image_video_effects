@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var rippleForce = vec2<f32>(0.0);
     let rippleCount = u32(u.config.y);
     for (var i = 0u; i < rippleCount; i++) {
-        let r = u.ripples[i];
+        let r = u.ripples[min(i, 49u)];
         let dist = distance(uv, r.xy);
         let age = time - r.z;
         if (age > 0.0 && age < 5.0) {

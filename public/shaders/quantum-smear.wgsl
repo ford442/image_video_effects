@@ -3,21 +3,21 @@
 //  Quantum particle disintegration with stochastic advection and entropy injection.
 //  Objects dissolve into pointillist particle clouds that reassemble when motion stops.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ────────────────────────────────────────────────────────────────────────────────
 
@@ -93,9 +93,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Sample inputs
     // ──────────────────────────────────────────────────────────────────────────
-    let videoSample = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    let prevFeedback = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
+    let videoSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let prevFeedback = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
 
     // ──────────────────────────────────────────────────────────────────────────
     //  Calculate motion entropy at this pixel
@@ -106,7 +106,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  Apply stochastic advection to create particle dispersion
     // ──────────────────────────────────────────────────────────────────────────
     let advectedUV = stochasticAdvect(uv, motion, depth * depthMod, scatterRadius, entropyScale, time);
-    let advectedSample = textureSampleLevel(feedbackTex, videoSampler, clamp(advectedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let advectedSample = textureSampleLevel(dataTextureC, u_sampler, clamp(advectedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
     // ──────────────────────────────────────────────────────────────────────────
     //  Entropy injection - motion creates energy bursts
@@ -167,7 +167,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Output (HDR allowed for glowing hotspots and anti-matter voids)
     // ──────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
 }

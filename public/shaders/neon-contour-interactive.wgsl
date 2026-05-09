@@ -5,21 +5,21 @@
 //  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     for(var i = -1; i <= 1; i++) {
         for(var j = -1; j <= 1; j++) {
             let offset = vec2<f32>(f32(i), f32(j)) * texelSize;
-            let c = textureSampleLevel(videoTex, videoSampler, uv + offset, 0.0).rgb;
+            let c = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
             let luma = getLuminance(c);
             let idx = (j + 1) * 3 + (i + 1);
             edgeX += luma * gx[idx];
@@ -121,5 +121,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
 
     // Output RGBA: RGB = emission (HDR), A = physical occlusion
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(emission, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(emission, finalAlpha));
 }

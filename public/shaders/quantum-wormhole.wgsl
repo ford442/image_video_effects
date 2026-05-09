@@ -3,21 +3,21 @@
 //  Turns any input video into a constantly‑twisting, colour‑as‑a‑
 //  physical‑dimension wormhole with 4D hypersphere mapping.
 // ---------------------------------------------------------------
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var persistBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTexC:    texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC:    texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------------------
 
@@ -70,10 +70,10 @@ fn to4D(uv: vec2<f32>, time: f32) -> vec4<f32> {
 // ---------------------------------------------------------------
 fn curlField(uv: vec2<f32>, texelSize: vec2<f32>) -> vec2<f32> {
     // Sample luminance at a small offset in four directions
-    let Lu = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
-    let Ld = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r;
-    let Ll = textureSampleLevel(videoTex, videoSampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
-    let Lr = textureSampleLevel(videoTex, videoSampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r;
+    let Lu = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
+    let Ld = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r;
+    let Ll = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
+    let Lr = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r;
 
     // Simple central differences → gradient
     let grad = vec2<f32>(Lr - Ll, Ld - Lu);
@@ -105,13 +105,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthInf = u.zoom_config.w;                        // Depth influence
 
     // Read depth
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // -----------------------------------------------------------------
     //  Get source and previous state (feedback)
     // -----------------------------------------------------------------
-    let src = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
-    let prevState = textureSampleLevel(dataTexC, videoSampler, uv, 0.0);
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let prevState = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
     // -----------------------------------------------------------------
     //  Build the 4‑D point and compute its phase
@@ -161,7 +161,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  Feedback warp – drag previous colour along the velocity
     // -----------------------------------------------------------------
     let warpedUV = clamp(uv + vel * trailLength, vec2<f32>(0.0), vec2<f32>(1.0));
-    let warpedPrev = textureSampleLevel(dataTexC, videoSampler, warpedUV, 0.0).rgb;
+    let warpedPrev = textureSampleLevel(dataTextureC, u_sampler, warpedUV, 0.0).rgb;
 
     // -----------------------------------------------------------------
     //  Temporal blend (persistence creates trails)
@@ -169,11 +169,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalRGB = warpedPrev * persistence + newRGB * (1.0 - persistence);
 
     // Store for next frame
-    textureStore(persistBuf, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
 
     // -----------------------------------------------------------------
     //  Output (HDR allowed for glow effects)
     // -----------------------------------------------------------------
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalRGB, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

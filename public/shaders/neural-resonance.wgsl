@@ -3,21 +3,21 @@
 //  Runaway neural feedback loop with hallucinogenic pareidolic effects.
 //  Creates breathing fractal scales, watching eyes, spiraling vortices.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ────────────────────────────────────────────────────────────────────────────────
 
@@ -39,10 +39,10 @@ fn luminance(rgb: vec3<f32>) -> f32 {
 //  Calculate gradient of luminance (4 texture samples)
 // ───────────────────────────────────────────────────────────────────────────────
 fn luminanceGradient(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
-    let l0 = luminance(textureSampleLevel(feedbackTex, videoSampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb);
-    let l1 = luminance(textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb);
-    let l2 = luminance(textureSampleLevel(feedbackTex, videoSampler, uv - vec2<f32>(0.0, texel.y), 0.0).rgb);
-    let l3 = luminance(textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb);
+    let l0 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb);
+    let l1 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb);
+    let l2 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).rgb);
+    let l3 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb);
     return vec2<f32>(l1 - l0, l3 - l2);
 }
 
@@ -67,15 +67,15 @@ fn gaussianBlur3x3(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> vec3<f32> {
     let scale = texel * radius;
     
     // 3x3 Gaussian weights (sigma ≈ 0.8)
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(-scale.x, -scale.y), 0.0).rgb * 0.0625;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(0.0, -scale.y), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(scale.x, -scale.y), 0.0).rgb * 0.0625;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(-scale.x, 0.0), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb * 0.25;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(scale.x, 0.0), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(-scale.x, scale.y), 0.0).rgb * 0.0625;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(0.0, scale.y), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(feedbackTex, videoSampler, uv + vec2<f32>(scale.x, scale.y), 0.0).rgb * 0.0625;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-scale.x, -scale.y), 0.0).rgb * 0.0625;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, -scale.y), 0.0).rgb * 0.125;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(scale.x, -scale.y), 0.0).rgb * 0.0625;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-scale.x, 0.0), 0.0).rgb * 0.125;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb * 0.25;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(scale.x, 0.0), 0.0).rgb * 0.125;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-scale.x, scale.y), 0.0).rgb * 0.0625;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, scale.y), 0.0).rgb * 0.125;
+    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(scale.x, scale.y), 0.0).rgb * 0.0625;
     
     return sum;
 }
@@ -106,9 +106,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Sample inputs
     // ──────────────────────────────────────────────────────────────────────────
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    let videoSample = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let prevFrame = textureSampleLevel(feedbackTex, videoSampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let videoSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let prevFrame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
 
     // Depth-modulated kernel radius
     let kernelRadius = mix(1.0, 3.0, depth * depthMod);
@@ -151,9 +151,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let offsetB = vec2<f32>(baseB.x * cosA - baseB.y * sinA, baseB.x * sinA + baseB.y * cosA);
     
     // Sample with chromatic aberration
-    let sampleR = textureSampleLevel(feedbackTex, videoSampler, uv + offsetR, 0.0).r;
-    let sampleG = textureSampleLevel(feedbackTex, videoSampler, uv + offsetG, 0.0).g;
-    let sampleB = textureSampleLevel(feedbackTex, videoSampler, uv + offsetB, 0.0).b;
+    let sampleR = textureSampleLevel(dataTextureC, u_sampler, uv + offsetR, 0.0).r;
+    let sampleG = textureSampleLevel(dataTextureC, u_sampler, uv + offsetG, 0.0).g;
+    let sampleB = textureSampleLevel(dataTextureC, u_sampler, uv + offsetB, 0.0).b;
     let warpedColor = vec3<f32>(sampleR, sampleG, sampleB);
     
     // Blend warped feedback with enhanced result
@@ -179,7 +179,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ──────────────────────────────────────────────────────────────────────────
     //  Output (HDR allowed for glow effects)
     // ──────────────────────────────────────────────────────────────────────────
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(feedbackOut, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
 }

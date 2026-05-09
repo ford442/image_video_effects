@@ -3,21 +3,21 @@
 //  Cascading activations flow through artificial synapses, creating
 //  surreal, ever-morphing landscapes that breathe with digital consciousness.
 // ---------------------------------------------------------------
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var persistBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTexC:    texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC:    texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------------------
 
@@ -120,7 +120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depthInf = u.zoom_config.w;                       // Depth influence
   
   // Read depth
-  let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   
   // -----------------------------------------------------------------
   //  Create dynamic neural centers (3 main neurons)
@@ -190,18 +190,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   );
   
   let distortedUV = clamp(uv + distortion * processedActivation, vec2<f32>(0.0), vec2<f32>(1.0));
-  let inputSample = textureSampleLevel(videoTex, videoSampler, distortedUV, 0.0).rgb;
+  let inputSample = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).rgb;
   
   // -----------------------------------------------------------------
   //  Sample previous frame for temporal coherence
   // -----------------------------------------------------------------
-  let prevSample = textureSampleLevel(dataTexC, videoSampler, uv, 0.0).rgb;
+  let prevSample = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
   
   // Create feedback with neural persistence
   let feedback = mix(prevSample, totalColor, feedbackStr);
   
   // Store for next frame
-  textureStore(persistBuf, vec2<i32>(gid.xy), vec4<f32>(feedback, 1.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(feedback, 1.0));
   
   // -----------------------------------------------------------------
   //  Morph between input and neural visualization
@@ -229,6 +229,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // -----------------------------------------------------------------
   //  Output
   // -----------------------------------------------------------------
-  textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
-  textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

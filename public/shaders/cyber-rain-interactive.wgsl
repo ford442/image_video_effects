@@ -2,21 +2,21 @@
 //  Cyber Rain Interactive
 //  Digital rain effect that interacts with image luminance and mouse.
 // ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
 
-@group(0) @binding(7) var feedbackOut: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var normalBuf:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var feedbackTex: texture_2d<f32>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
@@ -90,7 +90,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (dist < 0.0) { dist += 1.0; } // Wrap around
 
     // Underlying image interaction
-    let imgColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
+    let imgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let luma = dot(imgColor, vec3<f32>(0.299, 0.587, 0.114));
 
     // Mouse Interaction: Disrupt the rain
@@ -125,9 +125,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Final composite
     let finalColor = mix(imgColor * 0.1, rainColor, brightness);
 
-    textureStore(outTex, gid.xy, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
     
     // Pass through depth
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    textureStore(outDepth, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
