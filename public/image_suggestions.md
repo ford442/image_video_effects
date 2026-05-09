@@ -3982,6 +3982,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Challenges the generation of cohesive forms from chaotic, particle-based volumetric materials.
 
+
+### Suggestion: Holographic Bonsai Tree
+- **Date:** 2026-11-28
+- **Prompt:** "An ultra-detailed macro shot of a delicate bonsai tree constructed entirely from glowing holographic hard-light projections, resting on a sleek obsidian pedestal. The tree emits a soft, pulsing cyan and magenta light that illuminates the dark, minimalist cyber-dojo environment. The lighting is completely diegetic, relying on the vibrant glow of the holographic leaves against the pitch-black obsidian. The mood is serene, futuristic, and highly advanced. Captured with a 100mm macro lens, utilizing a shallow depth of field to create a soft, glowing neon bokeh."
+- **Negative prompt:** "organic, wood, dirt, daylight, bright background, lowres, blurry, messy"
+- **Tags:** macro, cyberpunk, holographic, bonsai, futuristic
+- **Style / Reference:** photorealistic macro photography, high-detail sci-fi rendering
+- **Composition:** centered subject, extreme close-up, shallow depth of field
+- **Color palette:** neon cyan, vibrant magenta, polished obsidian black, soft white glow
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261128_holographic-bonsai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing soft holographic emission and neon bokeh effects.
+
+### Suggestion: Clockwork Nebula Leviathan
+- **Date:** 2026-11-28
+- **Prompt:** "A majestic, colossal space leviathan resembling a blue whale, swimming through a vibrant, swirling purple and gold nebula. The celestial creature is composed entirely of intricate brass clockwork, glowing astrolabes, and highly polished copper gears. The lighting is intensely cinematic, with harsh, blinding light from a nearby young star reflecting off the polished metallic surfaces, contrasting with the soft, ethereal glow of the nebula. The mood is wondrous, epic, and highly imaginative. Captured with a wide-angle 24mm cinematic lens to emphasize the massive, awe-inspiring scale of the mechanical beast."
+- **Negative prompt:** "organic flesh, Earth ocean, water, dark space, simple, low quality, flat lighting"
+- **Tags:** sci-fi, steampunk, space, leviathan, epic
+- **Style / Reference:** cinematic sci-fi concept art, steampunk aesthetic, JWST style
+- **Composition:** wide perspective, dynamic movement, sweeping curves
+- **Color palette:** polished brass, glowing gold, vibrant nebula purple, blinding stellar white
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261128_clockwork-nebula-leviathan.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex metallic hard-surface modeling amidst soft, volumetric nebula clouds.
+
+### Suggestion: Cyber-Renaissance Floating Market
+- **Date:** 2026-11-28
+- **Prompt:** "A bustling, vibrant floating marketplace set in a Cyber-Renaissance canal city, reminiscent of a futuristic Venice. Elaborate gondolas powered by glowing blue repulsor engines navigate the waterways, surrounded by grand marble architecture adorned with intricate neon-lit frescoes. The lighting is a warm, golden-hour sunset reflecting off the rippling water, beautifully blended with the cool, electric cyan and pink glow of the holographic storefronts. The mood is energetic, historically wealthy, and technologically advanced. Captured from a high vantage point overlooking the canal, showcasing the dense, layered architecture and busy waterways."
+- **Negative prompt:** "dystopian, rainy, dark, gritty, simple, modern glass skyscrapers, empty"
+- **Tags:** cyberpunk, renaissance, city, floating market, vibrant
+- **Style / Reference:** opulent architectural visualization, retro-futuristic city design
+- **Composition:** high angle, deep perspective down the canal, dense overlapping elements
+- **Color palette:** warm sunset gold, pristine white marble, neon cyan, electric pink, deep canal blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261128_cyber-renaissance-market.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of grand historical architecture (Renaissance marble) with vibrant cyberpunk neon and water reflections.
+
+### Suggestion: Bioluminescent Ice Cave
+- **Date:** 2026-11-28
+- **Prompt:** "A breathtaking, wide-angle interior shot of a massive, frozen glacial cave. Instead of being dark, the cavern is illuminated by thousands of bioluminescent, deep-sea-like flora frozen within the walls of clear blue ice. The subjects emit a soft, pulsing emerald green and sapphire blue light. The lighting is entirely subterranean and emissive, causing the polished ice surfaces to refract and reflect the magical glow endlessly down the curving tunnels. The mood is freezing, ancient, and deeply mysterious. Captured with a 14mm ultra-wide lens, deep focus to capture the endless frozen reflections."
+- **Negative prompt:** "daylight, sun, warm colors, fire, people, muddy, messy rock"
+- **Tags:** landscape, fantasy, ice, bioluminescent, cave
+- **Style / Reference:** fantasy environment photography, hyper-detailed nature
+- **Composition:** sweeping tunnel curve, deep perspective, wide angle
+- **Color palette:** freezing glacial blue, glowing emerald green, brilliant sapphire, stark white ice highlights
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261128_bioluminescent-ice-cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing multi-bounce refractions through clear ice and internal, glowing light sources.
+
+### Suggestion: Art Deco Quantum Locomotive
+- **Date:** 2026-11-28
+- **Prompt:** "A sleek, hyper-advanced quantum locomotive speeding along an elevated magnetic track through a snowy mountain pass, designed in a lavish, opulent Art Deco style. The train features sweeping aerodynamic curves, polished chrome plating, and intricate gold geometric inlays. The lighting is a crisp, bright winter morning sun casting sharp shadows and brilliant specular glints on the metallic hull, while the repulsor engines leave a trail of glowing cyan plasma. The mood is luxurious, powerful, and wildly optimistic. Captured with a dynamic panning motion blur to convey immense speed while keeping the pristine locomotive in sharp focus."
+- **Negative prompt:** "rusty, old, steam train, dark, dystopian, slow, blurry, messy, gritty"
+- **Tags:** sci-fi, vehicle, art deco, train, winter
+- **Style / Reference:** retro-futuristic vehicle design, high-end 3D rendering
+- **Composition:** dynamic angled profile, panning motion blur, sharp subject focus
+- **Color palette:** polished chrome silver, brilliant gold, glowing cyan plasma, blinding white snow
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261128_art-deco-locomotive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating highly reflective, curved metallic surfaces under intense daylight and panning motion blur.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
