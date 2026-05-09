@@ -30,7 +30,7 @@ var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) 
 var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) 
-var<storage> plasmaBuffer: array<vec4<f32>>;
+var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 fn getLuma(color_1: vec3<f32>) -> f32 {
     return dot(color_1, vec3<f32>(0.299, 0.587, 0.114));

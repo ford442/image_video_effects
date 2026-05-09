@@ -29,6 +29,7 @@ struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Radius, y=Strength, z=Decay, w=Swirl
+  ripples: array<vec4<f32>, 50>,
 };
 
 // Schlick's approximation for Fresnel
