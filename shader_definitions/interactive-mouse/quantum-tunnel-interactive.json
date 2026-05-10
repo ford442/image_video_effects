@@ -1,9 +1,10 @@
 {
   "id": "quantum-tunnel-interactive",
   "name": "Quantum Tunnel",
-  "category": "image",
+  "category": "interactive-mouse",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -36,9 +37,11 @@
     }
   ],
   "url": "shaders/quantum-tunnel-interactive.wgsl",
-  "description": "Interactive radial distortion with chromatic aberration and pulsing effects.",
+  "description": "Interactive radial distortion with chromatic aberration, pulsing effects, and audio-reactive glow.",
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "distortion",
+    "audio-reactive"
   ]
 }

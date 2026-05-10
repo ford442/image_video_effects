@@ -2,8 +2,8 @@
   "id": "directional-glitch",
   "name": "Directional Glitch",
   "url": "shaders/directional-glitch.wgsl",
-  "category": "image",
-  "description": "Glitch artifacts radiate from the mouse position.",
+  "category": "interactive-mouse",
+  "description": "Glitch artifacts radiate from the mouse position with audio-reactive displacement.",
   "params": [
     {
       "id": "intensity",
@@ -48,10 +48,14 @@
   ],
   "features": [
     "mouse-driven",
-    "glitch"
+    "glitch",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "glitch",
+    "interactive",
+    "audio-reactive"
   ]
 }

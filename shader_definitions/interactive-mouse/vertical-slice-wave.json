@@ -3,7 +3,7 @@
   "name": "Vertical Slice Wave",
   "url": "shaders/vertical-slice-wave.wgsl",
   "category": "interactive-mouse",
-  "description": "Splits the image into vertical strips that oscillate. Mouse X controls frequency, Mouse Y controls amplitude.",
+  "description": "Splits the image into vertical strips that oscillate. Mouse X controls frequency, Mouse Y controls amplitude. Audio-reactive via bass modulation.",
   "params": [
     {
       "id": "strips",
@@ -35,10 +35,13 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "audio-reactive",
+    "distortion"
   ]
 }

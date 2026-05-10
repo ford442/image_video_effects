@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Velocity Field Paint
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, temporal
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Shader Upgrade Swarm — Phase A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +20,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>, // y,z is mouse
-  zoom_params: vec4<f32>, // x: dissipation, y: brush size, z: force, w: audio reactivity
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -48,7 +55,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
         if (dist < brushSize) {
-             let pushDir = normalize(dVec);
+             // Randomization-safe: avoid division by zero
+             let pushDir = select(vec2<f32>(0.0, 0.0), normalize(dVec), dist > 0.0001);
              let influence = smoothstep(brushSize, 0.0, dist);
              velocity += pushDir * force * influence;
         }
@@ -61,11 +69,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offsetUV = uv - velocity * 0.05;
     let sampledColor = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
 
-    // Write to display
+    // Write to display — preserve source alpha from sampled texture
     textureStore(writeTexture, vec2<i32>(global_id.xy), sampledColor);
 
-    // Store velocity for next frame
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(velocity, 0.0, 1.0));
+    // Store velocity for next frame with alpha = velocity magnitude (effect intensity)
+    let velMag = clamp(length(velocity), 0.0, 1.0);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(velocity, 0.0, velMag));
 
     // Pass depth through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -1,12 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quad Mirror
 //  Category: image
-//  Features: mouse-driven, geometry
+//  Features: mouse-driven, geometry, audio-reactive
 //  Complexity: Low
 //  Created: 2026-05-03
+//  Upgraded: 2026-05-10
 //  By: Optimizer
 // ═══════════════════════════════════════════════════════════════════
-// 4-way kaleidoscope mirror centered on mouse with rotation and zoom.
+// 4-way kaleidoscope mirror centered on mouse with rotation, zoom,
+// edge softness, and audio-reactive zoom pulsing.
 // Pipeline-ready: HDR preserved, single texture sample, slot-chainable.
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -44,6 +46,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / res;
   let mouse = u.zoom_config.yz;
 
+  // --- Audio reactivity ---
+  let bass = plasmaBuffer[0].x;
+  let audioPulse = 1.0 + bass * 0.2;
+
   // --- Mirror transform ---
   let rel = uv - mouse;
   let rot = u.zoom_params.z * TAU;
@@ -52,7 +58,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rx = rel.x * c - rel.y * s;
   let ry = rel.x * s + rel.y * c;
 
-  let zoom = max(MIN_ZOOM, u.zoom_params.y);
+  let zoom = max(MIN_ZOOM, u.zoom_params.y * audioPulse);
   let sample_uv = mouse - vec2<f32>(abs(rx), abs(ry)) / zoom;
 
   // Single texture sample — minimal cost for 3-slot chaining
@@ -63,10 +69,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeMask = smoothstep(0.0, 0.1, min(abs(rx), abs(ry)));
   color = color * mix(1.0, edgeMask, edgeAmt);
 
-  // HDR-ready output (no clamp)
+  // --- Meaningful alpha based on luminance, depth, and audio ---
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let luminance = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let effectIntensity = mix(luminance, depth, 0.3);
+  color.a = mix(color.a, clamp(effectIntensity * (1.0 + bass * 0.5), 0.0, 1.0), 0.5);
+
+  // HDR-ready output (no clamp on rgb)
   textureStore(writeTexture, px, color);
 
   // --- Depth pass-through ---
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

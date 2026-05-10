@@ -1,4 +1,19 @@
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>; };
+// ═══════════════════════════════════════════════════════════════════
+//  Neural Network Glow - Synaptic Pulse
+//  Category: generative
+//  Features: audio-reactive, mouse-driven
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -24,12 +39,15 @@ fn main(@builtin(global_invocation_id) coords: vec3<u32>) {
     if (coords.x >= res.x || coords.y >= res.y) { return; }
     let uv = vec2<f32>(coords.xy) / vec2<f32>(res);
 
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
     // Neural network layout
     let p = uv * 5.0;
     let i = floor(p);
     let f = fract(p);
 
-    var glow = 0.0;
     var min_dist = 1.0;
 
     for (var y = -1; y <= 1; y++) {
@@ -43,20 +61,23 @@ fn main(@builtin(global_invocation_id) coords: vec3<u32>) {
         }
     }
 
-    // Audio driven pulsing
-    let audio_pulse = u.config.x * 2.0;
-    let pulse_ring = fract(min_dist * 5.0 - u.config.w * u.zoom_params.x * 0.1);
+    // Audio driven pulsing using bass from plasmaBuffer
+    let bass = plasmaBuffer[0].x;
+    let audio_pulse = 1.0 + bass * 2.0;
+    let pulse_speed = u.zoom_params.x;
+    let glow_intensity = u.zoom_params.y;
+    let pulse_ring = fract(min_dist * 5.0 - u.config.x * pulse_speed * 0.1);
 
     let edge_intensity = smoothstep(0.05, 0.0, min_dist);
     let wave = smoothstep(0.9, 1.0, pulse_ring) * audio_pulse;
 
-    let intensity = (edge_intensity + wave) * u.zoom_params.y;
+    let intensity = (edge_intensity + wave) * glow_intensity;
 
     let color_idx = u32(clamp(intensity * 128.0, 0.0, 255.0));
     var col = plasmaBuffer[color_idx].rgb;
 
     // Mouse interaction via ripples
-    for(var k=0; k<50; k++) {
+    for(var k = 0; k < 50; k++) {
         let r = u.ripples[k];
         if(r.w > 0.0) {
             let d = length(uv - r.xy);
@@ -66,5 +87,8 @@ fn main(@builtin(global_invocation_id) coords: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, coords.xy, vec4<f32>(col, 1.0));
+    // Meaningful alpha based on luminance and intensity
+    let luminance = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(max(luminance * 2.0, intensity * 0.5), 0.0, 1.0);
+    textureStore(writeTexture, coords.xy, vec4<f32>(col, alpha));
 }

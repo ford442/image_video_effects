@@ -3,7 +3,7 @@
   "name": "Quad Mirror",
   "url": "shaders/quad-mirror.wgsl",
   "category": "image",
-  "description": "Kaleidoscope-like 4-way mirror reflection centered on the mouse.",
+  "description": "Kaleidoscope-like 4-way mirror reflection centered on the mouse with audio-reactive zoom pulsing.",
   "params": [
     {
       "id": "mode",
@@ -48,7 +48,8 @@
   ],
   "features": [
     "mouse-driven",
-    "geometry"
+    "geometry",
+    "audio-reactive"
   ],
   "tags": [
     "filter",

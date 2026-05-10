@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Virtual Lens
+//  Category: image
+//  Features: mouse-driven, chromatic-aberration, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -13,76 +22,57 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Magnification, y=Radius, z=Aberration, w=Softness
   ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
+    let coords = vec2<i32>(global_id.xy);
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    let aspect = resolution.x / resolution.y;
+    var mouse = u.zoom_config.yz;
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  var mouse = u.zoom_config.yz;
+    let bass = plasmaBuffer[0].x;
+    let magnification = u.zoom_params.x * 0.8 * (1.0 + bass * 0.2);
+    let radius = u.zoom_params.y;
+    let aberration = u.zoom_params.z * 0.05 * (1.0 + bass * 0.3);
+    let softness = u.zoom_params.w * 0.2;
 
-  // Params
-  let magnification = u.zoom_params.x * 0.8; // 0.0 to 0.8
-  let radius = u.zoom_params.y;              // Lens size
-  let aberration = u.zoom_params.z * 0.05;   // Chromatic sep
-  let softness = u.zoom_params.w * 0.2;      // Edge blending
+    var uv_corrected = uv;
+    uv_corrected.x *= aspect;
+    var mouse_corrected = mouse;
+    mouse_corrected.x *= aspect;
 
-  // Aspect correct calculation for circular lens
-  var uv_corrected = uv;
-  uv_corrected.x *= aspect;
-  var mouse_corrected = mouse;
-  mouse_corrected.x *= aspect;
+    let dist = distance(uv_corrected, mouse_corrected);
+    let mask = smoothstep(radius + softness, radius, dist);
 
-  let dist = distance(uv_corrected, mouse_corrected);
+    var dir = uv - mouse;
+    let distortion = sin(mask * 1.57079) * magnification;
 
-  // Mask: 1.0 at center, 0.0 outside radius
-  let mask = smoothstep(radius + softness, radius, dist);
+    let r_uv = uv - dir * distortion * (1.0 + aberration);
+    let g_uv = uv - dir * distortion;
+    let b_uv = uv - dir * distortion * (1.0 - aberration);
 
-  // Bulge Function
-  // We want to pull pixels closer to center.
-  // Sample coord = uv - (dir * amount)
-  var dir = uv - mouse;
+    let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
 
-  // Parabolic falloff for bulge
-  // At center (dist=0), deformation is max?
-  // Actually, magnification means we see a smaller area of the source texture stretched to fill the lens.
-  // So we sample closer to the mouse position.
-  // sample_pos = mouse + (uv - mouse) / zoom
+    let rim = smoothstep(radius * 0.9, radius, dist) * mask * 0.2;
+    var color = vec3<f32>(r, g, b) + vec3<f32>(rim);
 
-  // Let's interpret 'magnification' as the 'strength of the lens curvature'.
-  // Simple displacement:
-  let distortion = sin(mask * 1.57) * magnification;
+    // Alpha: opaque outside lens; inside lens, modulated by luminance and rim glow
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = mix(1.0, clamp(luma * 0.5 + rim * 0.8 + 0.5, 0.0, 1.0), mask);
 
-  // Apply chromatic aberration
-  let r_uv = uv - dir * distortion * (1.0 + aberration);
-  let g_uv = uv - dir * distortion;
-  let b_uv = uv - dir * distortion * (1.0 - aberration);
+    textureStore(writeTexture, coords, vec4<f32>(color, alpha));
 
-  // Read texture
-  let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
-
-  // Add a subtle glass shine/specular
-  let specular = smoothstep(radius - 0.02, radius, dist) * smoothstep(radius, radius - 0.02, dist);
-  // This just makes a ring.
-  // Let's make a rim.
-  let rim = smoothstep(radius * 0.9, radius, dist) * mask * 0.2;
-
-  var color = vec3<f32>(r, g, b) + vec3(rim);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-
-  // Depth pass
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

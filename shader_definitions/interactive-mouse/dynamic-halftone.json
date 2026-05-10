@@ -2,8 +2,8 @@
   "id": "dynamic-halftone",
   "name": "Dynamic Halftone",
   "url": "shaders/dynamic-halftone.wgsl",
-  "category": "image",
-  "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes.",
+  "category": "interactive-mouse",
+  "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes. Audio-reactive radius expansion via bass input.",
   "params": [
     {
       "id": "density",
@@ -34,14 +34,18 @@
       "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Halftone edge sharpness"
+      "description": "Halftone dot edge sharpness (wired to zoom_params.w)"
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
+    "halftone",
     "filter",
-    "image-processing"
+    "image-processing",
+    "interactive",
+    "audio-reactive"
   ]
 }

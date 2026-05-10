@@ -26,11 +26,16 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>, // x=WellCount(1-6), y=WellMass, z=BendStrength, w=EmissionScale
     ripples: array<vec4<f32>, 50>,
 };
+
+const PI:    f32 = 3.14159265358979323846;
+const TAU:   f32 = 6.28318530717958647692;
+const PHI:   f32 = 1.61803398874989484820;
+const G_CONST: f32 = 6.674;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  HSV → RGB
@@ -170,14 +175,17 @@ fn einsteinRingGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32, t: f32) -> f32 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res    = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv     = vec2<f32>(gid.xy) / res;
     let t      = u.config.x;
     let mouse  = u.zoom_config.yz;
+    let bass   = plasmaBuffer[0].x;
 
-    let wellCount   = i32(u.zoom_params.x * 5.0 + 1.5);   // 1 – 6
-    let wellMass    = u.zoom_params.y * 0.08 + 0.01;        // 0.01 – 0.09
-    let bendStrength = u.zoom_params.z * 0.15 + 0.02;       // 0.02 – 0.17
-    let emScale     = u.zoom_params.w * 3.0 + 0.5;          // 0.5 – 3.5
+    let wellCount   = i32(u.zoom_params.x * 5.0 + 1.5);
+    // Bass pumps black-hole mass — feels like the field reacts to drum hits
+    let wellMass    = (u.zoom_params.y * 0.08 + 0.01) * (1.0 + bass * 0.6);
+    let bendStrength = u.zoom_params.z * 0.15 + 0.02;
+    let emScale     = u.zoom_params.w * 3.0 + 0.5;
 
     let aspect = res.x / res.y;
     let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
@@ -188,7 +196,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let seed = f32(i) * 13.7;
         let orbitR = h1(seed) * 0.25 + 0.1;
         let orbitS = (h1(seed + 1.0) * 0.5 + 0.3) * (select(-1.0, 1.0, i32(h1(seed + 2.0) * 10.0) % 2 == 0));
-        let angle  = orbitS * t + h1(seed + 3.0) * 6.28318;
+        let angle  = orbitS * t + h1(seed + 3.0) * TAU;
         let wx     = cos(angle) * orbitR * aspect;
         let wy     = sin(angle) * orbitR;
         let mass   = wellMass * (h1(seed + 4.0) * 0.8 + 0.4);
@@ -264,15 +272,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Gravitational lensing arc highlights ──────────────────────────────
     let lensArc  = length(rayVel) * darkening * emScale * 0.3;
-    let arcColor = hsv2rgb(fract(atan2(rayVel.y, rayVel.x) / 6.28318 + t * 0.05), 0.8, lensArc);
+    let arcColor = hsv2rgb(fract(atan2(rayVel.y, rayVel.x) / TAU + t * 0.05), 0.8, lensArc);
     col = col + arcColor * smoothstep(0.05, 0.2, raySpeed);
 
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    // Depth: gravitational potential (normalized)
+    // Depth: gravitational potential (normalized) — strong wells = closer
     let phi = gravPotential(p, wells, wellCount);
     let depthOut = clamp((-phi) / (wellMass * f32(wellCount) * 20.0), 0.0, 1.0);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(col, 1.0));
+    // Alpha: emission energy + lens arc + Einstein-ring intensity drives compositing weight
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let emEnergy = length(emission) + length(ripEmission) + length(arcColor);
+    let alpha = clamp(0.4 + luma * 0.3 + emEnergy * 0.15 + depthOut * 0.2, 0.0, 1.0);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(col, alpha));
+    // Persist potential field for downstream feedback shaders
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(depthOut, raySpeed, emEnergy, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
 }

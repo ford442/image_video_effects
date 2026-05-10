@@ -3,7 +3,7 @@
   "name": "Steampunk Gear Lens",
   "url": "shaders/steampunk-gear-lens.wgsl",
   "category": "image",
-  "description": "A rotating mechanical gear lens with a sepia filter.",
+  "description": "A rotating mechanical gear lens with sepia filter and audio-reactive rotation.",
   "params": [
     {
       "id": "size",
@@ -35,10 +35,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "steampunk",
+    "gear",
+    "mechanical",
+    "sepia"
   ]
 }

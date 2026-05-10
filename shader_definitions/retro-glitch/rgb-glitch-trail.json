@@ -37,7 +37,8 @@
   "features": [
     "mouse-driven",
     "chromatic",
-    "trail"
+    "trail",
+    "audio-reactive"
   ],
   "tags": [
     "filter",

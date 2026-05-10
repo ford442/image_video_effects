@@ -3,12 +3,13 @@
   "name": "Kimi Ripple Touch",
   "url": "shaders/kimi_ripple_touch.wgsl",
   "category": "interactive-mouse",
-  "description": "Interactive water ripple effect at mouse position with expanding waves and chromatic aberration.",
+  "description": "Interactive water ripple effect at mouse position with expanding waves, chromatic aberration, and bass-driven audio reactivity.",
   "features": [
     "mouse-driven",
     "interactive",
     "ripple",
-    "water"
+    "water",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -46,6 +47,9 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "ripple",
+    "water",
+    "audio-reactive"
   ]
 }

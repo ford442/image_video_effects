@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive Glitch Brush
+//  Category: interactive-mouse
+//  Features: mouse-driven, glitch, audio-reactive
+//  Complexity: Medium
+//  Phase A Upgrade Swarm
+//  Created: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,16 +20,14 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
 };
 
-// Interactive Glitch Brush
 // Param1: Brush Size
 // Param2: Intensity
 // Param3: Block Scale
@@ -42,10 +48,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     var mousePos = u.zoom_config.yz;
 
-    let brushSize = u.zoom_params.x * 0.3 + 0.05;
-    let intensity = u.zoom_params.y;
-    let blockScale = u.zoom_params.z * 50.0 + 5.0;
-    let colorSplit = u.zoom_params.w * 0.1;
+    let brushSize = max(u.zoom_params.x * 0.3 + 0.05, 0.001);
+    let intensity = clamp(u.zoom_params.y, 0.0, 1.0);
+    let blockScale = max(u.zoom_params.z * 50.0 + 5.0, 0.001);
+    let colorSplit = clamp(u.zoom_params.w * 0.1, 0.0, 1.0);
+
+    // Audio reactivity: bass drives glitch intensity
+    let bass = plasmaBuffer[0].x;
+    let audioIntensity = intensity * (1.0 + bass * 0.5);
 
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
@@ -64,20 +74,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Displacement
             var offset = vec2<f32>(0.0);
             if (noise > 0.5) {
-                offset.x = (random(vec2<f32>(noise, time)) - 0.5) * intensity * 0.2;
+                offset.x = (random(vec2<f32>(noise, time)) - 0.5) * audioIntensity * 0.2;
             }
 
-            // Color Split
-            let r = textureSampleLevel(readTexture, u_sampler, uv + offset - vec2<f32>(colorSplit, 0.0), 0.0).r;
-            let g = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).g;
-            let b = textureSampleLevel(readTexture, u_sampler, uv + offset + vec2<f32>(colorSplit, 0.0), 0.0).b;
+            // Color Split with clamped UVs
+            let sampleUV_r = clamp(uv + offset - vec2<f32>(colorSplit, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+            let sampleUV_g = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+            let sampleUV_b = clamp(uv + offset + vec2<f32>(colorSplit, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+
+            let r = textureSampleLevel(readTexture, u_sampler, sampleUV_r, 0.0).r;
+            let g = textureSampleLevel(readTexture, u_sampler, sampleUV_g, 0.0).g;
+            let b = textureSampleLevel(readTexture, u_sampler, sampleUV_b, 0.0).b;
 
             // Invert occasionally
+            var glitchR = r;
+            var glitchG = g;
+            var glitchB = b;
             if (random(vec2<f32>(time, noise)) > 0.95) {
-                 color = vec4<f32>(1.0 - r, 1.0 - g, 1.0 - b, 1.0);
-            } else {
-                 color = vec4<f32>(r, g, b, 1.0);
+                 glitchR = 1.0 - r;
+                 glitchG = 1.0 - g;
+                 glitchB = 1.0 - b;
             }
+
+            // Luminance-based alpha
+            let alpha = clamp(0.299 * glitchR + 0.587 * glitchG + 0.114 * glitchB, 0.1, 1.0);
+            color = vec4<f32>(glitchR, glitchG, glitchB, alpha);
 
             // Scanlines inside brush
             if (fract(uv.y * resolution.y * 0.5) < 0.5) {

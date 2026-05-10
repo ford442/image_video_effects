@@ -27,11 +27,16 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>, // x=ParticleCount(1-8), y=Decoherence, z=WaveSpeed, w=WavefunctionOpacity
     ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+const PHI: f32 = 1.61803398874989484820;
+const HBAR: f32 = 1.0545718e-34;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  HSV → RGB

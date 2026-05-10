@@ -2,8 +2,8 @@
   "id": "heat-haze-gpt52",
   "name": "Heat Haze Mirage gpt52",
   "url": "shaders/heat-haze-gpt52.wgsl",
-  "category": "image",
-  "description": "Layered heat shimmer with chromatic dispersion and rising mirage flow.",
+  "category": "distortion",
+  "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
   "params": [
     {
       "id": "intensity",
@@ -37,10 +37,14 @@
   "features": [
     "animated",
     "atmospheric",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "distortion",
+    "heat",
+    "atmospheric"
   ]
 }

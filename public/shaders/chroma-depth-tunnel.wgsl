@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Chroma Depth Tunnel
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Shader Upgrade Swarm — Phase A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,16 +23,10 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=IsMouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Speed, y=Density, z=ChromaSep, w=FogCenter
   ripples: array<vec4<f32>, 50>,
 };
-
-// Params:
-// x: Speed (Tunnel movement)
-// y: Density (Repetition frequency)
-// z: Chroma Separation
-// w: Fog/Fade Center
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -31,20 +34,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-
+    let coords = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
-    // Mouse Interaction
+    let bass = plasmaBuffer[0].x;
     var mousePos = u.zoom_config.yz;
-    if (mousePos.x < 0.0) { mousePos = vec2<f32>(0.5, 0.5); } // Center default
+    if (mousePos.x < 0.0) { mousePos = vec2<f32>(0.5, 0.5); }
 
-    let speed = (u.zoom_params.x - 0.5) * 2.0; // -1 to 1 range
+    let speed = (u.zoom_params.x - 0.5) * 2.0;
     let density = u.zoom_params.y * 5.0 + 1.0;
-    let chroma = u.zoom_params.z * 0.05;
+    let chroma = u.zoom_params.z * 0.05 * (1.0 + bass * 0.3);
     let centerFade = u.zoom_params.w;
 
-    // Calculate aspect corrected vector to center
     let aspect = resolution.x / resolution.y;
     var p = uv - mousePos;
     let p_aspect = vec2<f32>(p.x * aspect, p.y);
@@ -52,22 +54,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radius = length(p_aspect);
     let angle = atan2(p.y, p.x);
 
-    // Tunnel Mapping
-    // u = angle, v = 1/radius
-    let u_coord = angle / 3.14159; // -1 to 1
-    let v_coord = 1.0 / (radius + 0.001); // Inverse distance
-
+    let u_coord = angle / 3.14159265;
+    let v_coord = 1.0 / (radius + 0.001);
     let tunnelUV = vec2<f32>(u_coord, v_coord * density + time * speed);
 
-    // Chromatic Aberration Sampling
-    // Shift the V coordinate slightly for RGB
     let r_uv = tunnelUV + vec2<f32>(chroma, 0.0);
     let g_uv = tunnelUV;
     let b_uv = tunnelUV - vec2<f32>(chroma, 0.0);
-
-    // To make it seamless, we might need mirror repeat, but sampler is usually repeat
-    // However, the input image texture might not be seamless.
-    // Let's sample.
 
     let r_col = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
     let g_col = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
@@ -75,15 +68,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(r_col, g_col, b_col);
 
-    // Dark center / fog
+    var fog = 1.0;
     if (centerFade > 0.0) {
-        let fog = smoothstep(0.0, centerFade, radius);
+        fog = smoothstep(0.0, centerFade, radius);
         color = color * fog;
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Alpha encodes tunnel depth: inner rings (high v_coord) are more opaque
+    let tunnel_depth = clamp(v_coord * 0.02, 0.0, 1.0);
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(fog * (0.4 + tunnel_depth * 0.4 + luma * 0.2), 0.0, 1.0);
 
-    // Passthrough depth
+    textureStore(writeTexture, coords, vec4<f32>(color, alpha));
+
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coords, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

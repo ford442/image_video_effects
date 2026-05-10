@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Double Exposure Zoom
+//  Category: image
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Low
+//  Created: 2026-05-10
+//  By: Pixelocity Shader Upgrade Swarm — Phase A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,17 +14,16 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -39,6 +46,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
+  let coords = vec2<i32>(global_id.xy);
+
+  // Sample depth and pass-through
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
   // Params
   // Zoom: Map 0.0-1.0 to 0.5x - 3.0x
   let zoomParam = u.zoom_params.x;
@@ -50,6 +63,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let opacity = u.zoom_params.z;
   let saturation = u.zoom_params.w;
+
+  // Audio reactivity — bass drives a subtle zoom pulse
+  let bass = plasmaBuffer[0].x;
+  let audioZoom = zoom * (1.0 + bass * 0.15);
 
   // Mouse interaction
   var mouse = u.zoom_config.yz;
@@ -68,15 +85,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Scale (Zoom)
   // To zoom IN, we divide the UV coordinates
-  p = p / zoom;
+  p = p / audioZoom;
 
   // Restore aspect and origin
   p.x /= aspect;
   let uv2 = p + mouse;
 
-  // Check bounds for uv2 to avoid clamping artifacts if desired,
-  // but textureSampleLevel usually handles clamping or wrapping.
-  // Using u_sampler which usually repeats or clamps.
   let c2 = textureSampleLevel(readTexture, u_sampler, uv2, 0.0);
 
   // Blend Logic
@@ -87,5 +101,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gray = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
   blended = mix(vec3<f32>(gray), blended, 0.5 + saturation * 0.5);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(blended, 1.0));
+  // Meaningful alpha: derived from blended luminance, opacity, and depth
+  let luminance = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
+  let effectIntensity = 0.5 + opacity * 0.5;
+  let depthFactor = 0.7 + depth * 0.3;
+  let alpha = clamp(luminance * effectIntensity * depthFactor + 0.2, 0.3, 1.0);
+
+  textureStore(writeTexture, coords, vec4<f32>(blended, alpha));
 }

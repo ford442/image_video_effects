@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=StreamSpeed, y=StreamDensity, z=LumaThreshold, w=Softness
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -53,32 +56,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
-    
+    // Bass from canonical plasmaBuffer
+    let audioBass = plasmaBuffer[0].x;
+    let audioReactivity = 1.0 + audioBass * 0.5;
+
     let streamSpeed = u.zoom_params.x * 3.0;
     let streamDensity = u.zoom_params.y * 10.0 + 3.0;
     let lumaThreshold = u.zoom_params.z * 0.5;
     let softness = u.zoom_params.w * 0.2;
-    
-    // Streaming pulses
+
+    // Streaming pulses — Gaussian centered at 0.5 (single pow, branchless)
     let streamY = fract(uv.y * streamDensity - time * streamSpeed * audioReactivity);
-    let pulse = exp(-pow((streamY - 0.5) / 0.1, 2.0));
-    
-    // Neon color cycling
-    let neonColor = vec3<f32>(
-        0.5 + 0.5 * sin(time + uv.y * 3.0),
-        0.5 + 0.5 * sin(time + uv.y * 3.0 + 2.09),
-        0.5 + 0.5 * sin(time + uv.y * 3.0 + 4.18)
-    );
-    
+    let dC = (streamY - 0.5) * 10.0;       // 1/0.1 inlined
+    let pulse = exp(-dC * dC);
+
+    // Neon color cycling — single phase, three offsets (vec3 ops, single ALU)
+    let phase = time + uv.y * 3.0;
+    let neonColor = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
+
+    // Composite onto background image (preserves user's photo behind stream)
+    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let streamColor = neonColor * pulse * streamDensity * 0.5;
-    
-    let alpha = calculatePulseStreamAlpha(streamColor, pulse, u.zoom_params);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(streamColor, alpha));
+    let composite = bg * (1.0 - pulse * 0.7) + streamColor;
+
+    let alpha = clamp(calculatePulseStreamAlpha(streamColor, pulse, u.zoom_params)
+                      + dot(bg, vec3<f32>(0.299, 0.587, 0.114)) * 0.2 + 0.1, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(composite, alpha));
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

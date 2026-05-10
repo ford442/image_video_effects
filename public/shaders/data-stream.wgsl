@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Data Stream
+//  Category: interactive-mouse
+//  Features: mouse-driven, glitch, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,18 +14,17 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Speed, y=Density, z=Turbulence, w=Glow
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -29,11 +36,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
 
+    let bass = plasmaBuffer[0].x;
+
     // Params
-    let speed = u.zoom_params.x; // Flow Speed
-    let density = u.zoom_params.y; // Strip Density
-    let turbulence = u.zoom_params.z; // Mouse turbulence
-    let glow = u.zoom_params.w; // Digital Glow
+    let speed = max(u.zoom_params.x * (1.0 + bass * 0.3), 0.001); // Flow Speed
+    let density = max(u.zoom_params.y, 0.001); // Strip Density
+    let turbulence = clamp(u.zoom_params.z, 0.0, 1.0); // Mouse turbulence
+    let glow = clamp(u.zoom_params.w, 0.0, 1.0); // Digital Glow
 
     let time = u.config.x;
 
@@ -80,12 +89,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let digitalColor = vec3<f32>(0.0, lum * 1.5, lum * 0.2); // Green matrix style
 
     // Random "bright" characters
-    let bright = step(0.98, noise * (sin(time * 2.0 + stripIdx)*0.5 + 0.5));
+    let bright = step(0.98, noise * (sin(time * 2.0 + stripIdx) * 0.5 + 0.5));
 
     let finalRGB = mix(color.rgb, digitalColor, glow);
     let outputColor = finalRGB + vec3<f32>(0.0, bright * glow, 0.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outputColor, 1.0));
+    // Alpha: digital glow and stream brightness drive compositing weight
+    let streamLuma = dot(outputColor, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(glow * 0.5 + bright * 0.3 + streamLuma * 0.3, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outputColor, alpha));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Polar Warp Interactive
 //  Category: image
-//  Features: mouse-driven
+//  Features: mouse-driven, audio-reactive
 //  Complexity: Low
 //  Chunks From: original polar-warp-interactive
-//  Created: 2026-05-03
+//  Created: 2026-05-10
 //  By: Optimizer
 // ═══════════════════════════════════════════════════════════════════
 
@@ -53,21 +53,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radius = length(diff);
     let angle = atan2(diff.y, diff.x);
 
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+
     // Tunable params
     let zoom = 0.1 + u.zoom_params.x * 2.0;
     let spiral = u.zoom_params.y * 5.0;
     let repeats = max(1.0, u.zoom_params.z);
     let offset = u.zoom_params.w;
 
+    // Depth pass-through (sample before early exit for singularity)
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
     // Early exit: hide center singularity
     if (radius < EPS) {
+        textureStore(writeDepthTexture, gid, vec4<f32>(depth, 0.0, 0.0, 0.0));
         textureStore(writeTexture, gid, vec4<f32>(0.0));
         return;
     }
 
-    // Polar distortion
+    // Polar distortion with audio-reactive twist
     let r_new = pow(radius, 1.0 / zoom) - offset;
-    let a_new = angle + radius * spiral;
+    let a_new = angle + radius * (spiral + bass * 0.5);
 
     // Map polar back to UV space with time rotation
     let tunnel_u = (a_new / PI) * repeats + u.config.x * 0.1;
@@ -80,9 +87,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Single texture sample
     let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
+    // Write depth pass-through
+    textureStore(writeDepthTexture, gid, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
     // Radial fade at the singularity
     let fade = smoothstep(0.0, 0.1, radius);
 
-    // HDR-ready output: explicit alpha for clean slot chaining
-    textureStore(writeTexture, gid, vec4<f32>(col.rgb * fade, 1.0));
+    // Meaningful alpha based on luminance and fade for clean slot chaining
+    let lum = dot(col.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = fade * clamp(0.5 + lum * 0.5, 0.0, 1.0);
+
+    textureStore(writeTexture, gid, vec4<f32>(col.rgb * fade, alpha));
 }

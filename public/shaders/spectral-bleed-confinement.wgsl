@@ -24,11 +24,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
+    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>, // x=BleedRadius, y=Confinement, z=CurlSpeed, w=EdgeThresh
     ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Smooth value noise
@@ -179,13 +182,14 @@ fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>, depthVal: f32) -> f32
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res   = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv    = vec2<f32>(gid.xy) / res;
     let t     = u.config.x;
     let tx    = 1.0 / res;
 
-    // ═══ AUDIO INPUT ═══
-    let audioOverall = u.config.y;
-    let audioBass = audioOverall * 1.2;
+    // Bass from canonical plasmaBuffer
+    let audioBass = plasmaBuffer[0].x;
+    let audioOverall = audioBass * 0.85;
     let audioPulse = 1.0 + audioBass * 0.5;
 
     // Parameters - audio modulated

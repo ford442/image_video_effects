@@ -2,10 +2,11 @@
   "id": "interactive-rgb-split",
   "name": "Interactive RGB Split",
   "url": "shaders/interactive-rgb-split.wgsl",
-  "category": "image",
-  "description": "Chromatic aberration that reacts to mouse position.",
+  "category": "distortion",
+  "description": "Chromatic aberration that reacts to mouse position and audio bass.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -39,6 +40,9 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "chromatic-aberration",
+    "audio-reactive",
+    "distortion"
   ]
 }

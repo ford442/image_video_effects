@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Fiber Optic Weave
+//  Category: image
+//  Features: woven-fibers, mouse-pluck, audio-reactive, signal-pulse
+//  Complexity: Medium
+//  Phase B / Interactivist
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,91 +13,94 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Density, y=Glow, z=Force, w=Fray
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+const PHI: f32 = 1.61803398874989484820;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let bass = plasmaBuffer[0].x;
 
-    // Params
+    // Params — bass amplifies fiber pulse
     let density = u.zoom_params.x * 100.0 + 10.0;
-    let glow = u.zoom_params.y;
+    let glow = u.zoom_params.y * (1.0 + bass * 0.4);
     let force = u.zoom_params.z;
     let fray = u.zoom_params.w;
 
-    var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
 
-    // Fiber strips calculations
+    // Fiber strips
     let stripIndex = floor(uv.y * density);
     let stripUV = fract(uv.y * density);
     let isOdd = (stripIndex % 2.0) >= 1.0;
 
-    // Mouse Interaction
+    // Mouse pluck — close to fiber centerline = pluck wave (golden-ratio harmonic per fiber)
+    let stripCenter = (stripIndex + 0.5) / density;
+    let dy = abs(uv.y - stripCenter);
+    let dxToMouse = abs(uv.x - mouse.x);
+    let yToMouseStrip = abs(stripIndex - floor(mouse.y * density));
+    let pluckGate = step(yToMouseStrip, 1.5);  // pluck nearby strips
+    let pluck = exp(-dxToMouse * 5.0) * pluckGate * (mouseDown * 0.6 + 0.2);
+
+    // Weaving displacement (alternating, with bass-driven sin wave)
+    let weavePhase = uv.y * 20.0 + time * 2.0 * (1.0 + bass * 0.3) + stripIndex * PHI;
+    let weaveAmt = sin(weavePhase) * 0.005 * fray;
+    var offsetX = select(-weaveAmt, weaveAmt, isOdd);
+    offsetX += pluck * sin((uv.x - mouse.x) * 50.0 + time * 8.0) * 0.02;
+
+    // Mouse repulsion (force param)
     let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+    let dM = length(distVec);
+    let repulsionStr = exp(-dM * dM * 12.0) * force * 0.2;
+    let dir = distVec / max(dM, 1e-4);
+    offsetX += dir.x * repulsionStr;
 
-    // Displacement logic
-    // Base weaving motion
-    var offsetX = 0.0;
-    if (isOdd) {
-        offsetX = sin(uv.y * 20.0 + time * 2.0) * 0.005 * fray;
-    } else {
-        offsetX = -sin(uv.y * 20.0 + time * 2.0) * 0.005 * fray;
-    }
+    let finalUV = clamp(vec2<f32>(uv.x + offsetX, uv.y), vec2<f32>(0.0), vec2<f32>(1.0));
+    var col = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    // Mouse Repulsion / Distortion
-    // We want the mouse to push the fibers apart horizontally or just disturb them?
-    // Let's make the mouse push pixels away from it, but stronger along the fiber direction (horizontal)
-
-    let repulsionRadius = 0.3;
-    let repulsionStr = smoothstep(repulsionRadius, 0.0, dist) * force * 0.2;
-
-    if (dist > 0.001) {
-        var dir = normalize(distVec);
-        offsetX += dir.x * repulsionStr;
-    }
-
-    // Apply offset
-    let finalUV = vec2<f32>(uv.x + offsetX, uv.y);
-
-    // Sample texture
-    var col = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-
-    // Add Fiber Glow
-    // Glow at the edges of the strips to simulate individual fibers
-    let edge = abs(stripUV - 0.5) * 2.0; // 0 at center, 1 at edge
+    // Fiber edge glow (pseudo cylindrical lighting)
+    let edge = abs(stripUV - 0.5) * 2.0;
     let glowFactor = smoothstep(0.7, 1.0, edge) * glow;
-
-    // Enhance brightness based on original image luminance
     let lum = dot(col.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Add a cyan/blue tint to the glow
-    let glowColor = vec4<f32>(0.2, 0.8, 1.0, 0.0) * glowFactor * lum;
+    // Signal pulse traveling along fiber — palette-mapped, golden-spaced per strip
+    let pulsePos = fract(time * 0.4 + stripIndex * (PHI - 1.0));
+    let pulseDist = abs(uv.x - pulsePos);
+    let pulseGlow = exp(-pulseDist * 30.0) * (0.4 + bass * 0.6);
+    let palIdx = u32(clamp((stripIndex / density + time * 0.05) * 255.0, 0.0, 255.0));
+    let pulseColor = plasmaBuffer[palIdx % 256u].rgb;
 
-    col = col + glowColor;
+    // Add fiber glow + signal pulse + cyan tint baseline
+    let glowColor = vec3<f32>(0.2, 0.8, 1.0) * glowFactor * lum
+                  + pulseColor * pulseGlow * glow;
+    col = vec4<f32>(col.rgb + glowColor, col.a);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), col);
+    // Alpha: glow + pluck + signal pulse drive fiber compositing weight
+    let alpha = clamp(0.5 + glowFactor * 0.3 + pulseGlow * 0.4 + pluck * 0.2 + lum * 0.1, 0.0, 1.0);
 
-    // Pass depth
+    textureStore(writeTexture, coord, vec4<f32>(col.rgb, alpha));
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

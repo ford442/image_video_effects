@@ -503,6 +503,58 @@
     ]
   },
   {
+    "id": "crt-clear-zone",
+    "name": "CRT Clear Zone",
+    "category": "visual-effects",
+    "url": "shaders/crt-clear-zone.wgsl",
+    "description": "Heavy CRT distortion with chromatic aberration, scanlines, and vignette. A clean, high-resolution zone follows the mouse cursor with an audio-reactive scanline intensity.",
+    "params": [
+      {
+        "name": "Distortion",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "distortion"
+      },
+      {
+        "name": "Aberration",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "aberration"
+      },
+      {
+        "name": "Zone Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "zone_size"
+      },
+      {
+        "name": "Scanlines",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "scanlines"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "crt",
+      "retro",
+      "glitch",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "cyber-grid-pulse",
     "url": "shaders/cyber-grid-pulse.wgsl",
     "icon": "grid_on",
@@ -597,7 +649,8 @@
     "category": "visual-effects",
     "url": "shaders/data-scanner.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -610,7 +663,7 @@
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Audio Reactivity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1085,7 +1138,8 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "vfx",
@@ -1184,11 +1238,73 @@
     ]
   },
   {
+    "id": "spectral-rain",
+    "category": "visual-effects",
+    "url": "shaders/spectral-rain.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Rain Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of rain streaks"
+      },
+      {
+        "id": "chromatic_strength",
+        "name": "Chromatic Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of chromatic displacement"
+      },
+      {
+        "id": "trail_length",
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Length of raindrop trails"
+      },
+      {
+        "id": "rain_angle_scale",
+        "name": "Rain Angle Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Scale of the rain angle variation"
+      }
+    ],
+    "tags": [
+      "rain",
+      "chromatic",
+      "distortion",
+      "filter",
+      "image-processing",
+      "audio-reactive"
+    ],
+    "name": "Spectral Rain",
+    "description": "Falling streaks of chromatic distortion with audio-reactive intensity and mouse-driven angle and speed controls."
+  },
+  {
     "id": "voxel-grid",
     "name": "Voxel Grid",
     "url": "shaders/voxel-grid.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1220,12 +1336,13 @@
         "max": 0.4
       }
     ],
-    "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity.",
+    "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity and audio bass.",
     "category": "visual-effects",
     "tags": [
       "vfx",
       "particles",
-      "glow"
+      "glow",
+      "audio-reactive"
     ]
   }
 ]

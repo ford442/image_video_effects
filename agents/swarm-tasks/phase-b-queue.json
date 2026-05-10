@@ -1,0 +1,610 @@
+{
+  "version": "3.0",
+  "created": "2026-05-10",
+  "description": "Three-phase shader upgrade swarm: A=RGBA foundation, B=advanced enhancement, C=novel compute",
+  "batch_size": 4,
+  "phases": {
+    "a": {
+      "total": 80,
+      "completed": 0,
+      "pending": 80
+    },
+    "b": {
+      "total": 65,
+      "completed": 0,
+      "pending": 65
+    },
+    "c": {
+      "total": 30,
+      "completed": 0,
+      "pending": 30
+    }
+  },
+  "items": [
+    {
+      "id": "pixel-sorter",
+      "size": 3069,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Interactivist",
+      "target_lines": 137,
+      "phase": "b"
+    },
+    {
+      "id": "sonic-boom",
+      "size": 3140,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Optimizer",
+      "target_lines": 139,
+      "phase": "b"
+    },
+    {
+      "id": "gen-luminous-fluid-chladni-resonator",
+      "size": 3336,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 143,
+      "phase": "b"
+    },
+    {
+      "id": "scanline-sorting",
+      "size": 3363,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 144,
+      "phase": "b"
+    },
+    {
+      "id": "phantom-lag",
+      "size": 3412,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Interactivist",
+      "target_lines": 145,
+      "phase": "b"
+    },
+    {
+      "id": "xerox-degrade",
+      "size": 3425,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Optimizer",
+      "target_lines": 146,
+      "phase": "b"
+    },
+    {
+      "id": "voronoi",
+      "size": 3429,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 146,
+      "phase": "b"
+    },
+    {
+      "id": "vortex-pass2",
+      "size": 3437,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 146,
+      "phase": "b"
+    },
+    {
+      "id": "neon-strings",
+      "size": 3529,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Interactivist",
+      "target_lines": 148,
+      "phase": "b"
+    },
+    {
+      "id": "melting-oil",
+      "size": 3533,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Optimizer",
+      "target_lines": 148,
+      "phase": "b"
+    },
+    {
+      "id": "heat-haze-gpt52",
+      "size": 3543,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 149,
+      "phase": "b"
+    },
+    {
+      "id": "luma-flow-field",
+      "size": 3543,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 149,
+      "phase": "b"
+    },
+    {
+      "id": "halftone",
+      "size": 3595,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Interactivist",
+      "target_lines": 150,
+      "phase": "b"
+    },
+    {
+      "id": "neon-ripple-split",
+      "size": 3607,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Optimizer",
+      "target_lines": 150,
+      "phase": "b"
+    },
+    {
+      "id": "scan-slice",
+      "size": 3681,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 152,
+      "phase": "b"
+    },
+    {
+      "id": "holographic-projection-failure",
+      "size": 3695,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 152,
+      "phase": "b"
+    },
+    {
+      "id": "spectrogram-displace-pass2",
+      "size": 3726,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Interactivist",
+      "target_lines": 153,
+      "phase": "b"
+    },
+    {
+      "id": "neon-pulse-stream",
+      "size": 3740,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Optimizer",
+      "target_lines": 154,
+      "phase": "b"
+    },
+    {
+      "id": "cyber-halftone-scanner",
+      "size": 3758,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 154,
+      "phase": "b"
+    },
+    {
+      "id": "liquid-metal",
+      "size": 3785,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 155,
+      "phase": "b"
+    },
+    {
+      "id": "fiber-optic-weave",
+      "size": 3801,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Interactivist",
+      "target_lines": 155,
+      "phase": "b"
+    },
+    {
+      "id": "moire-interference",
+      "size": 3845,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Optimizer",
+      "target_lines": 156,
+      "phase": "b"
+    },
+    {
+      "id": "navier-stokes-dye",
+      "size": 3902,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 158,
+      "phase": "b"
+    },
+    {
+      "id": "holographic-sticker",
+      "size": 3929,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 158,
+      "phase": "b"
+    },
+    {
+      "id": "holographic-shatter",
+      "size": 3953,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Interactivist",
+      "target_lines": 159,
+      "phase": "b"
+    },
+    {
+      "id": "neon-topology",
+      "size": 3967,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Optimizer",
+      "target_lines": 159,
+      "phase": "b"
+    },
+    {
+      "id": "oscilloscope-overlay",
+      "size": 3968,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 159,
+      "phase": "b"
+    },
+    {
+      "id": "optical-feedback",
+      "size": 3994,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 160,
+      "phase": "b"
+    },
+    {
+      "id": "neon-echo",
+      "size": 3997,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Interactivist",
+      "target_lines": 160,
+      "phase": "b"
+    },
+    {
+      "id": "gen-holographic-lens-flare-matrix",
+      "size": 4021,
+      "status": "pending",
+      "priority": 2,
+      "agent_role": "Optimizer",
+      "target_lines": 161,
+      "phase": "b"
+    },
+    {
+      "id": "neon-warp",
+      "size": 4034,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 161,
+      "phase": "b"
+    },
+    {
+      "id": "sim-fluid-feedback-field-pass1",
+      "size": 4042,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 161,
+      "phase": "b"
+    },
+    {
+      "id": "fire_smoke_volumetric",
+      "size": 4059,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Interactivist",
+      "target_lines": 161,
+      "phase": "b"
+    },
+    {
+      "id": "holographic-edge-ripple",
+      "size": 4067,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Optimizer",
+      "target_lines": 162,
+      "phase": "b"
+    },
+    {
+      "id": "prismatic-feedback-loop",
+      "size": 4092,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 162,
+      "phase": "b"
+    },
+    {
+      "id": "hybrid-fractal-feedback",
+      "size": 4116,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 163,
+      "phase": "b"
+    },
+    {
+      "id": "gen-ethereal-quantum-medusa",
+      "size": 4153,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Interactivist",
+      "target_lines": 164,
+      "phase": "b"
+    },
+    {
+      "id": "cyber-rain",
+      "size": 4179,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Optimizer",
+      "target_lines": 164,
+      "phase": "b"
+    },
+    {
+      "id": "ascii-glyph",
+      "size": 4194,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 165,
+      "phase": "b"
+    },
+    {
+      "id": "spec-histogram-equalize",
+      "size": 4265,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 167,
+      "phase": "b"
+    },
+    {
+      "id": "holographic_interference",
+      "size": 4273,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Interactivist",
+      "target_lines": 167,
+      "phase": "b"
+    },
+    {
+      "id": "vhs-jog",
+      "size": 4290,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Optimizer",
+      "target_lines": 167,
+      "phase": "b"
+    },
+    {
+      "id": "holographic-glitch",
+      "size": 4389,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 170,
+      "phase": "b"
+    },
+    {
+      "id": "sim-fluid-feedback-field-pass3",
+      "size": 4410,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 170,
+      "phase": "b"
+    },
+    {
+      "id": "ferrofluid",
+      "size": 4413,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Interactivist",
+      "target_lines": 170,
+      "phase": "b"
+    },
+    {
+      "id": "temporal_echo",
+      "size": 4427,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Optimizer",
+      "target_lines": 171,
+      "phase": "b"
+    },
+    {
+      "id": "neon-edge-radar",
+      "size": 4484,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 172,
+      "phase": "b"
+    },
+    {
+      "id": "gen_grok4_perlin",
+      "size": 4521,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 173,
+      "phase": "b"
+    },
+    {
+      "id": "gen-xeno-mycelial-resonance-web",
+      "size": 4535,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Interactivist",
+      "target_lines": 173,
+      "phase": "b"
+    },
+    {
+      "id": "infinite-video-feedback",
+      "size": 4564,
+      "status": "pending",
+      "priority": 3,
+      "agent_role": "Optimizer",
+      "target_lines": 174,
+      "phase": "b"
+    },
+    {
+      "id": "spectrogram-displace",
+      "size": 21828,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 477,
+      "phase": "b"
+    },
+    {
+      "id": "digital-glitch",
+      "size": 20712,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 454,
+      "phase": "b"
+    },
+    {
+      "id": "quantum-foam",
+      "size": 20623,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 452,
+      "phase": "b"
+    },
+    {
+      "id": "liquid-optimized",
+      "size": 19185,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 424,
+      "phase": "b"
+    },
+    {
+      "id": "liquid",
+      "size": 18928,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 419,
+      "phase": "b"
+    },
+    {
+      "id": "rgb-glitch-displacement",
+      "size": 18599,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 412,
+      "phase": "b"
+    },
+    {
+      "id": "vortex",
+      "size": 18015,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 400,
+      "phase": "b"
+    },
+    {
+      "id": "gen-quantum-superposition",
+      "size": 17913,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 398,
+      "phase": "b"
+    },
+    {
+      "id": "tensor-flow-sculpt",
+      "size": 17876,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 398,
+      "phase": "b"
+    },
+    {
+      "id": "spectral-bleed-confinement",
+      "size": 17814,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 396,
+      "phase": "b"
+    },
+    {
+      "id": "liquid-displacement",
+      "size": 17361,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 387,
+      "phase": "b"
+    },
+    {
+      "id": "chromatic-phase-inversion",
+      "size": 17088,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 382,
+      "phase": "b"
+    },
+    {
+      "id": "recursion-mirror-vortex",
+      "size": 16968,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 379,
+      "phase": "b"
+    },
+    {
+      "id": "tensor-flow-sculpting",
+      "size": 16512,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 370,
+      "phase": "b"
+    },
+    {
+      "id": "gen-gravitational-strain",
+      "size": 16338,
+      "status": "pending",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 367,
+      "phase": "b"
+    }
+  ]
+}

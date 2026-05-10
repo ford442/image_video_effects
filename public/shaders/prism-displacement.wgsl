@@ -1,4 +1,11 @@
-// Prism Lens - Creates a prismatic lens effect with chromatic dispersion
+// ═══════════════════════════════════════════════════════════════════
+//  Prism Lens
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-10
+//  By: Phase A Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,9 +21,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Size, y=Refraction, z=Rotation, w=EdgeShine
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -30,14 +37,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     var mousePos = u.zoom_config.yz;
 
+    let bass = plasmaBuffer[0].x;
+
     // Parameters
     let size = max(u.zoom_params.x * 0.5, 0.05);
-    let refraction = u.zoom_params.y * 0.3;
+    let refraction = u.zoom_params.y * 0.3 * (1.0 + bass * 0.25);
     let rotation = u.zoom_params.z;
     let edgeShine = u.zoom_params.w;
 
     // Distance from mouse (aspect corrected)
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 1.0);
     let dVec = uv - mousePos;
     let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
@@ -81,7 +90,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Blend lens effect with background
     let finalColor = mix(bgColor, color, lensMask * 0.8 + 0.2);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    // Alpha: lens mask + edge shine drive prism compositing weight
+    let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(lensMask * 0.6 + edge * edgeShine * 0.3 + luma * 0.15, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

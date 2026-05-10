@@ -22,11 +22,14 @@
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 struct Uniforms {
-  config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
-  zoom_config: vec4<f32>,         // unused, mouseX, mouseY, unused
-  zoom_params: vec4<f32>,         // surfaceTension, gravityScale, damping, turbidity
-  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
+  config: vec4<f32>,              // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,         // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,         // x=SurfaceTension, y=GravityScale, z=Damping, w=Turbidity
+  ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
@@ -175,9 +178,11 @@ fn calculateLiquidColor(
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
   let pixelSize = vec2<f32>(1.0) / resolution;
+  let bass = plasmaBuffer[0].x;
   
   // Get depth for depth-aware effects
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -186,10 +191,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ═══════════════════════════════════════════════════════════════════════════════
   // PARAMETERS (from zoom_params)
   // ═══════════════════════════════════════════════════════════════════════════════
-  let surfaceTension = u.zoom_params.x * 0.5 + 0.1;  // γ: 0.1 to 0.6
-  let gravityScale = u.zoom_params.y * 2.0 + 0.5;    // g: 0.5 to 2.5
-  let damping = u.zoom_params.z * 0.15 + 0.02;       // damping: 0.02 to 0.17
-  let turbidity = u.zoom_params.w;                    // turbidity: 0.0 to 1.0
+  let surfaceTension = u.zoom_params.x * 0.5 + 0.1;
+  let gravityScale = (u.zoom_params.y * 2.0 + 0.5) * (1.0 + bass * 0.4);  // bass-driven gravity pulses
+  let damping = u.zoom_params.z * 0.15 + 0.02;
+  let turbidity = u.zoom_params.w;
   
   // Physical constants (normalized)
   let density = 1.0;  // ρ (water = 1)

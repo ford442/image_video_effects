@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Divine Light Cathedral
+//  Category: lighting-effects
+//  Features: mouse-driven, volumetric, atmospheric, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +19,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -57,6 +63,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let density = mix(0.6, 1.4, u.zoom_params.z);
   let threshold = u.zoom_params.w;
 
+  // Audio reactivity: bass boost
+  let bass = plasmaBuffer[0].x;
+  let audioBoost = 1.0 + bass * 0.35;
+
   let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   var dir = (center - uv) * vec2<f32>(aspect, 1.0);
@@ -71,11 +81,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sample = textureSampleLevel(readTexture, u_sampler, current, 0.0).rgb;
     let luma = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
     if (luma > threshold) {
-      accum += sample * weight * intensity;
+      accum += sample * weight * intensity * audioBoost;
     }
 
     let dust = noise(current * resolution * 0.02 + vec2<f32>(time * 0.5, -time * 0.3));
-    accum += vec3<f32>(dust * 0.02) * weight * intensity;
+    accum += vec3<f32>(dust * 0.02) * weight * intensity * audioBoost;
 
     weight *= decay;
     current += delta;
@@ -85,12 +95,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   accum *= vec3<f32>(1.1, 1.05, 0.95);
 
   let dist = length((uv - center) * vec2<f32>(aspect, 1.0));
-  let halo = smoothstep(0.5, 0.0, dist) * intensity * 0.35;
+  let halo = smoothstep(0.5, 0.0, dist) * intensity * 0.35 * audioBoost;
 
   let finalColor = original.rgb + accum + vec3<f32>(halo * 1.1, halo, halo * 0.8);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+  // Meaningful alpha based on original alpha, ray luminance, and halo intensity
+  let effectLuma = dot(accum, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = clamp(original.a + effectLuma * 0.5 + halo * 0.3, 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

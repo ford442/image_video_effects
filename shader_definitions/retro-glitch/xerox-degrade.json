@@ -2,7 +2,7 @@
   "id": "xerox-degrade",
   "name": "Xerox Degrade",
   "url": "shaders/xerox-degrade.wgsl",
-  "category": "image",
+  "category": "retro-glitch",
   "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
   "params": [
     {
@@ -36,7 +36,8 @@
   ],
   "features": [
     "glitch",
-    "texture"
+    "texture",
+    "audio-reactive"
   ],
   "tags": [
     "filter",

@@ -2,8 +2,8 @@
   "id": "spectral-distortion",
   "name": "Spectral Distortion",
   "url": "shaders/spectral-distortion.wgsl",
-  "category": "image",
-  "description": "RGB channels split and warp based on noise and mouse proximity.",
+  "category": "interactive-mouse",
+  "description": "RGB channels split and warp based on noise, mouse proximity, and bass-driven audio reactivity.",
   "params": [
     {
       "id": "separation",
@@ -37,10 +37,14 @@
   "features": [
     "mouse-driven",
     "temporal-persistence",
-    "glitch"
+    "glitch",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "chromatic",
+    "warp",
+    "noise"
   ]
 }

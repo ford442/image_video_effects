@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Volumetric God Rays
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Phase A Upgrade Swarm
+//  Created: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,81 +20,57 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Density, y=Decay, z=Weight, w=Exposure
   ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
+    let coords = vec2<i32>(global_id.xy);
+    var uv = vec2<f32>(global_id.xy) / resolution;
+    var mousePos = u.zoom_config.yz;
 
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
+    let bass = plasmaBuffer[0].x;
+    let density = max(u.zoom_params.x, 0.001);
+    let decay = clamp(u.zoom_params.y, 0.0, 1.0);
+    let weight = u.zoom_params.z * (1.0 + bass * 0.3);
+    let exposure = clamp(u.zoom_params.w, 0.0, 1.0);
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  var mousePos = u.zoom_config.yz;
+    let numSamples = 64;
+    let deltaTextCoord = (uv - mousePos);
+    let step = (deltaTextCoord * density) / f32(numSamples);
 
-  // Params
-  let density = u.zoom_params.x; // Density
-  let decay = u.zoom_params.y;   // Decay
-  let weight = u.zoom_params.z;  // Weight
-  let exposure = u.zoom_params.w;// Exposure
+    var currentUV = uv;
+    var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  let numSamples = 64;
+    var illuminationDecay = 1.0;
+    var accumulatedColor = vec4<f32>(0.0);
 
-  // Calculate vector from pixel to light source (mouse)
-  // Adjust aspect ratio for correct direction?
-  // God rays usually work in UV space directly for the "smear" effect.
+    for (var i = 0; i < numSamples; i++) {
+        currentUV = currentUV - step;
+        var sampleColor = textureSampleLevel(readTexture, u_sampler, currentUV, 0.0);
+        sampleColor = sampleColor * illuminationDecay * weight;
+        accumulatedColor = accumulatedColor + sampleColor;
+        illuminationDecay = illuminationDecay * decay;
+    }
 
-  let deltaTextCoord = (uv - mousePos);
+    let finalColor = (color * ((1.0 - exposure) + 0.5)) + (accumulatedColor * exposure);
 
-  // Scale the step size by density.
-  // If density is 0, steps are 0. If 1, steps cover more distance.
-  // We divide by numSamples to distribute the steps.
-  let step = (deltaTextCoord * density) / f32(numSamples);
+    // Alpha encodes ray accumulation strength — bright ray zones = higher blend weight
+    let ray_luma = dot(accumulatedColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let base_luma = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.4 + ray_luma * exposure * 2.0 + base_luma * 0.2, 0.0, 1.0);
 
-  var currentUV = uv;
-  var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    textureStore(writeTexture, coords, vec4<f32>(finalColor.rgb, alpha));
 
-  // Apply a threshold to the base color effectively so rays only come from bright spots?
-  // Or just accumulate whatever is there. Standard algorithm accumulates whatever.
-  // But let's boost it.
-
-  var illuminationDecay = 1.0;
-  var accumulatedColor = vec4<f32>(0.0);
-
-  for (var i = 0; i < numSamples; i++) {
-    currentUV = currentUV - step;
-
-    // Sample
-    var sampleColor = textureSampleLevel(readTexture, u_sampler, currentUV, 0.0);
-
-    // Apply decay and weight
-    sampleColor = sampleColor * illuminationDecay * weight;
-
-    accumulatedColor = accumulatedColor + sampleColor;
-
-    illuminationDecay = illuminationDecay * decay;
-  }
-
-  // Combine
-  let finalColor = (color * ((1.0 - exposure) + 0.5)) + (accumulatedColor * exposure);
-  // Note: The exposure mixing above is a bit arbitrary, but aiming for a balanced look.
-  // Standard is: return color * exposure; (but we want to mix with original image)
-
-  // Let's try simple additive blend:
-  // let result = color + accumulatedColor * exposure;
-
-  // Ensure alpha is 1.0
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, 1.0));
-
-  // Pass through depth
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  RGB Glitch Trail
+//  Category: retro-glitch
+//  Features: mouse-driven, chromatic, trail, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Shader Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -13,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -25,11 +34,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
+  // Audio reactivity
+  let bass = plasmaBuffer[0].x;
+
   // Params
   let decayRate = 0.9 + u.zoom_params.x * 0.09;
   let radius = 0.05 + u.zoom_params.y * 0.2;
-  let shiftStrength = u.zoom_params.z * 0.05;
-  let chaos = u.zoom_params.w;
+  let shiftStrength = u.zoom_params.z * 0.05 * (1.0 + bass * 2.0);
+  let chaos = clamp(u.zoom_params.w * (1.0 + bass * 0.5), 0.0, 1.0);
 
   // Mouse
   var mouse = u.zoom_config.yz;
@@ -77,6 +89,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     color = blended;
   }
+
+  // Depth pass-through
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 }

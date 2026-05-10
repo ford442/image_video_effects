@@ -2,8 +2,8 @@
   "id": "cursor-aura",
   "name": "Cursor Aura",
   "url": "shaders/cursor-aura.wgsl",
-  "category": "image",
-  "description": "Glowing aura around cursor with customizable colors and effects.",
+  "category": "interactive-mouse",
+  "description": "Glowing aura around cursor with customizable colors, edge detection, and audio-reactive bass pulsing.",
   "params": [
     {
       "id": "size",
@@ -36,10 +36,13 @@
   ],
   "features": [
     "mouse-driven",
-    "glow"
+    "glow",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "interactive",
+    "audio-reactive"
   ]
 }

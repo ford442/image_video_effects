@@ -27,11 +27,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>, // x=StrainScale, y=DetailPreserve, z=DepthWeight, w=TensorMode
     ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS (OPTIMIZED) ═══
 
@@ -225,12 +228,14 @@ fn depthNormal(uv: vec2<f32>, tx: vec2<f32>, lodFactor: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res  = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv   = vec2<f32>(gid.xy) / res;
     let t    = u.config.x;
     let tx   = 1.0 / res;
+    let bass = plasmaBuffer[0].x;
 
-    // Parameters
-    let strainScale    = u.zoom_params.x * 0.08 + 0.005;
+    // Parameters — bass amplifies stress field intensity
+    let strainScale    = (u.zoom_params.x * 0.08 + 0.005) * (1.0 + bass * 0.5);
     let detailPreserve = u.zoom_params.y;
     let depthWeight    = u.zoom_params.z;
     let tensorMode     = u.zoom_params.w;
@@ -325,5 +330,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alpha = calculateAdvancedAlpha(finalResult, uv, warpedUV, colWarped.a, u.zoom_params);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(finalResult, alpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(eigen.lam_pos, eigen.lam_neg, warpMag, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(h, 0.0, 0.0, 1.0));
 }

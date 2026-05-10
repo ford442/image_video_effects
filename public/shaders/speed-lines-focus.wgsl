@@ -1,4 +1,3 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +11,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=BlurStrength, y=LineDensity, z=LineSpeed, w=Contrast
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -46,8 +44,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
     let time = u.config.x;
 
+    let bass = plasmaBuffer[0].x;
+
     // Params
-    let blurStrength = u.zoom_params.x * 0.1; // 0 to 0.1
+    let blurStrength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.2);
     let lineDensity = u.zoom_params.y * 50.0 + 10.0;
     let lineSpeed = u.zoom_params.z * 10.0 + 2.0;
     let contrast = u.zoom_params.w + 0.5;
@@ -98,7 +98,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Optional: Darken edges (Vignette)
     finalColor *= (1.0 - dist * 0.5);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    // Alpha: speed line intensity + radial blur haze drives motion effect blend weight
+    let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(lineEffect * 0.5 + dist * blurStrength * 3.0 + luma * 0.2, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -3,7 +3,8 @@
   "category": "visual-effects",
   "url": "shaders/data-scanner.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -16,7 +17,7 @@
     },
     {
       "id": "param2",
-      "name": "Speed",
+      "name": "Audio Reactivity",
       "default": 0.5,
       "min": 0,
       "max": 1,

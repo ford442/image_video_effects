@@ -27,11 +27,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
+    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>, // x=PhaseSpeed, y=GhostOff, z=InvDepth, w=Coherence
     ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  RGB → HSV
@@ -154,18 +157,19 @@ fn hueShift(c: vec3<f32>, shift: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res    = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv     = vec2<f32>(gid.xy) / res;
     let t      = u.config.x;
 
-    // ═══ AUDIO INPUT ═══
-    let audioOverall = u.config.y;
-    let audioBass = audioOverall * 1.2;
-    let audioPulse = 1.0 + audioBass * 0.4;
+    // ═══ AUDIO INPUT — bass from plasma buffer (canonical) ═══
+    let audioBass = plasmaBuffer[0].x;
+    let audioOverall = audioBass * 0.85;
+    let audioPulse = 1.0 + audioBass * 0.5;
 
     // Parameters - audio modulated
     let phaseSpeed  = (u.zoom_params.x * 1.5 + 0.2) * audioPulse;
     let ghostOff    = (u.zoom_params.y * 0.025) * (1.0 + audioOverall * 0.3);
-    let invDepth    = u.zoom_params.z * 6.28318;
+    let invDepth    = u.zoom_params.z * TAU;
     let coherence   = u.zoom_params.w * 0.8 + 0.1;
 
     // ── Depth at this pixel ───────────────────────────────────────────────
@@ -261,6 +265,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     outG += isBeat * 0.05;
     outB += isBeat * 0.03;
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, 1.0));
+    // Alpha: phase variance + ghosting offset drives chromatic inversion compositing weight
+    let lumaOut = dot(vec3<f32>(outR, outG, outB), vec3<f32>(0.299, 0.587, 0.114));
+    let phaseVar = abs(phR - phB);
+    let alpha = clamp(0.45 + lumaOut * 0.3 + phaseVar * 0.4 + audioBass * 0.1, 0.0, 1.0);
+    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, alpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(phR, phG, phB, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

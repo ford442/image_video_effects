@@ -3,7 +3,8 @@
   "name": "Voxel Grid",
   "url": "shaders/voxel-grid.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -35,11 +36,12 @@
       "max": 0.4
     }
   ],
-  "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity.",
+  "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity and audio bass.",
   "category": "visual-effects",
   "tags": [
     "vfx",
     "particles",
-    "glow"
+    "glow",
+    "audio-reactive"
   ]
 }

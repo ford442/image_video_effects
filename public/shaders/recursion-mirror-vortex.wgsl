@@ -24,11 +24,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
+    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>, // x=FoldDepth(1-6), y=FoldRadius, z=VortexSpeed, w=MirrorBlend
     ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const PHI: f32 = 1.61803398874989484820;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Complex multiply: treat vec2 as complex number
@@ -167,15 +170,17 @@ fn seamGlow(origUV: vec2<f32>, foldedUV: vec2<f32>, t: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res    = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     var uv     = vec2<f32>(gid.xy) / res;
     let t      = u.config.x;
-    let mouse  = u.zoom_config.yz; // normalized 0-1
+    let mouse  = u.zoom_config.yz;
+    let bass   = plasmaBuffer[0].x;
 
-    // Parameters
-    let foldDepth   = i32(u.zoom_params.x * 5.0 + 1.5);  // 1 – 6 iterations
-    let foldRadius  = u.zoom_params.y * 2.0 + 0.3;        // 0.3 – 2.3
-    let vortSpeed   = u.zoom_params.z * 2.0 - 1.0;        // -1 – 1
-    let mirrorBlend = u.zoom_params.w;                      // 0 – 1
+    // Parameters — bass deepens fold count, sharpens vortex
+    let foldDepth   = i32(u.zoom_params.x * 5.0 + 1.5 + bass * 1.5);
+    let foldRadius  = u.zoom_params.y * 2.0 + 0.3;
+    let vortSpeed   = (u.zoom_params.z * 2.0 - 1.0) * (1.0 + bass * 0.4);
+    let mirrorBlend = u.zoom_params.w;
 
     // Singularity center: mouse-driven, gently animated
     let cx = mouse.x * 0.6 + 0.2 + sin(t * 0.13) * 0.05;
@@ -245,6 +250,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthLift = 1.0 + depth * 0.08;
     let liftedMirror = vec4<f32>(clamp(finalMirror.rgb * depthLift, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
 
-    textureStore(writeTexture, gid.xy, liftedMirror);
+    // Alpha: fold seam glow + mirror blend + edge vignette drives compositing weight
+    let foldDist = length(uv - foldedUV);
+    let lumaOut = dot(liftedMirror.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.4 + lumaOut * 0.3 + length(sGlow) * 0.4 + foldDist * 0.5, 0.0, 1.0);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(liftedMirror.rgb, alpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(foldedUV, foldDist, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

@@ -2,43 +2,51 @@
   "id": "sonar-pulse",
   "name": "Sonar Pulse",
   "url": "shaders/sonar-pulse.wgsl",
-  "category": "image",
-  "description": "Radial sonar waves emitting from the cursor that distort and scan the image.",
+  "category": "interactive-mouse",
+  "description": "Radial sonar waves emitting from the cursor that distort and scan the image. Now with audio reactivity.",
   "params": [
     {
       "id": "speed",
       "name": "Wave Speed",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "id": "freq",
       "name": "Frequency",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "id": "intensity",
       "name": "Intensity",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "id": "width",
       "name": "Wave Width",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "sonar",
+    "pulse",
+    "audio-reactive"
   ]
 }

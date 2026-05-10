@@ -18,9 +18,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=DiffusionA, y=DiffusionB, z=Feed, w=Kill
+    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=LayerCount, y=DelayScale, z=DistortionAmp, w=Param4
     ripples: array<vec4<f32>, 50>,
 };
 
@@ -91,5 +91,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let new_delay = delay_raw - floor(delay_raw);
     textureStore(dataTextureA, coords, vec4<f32>(new_delay, 0.0, 0.0, 1.0));
 
-    textureStore(writeTexture, coords, vec4<f32>(final_color, 1.0));
+    // Alpha: psychedelic layer accumulation brightness drives temporal blend weight
+    let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(luma * 0.6 + current_delay * 0.2 + 0.15, 0.0, 1.0);
+
+    textureStore(writeTexture, coords, vec4<f32>(final_color, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

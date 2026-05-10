@@ -1,7 +1,16 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Swirling Void
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -60,14 +69,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = textureSampleLevel(readTexture, u_sampler, new_uv, 0.0);
 
-  // Apply "Event Horizon" darkness while preserving alpha
+  // Apply "Event Horizon" darkness with meaningful alpha
   let hole_size = 0.05 * darkness;
   if (dist < hole_size) {
-      color = vec4<f32>(0.0);
+    // Fully transparent void center
+    color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
   } else if (dist < hole_size * 2.0) {
-      let edge = smoothstep(hole_size, hole_size * 2.0, dist);
-      color = vec4<f32>(color.rgb * edge, color.a);
-      color.a *= edge;
+    let edge = smoothstep(hole_size, hole_size * 2.0, dist);
+    // Fade color and alpha toward the void edge
+    color = vec4<f32>(color.rgb * edge, color.a * edge);
   }
 
   textureStore(writeTexture, coord, color);

@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Kinetic Dispersion
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Phase A Upgrade Swarm
+//  Created: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,11 +20,10 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Sensitivity, y=Scatter, z=Aberration, w=Granularity
   ripples: array<vec4<f32>, 50>,
 };
@@ -30,52 +37,49 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
+    let coords = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let currMouse = u.zoom_config.yz;
     let time = u.config.x;
 
-    // Load previous mouse position from history texture (pixel 0,0)
     let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-
-    // Store current mouse position for next frame
     if (global_id.x == 0u && global_id.y == 0u) {
         textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(currMouse, 0.0, 0.0));
     }
 
-    // Parameters
-    let sensitivity = u.zoom_params.x * 50.0; // 0.0 - 50.0
-    let scatter = u.zoom_params.y * 0.1;      // 0.0 - 0.1
-    let aberration = u.zoom_params.z * 0.05;  // 0.0 - 0.05
-    let granularity = max(1.0, u.zoom_params.w * 50.0); // 1.0 - 50.0
+    let bass = plasmaBuffer[0].x;
+    let sensitivity = u.zoom_params.x * 50.0;
+    let scatter = u.zoom_params.y * 0.1;
+    let aberration = u.zoom_params.z * 0.05;
+    let granularity = max(1.0, u.zoom_params.w * 50.0);
 
-    // Calculate Velocity
-    let velocity = distance(currMouse, prevMouse);
+    let velocity = distance(currMouse, prevMouse) * (1.0 + bass * 0.3);
+    let intensity = clamp(velocity * sensitivity, 0.0, 1.0);
 
-    // Intensity is velocity * sensitivity
-    let intensity = velocity * sensitivity;
-
-    // Quantize UVs for "digital" scatter look
     let blockUV = floor(uv * resolution / granularity) * granularity / resolution;
+    let safeTime = max(time, 0.001);
+    let rnd = hash12(blockUV + vec2<f32>(safeTime * 10.0, safeTime * 20.0));
 
-    // Random offset based on block + time
-    let rnd = hash12(blockUV + vec2<f32>(time * 10.0, time * 20.0));
-
-    // Scatter displacement
     let displacement = (rnd - 0.5) * intensity * scatter;
-
-    // Chromatic Aberration offsets
     let rgbSplit = intensity * aberration;
 
-    // Sample with offsets
     let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(displacement - rgbSplit, displacement), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(displacement, displacement), 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(displacement + rgbSplit, displacement), 0.0).b;
 
     var color = vec3<f32>(r, g, b);
-
-    // Add white noise on top if moving fast
-    let noise = hash12(uv * time);
+    let noise = hash12(uv * safeTime);
     color = mix(color, vec3<f32>(noise), intensity * 0.2);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Alpha encodes dispersion activity: high velocity = higher effect blend
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.5 + intensity * 0.35 + luma * 0.15, 0.0, 1.0);
+
+    textureStore(writeTexture, coords, vec4<f32>(color, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

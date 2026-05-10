@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Stipple Render
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Low
+//  Chunks From: stipple-render (original)
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,18 +21,20 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
+  // x=Time, y=MouseClickCount, z=ResX, w=ResY
   config: vec4<f32>,
+  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_config: vec4<f32>,
+  // x=Param1, y=Param2, z=Param3, w=Param4
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 // Pseudo-random hash
 fn hash21(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    return max(fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453), 0.001);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -32,11 +43,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 0.001);
+
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
 
     // Params
     let dotScale = mix(1.0, 4.0, u.zoom_params.x); // Noise frequency
-    let contrast = mix(0.5, 2.0, u.zoom_params.y);
+    let contrast = mix(0.5, 2.0, u.zoom_params.y) * (1.0 + bass * 0.5);
     let mouseRadius = mix(0.1, 0.5, u.zoom_params.z);
     let detailMix = u.zoom_params.w; // Blend original color
 
@@ -52,13 +66,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Dynamic Density: Higher density near mouse
     // We achieve this by scaling the UV fed into the hash function
     // High scale = smaller dots (conceptually, though here we are doing probability stippling)
-
-    // Actually, "Stippling" is often: is rand() > luma? then black dot.
-    // To make it look like dots, we compare against noise.
-
-    // Near mouse: Fine grain (high frequency noise)
     // Far from mouse: Coarse grain (low frequency noise)
-    let localScale = mix(resolution.y * 0.5, resolution.y * 2.0, mouseFactor * 0.8 + 0.2) * dotScale;
+    let localScale = mix(max(resolution.y * 0.5, 0.001), max(resolution.y * 2.0, 0.001), mouseFactor * 0.8 + 0.2) * dotScale;
 
     let noise = hash21(floor(uv * localScale));
 
@@ -77,7 +86,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mix with original color based on mouse?
     // Let's mix in a bit of original color near mouse to "reveal" detail
-    let finalColor = mix(vec4<f32>(outColor, 1.0), color, mouseFactor * detailMix);
+    let stippleAlpha = mix(0.15, 0.95, inkDensity);
+    let stippleColor = vec4<f32>(outColor, stippleAlpha);
+    let finalColor = mix(stippleColor, color, mouseFactor * detailMix);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 

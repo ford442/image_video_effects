@@ -945,55 +945,6 @@
     ]
   },
   {
-    "id": "frosty-window",
-    "name": "Frosty Window",
-    "url": "shaders/frosty-window.wgsl",
-    "category": "image",
-    "description": "Animated frost crystal patterns on glass.",
-    "params": [
-      {
-        "id": "density",
-        "name": "Frost Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "crystal_size",
-        "name": "Crystal Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "blur",
-        "name": "Blur Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "sparkle",
-        "name": "Sparkle",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "upgraded-rgba",
-      "depth-aware",
-      "animated",
-      "crystalline",
-      "interactive",
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "green-tracer",
     "name": "Green Tracer World",
     "url": "shaders/green-tracer.wgsl",
@@ -1492,54 +1443,6 @@
     "url": "shaders/neural-resonance.wgsl",
     "category": "image",
     "description": "Runaway neural feedback loop with hallucinogenic pareidolic effects and breathing fractals.",
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "polka-dot-reveal",
-    "name": "Polka Dot Reveal",
-    "url": "shaders/polka-dot-reveal.wgsl",
-    "category": "image",
-    "description": "Interactive halftone effect where mouse proximity increases the dot density, revealing more detail.",
     "features": [
       "mouse-driven"
     ],
@@ -2098,61 +2001,6 @@
       "pass": 1,
       "totalPasses": 2,
       "nextShader": "spectrogram-displace-pass2"
-    },
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "spectrogram-displace-pass2",
-    "name": "Spectrogram Displace (Pass 2)",
-    "url": "shaders/spectrogram-displace-pass2.wgsl",
-    "category": "image",
-    "description": "Image displacement and compositing pass: applies spectrogram-driven displacement to the input image, blends with spectrogram colors, and applies frequency-based color grading and vignette.",
-    "tags": [
-      "spectrogram",
-      "displacement",
-      "compositing",
-      "multi-pass"
-    ],
-    "features": [
-      "multi-pass-2",
-      "mouse-driven"
-    ],
-    "multipass": {
-      "pass": 2,
-      "totalPasses": 2
     },
     "params": [
       {
@@ -3056,146 +2904,6 @@
     "name": "Glass Brick Wall"
   },
   {
-    "id": "glitch-slice-mirror",
-    "name": "Glitch Slice Mirror",
-    "url": "shaders/glitch-slice-mirror.wgsl",
-    "category": "image",
-    "description": "Mirrors the image at the mouse position with digital glitch artifacts along the seam.",
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "heat-haze-gpt52",
-    "name": "Heat Haze Mirage gpt52",
-    "url": "shaders/heat-haze-gpt52.wgsl",
-    "category": "image",
-    "description": "Layered heat shimmer with chromatic dispersion and rising mirage flow.",
-    "params": [
-      {
-        "id": "intensity",
-        "name": "Haze Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "rise",
-        "name": "Rise Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "frequency",
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "chroma",
-        "name": "Chromatic Split",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "animated",
-      "atmospheric",
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "heat-haze",
-    "name": "Heat Haze",
-    "url": "shaders/heat-haze.wgsl",
-    "category": "image",
-    "description": "Rising heat distortion effect with shimmer.",
-    "params": [
-      {
-        "id": "strength",
-        "name": "Haze Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Rise Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "frequency",
-        "name": "Wave Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "animated",
-      "atmospheric",
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "infinite-zoom-lens",
     "name": "Infinite Zoom Lens",
     "url": "shaders/infinite-zoom-lens.wgsl",
@@ -3292,94 +3000,6 @@
         "mapping": "zoom_params.w",
         "description": "Maximum fractal iterations"
       }
-    ]
-  },
-  {
-    "id": "interactive-rgb-split",
-    "name": "Interactive RGB Split",
-    "url": "shaders/interactive-rgb-split.wgsl",
-    "category": "image",
-    "description": "Chromatic aberration that reacts to mouse position.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "strength",
-        "name": "Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "falloff",
-        "name": "Localization",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "mode",
-        "name": "Mode (Rad/Dir)",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "angle",
-        "name": "Angle Offset",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "interactive-zoom-blur",
-    "name": "Interactive Zoom Blur",
-    "url": "shaders/interactive-zoom-blur.wgsl",
-    "category": "image",
-    "description": "Radial zoom blur centered on the mouse cursor.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "strength",
-        "name": "Blur Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "samples",
-        "name": "Quality",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "bias",
-        "name": "Center Bias",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -7707,7 +7327,7 @@
     "name": "Steampunk Gear Lens",
     "url": "shaders/steampunk-gear-lens.wgsl",
     "category": "image",
-    "description": "A rotating mechanical gear lens with a sepia filter.",
+    "description": "A rotating mechanical gear lens with sepia filter and audio-reactive rotation.",
     "params": [
       {
         "id": "size",
@@ -7739,11 +7359,16 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "steampunk",
+      "gear",
+      "mechanical",
+      "sepia"
     ]
   },
   {
@@ -8246,50 +7871,6 @@
     ]
   },
   {
-    "id": "bio-touch",
-    "name": "Bio-Luminescent Touch",
-    "url": "shaders/bio-touch.wgsl",
-    "category": "image",
-    "description": "Reveals organic, glowing cellular structures beneath the image where you touch.",
-    "params": [
-      {
-        "id": "radius",
-        "name": "Glow Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "density",
-        "name": "Cell Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "shift",
-        "name": "Color Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Pulse Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "biomimetic-scales",
     "name": "Biomimetic Scales",
     "url": "shaders/biomimetic-scales.wgsl",
@@ -8461,94 +8042,6 @@
       "mouse-driven",
       "interactive",
       "stateful"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "chroma-depth-tunnel",
-    "name": "Chroma Depth Tunnel",
-    "category": "image",
-    "url": "shaders/chroma-depth-tunnel.wgsl",
-    "description": "A concentric tunnel effect centered on the mouse, with chromatic aberration.",
-    "params": [
-      {
-        "id": "speed",
-        "name": "Tunnel Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "density",
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "chromaSep",
-        "name": "Chroma Sep",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "centerFade",
-        "name": "Center Fog",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "chroma-kinetic",
-    "name": "Chroma Kinetic",
-    "url": "shaders/chroma-kinetic.wgsl",
-    "category": "image",
-    "description": "Mouse-driven chromatic aberration modulated by image luminance.",
-    "params": [
-      {
-        "id": "strength",
-        "name": "Distortion Str",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Effect Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "luma_inf",
-        "name": "Luma Influence",
-        "default": 1,
-        "min": -2,
-        "max": 2
-      },
-      {
-        "id": "rotation",
-        "name": "Direction Rot",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
     ],
     "tags": [
       "filter",
@@ -9049,51 +8542,6 @@
     ]
   },
   {
-    "id": "cursor-aura",
-    "name": "Cursor Aura",
-    "url": "shaders/cursor-aura.wgsl",
-    "category": "image",
-    "description": "Glowing aura around cursor with customizable colors and effects.",
-    "params": [
-      {
-        "id": "size",
-        "name": "Aura Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "softness",
-        "name": "Edge Softness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "hue",
-        "name": "Color Hue",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "glow"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "cyber-focus",
     "name": "Cyber Focus",
     "url": "shaders/cyber-focus.wgsl",
@@ -9245,7 +8693,8 @@
     "category": "image",
     "url": "shaders/cyber-lattice.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
     "params": [
@@ -9372,52 +8821,6 @@
     ]
   },
   {
-    "id": "cyber-ripples",
-    "name": "Cyber Ripples",
-    "url": "shaders/cyber-ripples.wgsl",
-    "category": "image",
-    "description": "Digital ripples with neon grid overlay emanating from cursor.",
-    "params": [
-      {
-        "id": "speed",
-        "name": "Ripple Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "amplitude",
-        "name": "Wave Height",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "frequency",
-        "name": "Wave Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "grid_intensity",
-        "name": "Grid Overlay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "wave",
-      "neon"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "data-stream-corruption",
     "name": "Data Stream Corruption",
     "url": "shaders/data-stream-corruption.wgsl",
@@ -9456,51 +8859,6 @@
     "features": [
       "mouse-driven",
       "temporal-persistence",
-      "glitch"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "data-stream",
-    "name": "Digital Stream",
-    "url": "shaders/data-stream.wgsl",
-    "category": "image",
-    "description": "Digital matrix-style data stream disrupted by mouse interaction.",
-    "params": [
-      {
-        "id": "speed",
-        "name": "Flow Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "density",
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "default": 0.8,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "glow",
-        "name": "Digital Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
       "glitch"
     ],
     "tags": [
@@ -9703,70 +9061,14 @@
     ]
   },
   {
-    "id": "directional-glitch",
-    "name": "Directional Glitch",
-    "url": "shaders/directional-glitch.wgsl",
-    "category": "image",
-    "description": "Glitch artifacts radiate from the mouse position.",
-    "params": [
-      {
-        "id": "intensity",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Glitch strength"
-      },
-      {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Radius of glitch effect"
-      },
-      {
-        "id": "scatter",
-        "name": "Scatter",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Scatter and noise amount"
-      },
-      {
-        "id": "angle_bias",
-        "name": "Angle Bias",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Directional rotation bias"
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "glitch"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "double-exposure",
     "name": "Double Exposure Zoom",
     "category": "image",
     "url": "shaders/double-exposure.wgsl",
-    "description": "Blends the image with a zoomed and rotated version of itself, pivoted around the mouse cursor.",
+    "description": "Blends the image with a zoomed and rotated version of itself, pivoted around the mouse cursor. Reacts subtly to audio bass.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -9800,54 +9102,9 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "dynamic-halftone",
-    "name": "Dynamic Halftone",
-    "url": "shaders/dynamic-halftone.wgsl",
-    "category": "image",
-    "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes.",
-    "params": [
-      {
-        "id": "density",
-        "name": "Dot Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Mouse Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "contrast",
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "edge_sharpness",
-        "name": "Edge Sharpness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Halftone edge sharpness"
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
+      "image-processing",
+      "zoom",
+      "overlay"
     ]
   },
   {
@@ -10517,50 +9774,6 @@
     ]
   },
   {
-    "id": "hex-mosaic",
-    "name": "Hexagon Mosaic",
-    "url": "shaders/hex-mosaic.wgsl",
-    "category": "image",
-    "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor.",
-    "params": [
-      {
-        "id": "scale",
-        "name": "Tile Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Reveal Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "hardness",
-        "name": "Edge Hardness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "saturation",
-        "name": "Sat Boost",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "hex-pulse",
     "name": "Hex Pulse",
     "url": "shaders/hex-pulse.wgsl",
@@ -11136,7 +10349,7 @@
     "name": "Interactive Fisheye",
     "url": "shaders/interactive-fisheye.wgsl",
     "category": "image",
-    "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius.",
+    "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius and depth-aware alpha modulation.",
     "params": [
       {
         "id": "strength",
@@ -11171,7 +10384,8 @@
       "mouse-driven",
       "geometry",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -11220,51 +10434,6 @@
     "features": [
       "mouse-driven",
       "temporal-persistence"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "interactive-glitch-brush",
-    "name": "Glitch Brush",
-    "url": "shaders/interactive-glitch-brush.wgsl",
-    "category": "image",
-    "description": "Paint digital glitches onto the screen.",
-    "params": [
-      {
-        "id": "size",
-        "name": "Brush Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Glitch Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "block_scale",
-        "name": "Block Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "color_split",
-        "name": "Color Split",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "glitch"
     ],
     "tags": [
       "filter",
@@ -11739,51 +10908,6 @@
     ]
   },
   {
-    "id": "laser-burn",
-    "name": "Laser Burn",
-    "url": "shaders/laser-burn.wgsl",
-    "category": "image",
-    "description": "Interactive laser that burns the image permanently (or heals slowly).",
-    "params": [
-      {
-        "id": "beamSize",
-        "name": "Beam Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "burnSpeed",
-        "name": "Burn Intensity",
-        "default": 0.8,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "healRate",
-        "name": "Heal Rate",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "heatMode",
-        "name": "Heat Glow",
-        "default": 1,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "temporal-persistence"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "light-leaks",
     "name": "Light Leaks",
     "url": "shaders/light-leaks.wgsl",
@@ -12018,51 +11142,6 @@
     ]
   },
   {
-    "id": "luma-slice-interactive",
-    "name": "Luma Slice Interactive",
-    "url": "shaders/luma-slice-interactive.wgsl",
-    "category": "image",
-    "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position.",
-    "params": [
-      {
-        "id": "intensity",
-        "name": "Displace Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "slices",
-        "name": "Slice Density",
-        "default": 0.5,
-        "min": 0.1,
-        "max": 1
-      },
-      {
-        "id": "rgb_shift",
-        "name": "RGB Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "phase",
-        "name": "Phase Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "glitch"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "luma-topography",
     "name": "Luma Topography",
     "url": "shaders/luma-topography.wgsl",
@@ -12189,11 +11268,13 @@
     ],
     "features": [
       "mouse-driven",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio-reactive"
     ]
   },
   {
@@ -13614,51 +12695,6 @@
     ]
   },
   {
-    "id": "pixel-focus",
-    "name": "Pixel Focus",
-    "url": "shaders/pixel-focus.wgsl",
-    "category": "image",
-    "description": "Applies a mosaic effect everywhere except for a clear focus area around the mouse.",
-    "params": [
-      {
-        "id": "mosaicSize",
-        "name": "Block Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Focus Radius",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "hardness",
-        "name": "Edge Hardness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "chromatic",
-        "name": "Aberration",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "filter"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "pixel-reveal",
     "name": "Pixel Reveal",
     "url": "shaders/pixel-reveal.wgsl",
@@ -13895,7 +12931,8 @@
     "category": "image",
     "description": "Maps the image to polar coordinates centered on the mouse, creating a tunnel or funhouse mirror effect.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -13929,7 +12966,8 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "audio-reactive"
     ]
   },
   {
@@ -14076,7 +13114,7 @@
     "name": "Quad Mirror",
     "url": "shaders/quad-mirror.wgsl",
     "category": "image",
-    "description": "Kaleidoscope-like 4-way mirror reflection centered on the mouse.",
+    "description": "Kaleidoscope-like 4-way mirror reflection centered on the mouse with audio-reactive zoom pulsing.",
     "params": [
       {
         "id": "mode",
@@ -14121,7 +13159,8 @@
     ],
     "features": [
       "mouse-driven",
-      "geometry"
+      "geometry",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
@@ -14316,50 +13355,6 @@
       "audio",
       "music",
       "reactive"
-    ]
-  },
-  {
-    "id": "quantum-tunnel-interactive",
-    "name": "Quantum Tunnel",
-    "category": "image",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "tunnel_strength",
-        "name": "Tunnel Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "pulse_speed",
-        "name": "Pulse Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "twist",
-        "name": "Twist",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "url": "shaders/quantum-tunnel-interactive.wgsl",
-    "description": "Interactive radial distortion with chromatic aberration and pulsing effects.",
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -15027,55 +14022,11 @@
     ]
   },
   {
-    "id": "scan-slice",
-    "name": "Scan Slice",
-    "url": "shaders/scan-slice.wgsl",
-    "category": "image",
-    "description": "Mouse X selects a vertical slice; Mouse Y offsets it.",
-    "params": [
-      {
-        "id": "width",
-        "name": "Slice Width",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "offset_scale",
-        "name": "Offset Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "dimming",
-        "name": "Bg Dimming",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "scanline-sorting",
     "name": "Scanline Sorting",
     "url": "shaders/scanline-sorting.wgsl",
     "category": "image",
-    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse.",
+    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting.",
     "params": [
       {
         "id": "thresh",
@@ -15112,7 +14063,8 @@
     ],
     "features": [
       "mouse-driven",
-      "sorting"
+      "sorting",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
@@ -15249,7 +14201,8 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
@@ -15434,50 +14387,6 @@
     ]
   },
   {
-    "id": "sonar-pulse",
-    "name": "Sonar Pulse",
-    "url": "shaders/sonar-pulse.wgsl",
-    "category": "image",
-    "description": "Radial sonar waves emitting from the cursor that distort and scan the image.",
-    "params": [
-      {
-        "id": "speed",
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "freq",
-        "name": "Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "width",
-        "name": "Wave Width",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "sonic-distortion",
     "name": "Sonic Distortion",
     "url": "shaders/sonic-distortion.wgsl",
@@ -15533,9 +14442,11 @@
     "url": "shaders/spectral-brush.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
     ],
-    "description": "Reveals a spectral dimension where you paint with the mouse.",
+    "description": "Reveals a spectral dimension where you paint with the mouse. Reacts to audio bass.",
     "params": [
       {
         "id": "brush-size",
@@ -15568,53 +14479,8 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "spectral-distortion",
-    "name": "Spectral Distortion",
-    "url": "shaders/spectral-distortion.wgsl",
-    "category": "image",
-    "description": "RGB channels split and warp based on noise and mouse proximity.",
-    "params": [
-      {
-        "id": "separation",
-        "name": "RGB Separation",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "warpScale",
-        "name": "Warp Scale",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "mouseInfluence",
-        "name": "Mouse Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "temporal-persistence",
-      "glitch"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
+      "image-processing",
+      "audio-reactive"
     ]
   },
   {
@@ -15656,51 +14522,6 @@
     "features": [
       "mouse-driven",
       "history"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "spectral-waves",
-    "name": "Luma Ripple",
-    "url": "shaders/spectral-waves.wgsl",
-    "category": "image",
-    "description": "Luminance-reactive waves ripple out from the mouse cursor, displacing the image with chromatic aberration.",
-    "params": [
-      {
-        "id": "frequency",
-        "name": "Ripple Freq",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "amplitude",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Chromatic Split",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "image"
     ],
     "tags": [
       "filter",
@@ -16315,55 +15136,11 @@
     ]
   },
   {
-    "id": "vhs-tracking-mouse",
-    "name": "VHS Tracking",
-    "category": "image",
-    "url": "shaders/vhs-tracking-mouse.wgsl",
-    "description": "A vertical tracking bar distortion controlled by mouse height.",
-    "params": [
-      {
-        "id": "barHeight",
-        "name": "Bar Height",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "distortion",
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "noise",
-        "name": "Static Noise",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "colorShift",
-        "name": "Color Split",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "virtual-lens",
     "name": "Virtual Lens",
     "url": "shaders/virtual-lens.wgsl",
     "category": "image",
-    "description": "A virtual magnifying glass with chromatic aberration.",
+    "description": "A virtual magnifying glass with chromatic aberration and audio-reactive pulse.",
     "params": [
       {
         "id": "mag",
@@ -16396,7 +15173,8 @@
     ],
     "features": [
       "mouse-driven",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
@@ -16451,50 +15229,6 @@
       "image-processing",
       "alpha",
       "depth-layered"
-    ]
-  },
-  {
-    "id": "volumetric-god-rays",
-    "name": "Volumetric God Rays",
-    "url": "shaders/volumetric-god-rays.wgsl",
-    "category": "image",
-    "description": "Generates volumetric light rays emanating from the mouse position, using the image highlights as the source.",
-    "params": [
-      {
-        "id": "density",
-        "name": "Density",
-        "default": 1,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "decay",
-        "name": "Decay",
-        "default": 0.95,
-        "min": 0.8,
-        "max": 1
-      },
-      {
-        "id": "weight",
-        "name": "Weight",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "exposure",
-        "name": "Exposure",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -16780,52 +15514,6 @@
     ],
     "features": [
       "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "divine-light-gpt52",
-    "name": "Divine Light Cathedral gpt52",
-    "url": "shaders/divine-light-gpt52.wgsl",
-    "category": "image",
-    "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
-    "params": [
-      {
-        "id": "intensity",
-        "name": "Ray Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "decay",
-        "name": "Ray Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "density",
-        "name": "Ray Density",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "threshold",
-        "name": "Brightness Filter",
-        "default": 0.45,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "volumetric",
-      "atmospheric"
     ],
     "tags": [
       "filter",
@@ -18605,53 +17293,6 @@
     ]
   },
   {
-    "id": "halftone",
-    "name": "Retro Halftone",
-    "url": "shaders/halftone.wgsl",
-    "category": "image",
-    "description": "",
-    "params": [
-      {
-        "id": "dotScale",
-        "name": "Dot Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "contrast",
-        "name": "Contrast",
-        "default": 1,
-        "min": 0,
-        "max": 2
-      },
-      {
-        "id": "colorMode",
-        "name": "Color Mode",
-        "default": 1,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "grid_rotation",
-        "name": "Grid Rotation",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Rotation angle of halftone grid"
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "features": [
-      "mouse-driven"
-    ]
-  },
-  {
     "id": "holographic-glitch",
     "name": "Holographic Glitch",
     "url": "shaders/holographic-glitch.wgsl",
@@ -18898,7 +17539,8 @@
     "features": [
       "mouse-driven",
       "chromatic",
-      "trail"
+      "trail",
+      "audio-reactive"
     ],
     "tags": [
       "filter",
@@ -19143,51 +17785,6 @@
       "retro",
       "texture",
       "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "xerox-degrade",
-    "name": "Xerox Degrade",
-    "url": "shaders/xerox-degrade.wgsl",
-    "category": "image",
-    "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
-    "params": [
-      {
-        "id": "contrast",
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "grain",
-        "name": "Grain",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "smear",
-        "name": "Smear",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "threshold",
-        "name": "Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "glitch",
-      "texture"
     ],
     "tags": [
       "filter",
@@ -19647,54 +18244,6 @@
       "audio",
       "music",
       "reactive"
-    ]
-  },
-  {
-    "id": "crt-clear-zone",
-    "name": "CRT Clear Zone",
-    "category": "image",
-    "url": "shaders/crt-clear-zone.wgsl",
-    "description": "Heavy CRT distortion with a clean, high-resolution zone around the mouse cursor.",
-    "params": [
-      {
-        "name": "Distortion",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.5,
-        "id": "distortion"
-      },
-      {
-        "name": "Aberration",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.3,
-        "id": "aberration"
-      },
-      {
-        "name": "Zone Size",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.3,
-        "id": "zone_size"
-      },
-      {
-        "name": "Scanlines",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.5,
-        "id": "scanlines"
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -20245,61 +18794,6 @@
       "filter",
       "image-processing"
     ]
-  },
-  {
-    "id": "spectral-rain",
-    "category": "image",
-    "url": "shaders/spectral-rain.wgsl",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "density",
-        "name": "Rain Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Density of rain streaks"
-      },
-      {
-        "id": "chromatic_strength",
-        "name": "Chromatic Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Strength of chromatic displacement"
-      },
-      {
-        "id": "trail_length",
-        "name": "Trail Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Length of raindrop trails"
-      },
-      {
-        "id": "rain_angle_scale",
-        "name": "Rain Angle Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1.5,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Scale of the rain angle variation"
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "name": "Spectral Rain"
   },
   {
     "id": "temporal-rgb-smear",

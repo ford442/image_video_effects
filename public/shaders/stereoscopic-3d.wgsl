@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Stereoscopic 3D
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,11 +19,10 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -24,6 +30,7 @@ struct Uniforms {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    let coords = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Params
@@ -35,14 +42,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     var mouse = u.zoom_config.yz;
 
+    // Audio reactivity: bass drives extra separation pulse
+    let bass = plasmaBuffer[0].x;
+    let audioPulse = 1.0 + bass * 0.3;
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
     // Separation Logic
     // Mouse X creates a horizontal bias (convergence shift)
     // Vertical UV creates a fake "ground plane" depth gradient
 
     let mouseBias = (mouse.x - 0.5) * 2.0;
-    let depth = (uv.y - focusOffset) + mouseBias;
+    let sceneDepth = (uv.y - focusOffset) + mouseBias;
 
-    var sepOffset = vec2<f32>(depth * maxSep, 0.0);
+    var sepOffset = vec2<f32>(sceneDepth * maxSep * audioPulse, 0.0);
 
     // Glitch Effect
     if (glitchStr > 0.0) {
@@ -78,7 +93,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let redColor = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
     let cyanColor = textureSampleLevel(readTexture, u_sampler, cyanUV, 0.0).gb;
 
-    var finalColor = vec4<f32>(redColor, cyanColor.x, cyanColor.y, 1.0);
+    var finalColor = vec3<f32>(redColor, cyanColor.x, cyanColor.y);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    // Meaningful alpha based on effect intensity and luminance
+    let effectIntensity = clamp(abs(sceneDepth) * 2.0 + length(sepOffset) * 20.0 + glitchStr * 0.5, 0.0, 1.0);
+    let luminance = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = mix(0.75, 1.0, effectIntensity * 0.6 + luminance * 0.4);
+
+    textureStore(writeTexture, coords, vec4<f32>(finalColor, alpha));
 }

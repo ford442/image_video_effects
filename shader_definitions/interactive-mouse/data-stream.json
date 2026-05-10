@@ -2,8 +2,8 @@
   "id": "data-stream",
   "name": "Digital Stream",
   "url": "shaders/data-stream.wgsl",
-  "category": "image",
-  "description": "Digital matrix-style data stream disrupted by mouse interaction.",
+  "category": "interactive-mouse",
+  "description": "Digital matrix-style data stream disrupted by mouse interaction. Audio-reactive bass pulses accelerate the flow.",
   "params": [
     {
       "id": "speed",
@@ -36,10 +36,17 @@
   ],
   "features": [
     "mouse-driven",
-    "glitch"
+    "glitch",
+    "audio-reactive"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "digital",
+    "matrix",
+    "green",
+    "data",
+    "stream",
+    "glitch",
+    "interactive",
+    "audio-reactive"
   ]
 }

@@ -5,7 +5,8 @@
   "category": "distortion",
   "description": "Recursive refraction effect that creates a fractal-like kaleidoscope. Mouse position controls the distortion center.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {

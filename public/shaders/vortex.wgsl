@@ -17,11 +17,14 @@
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 
 struct Uniforms {
-  config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
-  zoom_config: vec4<f32>,         // zoomTime, mouseX, mouseY, unused
-  zoom_params: vec4<f32>,         // x=vortexStrength, y=coreSize, z=rotationSpeed, w=turbulence
-  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
+  config: vec4<f32>,              // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,         // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,         // x=VortexStrength, y=CoreSize, z=RotationSpeed, w=Turbulence
+  ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
@@ -213,12 +216,13 @@ fn calculateDistortionAlpha(
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
+    // ═══ AUDIO REACTIVITY — bass from canonical plasmaBuffer ═══
+    let audioBass = plasmaBuffer[0].x;
+    let audioOverall = audioBass * 0.7;
+    let audioReactivity = 1.0 + audioBass * 0.5;
     
     // Read parameters
     let vortexStrength = u.zoom_params.x;      // 0.0 to 1.0

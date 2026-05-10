@@ -1,8 +1,17 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Dynamic Tessellation (Ornate Fractal Tiles)
+//  Category: generative
+//  Features: audio-reactive, fractal, tiled
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Pixelocity Upgrade Swarm — Phase A
+// ═══════════════════════════════════════════════════════════════════
+
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -47,8 +56,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         cos(tile_id.y * 0.1 + u.config.x * 0.5)
     );
 
-    // Iterations driven by u.config.y (audio) and u.zoom_params.x
-    let iter = i32(max(5.0, 10.0 + u.zoom_params.x * 10.0 + u.config.y * 5.0));
+    // Audio-reactive iterations via plasmaBuffer bass (plasmaBuffer[0].x)
+    let bass = plasmaBuffer[0].x;
+    let iter = i32(max(5.0, 10.0 + u.zoom_params.x * 10.0 + bass * 5.0));
     var n = 0;
     for (var i = 0; i < 20; i++) {
         if (i >= iter) { break; }
@@ -57,13 +67,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         n++;
     }
 
-    let f_val = f32(n) / f32(iter);
-    let color_idx = u32(f_val * 255.0) % 256u;
+    let f_val = f32(n) / max(f32(iter), 1.0);
+    let color_idx = u32(clamp(f_val * 255.0, 0.0, 255.0)) % 256u;
     let col = plasmaBuffer[color_idx].rgb;
 
-    // Store tile parameters in dataTextureA
-    textureStore(dataTextureA, coords, vec4<f32>(tile_id, f_val, 1.0));
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // Write final color
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Store tile parameters in dataTextureA — alpha based on fractal intensity
+    let data_alpha = clamp(0.3 + f_val * 0.7, 0.0, 1.0);
+    textureStore(dataTextureA, coords, vec4<f32>(tile_id, f_val, data_alpha));
+
+    // Write final color — alpha derived from luminance + fractal intensity
+    let luminance = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.25 + luminance * 0.6 + f_val * 0.25, 0.25, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
 }
