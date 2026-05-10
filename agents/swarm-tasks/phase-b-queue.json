@@ -24,7 +24,7 @@
     {
       "id": "pixel-sorter",
       "size": 3069,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Interactivist",
       "target_lines": 137,
@@ -33,7 +33,7 @@
     {
       "id": "sonic-boom",
       "size": 3140,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Optimizer",
       "target_lines": 139,
@@ -42,7 +42,7 @@
     {
       "id": "gen-luminous-fluid-chladni-resonator",
       "size": 3336,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 143,
@@ -51,7 +51,7 @@
     {
       "id": "scanline-sorting",
       "size": 3363,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 144,
@@ -60,7 +60,7 @@
     {
       "id": "phantom-lag",
       "size": 3412,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Interactivist",
       "target_lines": 145,
@@ -69,7 +69,7 @@
     {
       "id": "xerox-degrade",
       "size": 3425,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Optimizer",
       "target_lines": 146,
@@ -78,7 +78,7 @@
     {
       "id": "voronoi",
       "size": 3429,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 146,
@@ -87,7 +87,7 @@
     {
       "id": "vortex-pass2",
       "size": 3437,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 146,
@@ -96,7 +96,7 @@
     {
       "id": "neon-strings",
       "size": 3529,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Interactivist",
       "target_lines": 148,
@@ -105,7 +105,7 @@
     {
       "id": "melting-oil",
       "size": 3533,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Optimizer",
       "target_lines": 148,
@@ -114,7 +114,7 @@
     {
       "id": "heat-haze-gpt52",
       "size": 3543,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 149,
@@ -123,7 +123,7 @@
     {
       "id": "luma-flow-field",
       "size": 3543,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 149,
@@ -132,7 +132,7 @@
     {
       "id": "halftone",
       "size": 3595,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Interactivist",
       "target_lines": 150,
@@ -141,7 +141,7 @@
     {
       "id": "neon-ripple-split",
       "size": 3607,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Optimizer",
       "target_lines": 150,
@@ -150,7 +150,7 @@
     {
       "id": "scan-slice",
       "size": 3681,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 152,
@@ -159,7 +159,7 @@
     {
       "id": "holographic-projection-failure",
       "size": 3695,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 152,
@@ -168,7 +168,7 @@
     {
       "id": "spectrogram-displace-pass2",
       "size": 3726,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Interactivist",
       "target_lines": 153,
@@ -177,7 +177,7 @@
     {
       "id": "neon-pulse-stream",
       "size": 3740,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Optimizer",
       "target_lines": 154,
@@ -186,7 +186,7 @@
     {
       "id": "cyber-halftone-scanner",
       "size": 3758,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 154,
@@ -195,7 +195,7 @@
     {
       "id": "liquid-metal",
       "size": 3785,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 155,
@@ -204,7 +204,7 @@
     {
       "id": "fiber-optic-weave",
       "size": 3801,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Interactivist",
       "target_lines": 155,
@@ -213,7 +213,7 @@
     {
       "id": "moire-interference",
       "size": 3845,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Optimizer",
       "target_lines": 156,
@@ -222,7 +222,7 @@
     {
       "id": "navier-stokes-dye",
       "size": 3902,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 158,
@@ -231,7 +231,7 @@
     {
       "id": "holographic-sticker",
       "size": 3929,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 158,
@@ -240,7 +240,7 @@
     {
       "id": "holographic-shatter",
       "size": 3953,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Interactivist",
       "target_lines": 159,
@@ -249,7 +249,7 @@
     {
       "id": "neon-topology",
       "size": 3967,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Optimizer",
       "target_lines": 159,
@@ -258,7 +258,7 @@
     {
       "id": "oscilloscope-overlay",
       "size": 3968,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 159,
@@ -267,7 +267,7 @@
     {
       "id": "optical-feedback",
       "size": 3994,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 160,
@@ -276,7 +276,7 @@
     {
       "id": "neon-echo",
       "size": 3997,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Interactivist",
       "target_lines": 160,
@@ -285,7 +285,7 @@
     {
       "id": "gen-holographic-lens-flare-matrix",
       "size": 4021,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Optimizer",
       "target_lines": 161,
@@ -294,7 +294,7 @@
     {
       "id": "neon-warp",
       "size": 4034,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 161,
@@ -303,7 +303,7 @@
     {
       "id": "sim-fluid-feedback-field-pass1",
       "size": 4042,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 161,
@@ -312,7 +312,7 @@
     {
       "id": "fire_smoke_volumetric",
       "size": 4059,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 161,
@@ -321,7 +321,7 @@
     {
       "id": "holographic-edge-ripple",
       "size": 4067,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 162,
@@ -330,7 +330,7 @@
     {
       "id": "prismatic-feedback-loop",
       "size": 4092,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 162,
@@ -339,7 +339,7 @@
     {
       "id": "hybrid-fractal-feedback",
       "size": 4116,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 163,
@@ -348,7 +348,7 @@
     {
       "id": "gen-ethereal-quantum-medusa",
       "size": 4153,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 164,
@@ -357,7 +357,7 @@
     {
       "id": "cyber-rain",
       "size": 4179,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 164,
@@ -366,7 +366,7 @@
     {
       "id": "ascii-glyph",
       "size": 4194,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 165,
@@ -375,7 +375,7 @@
     {
       "id": "spec-histogram-equalize",
       "size": 4265,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 167,
@@ -384,7 +384,7 @@
     {
       "id": "holographic_interference",
       "size": 4273,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 167,
@@ -393,7 +393,7 @@
     {
       "id": "vhs-jog",
       "size": 4290,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 167,
@@ -402,7 +402,7 @@
     {
       "id": "holographic-glitch",
       "size": 4389,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 170,
@@ -411,7 +411,7 @@
     {
       "id": "sim-fluid-feedback-field-pass3",
       "size": 4410,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 170,
@@ -420,7 +420,7 @@
     {
       "id": "ferrofluid",
       "size": 4413,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 170,
@@ -429,7 +429,7 @@
     {
       "id": "temporal_echo",
       "size": 4427,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 171,
@@ -438,7 +438,7 @@
     {
       "id": "neon-edge-radar",
       "size": 4484,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 172,
@@ -447,7 +447,7 @@
     {
       "id": "gen_grok4_perlin",
       "size": 4521,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 173,
@@ -456,7 +456,7 @@
     {
       "id": "gen-xeno-mycelial-resonance-web",
       "size": 4535,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 173,
@@ -465,7 +465,7 @@
     {
       "id": "infinite-video-feedback",
       "size": 4564,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 174,
@@ -474,7 +474,7 @@
     {
       "id": "spectrogram-displace",
       "size": 21828,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 477,
@@ -483,7 +483,7 @@
     {
       "id": "digital-glitch",
       "size": 20712,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 454,
@@ -492,7 +492,7 @@
     {
       "id": "quantum-foam",
       "size": 20623,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 452,
@@ -501,7 +501,7 @@
     {
       "id": "liquid-optimized",
       "size": 19185,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 424,
@@ -510,7 +510,7 @@
     {
       "id": "liquid",
       "size": 18928,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 419,
@@ -519,7 +519,7 @@
     {
       "id": "rgb-glitch-displacement",
       "size": 18599,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 412,
@@ -528,7 +528,7 @@
     {
       "id": "vortex",
       "size": 18015,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 400,
@@ -537,7 +537,7 @@
     {
       "id": "gen-quantum-superposition",
       "size": 17913,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 398,
@@ -546,7 +546,7 @@
     {
       "id": "tensor-flow-sculpt",
       "size": 17876,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 398,
@@ -555,7 +555,7 @@
     {
       "id": "spectral-bleed-confinement",
       "size": 17814,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 396,
@@ -564,7 +564,7 @@
     {
       "id": "liquid-displacement",
       "size": 17361,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 387,
@@ -573,7 +573,7 @@
     {
       "id": "chromatic-phase-inversion",
       "size": 17088,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 382,
@@ -582,7 +582,7 @@
     {
       "id": "recursion-mirror-vortex",
       "size": 16968,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 379,
@@ -591,7 +591,7 @@
     {
       "id": "tensor-flow-sculpting",
       "size": 16512,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 370,
@@ -600,7 +600,7 @@
     {
       "id": "gen-gravitational-strain",
       "size": 16338,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 367,

@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lineThickness = mix(0.001, 0.01, u.zoom_params.w);
     
     // Audio input (from zoom_config.x)
-    let audio = u.zoom_config.x;
+    let audio = plasmaBuffer[0].x;
     let audioMod = 1.0 + audio * audioReactivity * 2.0;
     
     // Background accumulation for trails
@@ -180,7 +180,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col * vignette;
     
     // Store for feedback
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col * 0.95, 1.0));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col * 0.95, 0.95));
+    let _luma_as = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha_as = clamp(_luma_as * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, _alpha_as));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

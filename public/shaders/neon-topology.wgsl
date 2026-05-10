@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=ContourLevels, y=EdgeThreshold, z=Intensity, w=ColorShift
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -43,35 +46,41 @@ fn edgePreserveAlpha(uv: vec2<f32>, pixelSize: vec2<f32>, edgeThreshold: f32) ->
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let pixelSize = 1.0 / resolution;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
-    
-    let contourLevels = u.zoom_params.x * 10.0 + 3.0;
+    let audioBass = plasmaBuffer[0].x;
+
+    // Bass adds extra contour density (more rings on beat)
+    let contourLevels = u.zoom_params.x * 10.0 + 3.0 + audioBass * 4.0;
     let edgeThreshold = u.zoom_params.y * 0.1 + 0.02;
-    let intensity = u.zoom_params.z * 2.0;
+    let intensity = u.zoom_params.z * 2.0 * (1.0 + audioBass * 0.3);
     let colorShift = u.zoom_params.w;
-    
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    // Contour lines
-    let contour = fract(depth * contourLevels);
+
+    // Branchless contour lines — pre-multiplied phase saves ALU
+    let contourPhase = depth * contourLevels;
+    let contour = fract(contourPhase);
     let line = smoothstep(0.05, 0.0, contour);
+    // Major every 5 contours (highlighted)
+    let major = step(0.95, fract(contourPhase * 0.2));
+    let lineWithMajor = line * (1.0 + major * 0.6);
+
+    // Neon color — single phase, branchless vec3 sin
+    let phase = depth * 10.0 + colorShift * TAU + time;
+    let neonColor = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
+
+    // Composite onto desaturated background image (preserve photo context)
+    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let bgGray = vec3<f32>(dot(bg, vec3<f32>(0.299, 0.587, 0.114))) * 0.4;
+    let emission = neonColor * lineWithMajor * intensity;
+    let final_color = bgGray + emission;
+
+    let alpha = clamp(edgePreserveAlpha(uv, pixelSize, edgeThreshold) * lineWithMajor
+                      + dot(emission, vec3<f32>(0.299, 0.587, 0.114)) * 0.3, 0.0, 1.0);
     
-    // Neon color
-    let neonColor = vec3<f32>(
-        0.5 + 0.5 * sin(depth * 10.0 + colorShift * 6.28 + time),
-        0.5 + 0.5 * sin(depth * 10.0 + colorShift * 6.28 + time + 2.09),
-        0.5 + 0.5 * sin(depth * 10.0 + colorShift * 6.28 + time + 4.18)
-    );
-    
-    let emission = neonColor * line * intensity;
-    let alpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold) * line;
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

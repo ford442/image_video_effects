@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (coords.x >= i32(res.x) || coords.y >= i32(res.y)) { return; }
 
     let time = u.config.x;
-    let audio = u.config.y; // Audio reactivity
+    let audio = plasmaBuffer[0].x; // Audio reactivity
 
     // Mouse center, default to middle if 0
     var center = u.zoom_config.yz * res;
@@ -117,5 +117,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow = max(0.0, 1.0 - (dist / (res.x * 0.5))) * audio;
     color += vec3<f32>(0.2, 0.5, 1.0) * glow * plasmaVal;
 
-    textureStore(writeTexture, coords, vec4<f32>(color, 1.0));
+    let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(color, _alpha));
+    let _depth_uv = clamp(vec2<f32>(coords) / res, vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

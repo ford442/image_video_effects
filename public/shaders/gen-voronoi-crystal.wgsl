@@ -99,6 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let t = u.config.x;
+    let bass = plasmaBuffer[0].x;
     
     // Parameters - safe randomization
     let growthSpeed = mix(0.2, 1.5, u.zoom_params.x);
@@ -165,6 +166,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let frost = smoothstep(0.1, 0.0, edge) * smoothstep(0.0, 0.05, f1);
     col = mix(col, vec3<f32>(0.95, 0.98, 1.0), frost * 0.4);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    let _luma_q = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha_q = clamp(_luma_q * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, _alpha_q));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth * 0.5, 0.0, 0.0, 0.0));
 }

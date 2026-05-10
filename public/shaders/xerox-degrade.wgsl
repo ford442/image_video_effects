@@ -27,6 +27,9 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
 // One hash → unpack into multiple uncorrelated values via xy/yx/sum permutes.
 // Cheaper than three independent hash12 calls.
 fn hash3_packed(p: vec2<f32>) -> vec3<f32> {

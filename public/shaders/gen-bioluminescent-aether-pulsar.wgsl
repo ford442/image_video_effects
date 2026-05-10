@@ -72,7 +72,7 @@ fn noise3(p: vec3<f32>) -> f32 {
 // --- SDFs ---
 fn map(p: vec3<f32>) -> vec2<f32> {
     let t = u.config.x * u.zoom_params.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
     // Core (Sphere twisted by Y)
     var q_core = p;
@@ -153,7 +153,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
     if (t < 20.0) {
         // Base color
@@ -173,5 +173,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Add volumetric glow
     col += vec3<f32>(0.1, 0.8, 1.0) * glow;
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

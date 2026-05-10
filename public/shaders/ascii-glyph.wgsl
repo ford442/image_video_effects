@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 const GLYPH_GRID: vec2<u32> = vec2<u32>(80u, 45u);
 const GLYPH_SIZE: u32 = 16u;
@@ -32,8 +35,10 @@ const GLYPH_SIZE: u32 = 16u;
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = vec2<f32>(u.config.z, u.config.w);
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
   var uv = vec2<f32>(gid.xy) / resolution;
   let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
   
   // Mouse-based displacement
   let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -60,7 +65,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cell_center = vec2<f32>(f32(cell_coord.x) * f32(GLYPH_SIZE), f32(cell_coord.y) * f32(GLYPH_SIZE));
   let src = textureLoad(readTexture, vec2<i32>(i32(cell_center.x), i32(cell_center.y)), 0);
   let saturation = max(src.r, max(src.g, src.b)) - min(src.r, min(src.g, src.b));
-  let glyph_index = u32((saturation + ripple_morph * 0.5) * 255.0) % 16u;
+  let glyph_index = u32((saturation + ripple_morph * 0.5 + bass * 0.3) * 255.0) % 16u;
   let atlas_uv = (vec2<f32>(f32(pixel_in_cell.x), f32(pixel_in_cell.y)) + vec2<f32>(f32(glyph_index * GLYPH_SIZE), 0.0)) / vec2<f32>(256.0, 16.0);
   let sdf = textureSampleLevel(dataTextureC, u_sampler, atlas_uv, 0.0).r;
   let morph_amount = saturation * 2.0 + mouse_displace * 0.1;

@@ -27,11 +27,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=ClipLimit, y=Strength, z=TileBlend, w=ColorPreserve
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 var<workgroup> localHistogram: array<atomic<u32>, 256>;
 
@@ -42,9 +45,12 @@ fn main(
     @builtin(local_invocation_index) lidx: u32
 ) {
     let res = u.config.zw;
+    let inBounds = gid.x < u32(res.x) && gid.y < u32(res.y);
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
+    let bass = plasmaBuffer[0].x;
 
-    let clipLimit = mix(1.0, 8.0, u.zoom_params.x);
+    // Bass loosens contrast clip — beat opens up tonal range
+    let clipLimit = mix(1.0, 8.0, u.zoom_params.x) * (1.0 + bass * 0.3);
     let strength = mix(0.0, 1.0, u.zoom_params.y);
     let tileBlend = mix(0.0, 1.0, u.zoom_params.z);
     let colorPreserve = mix(0.0, 1.0, u.zoom_params.w);
@@ -92,6 +98,10 @@ fn main(
     outColor = clamp(outColor, vec3<f32>(0.0), vec3<f32>(3.0));
 
     // Alpha stores CDF value (statistical importance map)
-    textureStore(writeTexture, gid.xy, vec4<f32>(outColor, f32(cdf) / f32(totalPixels)));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(equalizedLuma, luma, scaleFactor, f32(cdf) / f32(totalPixels)));
+    if (inBounds) {
+        textureStore(writeTexture, gid.xy, vec4<f32>(outColor, f32(cdf) / f32(totalPixels)));
+        textureStore(dataTextureA, gid.xy, vec4<f32>(equalizedLuma, luma, scaleFactor, f32(cdf) / f32(totalPixels)));
+        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    }
 }

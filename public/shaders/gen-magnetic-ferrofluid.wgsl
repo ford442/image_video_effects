@@ -90,6 +90,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(u.config.z, u.config.w);
+    let bass = plasmaBuffer[0].x;
     let fragCoord = vec2<f32>(id.xy);
 
     if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) {
@@ -169,5 +170,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Gamma correction
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, vec2<u32>(id.xy), vec4<f32>(col, 1.0));
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<u32>(id.xy), vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

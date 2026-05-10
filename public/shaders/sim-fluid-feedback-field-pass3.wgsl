@@ -25,11 +25,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=GlowIntensity
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ GLOW CALCULATION ═══
 fn calculateGlow(uv: vec2<f32>, intensity: f32) -> vec3<f32> {
@@ -37,7 +40,7 @@ fn calculateGlow(uv: vec2<f32>, intensity: f32) -> vec3<f32> {
     let samples = 16;
     
     for (var i = 0; i < samples; i++) {
-        let angle = f32(i) * 6.28318 / f32(samples);
+        let angle = f32(i) * TAU / f32(samples);
         let radius = 0.02 * (1.0 + f32(i % 4) * 0.3);
         let offset = vec2<f32>(cos(angle), sin(angle)) * radius;
         let sampleColor = textureSampleLevel(dataTextureC, u_sampler, uv + offset, 0.0).rgb;
@@ -55,9 +58,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     let uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
-    
-    // Parameters
-    let glowAmount = mix(0.5, 2.0, u.zoom_params.w);  // w: Glow intensity
+    let bass = plasmaBuffer[0].x;
+
+    // Parameters — bass amplifies glow
+    let glowAmount = mix(0.5, 2.0, u.zoom_params.w) * (1.0 + bass * 0.4);
     
     // Read density from dataTextureB (written by Pass 2)
     let density = textureLoad(dataTextureC, gid.xy, 0).rgb;

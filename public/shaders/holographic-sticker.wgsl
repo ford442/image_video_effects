@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=HolographicIntensity, y=ColorShift, z=DepthWeight, w=StickerShape
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -46,30 +49,39 @@ fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
-    let holographicIntensity = u.zoom_params.x;
+    let bass = plasmaBuffer[0].x;
+
+    let holographicIntensity = clamp(u.zoom_params.x * (1.0 + bass * 0.3), 0.0, 1.0);
     let colorShift = u.zoom_params.y;
     let depthWeight = u.zoom_params.z;
     let stickerShape = u.zoom_params.w;
-    
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    
-    // Holographic rainbow effect
-    let angle = atan2(uv.y - 0.5, uv.x - 0.5);
-    let rainbow = vec3<f32>(
-        0.5 + 0.5 * sin(angle * 3.0 + colorShift * 6.28 + time * 0.5),
-        0.5 + 0.5 * sin(angle * 3.0 + colorShift * 6.28 + time * 0.5 + 2.09),
-        0.5 + 0.5 * sin(angle * 3.0 + colorShift * 6.28 + time * 0.5 + 4.18)
-    );
-    
-    // Sticker edge shape
-    let distFromCenter = length(uv - 0.5);
-    let edgeGlow = smoothstep(stickerShape, stickerShape - 0.05, distFromCenter);
-    
-    let holographicColor = mix(baseSample.rgb, rainbow, holographicIntensity * edgeGlow);
+
+    // Sticker centered on mouse — drag the sticker around
+    let mouse = u.zoom_config.yz;
+    let toCenter = uv - mouse;
+
+    // View-angle iridescence — rainbow phase shifts with depth + radius
+    let angle = atan2(toCenter.y, toCenter.x);
+    let phase = angle * 3.0 + colorShift * TAU + time * 0.5 + depth * PI;
+    let rainbow = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
+
+    // Plasma palette overlay (multi-color holographic foil)
+    let palIdx = u32(clamp((angle / TAU + 0.5 + time * 0.05) * 255.0, 0.0, 255.0));
+    let palette = plasmaBuffer[palIdx % 256u].rgb;
+    let foil = mix(rainbow, rainbow * (0.6 + palette * 0.7), 0.4);
+
+    // Sticker edge shape (Gaussian — softer than smoothstep)
+    let distFromCenter = length(toCenter);
+    let r = stickerShape;
+    let edgeGlow = exp(-pow(distFromCenter / max(r, 1e-3), 8.0));   // tightening sticker boundary
+
+    let holographicColor = mix(baseSample.rgb, foil, holographicIntensity * edgeGlow);
     
     let depthAlpha = depthLayeredAlpha(holographicColor, uv, depthWeight);
     let lumaAlpha = luminanceKeyAlpha(holographicColor, 0.1, 0.05);

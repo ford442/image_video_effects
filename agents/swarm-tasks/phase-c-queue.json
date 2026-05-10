@@ -16,15 +16,15 @@
     },
     "c": {
       "total": 30,
-      "completed": 0,
-      "pending": 30
+      "completed": 30,
+      "pending": 0
     }
   },
   "items": [
     {
       "id": "gen-cymatic-plasma-mandalas",
       "size": 5059,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 206,
@@ -33,7 +33,7 @@
     {
       "id": "gen-psychedelic-time-warp-kaleidoscope",
       "size": 5155,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 209,
@@ -42,7 +42,7 @@
     {
       "id": "gen-nebular-chrono-astrolabe",
       "size": 5170,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 209,
@@ -51,7 +51,7 @@
     {
       "id": "gen-graviton-plasma-lotus",
       "size": 5281,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 212,
@@ -60,7 +60,7 @@
     {
       "id": "gen-crystalline-chrono-dyson",
       "size": 5342,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 214,
@@ -69,7 +69,7 @@
     {
       "id": "gen-chromodynamic-plasma-collider",
       "size": 5480,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 217,
@@ -78,7 +78,7 @@
     {
       "id": "gen-glass-mosaic-liquid-refraction",
       "size": 5510,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 218,
@@ -87,7 +87,7 @@
     {
       "id": "gen-fractal-clockwork",
       "size": 5693,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 222,
@@ -96,7 +96,7 @@
     {
       "id": "gen-quantum-aether-origami",
       "size": 5725,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 223,
@@ -105,7 +105,7 @@
     {
       "id": "gen-feedback-echo-chamber",
       "size": 5746,
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 224,
@@ -114,7 +114,7 @@
     {
       "id": "gen-cosmic-clockwork-dyson-sphere",
       "size": 5826,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 226,
@@ -123,7 +123,7 @@
     {
       "id": "gen-magnetic-ferrofluid",
       "size": 5834,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 226,
@@ -132,7 +132,7 @@
     {
       "id": "gen-quasicrystal",
       "size": 5853,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 226,
@@ -141,7 +141,7 @@
     {
       "id": "gen-photonic-crystal-brain",
       "size": 5865,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 227,
@@ -150,7 +150,7 @@
     {
       "id": "gen-bioluminescent-aether-pulsar",
       "size": 5946,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 229,
@@ -159,7 +159,7 @@
     {
       "id": "gen-nebula-light-trail-swarm",
       "size": 5994,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 230,
@@ -168,7 +168,7 @@
     {
       "id": "gen-sonic-lava-flow",
       "size": 6041,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 231,
@@ -177,7 +177,7 @@
     {
       "id": "gen-neural-fractal",
       "size": 6126,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 233,
@@ -186,7 +186,7 @@
     {
       "id": "gen-cosmic-web-filament",
       "size": 6248,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 236,
@@ -195,7 +195,7 @@
     {
       "id": "gen-hyper-refractive-rain-matrix",
       "size": 6316,
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 238,
@@ -204,7 +204,7 @@
     {
       "id": "gen-abyssal-chrono-coral",
       "size": 6330,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 238,
@@ -213,7 +213,7 @@
     {
       "id": "gen-audiovisual-mandelbulb-raymarcher",
       "size": 6379,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 239,
@@ -222,7 +222,7 @@
     {
       "id": "gen-voronoi-crystal",
       "size": 6392,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 240,
@@ -231,7 +231,7 @@
     {
       "id": "gen-stellar-plasma-ouroboros",
       "size": 6534,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 243,
@@ -240,7 +240,7 @@
     {
       "id": "gen-physarum-sacred-geometry",
       "size": 6612,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 245,
@@ -249,7 +249,7 @@
     {
       "id": "gen-neural-bioluminescence-matrix",
       "size": 6629,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 246,
@@ -258,7 +258,7 @@
     {
       "id": "gen-temporal-motion-smear",
       "size": 6689,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 247,
@@ -267,7 +267,7 @@
     {
       "id": "gen-cybernetic-liquid-chrome-engine",
       "size": 6771,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 249,
@@ -276,7 +276,7 @@
     {
       "id": "gen-audio-spirograph",
       "size": 6799,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 250,
@@ -285,7 +285,7 @@
     {
       "id": "gen-prismatic-aether-loom",
       "size": 6862,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 252,

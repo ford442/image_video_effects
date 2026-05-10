@@ -53,7 +53,7 @@ fn sdCappedCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
 fn map(p_in: vec3<f32>, global_glow: ptr<function, f32>) -> f32 {
     var p = p_in;
     let t = u.config.x * u.zoom_params.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
     // Domain repetition
     let spacing = 8.0;
@@ -123,7 +123,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = (coords - 0.5 * res) / res.y;
 
     // Chromatic aberration at screen edges during high audio
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
     let distFromCenter = length(uv);
     uv *= 1.0 - (distFromCenter * audio * 0.1);
 
@@ -202,5 +202,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Gamma correction
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

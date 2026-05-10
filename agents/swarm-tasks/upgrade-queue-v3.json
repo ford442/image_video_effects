@@ -11,8 +11,8 @@
     },
     "b": {
       "total": 65,
-      "completed": 0,
-      "pending": 65
+      "completed": 65,
+      "pending": 0
     },
     "c": {
       "total": 30,

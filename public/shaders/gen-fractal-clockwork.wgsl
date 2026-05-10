@@ -87,8 +87,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   let time = u.config.x;
   // ═══ AUDIO REACTIVITY ═══
-  let audioOverall = u.config.y;
-  let audioBass = u.config.y * 1.2;
+  let audioOverall = plasmaBuffer[0].x;
+  let audioBass = plasmaBuffer[0].x * 1.2;
   let audioMid = u.config.z;
   let audioHigh = u.config.w;
   let audioReactivity = 1.0 + audioOverall * 0.5;

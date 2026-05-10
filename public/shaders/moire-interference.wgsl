@@ -19,6 +19,9 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;

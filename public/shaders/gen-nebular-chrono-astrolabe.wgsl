@@ -68,7 +68,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         if(i >= num_rings) { break; }
         var p_ring = p1;
         let fi = f32(i);
-        let p_ring_yz = rot2D(u.config.x * 0.5 + u.config.y * 2.0 + fi * 0.5) * p_ring.yz;
+        let p_ring_yz = rot2D(u.config.x * 0.5 + bass * 2.0 + fi * 0.5) * p_ring.yz;
         p_ring.y = p_ring_yz.x;
         p_ring.z = p_ring_yz.y;
         let p_ring_xz = rot2D(u.config.x * 0.2 * u.zoom_params.x + fi * 1.2) * p_ring.xz;
@@ -125,6 +125,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
 
+    let bass = plasmaBuffer[0].x;
+
     let ro = vec3<f32>(0.0, 0.0, -10.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
 
@@ -156,5 +158,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(0.1, 0.4, 0.8) * glow * 0.5;
 
     // Output
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

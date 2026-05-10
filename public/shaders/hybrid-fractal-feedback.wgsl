@@ -20,11 +20,15 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=AccumulationRate, y=FractalIter, z=Zoom, w=Feedback
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+const PHI: f32 = 1.61803398874989484820;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -50,20 +54,26 @@ fn complexMul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
-    let uv = vec2<f32>(global_id.xy) / u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
+    let bass = plasmaBuffer[0].x;
+    let mouse = u.zoom_config.yz;
+
     let accumulationRate = u.zoom_params.x;
     let fractalIter = i32(u.zoom_params.y * 50.0 + 10.0);
     let zoom = u.zoom_params.z * 2.0 + 1.0;
     let feedback = u.zoom_params.w;
-    
+
     let current = textureLoad(readTexture, coord, 0);
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    
-    // Julia fractal
-    let c = vec2<f32>(cos(time * 0.2) * 0.7, sin(time * 0.3) * 0.3);
+
+    // Julia fractal — mouse steers c-parameter, bass adds breathing
+    let cBase = vec2<f32>(cos(time * 0.2) * 0.7, sin(time * 0.3) * 0.3);
+    let cMouse = (mouse - 0.5) * 1.4;
+    let c = mix(cBase, cMouse, 0.5) * (1.0 + bass * 0.1);
     let z = (uv - 0.5) * zoom * 2.0;
     
     var iter = 0;
@@ -78,11 +88,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     let fractalValue = f32(iter) / f32(fractalIter);
-    let fractalColor = vec3<f32>(
-        fractalValue * (0.5 + 0.5 * sin(time)),
-        fractalValue * (0.5 + 0.5 * sin(time + 2.0)),
-        fractalValue * (0.5 + 0.5 * sin(time + 4.0))
-    );
+    // Plasma palette colored by escape velocity (replaces simple sin gradient)
+    let palIdx = u32(clamp((fractalValue * PHI + time * 0.05) * 255.0, 0.0, 255.0));
+    let palette = plasmaBuffer[palIdx % 256u].rgb;
+    let fractalColor = palette * fractalValue * (0.7 + bass * 0.5);
     
     let blended = mix(prev.rgb, fractalColor, feedback);
     let newAlpha = fractalValue;

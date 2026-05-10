@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=ShatterAmount, y=HolographicIntensity, z=DepthWeight, w=ShardCount
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -45,40 +48,52 @@ fn rand(co: vec2<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
-    let shatterAmount = u.zoom_params.x;
+    let bass = plasmaBuffer[0].x;
+
+    let shatterAmount = clamp(u.zoom_params.x * (1.0 + bass * 0.4), 0.0, 1.0);
     let holographicIntensity = u.zoom_params.y;
     let depthWeight = u.zoom_params.z;
     let shardCount = u.zoom_params.w * 50.0 + 10.0;
-    
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
+
+    // Mouse-centered impact: shards farther from mouse displaced more (impact radial wave)
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+    let dM = distance(uv, mouse);
+    let impact = (0.4 + mouseDown * 0.6) * smoothstep(0.0, 0.6, dM);
+
     // Shatter grid
     let gridUV = uv * shardCount;
     let shardId = floor(gridUV);
     let shardUv = fract(gridUV);
-    
-    // Random offset per shard
+
+    // Per-shard random radial flight direction (mouse repels)
     let shardRand = rand(shardId);
-    let offset = vec2<f32>(rand(shardId + 1.0), rand(shardId + 2.0)) * shatterAmount;
-    
-    let warpedUV = uv + offset * smoothstep(0.5, 1.0, shatterAmount);
-    let sample = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    
-    // Holographic edge
+    let shardCenter = (shardId + 0.5) / shardCount;
+    let flightDir = normalize(shardCenter - mouse + vec2<f32>(1e-4));
+    let offset = flightDir * shatterAmount * impact * (0.4 + shardRand * 0.6);
+
+    let warpedUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sample = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
+
+    // Shard edge glow (pseudo-cracked-glass refraction)
     let edgeDist = min(min(shardUv.x, 1.0 - shardUv.x), min(shardUv.y, 1.0 - shardUv.y));
     let edgeGlow = smoothstep(0.1, 0.0, edgeDist);
-    
-    let holographic = vec3<f32>(
-        0.5 + 0.5 * sin(time + shardRand * 6.28),
-        0.5 + 0.5 * sin(time + shardRand * 6.28 + 2.09),
-        0.5 + 0.5 * sin(time + shardRand * 6.28 + 4.18)
-    );
-    
-    let finalColor = mix(sample.rgb, holographic, edgeGlow * holographicIntensity);
-    let alpha = depthLayeredAlpha(finalColor, uv, depthWeight) * (0.8 + edgeGlow * 0.2);
+
+    // Iridescent holographic + plasma palette per shard
+    let phase = time + shardRand * TAU + depth * PI;
+    let holographic = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
+    let palIdx = u32(clamp((shardRand + time * 0.05) * 255.0, 0.0, 255.0));
+    let palette = plasmaBuffer[palIdx % 256u].rgb;
+    let foil = mix(holographic, holographic * (0.6 + palette * 0.7), 0.4);
+
+    let finalColor = mix(sample.rgb, foil, edgeGlow * holographicIntensity);
+    let alpha = clamp(depthLayeredAlpha(finalColor, uv, depthWeight) * (0.8 + edgeGlow * 0.2)
+                      + impact * 0.1 + bass * 0.05, 0.0, 1.0);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

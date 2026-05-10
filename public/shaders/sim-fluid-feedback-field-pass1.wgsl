@@ -25,11 +25,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Viscosity, y=Turbulence, z=MouseForce, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ NOISE FUNCTIONS ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -69,15 +72,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pixel = 1.0 / resolution;
     let time = u.config.x;
     
-    // Parameters
-    let viscosity = mix(0.9, 0.999, u.zoom_params.x);  // x: Viscosity
-    let turbulence = u.zoom_params.y * 2.0;            // y: Turbulence
-    
-    // Initialize velocity field from curl noise (Pass 1 - no previous data)
-    // For feedback loops, this seeds the initial velocity
+    let bass = plasmaBuffer[0].x;
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+
+    // Parameters — bass amplifies turbulence
+    let viscosity = mix(0.9, 0.999, u.zoom_params.x);
+    let turbulence = u.zoom_params.y * 2.0 * (1.0 + bass * 0.5);
+    let mouseForce = clamp(u.zoom_params.z, 0.0, 1.0);
+
+    // Curl-noise seed (divergence-free) modulated by mouse stir
     let curl = curlNoise(uv * 5.0 + time * 0.1);
     var newVel = curl * turbulence * 0.1;
-    
+
+    // Mouse impulse — radial outward push (Gaussian)
+    let toMouse = uv - mouse;
+    let dM2 = dot(toMouse, toMouse);
+    let mouseGate = exp(-dM2 * 60.0) * (mouseForce + mouseDown * 0.5);
+    newVel = newVel + (toMouse / max(length(toMouse), 1e-4)) * 0.4 * mouseGate;
+
     // Apply viscosity (damping)
     newVel *= viscosity;
     

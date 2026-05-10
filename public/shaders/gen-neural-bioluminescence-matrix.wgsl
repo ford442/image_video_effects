@@ -129,7 +129,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (fragCoord - 0.5 * vec2<f32>(texSize)) / f32(texSize.y);
 
     let time = u.config.x;
-    let audioPulse = u.config.y * u.zoom_params.z; // Audio Reactivity
+    let audioPulse = plasmaBuffer[0].x * u.zoom_params.z; // Audio Reactivity
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, time * 2.0);
@@ -183,5 +183,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     color = mix(color, vec3<f32>(0.01, 0.01, 0.02), 1.0 - exp(-t * 0.02));
 
-    textureStore(writeTexture, id.xy, vec4<f32>(color, 1.0));
+        let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, id.xy, vec4<f32>(color, _alpha));
+    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

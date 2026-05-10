@@ -83,12 +83,12 @@ fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
         p *= 1.2;
 
         // Base coral branch
-        let branch = (length(p.xz) - u.zoom_params.x * (1.0 + u.config.y * 0.5)) / s;
+        let branch = (length(p.xz) - u.zoom_params.x * (1.0 + plasmaBuffer[0].x * 0.5)) / s;
         d = smin(d, branch, 0.2);
     }
 
     // Bioluminescent nodes at tips
-    let node_d = length(p) / s - (0.2 + u.config.y * 0.1);
+    let node_d = length(p) / s - (0.2 + plasmaBuffer[0].x * 0.1);
 
     if (node_d < d) {
         return vec2<f32>(node_d, 2.0); // Material 2: nodes
@@ -186,7 +186,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, vec3<f32>(0.0, 0.05, 0.1), 1.0 - exp(-0.02 * t));
 
     // Audio reactivity to overall brightness
-    col *= 1.0 + u.config.y * 0.2;
+    col *= 1.0 + plasmaBuffer[0].x * 0.2;
 
-    textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

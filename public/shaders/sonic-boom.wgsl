@@ -27,6 +27,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 const PHI: f32 = 1.61803398874989484820;
 
 @compute @workgroup_size(16, 16, 1)
