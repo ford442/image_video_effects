@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Fractal Glass Distort
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Chunks From: (original effect)
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -32,15 +42,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let coord = vec2<i32>(global_id.xy);
   var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
+  let aspect = resolution.x / max(resolution.y, 0.001);
   let bass = plasmaBuffer[0].x;
 
   let rot_speed = u.zoom_params.x * 3.14159;
-  let scale_base = mix(0.9, 1.3, u.zoom_params.y);
-  let refract_str = mix(0.0, 0.05, u.zoom_params.z) * (1.0 + bass * 0.3);
+  let scale_base = mix(0.9, 1.3, clamp(u.zoom_params.y, 0.0, 1.0));
+  let refract_str = mix(0.0, 0.05, clamp(u.zoom_params.z, 0.0, 1.0)) * (1.0 + bass * 0.3);
   let aberration = u.zoom_params.w * 0.1;
 
-  var mouse = u.zoom_config.yz;
+  var mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
   var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
   let mouse_p = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
@@ -58,15 +68,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         cos(rotated.x * 10.0 + u.config.x)
     );
 
-    total_disp = total_disp + sine_warp * refract_str / (f32(i) + 1.0);
+    total_disp = total_disp + sine_warp * refract_str / max(f32(i) + 1.0, 0.001);
     curr_p = rotated * scale_base + mouse_p;
   }
 
   let final_p = p + total_disp;
-  let final_uv = final_p / vec2<f32>(aspect, 1.0) + 0.5;
+  let final_uv = clamp(final_p / vec2<f32>(aspect, 1.0) + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let r_uv = (p + total_disp * (1.0 + aberration)) / vec2<f32>(aspect, 1.0) + 0.5;
-  let b_uv = (p + total_disp * (1.0 - aberration)) / vec2<f32>(aspect, 1.0) + 0.5;
+  let r_uv = clamp((p + total_disp * (1.0 + aberration)) / vec2<f32>(aspect, 1.0) + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+  let b_uv = clamp((p + total_disp * (1.0 - aberration)) / vec2<f32>(aspect, 1.0) + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0).g;
