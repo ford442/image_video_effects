@@ -2,34 +2,34 @@
   "id": "chrono-slit-scan",
   "name": "Chrono Slit Scan",
   "url": "shaders/chrono-slit-scan.wgsl",
-  "category": "image",
-  "description": "Accumulates time slices of the video into a static image via FBM-warped SDF slits with spatially-varying temporal decay.",
+  "category": "artistic",
+  "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, and audio-reactive speed modulation.",
   "params": [
     {
-      "id": "speed",
-      "name": "Scan Speed",
+      "id": "slitCount",
+      "name": "Slit Count",
       "default": 0.3,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "width",
+      "id": "slitWidth",
       "name": "Slit Width",
       "default": 0.2,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "warp",
-      "name": "Time Warp",
-      "default": 0.1,
+      "id": "slitSpeed",
+      "name": "Slit Speed",
+      "default": 0.3,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "freeze",
-      "name": "Fade Reset",
-      "default": 0.0,
+      "id": "feather",
+      "name": "Feather",
+      "default": 0.3,
       "min": 0.0,
       "max": 1.0
     }
@@ -38,13 +38,16 @@
     "temporal-persistence",
     "audio-reactive",
     "fbm-warp",
-    "sdf-composition"
+    "sdf-composition",
+    "upgraded-rgba",
+    "multi-slit"
   ],
   "tags": [
     "filter",
     "image-processing",
     "noise",
     "fractal",
-    "temporal"
+    "temporal",
+    "artistic"
   ]
 }

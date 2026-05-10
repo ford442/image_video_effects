@@ -1,7 +1,9 @@
-// ═══ PAGE CURL INTERACTIVE ═══
-// Category: image
-// Features: mouse-driven, audio-reactive, temporal, depth-aware
-// Complexity: Medium
+// ═══════════════════════════════════════════════════════════════════
+//  Page Curl Interactive
+//  Category: interactive-mouse
+//  Features: upgraded-rgba, mouse-driven, audio-reactive, temporal
+//  Complexity: Medium
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -17,89 +19,91 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-fn sampleRGBSplit(uv: vec2<f32>, shift: f32) -> vec4<f32> {
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  return vec4<f32>(r, g, b, 1.0);
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16, 1)
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var pp = p;
+  for (var i = 0; i < octaves; i = i + 1) {
+    let n = sin(dot(pp, vec2<f32>(127.1, 311.7)));
+    let h = fract(n * 43758.5453);
+    v = v + a * h;
+    pp = pp * 2.03 + vec2<f32>(1.7, 9.2);
+    a = a * 0.5;
+  }
+  return v;
+}
+
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
   if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
   let uv = vec2<f32>(global_id.xy) / res;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
-  let mouseDown = u.zoom_config.w;
-  let p1 = u.zoom_params.x;
-  let p2 = u.zoom_params.y;
-  let p3 = u.zoom_params.z;
-  let p4 = u.zoom_params.w;
+
+  let curlAngle = u.zoom_params.x * 1.5;
+  let curlRadius = max(0.03, u.zoom_params.y * 0.25);
+  let paperTexAmt = u.zoom_params.z;
+  let shadowIntensity = u.zoom_params.w;
 
   let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let snap = 1.0 + bass * 0.4 * step(0.6, bass);
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let depthMul = 1.0 - depth * p4 * 0.5;
+  // Curl axis driven by mouse x
+  let mouse = u.zoom_config.yz;
+  let curlX = clamp(mouse.x, 0.1, 0.9);
 
-  let audioPulse = 1.0 + bass * 0.5 * exp(-fract(time * 2.0) * 4.0);
-  let audioShift = mids * 0.03;
+  let dx = uv.x - curlX;
+  let radius = curlRadius * snap;
 
-  // Click shockwaves from ripples
-  var shock = 0.0;
-  let rippleCount = min(u32(u.config.y), 10u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let r = u.ripples[i];
-    let d = length(uv - r.xy);
-    let age = time - r.z;
-    let w = exp(-age * 3.0) * sin(d * 40.0 - age * 15.0);
-    shock = shock + w * 0.02;
-  }
-
-  let rollX = clamp(mouse.x + shock + sin(time * 0.4 + bass * 2.0) * 0.015, 0.0, 1.0);
-  let radius = max(0.03, (p1 * 0.2 + mouse.y * 0.1) * audioPulse * depthMul);
-  let shadowStrength = p2;
-
-  let dx = uv.x - rollX;
-  var col = vec4<f32>(0.05, 0.05, 0.05, 1.0);
+  var col = vec4<f32>(0.0);
+  var alpha = 1.0;
 
   if (dx < 0.0) {
-    let shadow = smoothstep(radius, 0.0, -dx) * 0.4 * shadowStrength * (1.0 + depth * 0.5);
-    let distortedUV = uv + vec2<f32>(shock, 0.0);
-    col = textureSampleLevel(readTexture, u_sampler, clamp(distortedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    col = col * (1.0 - shadow);
+    // Front page
+    let shadow = smoothstep(radius, 0.0, -dx) * 0.5 * shadowIntensity;
+    col = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    col.rgb = col.rgb * (1.0 - shadow);
+    alpha = col.a;
   } else if (dx < radius) {
+    // Curl cylinder
     let theta = asin(clamp(dx / radius, -1.0, 1.0));
     let arcLen = radius * theta;
-    let srcX = rollX + arcLen;
+    let srcX = curlX + arcLen;
     if (srcX <= 1.0) {
       let srcUV = vec2<f32>(srcX, uv.y);
-      col = sampleRGBSplit(srcUV, audioShift) * 0.6;
+      // Back face is darker and has paper texture
+      let paperNoise = fbm(srcUV * 40.0 + vec2<f32>(time * 0.01, 0.0), 3) * paperTexAmt;
+      col = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0);
+      col.rgb = col.rgb * 0.55 + vec3<f32>(paperNoise * 0.15);
+      // Lighting on cylinder
       let normalZ = cos(theta);
-      let highlight = pow(normalZ, 4.0) * (0.3 + treble * 0.3);
-      col += vec4<f32>(highlight);
+      let highlight = pow(normalZ, 3.0) * 0.25;
+      col.rgb = col.rgb + vec3<f32>(highlight);
+      // Fold shadow reduces alpha at fold line
+      let foldShadow = smoothstep(0.0, radius * 0.3, dx) * shadowIntensity;
+      alpha = mix(0.5, col.a, 1.0 - foldShadow);
     } else {
-      col = vec4<f32>(0.1, 0.1, 0.1, 1.0);
+      col = vec4<f32>(0.08, 0.08, 0.08, 0.6);
+      alpha = 0.6;
     }
+  } else {
+    // Revealed background
+    col = vec4<f32>(0.05, 0.05, 0.05, 0.4);
+    alpha = 0.4;
   }
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  let feedback = p3 * 0.4;
-  let trailAge = prev.a * 0.96 + select(0.0, 0.5, dx > 0.0 && dx < radius);
-  col = mix(col, prev, feedback * 0.25);
-  col.a = mix(1.0, trailAge, feedback);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let flash = select(0.0, 0.1, mouseDown > 0.5) * (0.5 + bass * 0.5);
-  col += vec4<f32>(flash);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), col);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col.rgb, alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

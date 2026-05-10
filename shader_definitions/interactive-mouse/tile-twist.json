@@ -40,7 +40,10 @@
   "features": [
     "mouse-driven",
     "geometry",
-    "temporal"
+    "temporal",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",

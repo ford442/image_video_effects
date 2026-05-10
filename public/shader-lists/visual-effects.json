@@ -1,122 +1,5 @@
 [
   {
-    "id": "parallax_depth_layers",
-    "name": "Parallax Layers RGBA",
-    "url": "shaders/parallax_depth_layers.wgsl",
-    "category": "visual-effects",
-    "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
-    "tags": [
-      "parallax",
-      "depth",
-      "layers",
-      "alpha",
-      "perspective",
-      "scrolling"
-    ],
-    "features": [
-      "rgba",
-      "parallax",
-      "depth-layers",
-      "alpha-occlusion",
-      "dof",
-      "atmospheric"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Parallax",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Layer Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Depth of Field",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "Fog",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.6
-  },
-  {
-    "id": "alpha-depth-fog-volumetric",
-    "name": "Alpha Depth Fog Volumetric",
-    "url": "shaders/alpha-depth-fog-volumetric.wgsl",
-    "category": "visual-effects",
-    "description": "Physically-motivated volumetric fog using depth texture. Alpha stores optical depth / transmittance via Beer-Lambert law. Fog density varies with 3D noise, depth, and height. Mouse clears local fog; ripples create swirling disturbances.",
-    "tags": [
-      "volumetric",
-      "fog",
-      "depth-aware",
-      "interactive",
-      "mouse-driven",
-      "rgba-state-machine",
-      "atmospheric"
-    ],
-    "features": [
-      "mouse-driven",
-      "depth-aware",
-      "rgba-state-machine"
-    ],
-    "params": [
-      {
-        "id": "fogDensity",
-        "name": "Fog Density",
-        "type": "float",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "fogHeight",
-        "name": "Fog Height",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "colorTemp",
-        "name": "Color Temperature",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
     "id": "alpha-hdr-bloom-chain",
     "name": "Alpha HDR Bloom Chain",
     "url": "shaders/alpha-hdr-bloom-chain.wgsl",
@@ -141,8 +24,8 @@
         "name": "Bloom Radius",
         "type": "float",
         "default": 0.4,
-        "min": 0,
-        "max": 1,
+        "min": 0.0,
+        "max": 1.0,
         "step": 0.01
       },
       {
@@ -150,8 +33,8 @@
         "name": "Bloom Intensity",
         "type": "float",
         "default": 0.5,
-        "min": 0,
-        "max": 1,
+        "min": 0.0,
+        "max": 1.0,
         "step": 0.01
       },
       {
@@ -159,8 +42,8 @@
         "name": "Exposure",
         "type": "float",
         "default": 0.5,
-        "min": 0,
-        "max": 1,
+        "min": 0.0,
+        "max": 1.0,
         "step": 0.01
       },
       {
@@ -168,390 +51,10 @@
         "name": "Saturation",
         "type": "float",
         "default": 0.5,
-        "min": 0,
-        "max": 1,
+        "min": 0.0,
+        "max": 1.0,
         "step": 0.01
       }
-    ]
-  },
-  {
-    "id": "alpha-luminance-history",
-    "name": "Alpha Luminance History",
-    "url": "shaders/alpha-luminance-history.wgsl",
-    "category": "visual-effects",
-    "description": "Temporal luminance history with rolling average stored in alpha. Areas that were recently bright retain a warm glow. Creates light-painting and after-image effects. Mouse leaves persistent bright trails.",
-    "tags": [
-      "temporal",
-      "history",
-      "luminance",
-      "glow",
-      "interactive",
-      "mouse-driven",
-      "rgba-state-machine",
-      "light-painting"
-    ],
-    "features": [
-      "mouse-driven",
-      "temporal",
-      "rgba-state-machine"
-    ],
-    "params": [
-      {
-        "id": "decay",
-        "name": "Memory Decay",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "glowIntensity",
-        "name": "Glow Intensity",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "colorShift",
-        "name": "History Tint",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "diffusion",
-        "name": "Trail Diffusion",
-        "type": "float",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "alpha-multi-layer-glass",
-    "name": "Alpha Multi-Layer Glass",
-    "url": "shaders/alpha-multi-layer-glass.wgsl",
-    "category": "visual-effects",
-    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
-    "tags": [
-      "glass",
-      "refraction",
-      "chromatic",
-      "interactive",
-      "mouse-driven",
-      "rgba-state-machine",
-      "fresnel"
-    ],
-    "features": [
-      "mouse-driven",
-      "rgba-state-machine"
-    ],
-    "params": [
-      {
-        "id": "ior",
-        "name": "Index of Refraction",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "thickness",
-        "name": "Glass Thickness",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "chromatic",
-        "name": "Chromatic Aberration",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "roughness",
-        "name": "Surface Roughness",
-        "type": "float",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "alpha-spectral-decompose",
-    "name": "Alpha Spectral Decompose",
-    "url": "shaders/alpha-spectral-decompose.wgsl",
-    "category": "visual-effects",
-    "description": "Decomposes the image into 4 spectral frequency bands stored in RGBA. Low freq (R), mid-low (G), mid-high (B), high freq/detail (A). Recomposes with user-controlled per-band gain for frequency-equalizer style image manipulation.",
-    "tags": [
-      "spectral",
-      "frequency",
-      "decomposition",
-      "interactive",
-      "mouse-driven",
-      "rgba-state-machine",
-      "filter"
-    ],
-    "features": [
-      "mouse-driven",
-      "rgba-state-machine"
-    ],
-    "params": [
-      {
-        "id": "gainLow",
-        "name": "Low Freq Gain",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "gainMidLow",
-        "name": "Mid-Low Gain",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "gainMidHigh",
-        "name": "Mid-High Gain",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "gainHigh",
-        "name": "High Freq Gain",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "chroma-vortex",
-    "url": "shaders/chroma-vortex.wgsl",
-    "category": "visual-effects",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "twist",
-        "name": "Vortex Twist",
-        "type": "float",
-        "default": 0.2,
-        "min": -1,
-        "max": 1
-      },
-      {
-        "id": "spread",
-        "name": "RGB Split",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Vortex Radius",
-        "type": "float",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "centerBias",
-        "name": "Center Stability",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "description": "Rotational RGB splitting effect centered on the mouse.",
-    "tags": [
-      "vfx",
-      "particles",
-      "glow",
-      "audio",
-      "music"
-    ],
-    "name": "Chroma Vortex"
-  },
-  {
-    "id": "chromatic-focus-interactive",
-    "name": "Chromatic Focus",
-    "category": "visual-effects",
-    "url": "shaders/chromatic-focus-interactive.wgsl",
-    "description": "Strong chromatic aberration that increases with distance from mouse focus.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "strength",
-        "name": "Abberation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "blur",
-        "name": "Blur",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Focus Rad",
-        "default": 0.2,
-        "min": 0,
-        "max": 0.8
-      },
-      {
-        "id": "hard",
-        "name": "Falloff",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow"
-    ]
-  },
-  {
-    "id": "cross-spec-alpha-spectral-bloom",
-    "name": "Spectral Bloom HDR",
-    "url": "shaders/cross-spec-alpha-spectral-bloom.wgsl",
-    "category": "visual-effects",
-    "description": "Crossover shader combining spectral dispersion with HDR bloom using RGBA as independent spectral bands. Decomposes the image into wavelength channels and applies per-band bloom with exposure control in alpha.",
-    "tags": [
-      "crossover",
-      "spectral",
-      "bloom",
-      "hdr",
-      "rgba-as-data",
-      "chromatic"
-    ],
-    "features": [
-      "crossover",
-      "spectral-rendering",
-      "rgba32float-exploiting"
-    ],
-    "params": [
-      {
-        "id": "bloomRadius",
-        "name": "Bloom Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "dispersion",
-        "name": "Dispersion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "exposure",
-        "name": "Exposure",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "chromaticShift",
-        "name": "Chromatic Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "crt-clear-zone",
-    "name": "CRT Clear Zone",
-    "category": "visual-effects",
-    "url": "shaders/crt-clear-zone.wgsl",
-    "description": "Heavy CRT distortion with chromatic aberration, scanlines, and vignette. A clean, high-resolution zone follows the mouse cursor with an audio-reactive scanline intensity.",
-    "params": [
-      {
-        "name": "Distortion",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.5,
-        "id": "distortion"
-      },
-      {
-        "name": "Aberration",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.3,
-        "id": "aberration"
-      },
-      {
-        "name": "Zone Size",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.3,
-        "id": "zone_size"
-      },
-      {
-        "name": "Scanlines",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.5,
-        "id": "scanlines"
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive"
-    ],
-    "tags": [
-      "crt",
-      "retro",
-      "glitch",
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -600,193 +103,158 @@
     "name": "Cyber Grid Pulse"
   },
   {
-    "id": "cyber-scan",
-    "name": "Cyber Scan",
-    "url": "shaders/cyber-scan.wgsl",
-    "category": "visual-effects",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "A digital scanning line that follows the mouse, highlighting edges and overlaying a cybernetic grid.",
-    "params": [
-      {
-        "id": "scanWidth",
-        "name": "Scan Width",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "gridIntensity",
-        "name": "Grid Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "colorSpeed",
-        "name": "Color Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "edgeStrength",
-        "name": "Edge Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow"
-    ]
-  },
-  {
-    "id": "data-scanner",
-    "category": "visual-effects",
-    "url": "shaders/data-scanner.wgsl",
+    "id": "voxel-grid",
+    "name": "Voxel Grid",
+    "url": "shaders/voxel-grid.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Audio Reactivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow"
-    ],
-    "name": "Data Scanner"
-  },
-  {
-    "id": "hex-circuit",
-    "name": "Hex Circuit",
-    "url": "shaders/hex-circuit.wgsl",
-    "category": "visual-effects",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "Overlays a cybernetic hexagonal grid that highlights image edges and reacts to mouse pulses.",
-    "params": [
-      {
-        "id": "grid_size",
+        "id": "grid",
         "name": "Grid Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "default": 40.0,
+        "min": 10.0,
+        "max": 100.0
       },
       {
-        "id": "glow_strength",
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "id": "radius",
+        "name": "Touch Radius",
+        "default": 0.4,
+        "min": 0.1,
+        "max": 0.8
       },
       {
-        "id": "pulse_speed",
-        "name": "Pulse Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
+        "id": "strength",
+        "name": "Rotation Force",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 2.0
       },
       {
-        "id": "edge_sensitivity",
-        "name": "Edge Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "id": "gap",
+        "name": "Cell Gap",
+        "default": 0.05,
+        "min": 0.0,
+        "max": 0.4
       }
     ],
+    "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity and audio bass.",
+    "category": "visual-effects",
     "tags": [
       "vfx",
       "particles",
-      "glow"
+      "glow",
+      "audio-reactive"
     ]
   },
   {
-    "id": "holographic-projection-gpt52",
-    "name": "Holo Projection Prism gpt52",
-    "url": "shaders/holographic-projection-gpt52.wgsl",
+    "id": "alpha-depth-fog-volumetric",
+    "name": "Alpha Depth Fog Volumetric",
+    "url": "shaders/alpha-depth-fog-volumetric.wgsl",
     "category": "visual-effects",
-    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+    "description": "Physically-motivated volumetric fog using depth texture. Alpha stores optical depth / transmittance via Beer-Lambert law. Fog density varies with 3D noise, depth, and height. Mouse clears local fog; ripples create swirling disturbances.",
+    "tags": [
+      "volumetric",
+      "fog",
+      "depth-aware",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "atmospheric"
+    ],
     "features": [
       "mouse-driven",
-      "glitch",
-      "animated",
+      "depth-aware",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "fogDensity",
+        "name": "Fog Density",
+        "type": "float",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "fogHeight",
+        "name": "Fog Height",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "type": "float",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "colorTemp",
+        "name": "Color Temperature",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "interactive-fresnel",
+    "name": "Interactive Fresnel",
+    "url": "shaders/interactive-fresnel.wgsl",
+    "category": "visual-effects",
+    "description": "Simulates a Fresnel lens with stepped concentric rings. Features chromatic aberration with alpha-aware blending, depth influence, and audio reactivity.",
+    "features": [
+      "mouse-driven",
       "audio-reactive",
       "audio-driven"
     ],
     "params": [
       {
-        "id": "scanSpeed",
-        "name": "Scan Speed",
-        "min": 0,
-        "max": 5,
-        "default": 1.2
+        "id": "ringDensity",
+        "name": "Ring Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "glitch",
-        "name": "Glitch Amount",
-        "min": 0,
-        "max": 1,
-        "default": 0.35
+        "id": "magnification",
+        "name": "Magnification",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "hue",
-        "name": "Holo Tint",
-        "min": 0,
-        "max": 1,
-        "default": 0.15
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "focus",
-        "name": "Focus Strength",
-        "min": 0,
-        "max": 1,
-        "default": 0.85
+        "id": "depthInfluence",
+        "name": "Depth Influence",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
       }
     ],
     "tags": [
-      "vfx",
-      "particles",
-      "glow",
+      "filter",
+      "image-processing",
       "audio",
-      "music"
+      "music",
+      "reactive"
     ]
   },
   {
@@ -804,29 +272,29 @@
       {
         "id": "scanSpeed",
         "name": "Scan Speed",
-        "min": 0,
-        "max": 5,
-        "default": 1
+        "min": 0.0,
+        "max": 5.0,
+        "default": 1.0
       },
       {
         "id": "glitch",
         "name": "Glitch Amount",
-        "min": 0,
-        "max": 1,
+        "min": 0.0,
+        "max": 1.0,
         "default": 0.3
       },
       {
         "id": "hue",
         "name": "Holo Tint",
-        "min": 0,
-        "max": 1,
-        "default": 0
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.0
       },
       {
         "id": "focus",
         "name": "Focus Strength",
-        "min": 0,
-        "max": 1,
+        "min": 0.0,
+        "max": 1.0,
         "default": 0.8
       }
     ],
@@ -892,11 +360,743 @@
     "name": "Holographic Sticker"
   },
   {
-    "id": "interactive-fresnel",
-    "name": "Interactive Fresnel",
-    "url": "shaders/interactive-fresnel.wgsl",
+    "id": "cross-spec-alpha-spectral-bloom",
+    "name": "Spectral Bloom HDR",
+    "url": "shaders/cross-spec-alpha-spectral-bloom.wgsl",
     "category": "visual-effects",
-    "description": "Simulates a Fresnel lens with stepped concentric rings. Features chromatic aberration with alpha-aware blending, depth influence, and audio reactivity.",
+    "description": "Crossover shader combining spectral dispersion with HDR bloom using RGBA as independent spectral bands. Decomposes the image into wavelength channels and applies per-band bloom with exposure control in alpha.",
+    "tags": [
+      "crossover",
+      "spectral",
+      "bloom",
+      "hdr",
+      "rgba-as-data",
+      "chromatic"
+    ],
+    "features": [
+      "crossover",
+      "spectral-rendering",
+      "rgba32float-exploiting"
+    ],
+    "params": [
+      {
+        "id": "bloomRadius",
+        "name": "Bloom Radius",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "exposure",
+        "name": "Exposure",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "chromaticShift",
+        "name": "Chromatic Shift",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-focus-interactive",
+    "name": "Chromatic Focus",
+    "category": "visual-effects",
+    "url": "shaders/chromatic-focus-interactive.wgsl",
+    "description": "Strong chromatic aberration that increases with distance from mouse focus.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "strength",
+        "name": "Abberation",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blur",
+        "name": "Blur",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Focus Rad",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 0.8
+      },
+      {
+        "id": "hard",
+        "name": "Falloff",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "hex-circuit",
+    "name": "Hex Circuit",
+    "url": "shaders/hex-circuit.wgsl",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "Overlays a cybernetic hexagonal grid that highlights image edges and reacts to mouse pulses.",
+    "params": [
+      {
+        "id": "grid_size",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glow_strength",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "edge_sensitivity",
+        "name": "Edge Sensitivity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "neon-topology",
+    "category": "visual-effects",
+    "url": "shaders/neon-topology.wgsl",
+    "description": "Renders the image as a glowing 3D topographic map.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Line Density",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "height",
+        "name": "Height Scale",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "mouse",
+        "name": "Mouse Force",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "glow",
+        "name": "Glow Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "name": "Neon Topology"
+  },
+  {
+    "id": "alpha-multi-layer-glass",
+    "name": "Alpha Multi-Layer Glass",
+    "url": "shaders/alpha-multi-layer-glass.wgsl",
+    "category": "visual-effects",
+    "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, and per-layer tinting. Alpha stores accumulated transmittance.",
+    "tags": [
+      "glass",
+      "refraction",
+      "chromatic",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "fresnel"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "ior",
+        "name": "Index of Refraction",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "thickness",
+        "name": "Glass Thickness",
+        "type": "float",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic",
+        "name": "Chromatic Aberration",
+        "type": "float",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "roughness",
+        "name": "Surface Roughness",
+        "type": "float",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "holographic-projection-gpt52",
+    "name": "Holo Projection Prism gpt52",
+    "url": "shaders/holographic-projection-gpt52.wgsl",
+    "category": "visual-effects",
+    "description": "Prismatic hologram with stabilized focus, scan interference, and spectral tinting.",
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "animated",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "scanSpeed",
+        "name": "Scan Speed",
+        "min": 0.0,
+        "max": 5.0,
+        "default": 1.2
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch Amount",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.35
+      },
+      {
+        "id": "hue",
+        "name": "Holo Tint",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.15
+      },
+      {
+        "id": "focus",
+        "name": "Focus Strength",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.85
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "audio",
+      "music"
+    ]
+  },
+  {
+    "id": "rgb-topology",
+    "name": "RGB Topology",
+    "category": "visual-effects",
+    "url": "shaders/rgb-topology.wgsl",
+    "description": "Visualizes the image as 3D topographic maps, one for each color channel (Red, Green, Blue). The layers are offset based on mouse tilt.",
+    "params": [
+      {
+        "name": "Contour Density",
+        "id": "zoomParam1",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "name": "Parallax Height",
+        "id": "zoomParam2",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "name": "Line Thickness",
+        "id": "zoomParam3",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "name": "Glow",
+        "id": "zoomParam4",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "alpha-spectral-decompose",
+    "name": "Alpha Spectral Decompose",
+    "url": "shaders/alpha-spectral-decompose.wgsl",
+    "category": "visual-effects",
+    "description": "Decomposes the image into 4 spectral frequency bands stored in RGBA. Low freq (R), mid-low (G), mid-high (B), high freq/detail (A). Recomposes with user-controlled per-band gain for frequency-equalizer style image manipulation.",
+    "tags": [
+      "spectral",
+      "frequency",
+      "decomposition",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "filter"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "gainLow",
+        "name": "Low Freq Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "gainMidLow",
+        "name": "Mid-Low Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "gainMidHigh",
+        "name": "Mid-High Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "gainHigh",
+        "name": "High Freq Gain",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "rgb-distance-split",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "url": "shaders/rgb-distance-split.wgsl",
+    "description": "Chromatic aberration that intensifies with distance from the mouse.",
+    "params": [
+      {
+        "id": "split",
+        "name": "Split Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "angle",
+        "name": "Angle Offset",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "blur",
+        "name": "Blur Amount",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "deadzone",
+        "name": "Deadzone",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ],
+    "name": "RGB Distance Split"
+  },
+  {
+    "id": "data-scanner",
+    "category": "visual-effects",
+    "url": "shaders/data-scanner.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ],
+    "name": "Data Scanner"
+  },
+  {
+    "id": "alpha-luminance-history",
+    "name": "Alpha Luminance History",
+    "url": "shaders/alpha-luminance-history.wgsl",
+    "category": "visual-effects",
+    "description": "Temporal luminance history with rolling average stored in alpha. Areas that were recently bright retain a warm glow. Creates light-painting and after-image effects. Mouse leaves persistent bright trails.",
+    "tags": [
+      "temporal",
+      "history",
+      "luminance",
+      "glow",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "light-painting"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "decay",
+        "name": "Memory Decay",
+        "type": "float",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "colorShift",
+        "name": "History Tint",
+        "type": "float",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion",
+        "name": "Trail Diffusion",
+        "type": "float",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "cyber-scan",
+    "name": "Cyber Scan",
+    "url": "shaders/cyber-scan.wgsl",
+    "category": "visual-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "description": "A digital scanning line that follows the mouse, highlighting edges and overlaying a cybernetic grid.",
+    "params": [
+      {
+        "id": "scanWidth",
+        "name": "Scan Width",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "gridIntensity",
+        "name": "Grid Intensity",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "colorSpeed",
+        "name": "Color Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "edgeStrength",
+        "name": "Edge Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
+    ]
+  },
+  {
+    "id": "temporal-rgb-smear",
+    "name": "Temporal RGB Smear",
+    "category": "visual-effects",
+    "url": "shaders/temporal-rgb-smear.wgsl",
+    "description": "Directional RGB smear with time-based offset, chromatic split modulated by mids, temporal feedback decay, and accumulative trail alpha.",
+    "params": [
+      {
+        "id": "smear_length",
+        "name": "Smear Length",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Length of the directional smear"
+      },
+      {
+        "id": "smear_decay",
+        "name": "Smear Decay",
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Temporal feedback decay amount"
+      },
+      {
+        "id": "chromatic_split",
+        "name": "Chromatic Split",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "RGB channel separation along smear direction"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Time-based directional turbulence"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio-reactive",
+      "interactive",
+      "temporal",
+      "feedback",
+      "chromatic"
+    ]
+  },
+  {
+    "id": "spectral-rain",
+    "category": "visual-effects",
+    "url": "shaders/spectral-rain.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Rain Density",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of rain streaks"
+      },
+      {
+        "id": "chromatic_strength",
+        "name": "Chromatic Strength",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of chromatic displacement"
+      },
+      {
+        "id": "trail_length",
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Length of raindrop trails"
+      },
+      {
+        "id": "rain_angle_scale",
+        "name": "Rain Angle Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Scale of the rain angle variation"
+      }
+    ],
+    "tags": [
+      "rain",
+      "chromatic",
+      "distortion",
+      "filter",
+      "image-processing",
+      "audio-reactive"
+    ],
+    "name": "Spectral Rain",
+    "description": "Falling streaks of chromatic distortion with audio-reactive intensity and mouse-driven angle and speed controls."
+  },
+  {
+    "id": "chroma-vortex",
+    "url": "shaders/chroma-vortex.wgsl",
+    "category": "visual-effects",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -904,40 +1104,144 @@
     ],
     "params": [
       {
-        "id": "ringDensity",
-        "name": "Ring Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "id": "twist",
+        "name": "Vortex Twist",
+        "type": "float",
+        "default": 0.2,
+        "min": -1.0,
+        "max": 1.0
       },
       {
-        "id": "magnification",
-        "name": "Magnification",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "id": "spread",
+        "name": "RGB Split",
+        "type": "float",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "id": "radius",
+        "name": "Vortex Radius",
+        "type": "float",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "depthInfluence",
-        "name": "Depth Influence",
-        "default": 0,
-        "min": 0,
-        "max": 1
+        "id": "centerBias",
+        "name": "Center Stability",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
       }
     ],
+    "description": "Rotational RGB splitting effect centered on the mouse.",
     "tags": [
-      "filter",
-      "image-processing",
+      "vfx",
+      "particles",
+      "glow",
       "audio",
-      "music",
-      "reactive"
+      "music"
+    ],
+    "name": "Chroma Vortex"
+  },
+  {
+    "id": "crt-clear-zone",
+    "name": "CRT Clear Zone",
+    "category": "visual-effects",
+    "url": "shaders/crt-clear-zone.wgsl",
+    "description": "Heavy CRT distortion with chromatic aberration, scanlines, and vignette. A clean, high-resolution zone follows the mouse cursor with an audio-reactive scanline intensity.",
+    "params": [
+      {
+        "name": "Distortion",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "distortion"
+      },
+      {
+        "name": "Aberration",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "aberration"
+      },
+      {
+        "name": "Zone Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "zone_size"
+      },
+      {
+        "name": "Scanlines",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "scanlines"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "crt",
+      "retro",
+      "glitch",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "quantum-field-visualizer",
+    "name": "Quantum Field Visualizer",
+    "url": "shaders/quantum-field-visualizer.wgsl",
+    "category": "visual-effects",
+    "description": "Visualizes quantum fluctuations as colorful noise. The act of observation (mouse proximity) collapses the wave function, clearing the image.",
+    "params": [
+      {
+        "id": "observation_strength",
+        "name": "Observation Field",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "fluctuation_speed",
+        "name": "Fluctuation Speed",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "energy_level",
+        "name": "Energy Level",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "uncertainty",
+        "name": "Uncertainty",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow"
     ]
   },
   {
@@ -957,29 +1261,29 @@
         "id": "edgeThreshold",
         "name": "Edge Threshold",
         "default": 0.5,
-        "min": 0,
-        "max": 1
+        "min": 0.0,
+        "max": 1.0
       },
       {
         "id": "pulseSpeed",
         "name": "Pulse Speed",
         "default": 0.5,
-        "min": 0,
-        "max": 1
+        "min": 0.0,
+        "max": 1.0
       },
       {
         "id": "glowIntensity",
         "name": "Glow Intensity",
         "default": 0.5,
-        "min": 0,
-        "max": 1
+        "min": 0.0,
+        "max": 1.0
       },
       {
         "id": "colorShift",
         "name": "Color Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
       }
     ],
     "tags": [
@@ -994,355 +1298,61 @@
     ]
   },
   {
-    "id": "neon-topology",
+    "id": "parallax_depth_layers",
+    "name": "Parallax Layers RGBA",
+    "url": "shaders/parallax_depth_layers.wgsl",
     "category": "visual-effects",
-    "url": "shaders/neon-topology.wgsl",
-    "description": "Renders the image as a glowing 3D topographic map.",
-    "params": [
-      {
-        "id": "density",
-        "name": "Line Density",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "height",
-        "name": "Height Scale",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "mouse",
-        "name": "Mouse Force",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "glow",
-        "name": "Glow Strength",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
+    "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
+    "tags": [
+      "parallax",
+      "depth",
+      "layers",
+      "alpha",
+      "perspective",
+      "scrolling"
     ],
     "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
+      "rgba",
+      "parallax",
+      "depth-layers",
+      "alpha-occlusion",
+      "dof",
+      "atmospheric"
     ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow",
-      "audio",
-      "music",
-      "reactive"
-    ],
-    "name": "Neon Topology"
-  },
-  {
-    "id": "phosphor-decay",
-    "name": "Phosphor Decay",
-    "url": "shaders/phosphor-decay.wgsl",
-    "category": "visual-effects",
-    "description": "CRT phosphor persistence with HDR trails, ACES tone mapping, split-tone color grading, atmospheric depth haze, and audio-reactive electron beam.",
     "params": [
       {
-        "name": "Persistence",
-        "type": "f32",
+        "id": "param1",
+        "name": "Parallax",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "default": 0.8,
-        "id": "persistence"
+        "step": 0.1
       },
       {
-        "name": "Beam Intensity",
-        "type": "f32",
+        "id": "param2",
+        "name": "Layer Density",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "default": 0.5,
-        "id": "beam_intensity"
+        "step": 0.1
       },
       {
-        "name": "Beam Size",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.2,
-        "id": "beam_size"
-      },
-      {
-        "name": "Atmosphere",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0,
-        "id": "color_drift"
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "depth-aware"
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow",
-      "hdr",
-      "crt",
-      "tone-mapped"
-    ]
-  },
-  {
-    "id": "quantum-field-visualizer",
-    "name": "Quantum Field Visualizer",
-    "url": "shaders/quantum-field-visualizer.wgsl",
-    "category": "visual-effects",
-    "description": "Visualizes quantum fluctuations as colorful noise. The act of observation (mouse proximity) collapses the wave function, clearing the image.",
-    "params": [
-      {
-        "id": "observation_strength",
-        "name": "Observation Field",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "fluctuation_speed",
-        "name": "Fluctuation Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "energy_level",
-        "name": "Energy Level",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "uncertainty",
-        "name": "Uncertainty",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive"
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow"
-    ]
-  },
-  {
-    "id": "rgb-distance-split",
-    "category": "visual-effects",
-    "features": [
-      "mouse-driven"
-    ],
-    "url": "shaders/rgb-distance-split.wgsl",
-    "description": "Chromatic aberration that intensifies with distance from the mouse.",
-    "params": [
-      {
-        "id": "split",
-        "name": "Split Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "angle",
-        "name": "Angle Offset",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "blur",
-        "name": "Blur Amount",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "deadzone",
-        "name": "Deadzone",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow"
-    ],
-    "name": "RGB Distance Split"
-  },
-  {
-    "id": "rgb-topology",
-    "name": "RGB Topology",
-    "category": "visual-effects",
-    "url": "shaders/rgb-topology.wgsl",
-    "description": "Visualizes the image as 3D topographic maps, one for each color channel (Red, Green, Blue). The layers are offset based on mouse tilt.",
-    "params": [
-      {
-        "name": "Contour Density",
-        "id": "zoomParam1",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Parallax Height",
-        "id": "zoomParam2",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Line Thickness",
-        "id": "zoomParam3",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Glow",
-        "id": "zoomParam4",
+        "id": "param3",
+        "name": "Depth of Field",
         "default": 0.3,
         "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow"
-    ]
-  },
-  {
-    "id": "spectral-rain",
-    "category": "visual-effects",
-    "url": "shaders/spectral-rain.wgsl",
-    "features": [
-      "mouse-driven",
-      "audio-reactive"
-    ],
-    "params": [
+        "max": 1,
+        "step": 0.1
+      },
       {
-        "id": "density",
-        "name": "Rain Density",
-        "default": 0.5,
+        "id": "param4",
+        "name": "Fog",
+        "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Density of rain streaks"
-      },
-      {
-        "id": "chromatic_strength",
-        "name": "Chromatic Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Strength of chromatic displacement"
-      },
-      {
-        "id": "trail_length",
-        "name": "Trail Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Length of raindrop trails"
-      },
-      {
-        "id": "rain_angle_scale",
-        "name": "Rain Angle Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1.5,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Scale of the rain angle variation"
+        "step": 0.1
       }
     ],
-    "tags": [
-      "rain",
-      "chromatic",
-      "distortion",
-      "filter",
-      "image-processing",
-      "audio-reactive"
-    ],
-    "name": "Spectral Rain",
-    "description": "Falling streaks of chromatic distortion with audio-reactive intensity and mouse-driven angle and speed controls."
-  },
-  {
-    "id": "voxel-grid",
-    "name": "Voxel Grid",
-    "url": "shaders/voxel-grid.wgsl",
-    "features": [
-      "mouse-driven",
-      "audio-reactive"
-    ],
-    "params": [
-      {
-        "id": "grid",
-        "name": "Grid Density",
-        "default": 40,
-        "min": 10,
-        "max": 100
-      },
-      {
-        "id": "radius",
-        "name": "Touch Radius",
-        "default": 0.4,
-        "min": 0.1,
-        "max": 0.8
-      },
-      {
-        "id": "strength",
-        "name": "Rotation Force",
-        "default": 1,
-        "min": 0,
-        "max": 2
-      },
-      {
-        "id": "gap",
-        "name": "Cell Gap",
-        "default": 0.05,
-        "min": 0,
-        "max": 0.4
-      }
-    ],
-    "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity and audio bass.",
-    "category": "visual-effects",
-    "tags": [
-      "vfx",
-      "particles",
-      "glow",
-      "audio-reactive"
-    ]
+    "target_rating": 4.6
   }
 ]

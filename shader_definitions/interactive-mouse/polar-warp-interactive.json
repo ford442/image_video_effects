@@ -2,45 +2,55 @@
   "id": "polar-warp-interactive",
   "name": "Polar Warp",
   "url": "shaders/polar-warp-interactive.wgsl",
-  "category": "image",
-  "description": "Maps the image to polar coordinates centered on the mouse, creating a tunnel or funhouse mirror effect.",
+  "category": "interactive-mouse",
+  "description": "Maps the image to polar coordinates centered on the mouse with bass-driven warp strength, spiral twist, click-triggered ripple bursts, and depth-aware fading.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware",
+    "multi-ripple"
   ],
   "params": [
     {
-      "id": "zoom",
-      "name": "Zoom",
+      "id": "param1",
+      "name": "Warp Strength",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "spiral",
-      "name": "Spiral Twist",
-      "default": 0.0,
-      "min": -1.0,
-      "max": 1.0
-    },
-    {
-      "id": "repeats",
-      "name": "Repeats",
-      "default": 1.0,
-      "min": 1.0,
-      "max": 5.0
-    },
-    {
-      "id": "offset",
-      "name": "Radial Offset",
+      "id": "param2",
+      "name": "Spiral Amount",
       "default": 0.0,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Ripple Decay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Pinch/Expand",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "tags": [
     "filter",
     "image-processing",
+    "interactive",
+    "polar",
+    "warp",
     "audio-reactive"
   ]
 }

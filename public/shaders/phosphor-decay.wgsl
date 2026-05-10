@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Phosphor Decay (HDR Upgrade)
-//  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, depth-aware
+//  Phosphor Decay (Batch D Upgrade)
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgrades: ACES tone mapping, split-tone grading, atmospheric
-//            depth haze, chromatic aberration, audio-reactive beam
+//  Upgrades: per-channel phosphor decay, CRT shadow mask, scan-line
+//            blanking, color bloom, luminance-key alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -45,10 +45,6 @@ fn aces_tone_map(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
 }
 
-fn color_temp(t: f32) -> vec3<f32> {
-  return mix(vec3(1.0, 0.72, 0.52), vec3(0.52, 0.72, 1.0), t);
-}
-
 fn vignette(uv: vec2<f32>, strength: f32) -> f32 {
   let d = length(uv - 0.5);
   return pow(max(0.0, 1.0 - d * 2.0), strength);
@@ -62,71 +58,88 @@ fn chromatic_aberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
   return vec3(r, g, b);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
+  let resolution = u.config.zw;
   let uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
 
   // Parameters
-  let decayRate = mix(0.75, 0.995, u.zoom_params.x);
-  let baseIntensity = mix(0.0, 4.0, u.zoom_params.y);
-  let mouseRadius = mix(0.005, 0.25, u.zoom_params.z);
-  let colorTemp = u.zoom_params.w;
+  let decayRateParam = u.zoom_params.x;
+  let bloomSpread = u.zoom_params.y;
+  let shadowMaskStrength = u.zoom_params.z;
+  let scanBlanking = u.zoom_params.w;
 
-  // Audio reactivity from plasmaBuffer
-  var audioBoost = 0.0;
-  if (arrayLength(&plasmaBuffer) > 0u) {
-    audioBoost = plasmaBuffer[0].x * 2.5;
-  }
-  let beamIntensity = baseIntensity * (1.0 + audioBoost);
+  // Per-channel phosphor decay rates (R fastest, B slowest)
+  let decayR = 0.95 - decayRateParam * 0.1;
+  let decayG = 0.96 - decayRateParam * 0.1;
+  let decayB = 0.98 - decayRateParam * 0.05;
+
+  // Audio reactivity: bass drives bloom burst
+  let bass = plasmaBuffer[0].x;
+  let bloomBurst = 1.0 + bass * 2.0;
 
   // Sample history in linear
   let histSample = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   var history = to_linear(histSample.rgb);
 
-  // Current input with chromatic aberration for CRT soul
-  let inputRGB = chromatic_aberration(uv, 0.003 * colorTemp);
+  // Apply per-channel decay
+  history.r = history.r * decayR;
+  history.g = history.g * decayG;
+  history.b = history.b * decayB;
+
+  // Current input with chromatic aberration
+  let inputRGB = chromatic_aberration(uv, 0.003);
   let inputColor = to_linear(inputRGB);
 
-  // Mouse-driven electron beam
-  let mouse = u.zoom_config.yz;
-  let mouseDist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-  let beamFalloff = smoothstep(mouseRadius, 0.0, mouseDist);
-  let beamHue = color_temp(colorTemp);
-  let beam = beamHue * beamFalloff * beamIntensity;
+  // Bloom: sample neighbors and blur
+  let spread = bloomSpread * 0.02 * bloomBurst;
+  var bloom = vec3(0.0);
+  bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv + vec2(spread, 0.0), 0.0).rgb) * 0.25;
+  bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv - vec2(spread, 0.0), 0.0).rgb) * 0.25;
+  bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv + vec2(0.0, spread), 0.0).rgb) * 0.25;
+  bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv - vec2(0.0, spread), 0.0).rgb) * 0.25;
 
-  // Decay history with split-tone color grading
-  var decayed = history * decayRate;
-  let lum = dot(decayed, vec3(0.299, 0.587, 0.114));
-  let shadowTint = mix(vec3(1.0, 0.82, 0.65), vec3(0.65, 0.82, 1.0), colorTemp);
-  let highlightTint = mix(vec3(1.0, 0.92, 0.78), vec3(0.78, 0.92, 1.0), 1.0 - colorTemp);
-  decayed = decayed * mix(shadowTint, highlightTint, lum);
+  // Extract high-luma pixels for bloom addition
+  let inputLuma = dot(inputColor, vec3(0.299, 0.587, 0.114));
+  let bloomAdd = bloom * smoothstep(0.5, 1.0, inputLuma) * bloomSpread * bloomBurst;
 
-  // HDR phosphor persistence: max composition in linear space
-  var merged = max(inputColor + beam, decayed);
+  // Merge input + bloom with decayed history
+  var merged = max(inputColor + bloomAdd, history);
 
-  // Atmospheric depth haze using depth texture
+  // CRT shadow mask (RGB dot pattern)
+  let px = vec2<f32>(global_id.xy);
+  let maskX = i32(px.x) % 3;
+  var mask = vec3(1.0);
+  if (maskX == 0) { mask = vec3(1.0, 0.6, 0.6); }
+  else if (maskX == 1) { mask = vec3(0.6, 1.0, 0.6); }
+  else { mask = vec3(0.6, 0.6, 1.0); }
+  merged = mix(merged, merged * mask, shadowMaskStrength * 0.5);
+
+  // Scan-line blanking
+  let scanLine = sin(uv.y * resolution.y * 0.5) * 0.5 + 0.5;
+  let blanking = mix(1.0, scanLine, scanBlanking * 0.4);
+  merged = merged * blanking;
+
+  // Depth-based atmospheric haze
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let hazeColor = color_temp(colorTemp * 0.5 + 0.25) * 0.12;
-  merged = mix(merged, hazeColor, depth * colorTemp * 0.35);
-
-  // Subtle animated caustics for living atmosphere
-  let caustic = sin(uv.x * 20.0 + time) * cos(uv.y * 20.0 - time * 0.7) * 0.5 + 0.5;
-  merged = merged + hazeColor * caustic * 0.02 * colorTemp;
+  let hazeColor = vec3(0.08, 0.06, 0.04) * 1.5;
+  merged = mix(merged, hazeColor, depth * 0.25);
 
   // Vignette for CRT tube atmosphere
-  let vig = vignette(uv, 1.2 + colorTemp * 0.5);
+  let vig = vignette(uv, 1.2);
   merged = merged * vig;
 
   // ACES tone mapping + gamma encode
   var finalRGB = aces_tone_map(merged);
   finalRGB = to_srgb(finalRGB);
 
-  let finalColor = vec4<f32>(finalRGB, 1.0);
+  // Luminance-key alpha
+  let alpha = dot(finalRGB, vec3(0.299, 0.587, 0.114));
+  let finalColor = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
   textureStore(dataTextureA, global_id.xy, finalColor);

@@ -1,44 +1,41 @@
 [
   {
-    "id": "poincare-tile",
-    "name": "Hyperbolic Tiling",
-    "url": "shaders/poincare-tile.wgsl",
+    "id": "kaleido-scope",
+    "name": "Kaleido-Scope",
+    "url": "shaders/kaleido-scope.wgsl",
     "category": "geometric",
-    "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
+    "features": [
+      "mouse-driven"
+    ],
     "params": [
       {
-        "id": "curvature",
-        "name": "Curvature",
-        "default": 0.7,
-        "min": 0,
-        "max": 1
+        "id": "segments",
+        "name": "Segments",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "symmetry",
-        "name": "Symmetry",
+        "id": "speed",
+        "name": "Rotation",
         "default": 0.5,
-        "min": 0,
-        "max": 1
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "animSpeed",
-        "name": "Animation Speed",
+        "id": "zoom",
+        "name": "Zoom",
         "default": 0.5,
-        "min": 0,
-        "max": 1
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "tileScale",
-        "name": "Tile Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "id": "offset",
+        "name": "Ring Offset",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
       }
-    ],
-    "features": [
-      "interactive",
-      "mathematical",
-      "mouse-driven"
     ],
     "tags": [
       "geometric",
@@ -46,46 +43,89 @@
     ]
   },
   {
-    "id": "voronoi-dynamics",
-    "name": "Voronoi Bubbles",
-    "url": "shaders/voronoi-dynamics.wgsl",
+    "id": "kaleido-scope-grokcf1",
+    "name": "Kaleido-Scope Prism grokcf1",
+    "url": "shaders/kaleido-scope-grokcf1.wgsl",
     "category": "geometric",
-    "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
+    "description": "Enhanced kaleidoscope with prism dispersion, reflections, chromatic effects, and audio-reactive bass modulation.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
     "params": [
       {
-        "id": "centroidCount",
-        "name": "Bubble Count",
+        "id": "segments",
+        "name": "Segments",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "speed",
+        "name": "Rotation",
         "default": 0.5,
-        "min": 0,
-        "max": 1
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "repulsion",
-        "name": "Repulsion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "attraction",
-        "name": "Attraction",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "edgeWidth",
-        "name": "Edge Width",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
+        "id": "offset",
+        "name": "Ring Offset",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
       }
     ],
+    "tags": [
+      "geometric",
+      "pattern",
+      "audio"
+    ]
+  },
+  {
+    "id": "neon-poly-grid",
+    "name": "Neon Poly Grid",
+    "url": "shaders/neon-poly-grid.wgsl",
+    "category": "geometric",
+    "description": "A futuristic hexagonal grid that lights up when you touch it, leaving a fading trail.",
     "features": [
-      "interactive",
-      "depth-aware",
-      "physics",
       "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "grid-scale",
+        "name": "Grid Scale",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.5
+      },
+      {
+        "id": "line-width",
+        "name": "Line Width",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.2
+      },
+      {
+        "id": "glow-strength",
+        "name": "Glow Strength",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.8
+      },
+      {
+        "id": "decay-speed",
+        "name": "Trail Duration",
+        "min": 0.0,
+        "max": 1.0,
+        "default": 0.8
+      }
     ],
     "tags": [
       "geometric",
@@ -93,51 +133,159 @@
     ]
   },
   {
-    "id": "voronoi",
-    "name": "Voronoi Tessellation",
-    "url": "shaders/voronoi.wgsl",
+    "id": "spec-hypercube-projection",
+    "name": "Hypercube Projection",
+    "url": "shaders/spec-hypercube-projection.wgsl",
     "category": "geometric",
-    "description": "Animated Voronoi reconstruction (simplified feature detection).",
+    "description": "Animated 4D tesseract projected into 2D using double rotation in XW and YZ planes. 32 edges are rendered with depth-based glow and input image texture-mapped onto faces.",
+    "tags": [
+      "hypercube",
+      "tesseract",
+      "4D",
+      "projection",
+      "geometric",
+      "rotation"
+    ],
+    "features": [
+      "4D",
+      "hypercube",
+      "mouse-driven",
+      "geometric"
+    ],
+    "params": [
+      {
+        "id": "rot_xw",
+        "name": "XW Rotation",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "rot_yz",
+        "name": "YZ Rotation",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "edge_glow",
+        "name": "Edge Glow",
+        "default": 0.4,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "face_opacity",
+        "name": "Face Opacity",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "adaptive-mosaic",
+    "url": "shaders/adaptive-mosaic.wgsl",
+    "category": "geometric",
     "features": [
       "mouse-driven"
+    ],
+    "description": "Dynamic pixelation that sharpens focus around your cursor while blurring the periphery into digital blocks.",
+    "params": [
+      {
+        "id": "minSize",
+        "name": "Focus Detail",
+        "type": "float",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "maxSize",
+        "name": "Bg Block Size",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "radius",
+        "name": "Focus Radius",
+        "type": "float",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
+      },
+      {
+        "id": "gridContrast",
+        "name": "Grid Lines",
+        "type": "float",
+        "default": 0.1,
+        "min": 0.0,
+        "max": 1.0
+      }
     ],
     "tags": [
       "geometric",
       "pattern"
     ],
+    "name": "Adaptive Mosaic"
+  },
+  {
+    "id": "quad-mirror",
+    "name": "Quad Mirror",
+    "url": "shaders/quad-mirror.wgsl",
+    "category": "geometric",
+    "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "hOffset",
+        "name": "H Mirror Offset",
         "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "vOffset",
+        "name": "V Mirror Offset",
         "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "id": "seamWarp",
+        "name": "Seam Warp",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "rotation",
+        "name": "Rotation",
         "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "min": 0.0,
+        "max": 1.0
       }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry",
+      "upgraded-rgba",
+      "fbm-domain-warp",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "kaleidoscope",
+      "mirror",
+      "geometric",
+      "audio-reactive"
     ]
   },
   {
@@ -243,240 +391,200 @@
     "target_rating": 4.6
   },
   {
-    "id": "adaptive-mosaic",
-    "url": "shaders/adaptive-mosaic.wgsl",
+    "id": "tesseract-fold",
+    "name": "Tesseract Fold",
+    "url": "shaders/tesseract-fold.wgsl",
     "category": "geometric",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "Dynamic pixelation that sharpens focus around your cursor while blurring the periphery into digital blocks.",
+    "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, treble-driven edge glow, and bloom-weight alpha for chained rendering.",
     "params": [
       {
-        "id": "minSize",
-        "name": "Focus Detail",
-        "type": "float",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "maxSize",
-        "name": "Bg Block Size",
-        "type": "float",
+        "id": "param1",
+        "name": "4D Rotation Speed",
         "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Focus Radius",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "gridContrast",
-        "name": "Grid Lines",
-        "type": "float",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "geometric",
-      "pattern"
-    ],
-    "name": "Adaptive Mosaic"
-  },
-  {
-    "id": "kaleido-scope-grokcf1",
-    "name": "Kaleido-Scope Prism grokcf1",
-    "url": "shaders/kaleido-scope-grokcf1.wgsl",
-    "category": "geometric",
-    "description": "Enhanced kaleidoscope with prism dispersion, reflections, chromatic effects, and audio-reactive bass modulation.",
-    "features": [
-      "mouse-driven",
-      "audio-reactive"
-    ],
-    "params": [
-      {
-        "id": "segments",
-        "name": "Segments",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "zoom",
-        "name": "Zoom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "offset",
-        "name": "Ring Offset",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "geometric",
-      "pattern",
-      "audio"
-    ]
-  },
-  {
-    "id": "kaleido-scope",
-    "name": "Kaleido-Scope",
-    "url": "shaders/kaleido-scope.wgsl",
-    "category": "geometric",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "segments",
-        "name": "Segments",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "zoom",
-        "name": "Zoom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "offset",
-        "name": "Ring Offset",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "geometric",
-      "pattern"
-    ]
-  },
-  {
-    "id": "neon-poly-grid",
-    "name": "Neon Poly Grid",
-    "url": "shaders/neon-poly-grid.wgsl",
-    "category": "geometric",
-    "description": "A futuristic hexagonal grid that lights up when you touch it, leaving a fading trail.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "grid-scale",
-        "name": "Grid Scale",
-        "min": 0,
-        "max": 1,
-        "default": 0.5
-      },
-      {
-        "id": "line-width",
-        "name": "Line Width",
-        "min": 0,
-        "max": 1,
-        "default": 0.2
-      },
-      {
-        "id": "glow-strength",
-        "name": "Glow Strength",
-        "min": 0,
-        "max": 1,
-        "default": 0.8
-      },
-      {
-        "id": "decay-speed",
-        "name": "Trail Duration",
-        "min": 0,
-        "max": 1,
-        "default": 0.8
-      }
-    ],
-    "tags": [
-      "geometric",
-      "pattern"
-    ]
-  },
-  {
-    "id": "spec-hypercube-projection",
-    "name": "Hypercube Projection",
-    "url": "shaders/spec-hypercube-projection.wgsl",
-    "category": "geometric",
-    "description": "Animated 4D tesseract projected into 2D using double rotation in XW and YZ planes. 32 edges are rendered with depth-based glow and input image texture-mapped onto faces.",
-    "tags": [
-      "hypercube",
-      "tesseract",
-      "4D",
-      "projection",
-      "geometric",
-      "rotation"
-    ],
-    "features": [
-      "4D",
-      "hypercube",
-      "mouse-driven",
-      "geometric"
-    ],
-    "params": [
-      {
-        "id": "rot_xw",
-        "name": "XW Rotation",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
+        "min": 0.0,
+        "max": 1.0,
         "step": 0.01
       },
       {
-        "id": "rot_yz",
-        "name": "YZ Rotation",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
+        "id": "param2",
+        "name": "Projection Scale",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
         "step": 0.01
       },
       {
-        "id": "edge_glow",
-        "name": "Edge Glow",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
+        "id": "param3",
+        "name": "Edge Glow Width",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
         "step": 0.01
       },
       {
-        "id": "face_opacity",
+        "id": "param4",
         "name": "Face Opacity",
-        "default": 0.3,
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "kaleidoscope",
+      "geometric",
+      "folding",
+      "iridescent",
+      "atmospheric"
+    ]
+  },
+  {
+    "id": "voronoi",
+    "name": "Voronoi Tessellation",
+    "url": "shaders/voronoi.wgsl",
+    "category": "geometric",
+    "description": "Animated Voronoi reconstruction (simplified feature detection).",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
+    ]
+  },
+  {
+    "id": "poincare-tile",
+    "name": "Hyperbolic Tiling",
+    "url": "shaders/poincare-tile.wgsl",
+    "category": "geometric",
+    "description": "Poincar\u00e9 disk hyperbolic geometry with M\u00f6bius transformations and animated tilings.",
+    "params": [
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "animSpeed",
+        "name": "Animation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "tileScale",
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ],
-    "target_rating": 4.7
+    "features": [
+      "interactive",
+      "mathematical",
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  {
+    "id": "voronoi-dynamics",
+    "name": "Voronoi Bubbles",
+    "url": "shaders/voronoi-dynamics.wgsl",
+    "category": "geometric",
+    "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
+    "params": [
+      {
+        "id": "centroidCount",
+        "name": "Bubble Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "repulsion",
+        "name": "Repulsion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "attraction",
+        "name": "Attraction",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeWidth",
+        "name": "Edge Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "interactive",
+      "depth-aware",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
   }
 ]

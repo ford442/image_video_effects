@@ -2,40 +2,47 @@
   "id": "tesseract-fold",
   "name": "Tesseract Fold",
   "url": "shaders/tesseract-fold.wgsl",
-  "category": "image",
-  "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, and bloom-weight alpha for chained rendering.",
+  "category": "geometric",
+  "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, treble-driven edge glow, and bloom-weight alpha for chained rendering.",
   "params": [
     {
-      "id": "folds",
-      "name": "Fold Complexity",
+      "id": "param1",
+      "name": "4D Rotation Speed",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "mirror",
-      "name": "Mirror Strength",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "shift",
-      "name": "Dim Shift",
+      "id": "param2",
+      "name": "Projection Scale",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "zoom",
-      "name": "Hyper Zoom",
+      "id": "param3",
+      "name": "Edge Glow Width",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Face Opacity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",

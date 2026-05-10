@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Tesseract Fold
-//  Category: image
-//  Features: mouse-driven
+//  Category: geometric
+//  Features: mouse-driven, upgraded-rgba, audio-reactive, depth-aware
 //  Complexity: Medium
 //  Upgraded: HDR, ACES tone mapping, iridescent color grading,
-//            atmospheric vignette, branchless mirror, bloom alpha
+//            atmospheric vignette, branchless mirror, bloom alpha,
+//            4D rotation projection, treble-driven edge glow
 // ═══════════════════════════════════════════════════════════════════
 
 // ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
@@ -26,7 +27,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Folds, y=Mirror, z=Shift, w=Zoom
+  zoom_params: vec4<f32>,  // x=4D Rotation Speed, y=Projection Scale, z=Edge Glow Width, w=Face Opacity
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -40,7 +41,7 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
   return a + b * cos(6.28318 * (c * t + d));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -49,33 +50,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let time = u.config.x;
 
-  let folds = u.zoom_params.x * 5.0 + 1.0;
-  let mirror_str = u.zoom_params.y;
-  let dim_shift = u.zoom_params.z;
-  let zoom = mix(0.5, 2.0, u.zoom_params.w);
+  let rotSpeed = u.zoom_params.x;
+  let projScale = mix(0.5, 2.0, u.zoom_params.y);
+  let glowWidth = u.zoom_params.z;
+  let faceOpacity = u.zoom_params.w;
+
+  let treble = plasmaBuffer[0].z;
+  let glowPulse = 1.0 + treble * 0.5;
 
   var p = (uv - mouse);
   p.x *= aspect;
 
+  // 4D rotation: rotate in w-x plane by time
+  let wAngle = time * rotSpeed * 0.5;
+  let wCos = cos(wAngle);
+  let wSin = sin(wAngle);
+  let px = p.x * wCos - p.y * wSin;
+  let py = p.x * wSin + p.y * wCos;
+  p = vec2<f32>(px, py) * projScale;
+
   let r = length(p);
   let a = atan2(p.y, p.x);
+  let folds = 4.0 + rotSpeed * 4.0;
   let base_angle = 3.14159 / folds;
 
   for (var i = 0; i < 3; i++) {
     p = abs(p);
-    p -= vec2<f32>(0.2 * dim_shift);
+    p -= vec2<f32>(0.2 * glowWidth);
     let angle = base_angle * (1.0 + 0.3 * sin(time + f32(i) * 1.7));
     let c = cos(angle);
     let s = sin(angle);
     p = vec2<f32>(p.x * c - p.y * s, p.x * s + p.y * c);
   }
 
-  p = p / zoom;
-
   var final_uv = mouse + p / vec2<f32>(aspect, 1.0);
-  final_uv = mix(final_uv, abs(final_uv - 0.5) + 0.5, smoothstep(0.4, 0.6, mirror_str));
+  final_uv = mix(final_uv, abs(final_uv - 0.5) + 0.5, smoothstep(0.4, 0.6, glowWidth));
 
-  let aberration = 0.008 * dim_shift + 0.002 * sin(time * 2.0);
+  let aberration = 0.008 * glowWidth + 0.002 * sin(time * 2.0);
   let col = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0).rgb;
   let cr = textureSampleLevel(readTexture, u_sampler, final_uv + vec2<f32>(aberration, 0.0), 0.0).r;
   let cb = textureSampleLevel(readTexture, u_sampler, final_uv - vec2<f32>(aberration, 0.0), 0.0).b;
@@ -97,7 +108,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = pow(aces_tone_map(color), vec3<f32>(1.0 / 2.2));
 
   let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
-  let bloom = pow(max(0.0, luma - 0.5), 2.0) * 3.0;
+  let bloom = pow(max(0.0, luma - 0.5), 2.0) * 3.0 * glowPulse;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, bloom));
+  // Edge glow at fold boundaries
+  let edgeDist = abs(fract(a / base_angle) * 2.0 - 1.0);
+  let edgeGlow = smoothstep(1.0 - glowWidth * 0.5, 1.0, edgeDist) * glowPulse;
+  color = color + vec3<f32>(edgeGlow * 0.3);
+
+  let alpha = mix(faceOpacity * bloom, 1.0, edgeGlow);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

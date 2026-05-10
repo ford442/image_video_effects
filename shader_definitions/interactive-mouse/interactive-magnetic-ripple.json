@@ -2,9 +2,23 @@
   "id": "interactive-magnetic-ripple",
   "name": "Magnetic Ripple",
   "url": "shaders/interactive-magnetic-ripple.wgsl",
-  "category": "image",
-  "description": "Magnetic field distortion with FBM domain warping, curl-noise velocity fields, multi-octave Worley ripple modulation, and audio-reactive pulse.",
+  "category": "interactive-mouse",
+  "description": "Magnetic field distortion with curl-noise field lines, all 50 ripple point accumulation, FBM domain warping, chromatic split, and glow-alpha at ripple peaks.",
   "params": [
+    {
+      "id": "ripple_freq",
+      "name": "Ripple Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "ripple_decay",
+      "name": "Ripple Decay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
     {
       "id": "field_strength",
       "name": "Field Strength",
@@ -13,22 +27,8 @@
       "max": 1.0
     },
     {
-      "id": "frequency",
-      "name": "Ripple Freq",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "damping",
-      "name": "Damping",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "aberration",
-      "name": "Aberration",
+      "id": "chromatic_split",
+      "name": "Chromatic Split",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
@@ -37,7 +37,8 @@
   "features": [
     "mouse-driven",
     "distortion",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
@@ -46,6 +47,8 @@
     "curl-noise",
     "worley",
     "domain-warp",
-    "fractal"
+    "fractal",
+    "magnetic",
+    "field-lines"
   ]
 }

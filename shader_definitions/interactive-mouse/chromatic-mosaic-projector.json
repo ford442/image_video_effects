@@ -1,35 +1,35 @@
 {
   "id": "chromatic-mosaic-projector",
-  "name": "Chromatic Mosaic",
+  "name": "Chromatic Mosaic Projector",
   "url": "shaders/chromatic-mosaic-projector.wgsl",
-  "category": "image",
-  "description": "Projects the image onto a reactive mosaic grid with chromatic aberration, audio-reactive cell pulsing, mouse gravity wells, click shockwaves, depth parallax, and temporal feedback trails.",
+  "category": "distortion",
+  "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, and audio-reactive cell pulsing.",
   "params": [
     {
-      "id": "cells",
-      "name": "Cell Count",
+      "id": "cellSize",
+      "name": "Cell Size",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Strength",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "spread",
-      "name": "Light Spread",
-      "default": 0.5,
+      "id": "voronoi",
+      "name": "Voronoi Distort",
+      "default": 0.4,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "chroma",
-      "name": "Aberration",
+      "id": "angle",
+      "name": "Projection Angle",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "tint",
-      "name": "Light Tint",
-      "default": 0.0,
       "min": 0.0,
       "max": 1.0
     }
@@ -37,16 +37,17 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "temporal",
-    "depth-aware"
+    "upgraded-rgba",
+    "voronoi",
+    "chromatic-dispersion"
   ],
   "tags": [
     "filter",
     "image-processing",
     "mosaic",
     "chromatic",
+    "voronoi",
     "audio-reactive",
-    "interactive",
-    "feedback"
+    "interactive"
   ]
 }

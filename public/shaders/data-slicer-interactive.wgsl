@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Data Slicer Interactive (Upgraded)
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, temporal, glitch
-//  Upgraded: 2026-05-02 by Interactivist
+//  Data Slicer Interactive — May 2026 Batch D Upgrade
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, temporal, glitch, upgraded-rgba
+//  Upgraded: 2026-05-10
 // ═══════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -19,7 +18,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -42,7 +40,19 @@ fn noise(p: vec2<f32>) -> f32 {
                mix(hash12(i + vec2(0.0,1.0)), hash12(i + vec2(1.0,1.0)), u.x), u.y);
 }
 
-@compute @workgroup_size(16, 16, 1)
+fn fbm(p: vec2<f32>) -> f32 {
+    var s = 0.0;
+    var a = 0.5;
+    var f = 1.0;
+    for (var i: i32 = 0; i < 4; i = i + 1) {
+        s += a * noise(p * f);
+        f *= 2.1;
+        a *= 0.5;
+    }
+    return s;
+}
+
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -59,60 +69,71 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Params
-    let slice_height = mix(0.01, 0.3, u.zoom_params.x);
-    let shift_amt = u.zoom_params.y * 0.5;
-    let speed = u.zoom_params.z * 10.0;
-    let rgb_split = u.zoom_params.w * 0.1;
+    let sliceCountBase = mix(4.0, 32.0, u.zoom_params.x);
+    let sliceCount = sliceCountBase * (1.0 + bass * 0.5);
+    let sliceWidth = mix(0.005, 0.08, u.zoom_params.y);
+    let fbmWarpAmt = u.zoom_params.z * 0.06;
+    let colorShift = u.zoom_params.w * 0.1;
+
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // Gravity well: pull slices toward mouse
     let distMouse = length(uv - mouse);
     let gravity = 1.0 - smoothstep(0.0, 0.35, distMouse);
 
-    // Bass pulse expands active slice zones
-    let pulse = 1.0 + bass * 1.5;
-    let active_height = slice_height * pulse;
-
-    // Slice band with gravity deformation
-    let distY = abs(uv.y - mouse.y);
-    let gravityDist = abs(uv.y - mouse.y + gravity * 0.08);
-    let combinedDist = mix(distY, gravityDist, gravity);
-
     var offset = 0.0;
     var split = 0.0;
     var strength = 0.0;
+    var alphaMod = 1.0;
 
-    if (combinedDist < active_height) {
-        strength = smoothstep(active_height, 0.0, combinedDist);
+    // Slice-based distortion with FBM-warped edges
+    let sliceIndex = floor(uv.y * sliceCount);
+    let sliceY = sliceIndex / sliceCount;
+    let nextSliceY = (sliceIndex + 1.0) / sliceCount;
 
-        // Block quantization modulated by mids
+    // FBM warp on slice edges for torn/organic look
+    let edgeNoise = fbm(vec2<f32>(uv.x * 8.0, sliceY * 4.0 + time * 0.3));
+    let warpedSliceWidth = sliceWidth + edgeNoise * fbmWarpAmt;
+
+    let distToSlice = min(abs(uv.y - sliceY), abs(uv.y - nextSliceY));
+    let inSliceBoundary = distToSlice < warpedSliceWidth;
+
+    if (inSliceBoundary) {
+        strength = smoothstep(warpedSliceWidth, 0.0, distToSlice);
+
+        // Click-triggered slice bursts from u.ripples
+        var burst = 0.0;
+        let rippleCount = u32(u.config.y);
+        for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+            let rp = u.ripples[i];
+            let rDist = length(uv - rp.xy);
+            let rAge = time - rp.z;
+            let rRad = rAge * 0.5;
+            let rBand = abs(rDist - rRad);
+            if (rBand < 0.04 && rAge < 1.2) {
+                burst += (1.0 - rAge / 1.2) * 0.15 * sin(rDist * 50.0 - rAge * 20.0);
+            }
+        }
+
+        // Quantized jitter modulated by mids
         let quant = mix(20.0, 70.0, mids);
         let quantY = floor(uv.y * quant) / quant;
-
-        // Speed modulated by treble
-        let t = time * speed * (1.0 + treble);
+        let t = time * 3.0 * (1.0 + treble);
         let n = noise(vec2(quantY * 10.0, t));
 
-        // Mouse click shockwave
-        let clickBurst = mouseDown * 0.2 * sin(distMouse * 40.0 - time * 20.0);
-        offset = (n - 0.5) * shift_amt * strength + clickBurst * strength;
-        split = rgb_split * strength * (1.0 + bass * 2.0);
+        offset = (n - 0.5) * 0.3 * strength + burst * strength;
+        split = colorShift * strength * (1.0 + bass * 2.0);
+
+        // Reduce alpha at slice boundaries
+        alphaMod = 1.0 - strength * 0.35;
     }
 
-    // Ripple shockwaves from click history
-    let rippleCount = u32(u.config.y);
-    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-        let rp = u.ripples[i];
-        let rDist = length(uv - rp.xy);
-        let rAge = time - rp.z;
-        let rRad = rAge * 0.5;
-        let rBand = abs(rDist - rRad);
-        if (rBand < 0.03 && rAge < 1.0) {
-            offset += (1.0 - rAge) * 0.08 * sin(rDist * 60.0 - rAge * 15.0);
-        }
-    }
+    // Gravity deformation on offset
+    let gravityDist = abs(uv.y - mouse.y + gravity * 0.08);
+    offset += gravity * 0.02 * sin(uv.x * 20.0 + time);
 
     // Depth-driven parallax on RGB split
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     split *= 1.0 + depth * 0.5;
 
     // RGB channel sampling with displacement
@@ -124,7 +145,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let feedbackUV = uv + vec2(offset * 0.3, 0.0);
     let prev = textureSampleLevel(dataTextureC, u_sampler, feedbackUV, 0.0);
     let fbAmt = 0.12 * strength + mouseDown * 0.25;
-    var color = mix(vec4<f32>(r, g, b, 1.0), prev, fbAmt);
+    var color = vec4<f32>(r, g, b, src.a * alphaMod);
+    color = mix(color, prev, fbAmt);
 
     // Treble sparkle additive
     color.r += treble * strength * 0.25;
@@ -136,6 +158,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
-
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

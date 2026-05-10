@@ -86,6 +86,258 @@
     ]
   },
   {
+    "id": "pp-vignette",
+    "name": "PP Vignette",
+    "url": "shaders/pp-vignette.wgsl",
+    "category": "post-processing",
+    "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
+    "tags": [
+      "post-process",
+      "vignette",
+      "grain",
+      "film",
+      "vintage"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Vignette",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Grain",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Color Style",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Effect",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "pixel-depth-sort",
+    "name": "Pixel Depth Sort",
+    "url": "shaders/pixel-depth-sort.wgsl",
+    "category": "post-processing",
+    "description": "Directional pixel sorting by depth with mouse-following sort angle, chromatic aberration at boundaries, bass-driven sort length, and depth-layered alpha.",
+    "features": [
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "filter",
+      "depth-aware",
+      "pixel-sort",
+      "chromatic-aberration",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Depth Threshold",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Sort Length",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Sort Angle",
+        "default": 0.0,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Aberration",
+        "default": 0.2,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "pp-tone-map",
+    "name": "PP Tone Map",
+    "url": "shaders/pp-tone-map.wgsl",
+    "category": "post-processing",
+    "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
+    "tags": [
+      "post-process",
+      "tone-map",
+      "hdr",
+      "color-grading"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Algorithm",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Exposure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "luma-pixel-sort",
+    "name": "Luma Pixel Sort",
+    "url": "shaders/luma-pixel-sort.wgsl",
+    "category": "post-processing",
+    "description": "Fibonacci disk neighborhood pixel sorting with depth-aware blending, audio-reactive threshold modulation, and luminance-keyed alpha.",
+    "features": [
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "stylized",
+      "artistic",
+      "glitch",
+      "pixel-sort",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Luma Threshold",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Sort Length",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Depth Blend",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Noise Mix",
+        "default": 0.3,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "radial-blur",
+    "name": "Radial Blur",
+    "url": "shaders/radial-blur.wgsl",
+    "category": "post-processing",
+    "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
+    "params": [
+      {
+        "id": "sigma",
+        "name": "Blur Sigma",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "shape",
+        "name": "Bokeh Shape",
+        "default": 0,
+        "min": 0,
+        "max": 2,
+        "step": 1,
+        "labels": [
+          "Circle",
+          "Hexagon",
+          "Star"
+        ]
+      },
+      {
+        "id": "focalDepth",
+        "name": "Focal Depth",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      },
+      {
+        "id": "maxBlur",
+        "name": "Max Blur",
+        "default": 0.5,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "depth-aware"
+    ],
+    "tags": [
+      "blur",
+      "bokeh",
+      "depth-of-field",
+      "post-processing",
+      "chromatic"
+    ]
+  },
+  {
     "id": "pp-sharpen",
     "name": "PP Sharpen",
     "url": "shaders/pp-sharpen.wgsl",
@@ -169,150 +421,6 @@
         "min": 0,
         "max": 1
       }
-    ]
-  },
-  {
-    "id": "pp-tone-map",
-    "name": "PP Tone Map",
-    "url": "shaders/pp-tone-map.wgsl",
-    "category": "post-processing",
-    "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
-    "tags": [
-      "post-process",
-      "tone-map",
-      "hdr",
-      "color-grading"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Algorithm",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param2",
-        "name": "Exposure",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param3",
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param4",
-        "name": "Saturation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ]
-  },
-  {
-    "id": "pp-vignette",
-    "name": "PP Vignette",
-    "url": "shaders/pp-vignette.wgsl",
-    "category": "post-processing",
-    "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
-    "tags": [
-      "post-process",
-      "vignette",
-      "grain",
-      "film",
-      "vintage"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Vignette",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param2",
-        "name": "Grain",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param3",
-        "name": "Color Style",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param4",
-        "name": "Effect",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ]
-  },
-  {
-    "id": "radial-blur",
-    "name": "Radial Blur",
-    "url": "shaders/radial-blur.wgsl",
-    "category": "post-processing",
-    "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
-    "params": [
-      {
-        "id": "sigma",
-        "name": "Blur Sigma",
-        "default": 0.3,
-        "min": 0.01,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "shape",
-        "name": "Bokeh Shape",
-        "default": 0,
-        "min": 0,
-        "max": 2,
-        "step": 1,
-        "labels": [
-          "Circle",
-          "Hexagon",
-          "Star"
-        ]
-      },
-      {
-        "id": "focalDepth",
-        "name": "Focal Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "maxBlur",
-        "name": "Max Blur",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "depth-aware"
-    ],
-    "tags": [
-      "blur",
-      "bokeh",
-      "depth-of-field",
-      "post-processing",
-      "chromatic"
     ]
   }
 ]

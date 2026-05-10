@@ -2,44 +2,44 @@
   "id": "mosaic-reveal",
   "name": "Mosaic Reveal",
   "url": "shaders/mosaic-reveal.wgsl",
-  "category": "image",
-  "description": "A low-resolution mosaic filter that clarifies into high-resolution video near the mouse cursor. Features HDR tile bevel lighting, atmospheric depth haze, split-tone grading, and ACES tone mapping.",
+  "category": "distortion",
+  "description": "Mosaic reveal with hexagonal/square grid options, flood-fill reveal animation from mouse, edge glow, and audio-reactive pulse.",
   "features": [
     "upgraded-rgba",
     "depth-aware",
     "mosaic",
     "interactive-reveal",
     "mouse-driven",
-    "hdr",
-    "tone-mapped",
-    "atmospheric"
+    "hex-grid",
+    "flood-fill-reveal",
+    "audio-reactive"
   ],
   "params": [
     {
-      "id": "size",
-      "name": "Mosaic Scale",
+      "id": "cellSize",
+      "name": "Cell Size",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "revealSpeed",
+      "name": "Reveal Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "edgeGlow",
+      "name": "Edge Glow",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "radius",
-      "name": "Focus Radius",
-      "default": 0.4,
-      "min": 0.1,
-      "max": 1.0
-    },
-    {
-      "id": "softness",
-      "name": "Edge Softness",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "atmosphere",
-      "name": "Atmosphere",
-      "default": 0.3,
+      "id": "gridType",
+      "name": "Grid Type",
+      "default": 0.0,
       "min": 0.0,
       "max": 1.0
     }
@@ -47,8 +47,9 @@
   "tags": [
     "filter",
     "image-processing",
-    "hdr",
-    "atmospheric",
-    "golden"
+    "mosaic",
+    "reveal",
+    "interactive",
+    "audio-reactive"
   ]
 }

@@ -1,10 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Tile Twist (Algorithmist Upgrade)
-//  Category: image
-//  Features: mouse-driven, geometry, temporal
+//  Tile Twist
+//  Category: distortion
+//  Features: upgraded-rgba, mouse-driven, audio-reactive
 //  Complexity: Medium
-//  Chunks From: tile-twist (original)
-//  Applied: FBM domain warping, hash tile jitter, SDF edge masking
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -21,19 +19,22 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI  = 3.141592653589793;
-const PHI = 1.618033988749895;
+const PI = 3.141592653589793;
 const TAU = 6.283185307179586;
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
-  return fract(vec2<f32>(n, n * PHI)) * 2.0 - 1.0;
+  return fract(vec2<f32>(n, n * 1.618033988749895)) * 2.0 - 1.0;
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
 fn vnoise(p: vec2<f32>) -> f32 {
@@ -64,7 +65,7 @@ fn sdRoundBox(p: vec2<f32>, b: vec2<f32>, r: f32) -> f32 {
   return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - r;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -73,42 +74,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
 
-  let tileParam = max(0.01, u.zoom_params.x);
-  let twistAmt = u.zoom_params.y * TAU;
-  let radius = max(0.001, u.zoom_params.z);
-  let edgeK = 0.01 + u.zoom_params.w * 0.09;
+  let twistAngle = u.zoom_params.x * TAU;
+  let tileSizeParam = max(0.01, u.zoom_params.y);
+  let lissajousRatio = u.zoom_params.z * 3.0 + 1.0;
+  let turbulence = u.zoom_params.w;
 
-  // FBM domain warp for organic tile distortion
+  let mids = plasmaBuffer[0].y;
+  let oscillationSpeed = 1.0 + mids * 2.0;
+
+  // Aspect-correct tile grid
+  let n = 2.0 + tileSizeParam * 18.0;
+  let tSize = vec2<f32>(1.0 / (n * aspect), 1.0 / n);
+  let grid = uv / tSize;
+  let tIdx = floor(grid);
+  let tFrac = fract(grid) - 0.5;
+
+  // Hash-based tile identity
+  let tileHash = hash12(tIdx);
+
+  // FBM turbulence for organic distortion
   let warp = vec2<f32>(
     fbm(uv * 5.0 + time * 0.1, 3),
     fbm(uv * 5.0 + vec2<f32>(5.2, 1.3) + time * 0.1, 3)
-  ) * 0.12 * tileParam;
+  ) * 0.12 * turbulence;
   let wuv = uv + warp;
-
-  // Aspect-correct tile grid
-  let n = 2.0 + tileParam * 18.0;
-  let tSize = vec2<f32>(1.0 / (n * aspect), 1.0 / n);
-  let grid = wuv / tSize;
-  let tIdx = floor(grid);
-  let tFrac = fract(grid) - 0.5;
 
   // Hash-jittered tile center
   let jitter = hash22(tIdx) * 0.3;
   let tCenter = (tIdx + 0.5 + jitter) * tSize;
 
-  // Mouse-distance falloff
-  let diff = tCenter - mouse;
-  let dist = length(diff * vec2<f32>(aspect, 1.0));
-  let falloff = 1.0 - smoothstep(0.0, radius, dist);
+  // Lissajous oscillation on rotation angle
+  let lissA = sin(time * oscillationSpeed * lissajousRatio + tileHash * TAU);
+  let lissB = sin(time * oscillationSpeed + tileHash * TAU * 0.7);
+  let lissajousAngle = atan2(lissB, lissA) * 0.5;
 
-  // FBM-animated rotation offset
-  let noiseRot = fbm(tCenter * 4.0 + time * 0.15, 2) * PI * 0.5;
-  let angle = falloff * twistAmt + noiseRot * falloff;
+  // Twist proportional to hash(tile_id) * zoom_params
+  let tileTwist = tileHash * twistAngle * (1.0 + turbulence);
+  let angle = lissajousAngle + tileTwist;
 
   // Rotate pixel around jittered tile center
-  let rel = uv - tCenter;
+  let rel = wuv - tCenter;
   let relA = vec2<f32>(rel.x * aspect, rel.y);
   let ca = cos(angle);
   let sa = sin(angle);
@@ -117,8 +123,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // SDF rounded tile edge for alpha compositing mask
   let dEdge = sdRoundBox(tFrac, vec2<f32>(0.48), 0.15);
-  let edgeMask = 1.0 - smoothstep(-edgeK, edgeK, dEdge);
+  let edgeMask = 1.0 - smoothstep(-0.02, 0.02, dEdge);
 
-  let color = textureSampleLevel(readTexture, u_sampler, rotUV, 0.0);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, color.a * mix(0.5, 1.0, edgeMask)));
+  let src = textureSampleLevel(readTexture, u_sampler, rotUV, 0.0);
+  let alpha = src.a * mix(0.6, 1.0, edgeMask);
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(src.rgb, alpha));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

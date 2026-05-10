@@ -1,10 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Spiral Lens — Interactivist Upgrade
-//  Category: image
-//  Features: mouse-driven, audio-reactive, temporal, depth-aware
-//  Chunks From: spiral-lens (original)
-//  Created: 2026-05-03
-//  By: Interactivist Agent
+//  Spiral Lens — Batch D Upgrade
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, temporal, depth-aware,
+//            upgraded-rgba, archimedean-spiral, chromatic-dispersion
+//  Created: 2026-05-10
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,69 +21,71 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Radius, y=Mag, z=Twist, w=Aberration
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let res = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / res;
-    let time = u.config.x;
-    let mouse = u.zoom_config.yz;
-    let md = u.zoom_config.w;
-    let audio = plasmaBuffer[0];
-    let bass = audio.x;
-    let treble = audio.z;
+  let res = u.config.zw;
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+  let uv = vec2<f32>(global_id.xy) / res;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
 
-    let r = u.zoom_params.x * 0.5 * (1.0 + bass * 0.4);
-    let mag = u.zoom_params.y * 3.0 + 0.1 + bass * 0.5;
-    let tw = (u.zoom_params.z - 0.5) * 20.0 * (1.0 + bass * 0.3);
-    let ab = u.zoom_params.w * 0.05 * (1.0 + treble * 0.5);
+  let bass = plasmaBuffer[0].x;
 
-    let asp = res.x / res.y;
-    let dvec = (uv - mouse) * vec2<f32>(asp, 1.0);
-    let dist = length(dvec);
-    let mask = smoothstep(r, 0.0, dist);
+  // Parameters
+  let spiralTightness = u.zoom_params.x * 4.0 + 1.0;
+  let lensStrength = (u.zoom_params.y * 3.0 + 0.1) * (1.0 + bass * 0.4);
+  let chromatic = u.zoom_params.z * 0.06;
+  let rotationSpeed = u.zoom_params.w * 2.0;
 
-    let wave = sin(dist * 40.0 - time * 10.0) * 0.03 * md * smoothstep(r * 1.5, 0.0, dist);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let asp = res.x / res.y;
+  let dvec = (uv - mouse) * vec2<f32>(asp, 1.0);
+  let dist = length(dvec);
+  let angle = atan2(dvec.y, dvec.x);
 
-    let a = tw * mask * mask * (1.0 + depth * 0.5);
-    let s = sin(a);
-    let c = cos(a);
-    let rot = mat2x2<f32>(c, -s, s, c);
+  // Archimedean spiral UV unwrap
+  let spiralAngle = angle + time * rotationSpeed;
+  let spiralDist = spiralTightness * spiralAngle;
+  let spiralUV = mouse + vec2<f32>(
+    cos(spiralAngle) * spiralDist / asp,
+    sin(spiralAngle) * spiralDist
+  ) * 0.1;
 
-    var p = (uv - mouse) * vec2<f32>(asp, 1.0);
-    p = rot * p;
-    p = p / vec2<f32>(asp, 1.0);
-    p = p * mix(1.0, 1.0 / mag, mask);
+  // Lens distortion toward spiral center
+  let lensMask = smoothstep(0.5, 0.0, dist);
+  let lensFactor = mix(1.0, 1.0 / max(lensStrength, 0.1), lensMask);
+  let lensedUV = mouse + (uv - mouse) * lensFactor;
 
-    let dir = select(vec2<f32>(0.0), dvec / max(dist, 0.0001), dist > 0.0001);
-    let fuv = mouse + p + dir * wave;
+  let sampleUV = mix(lensedUV, spiralUV, lensMask * 0.3);
 
-    let drift = vec2<f32>(sin(time * 0.7 + uv.y * 4.0), cos(time * 0.5 + uv.x * 4.0)) * 0.003 * bass;
-    let ruv = fuv + (mouse - fuv) * ab * mask + drift;
-    let buv = fuv - (mouse - fuv) * ab * mask - drift;
+  // Chromatic dispersion along spiral radius
+  let dir = select(vec2<f32>(0.0), dvec / max(dist, 0.0001), dist > 0.0001);
+  let dirUV = dir / vec2<f32>(asp, 1.0);
 
-    let col = vec3<f32>(
-        textureSampleLevel(readTexture, u_sampler, ruv, 0.0).r,
-        textureSampleLevel(readTexture, u_sampler, fuv + drift * 0.5, 0.0).g,
-        textureSampleLevel(readTexture, u_sampler, buv, 0.0).b
-    );
+  let rUV = sampleUV + dirUV * chromatic * (1.0 + dist * 2.0);
+  let gUV = sampleUV + dirUV * chromatic * 0.3 * dist;
+  let bUV = sampleUV - dirUV * chromatic * (1.0 + dist * 1.2);
 
-    let spark = 1.0 + treble * mask * 0.4;
-    var out = col * spark;
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  var col = vec3<f32>(r, g, b);
 
-    let fb = 0.15 * bass * mask;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv + drift * 0.3, 0.0).rgb;
-    out = mix(out, prev, fb);
+  // Temporal feedback trail
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let fb = 0.12 * bass * lensMask;
+  col = mix(col, prev * 0.96, fb);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(out, 1.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(out, 1.0));
+  // Alpha: depth-layered — center of spiral more opaque
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let alpha = mix(0.5, 1.0, lensMask * (0.5 + depth * 0.5));
 
-    let dep = textureSampleLevel(readDepthTexture, non_filtering_sampler, fuv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(dep, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
