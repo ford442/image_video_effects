@@ -2,8 +2,8 @@
   "id": "cyber-ripples",
   "name": "Cyber Ripples",
   "url": "shaders/cyber-ripples.wgsl",
-  "category": "image",
-  "description": "Digital ripples with neon grid overlay emanating from cursor.",
+  "category": "interactive-mouse",
+  "description": "Digital ripples with chromatic aberration and pixelation emanating from cursor. Audio-reactive bass boost.",
   "params": [
     {
       "id": "speed",
@@ -13,8 +13,15 @@
       "max": 1.0
     },
     {
-      "id": "amplitude",
-      "name": "Wave Height",
+      "id": "pixelation",
+      "name": "Block Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "aberration",
+      "name": "Chromatic Aberration",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
@@ -25,22 +32,17 @@
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
-    },
-    {
-      "id": "grid_intensity",
-      "name": "Grid Overlay",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
     }
   ],
   "features": [
     "mouse-driven",
     "wave",
-    "neon"
+    "neon",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio-reactive"
   ]
 }

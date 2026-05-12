@@ -19,11 +19,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=MouseClickCount, y=MouseX, z=MouseY, w=Param
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=CorruptionIntensity, y=BitManipulationType, z=ErrorPropagation, w=DecayRate
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ───────────────────────────────────────────────────────────────
 // Hash Functions
@@ -270,12 +273,14 @@ fn applyDigitalDecay(color: vec3<f32>, decayRate: f32, time: f32, uv: vec2<f32>)
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let texelCoord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
-    // Parameters
-    let corruptionIntensity = clamp(u.zoom_params.x, 0.0, 1.0);
+    let bass = plasmaBuffer[0].x;
+
+    // Parameters — bass amplifies corruption
+    let corruptionIntensity = clamp(u.zoom_params.x * (1.0 + bass * 0.4), 0.0, 1.0);
     let bitManipulationType = u.zoom_params.y;
     let errorPropagation = u.zoom_params.z;
     let decayRate = u.zoom_params.w;
@@ -400,7 +405,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ───────────────────────────────────────────────────────────
     // Output
     // ───────────────────────────────────────────────────────────
-    textureStore(writeTexture, texelCoord, vec4<f32>(color, 1.0));
+    // Alpha: corruption intensity + mouse focus + luminance drives glitch compositing
+    let glitchLuma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.5 + glitchLuma * 0.3 + effectiveIntensity * 0.3 + mouseInfluence * 0.15, 0.0, 1.0);
+    textureStore(writeTexture, texelCoord, vec4<f32>(color, alpha));
     
     // ───────────────────────────────────────────────────────────
     // Depth Pass-through

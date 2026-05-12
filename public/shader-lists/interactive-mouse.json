@@ -101,6 +101,55 @@
     ]
   },
   {
+    "id": "bio-touch",
+    "name": "Bio-Luminescent Touch",
+    "url": "shaders/bio-touch.wgsl",
+    "category": "interactive-mouse",
+    "description": "Reveals organic, glowing cellular structures beneath the image where you touch. Audio-reactive cell density and pulse speed respond to bass.",
+    "params": [
+      {
+        "id": "radius",
+        "name": "Glow Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Cell Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "bioluminescence",
+      "voronoi",
+      "organic",
+      "glow"
+    ]
+  },
+  {
     "id": "block-distort-interactive",
     "url": "shaders/block-distort-interactive.wgsl",
     "category": "interactive-mouse",
@@ -144,6 +193,102 @@
       "interactive"
     ],
     "name": "Block Distort"
+  },
+  {
+    "id": "chroma-depth-tunnel",
+    "name": "Chroma Depth Tunnel",
+    "category": "interactive-mouse",
+    "url": "shaders/chroma-depth-tunnel.wgsl",
+    "description": "A concentric tunnel effect centered on the mouse, with chromatic aberration.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Tunnel Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromaSep",
+        "name": "Chroma Sep",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "centerFade",
+        "name": "Center Fog",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "tunnel",
+      "chromatic",
+      "distortion"
+    ]
+  },
+  {
+    "id": "chroma-kinetic",
+    "name": "Chroma Kinetic",
+    "url": "shaders/chroma-kinetic.wgsl",
+    "category": "interactive-mouse",
+    "description": "Mouse-driven chromatic aberration modulated by image luminance and audio bass.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Distortion Str",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Effect Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "luma_inf",
+        "name": "Luma Influence",
+        "default": 1,
+        "min": -2,
+        "max": 2
+      },
+      {
+        "id": "rotation",
+        "name": "Direction Rot",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "chromatic-aberration",
+      "kinetic",
+      "mouse"
+    ]
   },
   {
     "id": "circuit-breaker",
@@ -347,6 +492,54 @@
     ]
   },
   {
+    "id": "cursor-aura",
+    "name": "Cursor Aura",
+    "url": "shaders/cursor-aura.wgsl",
+    "category": "interactive-mouse",
+    "description": "Glowing aura around cursor with customizable colors, edge detection, and audio-reactive bass pulsing.",
+    "params": [
+      {
+        "id": "size",
+        "name": "Aura Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "softness",
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "hue",
+        "name": "Color Hue",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glow",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "interactive",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "cyber-magnifier",
     "name": "Cyber Magnifier",
     "url": "shaders/cyber-magnifier.wgsl",
@@ -392,6 +585,54 @@
     "tags": [
       "mouse-driven",
       "interactive"
+    ]
+  },
+  {
+    "id": "cyber-ripples",
+    "name": "Cyber Ripples",
+    "url": "shaders/cyber-ripples.wgsl",
+    "category": "interactive-mouse",
+    "description": "Digital ripples with chromatic aberration and pixelation emanating from cursor. Audio-reactive bass boost.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pixelation",
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Chromatic Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "frequency",
+        "name": "Wave Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "wave",
+      "neon",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio-reactive"
     ]
   },
   {
@@ -492,32 +733,32 @@
     "name": "Data Slicer",
     "url": "shaders/data-slicer-interactive.wgsl",
     "category": "interactive-mouse",
-    "description": "Glitchy horizontal slicing with gravity wells, audio reactivity, click shockwaves, and temporal feedback.",
+    "description": "Glitchy horizontal slicing with FBM-warped torn edges, click-triggered slice bursts from ripple history, bass-modulated slice count, and semantic alpha at slice boundaries.",
     "params": [
       {
-        "id": "slice_height",
-        "name": "Slice Height",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "shift_amt",
-        "name": "Shift Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "jitter_speed",
-        "name": "Jitter Speed",
+        "id": "slice_count",
+        "name": "Slice Count",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "rgb_split",
-        "name": "RGB Split",
+        "id": "slice_width",
+        "name": "Slice Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fbm_warp",
+        "name": "FBM Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -527,7 +768,8 @@
       "mouse-driven",
       "glitch",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "mouse-driven",
@@ -535,7 +777,173 @@
       "audio-reactive",
       "glitch",
       "feedback",
-      "temporal"
+      "temporal",
+      "fbm",
+      "slice"
+    ]
+  },
+  {
+    "id": "data-stream",
+    "name": "Digital Stream",
+    "url": "shaders/data-stream.wgsl",
+    "category": "interactive-mouse",
+    "description": "Digital matrix-style data stream disrupted by mouse interaction. Audio-reactive bass pulses accelerate the flow.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Digital Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "audio-reactive"
+    ],
+    "tags": [
+      "digital",
+      "matrix",
+      "green",
+      "data",
+      "stream",
+      "glitch",
+      "interactive",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "directional-glitch",
+    "name": "Directional Glitch",
+    "url": "shaders/directional-glitch.wgsl",
+    "category": "interactive-mouse",
+    "description": "Glitch artifacts radiate from the mouse position with audio-reactive displacement.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Glitch strength"
+      },
+      {
+        "id": "radius",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius of glitch effect"
+      },
+      {
+        "id": "scatter",
+        "name": "Scatter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Scatter and noise amount"
+      },
+      {
+        "id": "angle_bias",
+        "name": "Angle Bias",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Directional rotation bias"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "glitch",
+      "interactive",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "dynamic-halftone",
+    "name": "Dynamic Halftone",
+    "url": "shaders/dynamic-halftone.wgsl",
+    "category": "interactive-mouse",
+    "description": "Halftone pattern that reacts to mouse proximity with size and contrast changes. Audio-reactive radius expansion via bass input.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Dot Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Mouse Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edge_sharpness",
+        "name": "Edge Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Halftone dot edge sharpness (wired to zoom_params.w)"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "halftone",
+      "filter",
+      "image-processing",
+      "interactive",
+      "audio-reactive"
     ]
   },
   {
@@ -624,6 +1032,157 @@
     "tags": [
       "mouse-driven",
       "interactive"
+    ]
+  },
+  {
+    "id": "hex-mosaic",
+    "name": "Hexagon Mosaic",
+    "url": "shaders/hex-mosaic.wgsl",
+    "category": "interactive-mouse",
+    "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor. Bass audio reactivity boosts saturation.",
+    "params": [
+      {
+        "id": "scale",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Reveal Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "hardness",
+        "name": "Edge Hardness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "saturation",
+        "name": "Sat Boost",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "hexagon",
+      "mosaic",
+      "interactive"
+    ]
+  },
+  {
+    "id": "interactive-glitch-brush",
+    "name": "Glitch Brush",
+    "url": "shaders/interactive-glitch-brush.wgsl",
+    "category": "interactive-mouse",
+    "description": "Paint digital glitches onto the screen with audio-reactive intensity.",
+    "params": [
+      {
+        "id": "size",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Glitch Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "block_scale",
+        "name": "Block Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_split",
+        "name": "Color Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "audio-reactive"
+    ],
+    "tags": [
+      "glitch",
+      "interactive",
+      "brush",
+      "mouse-driven",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "interactive-magnetic-ripple",
+    "name": "Magnetic Ripple",
+    "url": "shaders/interactive-magnetic-ripple.wgsl",
+    "category": "interactive-mouse",
+    "description": "Magnetic field distortion with curl-noise field lines, all 50 ripple point accumulation, FBM domain warping, chromatic split, and glow-alpha at ripple peaks.",
+    "params": [
+      {
+        "id": "ripple_freq",
+        "name": "Ripple Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ripple_decay",
+        "name": "Ripple Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "field_strength",
+        "name": "Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic_split",
+        "name": "Chromatic Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "distortion",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "fbm",
+      "curl-noise",
+      "worley",
+      "domain-warp",
+      "fractal",
+      "magnetic",
+      "field-lines"
     ]
   },
   {
@@ -728,12 +1287,13 @@
     "name": "Kimi Ripple Touch",
     "url": "shaders/kimi_ripple_touch.wgsl",
     "category": "interactive-mouse",
-    "description": "Interactive water ripple effect at mouse position with expanding waves and chromatic aberration.",
+    "description": "Interactive water ripple effect at mouse position with expanding waves, chromatic aberration, and bass-driven audio reactivity.",
     "features": [
       "mouse-driven",
       "interactive",
       "ripple",
-      "water"
+      "water",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -771,7 +1331,10 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "ripple",
+      "water",
+      "audio-reactive"
     ]
   },
   {
@@ -779,12 +1342,13 @@
     "name": "Kimi Spotlight",
     "url": "shaders/kimi_spotlight.wgsl",
     "category": "interactive-mouse",
-    "description": "Flashlight effect that reveals full color under the beam while surroundings are desaturated and darkened.",
+    "description": "Flashlight effect that reveals full color under the beam while surroundings are desaturated and darkened. Audio-reactive spotlight size pulses with bass.",
     "features": [
       "mouse-driven",
       "interactive",
       "spotlight",
-      "reveal"
+      "reveal",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -822,15 +1386,21 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "spotlight",
+      "reveal",
+      "audio-reactive"
     ]
   },
   {
     "id": "kinetic-dispersion",
+    "name": "Kinetic Dispersion",
     "category": "interactive-mouse",
     "url": "shaders/kinetic-dispersion.wgsl",
+    "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -864,9 +1434,61 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "dispersion",
+      "glitch"
+    ]
+  },
+  {
+    "id": "laser-burn",
+    "name": "Laser Burn",
+    "url": "shaders/laser-burn.wgsl",
+    "category": "interactive-mouse",
+    "description": "Interactive laser that burns the image permanently (or heals slowly).",
+    "params": [
+      {
+        "id": "beamSize",
+        "name": "Beam Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "burnSpeed",
+        "name": "Burn Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "healRate",
+        "name": "Heal Rate",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "heatMode",
+        "name": "Heat Glow",
+        "default": 1,
+        "min": 0,
+        "max": 1
+      }
     ],
-    "name": "Kinetic Dispersion"
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "laser",
+      "burn",
+      "interactive",
+      "fire"
+    ]
   },
   {
     "id": "liquid-time-warp",
@@ -1095,6 +1717,55 @@
       "interactive"
     ],
     "name": "Luma Magnetism"
+  },
+  {
+    "id": "luma-slice-interactive",
+    "name": "Luma Slice Interactive",
+    "url": "shaders/luma-slice-interactive.wgsl",
+    "category": "interactive-mouse",
+    "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position. Audio-reactive intensity via bass.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Displace Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "slices",
+        "name": "Slice Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1
+      },
+      {
+        "id": "rgb_shift",
+        "name": "RGB Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "phase",
+        "name": "Phase Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "interactive",
+      "slice",
+      "luma"
+    ]
   },
   {
     "id": "magnetic-edge",
@@ -2142,6 +2813,56 @@
     "name": "Pixel Explode"
   },
   {
+    "id": "pixel-focus",
+    "name": "Pixel Focus",
+    "url": "shaders/pixel-focus.wgsl",
+    "category": "interactive-mouse",
+    "description": "Applies a mosaic effect everywhere except for a clear focus area around the mouse. Audio-reactive density adds rhythmic pulse to pixelation.",
+    "params": [
+      {
+        "id": "mosaicSize",
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Focus Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "hardness",
+        "name": "Edge Hardness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic",
+        "name": "Aberration",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "filter"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "pixelation",
+      "focus",
+      "mosaic",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "pixel-repel",
     "category": "interactive-mouse",
     "url": "shaders/pixel-repel.wgsl",
@@ -2188,6 +2909,113 @@
       "reactive"
     ],
     "name": "Pixel Repeller"
+  },
+  {
+    "id": "pixel-stretch-cross",
+    "name": "Pixel Stretch Cross",
+    "url": "shaders/pixel-stretch-cross.wgsl",
+    "category": "interactive-mouse",
+    "description": "Multi-direction pixel stretch using Fibonacci disk sampling, depth-aware attenuation, bass-driven magnitude, and effect-masked alpha transparency.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "h_stretch",
+        "name": "H Stretch",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "v_stretch",
+        "name": "V Stretch",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "depth_influence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "fibonacci",
+      "depth-aware",
+      "stretch",
+      "distortion"
+    ]
+  },
+  {
+    "id": "polar-warp-interactive",
+    "name": "Polar Warp",
+    "url": "shaders/polar-warp-interactive.wgsl",
+    "category": "interactive-mouse",
+    "description": "Maps the image to polar coordinates centered on the mouse with bass-driven warp strength, spiral twist, click-triggered ripple bursts, and depth-aware fading.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware",
+      "multi-ripple"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Spiral Amount",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Ripple Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Pinch/Expand",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "interactive",
+      "polar",
+      "warp",
+      "audio-reactive"
+    ]
   },
   {
     "id": "psychedelic-noise-flow",
@@ -2238,7 +3066,7 @@
     "name": "Quantum Cursor",
     "url": "shaders/quantum-cursor.wgsl",
     "category": "interactive-mouse",
-    "description": "Quantized reality field around the cursor with chromatic distortion.",
+    "description": "Quantized reality field around the cursor with chromatic distortion and audio-reactive pulse.",
     "params": [
       {
         "id": "radius",
@@ -2271,11 +3099,15 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion"
+      "distortion",
+      "audio-reactive"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "glitch",
+      "distortion"
     ]
   },
   {
@@ -2324,6 +3156,53 @@
     ]
   },
   {
+    "id": "quantum-tunnel-interactive",
+    "name": "Quantum Tunnel",
+    "category": "interactive-mouse",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "tunnel_strength",
+        "name": "Tunnel Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "url": "shaders/quantum-tunnel-interactive.wgsl",
+    "description": "Interactive radial distortion with chromatic aberration, pulsing effects, and audio-reactive glow.",
+    "tags": [
+      "filter",
+      "image-processing",
+      "distortion",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "reality-tear",
     "name": "Reality Tear",
     "url": "shaders/reality-tear.wgsl",
@@ -2368,6 +3247,54 @@
     ]
   },
   {
+    "id": "scan-slice",
+    "name": "Scan Slice",
+    "url": "shaders/scan-slice.wgsl",
+    "category": "interactive-mouse",
+    "description": "Mouse X selects a vertical slice; Mouse Y offsets it with chromatic aberration. Audio-reactive edge glow pulses to bass.",
+    "params": [
+      {
+        "id": "width",
+        "name": "Slice Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "offset_scale",
+        "name": "Offset Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dimming",
+        "name": "Bg Dimming",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "slice",
+      "chromatic",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "scanline-wave",
     "name": "Scanline Wave",
     "url": "shaders/scanline-wave.wgsl",
@@ -2375,7 +3302,8 @@
     "features": [
       "mouse-driven",
       "upgraded-rgba",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive"
     ],
     "description": "Sine-wave horizontal scanline distortion with HDR bloom, atmospheric depth fog, and warm highlight grading. Mouse modulates wave intensity by vertical proximity.",
     "params": [
@@ -2416,6 +3344,58 @@
       "hdr",
       "bloom",
       "atmospheric"
+    ]
+  },
+  {
+    "id": "sonar-pulse",
+    "name": "Sonar Pulse",
+    "url": "shaders/sonar-pulse.wgsl",
+    "category": "interactive-mouse",
+    "description": "Radial sonar waves emitting from the cursor that distort and scan the image. Now with audio reactivity.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "freq",
+        "name": "Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "width",
+        "name": "Wave Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "sonar",
+      "pulse",
+      "audio-reactive"
     ]
   },
   {
@@ -2468,11 +3448,110 @@
     ]
   },
   {
+    "id": "spectral-distortion",
+    "name": "Spectral Distortion",
+    "url": "shaders/spectral-distortion.wgsl",
+    "category": "interactive-mouse",
+    "description": "RGB channels split and warp based on noise, mouse proximity, and bass-driven audio reactivity.",
+    "params": [
+      {
+        "id": "separation",
+        "name": "RGB Separation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "warpScale",
+        "name": "Warp Scale",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "glitch",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "chromatic",
+      "warp",
+      "noise"
+    ]
+  },
+  {
+    "id": "spectral-waves",
+    "name": "Luma Ripple",
+    "url": "shaders/spectral-waves.wgsl",
+    "category": "interactive-mouse",
+    "description": "Luminance-reactive waves ripple out from the mouse cursor, displacing the image with chromatic aberration. Audio bass boosts wave amplitude.",
+    "params": [
+      {
+        "id": "frequency",
+        "name": "Ripple Freq",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "amplitude",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Chromatic Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "image"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "ripple",
+      "chromatic",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "stereoscopic-3d",
     "name": "Stereoscopic 3D",
     "url": "shaders/stereoscopic-3d.wgsl",
     "category": "interactive-mouse",
-    "description": "Interactive Anaglyph 3D effect. Mouse movement controls separation depth and focal plane distortion.",
+    "description": "Interactive Anaglyph 3D effect. Mouse movement controls separation depth and focal plane distortion. Audio bass adds separation pulse.",
     "params": [
       {
         "id": "separation",
@@ -2504,11 +3583,15 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "anaglyph",
+      "3d"
     ]
   },
   {
@@ -2519,7 +3602,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal"
     ],
     "params": [
       {
@@ -2565,7 +3649,7 @@
     "name": "Vertical Slice Wave",
     "url": "shaders/vertical-slice-wave.wgsl",
     "category": "interactive-mouse",
-    "description": "Splits the image into vertical strips that oscillate. Mouse X controls frequency, Mouse Y controls amplitude.",
+    "description": "Splits the image into vertical strips that oscillate. Mouse X controls frequency, Mouse Y controls amplitude. Audio-reactive via bass modulation.",
     "params": [
       {
         "id": "strips",
@@ -2597,11 +3681,110 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "distortion"
+    ]
+  },
+  {
+    "id": "vhs-tracking-mouse",
+    "name": "VHS Tracking",
+    "category": "interactive-mouse",
+    "url": "shaders/vhs-tracking-mouse.wgsl",
+    "description": "A vertical tracking bar distortion controlled by mouse height with audio-reactive intensity.",
+    "params": [
+      {
+        "id": "barHeight",
+        "name": "Bar Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "noise",
+        "name": "Static Noise",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Split",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "vhs",
+      "glitch",
+      "retro"
+    ]
+  },
+  {
+    "id": "volumetric-god-rays",
+    "name": "Volumetric God Rays",
+    "url": "shaders/volumetric-god-rays.wgsl",
+    "category": "interactive-mouse",
+    "description": "Generates volumetric light rays emanating from the mouse position, using image highlights as the source. Audio-reactive weight modulation enhances the rays with bass frequencies.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.95,
+        "min": 0.8,
+        "max": 1
+      },
+      {
+        "id": "weight",
+        "name": "Weight",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "exposure",
+        "name": "Exposure",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "lighting",
+      "rays",
+      "volumetric"
     ]
   }
 ]

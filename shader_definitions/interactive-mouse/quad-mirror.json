@@ -2,56 +2,51 @@
   "id": "quad-mirror",
   "name": "Quad Mirror",
   "url": "shaders/quad-mirror.wgsl",
-  "category": "image",
-  "description": "Kaleidoscope-like 4-way mirror reflection centered on the mouse.",
+  "category": "geometric",
+  "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
   "params": [
     {
-      "id": "mode",
-      "name": "Mode",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Mirror mode blend"
-    },
-    {
-      "id": "zoom",
-      "name": "Zoom",
+      "id": "hOffset",
+      "name": "H Mirror Offset",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Zoom level of the mirrored image"
+      "max": 1.0
+    },
+    {
+      "id": "vOffset",
+      "name": "V Mirror Offset",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "seamWarp",
+      "name": "Seam Warp",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
     },
     {
       "id": "rotation",
       "name": "Rotation",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Rotation of the mirror pattern"
-    },
-    {
-      "id": "edge_softness",
-      "name": "Edge Softness",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Softness of mirror sector edges"
+      "max": 1.0
     }
   ],
   "features": [
     "mouse-driven",
-    "geometry"
+    "geometry",
+    "upgraded-rgba",
+    "fbm-domain-warp",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "kaleidoscope",
+    "mirror",
+    "geometric",
+    "audio-reactive"
   ]
 }

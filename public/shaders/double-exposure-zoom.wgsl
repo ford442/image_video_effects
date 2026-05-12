@@ -19,9 +19,20 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Double Exposure Zoom
-// Param 1: Rotation (Input 0..1 maps to -PI..PI)
-// Param 2: Zoom Level (Input 0..1 maps to 0.25x .. 4.0x)
+// ═══════════════════════════════════════════════════════════════════
+//  Double Exposure Zoom
+//  Category: image
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+// Blends the image with a zoomed and rotated copy of itself,
+// pivoting around the mouse cursor. Uses screen-blend compositing
+// with edge fade and audio-reactive zoom scaling.
+//
+// Param 1: Rotation (0..1 maps to -PI..PI)
+// Param 2: Zoom Level (0..1 maps to 0.25x .. 4.0x)
 // Param 3: Edge Fade (0..1)
 // Param 4: Audio Reactivity (0..1)
 
@@ -32,10 +43,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let aspect = resolution.x / max(resolution.y, 1.0);
 
-    var mouse = u.zoom_config.yz;
+    let mouse = u.zoom_config.yz;
 
     let rot = (u.zoom_params.x - 0.5) * 6.28318;
     let zoomRaw = u.zoom_params.y;
@@ -43,7 +54,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioReact = u.zoom_params.w;
     let bass = plasmaBuffer[0].x;
 
-    let zoom = pow(2.0, (zoomRaw - 0.5) * 4.0 + bass * audioReact);
+    let zoom = clamp(pow(2.0, (zoomRaw - 0.5) * 4.0 + bass * audioReact), 0.01, 100.0);
 
     let col1 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
@@ -72,5 +83,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(blendedRGB, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

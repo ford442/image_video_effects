@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Chroma Kinetic
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Chunks From: chroma-kinetic (original)
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +21,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Strength, y=Radius, z=LumaInfluence, w=Rotation
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -31,7 +39,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
 
     // Params
-    let strength = u.zoom_params.x * 0.1; // Scale strength
+    let bass = plasmaBuffer[0].x;
+    let strength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.3);
     let radius = u.zoom_params.y;
     let luma_inf = u.zoom_params.z;
     let rotation = u.zoom_params.w * 6.28318; // 0-1 -> 0-2PI
@@ -65,7 +74,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Calculate Offset Amount
     // Falloff based on radius
-    let falloff = smoothstep(radius, 0.0, dist); // 1.0 at mouse, 0.0 at radius
+    let falloff = smoothstep(max(radius, 0.001), 0.0, dist); // 1.0 at mouse, 0.0 at radius
 
     // Modulate by Luma
     // luma_inf controls how much brightness affects the shift
@@ -83,8 +92,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(r, g, b);
 
+    // Alpha: kinetic dispersion weight — scatter intensity drives compositing blend
+    let dispersion = length(finalOffset) / max(strength, 0.001);
+    let alpha = clamp(falloff * modFactor * 0.6 + dispersion * 0.3 + 0.1, 0.0, 1.0);
+
     // Write Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

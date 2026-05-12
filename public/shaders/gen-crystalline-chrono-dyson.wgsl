@@ -48,7 +48,7 @@ fn map(p: vec3<f32>) -> f32 {
     let time = u.config.x * u.zoom_params.z; // Flux Speed
 
     // Audio reactivity
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
     // Rotation for Dyson sphere
     let rot_x = q.x * cos(time * 0.1) - q.z * sin(time * 0.1);
@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (hit) {
         let p = ro + rd * t;
         let quasar_glow = u.zoom_params.y;
-        let audio_pulse = 1.0 + u.config.y * 0.5;
+        let audio_pulse = 1.0 + plasmaBuffer[0].x * 0.5;
 
         // Multi-step gradient: deep ultraviolet to blinding white-gold
         let dist_to_center = length(p);
@@ -142,5 +142,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = vec3<f32>(0.05, 0.05, 0.1) * hash3(rd).x;
     }
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(vec2<f32>(coords) / res, vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

@@ -3,13 +3,21 @@
   "name": "Fluid Ripples",
   "url": "shaders/gen_wave_equation.wgsl",
   "category": "generative",
-  "description": "Realistic water ripple simulation with wave interference.",
+  "description": "Audio-reactive water ripple simulation with wave interference. Bass amplifies wave energy and mouse-driven pulses. Parameters control intensity, speed, scale, and damping detail.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware",
+    "temporal"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "liquid",
+    "waves",
+    "audio-reactive",
+    "vj"
   ],
   "params": [
     {

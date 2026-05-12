@@ -2,8 +2,8 @@
   "id": "interactive-glitch-brush",
   "name": "Glitch Brush",
   "url": "shaders/interactive-glitch-brush.wgsl",
-  "category": "image",
-  "description": "Paint digital glitches onto the screen.",
+  "category": "interactive-mouse",
+  "description": "Paint digital glitches onto the screen with audio-reactive intensity.",
   "params": [
     {
       "id": "size",
@@ -36,10 +36,14 @@
   ],
   "features": [
     "mouse-driven",
-    "glitch"
+    "glitch",
+    "audio-reactive"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "glitch",
+    "interactive",
+    "brush",
+    "mouse-driven",
+    "audio-reactive"
   ]
 }

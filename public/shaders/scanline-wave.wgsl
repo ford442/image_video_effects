@@ -40,7 +40,7 @@ fn aces_tone_map(c: vec3<f32>) -> vec3<f32> {
   return clamp((c * (a * c + b)) / (c * (cc * c + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -54,7 +54,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let speed = (u.zoom_params.z - 0.5) * 20.0;
   let mouse_influence = u.zoom_params.w;
 
-  let wave = sin(uv.y * freq + time * speed) * amp *
+  let bass = plasmaBuffer[0].x;
+  let ampPulse = amp * (1.0 + bass * 0.4);
+
+  let wave = sin(uv.y * freq + time * speed) * ampPulse *
              mix(1.0, smoothstep(0.5, 0.0, abs(uv.y - mousePos.y)), step(0.001, mouse_influence));
 
   let finalUV = vec2<f32>(uv.x + wave, uv.y);

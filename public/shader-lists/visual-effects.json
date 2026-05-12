@@ -503,6 +503,58 @@
     ]
   },
   {
+    "id": "crt-clear-zone",
+    "name": "CRT Clear Zone",
+    "category": "visual-effects",
+    "url": "shaders/crt-clear-zone.wgsl",
+    "description": "Heavy CRT distortion with chromatic aberration, scanlines, and vignette. A clean, high-resolution zone follows the mouse cursor with an audio-reactive scanline intensity.",
+    "params": [
+      {
+        "name": "Distortion",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "distortion"
+      },
+      {
+        "name": "Aberration",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "aberration"
+      },
+      {
+        "name": "Zone Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "zone_size"
+      },
+      {
+        "name": "Scanlines",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "scanlines"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "crt",
+      "retro",
+      "glitch",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "cyber-grid-pulse",
     "url": "shaders/cyber-grid-pulse.wgsl",
     "icon": "grid_on",
@@ -597,7 +649,8 @@
     "category": "visual-effects",
     "url": "shaders/data-scanner.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -610,7 +663,7 @@
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Audio Reactivity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -995,60 +1048,6 @@
     "name": "Neon Topology"
   },
   {
-    "id": "phosphor-decay",
-    "name": "Phosphor Decay",
-    "url": "shaders/phosphor-decay.wgsl",
-    "category": "visual-effects",
-    "description": "CRT phosphor persistence with HDR trails, ACES tone mapping, split-tone color grading, atmospheric depth haze, and audio-reactive electron beam.",
-    "params": [
-      {
-        "name": "Persistence",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.8,
-        "id": "persistence"
-      },
-      {
-        "name": "Beam Intensity",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.5,
-        "id": "beam_intensity"
-      },
-      {
-        "name": "Beam Size",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.2,
-        "id": "beam_size"
-      },
-      {
-        "name": "Atmosphere",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0,
-        "id": "color_drift"
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "depth-aware"
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow",
-      "hdr",
-      "crt",
-      "tone-mapped"
-    ]
-  },
-  {
     "id": "quantum-field-visualizer",
     "name": "Quantum Field Visualizer",
     "url": "shaders/quantum-field-visualizer.wgsl",
@@ -1085,7 +1084,8 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "vfx",
@@ -1184,11 +1184,137 @@
     ]
   },
   {
+    "id": "spectral-rain",
+    "category": "visual-effects",
+    "url": "shaders/spectral-rain.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Rain Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of rain streaks"
+      },
+      {
+        "id": "chromatic_strength",
+        "name": "Chromatic Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of chromatic displacement"
+      },
+      {
+        "id": "trail_length",
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Length of raindrop trails"
+      },
+      {
+        "id": "rain_angle_scale",
+        "name": "Rain Angle Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Scale of the rain angle variation"
+      }
+    ],
+    "tags": [
+      "rain",
+      "chromatic",
+      "distortion",
+      "filter",
+      "image-processing",
+      "audio-reactive"
+    ],
+    "name": "Spectral Rain",
+    "description": "Falling streaks of chromatic distortion with audio-reactive intensity and mouse-driven angle and speed controls."
+  },
+  {
+    "id": "temporal-rgb-smear",
+    "name": "Temporal RGB Smear",
+    "category": "visual-effects",
+    "url": "shaders/temporal-rgb-smear.wgsl",
+    "description": "Directional RGB smear with time-based offset, chromatic split modulated by mids, temporal feedback decay, and accumulative trail alpha.",
+    "params": [
+      {
+        "id": "smear_length",
+        "name": "Smear Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Length of the directional smear"
+      },
+      {
+        "id": "smear_decay",
+        "name": "Smear Decay",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Temporal feedback decay amount"
+      },
+      {
+        "id": "chromatic_split",
+        "name": "Chromatic Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "RGB channel separation along smear direction"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Time-based directional turbulence"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio-reactive",
+      "interactive",
+      "temporal",
+      "feedback",
+      "chromatic"
+    ]
+  },
+  {
     "id": "voxel-grid",
     "name": "Voxel Grid",
     "url": "shaders/voxel-grid.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1220,12 +1346,13 @@
         "max": 0.4
       }
     ],
-    "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity.",
+    "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity and audio bass.",
     "category": "visual-effects",
     "tags": [
       "vfx",
       "particles",
-      "glow"
+      "glow",
+      "audio-reactive"
     ]
   }
 ]

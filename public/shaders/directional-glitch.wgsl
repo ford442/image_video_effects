@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Directional Glitch
+//  Category: interactive-mouse
+//  Features: mouse-driven, glitch, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Pixelocity Shader Upgrade Swarm — Phase A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -13,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -27,9 +36,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
+  let aspect = resolution.x / max(resolution.y, 1.0);
   let time = u.config.x;
   var mouse = u.zoom_config.yz;
+
+  // Audio reactivity — bass boost
+  let bass = plasmaBuffer[0].x;
+  let audio_mod = 1.0 + bass * 0.5;
 
   // Params
   let intensity = u.zoom_params.x;     // Glitch Strength
@@ -64,7 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let is_glitch = step(1.0 - scatter, noise); // 0 or 1
 
   // Displacement vector along the radial angle
-  let disp_amt = is_glitch * intensity * mask * 0.1;
+  let disp_amt = is_glitch * intensity * mask * 0.1 * audio_mod;
   let shift = vec2<f32>(cos(angle), sin(angle)) * disp_amt;
 
   // RGB Split (Chromatic Aberration)
@@ -77,13 +90,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, uv - b_shift, 0.0).b;
 
   // Add some static noise on top
-  let static_noise = fract(sin(dot(uv * time, vec2(12.9898, 78.233))) * 43758.5453) * mask * intensity * 0.2;
+  let static_noise = fract(sin(dot(uv * time, vec2(12.9898, 78.233))) * 43758.5453) * mask * intensity * 0.2 * audio_mod;
 
   let final_color = vec3<f32>(r, g, b) + vec3(static_noise);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+  // Meaningful alpha based on glitch intensity and luminance
+  let luminance = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
+  let glitch_factor = mask * is_glitch * intensity;
+  let alpha = clamp(mix(1.0, 0.5 + 0.5 * luminance, glitch_factor), 0.5, 1.0);
 
-  // Depth pass
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
+
+  // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

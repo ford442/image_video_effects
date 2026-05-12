@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Holographic Lens-Flare Matrix
+//  Category: generative
+//  Features: anamorphic-flare, mouse-spin, audio-reactive, palette-tinted
+//  Complexity: Medium
+//  Phase B / Optimizer
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,9 +20,17 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>; };
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=GridSize, y=FlareSpread, z=AngleOffset, w=Brightness
+  ripples: array<vec4<f32>, 50>,
+};
 
-// hash function to get a random vec2 based on a vec2 seed
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+const PHI: f32 = 1.61803398874989484820;
+
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 = p3 + vec3<f32>(dot(p3, p3.yzx + vec3<f32>(33.33)));
@@ -22,76 +38,80 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
-    let coords = vec2<i32>(GlobalInvocationID.xy);
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let coords = vec2<i32>(gid.xy);
     let res = textureDimensions(writeTexture);
-
     if (coords.x >= i32(res.x) || coords.y >= i32(res.y)) { return; }
 
     let uv = vec2<f32>(coords) / vec2<f32>(res);
-    let aspect = f32(res.x) / f32(res.y);
+    let aspect = f32(res.x) / max(f32(res.y), 1.0);
     let p = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
 
-    var col = vec3<f32>(0.0);
-    let time = u.config.w;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+    let mouse_p = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
 
-    // Add mouse interaction via ripples
+    // Mouse-driven grid offset (cap to first 6 ripples for cost)
     var mouseOffset = vec2<f32>(0.0);
-    for (var i = 0u; i < 50u; i = i + 1u) {
+    for (var i = 0; i < 6; i++) {
         let ripple = u.ripples[i];
-        if (ripple.w > 0.0) {
-            let rPos = ripple.xy;
-            let d = length(p - rPos);
-            // Influence the grid position based on mouse proximity
-            mouseOffset = mouseOffset + normalize(p - rPos) * smoothstep(0.2, 0.0, d) * ripple.w;
-        }
+        let alive = step(1e-4, ripple.w);
+        let rPos = ripple.xy;
+        let toR = p - rPos;
+        let d = length(toR);
+        let push = exp(-d * d * 50.0) * ripple.w * alive;
+        mouseOffset = mouseOffset + (toR / max(d, 1e-4)) * push;
     }
 
-    // gridSize is influenced by UI slider (zoom_params.x)
-    let gridSize = 10.0 + u.zoom_params.x * 5.0;
+    // Bass amplifies grid density and flare size
+    let gridSize = 10.0 + u.zoom_params.x * 5.0 + bass * 2.0;
+    let flareSpread = u.zoom_params.y;
 
-    // Apply mouse displacement to grid UV
     let gUv = (p + mouseOffset * 0.1) * gridSize;
     let id = floor(gUv);
     let fUv = fract(gUv) - vec2<f32>(0.5);
 
-    // Get random value for each cell
+    // Per-cell pseudo-random offset
     let r = hash22(id);
-
-    // Apply offset driven by zoom_config.y to push flares apart
-    let offset = (r - vec2<f32>(0.5)) * u.zoom_config.y * 2.0;
+    let offset = (r - vec2<f32>(0.5)) * flareSpread * 2.0;
     let flarePos = fUv - offset;
     let dist = length(flarePos);
 
-    // Audio bass (u.config.x) influences size and spin speed
-    let audioBass = u.config.x;
-    let size = 0.1 + audioBass * 0.2;
-    let spinSpeed = time * (1.0 + audioBass * 2.0);
+    // Anamorphic horizontal streak (signature lens-flare look)
+    let streak = exp(-flarePos.y * flarePos.y * 80.0) * exp(-abs(flarePos.x) * 4.0);
 
-    // Angle driven by time, audio, and UI sliders (zoom_params.w, zoom_config.z)
-    let angle = atan2(flarePos.y, flarePos.x) + spinSpeed + u.zoom_params.w + u.zoom_config.z;
+    // Bass drives flare size and spin — tied to canonical bass, not config.x
+    let size = 0.08 + bass * 0.25 + mouseDown * 0.05;
+    let spinSpeed = time * (1.0 + bass * 2.0);
+    let angle = atan2(flarePos.y, flarePos.x) + spinSpeed + u.zoom_params.z * TAU;
 
-    // Compute density of flare with sine modulation for star-like shape
-    var density = smoothstep(size, 0.0, dist);
-    density = density * (0.5 + 0.5 * sin(angle * 4.0 + time * 5.0));
+    // Star-shape density: Gaussian core × angular sine modulation
+    let core = exp(-dist * dist / max(size * size, 1e-6));
+    let starMod = 0.5 + 0.5 * sin(angle * 4.0 + time * 5.0);
+    let density = core * starMod + streak * 0.4;
 
-    // Write density to dataTextureA for soft-body blur step later
-    textureStore(dataTextureA, coords, vec4<f32>(density, density, density, 1.0));
+    // Plasma-tinted color (per-cell hash → palette index, golden-ratio walk)
+    let plasmaIdx = u32(abs(fract(r.x + time * 0.1)) * 256.0);
+    let pColor = plasmaBuffer[plasmaIdx % 256u].rgb;
+    let brightness = 1.0 + u.zoom_params.w + bass * 0.5;
+    var col = pColor * density * brightness;
 
-    // Color picking from plasmaBuffer using cell hash and time
-    let plasmaIdx = u32(abs(fract(r.x + time * 0.1)) * f32(arrayLength(&plasmaBuffer)));
-    var pColor = vec3<f32>(1.0);
-    if (plasmaIdx < arrayLength(&plasmaBuffer)) {
-        pColor = plasmaBuffer[plasmaIdx].rgb;
-    }
-
-    // Apply brightness slider
-    let brightness = 1.0 + u.zoom_params.y;
-    col = pColor * density * brightness;
-
-    // Mix with motion/input texture
+    // Composite over background photo (preserve user's image)
     let motion = textureLoad(readTexture, coords, 0).rgb;
-    col = col + motion * 0.1;
+    col = motion * (1.0 - density * 0.6) + col;
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Persist density for downstream bloom passes
+    textureStore(dataTextureA, coords, vec4<f32>(density, streak, dist, 1.0));
+
+    // Alpha: flare emission energy + bass drives bloom-style compositing weight
+    let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let bloom = max(0.0, lumaOut - 0.7) * 3.0;
+    let alpha = clamp(0.4 + density * 0.4 + bloom * 0.3 + bass * 0.1, 0.0, 1.0);
+
+    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

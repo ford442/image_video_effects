@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=EdgeThreshold, y=RadarSpeed, z=SweepWidth, w=Intensity
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -48,23 +51,23 @@ fn effectIntensityAlpha(intensity: f32, falloff: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let pixelSize = 1.0 / resolution;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
-    
+    let audioBass = plasmaBuffer[0].x;
+    let audioReactivity = 1.0 + audioBass * 0.5;
+
     let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
-    let radarSpeed = u.zoom_params.y * 2.0;
+    let radarSpeed = u.zoom_params.y * 2.0 * audioReactivity;
     let sweepWidth = u.zoom_params.z * 0.3;
     let intensity = u.zoom_params.w * 2.0;
-    
-    // Radar sweep angle
-    let centered = uv - 0.5;
+
+    // Radar centered on mouse — drag the radar around
+    let mouse = u.zoom_config.yz;
+    let centered = uv - mix(vec2<f32>(0.5), mouse, 0.6);
     let angle = atan2(centered.y, centered.x);
-    let sweepAngle = fract(time * radarSpeed * audioReactivity) * 6.28 - 3.14;
+    let sweepAngle = fract(time * radarSpeed) * TAU - PI;
     let angleDiff = abs(angle - sweepAngle);
     let sweep = exp(-angleDiff * angleDiff / (sweepWidth * sweepWidth));
     

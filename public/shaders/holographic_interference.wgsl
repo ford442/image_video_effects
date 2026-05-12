@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=FilmThickness, y=WavelengthScale, z=DepthWeight, w=InterferenceStr
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -61,9 +64,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
-    // Parameters
-    let filmThickness = u.zoom_params.x * 2.0 + 0.5;
+    let bass = plasmaBuffer[0].x;
+
+    // Parameters — bass modulates film thickness (color shifts with beat)
+    let filmThickness = (u.zoom_params.x * 2.0 + 0.5) * (1.0 + bass * 0.3);
     let wavelengthScale = u.zoom_params.y * 5.0 + 1.0;
     let depthWeight = u.zoom_params.z;
     let interferenceStrength = u.zoom_params.w;

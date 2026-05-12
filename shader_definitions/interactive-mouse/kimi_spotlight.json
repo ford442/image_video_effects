@@ -3,12 +3,13 @@
   "name": "Kimi Spotlight",
   "url": "shaders/kimi_spotlight.wgsl",
   "category": "interactive-mouse",
-  "description": "Flashlight effect that reveals full color under the beam while surroundings are desaturated and darkened.",
+  "description": "Flashlight effect that reveals full color under the beam while surroundings are desaturated and darkened. Audio-reactive spotlight size pulses with bass.",
   "features": [
     "mouse-driven",
     "interactive",
     "spotlight",
-    "reveal"
+    "reveal",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -46,6 +47,9 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "spotlight",
+    "reveal",
+    "audio-reactive"
   ]
 }

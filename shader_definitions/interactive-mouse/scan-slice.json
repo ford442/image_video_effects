@@ -2,8 +2,8 @@
   "id": "scan-slice",
   "name": "Scan Slice",
   "url": "shaders/scan-slice.wgsl",
-  "category": "image",
-  "description": "Mouse X selects a vertical slice; Mouse Y offsets it.",
+  "category": "interactive-mouse",
+  "description": "Mouse X selects a vertical slice; Mouse Y offsets it with chromatic aberration. Audio-reactive edge glow pulses to bass.",
   "params": [
     {
       "id": "width",
@@ -35,10 +35,14 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "slice",
+    "chromatic",
+    "audio-reactive"
   ]
 }

@@ -1,9 +1,10 @@
 {
   "id": "spectral-rain",
-  "category": "image",
+  "category": "visual-effects",
   "url": "shaders/spectral-rain.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -48,8 +49,13 @@
     }
   ],
   "tags": [
+    "rain",
+    "chromatic",
+    "distortion",
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio-reactive"
   ],
-  "name": "Spectral Rain"
+  "name": "Spectral Rain",
+  "description": "Falling streaks of chromatic distortion with audio-reactive intensity and mouse-driven angle and speed controls."
 }

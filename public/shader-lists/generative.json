@@ -2341,6 +2341,49 @@
     ]
   },
   {
+    "id": "gen-eldritch-tesseract-hive-mind",
+    "coordinate": 881,
+    "type": "wgsl",
+    "url": "shaders/gen-eldritch-tesseract-hive-mind.wgsl",
+    "category": "generative",
+    "name": "Eldritch Tesseract-Hive Mind",
+    "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Tesseract Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Swarm Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Voxel Tearing Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "param4",
+        "name": "Iridescence Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-ethereal-anemone-bloom",
     "name": "Ethereal Anemone Bloom",
     "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
@@ -3362,6 +3405,114 @@
     ]
   },
   {
+    "id": "gen-lorenz-attractor-flow",
+    "name": "Lorenz Attractor Flow",
+    "url": "shaders/lorenz-attractor-flow.wgsl",
+    "category": "generative",
+    "description": "Real-time visualization of the Lorenz strange attractor using GPU-accelerated ODE integration. Features chaotic butterfly-wing patterns, mouse perturbation, and temporal color evolution.",
+    "features": [
+      "generative",
+      "mouse-driven",
+      "temporal"
+    ],
+    "tags": [
+      "chaotic",
+      "attractor",
+      "lorenz",
+      "generative",
+      "scientific",
+      "flow",
+      "butterfly"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Integration Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-luminous-fluid-chladni-resonator",
+    "name": "Luminous-Fluid Chladni-Resonator",
+    "category": "generative",
+    "url": "/shaders/gen-luminous-fluid-chladni-resonator.wgsl",
+    "tags": [
+      "chladni",
+      "cymatics",
+      "fluid",
+      "resonance",
+      "audio-reactive",
+      "bioluminescent"
+    ],
+    "features": [
+      "audio-reactive"
+    ],
+    "description": "A mesmerizing, bioluminescent liquid surface that physically organizes itself into hyper-complex, evolving Chladni resonant figures driven by low-frequency audio interference patterns.",
+    "coordinate": 880,
+    "params": [
+      {
+        "id": "modeN",
+        "name": "Mode N",
+        "default": 3,
+        "min": 1,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "modeM",
+        "name": "Mode M",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "fluidity",
+        "name": "Fluidity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 1.5,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-magnetic-ferrofluid",
     "name": "Magnetic Ferrofluid",
     "url": "shaders/gen-magnetic-ferrofluid.wgsl",
@@ -3491,6 +3642,29 @@
       "magnetic",
       "warp",
       "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "warp_strength",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "plasma_mix",
+        "name": "Plasma Mix",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -3839,7 +4013,24 @@
       "audio-reactive",
       "mouse-driven"
     ],
-    "params": []
+    "params": [
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "gen-neuro-cosmos",
@@ -6406,13 +6597,21 @@
     "name": "Fluid Ripples",
     "url": "shaders/gen_wave_equation.wgsl",
     "category": "generative",
-    "description": "Realistic water ripple simulation with wave interference.",
+    "description": "Audio-reactive water ripple simulation with wave interference. Bass amplifies wave energy and mouse-driven pulses. Parameters control intensity, speed, scale, and damping detail.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware",
+      "temporal"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "liquid",
+      "waves",
+      "audio-reactive",
+      "vj"
     ],
     "params": [
       {

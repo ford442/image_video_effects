@@ -104,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gearRatio = u.zoom_params.w; // Gear Ratio
 
     let time = u.config.x * clockSpd;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
 
     // Snapping Rotation (stepped time + audio kick)
     let steppedTime = floor(time) + smoothstep(0.8, 1.0, time - floor(time) * 1.0);
@@ -177,5 +177,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Post-processing
     color = pow(color, vec3<f32>(1.0 / 2.2)); // Gamma correction
 
-    textureStore(writeTexture, coords, vec4<f32>(color, 1.0));
+        let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(color, _alpha));
+    let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

@@ -1,9 +1,18 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Voxel Grid
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var filteringSampler: sampler;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
@@ -13,10 +22,10 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 32>,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(16, 16, 1)
@@ -30,6 +39,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(coords) / vec2<f32>(dimensions);
     let aspect = u.config.z / u.config.w;
+
+    // Audio reactivity
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
 
     // Parameters
     let grid_density = u.zoom_params.x; // 20.0 to 100.0
@@ -68,27 +80,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Basic 3D effect (bevel) or gap
     let scale = 0.5 - (cell_gap * 0.5);
-    // Add "pop" effect on hover
-    let pop = influence * 0.2;
+    // Add "pop" effect on hover + bass pulse
+    let pop = influence * 0.2 + bass * 0.15;
     let current_scale = scale + pop;
 
     // Box SDF
     let box_dist = max(abs(rotated.x), abs(rotated.y)) - current_scale;
 
-    var final_color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    var final_color: vec4<f32>;
 
     if (box_dist < 0.0) {
-        final_color = cell_color;
-
+        // Voxel cell interior
         // Add shading based on rotated coordinates to simulate 3D face
         // Top-Left light
         let light = (rotated.x - rotated.y) * 0.5 + 0.5; // 0..1 gradient
-        final_color = vec4<f32>(final_color.rgb * (0.8 + 0.4 * light), 1.0);
+        let shaded = cell_color.rgb * (0.8 + 0.4 * light);
+
+        // Meaningful alpha based on luminance + mouse influence + bass
+        let luminance = dot(shaded, vec3<f32>(0.299, 0.587, 0.114));
+        let alpha = clamp(luminance + influence * 0.3 + bass * 0.2, 0.2, 1.0);
+
+        final_color = vec4<f32>(shaded, alpha);
+    } else {
+        // Background / gap: transparent so underlying layers show through
+        final_color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
     }
 
     textureStore(writeTexture, coords, final_color);
-    
+
     // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

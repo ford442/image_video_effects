@@ -510,6 +510,60 @@
     ]
   },
   {
+    "id": "frosty-window",
+    "name": "Frosty Window",
+    "url": "shaders/frosty-window.wgsl",
+    "category": "artistic",
+    "description": "Animated frost crystal patterns on glass with audio-reactive growth and mouse-driven melting.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Frost Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "crystal_size",
+        "name": "Crystal Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur",
+        "name": "Blur Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "sparkle",
+        "name": "Sparkle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "upgraded-rgba",
+      "depth-aware",
+      "animated",
+      "crystalline",
+      "interactive",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "frost",
+      "ice",
+      "glass",
+      "winter",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "gen-chrono-erosion-feedback-melting",
     "name": "Chrono Erosion",
     "url": "shaders/gen-chrono-erosion-feedback-melting.wgsl",
@@ -888,52 +942,6 @@
     ]
   },
   {
-    "id": "luma-pixel-sort",
-    "category": "artistic",
-    "features": [
-      "mouse-driven",
-      "hdr-ready"
-    ],
-    "url": "shaders/luma-pixel-sort.wgsl",
-    "description": "Glitchy pixel sorting based on luminance and mouse height. HDR-ready with early-exit optimization.",
-    "params": [
-      {
-        "id": "threshold",
-        "name": "Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "strength",
-        "name": "Sort Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "direction",
-        "name": "Direction Mix",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "glitch",
-        "name": "Glitchiness",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "stylized",
-      "artistic",
-      "glitch"
-    ],
-    "name": "Luma Pixel Sort"
-  },
-  {
     "id": "mirror-dimension",
     "name": "Mirror Dimension",
     "url": "shaders/mirror-dimension.wgsl",
@@ -1024,6 +1032,57 @@
       "audio",
       "music",
       "reactive"
+    ]
+  },
+  {
+    "id": "polka-dot-reveal",
+    "name": "Polka Dot Reveal",
+    "url": "shaders/polka-dot-reveal.wgsl",
+    "category": "artistic",
+    "description": "Interactive halftone effect where mouse proximity increases the dot density, revealing more detail. Now with audio-reactive dot sizing and parameter-driven density, speed, and detail.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "halftone",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1249,11 +1308,69 @@
     ]
   },
   {
+    "id": "spectrogram-displace-pass2",
+    "name": "Spectrogram Displace (Pass 2)",
+    "url": "shaders/spectrogram-displace-pass2.wgsl",
+    "category": "artistic",
+    "description": "Image displacement and compositing pass: applies spectrogram-driven displacement to the input image, blends with spectrogram colors, applies frequency-based color grading and vignette, and reacts to bass audio input.",
+    "tags": [
+      "spectrogram",
+      "displacement",
+      "compositing",
+      "multi-pass",
+      "audio-reactive",
+      "color-grading"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "stipple-render",
     "name": "Stipple Render",
     "url": "shaders/stipple-render.wgsl",
     "category": "artistic",
-    "description": "Converts the image to a stippled ink drawing with dynamic density based on mouse position.",
+    "description": "Converts the image to a stippled ink drawing with dynamic density based on mouse position and bass-driven audio reactivity.",
     "params": [
       {
         "name": "Dot Scale",
@@ -1289,10 +1406,67 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "stylized",
+      "artistic",
+      "stipple",
+      "ink",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "chrono-slit-scan",
+    "name": "Chrono Slit Scan",
+    "url": "shaders/chrono-slit-scan.wgsl",
+    "category": "artistic",
+    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, and audio-reactive speed modulation.",
+    "params": [
+      {
+        "id": "slitCount",
+        "name": "Slit Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "slitWidth",
+        "name": "Slit Width",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "slitSpeed",
+        "name": "Slit Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feather",
+        "name": "Feather",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "audio-reactive",
+      "fbm-warp",
+      "sdf-composition",
+      "upgraded-rgba",
+      "multi-slit"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "noise",
+      "fractal",
+      "temporal",
       "artistic"
     ]
   },

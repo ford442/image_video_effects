@@ -2,8 +2,8 @@
   "id": "halftone",
   "name": "Retro Halftone",
   "url": "shaders/halftone.wgsl",
-  "category": "image",
-  "description": "",
+  "category": "retro-glitch",
+  "description": "Classic newspaper halftone dot pattern with adjustable scale, contrast, and color mode. Audio-reactive bass pulse modulates dot intensity.",
   "params": [
     {
       "id": "dotScale",
@@ -38,10 +38,16 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "retro",
+    "halftone",
+    "print",
+    "monochrome",
+    "colorful",
+    "image-processing",
+    "filter"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ]
 }

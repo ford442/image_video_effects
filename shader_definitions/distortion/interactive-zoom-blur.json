@@ -2,10 +2,11 @@
   "id": "interactive-zoom-blur",
   "name": "Interactive Zoom Blur",
   "url": "shaders/interactive-zoom-blur.wgsl",
-  "category": "image",
-  "description": "Radial zoom blur centered on the mouse cursor.",
+  "category": "distortion",
+  "description": "Radial zoom blur centered on the mouse cursor with audio-reactive intensity and chromatic aberration.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -39,6 +40,10 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "zoom",
+    "radial",
+    "blur",
+    "chromatic"
   ]
 }

@@ -1,4 +1,10 @@
-// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive Magnetic Ripple — May 2026 Batch D Upgrade
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +18,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ───────────────────────────────────────────────────────────────
 
 struct Uniforms {
   config: vec4<f32>,
@@ -20,11 +25,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-
-// ═══ Interactive Magnetic Ripple — Algorithmist Upgrade ═══
-// FBM domain warping, curl-noise velocity field, multi-octave ripple,
-// SDF mouse influence zone, Worley cellular modulation, click ripples.
-// Chunks from: standard hash22, valueNoise, fbm, curlNoise, worley
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var pp = vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973);
@@ -62,27 +62,7 @@ fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
   return vec2<f32>(n0 - n1, n3 - n2) / (2.0 * e);
 }
 
-fn worleyNoise(p: vec2<f32>, t: f32) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  var d = 1.0;
-  for (var y: i32 = -1; y <= 1; y = y + 1) {
-    for (var x: i32 = -1; x <= 1; x = x + 1) {
-      let n = vec2<f32>(f32(x), f32(y));
-      let h = hash22(i + n + vec2<f32>(t * 0.05, t * 0.03));
-      d = min(d, length(n + h - f));
-    }
-  }
-  return d;
-}
-
-fn domainWarpFbm(p: vec2<f32>, t: f32) -> f32 {
-  let q = vec2<f32>(fbm(p + vec2<f32>(0.0, 0.0), t),
-                     fbm(p + vec2<f32>(5.2, 1.3), t));
-  return fbm(p + q * 1.5, t);
-}
-
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
   if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
@@ -91,16 +71,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
 
-  let strength = u.zoom_params.x;
-  let freq = u.zoom_params.y * 40.0;
-  let decay = u.zoom_params.z * 3.0 + 0.5;
-  let aberration = u.zoom_params.w * 0.08;
+  let freq = u.zoom_params.x * 40.0;
+  let decay = u.zoom_params.y * 3.0 + 0.5;
+  let fieldStrength = u.zoom_params.z;
+  let chromaticSplit = u.zoom_params.w * 0.08;
 
   // Audio reactivity
   let bass = plasmaBuffer[0].x;
-  let audioPulse = 1.0 + bass * 0.4;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  // Bass → field strength pulse
+  let pulseStrength = fieldStrength * (1.0 + bass * 0.6);
 
   var totalDisp = vec2<f32>(0.0);
+  var rippleIntensity = 0.0;
 
   // ── Mouse-driven magnetic field ──
   if (mouse.x >= 0.0) {
@@ -109,34 +94,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(dAspect);
     let dir = select(vec2<f32>(0.0), dMouse / dist, dist > 0.001);
 
-    // SDF-based mouse influence zone with animated radius
-    let zone = smoothstep(0.0, 0.3, 0.4 + fbm(vec2<f32>(time * 0.1, 0.0), time) * 0.08 - dist);
-
     // Curl-noise velocity field (divergence-free)
     let curl = curlNoise(uv * 3.0 + time * 0.3, time) * 0.25;
 
-    // Multi-octave ripple with FBM phase warp + Worley cells
-    let phase = dist * freq * audioPulse - time * 4.0;
+    // Multi-octave ripple with FBM phase warp
+    let phase = dist * freq - time * 4.0;
     let fbmWarp = fbm(vec2<f32>(dist * 4.0, time * 0.4), time) * 2.5;
-    let cells = worleyNoise(uv * 7.0 + time * 0.15, time);
-    let ripple = cos(phase + fbmWarp) * 0.55 + sin(phase * 1.618 + cells * 6.283) * 0.45;
+    let ripple = cos(phase + fbmWarp) * 0.55 + sin(phase * 1.618) * 0.45;
     let rippleAtten = exp(-dist * decay);
     totalDisp += dir * ripple * rippleAtten * 0.06;
+    rippleIntensity += abs(ripple) * rippleAtten;
 
     // Magnetic pull with FBM-modulated radial falloff
     let magFalloff = fbm(vec2<f32>(dist * 6.0, time * 0.2), time) * 0.3 + 0.7;
-    let magPull = dir * strength * zone * magFalloff / (dist * dist + 0.04) * 0.06;
-    totalDisp += magPull + curl * zone * 0.04;
+    let magPull = dir * pulseStrength * magFalloff / (dist * dist + 0.04) * 0.06;
+    totalDisp += magPull + curl * 0.04;
+    rippleIntensity += length(magPull) * 10.0;
 
-    // Secondary fractal vorticity in the magnetic core
-    let turb = domainWarpFbm(uv * 6.0 + dir * dist * 4.0, time) * 0.08;
-    totalDisp += dir * turb * zone * strength;
+    // Magnetic field lines using curl noise
+    let fieldLineFreq = 12.0;
+    let fieldLine = sin(atan2(dAspect.y, dAspect.x) * fieldLineFreq + fbm(uv * 5.0, time) * 3.0);
+    let fieldLineMask = smoothstep(0.3, 0.0, abs(fieldLine)) * exp(-dist * 3.0);
+    totalDisp += dir * fieldLineMask * pulseStrength * 0.02;
+    rippleIntensity += fieldLineMask * pulseStrength;
   }
 
-  // ── Stored click ripples ──
-  let rippleCount = u32(u.config.y);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+  // ── Process all 50 ripple points for multi-click accumulation ──
+  for (var i: u32 = 0u; i < 50u; i = i + 1u) {
     let rp = u.ripples[i];
+    if (rp.z <= 0.0) { continue; }
     let rPos = rp.xy;
     let rAge = time - rp.z;
     let rDiff = vec2<f32>((rPos.x - uv.x) * aspect, rPos.y - uv.y);
@@ -144,25 +130,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rDir = select(vec2<f32>(0.0), vec2<f32>(rDiff.x / aspect, rDiff.y) / rDist, rDist > 0.001);
     let rRipple = cos(rDist * freq * 0.6 - rAge * 5.0) * exp(-rDist * decay - rAge * 1.2);
     totalDisp += rDir * rRipple * 0.035;
+    rippleIntensity += abs(rRipple) * 0.5;
   }
 
   // Domain-warped displacement amplification
-  let warp = domainWarpFbm(uv * 4.0 + time * 0.2, time) * 0.015;
+  let warp = fbm(uv * 4.0 + time * 0.2, time) * 0.015;
   totalDisp = totalDisp + totalDisp * warp;
 
   // Chromatic aberration with noise-driven asymmetry
   let abNoise = fbm(uv * 6.0 + vec2<f32>(time * 0.1, 0.0), time) * 0.015;
-  let abScale = 1.0 + aberration + abNoise;
+  let abScale = 1.0 + chromaticSplit + abNoise;
   let rUV = uv - totalDisp * abScale;
   let gUV = uv - totalDisp;
   let bUV = uv - totalDisp * (2.0 - abScale);
 
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
+  // Alpha: preserves src.a, adds glow at high-intensity ripple peaks
+  let glow = smoothstep(0.2, 0.8, rippleIntensity) * (1.0 + bass * 0.5);
+  let alpha = mix(src.a, min(src.a + glow * 0.3, 1.0), glow);
+
+  var color = vec3<f32>(r, g, b);
+  // Add glow color at peaks modulated by mids/treble
+  color += vec3<f32>(0.3 + mids * 0.3, 0.5 + treble * 0.3, 0.8) * glow * 0.4;
 
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

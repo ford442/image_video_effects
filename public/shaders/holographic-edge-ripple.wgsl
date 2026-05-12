@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=EdgeThreshold, y=RippleSpeed, z=RippleIntensity, w=HolographicShift
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -43,13 +46,15 @@ fn edgePreserveAlpha(uv: vec2<f32>, pixelSize: vec2<f32>, edgeThreshold: f32) ->
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let pixelSize = 1.0 / resolution;
     let time = u.config.x;
-    
+    let bass = plasmaBuffer[0].x;
+
     let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
-    let rippleSpeed = u.zoom_params.y * 5.0;
-    let rippleIntensity = u.zoom_params.z;
+    let rippleSpeed = u.zoom_params.y * 5.0 * (1.0 + bass * 0.4);
+    let rippleIntensity = u.zoom_params.z * (1.0 + bass * 0.3);
     let holographicShift = u.zoom_params.w;
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -62,14 +67,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ripple on edges
     let ripple = sin(edge * 50.0 - time * rippleSpeed) * rippleIntensity;
     
-    // Holographic color
-    let holographic = vec3<f32>(
-        0.5 + 0.5 * sin(time + ripple + holographicShift * 6.28),
-        0.5 + 0.5 * sin(time + ripple + holographicShift * 6.28 + 2.09),
-        0.5 + 0.5 * sin(time + ripple + holographicShift * 6.28 + 4.18)
-    );
-    
-    let emission = holographic * edge * (1.0 + ripple);
+    // Holographic color (plasma palette + sin gradient hybrid)
+    let phase = time + ripple + holographicShift * TAU;
+    let holographic = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
+    let palIdx = u32(clamp((edge * 5.0 + holographicShift) * 255.0, 0.0, 255.0));
+    let palette = plasmaBuffer[palIdx % 256u].rgb;
+    let foil = mix(holographic, holographic * (0.6 + palette * 0.7), 0.4);
+
+    // Composite with background
+    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let emission = bg * (1.0 - edge * 0.6) + foil * edge * (1.0 + ripple);
     let alpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold) * (0.5 + ripple * 0.5);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));

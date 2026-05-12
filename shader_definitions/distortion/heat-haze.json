@@ -2,33 +2,33 @@
   "id": "heat-haze",
   "name": "Heat Haze",
   "url": "shaders/heat-haze.wgsl",
-  "category": "image",
-  "description": "Rising heat distortion effect with shimmer.",
+  "category": "distortion",
+  "description": "Interactive heat distortion with thermal glow, mouse-driven heat injection, diffusion, and audio-reactive shimmer.",
   "params": [
     {
-      "id": "strength",
-      "name": "Haze Strength",
+      "id": "heatGain",
+      "name": "Heat Gain",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "speed",
-      "name": "Rise Speed",
+      "id": "decayRate",
+      "name": "Decay Rate",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "frequency",
-      "name": "Wave Frequency",
+      "id": "diffusion",
+      "name": "Diffusion",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "turbulence",
-      "name": "Turbulence",
+      "id": "refraction",
+      "name": "Refraction",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -37,10 +37,13 @@
   "features": [
     "animated",
     "atmospheric",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "distortion",
+    "heat",
+    "thermal",
+    "filter"
   ]
 }

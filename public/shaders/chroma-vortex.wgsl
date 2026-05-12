@@ -1,4 +1,3 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +11,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Twist, y=Spread, z=Radius, w=CenterBias
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -43,7 +41,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
-    let twist = u.zoom_params.x * 3.14159 * 2.0; // +/- 2 PI
+    let bass = plasmaBuffer[0].x;
+    let twist = u.zoom_params.x * 3.14159 * 2.0 * (1.0 + bass * 0.2);
     let spread = u.zoom_params.y * 0.1;
     let radius = max(u.zoom_params.z, 0.01);
     let centerBias = u.zoom_params.w;
@@ -94,5 +93,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(colR, colG, colB, 1.0));
+    // Alpha: vortex rotation factor drives chromatic swirl compositing weight
+    let chromaSplit = length(uvR - uvB);
+    let luma = dot(vec3<f32>(colR, colG, colB), vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(factor * 0.5 + chromaSplit * 6.0 + luma * 0.2, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(colR, colG, colB, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -8,11 +8,14 @@
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>
+    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Repetition, y=BranchSize, z=Hue, w=PulseSpeed
+    ripples: array<vec4<f32>, 50>,
 }
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
@@ -67,9 +70,10 @@ fn map(pos: vec3<f32>) -> f32 {
         d = smin(d, branch, 0.2);
     }
 
-    // Audio reactive swelling
+    // Audio reactive swelling — bass via plasmaBuffer
+    let bassMap = plasmaBuffer[0].x;
     let pulse = sin(pos.z * 5.0 - u.config.x * u.zoom_params.w) * 0.5 + 0.5;
-    d -= pulse * u.config.y * 0.1;
+    d -= pulse * bassMap * 0.15;
 
     return d;
 }
@@ -97,9 +101,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var ro = vec3<f32>(0.0, 0.0, -3.0 + u.config.x * 0.5);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
+    let bass = plasmaBuffer[0].x;
+
     // Mouse Rotation
-    let mouseX = (u.zoom_config.y - 0.5) * 6.28;
-    let mouseY = (u.zoom_config.z - 0.5) * 3.14;
+    let mouseX = (u.zoom_config.y - 0.5) * TAU;
+    let mouseY = (u.zoom_config.z - 0.5) * PI;
 
     let roYZ = rot2(-mouseY) * ro.yz;
     ro.y = roYZ.x;
@@ -127,17 +133,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
+    var hit = 0.0;
+    var glow = 0.0;
 
     if (t < max_t) {
+        hit = 1.0;
         let p = ro + rd * t;
         let n = calcNormal(p);
 
-        // Base color based on hue slider
-        let base_col = 0.5 + 0.5 * cos(6.28318 * (u.zoom_params.z + vec3<f32>(0.0, 0.33, 0.67)));
+        // Base color based on hue slider — TAU constant
+        let base_col = 0.5 + 0.5 * cos(TAU * (u.zoom_params.z + vec3<f32>(0.0, 0.33, 0.67)));
 
-        // Bioluminescent Glow
+        // Bioluminescent Glow — bass-driven from plasmaBuffer
         let pulse = sin(p.z * 5.0 - u.config.x * u.zoom_params.w) * 0.5 + 0.5;
-        let glow = pow(pulse, 4.0) * u.config.y * 2.0;
+        glow = pow(pulse, 4.0) * (0.5 + bass * 2.0);
 
         col = base_col * (0.2 + glow);
 
@@ -146,9 +155,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let diff = max(dot(n, lightDir), 0.0);
         col += diff * 0.1 * base_col;
 
-        // Fog
+        // Beer-Lambert fog
         col = mix(col, vec3<f32>(0.01, 0.0, 0.02), 1.0 - exp(-0.15 * t));
     }
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Alpha: ray hit + bioluminescent glow drives ethereal compositing weight
+    let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(hit * (0.4 + glow * 0.4) + lumaOut * 0.2 + 0.05, 0.0, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(coords) / res, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

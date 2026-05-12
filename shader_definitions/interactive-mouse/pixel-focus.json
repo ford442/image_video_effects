@@ -2,8 +2,8 @@
   "id": "pixel-focus",
   "name": "Pixel Focus",
   "url": "shaders/pixel-focus.wgsl",
-  "category": "image",
-  "description": "Applies a mosaic effect everywhere except for a clear focus area around the mouse.",
+  "category": "interactive-mouse",
+  "description": "Applies a mosaic effect everywhere except for a clear focus area around the mouse. Audio-reactive density adds rhythmic pulse to pixelation.",
   "params": [
     {
       "id": "mosaicSize",
@@ -36,10 +36,15 @@
   ],
   "features": [
     "mouse-driven",
+    "audio-reactive",
     "filter"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "pixelation",
+    "focus",
+    "mosaic",
+    "audio-reactive"
   ]
 }

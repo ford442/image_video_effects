@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Magnetic Interference
+//  Category: image
+//  Features: mouse-driven, chromatic-aberration, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Shader Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,18 +14,17 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Radius, z=Aberration, w=Scanlines
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -41,9 +48,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aberration = u.zoom_params.z; // Chromatic Aberration
   let scanline_intensity = u.zoom_params.w;
 
+  // Audio reactivity
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let audioStrength = strength * (1.0 + bass * 0.3);
+  let audioScanlines = scanline_intensity * (1.0 + bass * 0.5);
+
   // Magnetic distortion (pull towards mouse)
   // Falloff 1 / (d^2)
-  let pull = strength * 0.05 / (pow(dist, 2.0) + 0.01);
+  let pull = audioStrength * 0.05 / (pow(dist, 2.0) + 0.01);
   let influence = smoothstep(radius, 0.0, dist); // Only affect within radius
 
   var dir = uv - mouse;
@@ -64,7 +76,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Distort the scanlines themselves based on the magnetic field
   let scanline_uv_y = uv.y + length(displacement) * 10.0;
   let scanline = sin(scanline_uv_y * resolution.y * 0.5 + time * 5.0);
-  let scanline_mask = 1.0 - (scanline * 0.5 + 0.5) * scanline_intensity;
+  let scanline_mask = 1.0 - (scanline * 0.5 + 0.5) * audioScanlines;
 
   color = color * scanline_mask;
 
@@ -72,5 +84,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+  // Meaningful alpha based on effect intensity and luminance
+  let luminance = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = mix(1.0, clamp(0.75 + luminance * 0.25, 0.8, 1.0), influence);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 }

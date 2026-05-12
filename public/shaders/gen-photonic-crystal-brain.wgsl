@@ -131,7 +131,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Volumetric Glow Accumulation
         // Audio reactive bursts of plasma
-        let audioPulse = u.config.y * 0.5;
+        let audioPulse = plasmaBuffer[0].x * 0.5;
         let pulseSpeed = u.zoom_params.y;
         let glowIntens = u.zoom_params.w;
         let pulse = sin(p.z * 2.0 - u.config.x * 5.0 * pulseSpeed) * 0.5 + 0.5;
@@ -171,5 +171,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Tonemapping
     col = col / (1.0 + col);
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(vec2<f32>(coords) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

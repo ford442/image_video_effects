@@ -2,8 +2,8 @@
   "id": "chroma-kinetic",
   "name": "Chroma Kinetic",
   "url": "shaders/chroma-kinetic.wgsl",
-  "category": "image",
-  "description": "Mouse-driven chromatic aberration modulated by image luminance.",
+  "category": "interactive-mouse",
+  "description": "Mouse-driven chromatic aberration modulated by image luminance and audio bass.",
   "params": [
     {
       "id": "strength",
@@ -35,10 +35,14 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "chromatic-aberration",
+    "kinetic",
+    "mouse"
   ]
 }

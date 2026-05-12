@@ -21,11 +21,14 @@
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=SurfaceTension, y=GravityScale, z=Damping, w=Turbidity
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
@@ -253,9 +256,9 @@ fn main(
     return;
   }
 
-  // ═══ AUDIO INPUT ═══
-  let audioOverall = u.config.y;
-  let audioBass = audioOverall * 1.2;
+  // ═══ AUDIO INPUT — bass from canonical plasmaBuffer ═══
+  let audioBass = plasmaBuffer[0].x;
+  let audioOverall = audioBass * 0.85;
   let audioPulse = 1.0 + audioBass * 0.5;
 
   // Get depth for depth-aware effects
@@ -422,7 +425,10 @@ fn main(
   // WRITE OUTPUTS
   // ═══════════════════════════════════════════════════════════════════════════════
 
-  textureStore(writeTexture, gid.xy, vec4<f32>(beatColor, 1.0));
+  // Alpha: surface height + velocity drives liquid compositing weight
+  let beatLuma = dot(beatColor, vec3<f32>(0.299, 0.587, 0.114));
+  let alphaOut = clamp(finalAlpha * 0.6 + beatLuma * 0.3 + abs(newVelocity) * 0.2 + 0.1, 0.0, 1.0);
+  textureStore(writeTexture, gid.xy, vec4<f32>(beatColor, alphaOut));
   textureStore(dataTextureA, gid.xy, vec4<f32>(h_curr, newHeight, newVelocity, age + dt));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

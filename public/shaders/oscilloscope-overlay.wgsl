@@ -29,6 +29,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 const LUMA_WEIGHTS: vec3<f32> = vec3<f32>(0.299, 0.587, 0.114);
 const SCAN_COLOR: vec3<f32> = vec3<f32>(1.0, 0.2, 0.2);
 const PHOSPHOR_COLOR: vec3<f32> = vec3<f32>(0.2, 1.0, 0.5);
@@ -55,8 +57,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  // Parameters
-  let amplitude = u.zoom_params.x;
+  let bass = plasmaBuffer[0].x;
+
+  // Parameters — bass amplifies waveform amplitude
+  let amplitude = u.zoom_params.x * (1.0 + bass * 0.5);
   let thickness = max(0.001, u.zoom_params.y * 0.02);
   let waveOpacity = u.zoom_params.z;
   let scanAlpha = u.zoom_params.w;
@@ -92,4 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloomWeight = scanLine * 0.5 + waveVal * 0.8 + gridVal * 0.15;
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, bloomWeight));
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

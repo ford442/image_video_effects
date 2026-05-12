@@ -38,7 +38,8 @@
     "mouse-driven",
     "temporal-persistence",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

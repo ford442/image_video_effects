@@ -4,7 +4,8 @@
   "url": "shaders/sonic-boom.wgsl",
   "category": "distortion",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {

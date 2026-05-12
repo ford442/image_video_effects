@@ -334,6 +334,59 @@
     ]
   },
   {
+    "id": "crt-magnet",
+    "name": "CRT Magnet",
+    "url": "shaders/crt-magnet.wgsl",
+    "category": "retro-glitch",
+    "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse. Features color bloom, Gaussian blur, curl-noise field lines, barrel distortion, and bass-driven magnet pulse.",
+    "params": [
+      {
+        "id": "magnet_strength",
+        "name": "Magnet Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "bloom_intensity",
+        "name": "Bloom Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion_radius",
+        "name": "Distortion Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "noise",
+      "curl",
+      "fractal",
+      "crt",
+      "magnet",
+      "bloom"
+    ]
+  },
+  {
     "id": "crt-phosphor-decay",
     "name": "CRT Phosphor Decay",
     "url": "shaders/crt-phosphor-decay.wgsl",
@@ -478,6 +531,59 @@
     ]
   },
   {
+    "id": "halftone",
+    "name": "Retro Halftone",
+    "url": "shaders/halftone.wgsl",
+    "category": "retro-glitch",
+    "description": "Classic newspaper halftone dot pattern with adjustable scale, contrast, and color mode. Audio-reactive bass pulse modulates dot intensity.",
+    "params": [
+      {
+        "id": "dotScale",
+        "name": "Dot Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 1,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": "colorMode",
+        "name": "Color Mode",
+        "default": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "grid_rotation",
+        "name": "Grid Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Rotation angle of halftone grid"
+      }
+    ],
+    "tags": [
+      "retro",
+      "halftone",
+      "print",
+      "monochrome",
+      "colorful",
+      "image-processing",
+      "filter"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "holographic-projection-failure",
     "name": "Holo-Projection Failure",
     "url": "shaders/holographic-projection-failure.wgsl",
@@ -524,6 +630,59 @@
       "vintage",
       "audio",
       "music"
+    ]
+  },
+  {
+    "id": "phosphor-decay",
+    "name": "Phosphor Decay",
+    "url": "shaders/phosphor-decay.wgsl",
+    "category": "retro-glitch",
+    "description": "CRT phosphor persistence with per-channel decay rates, color bloom, shadow mask, scan-line blanking, depth haze, and bass-reactive bloom burst.",
+    "params": [
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "bloom_spread",
+        "name": "Bloom Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "shadow_mask",
+        "name": "Shadow Mask Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scan_blanking",
+        "name": "Scan Blanking",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "vfx",
+      "particles",
+      "glow",
+      "hdr",
+      "crt",
+      "tone-mapped",
+      "phosphor",
+      "bloom"
     ]
   },
   {
@@ -769,44 +928,53 @@
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
     "category": "retro-glitch",
-    "description": "VHS tracking jitter with domain-warped FBM, Worley-cellular block corruption, curl-noise datamoshing, digital bit-crush, and depth-aware audio-reactive glitch intensity.",
+    "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, and displacement-magnitude alpha masking.",
     "features": [
       "temporal",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
-        "id": "vhsJitter",
-        "name": "VHS Jitter",
+        "id": "wave_intensity",
+        "name": "Wave Intensity",
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base wave intensity, spiked by bass"
       },
       {
-        "id": "intensity",
-        "name": "Block Intensity",
+        "id": "vhs_intensity",
+        "name": "VHS Intensity",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "VHS tracking jitter and block corruption intensity"
       },
       {
-        "id": "smearScale",
-        "name": "Smear Scale",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "flickerSpeed",
-        "name": "Flicker Speed",
+        "id": "block_glitch_size",
+        "name": "Block Glitch Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Size of block corruption cells"
+      },
+      {
+        "id": "shadow_mask",
+        "name": "Shadow Mask",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "CRT shadow mask intensity"
       }
     ],
     "tags": [
@@ -815,7 +983,54 @@
       "vhs",
       "datamosh",
       "noise",
-      "fractal"
+      "fractal",
+      "crt"
+    ]
+  },
+  {
+    "id": "xerox-degrade",
+    "name": "Xerox Degrade",
+    "url": "shaders/xerox-degrade.wgsl",
+    "category": "retro-glitch",
+    "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
+    "params": [
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "grain",
+        "name": "Grain",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "smear",
+        "name": "Smear",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "threshold",
+        "name": "Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "glitch",
+      "texture",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
     ]
   }
 ]

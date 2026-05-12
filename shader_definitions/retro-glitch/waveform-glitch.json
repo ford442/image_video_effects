@@ -3,44 +3,53 @@
   "name": "Waveform Glitch",
   "url": "shaders/waveform-glitch.wgsl",
   "category": "retro-glitch",
-  "description": "VHS tracking jitter with domain-warped FBM, Worley-cellular block corruption, curl-noise datamoshing, digital bit-crush, and depth-aware audio-reactive glitch intensity.",
+  "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, and displacement-magnitude alpha masking.",
   "features": [
     "temporal",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {
-      "id": "vhsJitter",
-      "name": "VHS Jitter",
+      "id": "wave_intensity",
+      "name": "Wave Intensity",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base wave intensity, spiked by bass"
     },
     {
-      "id": "intensity",
-      "name": "Block Intensity",
+      "id": "vhs_intensity",
+      "name": "VHS Intensity",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "VHS tracking jitter and block corruption intensity"
     },
     {
-      "id": "smearScale",
-      "name": "Smear Scale",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "flickerSpeed",
-      "name": "Flicker Speed",
+      "id": "block_glitch_size",
+      "name": "Block Glitch Size",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Size of block corruption cells"
+    },
+    {
+      "id": "shadow_mask",
+      "name": "Shadow Mask",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "CRT shadow mask intensity"
     }
   ],
   "tags": [
@@ -49,6 +58,7 @@
     "vhs",
     "datamosh",
     "noise",
-    "fractal"
+    "fractal",
+    "crt"
   ]
 }

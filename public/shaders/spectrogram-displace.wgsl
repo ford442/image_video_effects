@@ -37,11 +37,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=FreqRange, y=TimeWindow, z=Magnification, w=ColorScheme
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -312,7 +315,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Time and parameters
   let time = u.config.x;
   let frameCount = u.config.y;
-  let freqRange = u.zoom_params.x;        // Frequency range multiplier
+  let bass = plasmaBuffer[0].x;
+  let freqRange = u.zoom_params.x * (1.0 + bass * 0.3);
   let timeWindow = u.zoom_params.y;       // Time window / scrolling speed
   let magnification = u.zoom_params.z;    // Magnification/boost
   let colorScheme = u.zoom_params.w;      // Color scheme selector
@@ -454,8 +458,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // OUTPUT
   // ═══════════════════════════════════════════════════════════════════════════
   
-  // Write color output
-  textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), vec4<f32>(finalColor, 1.0));
+  // Alpha: spectrogram magnitude + bass drives audio-visual compositing weight
+  let lumaOut = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = clamp(0.4 + lumaOut * 0.4 + bass * 0.2 + 0.1, 0.0, 1.0);
+  textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), vec4<f32>(finalColor, alpha));
   
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

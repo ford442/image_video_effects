@@ -13,9 +13,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=GlitchIntensity, y=ColorShift, z=NegativeStr, w=SplitAngle
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -54,7 +54,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     var mouse = get_mouse();
 
-    let glitch_amt = u.zoom_params.x;
+    let bass = plasmaBuffer[0].x;
+    let glitch_amt = u.zoom_params.x * (1.0 + bass * 0.3);
     let color_shift = u.zoom_params.y;
     let neg_str = u.zoom_params.z;
     let angle_param = u.zoom_params.w; // -1 to 1
@@ -108,5 +109,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    // Alpha: glitch dimension = effect intensity drives blend; normal dimension = source luma
+    let luma = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    var alpha: f32;
+    if (d < 0.0) {
+        alpha = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
+    } else {
+        alpha = clamp(glitch_amt * 0.3 + luma * 0.5 + 0.15, 0.0, 1.0);
+    }
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

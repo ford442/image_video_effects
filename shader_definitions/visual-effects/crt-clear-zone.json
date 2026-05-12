@@ -1,9 +1,9 @@
 {
   "id": "crt-clear-zone",
   "name": "CRT Clear Zone",
-  "category": "image",
+  "category": "visual-effects",
   "url": "shaders/crt-clear-zone.wgsl",
-  "description": "Heavy CRT distortion with a clean, high-resolution zone around the mouse cursor.",
+  "description": "Heavy CRT distortion with chromatic aberration, scanlines, and vignette. A clean, high-resolution zone follows the mouse cursor with an audio-reactive scanline intensity.",
   "params": [
     {
       "name": "Distortion",
@@ -39,9 +39,13 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
+    "crt",
+    "retro",
+    "glitch",
     "filter",
     "image-processing"
   ]

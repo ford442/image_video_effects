@@ -343,6 +343,61 @@
     "target_rating": 4.8
   },
   {
+    "id": "mosaic-reveal",
+    "name": "Mosaic Reveal",
+    "url": "shaders/mosaic-reveal.wgsl",
+    "category": "distortion",
+    "description": "Mosaic reveal with hexagonal/square grid options, flood-fill reveal animation from mouse, edge glow, and audio-reactive pulse.",
+    "features": [
+      "upgraded-rgba",
+      "depth-aware",
+      "mosaic",
+      "interactive-reveal",
+      "mouse-driven",
+      "hex-grid",
+      "flood-fill-reveal",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "cellSize",
+        "name": "Cell Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "revealSpeed",
+        "name": "Reveal Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeGlow",
+        "name": "Edge Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gridType",
+        "name": "Grid Type",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "mosaic",
+      "reveal",
+      "interactive",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "chromatic-swirl",
     "url": "shaders/chromatic-swirl.wgsl",
     "icon": "cyclone",
@@ -556,7 +611,8 @@
     "category": "distortion",
     "description": "Recursive refraction effect that creates a fractal-like kaleidoscope. Mouse position controls the distortion center.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -699,6 +755,59 @@
     ]
   },
   {
+    "id": "glitch-slice-mirror",
+    "name": "Glitch Slice Mirror",
+    "url": "shaders/glitch-slice-mirror.wgsl",
+    "category": "distortion",
+    "description": "Mirrors the image at the mouse position with digital glitch artifacts, chromatic aberration, and scanlines along the seam. Audio-reactive intensity boost.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "glitch",
+      "mirror",
+      "distortion",
+      "chromatic-aberration",
+      "scanlines",
+      "filter"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gravity-well",
     "name": "Gravity Well",
     "url": "shaders/gravity-well.wgsl",
@@ -740,6 +849,202 @@
       "warp",
       "distort",
       "transform"
+    ]
+  },
+  {
+    "id": "heat-haze-gpt52",
+    "name": "Heat Haze Mirage gpt52",
+    "url": "shaders/heat-haze-gpt52.wgsl",
+    "category": "distortion",
+    "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Haze Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rise",
+        "name": "Rise Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "frequency",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Split",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "animated",
+      "atmospheric",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "distortion",
+      "heat",
+      "atmospheric"
+    ]
+  },
+  {
+    "id": "heat-haze",
+    "name": "Heat Haze",
+    "url": "shaders/heat-haze.wgsl",
+    "category": "distortion",
+    "description": "Interactive heat distortion with thermal glow, mouse-driven heat injection, diffusion, and audio-reactive shimmer.",
+    "params": [
+      {
+        "id": "heatGain",
+        "name": "Heat Gain",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decayRate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "animated",
+      "atmospheric",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "distortion",
+      "heat",
+      "thermal",
+      "filter"
+    ]
+  },
+  {
+    "id": "interactive-rgb-split",
+    "name": "Interactive RGB Split",
+    "url": "shaders/interactive-rgb-split.wgsl",
+    "category": "distortion",
+    "description": "Chromatic aberration that reacts to mouse position and audio bass.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "strength",
+        "name": "Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "falloff",
+        "name": "Localization",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mode",
+        "name": "Mode (Rad/Dir)",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "angle",
+        "name": "Angle Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "chromatic-aberration",
+      "audio-reactive",
+      "distortion"
+    ]
+  },
+  {
+    "id": "interactive-zoom-blur",
+    "name": "Interactive Zoom Blur",
+    "url": "shaders/interactive-zoom-blur.wgsl",
+    "category": "distortion",
+    "description": "Radial zoom blur centered on the mouse cursor with audio-reactive intensity and chromatic aberration.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "strength",
+        "name": "Blur Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "samples",
+        "name": "Quality",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "bias",
+        "name": "Center Bias",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "aberration",
+        "name": "Aberration",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "zoom",
+      "radial",
+      "blur",
+      "chromatic"
     ]
   },
   {
@@ -1205,10 +1510,13 @@
   },
   {
     "id": "prism-displacement",
+    "name": "Prism Lens",
     "category": "distortion",
     "url": "shaders/prism-displacement.wgsl",
+    "description": "Creates a prismatic lens effect with chromatic dispersion, magnification, and edge shine. Audio-reactive refraction responds to bass.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1243,9 +1551,11 @@
     "tags": [
       "warp",
       "distort",
-      "transform"
-    ],
-    "name": "Prism Lens"
+      "transform",
+      "prism",
+      "chromatic",
+      "lens"
+    ]
   },
   {
     "id": "radial-rgb",
@@ -1300,12 +1610,66 @@
     ]
   },
   {
+    "id": "scan-distort-gpt52",
+    "name": "Scan Distort Matrix gpt52",
+    "url": "shaders/scan-distort-gpt52.wgsl",
+    "category": "distortion",
+    "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, and mids-driven band distortion.",
+    "params": [
+      {
+        "id": "scan_intensity",
+        "name": "Scan Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "band_split",
+        "name": "Band Split",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fbm_scale",
+        "name": "FBM Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic_mix",
+        "name": "Chromatic Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "glitch",
+      "animated",
+      "depth-aware",
+      "upgraded-rgba",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "cinematic",
+      "vintage",
+      "atmospheric",
+      "fbm",
+      "bands"
+    ]
+  },
+  {
     "id": "sonic-boom",
     "name": "Sonic Boom",
     "url": "shaders/sonic-boom.wgsl",
     "category": "distortion",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1398,6 +1762,61 @@
       }
     ],
     "target_rating": 4.7
+  },
+  {
+    "id": "spiral-lens",
+    "name": "Spiral Lens",
+    "url": "shaders/spiral-lens.wgsl",
+    "category": "distortion",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba",
+      "archimedean-spiral",
+      "chromatic-dispersion"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Spiral Tightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Chromatic",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Rotation Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio-reactive",
+      "feedback",
+      "interactive",
+      "lens",
+      "distortion",
+      "spiral"
+    ]
   },
   {
     "id": "temporal-distortion-field",
@@ -1931,6 +2350,58 @@
     "created_date": "2026-03-22"
   },
   {
+    "id": "digital-lens",
+    "name": "Digital Lens",
+    "url": "shaders/digital-lens.wgsl",
+    "category": "distortion",
+    "description": "Barrel/pincushion lens distortion with spectral chromatic dispersion, vignette darkening, and audio-reactive distortion pulse.",
+    "params": [
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "vignette",
+        "name": "Vignette",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "focus",
+        "name": "Focus Point",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "barrel-distortion",
+      "chromatic-dispersion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "lens",
+      "digital",
+      "chromatic",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "chroma-shift-grid",
     "name": "Chroma Shift Grid",
     "url": "shaders/chroma-shift-grid.wgsl",
@@ -1982,6 +2453,59 @@
       "lens",
       "grid",
       "distortion"
+    ]
+  },
+  {
+    "id": "chromatic-mosaic-projector",
+    "name": "Chromatic Mosaic Projector",
+    "url": "shaders/chromatic-mosaic-projector.wgsl",
+    "category": "distortion",
+    "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, and audio-reactive cell pulsing.",
+    "params": [
+      {
+        "id": "cellSize",
+        "name": "Cell Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic",
+        "name": "Chromatic Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "voronoi",
+        "name": "Voronoi Distort",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "angle",
+        "name": "Projection Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "voronoi",
+      "chromatic-dispersion"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "mosaic",
+      "chromatic",
+      "voronoi",
+      "audio-reactive",
+      "interactive"
     ]
   },
   {
@@ -2109,5 +2633,68 @@
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22"
+  },
+  {
+    "id": "elastic-chromatic",
+    "name": "Elastic Chromatic",
+    "url": "shaders/elastic-chromatic.wgsl",
+    "category": "distortion",
+    "description": "Elastic chromatic aberration with Lissajous-based secondary source oscillating around mouse, bass-driven spring constant, and effect-masked alpha.",
+    "features": [
+      "mouse-driven",
+      "depth-aware",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "elasticity",
+        "name": "Elasticity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Elastic spring constant for chromatic lag"
+      },
+      {
+        "id": "chromatic_scale",
+        "name": "Chromatic Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Scale of chromatic separation"
+      },
+      {
+        "id": "lissajous_ratio",
+        "name": "Lissajous Ratio",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Frequency ratio for Lissajous oscillation"
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Damping factor for elastic lag"
+      }
+    ],
+    "tags": [
+      "filter",
+      "chromatic",
+      "lag",
+      "elastic",
+      "lissajous",
+      "mouse-driven"
+    ]
   }
 ]

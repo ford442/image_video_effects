@@ -38,9 +38,12 @@ struct Uniforms {
 };
 
 // Constants
-const DT: f32 = 0.016;              // Time step (60fps)
-const DISSIPATION: f32 = 0.995;      // Velocity decay
-const PRESSURE_ALPHA: f32 = 0.25;    // Jacobi relaxation factor
+const DT: f32 = 0.016;
+const DISSIPATION: f32 = 0.995;
+const PRESSURE_ALPHA: f32 = 0.25;
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+const PHI: f32 = 1.61803398874989484820;
 
 // Schlick's approximation for Fresnel reflection
 fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
@@ -114,11 +117,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let texel = 1.0 / resolution;
 
-    // Parameters
-    let viscosity = max(u.zoom_params.x * 0.01, 0.0001);        // Viscosity (0-1 → 0-0.01)
-    let pressureIters = clamp(u.zoom_params.y * 20.0, 2.0, 20.0); // Iterations (2-20)
-    let flowSpeed = u.zoom_params.z * 2.0;                       // Flow speed multiplier
-    let turbidity = u.zoom_params.w;                            // Turbidity for alpha
+    // Parameters — bass amplifies flow speed and turbidity
+    let bass = plasmaBuffer[0].x;
+    let viscosity = max(u.zoom_params.x * 0.01, 0.0001);
+    let pressureIters = clamp(u.zoom_params.y * 20.0, 2.0, 20.0);
+    let flowSpeed = u.zoom_params.z * 2.0 * (1.0 + bass * 0.4);
+    let turbidity = u.zoom_params.w * (1.0 + bass * 0.2);
 
     // Mouse interaction
     let mouse = u.zoom_config.yz;

@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Tunnel Interactive
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Phase A Upgrade Swarm
+//  Created: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,13 +20,12 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
 };
 
 @compute @workgroup_size(16, 16, 1)
@@ -27,14 +34,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let texel = vec2<i32>(global_id.xy);
+    var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
+    let aspect = resolution.x / max(resolution.y, 0.001);
+
+    // Depth pass-through
+    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, texel, vec4<f32>(depthVal, 0.0, 0.0, 1.0));
 
     // Parameters
     let tunnelStrength = u.zoom_params.x; // 0.0 to 1.0 (Zoom strength)
     let aberration = u.zoom_params.y;     // 0.0 to 1.0 (Color split)
     let pulseSpeed = u.zoom_params.z;     // 0.0 to 1.0
     let spiral = u.zoom_params.w;         // 0.0 to 1.0 (Twist)
+
+    // Audio reactivity (bass)
+    let bass = plasmaBuffer[0].x;
 
     // Mouse Interaction
     var mouse = u.zoom_config.yz;
@@ -49,9 +64,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(offset);
     let angle = atan2(offset.y, offset.x);
 
-    // Dynamic Pulse
+    // Dynamic Pulse (audio-reactive)
     let time = u.config.x;
-    let pulse = sin(dist * 20.0 - time * (pulseSpeed * 10.0)) * 0.05 * tunnelStrength;
+    let audioPulse = 1.0 + bass * 0.5;
+    let pulse = sin(dist * 20.0 - time * (pulseSpeed * 10.0 * audioPulse)) * 0.05 * tunnelStrength;
 
     // Twist
     let twistAngle = angle + (1.0 - smoothstep(0.0, 1.0, dist)) * (spiral * 5.0) * sin(time);
@@ -73,19 +89,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offB = vec2<f32>(cos(twistAngle), sin(twistAngle)) * rB;
 
     // Convert back to UV space (undo aspect correction)
-    let uvR = vec2<f32>(offR.x / aspect, offR.y) + center;
-    let uvG = vec2<f32>(offG.x / aspect, offG.y) + center;
-    let uvB = vec2<f32>(offB.x / aspect, offB.y) + center;
+    let uvR = clamp(vec2<f32>(offR.x / aspect, offR.y) + center, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvG = clamp(vec2<f32>(offG.x / aspect, offG.y) + center, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(vec2<f32>(offB.x / aspect, offB.y) + center, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let cR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let cG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let cB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    color = vec4<f32>(cR, cG, cB, 1.0);
+    // Luminance-based alpha
+    let luminance = dot(vec3<f32>(cR, cG, cB), vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(luminance + tunnelStrength * 0.3, 0.0, 1.0);
+    color = vec4<f32>(cR, cG, cB, alpha);
 
-    // Let's add a "glow" at the mouse cursor
+    // Glow at the mouse cursor (audio-reactive)
     let glow = 1.0 - smoothstep(0.0, 0.1, dist);
-    color = color + vec4<f32>(0.2, 0.4, 1.0, 0.0) * glow * tunnelStrength;
+    let glowColor = vec3<f32>(0.2, 0.4, 1.0) * (1.0 + bass * 2.0);
+    color = vec4<f32>(color.rgb + glowColor * glow * tunnelStrength, color.a);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(writeTexture, texel, color);
 }

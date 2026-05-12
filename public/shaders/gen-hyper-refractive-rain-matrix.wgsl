@@ -61,7 +61,7 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     let rainDensity = u.zoom_params.x;
     let dropSpeed = u.zoom_params.y;
     let fluidViscosity = u.zoom_params.z;
-    let audioReactive = u.config.y;
+    let audioReactive = plasmaBuffer[0].x;
 
     let t = u.config.x * dropSpeed * (1.0 + audioReactive * 0.5);
     p.y -= t * 5.0; // Falling motion
@@ -188,5 +188,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let col = render(ro, rd);
 
     let finalCol = vec4<f32>(col, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), finalCol);
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    let finalCol2 = vec4<f32>(col, _alpha);
+    textureStore(writeTexture, vec2<i32>(id.xy), finalCol2);
+    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

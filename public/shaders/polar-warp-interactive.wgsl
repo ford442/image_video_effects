@@ -1,11 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Polar Warp Interactive
-//  Category: image
-//  Features: mouse-driven
-//  Complexity: Low
-//  Chunks From: original polar-warp-interactive
-//  Created: 2026-05-03
-//  By: Optimizer
+//  Category: interactive-mouse
+//  Features: mouse-driven, upgraded-rgba, audio-reactive, depth-aware, multi-ripple
+//  Complexity: Medium
+//  Upgraded: bass-driven warp, spiral component, ripple bursts, semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,44 +31,59 @@ const PI: f32 = 3.14159265;
 const TAU: f32 = 6.2831853;
 const EPS: f32 = 1e-3;
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
     let gid = vec2<i32>(global_id.xy);
-    if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }
-
     let uv = vec2<f32>(global_id.xy) / res;
     let aspect = res.x / res.y;
+    let time = u.config.x;
 
-    // Branchless mouse fallback to center when unavailable
     let mouseRaw = u.zoom_config.yz;
     let mouse = select(mouseRaw, vec2<f32>(0.5), mouseRaw.x < 0.0);
 
-    // Aspect-corrected polar coordinates centered on mouse
+    let bass = plasmaBuffer[0].x;
+    let bassPulse = 1.0 + bass * 0.4;
+
+    let warpStrength = u.zoom_params.x * bassPulse;
+    let spiralAmount = u.zoom_params.y * 5.0;
+    let rippleDecay = u.zoom_params.z;
+    let pinchExpand = u.zoom_params.w;
+
     var diff = uv - mouse;
     diff.x *= aspect;
 
     let radius = length(diff);
     let angle = atan2(diff.y, diff.x);
 
-    // Tunable params
-    let zoom = 0.1 + u.zoom_params.x * 2.0;
-    let spiral = u.zoom_params.y * 5.0;
-    let repeats = max(1.0, u.zoom_params.z);
-    let offset = u.zoom_params.w;
-
     // Early exit: hide center singularity
     if (radius < EPS) {
         textureStore(writeTexture, gid, vec4<f32>(0.0));
+        textureStore(writeDepthTexture, gid, vec4<f32>(0.0, 0.0, 0.0, 0.0));
         return;
     }
 
     // Polar distortion
-    let r_new = pow(radius, 1.0 / zoom) - offset;
-    let a_new = angle + radius * spiral;
+    let zoom = 0.1 + warpStrength * 2.0;
+    let r_new = pow(radius, 1.0 / zoom) - pinchExpand;
+    var a_new = angle + radius * spiralAmount;
+
+    // Click-triggered ripple bursts from u.ripples
+    for (var i: i32 = 0; i < 50; i = i + 1) {
+        let rp = u.ripples[i];
+        if (rp.z > 0.0) {
+            let age = time - rp.z;
+            if (age > 0.0 && age < 3.0) {
+                let rd = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+                let rippleWave = sin(rd * 30.0 - age * 10.0) * exp(-age * rippleDecay * 3.0);
+                a_new = a_new + rippleWave * 0.1 * rp.w;
+            }
+        }
+    }
 
     // Map polar back to UV space with time rotation
-    let tunnel_u = (a_new / PI) * repeats + u.config.x * 0.1;
+    let tunnel_u = (a_new / PI) * 2.0 + time * 0.1;
     let tunnel_v = 1.0 / (r_new + EPS);
 
     // Mirrored-repeat UV sampling for seamless edges
@@ -83,6 +96,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Radial fade at the singularity
     let fade = smoothstep(0.0, 0.1, radius);
 
-    // HDR-ready output: explicit alpha for clean slot chaining
-    textureStore(writeTexture, gid, vec4<f32>(col.rgb * fade, 1.0));
+    // Depth-aware fade
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthFade = mix(0.7, 1.0, depth);
+
+    // Semantic alpha: reduce at extreme warp distortion
+    let warpDistort = abs(r_new - radius) + abs(a_new - angle);
+    let alpha = mix(col.a, 0.85, smoothstep(0.5, 1.5, warpDistort));
+    let finalAlpha = alpha * fade * depthFade;
+
+    textureStore(writeTexture, gid, vec4<f32>(col.rgb * fade * depthFade, finalAlpha));
+    textureStore(writeDepthTexture, gid, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -2,8 +2,8 @@
   "id": "spectral-waves",
   "name": "Luma Ripple",
   "url": "shaders/spectral-waves.wgsl",
-  "category": "image",
-  "description": "Luminance-reactive waves ripple out from the mouse cursor, displacing the image with chromatic aberration.",
+  "category": "interactive-mouse",
+  "description": "Luminance-reactive waves ripple out from the mouse cursor, displacing the image with chromatic aberration. Audio bass boosts wave amplitude.",
   "params": [
     {
       "id": "frequency",
@@ -36,10 +36,14 @@
   ],
   "features": [
     "mouse-driven",
+    "audio-reactive",
     "image"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "ripple",
+    "chromatic",
+    "audio-reactive"
   ]
 }

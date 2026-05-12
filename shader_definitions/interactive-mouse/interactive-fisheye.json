@@ -3,7 +3,7 @@
   "name": "Interactive Fisheye",
   "url": "shaders/interactive-fisheye.wgsl",
   "category": "image",
-  "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius.",
+  "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius and depth-aware alpha modulation.",
   "params": [
     {
       "id": "strength",
@@ -38,7 +38,8 @@
     "mouse-driven",
     "geometry",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "depth-aware"
   ],
   "tags": [
     "filter",

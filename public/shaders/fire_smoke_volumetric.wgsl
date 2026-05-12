@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=FireIntensity, y=SmokeDensity, z=DepthWeight, w=Turbulence
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -57,13 +60,20 @@ fn hash(p: vec3<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
-    let fireIntensity = u.zoom_params.x * 2.0;
+    let bass = plasmaBuffer[0].x;
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+
+    // Bass-driven flame flare; mouse drag adds extra heat near cursor
+    let dM = length(uv - mouse);
+    let mouseHeat = exp(-dM * dM * 8.0) * (mouseDown * 0.6 + 0.2);
+    let fireIntensity = u.zoom_params.x * 2.0 * (1.0 + bass * 0.4 + mouseHeat * 0.5);
     let smokeDensity = u.zoom_params.y;
     let depthWeight = u.zoom_params.z;
-    let turbulence = u.zoom_params.w;
+    let turbulence = u.zoom_params.w * (1.0 + bass * 0.3);
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     

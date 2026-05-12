@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Bio-Luminescent Touch
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Chunks From: original bio-touch
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,16 +21,15 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Radius, z=Aberration, w=Darkness
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=GlowRadius, y=CellDensity, z=ColorShift, w=PulseSpeed
   ripples: array<vec4<f32>, 50>,
 };
 
-// Includes from _hash_library.wgsl
+// ═══ CHUNK: hash22 (from _hash_library.wgsl) ═══
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     let k = vec2<f32>(
         dot(p, vec2<f32>(127.1, 311.7)),
@@ -52,23 +60,26 @@ fn voronoi(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+    var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001, 0.001));
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
 
     // Mouse Interaction
-    var mousePos = u.zoom_config.yz;
+    var mousePos = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     let mouseDown = u.zoom_config.w; // 1.0 if down
 
     // Correct aspect ratio for distance calculation
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 0.001);
     let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     var dist = length(distVec);
 
     // Params
-    let glowRadius = u.zoom_params.x * 0.5; // 0.0 to 0.5
-    let cellDensity = 10.0 + u.zoom_params.y * 50.0; // 10 to 60
-    let colorShift = u.zoom_params.z;
-    let pulseSpeed = u.zoom_params.w * 5.0;
+    let glowRadius = clamp(u.zoom_params.x * 0.5, 0.0, 0.5); // 0.0 to 0.5
+    let cellDensity = (10.0 + u.zoom_params.y * 50.0) * (1.0 + bass * 0.25);
+    let colorShift = clamp(u.zoom_params.z, 0.0, 1.0);
+    let pulseSpeed = u.zoom_params.w * 5.0 * (1.0 + bass * 0.5);
 
     // Bio-Luminescence Logic
     // Only active near mouse
@@ -76,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Animate voronoi
     let offset = vec2<f32>(sin(time * 0.5), cos(time * 0.4)) * 0.1;
-    let v = voronoi((uv + offset) * cellDensity);
+    let v = voronoi((uv + offset) * max(cellDensity, 0.001));
 
     // Invert voronoi for cell walls/nuclei
     let glow = 1.0 - smoothstep(0.0, 0.5, v);
@@ -99,5 +110,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add glow to original color
     let outColor = color + tint * finalGlow;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, 1.0));
+    // Alpha: bioluminescent glow intensity as compositing weight
+    let alpha = clamp(finalGlow * 0.7 + influence * 0.2 + 0.1, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

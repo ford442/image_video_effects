@@ -20,11 +20,14 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=AccumulationRate, y=PrismStrength, z=Rotation, w=Feedback
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -45,13 +48,16 @@ fn accumulativeAlpha(
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
-    let uv = vec2<f32>(global_id.xy) / u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
+    let bass = plasmaBuffer[0].x;
+
     let accumulationRate = u.zoom_params.x;
-    let prismStrength = u.zoom_params.y * 0.1;
-    let rotation = u.zoom_params.z * 6.28;
+    let prismStrength = u.zoom_params.y * 0.1 * (1.0 + bass * 0.4);
+    let rotation = u.zoom_params.z * TAU;
     let feedback = u.zoom_params.w;
     
     let current = textureLoad(readTexture, coord, 0);

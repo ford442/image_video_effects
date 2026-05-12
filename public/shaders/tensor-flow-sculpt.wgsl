@@ -33,6 +33,9 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Hash
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,12 +155,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // ─────────────────────────────────────────────────────────────────────────
     //  Parameters
     // ─────────────────────────────────────────────────────────────────────────
-    let sculptDepth = u.zoom_params.x * 0.08 + 0.005;      // 0.005 – 0.085
-    let freqSep = u.zoom_params.y * 8.0 + 1.0;             // 1 – 9
-    let curvatureScale = u.zoom_params.z * 5.0 + 0.5;      // 0.5 – 5.5
-    let animSpeed = u.zoom_params.w * 2.0 + 0.2;           // 0.2 – 2.2
-    let flowStr = u.zoom_config.x * 2.0 + 0.3;             // 0.3 – 2.3
-    let persistence = u.zoom_config.w * 0.3 + 0.6;         // 0.6 – 0.9
+    let bass = plasmaBuffer[0].x;
+    let sculptDepth = (u.zoom_params.x * 0.08 + 0.005) * (1.0 + bass * 0.4);
+    let freqSep = u.zoom_params.y * 8.0 + 1.0;
+    let curvatureScale = u.zoom_params.z * 5.0 + 0.5;
+    let animSpeed = u.zoom_params.w * 2.0 + 0.2;
+    let flowStr = u.zoom_config.x * 2.0 + 0.3;
+    let persistence = u.zoom_config.w * 0.3 + 0.6;
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Compute structure tensor and extract principal directions
@@ -245,7 +249,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // ─────────────────────────────────────────────────────────────────────────
     //  Output
     // ─────────────────────────────────────────────────────────────────────────
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalColor, 1.0));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(finalColor, 1.0));
+    // Alpha: tensor warp magnitude + persistence drives sculpt compositing weight
+    let warpDist = length(warpedUV - uv);
+    let lumaOut = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.4 + lumaOut * 0.3 + warpDist * 6.0 + persistence * 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

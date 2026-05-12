@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Kaleido-Scope Prism grokcf1
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Shader Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +20,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -65,18 +72,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
 
+    // Audio reactivity via bass
+    let bass = plasmaBuffer[0].x;
+
     // Add prism effects
-    let prism_shift = sin(angle * 6.0 + time) * 0.02;
+    let prism_shift = sin(angle * 6.0 + time) * (0.02 + bass * 0.03);
     let r = textureSampleLevel(readTexture, u_sampler, sample_uv + vec2<f32>(prism_shift, 0.0), 0.0).r;
     let b = textureSampleLevel(readTexture, u_sampler, sample_uv - vec2<f32>(prism_shift, 0.0), 0.0).b;
     color = vec3<f32>(r, color.g, b);
 
     // Add reflections
     let reflect_uv = vec2<f32>(0.5, 0.5) - vec2<f32>(new_vec.x / aspect, new_vec.y);
-    let reflect_color = textureSampleLevel(readTexture, u_sampler, reflect_uv, 0.0).rgb * 0.3;
+    let reflect_color = textureSampleLevel(readTexture, u_sampler, reflect_uv, 0.0).rgb * (0.3 + bass * 0.2);
     color += reflect_color;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Meaningful alpha based on luminance and effect intensity
+    let luminance = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let effect_intensity = clamp(0.5 + dist * 0.5, 0.0, 1.0);
+    let alpha = clamp(0.25 + luminance * 0.7 * effect_intensity, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

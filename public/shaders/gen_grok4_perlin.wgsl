@@ -20,11 +20,15 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Opacity
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+const PHI: f32 = 1.61803398874989484820;
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var n = sin(dot(p, vec3<f32>(127.1, 311.7, 74.7)));
@@ -56,14 +60,16 @@ fn noise(p: vec3<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution * 10.0;
     let time = u.config.x * 0.1;
+    let bass = plasmaBuffer[0].x;
     var mouse = vec2<f32>(u.zoom_config.y * 10.0, (1.0 - u.zoom_config.z) * 10.0);
 
-    // Multi-octave Perlin noise
+    // Multi-octave Perlin noise — bass deepens octave amplitude (terrain breathes)
     var n = 0.0;
-    var amp = 0.5;
+    var amp = 0.5 * (1.0 + bass * 0.3);
     var freq = 1.0;
     for (var i = 0; i < 5; i++) {
         n += amp * noise(vec3<f32>(uv * freq + mouse * 0.2, time * 0.5));

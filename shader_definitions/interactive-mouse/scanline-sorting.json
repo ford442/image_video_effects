@@ -3,7 +3,7 @@
   "name": "Scanline Sorting",
   "url": "shaders/scanline-sorting.wgsl",
   "category": "image",
-  "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse.",
+  "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting.",
   "params": [
     {
       "id": "thresh",
@@ -40,7 +40,8 @@
   ],
   "features": [
     "mouse-driven",
-    "sorting"
+    "sorting",
+    "audio-reactive"
   ],
   "tags": [
     "filter",

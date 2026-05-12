@@ -2,7 +2,7 @@
   "id": "laser-burn",
   "name": "Laser Burn",
   "url": "shaders/laser-burn.wgsl",
-  "category": "image",
+  "category": "interactive-mouse",
   "description": "Interactive laser that burns the image permanently (or heals slowly).",
   "params": [
     {
@@ -36,10 +36,15 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "laser",
+    "burn",
+    "interactive",
+    "fire"
   ]
 }

@@ -1,9 +1,12 @@
 {
   "id": "prism-displacement",
+  "name": "Prism Lens",
   "category": "distortion",
   "url": "shaders/prism-displacement.wgsl",
+  "description": "Creates a prismatic lens effect with chromatic dispersion, magnification, and edge shine. Audio-reactive refraction responds to bass.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -38,7 +41,9 @@
   "tags": [
     "warp",
     "distort",
-    "transform"
-  ],
-  "name": "Prism Lens"
+    "transform",
+    "prism",
+    "chromatic",
+    "lens"
+  ]
 }

@@ -3,9 +3,10 @@
   "name": "Double Exposure Zoom",
   "category": "image",
   "url": "shaders/double-exposure.wgsl",
-  "description": "Blends the image with a zoomed and rotated version of itself, pivoted around the mouse cursor.",
+  "description": "Blends the image with a zoomed and rotated version of itself, pivoted around the mouse cursor. Reacts subtly to audio bass.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -39,6 +40,8 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "zoom",
+    "overlay"
   ]
 }

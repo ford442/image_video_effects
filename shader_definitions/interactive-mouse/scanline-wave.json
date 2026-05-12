@@ -6,7 +6,8 @@
   "features": [
     "mouse-driven",
     "upgraded-rgba",
-    "depth-aware"
+    "depth-aware",
+    "audio-reactive"
   ],
   "description": "Sine-wave horizontal scanline distortion with HDR bloom, atmospheric depth fog, and warm highlight grading. Mouse modulates wave intensity by vertical proximity.",
   "params": [

@@ -3,7 +3,7 @@
   "name": "Virtual Lens",
   "url": "shaders/virtual-lens.wgsl",
   "category": "image",
-  "description": "A virtual magnifying glass with chromatic aberration.",
+  "description": "A virtual magnifying glass with chromatic aberration and audio-reactive pulse.",
   "params": [
     {
       "id": "mag",
@@ -36,7 +36,8 @@
   ],
   "features": [
     "mouse-driven",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "audio-reactive"
   ],
   "tags": [
     "filter",

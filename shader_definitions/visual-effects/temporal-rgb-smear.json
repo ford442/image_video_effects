@@ -1,55 +1,56 @@
 {
   "id": "temporal-rgb-smear",
   "name": "Temporal RGB Smear",
-  "category": "image",
+  "category": "visual-effects",
   "url": "shaders/temporal-rgb-smear.wgsl",
-  "description": "Separates RGB channels in time with gravity wells, motion trails, audio reactivity, and temporal feedback.",
+  "description": "Directional RGB smear with time-based offset, chromatic split modulated by mids, temporal feedback decay, and accumulative trail alpha.",
   "params": [
     {
-      "id": "green_lag",
-      "name": "Green Lag",
+      "id": "smear_length",
+      "name": "Smear Length",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "Lag amount for the green channel"
+      "description": "Length of the directional smear"
     },
     {
-      "id": "blue_lag",
-      "name": "Blue Lag",
-      "default": 0.8,
+      "id": "smear_decay",
+      "name": "Smear Decay",
+      "default": 0.7,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.y",
-      "description": "Lag amount for the blue channel"
+      "description": "Temporal feedback decay amount"
     },
     {
-      "id": "feedback",
-      "name": "Feedback",
-      "default": 0.0,
+      "id": "chromatic_split",
+      "name": "Chromatic Split",
+      "default": 0.5,
       "min": 0.0,
-      "max": 0.99,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Temporal feedback amount for recursive smearing"
+      "description": "RGB channel separation along smear direction"
     },
     {
-      "id": "mouse_influence",
-      "name": "Gravity Well",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 0.6,
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Strength of mouse gravity well and motion trail distortion"
+      "description": "Time-based directional turbulence"
     }
   ],
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
@@ -57,6 +58,7 @@
     "audio-reactive",
     "interactive",
     "temporal",
-    "feedback"
+    "feedback",
+    "chromatic"
   ]
 }

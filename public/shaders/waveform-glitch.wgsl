@@ -1,12 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Waveform Glitch
+//  Waveform Glitch — May 2026 Batch D Upgrade
 //  Category: retro-glitch
-//  Features: temporal, audio-reactive, depth-aware
+//  Features: temporal, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: waveform-glitch (original)
 //  Created: 2026-04-25
 //  Upgraded: 2026-05-02
+//  Re-Upgraded: 2026-05-10
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -22,16 +24,16 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// ── Hash & Noise ─────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
+
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   return fract(sin(vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)))) * 43758.5453);
 }
@@ -56,7 +58,6 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
   return sum;
 }
 
-// ── Domain-warped FBM ────────────────────────────────────────
 fn dwfBm(p: vec2<f32>, time: f32) -> f32 {
   let q = vec2<f32>(fbm(p + vec2<f32>(0.0, 0.0), 3), fbm(p + vec2<f32>(5.2, 1.3), 3));
   let r = vec2<f32>(fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2) + time * 0.15, 3),
@@ -64,7 +65,6 @@ fn dwfBm(p: vec2<f32>, time: f32) -> f32 {
   return fbm(p + 4.0 * r, 4);
 }
 
-// ── Curl Noise (divergence-free) ─────────────────────────────
 fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
   let eps = 0.01;
   let n = valueNoise(p + time * 0.1);
@@ -75,7 +75,6 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
   return vec2<f32>(dy, -dx);
 }
 
-// ── Worley Noise (cellular) ──────────────────────────────────
 fn worleyNoise(p: vec2<f32>, time: f32) -> f32 {
   let n = floor(p);
   let f = fract(p);
@@ -92,7 +91,6 @@ fn worleyNoise(p: vec2<f32>, time: f32) -> f32 {
   return sqrt(dist);
 }
 
-// ── VHS Tracking with domain warping ─────────────────────────
 fn vhsTracking(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
   let warp = dwfBm(vec2<f32>(uv.y * 8.0, time * 0.3), time);
   let jitter = sin(time * 30.0 + uv.y * 1000.0 + warp * 6.28) * intensity * 0.02;
@@ -100,7 +98,6 @@ fn vhsTracking(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
   return uv + vec2<f32>(jitter, roll);
 }
 
-// ── Block Corruption with Worley cells ───────────────────────
 fn blockCorruption(uv: vec2<f32>, blockSize: f32, intensity: f32, time: f32) -> vec2<f32> {
   let blockId = floor(uv / blockSize);
   let cell = worleyNoise(blockId * 3.0 + vec2<f32>(time * 0.1, 7.31), time);
@@ -110,56 +107,72 @@ fn blockCorruption(uv: vec2<f32>, blockSize: f32, intensity: f32, time: f32) -> 
   return uv + vec2<f32>(offset, 0.0);
 }
 
-// ── Datamoshing with curl noise ──────────────────────────────
 fn datamoshDisp(uv: vec2<f32>, time: f32, smearScale: f32) -> vec2<f32> {
   let n = dwfBm(uv * 6.0 + time * 0.5, time);
   let curl = curlNoise(uv * 4.0 + time * 0.3, time);
   return uv + curl * n * smearScale * 0.08;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
   let uv = vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w);
   let time = u.config.x;
+  let resolution = u.config.zw;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let vhsJitter = u.zoom_params.x;
-  let intensity = u.zoom_params.y;
-  let smearScale = u.zoom_params.z;
-  let flickerSpeed = 2.0 + u.zoom_params.w * 20.0;
-
-  // Audio reactivity from plasmaBuffer
+  // Audio: bass drives wave intensity spike
   let bass = plasmaBuffer[0].x;
+
+  // Parameters: x=Wave Intensity, y=VHS Intensity, z=Block Glitch Size, w=Shadow Mask
+  let waveIntensity = u.zoom_params.x * (1.0 + bass * 0.8);
+  let vhsIntensity = u.zoom_params.y;
+  let blockGlitchSize = mix(0.02, 0.16, u.zoom_params.z);
+  let shadowMaskAmount = u.zoom_params.w;
 
   // Depth-aware scaling: more glitch in foreground
   let depthScale = mix(1.0, 0.3, depth);
 
-  var warped = vhsTracking(uv, time, vhsJitter * depthScale);
-  warped = blockCorruption(warped, 0.08, intensity * depthScale * (1.0 + bass), time);
-  warped = datamoshDisp(warped, time, smearScale * depthScale);
+  var warped = vhsTracking(uv, time, vhsIntensity * depthScale);
+  warped = blockCorruption(warped, blockGlitchSize, vhsIntensity * depthScale, time);
+  warped = datamoshDisp(warped, time, waveIntensity * depthScale);
   warped = clamp(warped, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let glitchStrength = clamp(length(warped - uv) * 10.0, 0.0, 1.0);
+  let glitchMag = length(warped - uv);
+  let glitchStrength = clamp(glitchMag * 10.0, 0.0, 1.0);
 
   // Quantized scanline artifact
   let scanQ = floor(uv.y * 240.0) / 240.0;
-  let quant = step(0.5, hash21(vec2<f32>(scanQ, floor(time * 8.0)))) * 0.06 * intensity;
+  let quant = step(0.5, hash21(vec2<f32>(scanQ, floor(time * 8.0)))) * 0.06 * vhsIntensity;
 
-  let cR = textureSampleLevel(readTexture, u_sampler, warped + vec2<f32>(0.003 * intensity + quant, 0.0), 0.0);
+  let cR = textureSampleLevel(readTexture, u_sampler, warped + vec2<f32>(0.003 * vhsIntensity + quant, 0.0), 0.0);
   let cG = textureSampleLevel(readTexture, u_sampler, warped, 0.0);
-  let cB = textureSampleLevel(readTexture, u_sampler, warped - vec2<f32>(0.003 * intensity + quant, 0.0), 0.0);
+  let cB = textureSampleLevel(readTexture, u_sampler, warped - vec2<f32>(0.003 * vhsIntensity + quant, 0.0), 0.0);
 
-  let flicker = 0.8 + 0.2 * fract(time * flickerSpeed);
+  // VHS head-switching noise band at bottom 8% of frame
+  let inBand = step(0.92, uv.y);
+  let bandNoise = hash21(vec2<f32>(uv.x * 100.0, time * 30.0)) * inBand * vhsIntensity * 0.3;
+
+  let flicker = 0.8 + 0.2 * fract(time * 2.0 + bandNoise * 10.0);
   var col = vec3<f32>(cR.r, cG.g, cB.b) * flicker;
 
   // Digital bit-crush on luma
   let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
-  let crush = floor(luma * 16.0 * (1.0 + intensity * 2.0)) / (16.0 * (1.0 + intensity * 2.0));
+  let crush = floor(luma * 16.0 * (1.0 + vhsIntensity * 2.0)) / (16.0 * (1.0 + vhsIntensity * 2.0));
   col = mix(col, col * (crush / max(luma, 0.001)), glitchStrength * 0.4);
 
-  let alpha = cG.a * (1.0 - glitchStrength * 0.5);
+  // CRT shadow mask
+  let shadowMask = 0.85 + 0.15 * step(0.33, fract(uv.x * resolution.x / 3.0));
+  col = col * mix(1.0, shadowMask, shadowMaskAmount);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(col, alpha));
+  // Add head-switching noise band color tint
+  col = col + vec3<f32>(bandNoise * 0.5, bandNoise * 0.3, bandNoise * 0.1);
+
+  // Effect-mask alpha based on glitch displacement magnitude
+  let alpha = cG.a * (1.0 - glitchStrength * 0.5);
+  let finalAlpha = clamp(alpha, 0.25, cG.a);
+
+  textureStore(writeTexture, global_id.xy, vec4<f32>(col, finalAlpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

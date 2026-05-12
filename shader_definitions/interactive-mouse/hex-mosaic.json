@@ -2,8 +2,8 @@
   "id": "hex-mosaic",
   "name": "Hexagon Mosaic",
   "url": "shaders/hex-mosaic.wgsl",
-  "category": "image",
-  "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor.",
+  "category": "interactive-mouse",
+  "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor. Bass audio reactivity boosts saturation.",
   "params": [
     {
       "id": "scale",
@@ -35,10 +35,14 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "hexagon",
+    "mosaic",
+    "interactive"
   ]
 }

@@ -295,9 +295,10 @@
     "name": "Kaleido-Scope Prism grokcf1",
     "url": "shaders/kaleido-scope-grokcf1.wgsl",
     "category": "geometric",
-    "description": "Enhanced kaleidoscope with prism dispersion, reflections, and chromatic effects.",
+    "description": "Enhanced kaleidoscope with prism dispersion, reflections, chromatic effects, and audio-reactive bass modulation.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -331,7 +332,8 @@
     ],
     "tags": [
       "geometric",
-      "pattern"
+      "pattern",
+      "audio"
     ]
   },
   {
@@ -476,5 +478,113 @@
       }
     ],
     "target_rating": 4.7
+  },
+  {
+    "id": "tesseract-fold",
+    "name": "Tesseract Fold",
+    "url": "shaders/tesseract-fold.wgsl",
+    "category": "geometric",
+    "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, treble-driven edge glow, and bloom-weight alpha for chained rendering.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "4D Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Projection Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Edge Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Face Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "kaleidoscope",
+      "geometric",
+      "folding",
+      "iridescent",
+      "atmospheric"
+    ]
+  },
+  {
+    "id": "quad-mirror",
+    "name": "Quad Mirror",
+    "url": "shaders/quad-mirror.wgsl",
+    "category": "geometric",
+    "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
+    "params": [
+      {
+        "id": "hOffset",
+        "name": "H Mirror Offset",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "vOffset",
+        "name": "V Mirror Offset",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "seamWarp",
+        "name": "Seam Warp",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "geometry",
+      "upgraded-rgba",
+      "fbm-domain-warp",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "kaleidoscope",
+      "mirror",
+      "geometric",
+      "audio-reactive"
+    ]
   }
 ]

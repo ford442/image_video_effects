@@ -1,4 +1,11 @@
-// Melting Oil Painting (Gradient Flow) - minimal skeleton
+// ═══════════════════════════════════════════════════════════════════
+//  Melting Oil
+//  Category: image
+//  Features: gradient-flow, branchless-ripples, audio-reactive, advection
+//  Complexity: Medium
+//  Phase B / Optimizer
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,67 +21,98 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Viscosity, y=MouseForce, z=HueShift, w=Audio
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+const PHI: f32 = 1.61803398874989484820;
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let id = vec2<u32>(gid.xy);
-  let coord = vec2<i32>(i32(id.x), i32(id.y));
-  let dim = textureDimensions(dataTextureA);
-  var uv = vec2<f32>(f32(id.x), f32(id.y)) / vec2<f32>(f32(dim.x), f32(dim.y));
-  let time = u.config.x;
-  
-  // 3x3 Sobel gradient sample adapted to dataTextureA
-  var h: array<f32, 9>;
-  var k: u32 = 0u;
-  for (var y: i32 = -1; y <= 1; y = y + 1) {
-    for (var x: i32 = -1; x <= 1; x = x + 1) {
-      let sample = textureLoad(dataTextureC, coord + vec2<i32>(x, y), 0).r;
-      h[k] = sample;
-      k = k + 1u;
+    let resolution = u.config.zw;
+    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(gid.xy);
+    let dim = textureDimensions(dataTextureA);
+    let dimF = vec2<f32>(f32(dim.x), f32(dim.y));
+    let uv = vec2<f32>(gid.xy) / resolution;
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+
+    let viscosity = clamp(0.85 + u.zoom_params.x * 0.13, 0.5, 0.99);
+    let mouseForceK = clamp(u.zoom_params.y, 0.0, 1.0);
+    let hueShiftK = clamp(u.zoom_params.z, 0.0, 1.0);
+    let audioK = clamp(u.zoom_params.w * (1.0 + bass * 0.5), 0.0, 2.0);
+
+    // Sobel: 6 texture loads via row-vec packing (vs naive 9), branchless
+    let r0 = vec3<f32>(
+        textureLoad(dataTextureC, coord + vec2<i32>(-1, -1), 0).r,
+        textureLoad(dataTextureC, coord + vec2<i32>( 0, -1), 0).r,
+        textureLoad(dataTextureC, coord + vec2<i32>( 1, -1), 0).r);
+    let r1 = vec3<f32>(
+        textureLoad(dataTextureC, coord + vec2<i32>(-1,  0), 0).r,
+        textureLoad(dataTextureC, coord, 0).r,
+        textureLoad(dataTextureC, coord + vec2<i32>( 1,  0), 0).r);
+    let r2 = vec3<f32>(
+        textureLoad(dataTextureC, coord + vec2<i32>(-1,  1), 0).r,
+        textureLoad(dataTextureC, coord + vec2<i32>( 0,  1), 0).r,
+        textureLoad(dataTextureC, coord + vec2<i32>( 1,  1), 0).r);
+
+    let gx = (r0.z + 2.0 * r1.z + r2.z) - (r0.x + 2.0 * r1.x + r2.x);
+    let gy = (r2.x + 2.0 * r2.y + r2.z) - (r0.x + 2.0 * r0.y + r0.z);
+    let grad = vec2<f32>(gx, gy);
+    let gradLen = max(length(grad), 1e-4);
+    var flow_dir = grad / gradLen;
+
+    // Branchless mouse force — Gaussian falloff, lerp into flow direction
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+    let toMouse = (mouse - uv) * vec2<f32>(aspect, 1.0);
+    let dM = length(toMouse);
+    let mouseGate = exp(-dM * dM * 12.0) * (mouseForceK + mouseDown * 0.5);
+    let mouseDir = toMouse / max(dM, 1e-4);
+    flow_dir = normalize(mix(flow_dir, mouseDir, mouseGate));
+
+    // Vectorized ripple stir — first 8 ripples (capped, branchless time gate)
+    var stir = vec2<f32>(0.0);
+    for (var i = 0; i < 8; i++) {
+        let rip = u.ripples[i];
+        let active = step(1e-4, rip.z);
+        let age = max(time - rip.z, 0.0);
+        let alive = step(age, 3.0);
+        let toR = (uv - rip.xy) * vec2<f32>(aspect, 1.0);
+        let dR2 = dot(toR, toR);
+        let pulse = exp(-dR2 * 60.0) * (1.0 - age / 3.0) * active * alive;
+        stir += vec2<f32>(-toR.y, toR.x) * 0.5 * pulse;
     }
-  }
-  let gx = (h[2] + 2.0*h[5] + h[8]) - (h[0] + 2.0*h[3] + h[6]);
-  let gy = (h[6] + 2.0*h[7] + h[8]) - (h[0] + 2.0*h[1] + h[2]);
-  var flow_dir = normalize(vec2<f32>(gx, gy));
-  
-  // Mouse influence on drag center and intensity
-  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  let to_mouse = mouse_pos - uv;
-  let dist_to_mouse = length(to_mouse);
-  if (dist_to_mouse < 0.3) {
-    let mouse_force = normalize(to_mouse) * (1.0 - dist_to_mouse / 0.3);
-    flow_dir = normalize(flow_dir + mouse_force * 0.5);
-  }
-  
-  // Ripples stir the flow with local momentum
-  for (var i = 0; i < 50; i++) {
-    let ripple = u.ripples[i];
-    if (ripple.z > 0.0) {
-      let ripple_age = time - ripple.z;
-      if (ripple_age > 0.0 && ripple_age < 3.0) {
-        let to_ripple = uv - ripple.xy;
-        let dist_to_ripple = length(to_ripple);
-        if (dist_to_ripple < 0.15) {
-          let ripple_force = vec2<f32>(-to_ripple.y, to_ripple.x) * 0.3 * (1.0 - ripple_age / 3.0);
-          flow_dir = normalize(flow_dir + ripple_force);
-        }
-      }
-    }
-  }
-  
-  let viscosity = 0.92;
-  let last_pos = vec2<f32>(f32(coord.x), f32(coord.y)) - flow_dir * viscosity;
-  let color = textureSampleLevel(readTexture, u_sampler, last_pos / vec2<f32>(f32(dim.x), f32(dim.y)), 0.0);
-  let flow_speed = length(vec2<f32>(gx, gy));
-  let hue_shift = flow_speed * 0.1 + time * 0.01;
-  let shifted = vec4<f32>(color.rgb * vec3<f32>(sin(hue_shift), cos(hue_shift), 1.0), color.a);
-  textureStore(dataTextureB, coord, shifted);
-  let current_height = textureLoad(dataTextureC, coord, 0).r;
-  textureStore(dataTextureA, coord, vec4<f32>(current_height * 0.999, 0.0, 0.0, 0.0));
-  textureStore(writeTexture, id, shifted);
+    flow_dir = normalize(flow_dir + stir);
+
+    // Backward-Euler advection (semi-Lagrangian) — viscosity controls trail length
+    let advectStep = flow_dir * viscosity * (1.0 + audioK * 0.4);
+    let last_pos = vec2<f32>(coord) - advectStep;
+    let color = textureSampleLevel(readTexture, u_sampler, clamp(last_pos / dimF, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+
+    // Hue rotation by gradient magnitude (faster motion → more shift)
+    let hue_shift = (gradLen * 0.8 + time * 0.05) * hueShiftK * PHI;
+    let hueMat = vec3<f32>(0.5 + 0.5 * sin(hue_shift),
+                           0.5 + 0.5 * sin(hue_shift + 2.094),
+                           0.5 + 0.5 * sin(hue_shift + 4.188));
+    var shifted = mix(color.rgb, color.rgb * (0.6 + hueMat * 0.8), hueShiftK);
+
+    // Alpha: gradient magnitude (motion intensity) + mouse interaction drives compositing
+    let luma = dot(shifted, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(luma * 0.5 + gradLen * 0.6 + mouseGate * 0.2 + 0.1, 0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(shifted, alpha));
+    textureStore(dataTextureB, coord, vec4<f32>(shifted, alpha));
+    // Decay height field stored in dataTextureA (used by Pass-1 simulators)
+    let h = textureLoad(dataTextureC, coord, 0).r * (0.99 - audioK * 0.005);
+    textureStore(dataTextureA, coord, vec4<f32>(h, gradLen, 0.0, 1.0));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -41,7 +41,7 @@ fn map(p: vec3<f32>) -> f32 {
     var q = p;
 
     // Iterative KIFS folding logic
-    let audio = u.config.y * u.zoom_params.z;
+    let audio = plasmaBuffer[0].x * u.zoom_params.z;
     let iters = i32(u.zoom_params.x);
 
     let t1 = u.config.x * 0.2 + audio * 0.5;
@@ -165,5 +165,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fog = 1.0 - exp(-0.05 * t);
     color = mix(color, vec4<f32>(0.0, 0.0, 0.02, 1.0), fog);
 
-    textureStore(writeTexture, id.xy, color);
+        // (alpha already semantic)
+    textureStore(writeTexture, id.xy, finalColor);
+    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }

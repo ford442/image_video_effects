@@ -102,7 +102,7 @@ fn map(p: vec3<f32>) -> f32 {
 
     // Cosmic Wind Displacement
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
     let windDisp = fbm(pos * 0.5 + time * wind) * wind * (1.0 + audio * 0.5);
     pos += vec3<f32>(windDisp);
 
@@ -143,7 +143,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
     let chromaticShift = u.zoom_params.w;
 
     // Mouse Interaction
@@ -208,5 +208,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Fog
     col = mix(col, vec3<f32>(0.0, 0.0, 0.1), 1.0 - exp(-0.05 * t * t));
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(col, _alpha));
+    let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
 }
