@@ -1,56 +1,224 @@
 [
   {
-    "id": "aurora-rift-pass2",
-    "name": "Aurora Rift (Pass 2: Atmospheric Scattering)",
-    "url": "shaders/aurora-rift-pass2.wgsl",
+    "id": "atmos_volumetric_fog",
+    "name": "Volumetric Fog",
+    "url": "shaders/atmos_volumetric_fog.wgsl",
     "category": "lighting-effects",
-    "description": "Atmospheric scattering, color grading, and tone mapping. Second pass of 2-pass system.",
-    "features": [
-      "multi-pass-2",
-      "compute-shader",
-      "post-processing",
-      "tone-mapping"
-    ],
-    "multipass": {
-      "pass": 2,
-      "totalPasses": 2,
-      "prevShader": "aurora-rift-pass1"
-    },
+    "description": "Volumetric fog with ray marching, Mie/Rayleigh scattering, height-based density, god rays, and mouse-controlled light source",
     "tags": [
-      "aurora",
+      "volumetric",
+      "fog",
+      "god-rays",
       "scattering",
-      "grading",
-      "post-processing"
+      "atmosphere"
+    ],
+    "features": [
+      "ray-marching",
+      "mouse-control",
+      "audio-reactive",
+      "temporal"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "name": "Fog Density",
+        "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.1
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Light Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.1
       },
       {
         "id": "param3",
-        "name": "Scale",
+        "name": "Scattering",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "God Rays",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "gen-velocity-bloom",
+    "name": "Velocity Bloom",
+    "url": "shaders/gen-velocity-bloom.wgsl",
+    "category": "lighting-effects",
+    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity",
+    "tags": [
+      "temporal",
+      "bloom",
+      "velocity",
+      "motion",
+      "glow",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "temporal",
+      "motion-aware",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "threshold",
+        "name": "Velocity Threshold",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "intensity",
+        "name": "Bloom Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "radius",
+        "name": "Bloom Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "decay",
+        "name": "Decay Rate",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "holographic_interference",
+    "name": "Holographic Interference",
+    "url": "shaders/holographic_interference.wgsl",
+    "category": "lighting-effects",
+    "description": "Holographic rainbow patterns with interference fringes, multi-layer ghosting with staggered alpha, and wavelength-dependent diffraction",
+    "tags": [
+      "holographic",
+      "interference",
+      "rainbow",
+      "ghosting",
+      "diffraction"
+    ],
+    "features": [
+      "rgba",
+      "interference",
+      "diffraction",
+      "hologram",
+      "rainbow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Layers",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Rainbow Spread",
         "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Coherence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Ghost Offset",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "alpha-aurora-bands",
+    "name": "Alpha Aurora Bands",
+    "url": "shaders/alpha-aurora-bands.wgsl",
+    "category": "lighting-effects",
+    "description": "Physically-motivated aurora borealis simulation with emission-line spectral decomposition. RGB stores oxygen green, oxygen red, and nitrogen blue emission intensities. Alpha tracks altitude layer index. Mouse controls solar wind direction; ripples trigger magnetic reconnection substorms.",
+    "tags": [
+      "aurora",
+      "borealis",
+      "lighting",
+      "spectral",
+      "interactive",
+      "mouse-driven",
+      "rgba-state-machine",
+      "atmospheric"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Aurora Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "curtainFreq",
+        "name": "Curtain Frequency",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Wind Speed",
+        "type": "float",
+        "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -116,53 +284,61 @@
     ]
   },
   {
-    "id": "divine-light-gpt52",
-    "name": "Divine Light Cathedral gpt52",
-    "url": "shaders/divine-light-gpt52.wgsl",
+    "id": "aurora-rift-2-pass2",
+    "name": "Aurora Rift 2 (Pass 2: Enhanced Scattering)",
+    "url": "shaders/aurora-rift-2-pass2.wgsl",
     "category": "lighting-effects",
-    "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
+    "description": "Enhanced atmospheric scattering with richer color grading. Second pass of 2-pass system.",
+    "features": [
+      "multi-pass-2",
+      "compute-shader",
+      "post-processing",
+      "tone-mapping"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2,
+      "prevShader": "aurora-rift-2-pass1"
+    },
+    "tags": [
+      "aurora",
+      "scattering",
+      "grading",
+      "enhanced"
+    ],
     "params": [
       {
-        "id": "intensity",
-        "name": "Ray Intensity",
-        "default": 0.6,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "decay",
-        "name": "Ray Decay",
+        "id": "param1",
+        "name": "Intensity",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "density",
-        "name": "Ray Density",
-        "default": 0.6,
-        "min": 0.0,
-        "max": 1.0
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "threshold",
-        "name": "Brightness Filter",
-        "default": 0.45,
-        "min": 0.0,
-        "max": 1.0
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
-    ],
-    "features": [
-      "mouse-driven",
-      "volumetric",
-      "atmospheric",
-      "audio-reactive"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio-reactive",
-      "god-rays",
-      "cinematic"
     ]
   },
   {
@@ -224,86 +400,11 @@
     ]
   },
   {
-    "id": "sim-volumetric-fake-em",
-    "name": "Volumetric Fake + EM Field",
-    "url": "shaders/sim-volumetric-fake-em.wgsl",
+    "id": "aurora-rift-pass2",
+    "name": "Aurora Rift (Pass 2: Atmospheric Scattering)",
+    "url": "shaders/aurora-rift-pass2.wgsl",
     "category": "lighting-effects",
-    "description": "God rays with mouse electromagnetic field distortion. Electric field bends light rays; magnetic field causes chromatic RGB separation. Click ripples spawn secondary light charges.",
-    "features": [
-      "simulation",
-      "fake-volumetrics",
-      "mouse-driven",
-      "electromagnetic",
-      "interactive",
-      "randomization-safe"
-    ],
-    "params": [
-      {
-        "id": "light_intensity",
-        "name": "Light Intensity",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Light source intensity and EM charge strength"
-      },
-      {
-        "id": "em_distortion",
-        "name": "EM Distortion",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Electric field ray bending and dust density"
-      },
-      {
-        "id": "chromatic_split",
-        "name": "Chromatic Split",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Magnetic field RGB separation and scattering"
-      },
-      {
-        "id": "ripple_charge",
-        "name": "Ripple Charge",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Secondary charge strength from clicks and noise speed"
-      }
-    ],
-    "tags": [
-      "interactive",
-      "mouse-driven",
-      "physics",
-      "volumetric",
-      "god-rays",
-      "electromagnetic"
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "noise",
-      "Radial blur",
-      "electricField (mouse-electromagnetic-aurora.wgsl)",
-      "magneticField (mouse-electromagnetic-aurora.wgsl)"
-    ],
-    "performance_target": "45-60 FPS (GTX 1060)",
-    "created_by": "Agent CB-4 - Mouse Physics Injector",
-    "created_date": "2026-04-18"
-  },
-  {
-    "id": "aurora-rift-2-pass2",
-    "name": "Aurora Rift 2 (Pass 2: Enhanced Scattering)",
-    "url": "shaders/aurora-rift-2-pass2.wgsl",
-    "category": "lighting-effects",
-    "description": "Enhanced atmospheric scattering with richer color grading. Second pass of 2-pass system.",
+    "description": "Atmospheric scattering, color grading, and tone mapping. Second pass of 2-pass system.",
     "features": [
       "multi-pass-2",
       "compute-shader",
@@ -313,13 +414,13 @@
     "multipass": {
       "pass": 2,
       "totalPasses": 2,
-      "prevShader": "aurora-rift-2-pass1"
+      "prevShader": "aurora-rift-pass1"
     },
     "tags": [
       "aurora",
       "scattering",
       "grading",
-      "enhanced"
+      "post-processing"
     ],
     "params": [
       {
@@ -355,6 +456,131 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "divine-light-gpt52",
+    "name": "Divine Light Cathedral gpt52",
+    "url": "shaders/divine-light-gpt52.wgsl",
+    "category": "lighting-effects",
+    "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Ray Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Ray Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Ray Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "threshold",
+        "name": "Brightness Filter",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "volumetric",
+      "atmospheric",
+      "audio-reactive"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio-reactive",
+      "god-rays",
+      "cinematic"
+    ]
+  },
+  {
+    "id": "sim-volumetric-fake-em",
+    "name": "Volumetric Fake + EM Field",
+    "url": "shaders/sim-volumetric-fake-em.wgsl",
+    "category": "lighting-effects",
+    "description": "God rays with mouse electromagnetic field distortion. Electric field bends light rays; magnetic field causes chromatic RGB separation. Click ripples spawn secondary light charges.",
+    "features": [
+      "simulation",
+      "fake-volumetrics",
+      "mouse-driven",
+      "electromagnetic",
+      "interactive",
+      "randomization-safe"
+    ],
+    "params": [
+      {
+        "id": "light_intensity",
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Light source intensity and EM charge strength"
+      },
+      {
+        "id": "em_distortion",
+        "name": "EM Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Electric field ray bending and dust density"
+      },
+      {
+        "id": "chromatic_split",
+        "name": "Chromatic Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Magnetic field RGB separation and scattering"
+      },
+      {
+        "id": "ripple_charge",
+        "name": "Ripple Charge",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Secondary charge strength from clicks and noise speed"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "volumetric",
+      "god-rays",
+      "electromagnetic"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "noise",
+      "Radial blur",
+      "electricField (mouse-electromagnetic-aurora.wgsl)",
+      "magneticField (mouse-electromagnetic-aurora.wgsl)"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
   },
   {
     "id": "underwater_caustics",
@@ -413,65 +639,6 @@
     "target_rating": 4.7
   },
   {
-    "id": "alpha-aurora-bands",
-    "name": "Alpha Aurora Bands",
-    "url": "shaders/alpha-aurora-bands.wgsl",
-    "category": "lighting-effects",
-    "description": "Physically-motivated aurora borealis simulation with emission-line spectral decomposition. RGB stores oxygen green, oxygen red, and nitrogen blue emission intensities. Alpha tracks altitude layer index. Mouse controls solar wind direction; ripples trigger magnetic reconnection substorms.",
-    "tags": [
-      "aurora",
-      "borealis",
-      "lighting",
-      "spectral",
-      "interactive",
-      "mouse-driven",
-      "rgba-state-machine",
-      "atmospheric"
-    ],
-    "features": [
-      "mouse-driven",
-      "rgba-state-machine"
-    ],
-    "params": [
-      {
-        "id": "intensity",
-        "name": "Aurora Intensity",
-        "type": "float",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "curtainFreq",
-        "name": "Curtain Frequency",
-        "type": "float",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "type": "float",
-        "default": 0.3,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "speed",
-        "name": "Wind Speed",
-        "type": "float",
-        "default": 0.4,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      }
-    ]
-  },
-  {
     "id": "sim-volumetric-fake",
     "name": "Volumetric Fake (God Rays)",
     "url": "shaders/sim-volumetric-fake.wgsl",
@@ -489,8 +656,8 @@
         "id": "light_intensity",
         "name": "Light Intensity",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
         "description": "Light source intensity"
@@ -499,8 +666,8 @@
         "id": "dust",
         "name": "Dust Density",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
         "description": "Dust particle density"
@@ -509,8 +676,8 @@
         "id": "scattering",
         "name": "Scattering",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
         "description": "Scattering amount"
@@ -519,8 +686,8 @@
         "id": "noise_speed",
         "name": "Noise Speed",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Dust movement speed"
@@ -535,172 +702,5 @@
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22"
-  },
-  {
-    "id": "gen-velocity-bloom",
-    "name": "Velocity Bloom",
-    "url": "shaders/gen-velocity-bloom.wgsl",
-    "category": "lighting-effects",
-    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity",
-    "tags": [
-      "temporal",
-      "bloom",
-      "velocity",
-      "motion",
-      "glow",
-      "audio",
-      "music"
-    ],
-    "features": [
-      "temporal",
-      "motion-aware",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "threshold",
-        "name": "Velocity Threshold",
-        "default": 0.3,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "intensity",
-        "name": "Bloom Intensity",
-        "default": 0.7,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "radius",
-        "name": "Bloom Radius",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "decay",
-        "name": "Decay Rate",
-        "default": 0.85,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "atmos_volumetric_fog",
-    "name": "Volumetric Fog",
-    "url": "shaders/atmos_volumetric_fog.wgsl",
-    "category": "lighting-effects",
-    "description": "Volumetric fog with ray marching, Mie/Rayleigh scattering, height-based density, god rays, and mouse-controlled light source",
-    "tags": [
-      "volumetric",
-      "fog",
-      "god-rays",
-      "scattering",
-      "atmosphere"
-    ],
-    "features": [
-      "ray-marching",
-      "mouse-control",
-      "audio-reactive",
-      "temporal"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Fog Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Light Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Scattering",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "God Rays",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.7
-  },
-  {
-    "id": "holographic_interference",
-    "name": "Holographic Interference",
-    "url": "shaders/holographic_interference.wgsl",
-    "category": "lighting-effects",
-    "description": "Holographic rainbow patterns with interference fringes, multi-layer ghosting with staggered alpha, and wavelength-dependent diffraction",
-    "tags": [
-      "holographic",
-      "interference",
-      "rainbow",
-      "ghosting",
-      "diffraction"
-    ],
-    "features": [
-      "rgba",
-      "interference",
-      "diffraction",
-      "hologram",
-      "rainbow"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Layers",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Rainbow Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Coherence",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "Ghost Offset",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.6
   }
 ]

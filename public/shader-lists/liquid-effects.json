@@ -1,5 +1,63 @@
 [
   {
+    "id": "ink_dispersion_alpha",
+    "name": "Ink Dispersion RGBA",
+    "url": "shaders/ink_dispersion_alpha.wgsl",
+    "category": "liquid-effects",
+    "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
+    "tags": [
+      "ink",
+      "fluid",
+      "dispersion",
+      "chemical",
+      "curl",
+      "water"
+    ],
+    "features": [
+      "rgba",
+      "fluid-sim",
+      "curl-noise",
+      "advection",
+      "alpha-density",
+      "mouse-spawn"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Diffusion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Reaction",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
     "id": "liquid_magnetic_ferro",
     "name": "Magnetic Ferrofluid",
     "url": "shaders/liquid_magnetic_ferro.wgsl",
@@ -53,154 +111,6 @@
       }
     ],
     "target_rating": 4.7
-  },
-  {
-    "id": "liquid-optimized",
-    "name": "Liquid Surface Tension (Optimized)",
-    "url": "shaders/liquid-optimized.wgsl",
-    "category": "liquid-effects",
-    "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
-    "tags": [
-      "liquid",
-      "surface-tension",
-      "capillary-waves",
-      "optimized",
-      "shared-memory",
-      "audio",
-      "music"
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive"
-    ],
-    "params": [
-      {
-        "id": "surfaceTension",
-        "name": "Surface Tension",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "gravityScale",
-        "name": "Gravity Scale",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "damping",
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "turbidity",
-        "name": "Turbidity",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "viscous-drag",
-    "name": "Viscous Drag",
-    "url": "shaders/viscous-drag.wgsl",
-    "category": "liquid-effects",
-    "description": "The screen becomes a thick, viscous fluid that ripples and deforms under your touch.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "viscosity",
-        "name": "Viscosity",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.6
-      },
-      {
-        "id": "drag-strength",
-        "name": "Push Strength",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.5
-      },
-      {
-        "id": "recovery-speed",
-        "name": "Flow Memory",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.95
-      },
-      {
-        "id": "distortion-scale",
-        "name": "Warp Amount",
-        "min": 0.0,
-        "max": 1.0,
-        "default": 0.5
-      }
-    ],
-    "tags": [
-      "fluid",
-      "liquid",
-      "water"
-    ]
-  },
-  {
-    "id": "luma-melt-interactive",
-    "url": "shaders/luma-melt-interactive.wgsl",
-    "category": "liquid-effects",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "speed",
-        "name": "Melt Speed",
-        "type": "float",
-        "default": 0.3,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "persistence",
-        "name": "Trails",
-        "type": "float",
-        "default": 0.9,
-        "min": 0.5,
-        "max": 0.99
-      },
-      {
-        "id": "radius",
-        "name": "Heat Radius",
-        "type": "float",
-        "default": 0.2,
-        "min": 0.0,
-        "max": 1.0
-      },
-      {
-        "id": "heat",
-        "name": "Heat Intensity",
-        "type": "float",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0
-      }
-    ],
-    "description": "Video melts downwards, accelerated by brightness and mouse heat.",
-    "tags": [
-      "fluid",
-      "liquid",
-      "water"
-    ],
-    "name": "Luma Melt"
   },
   {
     "id": "kimi-liquid-glass",
@@ -270,32 +180,32 @@
         "id": "viscosity",
         "name": "Viscosity",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       },
       {
         "id": "pressure_iterations",
         "name": "Pressure Iterations",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       },
       {
         "id": "flow_speed",
         "name": "Flow Speed",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       },
       {
         "id": "turbulence",
         "name": "Turbulence",
         "default": 0.3,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       }
     ],
@@ -314,62 +224,6 @@
       "eddy",
       "interactive",
       "physics"
-    ]
-  },
-  {
-    "id": "liquid-optimized-pass2",
-    "name": "Liquid Optimized (Pass 2)",
-    "url": "shaders/liquid-optimized-pass2.wgsl",
-    "category": "liquid-effects",
-    "description": "Fluid rendering pass: Fresnel reflection, Beer-Lambert absorption, specular highlights, and alpha blending. Reads physics state from dataTextureC.",
-    "tags": [
-      "liquid",
-      "fresnel",
-      "beer-lambert",
-      "multi-pass",
-      "rendering"
-    ],
-    "features": [
-      "multi-pass-2",
-      "mouse-driven"
-    ],
-    "multipass": {
-      "pass": 2,
-      "totalPasses": 2
-    },
-    "params": [
-      {
-        "id": "surfaceTension",
-        "name": "Surface Tension",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "gravityScale",
-        "name": "Gravity Scale",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "damping",
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      },
-      {
-        "id": "turbidity",
-        "name": "Turbidity",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -399,92 +253,238 @@
         "id": "surfaceTension",
         "name": "Surface Tension",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       },
       {
         "id": "gravityScale",
         "name": "Gravity Scale",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       },
       {
         "id": "damping",
         "name": "Damping",
         "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       },
       {
         "id": "turbidity",
         "name": "Turbidity",
-        "default": 0.0,
-        "min": 0.0,
-        "max": 1.0,
+        "default": 0,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       }
     ]
   },
   {
-    "id": "ink_dispersion_alpha",
-    "name": "Ink Dispersion RGBA",
-    "url": "shaders/ink_dispersion_alpha.wgsl",
+    "id": "liquid-optimized-pass2",
+    "name": "Liquid Optimized (Pass 2)",
+    "url": "shaders/liquid-optimized-pass2.wgsl",
     "category": "liquid-effects",
-    "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
+    "description": "Fluid rendering pass: Fresnel reflection, Beer-Lambert absorption, specular highlights, and alpha blending. Reads physics state from dataTextureC.",
     "tags": [
-      "ink",
-      "fluid",
-      "dispersion",
-      "chemical",
-      "curl",
-      "water"
+      "liquid",
+      "fresnel",
+      "beer-lambert",
+      "multi-pass",
+      "rendering"
     ],
     "features": [
-      "rgba",
-      "fluid-sim",
-      "curl-noise",
-      "advection",
-      "alpha-density",
-      "mouse-spawn"
+      "multi-pass-2",
+      "mouse-driven"
     ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
     "params": [
       {
-        "id": "param1",
-        "name": "Diffusion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Viscosity",
+        "id": "surfaceTension",
+        "name": "Surface Tension",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.1
+        "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Intensity",
-        "default": 0.7,
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.1
+        "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Reaction",
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-optimized",
+    "name": "Liquid Surface Tension (Optimized)",
+    "url": "shaders/liquid-optimized.wgsl",
+    "category": "liquid-effects",
+    "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
+    "tags": [
+      "liquid",
+      "surface-tension",
+      "capillary-waves",
+      "optimized",
+      "shared-memory",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "luma-melt-interactive",
+    "url": "shaders/luma-melt-interactive.wgsl",
+    "category": "liquid-effects",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Melt Speed",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "persistence",
+        "name": "Trails",
+        "type": "float",
+        "default": 0.9,
+        "min": 0.5,
+        "max": 0.99
+      },
+      {
+        "id": "radius",
+        "name": "Heat Radius",
+        "type": "float",
         "default": 0.2,
         "min": 0,
-        "max": 1,
-        "step": 0.1
+        "max": 1
+      },
+      {
+        "id": "heat",
+        "name": "Heat Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
       }
     ],
-    "target_rating": 4.7
+    "description": "Video melts downwards, accelerated by brightness and mouse heat.",
+    "tags": [
+      "fluid",
+      "liquid",
+      "water"
+    ],
+    "name": "Luma Melt"
+  },
+  {
+    "id": "viscous-drag",
+    "name": "Viscous Drag",
+    "url": "shaders/viscous-drag.wgsl",
+    "category": "liquid-effects",
+    "description": "The screen becomes a thick, viscous fluid that ripples and deforms under your touch.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "drag-strength",
+        "name": "Push Strength",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "recovery-speed",
+        "name": "Flow Memory",
+        "min": 0,
+        "max": 1,
+        "default": 0.95
+      },
+      {
+        "id": "distortion-scale",
+        "name": "Warp Amount",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    ],
+    "tags": [
+      "fluid",
+      "liquid",
+      "water"
+    ]
   }
 ]
