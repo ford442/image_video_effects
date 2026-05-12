@@ -4048,6 +4048,70 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for evaluating highly reflective, curved metallic surfaces under intense daylight and panning motion blur.
 
+### Suggestion: Cyberpunk Neon Fish Market
+- **Date:** 2026-11-29
+- **Prompt:** "A vibrant, eye-level shot of a bustling cyberpunk fish market at night. The stall is overflowing with exotic, bioluminescent seafood reflecting the harsh, flickering neon signs in vibrant pink and cyan above. Steam billows from boiling pots and the wet, metallic surfaces gleam with reflections. The mood is gritty, energetic, and atmospheric. Shot on a 35mm lens, high contrast, capturing the chaotic urban environment."
+- **Negative prompt:** "daytime, clean, pristine, cartoon, low-res, empty, simple"
+- **Tags:** cyberpunk, urban, photorealistic, gritty
+- **Style / Reference:** cyberpunk aesthetic, cinematic lighting, photorealistic
+- **Composition:** eye-level, crowded street, naturalistic framing
+- **Color palette:** neon magenta, electric cyan, deep shadows, silver reflections
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261129_cyberpunk-fish-market.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing reflections on wet surfaces, glowing seafood, and dense urban clutter.
+
+### Suggestion: Steampunk Greenhouse Laboratory
+- **Date:** 2026-11-29
+- **Prompt:** "An incredibly detailed, wide-angle interior of a steampunk greenhouse functioning as a mad botanist's laboratory. Colossal glass domes framed with wrought iron let in a hazy, golden-hour light that cuts through the thick mist. Exotic, alien plants with glowing veins are intertwined with complex brass pipes, ticking gauges, and bubbling alembics. The mood is wondrous, intellectual, and slightly chaotic. Captured with a 24mm wide-angle lens, emphasizing the sprawling scale of the lush greenery and mechanical apparatuses."
+- **Negative prompt:** "modern, clean, daylight, simple, dark, empty, low detail"
+- **Tags:** steampunk, interior, 3D, whimsical
+- **Style / Reference:** steampunk concept art, highly detailed illustration
+- **Composition:** wide expansive view, dense overlapping elements, deep depth of field
+- **Color palette:** warm brass, emerald green, golden sunlight, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261129_steampunk-greenhouse-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing atmospheric mist, volumetric lighting, and intricate brass and glass materials.
+
+### Suggestion: Ethereal Glacial Crystal Palace
+- **Date:** 2026-11-29
+- **Prompt:** "A majestic, wide landscape of a colossal palace carved entirely out of semi-translucent, glowing glacial ice and iridescent quartz crystals. The structure is perched atop a snowy mountain peak under a brilliant, star-filled night sky featuring a vibrant aurora borealis. The lighting is ethereal, with the soft green and purple aurora reflecting perfectly off the faceted crystal walls. The mood is serene, magical, and freezing. Captured with an ultra-wide 14mm lens to emphasize the majestic scale against the cosmic sky."
+- **Negative prompt:** "sunlight, daylight, warm colors, people, muddy, messy rock, modern"
+- **Tags:** fantasy, architecture, 3D, ethereal
+- **Style / Reference:** epic fantasy landscape, hyper-detailed 3D environment
+- **Composition:** symmetrical, grand scale, low angle looking up
+- **Color palette:** freezing glacial blue, glowing aurora green, pale quartz white, deep night sky
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261129_glacial-crystal-palace.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for evaluating ice refraction, aurora lighting, and grand, glowing architectural forms.
+
+### Suggestion: Macro Clockwork Tarantula
+- **Date:** 2026-11-29
+- **Prompt:** "A hyper-detailed, extreme macro photograph of a terrifying yet beautiful mechanical tarantula. The intricate subject is constructed from polished copper wire, brushed steel plates, and tiny ticking watch gears. It rests on a piece of dark, aged leather. The lighting is warm, directional studio lighting, creating sharp specular highlights on the metallic edges and deep, dark shadows between the gears. The mood is intricate, menacing, and antique. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on its glowing red ruby eyes."
+- **Negative prompt:** "organic, flesh, real spider, bright daylight, soft lighting, simple"
+- **Tags:** steampunk, macro, photorealistic, dark
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** extreme close-up, asymmetrical, shallow depth of field
+- **Color palette:** warm copper, brushed steel, deep brown leather, glowing ruby red
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261129_clockwork-tarantula.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for pushing the model's detailing capabilities on micro-mechanical parts and dramatic lighting.
+
+### Suggestion: Solarpunk Floating Archipelago
+- **Date:** 2026-11-29
+- **Prompt:** "A breathtaking, sweeping aerial view of a vibrant solarpunk floating archipelago suspended high above a pristine, deep blue ocean. The islands are connected by elegant, curved bridges of gleaming white composite and feature lush vertical gardens and wind turbines. The lighting features brilliant, midday sunlight that casts sharp, clean shadows across the hanging vines and cascading waterfalls. The mood is utopian, harmonious, and uplifting. Captured with an aerial wide-angle perspective to showcase the vast scale and intricate eco-architecture."
+- **Negative prompt:** "dystopian, dark, night, pollution, gritty, lowres, blurry, smog"
+- **Tags:** solarpunk, architecture, 3D, bright
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** aerial perspective, wide expansive view, dynamic curves
+- **Color palette:** brilliant white, lush forest greens, bright sky blue, deep ocean blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261129_solarpunk-archipelago.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests large-scale floating architecture, clean lighting, and vibrant eco-futurism.
 ### Suggestion: Graphene Cyberpunk Koi Pond
 - **Date:** 2026-11-29
 - **Prompt:** "A high-angle, extreme close-up of a futuristic koi pond where the water is a thick, glowing neon cyan liquid and the koi fish are intricately constructed from matte, light-absorbing graphene and polished chrome. The metallic subjects swim gracefully, leaving rippling trails of glowing data in the fluid. The lighting is high-contrast, dominated by the vibrant cyan glow of the liquid reflecting off the chrome details, while the graphene scales remain in pitch black shadow. The mood is ethereal yet highly advanced. Captured with a 50mm lens, utilizing a fast shutter speed to freeze the splashing, glowing liquid droplets."
