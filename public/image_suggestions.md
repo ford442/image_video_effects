@@ -4048,6 +4048,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for evaluating highly reflective, curved metallic surfaces under intense daylight and panning motion blur.
 
+### Suggestion: Graphene Cyberpunk Koi Pond
+- **Date:** 2026-11-29
+- **Prompt:** "A high-angle, extreme close-up of a futuristic koi pond where the water is a thick, glowing neon cyan liquid and the koi fish are intricately constructed from matte, light-absorbing graphene and polished chrome. The metallic subjects swim gracefully, leaving rippling trails of glowing data in the fluid. The lighting is high-contrast, dominated by the vibrant cyan glow of the liquid reflecting off the chrome details, while the graphene scales remain in pitch black shadow. The mood is ethereal yet highly advanced. Captured with a 50mm lens, utilizing a fast shutter speed to freeze the splashing, glowing liquid droplets."
+- **Negative prompt:** "organic fish, clear water, daylight, natural, muddy, messy, blurry, low resolution"
+- **Tags:** cyberpunk, nature, macro, 3D, ethereal
+- **Style / Reference:** photorealistic, cybernetic wildlife
+- **Composition:** close-up, tight framing, dynamic movement
+- **Color palette:** pitch black matte graphene, glowing neon cyan, polished chrome silver
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261129_graphene-koi.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing high contrast between light-emitting fluids and light-absorbing materials like graphene.
+
+### Suggestion: Biopunk Bioluminescent Library
+- **Date:** 2026-11-29
+- **Prompt:** "A sprawling, multi-level library where the towering bookshelves are carved directly from massive, ancient fungal stalks, and the books are bound in pulsing, fleshy bio-membranes. The organic architecture is overgrown with glowing, bioluminescent cyan vines and giant neon magenta mushrooms acting as lamps. The lighting is completely diegetic, emitting softly from the bioluminescent flora and creating a mysterious, multi-colored glow that casts deep, eerie shadows in the vast interior. The mood is moody, alien, and slightly unsettling. Captured with a wide 14mm lens to emphasize the massive, cathedral-like scale of the fungal library."
+- **Negative prompt:** "wood, paper books, daylight, modern, clean, people, bright sunlight, flat lighting"
+- **Tags:** sci-fi, architecture, interior, surreal, moody
+- **Style / Reference:** 3D, dark fantasy environmental visualization
+- **Composition:** wide shot, deep perspective, towering vertical elements
+- **Color palette:** glowing neon magenta, bioluminescent cyan, deep earthy browns, fleshy pinks
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261129_biopunk-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating complex organic architectural forms mixed with multi-colored volumetric emission.
+
+### Suggestion: Art Deco Crystal Locomotive
+- **Date:** 2026-11-29
+- **Prompt:** "A majestic, heavily stylized steam locomotive soaring across a colossal viaduct, constructed entirely from perfectly faceted, translucent sapphire crystal with intricate gold Art Deco geometric inlays. The translucent subject is backlit by a massive, golden-hour sun setting low on the horizon, creating blindingly beautiful internal refractions and casting a warm glow through the blue crystal. The lighting is intensely cinematic and directional, with thick, white steam billowing from the engine catching the warm sunlight. The mood is bright, powerful, and wildly optimistic. Captured with a dynamic, low-angle perspective using a 35mm lens."
+- **Negative prompt:** "iron, rust, dark, gritty, modern train, dystopia, blurry, flat lighting"
+- **Tags:** sci-fi, architecture, 3D, surreal, bright
+- **Style / Reference:** 3D, opulent retro-futuristic vehicle design
+- **Composition:** wide shot, dynamic diagonal lines, towering scale
+- **Color palette:** deep translucent sapphire, brilliant gold, blinding warm sunlight, crisp white steam
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261129_crystal-locomotive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating internal crystal refraction combined with intricate metallic inlays and volumetric steam.
+
+### Suggestion: Italian Futurism Asteroid Mining
+- **Date:** 2026-11-29
+- **Prompt:** "A chaotic, high-speed scene of industrial mining on a tumbling asteroid, depicted in the harsh, fragmented style of Italian Futurism. Massive, aggressive drilling machines are deconstructed into jagged diagonal lines and overlapping geometric planes that capture the kinetic energy and violent mechanical force. The lighting is a stark, harsh white spotlight cutting through the vacuum of space, casting jagged, hard-edged shadows that enhance the splintered geometry of the composition. The mood is cinematic, aggressive, and industrial. Captured with a dynamic, tilted perspective to emphasize raw, destructive motion."
+- **Negative prompt:** "calm, realistic space, smooth curves, organic, gentle, photorealistic, quiet"
+- **Tags:** sci-fi, landscape, abstract, cinematic, dark
+- **Style / Reference:** abstract, Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** wide shot, dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black space, blinding white light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261129_futurism-asteroid.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to an industrial space-mining concept.
+
+### Suggestion: Steampunk Damascus Steel Arachnid
+- **Date:** 2026-11-29
+- **Prompt:** "An incredibly detailed, extreme macro photograph of a mechanical tarantula constructed from beautiful, rippled Damascus steel and tiny brass clockwork gears. The heavy, metallic subject features intricate, flowing dark and light grey wave patterns across its segmented legs and abdomen, resting on a bed of crushed coal. The lighting is moody, directional studio lighting that grazes the metallic surface, creating sharp specular highlights on the forged ridges and deep, dark shadows beneath the mechanical legs. The mood is dark, menacing, and masterful. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the glowing, multi-faceted ruby eyes of the arachnid."
+- **Negative prompt:** "organic, real spider, hair, daylight, soft lighting, bright background, blurry"
+- **Tags:** steampunk, macro, photorealistic, cinematic, dark
+- **Style / Reference:** photorealistic, steampunk aesthetic
+- **Composition:** close-up, menacing low angle, shallow depth of field
+- **Color palette:** dark metallic greys, warm brass accents, deep black coal, glowing ruby red
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261129_damascus-arachnid.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the complex, flowing texture generation of Damascus steel mapped onto intricate, macro-mechanical insect parts.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
