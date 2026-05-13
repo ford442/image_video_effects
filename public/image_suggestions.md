@@ -4242,6 +4242,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for testing bright global illumination, dense foliage rendering, and complex architectural environments in daylight.
 
+
+### Suggestion: Bioluminescent Biolab Portrait
+- **Date:** 2026-12-01
+- **Prompt:** "A close-up portrait of a weary scientist inside a high-tech biolab overgrown with glowing cyan moss. The subject's face is illuminated by the harsh, cold light of a holographic interface and the soft, ethereal cyan glow of the mutated flora. The mood is moody, intense, and mysterious. Captured with an 85mm portrait lens, featuring a shallow depth of field to isolate the subject against the out-of-focus background equipment."
+- **Negative prompt:** "daylight, sunny, cartoon, flat, simple, empty, wide angle"
+- **Tags:** sci-fi, portrait, photorealistic, moody
+- **Style / Reference:** photorealistic portrait photography, sci-fi concept art
+- **Composition:** close-up, shallow depth of field, rule of thirds
+- **Color palette:** glowing cyan, sterile white, deep shadow black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261201_biolab-portrait.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing high-contrast facial lighting and glowing organic textures.
+
+### Suggestion: Steampunk Alchemy Laboratory
+- **Date:** 2026-12-01
+- **Prompt:** "A wide-angle interior shot of a cluttered steampunk alchemy laboratory. The room is filled with brass alembics, bubbling glass vials, and heavy iron gears built into the walls. The lighting is warm and directional, emanating from a roaring furnace and scattering through the thick, atmospheric steam hanging in the air. The mood is dark, mysterious, and historically inventive. Captured with a 24mm lens to emphasize the dense clutter and intricate architectural details of the lab."
+- **Negative prompt:** "modern, bright, clean, sterile, daylight, simple, outdoor"
+- **Tags:** steampunk, interior, 3D, dark
+- **Style / Reference:** highly detailed 3D environment, steampunk aesthetic
+- **Composition:** wide interior, deep perspective, dense overlapping elements
+- **Color palette:** warm brass, rusty iron, glowing amber, dark soot black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_steampunk-alchemy.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of complex brass machinery and volumetric steam lighting.
+
+### Suggestion: Floating Solarpunk Windmill
+- **Date:** 2026-12-01
+- **Prompt:** "A majestic, floating windmill structure designed in a vibrant solarpunk aesthetic, suspended high above a lush, green mountain valley. The architecture blends sleek white carbon fiber with natural bamboo and cascading vines. The lighting is bright, clear midday sunlight that casts sharp shadows and highlights the brilliant greens and whites. The mood is bright, optimistic, and peaceful. Captured with a drone-like aerial perspective to showcase the vast scale of the landscape below."
+- **Negative prompt:** "dystopian, smog, pollution, night, gritty, dark, lowres"
+- **Tags:** solarpunk, architecture, photorealistic, bright
+- **Style / Reference:** utopian architectural visualization, bright and clean
+- **Composition:** aerial perspective, dynamic angles, expansive background
+- **Color palette:** pristine white, bamboo yellow, lush forest green, clear sky blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261201_solarpunk-windmill.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating clean, bright global illumination and futuristic eco-designs.
+
+### Suggestion: Ethereal Crystal Spider Macro
+- **Date:** 2026-12-01
+- **Prompt:** "An ultra-detailed macro photograph of a delicate spider constructed entirely from translucent, pale blue quartz crystals. The crystalline subject is perched on a dark, wet fern leaf. The lighting is soft and ethereal, passing through the spider's translucent legs and creating intricate internal refractions. The mood is ethereal, delicate, and surreal. Captured with a 100mm macro lens, utilizing a razor-thin depth of field to isolate the spider against a smooth, dark background."
+- **Negative prompt:** "organic, flesh, real spider, bright sunlight, wide angle, messy"
+- **Tags:** fantasy, macro, surreal, ethereal
+- **Style / Reference:** photorealistic macro photography, surreal material swap
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** translucent pale blue, dark wet green, deep black shadows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261201_crystal-spider.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing complex subsurface scattering and crystalline refraction on macro subjects.
+
+### Suggestion: Isometric Cyberpunk Noodles
+- **Date:** 2026-12-01
+- **Prompt:** "A vibrant, highly detailed isometric view of a tiny cyberpunk noodle stand tucked into a gritty urban corner. The scene is densely packed with glowing neon signs, steaming pots, and a weary robotic chef. The lighting is a chaotic mix of harsh neon pink and electric cyan contrasting with the dark, rainy shadows of the city. The mood is cinematic, energetic, and crowded. Captured with a strict orthographic isometric camera, ensuring perfectly parallel lines and flat perspective."
+- **Negative prompt:** "perspective, vanishing point, daylight, clean, natural, wide landscape"
+- **Tags:** cyberpunk, architecture, isometric, cinematic
+- **Style / Reference:** isometric 3D illustration, highly detailed cyberpunk diorama
+- **Composition:** isometric projection, centered diorama, dense clutter
+- **Color palette:** neon magenta, electric cyan, rainy grey, warm noodle broth yellow
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261201_isometric-noodles.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's ability to strictly adhere to isometric perspective while rendering dense, glowing urban clutter.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
