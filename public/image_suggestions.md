@@ -4177,6 +4177,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the complex, flowing texture generation of Damascus steel mapped onto intricate, macro-mechanical insect parts.
 
+### Suggestion: Crystal Cave Sanctuary
+- **Date:** 2026-05-15
+- **Prompt:** "A vast underground cavern serving as a mystical sanctuary, illuminated by colossal, glowing amethysts and emeralds protruding from the ceiling and floor. An ancient stone altar sits in the center, bathed in a shaft of ethereal blue light from a crack far above. The atmosphere is solemn and magical, with motes of glowing dust floating in the air. Photographed with a wide 14mm lens, capturing the expansive scale and intricate crystalline details."
+- **Negative prompt:** "daylight, modern, people, artificial lights, blurry, low resolution"
+- **Tags:** fantasy, interior, nature, photorealistic, ethereal, magical
+- **Style / Reference:** photorealistic, cinematic concept art
+- **Composition:** wide shot, symmetrical, low angle looking up at the crystals
+- **Color palette:** deep purples, emerald greens, ethereal blues
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_crystal-cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing volumetric lighting passing through translucent colored crystals and atmospheric dust scattering.
+
+### Suggestion: Neon-lit Noir Detective Office
+- **Date:** 2026-05-15
+- **Prompt:** "The messy, cluttered office of a weary detective in a futuristic metropolis. Rain streaks the large glass window, blurring the vibrant neon signs of the cyberpunk city outside. Inside, a single tungsten desk lamp casts long, harsh shadows across piles of scattered documents, a classic typewriter, and a half-empty glass of amber liquid. The lighting is high-contrast, moody, and dramatic. Captured with a 35mm lens, focusing on the desk with the city serving as a bokeh background."
+- **Negative prompt:** "bright, sunny, clean, minimalist, cartoon, 3D render"
+- **Tags:** cyberpunk, noir, interior, still life, moody, cinematic
+- **Style / Reference:** photorealistic, classic film noir meets cyberpunk
+- **Composition:** medium shot, slightly off-center desk, rule of thirds
+- **Color palette:** stark blacks, tungsten yellow, neon magenta, electric blue reflections
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_noir-office.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for checking reflections on wet glass, bokeh quality, and high-contrast shadow rendering.
+
+### Suggestion: Bioluminescent Fungal Forest
+- **Date:** 2026-05-15
+- **Prompt:** "A macro, ground-level view deep within an alien forest, where towering mushrooms substitute for trees. The giant fungi emit a soft, pulsing bioluminescent glow in shades of cyan and magenta. The forest floor is covered in glowing moss and tiny, luminous spores drifting lazily. The scene is lit entirely by the organic glow of the flora, creating a whimsical and alien mood. Shot with a 100mm macro lens, featuring a very shallow depth of field to isolate a single, intricate mushroom cluster."
+- **Negative prompt:** "sunlight, earth-like, daytime, clear sky, human structures, harsh shadows"
+- **Tags:** sci-fi, macro, nature, surreal, whimsical, ethereal
+- **Style / Reference:** photorealistic macro photography, 3D render, dreamlike
+- **Composition:** extreme close-up, ground level, subject centered
+- **Color palette:** glowing cyan, deep magenta, dark forest greens
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260515_fungal-forest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating subsurface scattering on organic textures and shallow depth of field (bokeh) on glowing particles.
+
+### Suggestion: Brass and Steam Clockwork Insect
+- **Date:** 2026-05-15
+- **Prompt:** "A highly intricate, mechanical praying mantis constructed entirely from polished brass, copper gears, and tiny glass vials of glowing green fluid. The insect rests on a weathered, leather-bound journal. Tiny plumes of steam escape from its joints. The lighting is warm and directional, emphasizing the reflective metallic surfaces and the fine engraving on its armor. The mood is curious and inventive. Photographed with a 50mm lens, sharp focus on the complex gear-work of the insect's head."
+- **Negative prompt:** "biological, fleshy, real insect, modern technology, plastic, lowres"
+- **Tags:** steampunk, macro, still life, photorealistic, whimsical
+- **Style / Reference:** photorealistic, intricate 3D rendering, macro product photography
+- **Composition:** close-up, looking slightly down, subject filling the frame
+- **Color palette:** warm brass, polished copper, aged leather brown, glowing neon green
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260515_clockwork-insect.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for testing intricate metallic reflections, micro-shadows within gear mechanisms, and sharp textural contrasts.
+
+### Suggestion: Solarpunk Rooftop Garden Oasis
+- **Date:** 2026-05-15
+- **Prompt:** "A lush, thriving community garden located on the rooftop of a curved, futuristic skyscraper. People are tending to overflowing planters and terraced vegetable beds, surrounded by sleek solar panels and gentle wind turbines. The bright, midday sun bathes the scene in vibrant, natural light, highlighting the diverse, vivid greens of the foliage against the bright white architecture. The mood is optimistic, bustling, and harmonious. Captured with a wide 24mm lens to show the expansive garden and the eco-city skyline in the background."
+- **Negative prompt:** "dystopian, dark, rainy, polluted, grim, abandoned"
+- **Tags:** solarpunk, architecture, landscape, bright, optimistic
+- **Style / Reference:** photorealistic architectural visualization, utopian
+- **Composition:** wide shot, slight high angle, deep depth of field
+- **Color palette:** vivid greens, bright white, clear sky blue, vibrant floral colors
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_solarpunk-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing bright global illumination, dense foliage rendering, and complex architectural environments in daylight.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
