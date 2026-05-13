@@ -1145,6 +1145,21 @@
     ]
   },
   {
+    "id": "gen-aurora-borealis-synthesis",
+    "name": "Aurora Borealis Synthesis",
+    "description": "Render a 3D volume of swirling aurora light and project it onto the 2D video surface, with audio-driven motion and depth-based mapping.",
+    "category": "generative",
+    "tags": [
+      "aurora",
+      "volumetric",
+      "audio-reactive",
+      "plasma"
+    ],
+    "coordinate": 878,
+    "parameters": [],
+    "url": "shaders/gen-aurora-borealis-synthesis.wgsl"
+  },
+  {
     "id": "gen-auroral-ferrofluid-monolith",
     "name": "Auroral Ferrofluid-Monolith",
     "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
@@ -1902,6 +1917,51 @@
     ]
   },
   {
+    "id": "gen-cosmic-clockwork-dyson-sphere",
+    "name": "Cosmic-Clockwork Dyson-Sphere",
+    "description": "A hyper-intricate, colossal megastructure of interlocking golden gears, glowing plasma conduits, and rhythmic mechanical fractal shifts, enclosing a blinding quantum singularity that powers an ancient stellar clock.",
+    "category": "generative",
+    "tags": [
+      "mechanical",
+      "cosmic",
+      "fractal",
+      "audio-reactive",
+      "volumetric"
+    ],
+    "coordinate": 879,
+    "parameters": [
+      {
+        "name": "Mechanical Complexity",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Clock Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "name": "Plasma Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "name": "Gear Ratio",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl"
+  },
+  {
     "id": "gen-cosmic-web-filament",
     "name": "Cosmic Web Filament",
     "url": "shaders/gen-cosmic-web-filament.wgsl",
@@ -2341,6 +2401,36 @@
     ]
   },
   {
+    "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
+    "name": "Dynamic Tessellation (Ornate Fractal Tiles)",
+    "category": "generative",
+    "type": "compute",
+    "coordinate": 874,
+    "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
+    "features": [
+      "audio-reactive"
+    ],
+    "parameters": [
+      {
+        "id": "iterations",
+        "name": "Fractal Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl"
+  },
+  {
     "id": "gen-eldritch-tesseract-hive-mind",
     "coordinate": 881,
     "type": "wgsl",
@@ -2729,6 +2819,51 @@
     ]
   },
   {
+    "id": "gen-holographic-bismuth-core-reactor",
+    "name": "Holographic Bismuth-Core Reactor",
+    "category": "generative",
+    "description": "A hyper-dimensional, endlessly unfolding bismuth core reactor, merging metallic stepped-fractals with liquid-holographic interference patterns.",
+    "coordinate": 882,
+    "tags": [
+      "cosmic",
+      "mechanical",
+      "kifs",
+      "raymarching",
+      "holographic"
+    ],
+    "parameters": [
+      {
+        "name": "Core Size",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Iridescence Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Pulse Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Plasma Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-holographic-bismuth-core-reactor.wgsl"
+  },
+  {
     "id": "gen-holographic-data-core",
     "name": "Holographic Data Core",
     "url": "shaders/gen-holographic-data-core.wgsl",
@@ -2785,6 +2920,21 @@
         "step": 0.05
       }
     ]
+  },
+  {
+    "id": "gen-holographic-lens-flare-matrix",
+    "name": "Holographic Lens-Flare Matrix",
+    "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field.",
+    "author": "Jules",
+    "tags": [
+      "generative",
+      "holographic",
+      "matrix"
+    ],
+    "coordinate": 875,
+    "category": "generative",
+    "parameters": [],
+    "url": "shaders/gen-holographic-lens-flare-matrix.wgsl"
   },
   {
     "id": "gen-holographic-plasma-geode",
@@ -4474,6 +4624,46 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "gen-psychedelic-layered-time-stamps",
+    "name": "Psychedelic Layered Time-Stamps",
+    "wgsl_code": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
+    "tags": [
+      "generative",
+      "psychedelic",
+      "time",
+      "layers",
+      "audio-reactive"
+    ],
+    "category": "generative",
+    "description": "Overlay multiple delayed copies of the video, each with a different color offset and evolving distortion.",
+    "coordinate": 877,
+    "source": "Jules",
+    "parameters": [
+      {
+        "name": "Layer Count",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5
+      },
+      {
+        "name": "Delay Scale",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5
+      },
+      {
+        "name": "Distortion Amp",
+        "min": 0,
+        "max": 0.1,
+        "step": 0.001,
+        "default": 0.02
+      }
+    ],
+    "url": "shaders/gen-psychedelic-layered-time-stamps.wgsl"
   },
   {
     "id": "gen-psychedelic-time-warp-kaleidoscope",
