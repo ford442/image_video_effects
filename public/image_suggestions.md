@@ -4308,6 +4308,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the model's ability to strictly adhere to isometric perspective while rendering dense, glowing urban clutter.
 
+
+### Suggestion: Cyberpunk Gothic Chandelier
+- **Date:** 2024-11-30
+- **Prompt:** "A massive, ornate gothic chandelier suspended in the center of a dark, abandoned cyberpunk warehouse. The chandelier is constructed from twisted black iron and glowing neon magenta tubing instead of candles. The subject is dripping with thick, dark oil. The lighting is extremely dramatic, with the harsh neon casting deep, jagged shadows against the wet concrete floor. The mood is dark, cinematic, and oppressive. Captured with a 35mm lens, looking up at a sharp angle."
+- **Negative prompt:** "bright, cheerful, clean, daylight, soft, blurry, low resolution"
+- **Tags:** cyberpunk, interior, 3D, dark, cinematic
+- **Style / Reference:** 3D render, cyberpunk concept art, photorealistic
+- **Composition:** low angle looking up, dramatic perspective
+- **Color palette:** neon magenta, pitch black, oily metallic sheen
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20241130_cyberpunk-chandelier.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing emissive neon materials combined with dripping, wet metallic textures.
+
+### Suggestion: Surreal Obsidian Lighthouse
+- **Date:** 2024-11-30
+- **Prompt:** "A towering, monolithic lighthouse carved entirely from a single piece of flawlessly smooth, highly reflective black obsidian. It stands on a jagged cliff edge overlooking a turbulent, ink-black ocean. Instead of a standard light, a swirling, ethereal sphere of pale blue plasma hovers at the top. The lighting is low-key and moody, relying on the soft, pulsing glow of the plasma reflecting off the wet obsidian. The mood is ethereal, moody, and mysterious. Captured with a wide-angle 14mm lens under a starless night sky."
+- **Negative prompt:** "daylight, sun, bright, bustling, realistic lighthouse, brick, white"
+- **Tags:** fantasy, landscape, surreal, moody, ethereal
+- **Style / Reference:** surreal 3D environment, minimalist dark fantasy
+- **Composition:** wide angle, rule of thirds, towering scale
+- **Color palette:** pure black, polished obsidian, pale glowing blue, dark ocean grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20241130_obsidian-lighthouse.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests highly reflective dark surfaces (obsidian) and localized, soft emissive lighting.
+
+### Suggestion: Solarpunk Terrarium Backpack
+- **Date:** 2024-11-30
+- **Prompt:** "An ultra-detailed, macro shot of a futuristic solarpunk backpack resting on a sun-drenched wooden table. The backpack features a clear, domed terrarium embedded in its center, housing a tiny, thriving ecosystem of glowing ferns and a miniature waterfall. The lighting is bright, natural midday sunlight filtering through a nearby window, casting crisp shadows and highlighting the condensation on the inside of the glass dome. The mood is bright, whimsical, and optimistic. Captured with a 50mm macro lens, utilizing a shallow depth of field to blur the workshop background."
+- **Negative prompt:** "dark, cyberpunk, gritty, dirty, low resolution, messy, plastic"
+- **Tags:** solarpunk, still life, macro, photorealistic, bright
+- **Style / Reference:** photorealistic product photography, solarpunk aesthetic
+- **Composition:** centered subject, macro close-up, shallow depth of field
+- **Color palette:** vibrant forest greens, warm sunlight yellow, clear glass, natural wood brown
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20241130_solarpunk-backpack.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating complex glass refractions, condensation details, and vibrant organic elements.
+
+### Suggestion: Isometric Retro Arcade
+- **Date:** 2024-11-30
+- **Prompt:** "A vibrant, highly detailed isometric view of a bustling 1980s retro arcade room. The scene is densely packed with glowing arcade cabinets, patterned neon carpets, and a shiny air hockey table. The lighting is a chaotic, colorful mix of harsh CRT monitor glows and overhead fluorescent lights, creating distinct, sharp shadows. The mood is retro, energetic, and bright. Captured with a strict orthographic isometric camera, ensuring perfectly parallel lines and a flat, diorama-like perspective."
+- **Negative prompt:** "perspective, vanishing point, dark, moody, realistic lighting, outdoor, nature"
+- **Tags:** retro, interior, isometric, 3D, bright
+- **Style / Reference:** isometric 3D illustration, retro 80s aesthetic
+- **Composition:** isometric projection, dense diorama, balanced framing
+- **Color palette:** neon pink, electric cyan, vibrant yellow, dark patterned carpet
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20241130_isometric-arcade.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's ability to maintain strict isometric perspective and render multiple, distinct glowing screens.
+
+### Suggestion: Painterly Celestial Nebula
+- **Date:** 2024-11-30
+- **Prompt:** "A breathtaking, abstract depiction of a sprawling celestial nebula, rendered in a thick, expressive painterly style reminiscent of impasto oil painting. The cosmic subject swirls with massive, textured brushstrokes of deep violet, glowing gold, and fiery magenta. The lighting is purely atmospheric and internal, with the brightest strokes of paint creating the illusion of newborn stars bursting through the gas clouds. The mood is ethereal, sweeping, and cinematic. Captured as a flat, full-canvas texture, emphasizing the physical dimension of the oil paint."
+- **Negative prompt:** "photorealistic, sharp stars, 3D render, spaceships, planets, digital, smooth"
+- **Tags:** sci-fi, landscape, painterly, abstract, ethereal
+- **Style / Reference:** impasto oil painting, abstract expressionism, thick brushstrokes
+- **Composition:** full frame, sweeping curved strokes, abstract layout
+- **Color palette:** deep violet, fiery magenta, glowing gold, thick black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20241130_painterly-nebula.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing the model to generate thick, physical paint textures (impasto) rather than photorealistic space imagery.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
