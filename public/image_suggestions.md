@@ -4374,6 +4374,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for pushing the model to generate thick, physical paint textures (impasto) rather than photorealistic space imagery.
 
+
+### Suggestion: Cybernetic Zen Garden
+- **Date:** 2026-05-15
+- **Prompt:** "A serene Japanese zen garden where the raked sand is replaced by glowing blue fiber-optic cables and the rocks are smooth, dark obsidian monoliths etched with golden circuitry. A traditional wooden bridge arches over a stream of liquid silver. Soft, ethereal neon lighting from below, foggy atmosphere, highly detailed, photorealistic."
+- **Negative prompt:** "people, messy, daylight, lowres, text, watermark"
+- **Tags:** cyberpunk, landscape, photorealistic, ethereal
+- **Style / Reference:** Cyberpunk aesthetics mixed with traditional Japanese landscaping, 3D render, Octane render
+- **Composition:** Wide shot, rule of thirds, low angle
+- **Color palette:** Glowing neon blue, dark obsidian, metallic silver, warm gold accents
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_cyber-zen-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing neon glow, metallic reflections, and volumetric fog.
+
+### Suggestion: Steampunk Botanist's Airship
+- **Date:** 2026-05-15
+- **Prompt:** "The interior of a grand steampunk airship greenhouse, filled with exotic, bioluminescent alien plants in polished brass pots. Sunlight streams through massive glass arched windows, catching motes of dust in the air. Intricate copper pipes and pressure gauges line the walls. A large mahogany desk sits in the corner, covered in scientific sketches and glowing vials."
+- **Negative prompt:** "modern, clean, minimal, dark, empty"
+- **Tags:** steampunk, interior, photorealistic, bright
+- **Style / Reference:** Victorian era illustration style mixed with photorealistic rendering
+- **Composition:** Interior shot, deep perspective, slightly elevated angle
+- **Color palette:** Warm brass, emerald green, glowing cyan, rich mahogany
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_steampunk-airship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing god-rays, glass refractions, and intricate metallic textures.
+
+### Suggestion: Neon Geisha in a Rainy Alley
+- **Date:** 2026-05-15
+- **Prompt:** "A close-up portrait of a cybernetic geisha standing in a dark, narrow, rain-slicked alleyway. Her porcelain face has subtle glowing pink panel lines. She holds a transparent umbrella glowing with holographic koi fish. The background is a blur of neon signs reflecting in the puddles. Cinematic lighting, moody, 85mm lens, shallow depth of field."
+- **Negative prompt:** "cartoon, anime, daylight, flat lighting, ugly, deformed"
+- **Tags:** cyberpunk, portrait, photorealistic, cinematic
+- **Style / Reference:** Cinematic photography, Blade Runner inspired, photorealistic portrait
+- **Composition:** Close-up, eye-level, subject slightly off-center
+- **Color palette:** Deep shadows, vibrant neon pink and cyan, stark contrasts
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260515_neon-geisha.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests wet surface reflections, skin textures, and depth-of-field effects.
+
+### Suggestion: Abyssal Leviathan Skeleton
+- **Date:** 2026-05-15
+- **Prompt:** "A massive, ancient skeleton of an alien sea leviathan resting on the dark ocean floor. The bones are encrusted with glowing, bioluminescent turquoise corals and strange, translucent anemones. Schools of tiny, silver fish swim through the ribcage. The only light source is the eerie glow of the flora. Deep sea exploration vibe, hyper-detailed, murky water."
+- **Negative prompt:** "bright, sunlight, shallow water, people, submarine"
+- **Tags:** horror, landscape, 3D, moody
+- **Style / Reference:** Deep-sea documentary style, moody concept art
+- **Composition:** Wide shot, looking slightly up at the imposing structure
+- **Color palette:** Pitch black, bioluminescent turquoise, pale bone, silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_abyssal-skeleton.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for underwater lighting tests, particle systems (fish), and volumetric scattering.
+
+### Suggestion: Chrono-Glitch Cityscape
+- **Date:** 2026-05-15
+- **Prompt:** "A sprawling futuristic city where time is visibly fractured. Slices of the city are stuck in a sun-drenched golden hour, while adjacent slices are deep in a neon-lit, rainy night. The boundaries between these time zones are marked by harsh, chromatic aberration and digital glitch artifacts. Flying cars smear into light trails across the temporal divides. Highly chaotic, dynamic, maximalist."
+- **Negative prompt:** "peaceful, simple, uniform, historical, lowres"
+- **Tags:** sci-fi, architecture, abstract, cinematic
+- **Style / Reference:** Glitch art, surrealism, digital maximalism
+- **Composition:** Ultra-wide cityscape, dynamic diagonal lines
+- **Color palette:** High contrast: golden hour oranges/yellows vs. midnight blues/magentas
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260515_chrono-glitch-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests spatial distortion shaders, chromatic aberration, and complex compositing.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
