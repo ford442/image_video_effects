@@ -471,6 +471,20 @@
       "added": "2026-05-12T16:02:59.245775",
       "status": "completed",
       "completed_at": "2026-05-13T08:00:43.479413"
+    },
+    {
+      "filename": "2026-05-13_sonoluminescent-chrono-geode-matrix.md",
+      "title": "Sonoluminescent Chrono-Geode Matrix",
+      "added": "2026-05-13T15:31:30.309550",
+      "status": "completed",
+      "completed_at": "2026-05-14T08:06:15.168165"
+    },
+    {
+      "filename": "2026-05-10_luminescent-chrono-fluid-astrolabe.md",
+      "title": "Luminescent Chrono-Fluid Astrolabe",
+      "added": "2026-05-10T15:17:16.993907",
+      "status": "completed",
+      "completed_at": "2026-05-15T09:32:43.396000"
     }
   ],
   "rejected": [],
@@ -657,11 +671,6 @@
       "added": "2026-05-09T15:44:19.573334"
     },
     {
-      "filename": "2026-05-10_luminescent-chrono-fluid-astrolabe.md",
-      "title": "Luminescent Chrono-Fluid Astrolabe",
-      "added": "2026-05-10T15:17:16.993907"
-    },
-    {
       "filename": "2026-05-11_holographic-bismuth-core-reactor.md",
       "title": "Holographic Bismuth-Core Reactor",
       "added": "2026-05-11T15:26:13.364552"
@@ -680,6 +689,9 @@
       "filename": "2026-05-14_sentient-aether-flora-biosphere.md",
       "title": "Sentient Aether-Flora Biosphere",
       "added": "2026-05-14T15:36:23.346130"
+      "filename": "2026-05-15_chromatic-singularity-loom.md",
+      "title": "Chromatic Singularity-Loom",
+      "added": "2026-05-15T15:39:20.139263"
     }
   ],
   "in_progress": null

@@ -4308,6 +4308,138 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the model's ability to strictly adhere to isometric perspective while rendering dense, glowing urban clutter.
 
+
+### Suggestion: Cyberpunk Gothic Chandelier
+- **Date:** 2024-11-30
+- **Prompt:** "A massive, ornate gothic chandelier suspended in the center of a dark, abandoned cyberpunk warehouse. The chandelier is constructed from twisted black iron and glowing neon magenta tubing instead of candles. The subject is dripping with thick, dark oil. The lighting is extremely dramatic, with the harsh neon casting deep, jagged shadows against the wet concrete floor. The mood is dark, cinematic, and oppressive. Captured with a 35mm lens, looking up at a sharp angle."
+- **Negative prompt:** "bright, cheerful, clean, daylight, soft, blurry, low resolution"
+- **Tags:** cyberpunk, interior, 3D, dark, cinematic
+- **Style / Reference:** 3D render, cyberpunk concept art, photorealistic
+- **Composition:** low angle looking up, dramatic perspective
+- **Color palette:** neon magenta, pitch black, oily metallic sheen
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20241130_cyberpunk-chandelier.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing emissive neon materials combined with dripping, wet metallic textures.
+
+### Suggestion: Surreal Obsidian Lighthouse
+- **Date:** 2024-11-30
+- **Prompt:** "A towering, monolithic lighthouse carved entirely from a single piece of flawlessly smooth, highly reflective black obsidian. It stands on a jagged cliff edge overlooking a turbulent, ink-black ocean. Instead of a standard light, a swirling, ethereal sphere of pale blue plasma hovers at the top. The lighting is low-key and moody, relying on the soft, pulsing glow of the plasma reflecting off the wet obsidian. The mood is ethereal, moody, and mysterious. Captured with a wide-angle 14mm lens under a starless night sky."
+- **Negative prompt:** "daylight, sun, bright, bustling, realistic lighthouse, brick, white"
+- **Tags:** fantasy, landscape, surreal, moody, ethereal
+- **Style / Reference:** surreal 3D environment, minimalist dark fantasy
+- **Composition:** wide angle, rule of thirds, towering scale
+- **Color palette:** pure black, polished obsidian, pale glowing blue, dark ocean grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20241130_obsidian-lighthouse.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests highly reflective dark surfaces (obsidian) and localized, soft emissive lighting.
+
+### Suggestion: Solarpunk Terrarium Backpack
+- **Date:** 2024-11-30
+- **Prompt:** "An ultra-detailed, macro shot of a futuristic solarpunk backpack resting on a sun-drenched wooden table. The backpack features a clear, domed terrarium embedded in its center, housing a tiny, thriving ecosystem of glowing ferns and a miniature waterfall. The lighting is bright, natural midday sunlight filtering through a nearby window, casting crisp shadows and highlighting the condensation on the inside of the glass dome. The mood is bright, whimsical, and optimistic. Captured with a 50mm macro lens, utilizing a shallow depth of field to blur the workshop background."
+- **Negative prompt:** "dark, cyberpunk, gritty, dirty, low resolution, messy, plastic"
+- **Tags:** solarpunk, still life, macro, photorealistic, bright
+- **Style / Reference:** photorealistic product photography, solarpunk aesthetic
+- **Composition:** centered subject, macro close-up, shallow depth of field
+- **Color palette:** vibrant forest greens, warm sunlight yellow, clear glass, natural wood brown
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20241130_solarpunk-backpack.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating complex glass refractions, condensation details, and vibrant organic elements.
+
+### Suggestion: Isometric Retro Arcade
+- **Date:** 2024-11-30
+- **Prompt:** "A vibrant, highly detailed isometric view of a bustling 1980s retro arcade room. The scene is densely packed with glowing arcade cabinets, patterned neon carpets, and a shiny air hockey table. The lighting is a chaotic, colorful mix of harsh CRT monitor glows and overhead fluorescent lights, creating distinct, sharp shadows. The mood is retro, energetic, and bright. Captured with a strict orthographic isometric camera, ensuring perfectly parallel lines and a flat, diorama-like perspective."
+- **Negative prompt:** "perspective, vanishing point, dark, moody, realistic lighting, outdoor, nature"
+- **Tags:** retro, interior, isometric, 3D, bright
+- **Style / Reference:** isometric 3D illustration, retro 80s aesthetic
+- **Composition:** isometric projection, dense diorama, balanced framing
+- **Color palette:** neon pink, electric cyan, vibrant yellow, dark patterned carpet
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20241130_isometric-arcade.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the model's ability to maintain strict isometric perspective and render multiple, distinct glowing screens.
+
+### Suggestion: Painterly Celestial Nebula
+- **Date:** 2024-11-30
+- **Prompt:** "A breathtaking, abstract depiction of a sprawling celestial nebula, rendered in a thick, expressive painterly style reminiscent of impasto oil painting. The cosmic subject swirls with massive, textured brushstrokes of deep violet, glowing gold, and fiery magenta. The lighting is purely atmospheric and internal, with the brightest strokes of paint creating the illusion of newborn stars bursting through the gas clouds. The mood is ethereal, sweeping, and cinematic. Captured as a flat, full-canvas texture, emphasizing the physical dimension of the oil paint."
+- **Negative prompt:** "photorealistic, sharp stars, 3D render, spaceships, planets, digital, smooth"
+- **Tags:** sci-fi, landscape, painterly, abstract, ethereal
+- **Style / Reference:** impasto oil painting, abstract expressionism, thick brushstrokes
+- **Composition:** full frame, sweeping curved strokes, abstract layout
+- **Color palette:** deep violet, fiery magenta, glowing gold, thick black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20241130_painterly-nebula.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing the model to generate thick, physical paint textures (impasto) rather than photorealistic space imagery.
+
+
+### Suggestion: Cybernetic Zen Garden
+- **Date:** 2026-05-15
+- **Prompt:** "A serene Japanese zen garden where the raked sand is replaced by glowing blue fiber-optic cables and the rocks are smooth, dark obsidian monoliths etched with golden circuitry. A traditional wooden bridge arches over a stream of liquid silver. Soft, ethereal neon lighting from below, foggy atmosphere, highly detailed, photorealistic."
+- **Negative prompt:** "people, messy, daylight, lowres, text, watermark"
+- **Tags:** cyberpunk, landscape, photorealistic, ethereal
+- **Style / Reference:** Cyberpunk aesthetics mixed with traditional Japanese landscaping, 3D render, Octane render
+- **Composition:** Wide shot, rule of thirds, low angle
+- **Color palette:** Glowing neon blue, dark obsidian, metallic silver, warm gold accents
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_cyber-zen-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing neon glow, metallic reflections, and volumetric fog.
+
+### Suggestion: Steampunk Botanist's Airship
+- **Date:** 2026-05-15
+- **Prompt:** "The interior of a grand steampunk airship greenhouse, filled with exotic, bioluminescent alien plants in polished brass pots. Sunlight streams through massive glass arched windows, catching motes of dust in the air. Intricate copper pipes and pressure gauges line the walls. A large mahogany desk sits in the corner, covered in scientific sketches and glowing vials."
+- **Negative prompt:** "modern, clean, minimal, dark, empty"
+- **Tags:** steampunk, interior, photorealistic, bright
+- **Style / Reference:** Victorian era illustration style mixed with photorealistic rendering
+- **Composition:** Interior shot, deep perspective, slightly elevated angle
+- **Color palette:** Warm brass, emerald green, glowing cyan, rich mahogany
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_steampunk-airship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing god-rays, glass refractions, and intricate metallic textures.
+
+### Suggestion: Neon Geisha in a Rainy Alley
+- **Date:** 2026-05-15
+- **Prompt:** "A close-up portrait of a cybernetic geisha standing in a dark, narrow, rain-slicked alleyway. Her porcelain face has subtle glowing pink panel lines. She holds a transparent umbrella glowing with holographic koi fish. The background is a blur of neon signs reflecting in the puddles. Cinematic lighting, moody, 85mm lens, shallow depth of field."
+- **Negative prompt:** "cartoon, anime, daylight, flat lighting, ugly, deformed"
+- **Tags:** cyberpunk, portrait, photorealistic, cinematic
+- **Style / Reference:** Cinematic photography, Blade Runner inspired, photorealistic portrait
+- **Composition:** Close-up, eye-level, subject slightly off-center
+- **Color palette:** Deep shadows, vibrant neon pink and cyan, stark contrasts
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260515_neon-geisha.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests wet surface reflections, skin textures, and depth-of-field effects.
+
+### Suggestion: Abyssal Leviathan Skeleton
+- **Date:** 2026-05-15
+- **Prompt:** "A massive, ancient skeleton of an alien sea leviathan resting on the dark ocean floor. The bones are encrusted with glowing, bioluminescent turquoise corals and strange, translucent anemones. Schools of tiny, silver fish swim through the ribcage. The only light source is the eerie glow of the flora. Deep sea exploration vibe, hyper-detailed, murky water."
+- **Negative prompt:** "bright, sunlight, shallow water, people, submarine"
+- **Tags:** horror, landscape, 3D, moody
+- **Style / Reference:** Deep-sea documentary style, moody concept art
+- **Composition:** Wide shot, looking slightly up at the imposing structure
+- **Color palette:** Pitch black, bioluminescent turquoise, pale bone, silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260515_abyssal-skeleton.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for underwater lighting tests, particle systems (fish), and volumetric scattering.
+
+### Suggestion: Chrono-Glitch Cityscape
+- **Date:** 2026-05-15
+- **Prompt:** "A sprawling futuristic city where time is visibly fractured. Slices of the city are stuck in a sun-drenched golden hour, while adjacent slices are deep in a neon-lit, rainy night. The boundaries between these time zones are marked by harsh, chromatic aberration and digital glitch artifacts. Flying cars smear into light trails across the temporal divides. Highly chaotic, dynamic, maximalist."
+- **Negative prompt:** "peaceful, simple, uniform, historical, lowres"
+- **Tags:** sci-fi, architecture, abstract, cinematic
+- **Style / Reference:** Glitch art, surrealism, digital maximalism
+- **Composition:** Ultra-wide cityscape, dynamic diagonal lines
+- **Color palette:** High contrast: golden hour oranges/yellows vs. midnight blues/magentas
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260515_chrono-glitch-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests spatial distortion shaders, chromatic aberration, and complex compositing.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
