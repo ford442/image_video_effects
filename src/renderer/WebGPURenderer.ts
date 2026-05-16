@@ -24,14 +24,15 @@
  */
 
 import { Renderer, RendererConfig } from './Renderer';
-import { validateBindGroup } from './bindGroupValidator';
 import { resolveMultipassChain } from './multipassRegistry';
+import { createUniformBufferView, UniformBufferView, Ripple, UNIFORM_FLOATS, MAX_RIPPLES } from './UniformBuffer';
+import { reportError, getBrowserWarning } from './ErrorHandling';
+import { compileShader } from './ShaderCompilation';
+import { BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
 
 // ── Constants matching C++ renderer ─────────────────────────────────────────
 
-const MAX_RIPPLES        = 50;
 const MAX_PLASMA_BALLS   = 50;
-const UNIFORM_FLOATS     = 12 + MAX_RIPPLES * 4;   // 212 floats = 848 bytes
 const EXTRA_FLOATS       = 256;                     // 1024 bytes
 const PLASMA_BYTES       = MAX_PLASMA_BALLS * 48;   // 2400 bytes
 
@@ -64,253 +65,13 @@ const WG_SIZE_1D         = 256; // Workgroup size for 1D dispatch (particles, wa
 
 // ── Typed Uniform Buffer Layout ─────────────────────────────────────────────
 // Provides type-safe access to the uniform buffer structure matching WGSL
-
-/** Byte offsets for each uniform field (align 16) */
-const UNIFORM_OFFSETS = {
-  // config: vec4<f32> @ offset 0
-  config_time:         0,
-  config_rippleCount:  4,
-  config_resW:         8,
-  config_resH:         12,
-  
-  // zoom_config: vec4<f32> @ offset 16
-  zoom_time:           16,
-  zoom_mouseX:         20,
-  zoom_mouseY:         24,
-  zoom_mouseDown:      28,
-  
-  // zoom_params: vec4<f32> @ offset 32
-  params_x:            32,
-  params_y:            36,
-  params_z:            40,
-  params_w:            44,
-  
-  // ripples: array<vec4<f32>, 50> @ offset 48
-  ripples_start:       48,
-  ripple_stride:       16,  // each ripple is vec4<f32>
-} as const;
-
-/** Type-safe view over the uniform Float32Array */
-interface UniformBufferView {
-  /** Sets the config vec4: [time, rippleCount, resW, resH] */
-  setConfig(time: number, rippleCount: number, resW: number, resH: number): void;
-  
-  /** Sets the zoom_config vec4: [time, mouseX, mouseY, mouseDown] */
-  setZoomConfig(time: number, mouseX: number, mouseY: number, mouseDown: number): void;
-  
-  /** Sets the zoom_params vec4: [p1, p2, p3, p4] */
-  setZoomParams(p1: number, p2: number, p3: number, p4: number): void;
-  
-  /** Sets a ripple at the given index */
-  setRipple(index: number, x: number, y: number, startTime: number): void;
-  
-  /** Clears a ripple slot */
-  clearRipple(index: number): void;
-  
-  /** Gets the underlying Float32Array for GPU upload */
-  readonly data: Float32Array;
-}
-
-/** Creates a type-safe view over a uniform buffer */
-function createUniformBufferView(): UniformBufferView {
-  const data = new Float32Array(UNIFORM_FLOATS);
-  
-  return {
-    setConfig(time, rippleCount, resW, resH) {
-      const o = UNIFORM_OFFSETS.config_time / 4;
-      data[o]     = time;
-      data[o + 1] = rippleCount;
-      data[o + 2] = resW;
-      data[o + 3] = resH;
-    },
-    
-    setZoomConfig(time, mouseX, mouseY, mouseDown) {
-      const o = UNIFORM_OFFSETS.zoom_time / 4;
-      data[o]     = time;
-      data[o + 1] = mouseX;
-      data[o + 2] = mouseY;
-      data[o + 3] = mouseDown;
-    },
-    
-    setZoomParams(p1, p2, p3, p4) {
-      const o = UNIFORM_OFFSETS.params_x / 4;
-      data[o]     = p1;
-      data[o + 1] = p2;
-      data[o + 2] = p3;
-      data[o + 3] = p4;
-    },
-    
-    setRipple(index, x, y, startTime) {
-      if (index < 0 || index >= MAX_RIPPLES) return;
-      const o = (UNIFORM_OFFSETS.ripples_start + index * UNIFORM_OFFSETS.ripple_stride) / 4;
-      data[o]     = x;
-      data[o + 1] = y;
-      data[o + 2] = startTime;
-      data[o + 3] = 0;  // padding
-    },
-    
-    clearRipple(index) {
-      if (index < 0 || index >= MAX_RIPPLES) return;
-      const o = (UNIFORM_OFFSETS.ripples_start + index * UNIFORM_OFFSETS.ripple_stride) / 4;
-      data[o] = data[o + 1] = data[o + 2] = data[o + 3] = 0;
-    },
-    
-    get data() { return data; },
-  };
-}
+// (Definitions moved to UniformBuffer.ts)
 
 // ── Error handling utilities ────────────────────────────────────────────────
+// (Definitions moved to ErrorHandling.ts)
 
-export interface RendererError {
-  type: 'webgpu-unavailable' | 'shader-compile' | 'media-load' | 'device-lost';
-  message: string;
-  recoverable: boolean;
-}
-
-export type ErrorHandler = (error: RendererError) => void;
-
-// Default error handler that logs to console
-let globalErrorHandler: ErrorHandler = (error) => {
-  console.error(`[WebGPU Renderer] ${error.type}: ${error.message}`);
-};
-
-export function setRendererErrorHandler(handler: ErrorHandler) {
-  globalErrorHandler = handler;
-}
-
-// Browser detection for WebGPU warnings
-function getBrowserWarning(): string | null {
-  const ua = navigator.userAgent.toLowerCase();
-  
-  // Safari check (all versions as of 2026)
-  if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('chromium')) {
-    return 'Safari does not support WebGPU. Please use Chrome, Edge, or Firefox Nightly.';
-  }
-  
-  // iOS check
-  if (/iphone|ipad|ipod/.test(ua)) {
-    return 'WebGPU is not available on iOS. Please use a desktop browser.';
-  }
-  
-  // Older browser check
-  if (!navigator.gpu) {
-    return 'Your browser does not support WebGPU. Please update to the latest Chrome, Edge, or Firefox.';
-  }
-  
-  return null;
-}
-
-// ── Fallback compute shader ──────────────────────────────────────────────────
-// Simple pass-through shader used when the requested shader fails to compile
-
-const FALLBACK_WGSL = /* wgsl */`
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-@compute @workgroup_size(16, 16, 1)  // Match all real shaders' workgroup size
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = vec2<f32>(textureDimensions(readTexture));
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    
-    // Simple pass-through with slight color boost to indicate fallback
-    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    
-    // Add a subtle red tint to indicate fallback mode
-    let fallbackColor = vec4<f32>(
-        min(color.r * 1.1, 1.0),
-        color.g * 0.9,
-        color.b * 0.9,
-        color.a
-    );
-    
-    textureStore(writeTexture, global_id.xy, fallbackColor);
-}
-`;
-
-// ── Video copy shader ────────────────────────────────────────────────────────
-// Copies from external video texture to rgba32float compute texture.
-// Used for zero-copy video import (importExternalTexture → sourceTex).
-
-const VIDEO_COPY_WGSL = /* wgsl */`
-struct VSOut {
-  @builtin(position) pos : vec4f,
-  @location(0)       uv  : vec2f,
-}
-
-@vertex
-fn vs_main(@builtin(vertex_index) vi : u32) -> VSOut {
-  // Full-screen triangle
-  var pos = array<vec2f, 3>(
-    vec2f(-1.0, -1.0),
-    vec2f( 3.0, -1.0),
-    vec2f(-1.0,  3.0)
-  );
-  var uv = array<vec2f, 3>(
-    vec2f(0.0, 1.0),
-    vec2f(2.0, 1.0),
-    vec2f(0.0, -1.0)
-  );
-  return VSOut(vec4f(pos[vi], 0.0, 1.0), uv[vi]);
-}
-
-@group(0) @binding(0) var videoTex: texture_external;
-@group(0) @binding(1) var videoSampler: sampler;
-
-@fragment
-fn fs_main(in: VSOut) -> @location(0) vec4f {
-  // Sample from external video texture (handles YUV conversion automatically)
-  let color = textureSampleBaseClampToEdge(videoTex, videoSampler, in.uv);
-  return color;
-}
-`;
-
-// ── Full-screen blit shader ──────────────────────────────────────────────────
-// Renders the final rgba32float compute output to the canvas.
-// Uses textureLoad (no sampler) to avoid float32-filterable requirement at blit.
-// Applies simple gamma correction (linear → sRGB).
-
-const BLIT_WGSL = /* wgsl */`
-struct VSOut {
-  @builtin(position) pos : vec4f,
-  @location(0)       uv  : vec2f,
-}
-
-@vertex
-fn vs(@builtin(vertex_index) idx: u32) -> VSOut {
-  // Full-screen triangle
-  var p = array<vec2f,3>(
-    vec2f(-1.0, -1.0),
-    vec2f( 3.0, -1.0),
-    vec2f(-1.0,  3.0),
-  );
-  var out: VSOut;
-  out.pos = vec4f(p[idx], 0.0, 1.0);
-  // NDC → UV:  x [-1,1]→[0,1],  y [-1,1]→[1,0]  (flip Y for texture convention)
-  out.uv  = p[idx] * vec2f(0.5, -0.5) + vec2f(0.5);
-  return out;
-}
-
-@group(0) @binding(0) var src: texture_2d<f32>;
-
-@fragment
-fn fs(in: VSOut) -> @location(0) vec4f {
-  let dim   = vec2i(textureDimensions(src));
-  let coord = clamp(vec2i(in.uv * vec2f(dim)), vec2i(0), dim - 1);
-  let c     = textureLoad(src, coord, 0);
-  // Gamma encode: linear → sRGB (γ = 2.2 approximation)
-  let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
-  return vec4f(rgb, 1.0);
-}
-`;
+// ── Shader templates ─────────────────────────────────────────────────────────
+// (Definitions moved to ShaderTemplates.ts)
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -323,11 +84,7 @@ interface ShaderSlot {
   mode: SlotMode;
 }
 
-interface Ripple {
-  x: number;
-  y: number;
-  startTime: number;
-}
+// Ripple type is imported from UniformBuffer.ts
 
 // ── Renderer class ───────────────────────────────────────────────────────────
 
@@ -451,7 +208,7 @@ export class WebGPURenderer implements Renderer {
       const warning = getBrowserWarning();
       const message = warning || 'WebGPU is not available in this browser';
       
-      globalErrorHandler({
+      reportError({
         type: 'webgpu-unavailable',
         message,
         recoverable: false
@@ -463,7 +220,7 @@ export class WebGPURenderer implements Renderer {
 
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) {
-      globalErrorHandler({
+      reportError({
         type: 'webgpu-unavailable',
         message: 'No suitable GPU adapter found. Your device may not support WebGPU.',
         recoverable: false
@@ -497,7 +254,7 @@ export class WebGPURenderer implements Renderer {
 
     // Handle device lost (GPU crash, driver reset, etc.)
     this.device.lost.then((info) => {
-      globalErrorHandler({
+      reportError({
         type: 'device-lost',
         message: `GPU device lost: ${info.reason}. Try reloading the page.`,
         recoverable: false
@@ -875,110 +632,18 @@ export class WebGPURenderer implements Renderer {
     }
   }
 
-  private hashWgsl(code: string): string {
-    let hash = 5381;
-    for (let i = 0; i < code.length; i++) {
-      hash = ((hash << 5) + hash + code.charCodeAt(i)) | 0;
-    }
-    return hash.toString(36) + ':' + code.length;
-  }
-
-  /** Parse @workgroup_size(x, y) from WGSL source to determine dispatch dimensions */
-  private parseWorkgroupSize(wgslSource: string): { x: number; y: number } {
-    // Tolerant: allows whitespace/newlines/comments between @compute and @workgroup_size
-    const match = wgslSource.match(/@compute\s+@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
-    if (match) {
-      return { x: parseInt(match[1], 10), y: parseInt(match[2], 10) };
-    }
-    // Fallback: search for @workgroup_size anywhere after @compute
-    const computeIdx = wgslSource.indexOf('@compute');
-    if (computeIdx !== -1) {
-      const afterCompute = wgslSource.slice(computeIdx);
-      const match2 = afterCompute.match(/@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
-      if (match2) {
-        return { x: parseInt(match2[1], 10), y: parseInt(match2[2], 10) };
-      }
-    }
-    console.warn('[WebGPU] Could not parse workgroup_size from shader, defaulting to 8x8');
-    return { x: 8, y: 8 };
-  }
-
+  /** Wrapper for shader compilation that uses extracted ShaderCompilation module */
   private compileShader(id: string, wgsl: string): boolean {
     if (!this.device) return false;
-
-    // Fast path: shader already cached AND content unchanged
-    const contentHash = this.hashWgsl(wgsl);
-    if (this.pipelines.has(id) && this.pipelineHashes.get(id) === contentHash) {
-      return true;
-    }
-
-    // Validate bind-group compatibility BEFORE attempting pipeline creation
-    const validation = validateBindGroup(id, wgsl);
-    if (!validation.valid) {
-      console.warn(
-        `[WebGPU] Shader "${id}" failed bind-group validation (${validation.errors.length} errors). ` +
-        `Using fallback pass-through shader.`
-      );
-      // Skip directly to fallback below
-    }
-
-    // Parse workgroup size from shader source
-    const wgSize = this.parseWorkgroupSize(wgsl);
-
-    // Try to compile the requested shader only if validation passed
-    if (validation.valid) {
-      try {
-        const module = this.device.createShaderModule({ label: id, code: wgsl });
-
-        // Check for compilation errors using compilationInfo
-        module.getCompilationInfo().then(info => {
-          const errors = info.messages.filter(m => m.type === 'error');
-          if (errors.length > 0) {
-            console.warn(`[WebGPU] Shader '${id}' compilation warnings:`, errors);
-          }
-        });
-
-        const pipeline = this.device.createComputePipeline({
-          label: id,
-          layout: this.pipelineLayout,
-          compute: { module, entryPoint: 'main' },
-        });
-
-        this.pipelines.set(id, pipeline);
-        this.pipelineHashes.set(id, contentHash);
-        this.workgroupSizes.set(id, wgSize);
-        return true;
-      } catch (e) {
-        console.warn(`[WebGPU] Shader compile failed (${id}):`, e);
-
-        // Report error through handler
-        globalErrorHandler({
-          type: 'shader-compile',
-          message: `Shader "${id}" failed to compile. Using fallback pass-through shader.`,
-          recoverable: true
-        });
-      }
-    }
-
-    // Try to use fallback shader (reached on validation failure OR pipeline creation failure)
-    try {
-      const fallbackModule = this.device.createShaderModule({
-        label: `${id}-fallback`,
-        code: FALLBACK_WGSL
-      });
-      const fallbackPipeline = this.device.createComputePipeline({
-        label: `${id}-fallback`,
-        layout: this.pipelineLayout,
-        compute: { module: fallbackModule, entryPoint: 'main' },
-      });
-      this.pipelines.set(id, fallbackPipeline);
-      this.workgroupSizes.set(id, this.parseWorkgroupSize(FALLBACK_WGSL));
-      console.log(`[WebGPU] Using fallback shader for '${id}'`);
-      return true;
-    } catch (fallbackError) {
-      console.error(`[WebGPU] Fallback shader also failed:`, fallbackError);
-      return false;
-    }
+    return compileShader(
+      this.device,
+      this.pipelineLayout,
+      id,
+      wgsl,
+      this.pipelines,
+      this.pipelineHashes,
+      this.workgroupSizes,
+    );
   }
 
   /** Set a single active shader (slot 0). Clears slots 1 and 2. */
@@ -1182,7 +847,7 @@ export class WebGPURenderer implements Renderer {
           4: 'Video format not supported'
         };
         
-        globalErrorHandler({
+        reportError({
           type: 'media-load',
           message: `Video error: ${errorMessages[errorCode] || 'Unknown video error'}`,
           recoverable: true
@@ -1327,7 +992,7 @@ export class WebGPURenderer implements Renderer {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
-      globalErrorHandler({
+      reportError({
         type: 'media-load',
         message: `Failed to load image "${url}": ${errorMessage}`,
         recoverable: true

@@ -50,3 +50,9 @@ export const DEFAULT_CONFIG: RendererConfig = {
   height: 1080,
   agentCount: 50000,
 };
+
+// Re-export error handling from ErrorHandling module for backward compatibility
+
+// Re-export error handling from ErrorHandling module for backward compatibility
+export type { RendererError, ErrorHandler } from './ErrorHandling';
+export { setRendererErrorHandler, reportError, getBrowserWarning, isWebGPUAvailable } from './ErrorHandling';
