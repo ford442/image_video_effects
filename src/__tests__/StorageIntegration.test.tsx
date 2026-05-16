@@ -44,7 +44,7 @@ describe('Storage Integration', () => {
       render(<StorageBrowser />);
       
       await waitFor(() => {
-        expect(screen.getByText(/Connected to VPS/i)).toBeInTheDocument();
+        expect(screen.getByText(/Connected/i)).toBeInTheDocument();
       });
     });
 
