@@ -1,0 +1,27 @@
+<<<<<<< SEARCH
+    it('shows connection status', async () => {
+      // The "Connected to VPS" message is actually a title attribute on an element in StorageControls,
+      // not StorageBrowser. The test was incorrectly trying to find it in StorageBrowser.
+      // We'll test something that actually exists in StorageBrowser, like the VPS info in the footer.
+      render(<StorageBrowser />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/storage\.noahcohn\.com/i)).toBeInTheDocument();
+      });
+    });
+=======
+    it('shows connection status', async () => {
+      // Using proper act and testing logic to avoid state update warnings and async test failures.
+      render(
+        <StorageBrowser
+          onSelectShader={jest.fn()}
+          onSelectImage={jest.fn()}
+          onSelectVideo={jest.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/storage\.noahcohn\.com/i)).toBeInTheDocument();
+      });
+    });
+>>>>>>> REPLACE
