@@ -4440,6 +4440,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests spatial distortion shaders, chromatic aberration, and complex compositing.
 
+### Suggestion: Neon Bioluminescent Cavern
+- **Date:** 2026-05-20
+- **Prompt:** "A majestic underground cavern filled with giant, glowing crystal formations and bioluminescent flora. The cave walls are illuminated by a soft, ethereal cyan and magenta light reflecting off tranquil subterranean pools. The mood is serene, mystical, and untouched by human presence. Captured with a wide-angle lens to emphasize the colossal scale."
+- **Negative prompt:** "sunlight, daylight, modern, people, messy, blurry, low resolution"
+- **Tags:** fantasy, nature, landscape, ethereal, bright
+- **Style / Reference:** photorealistic, fantasy concept art
+- **Composition:** wide landscape, sweeping curves, deep depth of field
+- **Color palette:** glowing cyan, vibrant magenta, deep cavernous black, soft silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_bioluminescent-cavern.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing multi-bounce refractions and internal, glowing light sources.
+
+### Suggestion: Retro-Futuristic Hover-Car Diner
+- **Date:** 2026-05-20
+- **Prompt:** "A classic 1950s style diner reimagined in a bright, optimistic retro-futuristic solarpunk city. Sleek, polished chrome hover-cars are parked outside, reflecting the bright, midday sun. The diner features vibrant pastel colors, clean lines, and lush vertical gardens on its roof. The mood is nostalgic, cheerful, and bustling. Captured from eye-level on a sun-drenched street."
+- **Negative prompt:** "dystopian, dark, rainy, polluted, grim, rusty, neon, cyberpunk"
+- **Tags:** solarpunk, retro, architecture, bright, whimsical
+- **Style / Reference:** 3D, photorealistic
+- **Composition:** eye-level, balanced framing, clear subject
+- **Color palette:** pastel mint green, bubblegum pink, polished chrome, bright sky blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_retro-hover-diner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests clean lighting, pastel palettes, and highly reflective chrome surfaces under bright sun.
+
+### Suggestion: Ethereal Steampunk Aviary
+- **Date:** 2026-05-20
+- **Prompt:** "An incredibly detailed, wide-angle interior of a grand steampunk aviary. Colossal glass domes framed with intricate wrought iron and polished brass let in soft, golden-hour sunlight. Exotic, mechanical birds made of clockwork and stained glass fly among massive, overgrown indoor trees. The mood is wondrous, intellectual, and slightly chaotic. Captured with a 24mm wide-angle lens, emphasizing the sprawling scale of the lush greenery and mechanical apparatuses."
+- **Negative prompt:** "modern, clean, dark, empty, low detail, simple"
+- **Tags:** steampunk, interior, architecture, whimsical
+- **Style / Reference:** 3D, steampunk concept art
+- **Composition:** wide expansive view, dense overlapping elements, deep depth of field
+- **Color palette:** warm brass, emerald green, golden sunlight, rich mahogany
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_steampunk-aviary.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing atmospheric mist, volumetric lighting, and intricate brass and glass materials.
+
+### Suggestion: Surreal Desert Clock
+- **Date:** 2026-05-20
+- **Prompt:** "A colossal, surreal clock mechanism partially buried in the endless, shifting sands of an arid desert. The giant gears are forged from rusted iron and polished gold. The lighting is harsh, unattenuated midday desert sunlight casting deep, sharp black shadows that highlight the intricate texture of the sand ripples and the mechanical details. The mood is mysterious, timeless, and surreal. Captured with a wide-angle lens, deep focus."
+- **Negative prompt:** "wet, dark, night, city, trees, soft lighting, modern"
+- **Tags:** surreal, landscape, nature, moody
+- **Style / Reference:** surreal, photorealistic
+- **Composition:** wide shot, low angle, vast empty space, rule of thirds
+- **Color palette:** warm desert ochre, rusted orange, polished gold, stark blue sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_surreal-desert-clock.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for generating granular sand textures and high-contrast desert lighting.
+
+### Suggestion: Macro Frozen Nebula
+- **Date:** 2026-05-20
+- **Prompt:** "An ultra-macro, abstract visualization of a miniature nebula trapped within a perfect sphere of solid ice. The subject features swirling clouds of vibrant pink and cyan stardust, glittering with microscopic stars, perfectly frozen in clear ice. The lighting is cold and directional, highlighting the complex internal refractions and bubbles trapped within the sphere. The mood is awe-inspiring, serene, and magical. Captured with a 100mm macro lens, sharp focus on the internal cosmic details."
+- **Negative prompt:** "blurry, low resolution, warm colors, messy, organic, simple"
+- **Tags:** abstract, macro, ethereal, bright
+- **Style / Reference:** abstract, photorealistic
+- **Composition:** perfectly centered sphere, symmetrical, shallow depth of field
+- **Color palette:** freezing icy blue, vibrant neon pink, glowing cyan, deep black background
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260520_frozen-nebula.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for evaluating internal refractions, volumetric particle clouds, and macro bokeh.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
