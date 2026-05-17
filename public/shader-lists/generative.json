@@ -2620,7 +2620,7 @@
     "name": "Gravitational Strain Field",
     "url": "shaders/gen-gravitational-strain.wgsl",
     "category": "generative",
-    "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide \u2014 dark matter visualization as art.",
+    "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide — dark matter visualization as art.",
     "tags": [
       "gravity",
       "lensing",
@@ -2647,7 +2647,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of gravity wells (maps to 1\u20136)."
+        "description": "Number of gravity wells (maps to 1–6)."
       },
       {
         "id": "param2",
@@ -2656,7 +2656,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Mass of each gravity well \u2014 controls bending strength."
+        "description": "Mass of each gravity well — controls bending strength."
       },
       {
         "id": "param3",
@@ -3001,7 +3001,7 @@
     "name": "Hyperbolic Tessellation Engine",
     "url": "shaders/gen-hyperbolic-tessellation.wgsl",
     "category": "generative",
-    "description": "Non-Euclidean Poincar\u00e9-disk tessellation in real-time. Hyperbolic tiles subdivide infinitely toward the boundary disk, colored by recursive depth \u2014 M.C. Escher meets fractals.",
+    "description": "Non-Euclidean Poincaré-disk tessellation in real-time. Hyperbolic tiles subdivide infinitely toward the boundary disk, colored by recursive depth — M.C. Escher meets fractals.",
     "tags": [
       "hyperbolic",
       "tessellation",
@@ -3027,7 +3027,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of sides in the fundamental tile (maps to p=3\u20138)."
+        "description": "Number of sides in the fundamental tile (maps to p=3–8)."
       },
       {
         "id": "param2",
@@ -3054,7 +3054,7 @@
         "max": 1,
         "default": 0.7,
         "step": 0.01,
-        "description": "Brightness of the glow near the Poincar\u00e9 disk boundary."
+        "description": "Brightness of the glow near the Poincaré disk boundary."
       }
     ]
   },
@@ -3090,7 +3090,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Maximum iteration count (maps to 20\u201380)."
+        "description": "Maximum iteration count (maps to 20–80)."
       },
       {
         "id": "param2",
@@ -3117,7 +3117,7 @@
         "max": 1,
         "default": 0.3,
         "step": 0.01,
-        "description": "Escape radius \u2014 lower values create more intricate boundaries."
+        "description": "Escape radius — lower values create more intricate boundaries."
       }
     ]
   },
@@ -3944,7 +3944,7 @@
     "name": "Neural Fractal",
     "url": "shaders/gen-neural-fractal.wgsl",
     "category": "generative",
-    "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z\u00b2+c iterations",
+    "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z²+c iterations",
     "tags": [
       "generative",
       "fractal",
@@ -4659,7 +4659,7 @@
     "name": "Quantum Superposition Lattice",
     "url": "shaders/gen-quantum-superposition.wgsl",
     "category": "generative",
-    "description": "Particles exist in quantum superposition \u2014 visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
+    "description": "Particles exist in quantum superposition — visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
     "tags": [
       "quantum",
       "superposition",
@@ -4687,7 +4687,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of quantum particles (maps to 1\u20138)."
+        "description": "Number of quantum particles (maps to 1–8)."
       },
       {
         "id": "param2",
@@ -5616,7 +5616,7 @@
     "name": "Domain-Warped FBM Grid",
     "url": "shaders/gen_grid.wgsl",
     "category": "generative",
-    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moir\u00e9 sub-grids, chromatic dispersion edges, and temporal motion blur.",
+    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -6273,7 +6273,7 @@
     "name": "Lorenz Strange Attractor",
     "url": "shaders/gen_orb.wgsl",
     "category": "generative",
-    "description": "Audio-reactive Lorenz strange attractor (\u03c3, \u03c1, \u03b2) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
+    "description": "Audio-reactive Lorenz strange attractor (σ, ρ, β) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -6296,7 +6296,7 @@
     "params": [
       {
         "id": "param1",
-        "name": "Sigma (\u03c3)",
+        "name": "Sigma (σ)",
         "default": 0.45,
         "min": 0,
         "max": 1,
@@ -6304,7 +6304,7 @@
       },
       {
         "id": "param2",
-        "name": "Rho (\u03c1)",
+        "name": "Rho (ρ)",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6312,7 +6312,7 @@
       },
       {
         "id": "param3",
-        "name": "Beta (\u03b2)",
+        "name": "Beta (β)",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -7901,58 +7901,6 @@
     "tags": [
       "procedural",
       "generative"
-    ]
-  },
-  {
-    "id": "gen-chromatic-singularity-loom",
-    "name": "Chromatic Singularity-Loom",
-    "category": "generative",
-    "tags": [
-      "singularity",
-      "fractal",
-      "weaving",
-      "space",
-      "audio-reactive",
-      "distortion"
-    ],
-    "description": "A majestic, gravity-warped cosmic loom weaving fractal strings of pure light around a central singularity.",
-    "parameters": [
-      {
-        "id": "gravity_mass",
-        "name": "Gravity Mass",
-        "type": "slider",
-        "min": 0.1,
-        "max": 10.0,
-        "step": 0.1,
-        "default": 2.0
-      },
-      {
-        "id": "thread_density",
-        "name": "Thread Density",
-        "type": "slider",
-        "min": 1.0,
-        "max": 8.0,
-        "step": 1.0,
-        "default": 4.0
-      },
-      {
-        "id": "accretion_glow",
-        "name": "Accretion Glow",
-        "type": "slider",
-        "min": 0.0,
-        "max": 5.0,
-        "step": 0.1,
-        "default": 1.0
-      },
-      {
-        "id": "chromatic_shift",
-        "name": "Chromatic Shift",
-        "type": "slider",
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.01,
-        "default": 0.5
-      }
     ]
   }
 ]

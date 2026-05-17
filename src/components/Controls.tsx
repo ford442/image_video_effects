@@ -9,6 +9,7 @@ import type { ShaderMegaMenuOption } from './ShaderMegaMenu';
 import { ShaderStarRating } from './ShaderStarRating';
 import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from './LiveStreamPanel';
+import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../services/vjHistory';
 import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
@@ -63,6 +64,8 @@ interface ControlsProps {
     aiVjStatus: AIStatus;
     aiVjMessage?: string;
     onGenerateFromVibe?: (vibe: string) => void;
+    onUpdateStack?: (ids: string[]) => void;
+    onUpdateParams?: (params: Record<string, number>[]) => void;
     // Webcam Props
     isWebcamActive?: boolean;
     onStartWebcam?: () => void;
@@ -118,6 +121,8 @@ const Controls: React.FC<ControlsProps> = ({
     aiVjStatus,
     aiVjMessage,
     onGenerateFromVibe,
+    onUpdateStack,
+    onUpdateParams,
     isWebcamActive = false,
     onStartWebcam,
     onStopWebcam,
@@ -148,6 +153,33 @@ const Controls: React.FC<ControlsProps> = ({
 
     // --- Vibe Prompt State ---
     const [vibeInput, setVibeInput] = useState('');
+
+    // --- VJ History State ---
+    const [history, setHistory] = useState<VJHistoryEntry[]>([]);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const prevAiVjStatusRef = React.useRef<AIStatus>(aiVjStatus);
+
+    useEffect(() => {
+        setHistory(loadVJHistory());
+    }, []);
+
+    useEffect(() => {
+        if (prevAiVjStatusRef.current === 'generating' && aiVjStatus !== 'generating') {
+            setHistory(loadVJHistory());
+        }
+        prevAiVjStatusRef.current = aiVjStatus;
+    }, [aiVjStatus]);
+
+    const formatRelativeTime = (timestamp: number): string => {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        if (seconds < 60) return `${seconds}s ago`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} min ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return `${days}d ago`;
+    };
 
     // --- Star Ratings ---
     const { shaders: ratedShaders, rateShader } = useShaderRatings();
@@ -930,6 +962,80 @@ const Controls: React.FC<ControlsProps> = ({
                         </div>
                     )}
 
+                    {/* VJ History */}
+                    <div className="control-group glass-panel" style={{padding: '12px', marginTop: '10px'}}>
+                        <div
+                            className="gold-section-header"
+                            style={{fontSize: '12px', marginTop: '0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer'}}
+                            onClick={() => setHistoryOpen(o => !o)}
+                        >
+                            <span>VJ History</span>
+                            <span style={{transform: historyOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s'}}>▼</span>
+                        </div>
+                        {historyOpen && (
+                            <>
+                                <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: '8px', marginBottom: '8px'}}>
+                                    <button
+                                        className="gold-outline-btn"
+                                        style={{fontSize: '11px', padding: '4px 10px'}}
+                                        onClick={() => {
+                                            clearVJHistory();
+                                            setHistory([]);
+                                        }}
+                                    >
+                                        Clear History
+                                    </button>
+                                </div>
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto'}}>
+                                    {history.length === 0 && (
+                                        <div style={{fontSize: '12px', color: '#a0a0b0', fontStyle: 'italic', textAlign: 'center'}}>
+                                            No history yet
+                                        </div>
+                                    )}
+                                    {history.map(entry => {
+                                        const vibeDisplay = entry.vibeText.length > 60 ? entry.vibeText.slice(0, 60) + '…' : entry.vibeText;
+                                        const idDisplay = entry.shaderIds.slice(0, 3).join(', ') + (entry.shaderIds.length > 3 ? ` …+${entry.shaderIds.length - 3}` : '');
+                                        return (
+                                            <div key={entry.id} style={{
+                                                background: 'rgba(20, 20, 30, 0.6)',
+                                                border: '1px solid rgba(255, 215, 0, 0.1)',
+                                                borderRadius: '6px',
+                                                padding: '8px',
+                                            }}>
+                                                <div style={{fontSize: '12px', color: '#FFD700', fontWeight: 500, marginBottom: '4px'}}>
+                                                    {vibeDisplay}
+                                                </div>
+                                                <div style={{fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px'}}>
+                                                    {idDisplay} • {formatRelativeTime(entry.timestamp)}
+                                                </div>
+                                                <div style={{display: 'flex', gap: '6px'}}>
+                                                    <button
+                                                        className="gold-outline-btn"
+                                                        style={{fontSize: '11px', padding: '3px 8px', flex: 1}}
+                                                        onClick={() => {
+                                                            if (onUpdateStack) onUpdateStack(entry.shaderIds);
+                                                            if (onUpdateParams) onUpdateParams(entry.params);
+                                                        }}
+                                                    >
+                                                        Restore
+                                                    </button>
+                                                    <button
+                                                        className="gold-outline-btn"
+                                                        style={{fontSize: '11px', padding: '3px 8px', flex: 1}}
+                                                        onClick={() => {
+                                                            if (onGenerateFromVibe) onGenerateFromVibe(entry.vibeText);
+                                                        }}
+                                                    >
+                                                        Regen
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        )}
+                    </div>
 
                 </>
             )}

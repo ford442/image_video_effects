@@ -397,6 +397,35 @@ function MainApp() {
         });
     }, []);
 
+    const handleUpdateStack = useCallback((ids: string[]) => {
+        setModes(prev => {
+            const next = [...prev];
+            if (ids.length > 0) next[0] = ids[0];
+            if (ids.length > 1) next[1] = ids[1];
+            if (ids.length > 2) next[2] = ids[2];
+            return next;
+        });
+    }, []);
+
+    const handleUpdateParams = useCallback((paramsList: Record<string, number>[]) => {
+        paramsList.forEach((slotParamsUpdates, slotIndex) => {
+            const shaderId = modes[slotIndex];
+            const shaderEntry = availableModes.find(m => m.id === shaderId);
+            if (!shaderEntry || !shaderEntry.params) return;
+            const updates: Partial<SlotParams> = {};
+            for (const [key, value] of Object.entries(slotParamsUpdates)) {
+                const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
+                if (paramIndex === 0) updates.zoomParam1 = value;
+                else if (paramIndex === 1) updates.zoomParam2 = value;
+                else if (paramIndex === 2) updates.zoomParam3 = value;
+                else if (paramIndex === 3) updates.zoomParam4 = value;
+            }
+            if (Object.keys(updates).length > 0) {
+                updateSlotParam(slotIndex, updates);
+            }
+        });
+    }, [modes, availableModes, updateSlotParam]);
+
     // --- EFFECT: Auto-Switch Generative Mode ---
     // This fixes the issue where generative mode wouldn't replace image/video input
     useEffect(() => {
@@ -655,15 +684,7 @@ function MainApp() {
             }
             const vj = new Alucinate(
                 (url) => handleLoadImage(url),
-                (ids) => {
-                    setModes(prev => {
-                        const next = [...prev];
-                        if (ids.length > 0) next[0] = ids[0];
-                        if (ids.length > 1) next[1] = ids[1];
-                        if (ids.length > 2) next[2] = ids[2];
-                        return next;
-                    });
-                },
+                handleUpdateStack,
                 () => { // This now correctly reads from state
                     const imgRecord = imageManifest.find(img => img.url === currentImageUrl) || null;
                     const shaderEntry = availableModes.find(m => m.id === modes[0]) || null;
@@ -678,24 +699,7 @@ function MainApp() {
                 }
             );
             vj.onStatusChange = (s, m) => { setAiVjStatus(s); setAiVjMessage(m); };
-            vj.onUpdateParams = (paramsList) => {
-                paramsList.forEach((slotParams, slotIndex) => {
-                    const shaderId = modes[slotIndex];
-                    const shaderEntry = availableModes.find(m => m.id === shaderId);
-                    if (!shaderEntry || !shaderEntry.params) return;
-                    const updates: Partial<SlotParams> = {};
-                    for (const [key, value] of Object.entries(slotParams)) {
-                        const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
-                        if (paramIndex === 0) updates.zoomParam1 = value;
-                        else if (paramIndex === 1) updates.zoomParam2 = value;
-                        else if (paramIndex === 2) updates.zoomParam3 = value;
-                        else if (paramIndex === 3) updates.zoomParam4 = value;
-                    }
-                    if (Object.keys(updates).length > 0) {
-                        updateSlotParam(slotIndex, updates);
-                    }
-                });
-            };
+            vj.onUpdateParams = handleUpdateParams;
             setAiVj(vj);
             setIsAiVjMode(true);
             await vj.initialize(imageManifest, IMAGE_SUGGESTIONS_URL);
@@ -719,7 +723,7 @@ function MainApp() {
                 }
             }
         }
-    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, updateSlotParam]);
+    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, handleUpdateStack, handleUpdateParams]);
 
     const handleGenerateFromVibe = useCallback(async (vibe: string) => {
         if (!aiVj) {
@@ -1407,6 +1411,7 @@ function MainApp() {
                         onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
                         aiVjMessage={aiVjMessage} onGenerateFromVibe={handleGenerateFromVibe}
+                        onUpdateStack={handleUpdateStack} onUpdateParams={handleUpdateParams}
                         isWebcamActive={isWebcamActive}
                         onStartWebcam={startWebcam}
                         onStopWebcam={stopWebcam}

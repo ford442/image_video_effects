@@ -1,6 +1,7 @@
 import { pipeline, env } from '@xenova/transformers';
 import * as webllm from "@mlc-ai/web-llm";
 import { buildCatalog, CatalogShader } from './services/shaderCatalog';
+import { saveVJStack } from './services/vjHistory';
 
 // --- Configuration ---
 env.allowLocalModels = false;
@@ -42,6 +43,7 @@ export class Alucinate {
   public status: AIStatus = 'idle';
   public statusMessage: string = "AI Not Initialized";
   public onStatusChange: ((status: AIStatus, message: string) => void) | null = null;
+  private lastVibeText: string = '';
   
   // Callbacks
   private onNextImage: (url: string) => void;
@@ -182,6 +184,7 @@ export class Alucinate {
   public async generateFromVibe(vibeText: string): Promise<boolean> {
     if (!this.llm || this.status === 'loading-models') return false;
     try {
+        this.lastVibeText = vibeText;
         this.setStatus('generating', `Vibe: "${vibeText}"`);
         const result = await this.selectShadersFromLLM(vibeText, vibeText);
         if (result) {
@@ -196,6 +199,7 @@ export class Alucinate {
             if (this.onUpdateParams) {
                 this.onUpdateParams(params);
             }
+            saveVJStack({ vibeText: this.lastVibeText, shaderIds: ids, params });
             return true;
         }
         return false;
