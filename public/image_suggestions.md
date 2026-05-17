@@ -4506,6 +4506,73 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Great for evaluating internal refractions, volumetric particle clouds, and macro bokeh.
 
 
+
+### Suggestion: Neon Samurai Cyber-Alley
+- **Date:** 2026-05-25
+- **Prompt:** "A photorealistic, moody portrait of a futuristic cyber-samurai standing in a rain-drenched neon alleyway. The subject wears intricately detailed, jet-black carbon-fiber samurai armor emitting glowing neon crimson energy lines. The lighting is cinematic and harsh, dominated by reflections of cyan and pink neon signs shimmering in the wet pavement puddles. The mood is tense, noir, and dangerous. Captured with a 50mm f/1.4 lens, shallow depth of field, sharp focus on the glowing katana handle."
+- **Negative prompt:** "daylight, clean, bright, cartoon, 2D, blurry, missing details"
+- **Tags:** cyberpunk, noir, portrait, moody, cinematic
+- **Style / Reference:** photorealistic, cinematic concept art
+- **Composition:** waist-up portrait, off-center subject, neon reflections in foreground
+- **Color palette:** jet black, vibrant crimson, neon cyan, electric pink
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260525_neon-samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing rain simulations, emissive armor materials, and highly reflective wet ground.
+
+### Suggestion: Steampunk Clockwork Aviary
+- **Date:** 2026-05-25
+- **Prompt:** "An ultra-detailed interior shot of a massive, Victorian-era steampunk aviary built inside a giant greenhouse of curved brass and stained glass. The subject features hundreds of intricate clockwork mechanical birds with polished copper and gold gears, flying amid exotic iron-wrought mechanical trees. The lighting is warm golden hour sunlight filtering through the stained glass, casting colorful intricate shadows across the tiled marble floor. The mood is whimsical, magical, and complex. Captured with a wide 24mm lens to emphasize scale."
+- **Negative prompt:** "modern, clean lines, organic, real birds, dark, minimalist"
+- **Tags:** steampunk, interior, fantasy, architecture, whimsical
+- **Style / Reference:** 3D render, Victorian architecture, photorealistic
+- **Composition:** wide shot, symmetrical framing, low angle
+- **Color palette:** warm brass, polished copper, golden yellow, emerald green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260525_steampunk-aviary.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests complex intersecting shadows, intricate metallic reflections, and volumetric light shafts.
+
+### Suggestion: Eldritch Lunar Monolith
+- **Date:** 2026-05-25
+- **Prompt:** "A chilling, wide-angle landscape shot of a colossal, alien obsidian monolith erupting from the barren surface of a pale, cratered moon. The subject is covered in faintly glowing, pulsing green eldritch runes. The lighting is stark and ethereal, illuminated only by a massive, looming ringed gas giant in the star-filled sky. The mood is dark, cosmic horror, and isolating. Captured with a 14mm ultra-wide lens, deep depth of field to capture the sprawling desolate terrain."
+- **Negative prompt:** "earth, blue sky, plants, sunlight, cheerful, human"
+- **Tags:** sci-fi, horror, landscape, dark, moody
+- **Style / Reference:** cinematic, cosmic horror concept art
+- **Composition:** rule of thirds, monolith on the right, towering over landscape
+- **Color palette:** desolate greys, pitch black, eerie neon green, pale blue starlight
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260525_lunar-monolith.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for stark high-contrast environments and evaluating eerie glowing materials.
+
+### Suggestion: Solarpunk Floating Market
+- **Date:** 2026-05-25
+- **Prompt:** "A vibrant, bustling daytime scene of a solarpunk floating market on a serene, crystal-clear turquoise river. The subject features a series of interconnected, modular bamboo boats draped in solar panels and lush blooming hydroponic gardens, overflowing with colorful glowing fruits. The lighting is bright, cheerful, mid-day sunlight with soft dappled shadows from giant synthetic lily pads overhead. The mood is utopian, bustling, and bright. Captured with a standard 35mm lens, natural documentary style."
+- **Negative prompt:** "dystopian, pollution, dark, gloomy, winter, concrete"
+- **Tags:** solarpunk, bright, architecture, nature, cinematic
+- **Style / Reference:** 3D render, photorealistic, optimistic sci-fi
+- **Composition:** dynamic diagonal lines, bustling foreground, river winding into the background
+- **Color palette:** bright turquoise, lush greens, vibrant orange and magenta accents, golden bamboo
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260525_solarpunk-market.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex organic materials, clear water refraction, and bright daylight global illumination.
+
+### Suggestion: Isometric Micro-Laboratory
+- **Date:** 2026-05-25
+- **Prompt:** "A clean, highly detailed isometric view of a futuristic micro-laboratory floating against a solid pastel background. The subject is a cutaway diorama of a sterile sci-fi lab featuring sleek white robotic arms, glowing holographic blue computer terminals, and a central containment tube holding a swirling galaxy. The lighting is soft, even studio lighting with no harsh shadows, highlighting the glossy white plastic and emissive holograms. The mood is clinical, minimalist, and high-tech. Rendered in a strict isometric projection."
+- **Negative prompt:** "perspective, realistic background, messy, dark, grunge"
+- **Tags:** sci-fi, interior, isometric, minimalist, bright
+- **Style / Reference:** 3D isometric, clean product render
+- **Composition:** strict isometric perspective, centered, cutaway view
+- **Color palette:** clinical white, holographic cyan, pastel pink background
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260525_isometric-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for generating clean, stylized isometric assets and testing smooth glossy material rendering.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
