@@ -36,7 +36,9 @@
   ],
   "features": [
     "mouse-driven",
-    "lighting"
+    "lighting",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
