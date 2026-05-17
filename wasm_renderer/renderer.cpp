@@ -247,7 +247,6 @@ bool WebGPURenderer::CreateDevice() {
             switch (reason) {
                 case WGPUDeviceLostReason_Unknown:     reasonStr = "Unknown";     break;
                 case WGPUDeviceLostReason_Destroyed:   reasonStr = "Destroyed";   break;
-                case WGPUDeviceLostReason_InstanceDropped: reasonStr = "InstanceDropped"; break;
                 case WGPUDeviceLostReason_FailedCreation: reasonStr = "FailedCreation";  break;
                 default: break;
             }
