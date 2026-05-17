@@ -85,6 +85,47 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 - Natural → Iridescent thin-film: wavelength-dependent phase shift
 - Flat mix → OkLab interpolation (prevents muddy mid-tone blending)
 
+### Tonemap & Dither Stack (kimi-cli reference snippets)
+
+Always process in this order: accumulate HDR → hue-preserve clamp → ACES tonemap → dither → premultiplied write.
+
+#### 1. Hue-preserving HDR clamp (prevents desaturation on bright highlights)
+```wgsl
+fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let s = min(1.0, max_lum / max(l, 1e-4));
+    return c * s;
+}
+```
+Apply after additive accumulation, before ACES. Beats `min(c, 1.0)` which desaturates to white.
+
+#### 2. ACES filmic tonemap (drop-in, no LUT required)
+```wgsl
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+```
+Pair with sRGB gamma `pow(c, vec3<f32>(1.0/2.2))` on write if the display is sRGB.
+
+#### 3. Interleaved-gradient (IGN) blue-noise dither (kills 8-bit banding)
+```wgsl
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+// before textureStore:
+let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
+let outRGB = aces(hdr) + vec3<f32>(dither);
+```
+Cheaper than a blue-noise texture lookup and visually identical at 8-bit precision.
+
+#### Premultiplied-alpha writeback — tactic #12 (correct compositing in the slot chain)
+```wgsl
+let a = clamp(alpha, 0.0, 1.0);
+textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
+```
+The renderer expects premultiplied output downstream of slot 1. Straight alpha causes dark fringes after the next slot's blur/blend.
+
 ## RGBA Channel Strategy
 
 **Alpha = bloom weight** is the most useful convention for generative shaders:
@@ -104,10 +145,13 @@ Other useful alpha encodings:
 ## Quality Checklist
 - [ ] HDR values exceed 1.0 in highlights before tone mapping
 - [ ] At least 2 light sources with different color temperatures
+- [ ] `hue_preserve_clamp` applied before ACES to avoid highlight desaturation
 - [ ] ACES tone mapping applied as the final step
+- [ ] IGN dither added before `textureStore` to kill 8-bit banding
 - [ ] Atmospheric depth (fog/haze/dust via Beer-Lambert or Rayleigh)
 - [ ] Color gradients use OkLab mixing to avoid muddy transitions
 - [ ] Alpha channel encodes bloom weight or compositing info
+- [ ] Premultiplied-alpha writeback (`vec4(rgb * a, a)`) when alpha < 1
 
 ## Output Rules
 - Keep the original "soul" of the shader while making it visually stunning.

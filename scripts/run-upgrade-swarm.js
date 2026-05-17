@@ -42,12 +42,186 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };`;
 
+// ── 12 WGSL GRAPHICAL TACTICS injected into kimi-cli prompts ─────────────────
+const KIMI_TACTICS = `
+## 12 Kimi-CLI WGSL Graphical Tactics (apply where appropriate)
+
+### 1. Hue-preserving HDR clamp
+\`\`\`wgsl
+fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let s = min(1.0, max_lum / max(l, 1e-4));
+    return c * s;
+}
+\`\`\`
+
+### 2. ACES filmic tonemap
+\`\`\`wgsl
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+\`\`\`
+
+### 3. Interleaved-gradient (IGN) blue-noise dither
+\`\`\`wgsl
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+// before textureStore: let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
+\`\`\`
+
+### 4. fwidth-based AA step for SDF / grid edges
+\`\`\`wgsl
+fn aa_step(edge: f32, x: f32) -> f32 {
+    let w = max(fwidth(x), 1e-4);
+    return smoothstep(edge - w, edge + w, x);
+}
+\`\`\`
+
+### 5. smin smooth-min SDF union
+\`\`\`wgsl
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0 - h);
+}
+\`\`\`
+
+### 6. Domain-warped FBM (two-octave warp)
+\`\`\`wgsl
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5; var s = 0.0; var q = p;
+    for (var i = 0; i < 5; i = i + 1) { s = s + a * valueNoise(q); q = q * 2.02; a = a * 0.5; }
+    return s;
+}
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)), fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)), fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0*r);
+}
+\`\`\`
+
+### 7. Polar kaleidoscope fold
+\`\`\`wgsl
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+    let r = length(uv); var a = atan2(uv.y, uv.x);
+    let seg = 6.2831853 / max(segs, 1.0);
+    a = abs(((a % seg) + seg) % seg - seg * 0.5);
+    return vec2<f32>(cos(a), sin(a)) * r;
+}
+\`\`\`
+
+### 8. 7-tap hex bokeh sampling
+\`\`\`wgsl
+const HEX_TAPS = array<vec2<f32>, 7>(
+    vec2<f32>( 0.0,  0.0),
+    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
+    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
+    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
+);
+\`\`\`
+
+### 9. Attack/release audio envelope
+\`\`\`wgsl
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+// Store prev in dataTextureA.r; attack≈0.8, release≈0.15
+\`\`\`
+
+### 10. Depth-aware compositing for slot-2/3
+\`\`\`wgsl
+let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
+let fog = 1.0 - exp(-z * u.zoom_params.z);
+let out = mix(srcColor, fxColor, fog);
+\`\`\`
+
+### 11. Anti-moiré LOD bias for procedural noise
+\`\`\`wgsl
+let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
+let p   = uv * (cell_freq * exp2(-lod));
+\`\`\`
+
+### 12. Premultiplied-alpha writeback
+\`\`\`wgsl
+let a = clamp(alpha, 0.0, 1.0);
+textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
+\`\`\`
+`;
+
+/**
+ * Extract the first complete ```wgsl … ``` block from kimi-cli output,
+ * trimming any trailing prose that follows the closing fence.
+ * Non-greedy match is safe because valid WGSL source never contains
+ * triple-backtick sequences.
+ */
+function parseKimiOutput(text) {
+  const match = text.match(/```wgsl\s*\n([\s\S]*?)```/);
+  if (match) {
+    return match[1].trimEnd();
+  }
+  return null;
+}
+
+/**
+ * Build a kimi-cli-tailored prompt by stitching the standard prompt with
+ * the 12 tactics and adding an explicit single-fence output instruction.
+ */
+function generateKimiPrompt(item) {
+  const basePrompt = generatePrompt(item);
+  const jsonDef = (() => {
+    const jsonPath = findShaderJson(item.id);
+    if (!jsonPath) return {};
+    try { return JSON.parse(fs.readFileSync(jsonPath, 'utf8')); } catch { return {}; }
+  })();
+  const name = jsonDef.name || item.id;
+  const desc = jsonDef.description ? ` — ${jsonDef.description}` : '';
+  const themeLine = `**Shader theme:** "${name}"${desc}`;
+  const wgslPath = findShaderWgsl(item.id);
+  const currentLines = wgslPath
+    ? fs.readFileSync(wgslPath, 'utf8').split('\n').length
+    : (item.target_lines || 100);
+  const lineCap = currentLines + 40;
+
+  return `${themeLine}
+
+${basePrompt}
+${KIMI_TACTICS}
+
+---
+
+**Kimi-CLI output instructions:**
+- Output at most ${lineCap} lines total (prefer math density over comments).
+- **Return exactly one \`\`\`wgsl fenced block, no prose before or after.**
+- Stop immediately after the closing \`\`\`  — do not add explanations.
+`;
+}
+
+/**
+ * Dispatch a single prompt to kimi-cli and return its stdout.
+ */
+function dispatchToKimi(prompt) {
+  const { execFileSync } = require('child_process');
+  try {
+    const output = execFileSync('kimi-cli', ['--no-stream'], {
+      input: prompt,
+      encoding: 'utf8',
+      timeout: 120000,
+    });
+    return output;
+  } catch (err) {
+    return err.stdout || err.message || 'kimi-cli failed';
+  }
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   return {
     prepare: args.includes('--prepare'),
     dispatch: args.includes('--dispatch'),
     agentDispatch: args.includes('--agent-dispatch'),
+    kimi: args.includes('--kimi'),
     batch: parseInt(args.find(a => a.startsWith('--batch='))?.split('=')[1] || '4', 10),
     help: args.includes('--help') || args.includes('-h'),
   };
@@ -63,6 +237,7 @@ Usage:
 Options:
   --prepare           Generate agent prompt files for pending shaders (default)
   --dispatch          Spawn parallel subagents via external AI API (needs API key)
+  --dispatch --kimi   Dispatch to kimi-cli (no API key needed; uses local kimi-cli)
   --agent-dispatch    Output JSON manifest for AI CLI Agent-tool dispatch
   --batch=N           Process N shaders in parallel (default: 4)
   --help, -h          Show this help
@@ -315,7 +490,7 @@ async function main() {
   console.log(`Total items: ${queue.items.length}`);
   console.log(`Pending: ${queue.items.filter(i => i.status === 'pending').length}`);
   console.log(`Batch size: ${opts.batch}`);
-  console.log(`Mode: ${opts.prepare ? 'PREPARE' : opts.dispatch ? 'DISPATCH' : 'AGENT-DISPATCH'}`);
+  console.log(`Mode: ${opts.prepare ? 'PREPARE' : opts.dispatch ? (opts.kimi ? 'DISPATCH (kimi-cli)' : 'DISPATCH') : 'AGENT-DISPATCH'}`);
   console.log('');
 
   const pending = queue.items.filter(i => i.status === 'pending');
@@ -350,17 +525,48 @@ async function main() {
   }
 
   if (opts.dispatch) {
-    const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      console.log('\n⚠️  No OPENAI_API_KEY or ANTHROPIC_API_KEY found in environment.');
-      console.log('   Falling back to --prepare mode. Set an API key to use --dispatch.');
-      return;
-    }
+    // ── kimi-cli dispatch path ─────────────────────────────────────────────
+    if (opts.kimi) {
+      console.log('\n🤖 kimi-cli dispatch mode — processing batch sequentially...');
+      let kimiSucceeded = 0;
+      for (const item of batch) {
+        try {
+          console.log(`  ⏳ Sending ${item.id} to kimi-cli...`);
+          const kimiPrompt = generateKimiPrompt(item);
+          const kimiRaw = dispatchToKimi(kimiPrompt);
+          const wgslSource = parseKimiOutput(kimiRaw);
+          if (wgslSource) {
+            const wgslPath = findShaderWgsl(item.id);
+            if (wgslPath) {
+              fs.writeFileSync(wgslPath, wgslSource, 'utf8');
+              console.log(`  ✅ ${item.id} — kimi-cli upgraded (${wgslSource.split('\n').length} lines)`);
+              kimiSucceeded++;
+            } else {
+              console.warn(`  ⚠️  ${item.id} — kimi responded but WGSL path not found; skipping write`);
+            }
+          } else {
+            console.warn(`  ⚠️  ${item.id} — kimi response contained no \`\`\`wgsl block`);
+          }
+        } catch (err) {
+          console.error(`  ❌ ${item.id} — kimi dispatch error: ${err.message}`);
+        }
+      }
+      console.log(`\n✅ kimi-cli upgraded ${kimiSucceeded}/${batch.length} shaders.`);
+    } else {
+      // ── standard AI API dispatch path ──────────────────────────────────
+      const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        console.log('\n⚠️  No OPENAI_API_KEY or ANTHROPIC_API_KEY found in environment.');
+        console.log('   Falling back to --prepare mode. Set an API key to use --dispatch.');
+        console.log('   Tip: use --dispatch --kimi to dispatch via local kimi-cli instead.');
+        return;
+      }
 
-    console.log('\n🚀 Dispatch mode: spawning parallel subagents...');
-    console.log('   (Note: Full AI API dispatch requires a subagent worker implementation.');
-    console.log('    For now, prompts are ready. Use --agent-dispatch to get a manifest for manual Agent-tool usage.)');
-    // Placeholder: in a future iteration, spawn child processes that call the AI API.
+      console.log('\n🚀 Dispatch mode: spawning parallel subagents...');
+      console.log('   (Note: Full AI API dispatch requires a subagent worker implementation.');
+      console.log('    For now, prompts are ready. Use --agent-dispatch to get a manifest for manual Agent-tool usage.)');
+      // Placeholder: in a future iteration, spawn child processes that call the AI API.
+    }
   }
 
   // Step 3: Validation pipeline (only if something was actually modified)

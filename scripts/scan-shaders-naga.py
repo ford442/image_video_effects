@@ -6,6 +6,7 @@ Then optionally pipes failures to kimi-cli for fixes + visual improvements.
 """
 
 import os
+import re
 import subprocess
 import json
 import sys
@@ -20,6 +21,29 @@ USE_KIMI = "--kimi" in sys.argv
 CARGO_BIN = Path.home() / ".cargo" / "bin"
 if str(CARGO_BIN) not in os.environ.get("PATH", ""):
     os.environ["PATH"] = f"{CARGO_BIN}{os.pathsep}{os.environ.get('PATH', '')}"
+
+# Canonical 13-binding header that kimi-cli must reproduce verbatim
+BINDING_HEADER = """\
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};"""
 
 
 def run_naga(wgsl_file: Path) -> dict:
@@ -80,31 +104,81 @@ def parse_naga_errors(raw: str) -> list:
     return errors
 
 
+def find_shader_json(wgsl_path: Path) -> dict:
+    """Try to locate the JSON shader definition and return its parsed contents."""
+    stem = wgsl_path.stem
+    definitions_dir = Path("shader_definitions").resolve()
+    if not definitions_dir.exists():
+        return {}
+    for cat_dir in definitions_dir.iterdir():
+        if not cat_dir.is_dir():
+            continue
+        json_file = cat_dir / f"{stem}.json"
+        if json_file.exists():
+            try:
+                return json.loads(json_file.read_text(encoding="utf-8"))
+            except Exception:
+                return {}
+    return {}
+
+
+def _extract_first_wgsl_block(text: str) -> str:
+    """Return the first ```wgsl … ``` block from text, trimming trailing prose.
+
+    Uses a non-greedy match which is safe here because valid WGSL source
+    never contains triple-backtick sequences.
+    """
+    match = re.search(r"```wgsl\s*\n(.*?)```", text, re.DOTALL)
+    if match:
+        return f"```wgsl\n{match.group(1)}```"
+    return text
+
+
 def ask_kimi(wgsl_path: Path, raw_error: str) -> str:
     """Send failing shader + error to kimi-cli for fix + visual improvement."""
     try:
-        wgsl_code = wgsl_path.read_text()
+        wgsl_code = wgsl_path.read_text(encoding="utf-8")
     except Exception as e:
         return f"Could not read file: {e}"
 
+    current_lines = len(wgsl_code.splitlines())
+    line_cap = current_lines + 40
+
+    # Build a one-sentence theme from the JSON definition when available
+    shader_def = find_shader_json(wgsl_path)
+    shader_name = shader_def.get("name", wgsl_path.stem)
+    shader_desc = shader_def.get("description", "")
+    if shader_desc:
+        theme_sentence = f'This shader is "{shader_name}" — {shader_desc}.'
+    else:
+        theme_sentence = f'This shader is "{shader_name}".'
+
     prompt = f"""You are a WebGPU WGSL expert. This shader failed naga validation.
+
+Shader theme: {theme_sentence}
 
 File: {wgsl_path}
 
-NAGA ERROR OUTPUT:
+## Canonical 13-Binding Header (copy EXACTLY — do NOT rename or reorder bindings)
+```wgsl
+{BINDING_HEADER}
+```
+
+## NAGA ERROR OUTPUT
 {raw_error}
 
-SHADER CODE:
+## SHADER CODE
 ```wgsl
 {wgsl_code}
 ```
 
-Please:
+## Instructions
+1. FIX all compile errors shown above.
+2. IMPROVE the visual output — apply richer colors, better noise/math, glow, \
+or more dynamic animation consistent with the shader theme.
+3. Keep output to <= {line_cap} lines (prefer math density over comments).
 
-1. FIX the compile error(s) shown above. Explain what was wrong.
-2. IMPROVE the visual output — suggest and apply richer colors, better noise/math, glow effects, or more dynamic animation while keeping the shader's theme.
-3. Return the complete, fixed WGSL code in a single code block.
-"""
+**Return exactly one ```wgsl fenced block, no prose before or after.**"""
 
     try:
         result = subprocess.run(
@@ -114,7 +188,8 @@ Please:
             text=True,
             timeout=120,
         )
-        return result.stdout.strip() or result.stderr.strip()
+        raw_output = result.stdout.strip() or result.stderr.strip()
+        return _extract_first_wgsl_block(raw_output)
     except Exception as e:
         return f"kimi-cli failed: {e}"
 
