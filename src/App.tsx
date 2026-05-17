@@ -129,7 +129,7 @@ function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
     // Try multiple variations of the shader ID
     const variations = [
         shaderId,                                    // exact match
-        shaderId.replace('.wgsl', ''),              // without .wgsl
+        shaderId.replace('.wgsl', ''),              // strip .wgsl extension if present
         `${shaderId}.wgsl`,                         // with .wgsl
         shaderId.replace(/-/g, '_'),                // snake_case
         shaderId.replace(/_/g, '-'),                // kebab-case
@@ -139,17 +139,12 @@ function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
     for (const key of variations) {
         const defaults = SHADER_DEFAULTS[key];
         if (defaults) {
-            console.log(`[getShaderDefaults] Found defaults for "${shaderId}" (matched as "${key}")`);
             return [...defaults, ...Array(4 - defaults.length).fill(0.5)].slice(0, numParams);
         }
     }
     
-    console.log(`[getShaderDefaults] No defaults found for "${shaderId}" (tried: ${variations.join(', ')})`);
     return Array(numParams).fill(0.5);
 }
-
-// Debug: Log available shader default keys
-console.log('[SHADER_DEFAULTS] Available keys:', Object.keys(SHADER_DEFAULTS));
 
 // --- Configuration ---
 env.allowLocalModels = false;
@@ -205,7 +200,7 @@ function MainApp() {
 
     // --- State: General & Stacking ---
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
-    const [modes, setModes] = useState<RenderMode[]>(['liquid-displacement', 'none', 'none']);
+    const [modes, setModes] = useState<RenderMode[]>(['none', 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
     const [slotParams, setSlotParams] = useState<SlotParams[]>([
         defaultSlotParams,
@@ -342,36 +337,27 @@ function MainApp() {
                 
                 // Initialize slider values to shader's declared param defaults
                 // Use hardcoded defaults first (API returns generic 0.5 values)
-                console.log(`[setMode] Setting defaults for shader: "${shaderEntry.id}"`);
                 const hardcodedDefaults = getShaderDefaults(shaderEntry.id, shaderEntry.params?.length || 4);
                 const hasHardcoded = hardcodedDefaults.some(v => v !== 0.5);
-                console.log(`[setMode] Has hardcoded defaults: ${hasHardcoded}`, hardcodedDefaults);
                 
                 if (ok && (shaderEntry.params?.length || hasHardcoded)) {
                     const paramDefaults: Partial<SlotParams> = {};
                     const numParams = shaderEntry.params?.length || hardcodedDefaults.length;
                     
-                    console.log(`[setMode] Applying defaults for ${shaderEntry.id}:`, 
-                        hasHardcoded ? 'using hardcoded defaults' : 'using API defaults');
-                    
                     for (let i = 0; i < numParams; i++) {
                         // Use hardcoded default if available, otherwise fall back to API default
                         const defaultValue = hasHardcoded ? hardcodedDefaults[i] : (shaderEntry.params?.[i]?.default ?? 0.5);
-                        console.log(`[setMode] Param ${i}: default = ${defaultValue}`);
                         if (i === 0) paramDefaults.zoomParam1 = defaultValue;
                         else if (i === 1) paramDefaults.zoomParam2 = defaultValue;
                         else if (i === 2) paramDefaults.zoomParam3 = defaultValue;
                         else if (i === 3) paramDefaults.zoomParam4 = defaultValue;
                     }
                     
-                    console.log(`[setMode] Setting slot ${index} defaults:`, paramDefaults);
                     setSlotParams(prev => {
                         const next = [...prev];
                         next[index] = { ...next[index], ...paramDefaults };
                         return next;
                     });
-                } else {
-                    console.log(`[setMode] No params for ${shaderEntry.id}:`, { ok, params: shaderEntry.params });
                 }
 
                 // Record play event (fire-and-forget)
@@ -519,17 +505,11 @@ function MainApp() {
 
                 setAvailableModes(entries);
                 setShadersReady(true);
-                // Debug: Check params
-                const withParams = entries.filter(e => e.params && e.params.length > 0);
-                console.log(`✅ Loaded ${entries.length} shaders (API-first with fallback)`);
-                console.log(`   ${withParams.length} shaders have params`);
-                if (withParams.length > 0) {
-                    console.log(`   Example: ${withParams[0].id} has params:`, withParams[0].params);
-                }
             } catch (error) {
                 if (!isMounted) return;
                 console.warn('Failed to load shaders:', error);
                 setShadersReady(true); // Mark ready even on failure so boot gate doesn't block forever
+                setStatus('⚠️ Could not load shader list. Some effects may be unavailable.');
             }
         };
 
@@ -607,7 +587,6 @@ function MainApp() {
         // If manifest is empty, try to use fallback images directly
         let sourceList = imageManifest;
         if (sourceList.length === 0) {
-            console.warn('Manifest empty, using fallback images directly');
             sourceList = FALLBACK_IMAGES.map(url => ({
                 url,
                 tags: ['fallback', 'unsplash', 'demo'],
@@ -620,6 +599,8 @@ function MainApp() {
             setStatus('Loading image...');
             await handleLoadImage(randomImage.url);
             setStatus('Image loaded');
+            // Clear the transient status message after a short delay
+            setTimeout(() => setStatus('Ready.'), 2000);
         }
     }, [imageManifest, handleLoadImage]);
 
@@ -635,7 +616,6 @@ function MainApp() {
         // Load initial shader
         const initialMode = modes[0];
         if (initialMode && initialMode !== 'none') {
-            console.log(`[boot] Loading initial shader: ${initialMode}`);
             setMode(0, initialMode);
         }
     }, [rendererReady, shadersReady, modes, setMode]);
@@ -646,7 +626,6 @@ function MainApp() {
     useEffect(() => {
         if (!rendererReady || imageManifest.length === 0 || currentImageUrl) return;
         if (inputSource !== 'image') return;
-        console.log('[boot] Auto-loading first image (manifest ready)...');
         handleNewRandomImage();
     }, [rendererReady, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
@@ -1321,7 +1300,6 @@ function MainApp() {
                 setIsMuted(msg.payload);
             } else if (msg.type === 'CMD_UPLOAD_FILE') {
                 // File upload from remote - handle if needed
-                console.log('File upload from remote:', msg.payload);
             }
         };
 
