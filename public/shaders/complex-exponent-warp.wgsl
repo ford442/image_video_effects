@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Complex Exponent Warp
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +19,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -26,15 +32,13 @@ fn complex_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 }
 
 // z^w = exp(w * ln(z))
+// Branchless: guard r=0 via max, never output garbage
 fn complex_pow(z: vec2<f32>, w: vec2<f32>) -> vec2<f32> {
-    let r = length(z);
-    if (r < 0.0001) { return vec2<f32>(0.0); }
+    let r     = max(length(z), 0.0001);
     let angle = atan2(z.y, z.x);
 
     // ln(z) = ln(r) + i*angle
-    let ln_z = vec2<f32>(log(r), angle);
-
-    // w * ln(z)
+    let ln_z     = vec2<f32>(log(r), angle);
     let exponent = complex_mul(w, ln_z);
 
     // exp(x + iy) = exp(x) * (cos(y) + i*sin(y))
@@ -49,62 +53,59 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         return;
     }
 
-    // Normalized UV [0, 1]
-    var uv = vec2<f32>(gid.xy) / resolution;
+    let coord = vec2<i32>(gid.xy);
+    let uv    = vec2<f32>(gid.xy) / resolution;
+    let time  = u.config.x;
 
-    // Center UV [-1, 1] for complex plane, correcting for aspect ratio
-    let aspect = resolution.x / resolution.y;
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let aspect = resolution.x / max(resolution.y, 0.001);
+
+    // Center UV on complex plane
     var z = (uv - 0.5) * 2.0;
     z.x *= aspect;
 
-    // Parameters
-    // Scale: Zoom into the complex plane
     let scale = mix(1.0, 5.0, u.zoom_params.x);
     z *= scale;
 
-    // Mouse Interaction -> Complex Exponent w
-    // Mouse X: Real part (u), Mouse Y: Imaginary part (v)
-    // Default to z^1 if mouse not moved?
-    // Mouse coords are typically [0, 1] in u.zoom_config.yz (if I recall correct usage from other shaders)
-    // Actually standard is u.zoom_config.y = mouseX (0..1), u.zoom_config.z = mouseY (0..1)
-
-    var mouse = u.zoom_config.yz;
-
-    // Map mouse to a reasonable range for exponents
-    // Center (0.5, 0.5) -> Exponent (1.0, 0.0) implies Identity z^1
-    // Range: Real [-2, 4], Imag [-2, 2]
+    let mouse = u.zoom_config.yz;
 
     let w_real = (mouse.x - 0.5) * mix(1.0, 10.0, u.zoom_params.z) + 1.0;
-    let w_imag = (mouse.y - 0.5) * 6.0;
-    let w = vec2<f32>(w_real, w_imag);
+    // Mids add a time-varying imaginary exponent component
+    let w_imag = (mouse.y - 0.5) * 6.0 + mids * sin(time) * 0.5;
+    let w      = vec2<f32>(w_real, w_imag);
 
-    // Apply z^w
     var result_z = complex_pow(z, w);
 
-    // Add spiral parameter from zoom_params.y
-    let spiral = u.zoom_params.y * 3.14159;
+    // Bass modulates spiral angle
+    let spiral   = u.zoom_params.y * 3.14159265 + bass * 0.3;
     let rotation = vec2<f32>(cos(spiral), sin(spiral));
-    result_z = complex_mul(result_z, rotation);
+    result_z     = complex_mul(result_z, rotation);
 
-    // Convert back to UV [0, 1]
-    // Undo aspect ratio correction
+    // Convert back to UV [0,1]
     result_z.x /= aspect;
     var final_uv = result_z * mix(0.1, 1.0, u.zoom_params.w) + 0.5;
+    final_uv     = fract(final_uv);
 
-    // Mirror repeat or clamp? Mirror looks more "infinite"
-    // final_uv = fract(final_uv); // Tiling
-    // Let's use mirror for smoother edges
-    // final_uv = abs(fract(final_uv * 0.5) * 2.0 - 1.0); // Triangle wave
+    // Clamp before sampling (fract already keeps [0,1) but be explicit)
+    let final_uv_clamped = clamp(final_uv, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Simple wrapping
-    final_uv = fract(final_uv);
+    let sampled = textureSampleLevel(readTexture, u_sampler, final_uv_clamped, 0.0);
 
-    let color = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0).rgb;
+    // Alpha: encodes UV distance from center and bass (far-mapped = lower alpha)
+    let uvDist    = length(result_z);
+    let distAlpha = clamp(1.0 - uvDist * 0.15, 0.0, 1.0);
+    let alpha     = clamp(distAlpha * (0.7 + bass * 0.3), 0.0, 1.0);
 
-    // Visualizing the complex plane grid slightly?
-    // Maybe fade to black at infinity if result_z is huge
-    let dist = length(result_z);
-    // let fade = smoothstep(10.0, 5.0, dist);
+    let finalColor = vec4<f32>(sampled.rgb, alpha);
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, coord, finalColor);
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, finalColor);
 }
