@@ -492,6 +492,13 @@
       "added": "2026-05-15T15:39:20.139263",
       "status": "completed",
       "completed_at": "2026-05-16T08:14:36.177786"
+    },
+    {
+      "filename": "2026-05-16_eldritch-quantum-fractal-eye.md",
+      "title": "Eldritch-Quantum Fractal-Eye",
+      "added": "2026-05-16T15:31:28.839031",
+      "status": "completed",
+      "completed_at": "2026-05-17T08:07:57.045934+00:00"
     }
   ],
   "rejected": [],
@@ -701,11 +708,6 @@
       "filename": "2026-05-15_chromatic-singularity-loom.md",
       "title": "Chromatic Singularity-Loom",
       "added": "2026-05-15T15:39:20.139263"
-    },
-    {
-      "filename": "2026-05-16_eldritch-quantum-fractal-eye.md",
-      "title": "Eldritch-Quantum Fractal-Eye",
-      "added": "2026-05-16T15:31:28.839031"
     }
   ],
   "in_progress": null
