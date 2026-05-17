@@ -51,7 +51,7 @@ describe('Storage Integration', () => {
       );
       
       await waitFor(() => {
-        expect(screen.getByText(/VPS Storage Manager/i)).toBeInTheDocument();
+        expect(screen.getByText(/Connected/i)).toBeInTheDocument();
       });
     });
 
