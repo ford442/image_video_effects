@@ -123,13 +123,12 @@ void WebGPURenderer::Shutdown() {
     shaders_.clear();
 
     // Clean up textures
-    // ARCH: [High] Manual resource cleanup is error-prone.
-    // This pattern repeats for every resource type.
-    // Refactor using RAII wrappers: wgpu::Texture, wgpu::Buffer, etc.
     if (imageTexture_) wgpuTextureRelease(imageTexture_);
     if (videoTexture_) wgpuTextureRelease(videoTexture_);
     if (readTexture_) wgpuTextureRelease(readTexture_);
     if (writeTexture_) wgpuTextureRelease(writeTexture_);
+    if (pingPong0_) wgpuTextureRelease(pingPong0_);
+    if (pingPong1_) wgpuTextureRelease(pingPong1_);
     if (depthTextureRead_) wgpuTextureRelease(depthTextureRead_);
     if (depthTextureWrite_) wgpuTextureRelease(depthTextureWrite_);
     if (dataTextureA_) wgpuTextureRelease(dataTextureA_);
@@ -319,6 +318,10 @@ bool WebGPURenderer::CreateResources() {
     readTexture_ = wgpuDeviceCreateTexture(device_, &texDesc);
     texDesc.label = MakeStringView("Write Texture");
     writeTexture_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Ping-Pong 0");
+    pingPong0_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Ping-Pong 1");
+    pingPong1_ = wgpuDeviceCreateTexture(device_, &texDesc);
     texDesc.label = MakeStringView("Data Texture A");
     dataTextureA_ = wgpuDeviceCreateTexture(device_, &texDesc);
     texDesc.label = MakeStringView("Data Texture B");
@@ -358,9 +361,6 @@ bool WebGPURenderer::CreateResources() {
     wgpuQueueWriteTexture(queue_, &emptyDest, black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
     // Initialize data texture C to zeros
-    // ARCH: [High] Allocating large vector every initialization.
-    // Consider using wgpuCommandEncoderClearBuffer if available
-    // or reusing a static zero buffer.
     std::vector<float> zeros(canvasWidth_ * canvasHeight_ * 4, 0.0f);
     
     WGPUTexelCopyTextureInfo dataDest = {};
@@ -371,8 +371,6 @@ bool WebGPURenderer::CreateResources() {
     
     WGPUTexelCopyBufferLayout dataLayout = {};
     dataLayout.offset = 0;
-    // ARCH: [Medium] Magic number 16 = sizeof(float) * 4 (RGBA)
-    // Use named constant for clarity.
     dataLayout.bytesPerRow = static_cast<uint32_t>(canvasWidth_ * 16);
     dataLayout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
     
@@ -383,8 +381,11 @@ bool WebGPURenderer::CreateResources() {
     
     wgpuQueueWriteTexture(queue_, &dataDest, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &dataExtent);
 
-    // ARCH: [Critical] No validation that resources were created successfully.
-    // If device is lost or OOM, nullptrs will cause crashes later.
+    // Initialize readTexture_ to zeros so generative shaders receive a black
+    // placeholder rather than uninitialised GPU memory.
+    dataDest.texture = readTexture_;
+    wgpuQueueWriteTexture(queue_, &dataDest, zeros.data(), zeros.size() * sizeof(float), &dataLayout, &dataExtent);
+
     return true;
 }
 
@@ -734,6 +735,143 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
 
 void WebGPURenderer::SetActiveShader(const char* id) {
     activeShaderId_ = id;
+    // Also configure slot 0 for backwards compatibility with callers that
+    // still use the single-shader API.
+    if (id && *id) {
+        slots_[0].shaderId = id;
+        slots_[0].enabled  = true;
+    }
+}
+
+// ─── Multi-slot shader API ────────────────────────────────────────────────────
+
+void WebGPURenderer::SetSlotShader(int slotIndex, const char* id) {
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return;
+    if (id && *id) {
+        slots_[slotIndex].shaderId = id;
+        slots_[slotIndex].enabled  = true;
+    } else {
+        slots_[slotIndex].shaderId.clear();
+        slots_[slotIndex].enabled = false;
+    }
+}
+
+void WebGPURenderer::SetSlotParams(int slotIndex, float p1, float p2, float p3, float p4) {
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return;
+    slots_[slotIndex].params[0] = p1;
+    slots_[slotIndex].params[1] = p2;
+    slots_[slotIndex].params[2] = p3;
+    slots_[slotIndex].params[3] = p4;
+}
+
+void WebGPURenderer::SetSlotMode(int slotIndex, int mode) {
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return;
+    slots_[slotIndex].mode = (mode == 1) ? SlotMode::Parallel : SlotMode::Chained;
+}
+
+void WebGPURenderer::SetInputSource(InputSource source) {
+    inputSource_ = source;
+}
+
+// ─── CreateComputeBindGroup ───────────────────────────────────────────────────
+
+WGPUBindGroup WebGPURenderer::CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex) {
+    WGPUTextureViewDescriptor rgbaView = {};
+    rgbaView.format          = WGPUTextureFormat_RGBA32Float;
+    rgbaView.dimension       = WGPUTextureViewDimension_2D;
+    rgbaView.baseMipLevel    = 0;
+    rgbaView.mipLevelCount   = 1;
+    rgbaView.baseArrayLayer  = 0;
+    rgbaView.arrayLayerCount = 1;
+    rgbaView.aspect          = WGPUTextureAspect_All;
+
+    WGPUTextureViewDescriptor r32View = rgbaView;
+    r32View.format = WGPUTextureFormat_R32Float;
+
+    WGPUBindGroupEntry entries[13] = {};
+
+    entries[0].binding = 0;
+    entries[0].sampler = filteringSampler_;
+
+    entries[1].binding     = 1;
+    entries[1].textureView = wgpuTextureCreateView(readTex, &rgbaView);
+
+    entries[2].binding     = 2;
+    entries[2].textureView = wgpuTextureCreateView(writeTex, &rgbaView);
+
+    entries[3].binding = 3;
+    entries[3].buffer  = uniformBuffer_;
+    entries[3].offset  = 0;
+    entries[3].size    = wgpuBufferGetSize(uniformBuffer_);
+
+    entries[4].binding     = 4;
+    entries[4].textureView = wgpuTextureCreateView(depthTextureRead_, &r32View);
+
+    entries[5].binding = 5;
+    entries[5].sampler = nonFilteringSampler_;
+
+    entries[6].binding     = 6;
+    entries[6].textureView = wgpuTextureCreateView(depthTextureWrite_, &r32View);
+
+    entries[7].binding     = 7;
+    entries[7].textureView = wgpuTextureCreateView(dataTextureA_, &rgbaView);
+
+    entries[8].binding     = 8;
+    entries[8].textureView = wgpuTextureCreateView(dataTextureB_, &rgbaView);
+
+    entries[9].binding     = 9;
+    entries[9].textureView = wgpuTextureCreateView(dataTextureC_, &rgbaView);
+
+    entries[10].binding = 10;
+    entries[10].buffer  = extraBuffer_;
+    entries[10].offset  = 0;
+    entries[10].size    = wgpuBufferGetSize(extraBuffer_);
+
+    entries[11].binding = 11;
+    entries[11].sampler = comparisonSampler_;
+
+    entries[12].binding = 12;
+    entries[12].buffer  = plasmaBuffer_;
+    entries[12].offset  = 0;
+    entries[12].size    = wgpuBufferGetSize(plasmaBuffer_);
+
+    WGPUBindGroupDescriptor bgDesc = {};
+    bgDesc.label      = MakeStringView("Compute Bind Group");
+    bgDesc.layout     = computeBindGroupLayout_;
+    bgDesc.entryCount = 13;
+    bgDesc.entries    = entries;
+
+    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(device_, &bgDesc);
+
+    // Release texture views — the bind group holds its own references.
+    for (int i = 0; i < 13; i++) {
+        if (entries[i].textureView) wgpuTextureViewRelease(entries[i].textureView);
+    }
+    return bg;
+}
+
+// Overwrite only the zoom_params portion (bytes 32-47) of the uniform buffer.
+void WebGPURenderer::WriteSlotParams(const float* params) {
+    if (!uniformBuffer_) return;
+    wgpuQueueWriteBuffer(queue_, uniformBuffer_, 32, params, 4 * sizeof(float));
+}
+
+// Dispatch a compute pass over the full canvas at 16×16 workgroups.
+void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
+                                          WGPUComputePipeline pipeline,
+                                          WGPUBindGroup bindGroup) {
+    WGPUComputePassDescriptor cpDesc = {};
+    cpDesc.label = MakeStringView("Compute Pass");
+    WGPUComputePassEncoder cp = wgpuCommandEncoderBeginComputePass(encoder, &cpDesc);
+    wgpuComputePassEncoderSetPipeline(cp, pipeline);
+    wgpuComputePassEncoderSetBindGroup(cp, 0, bindGroup, 0, nullptr);
+    wgpuComputePassEncoderDispatchWorkgroups(
+        cp,
+        (static_cast<uint32_t>(canvasWidth_)  + 15) / 16,
+        (static_cast<uint32_t>(canvasHeight_) + 15) / 16,
+        1);
+    wgpuComputePassEncoderEnd(cp);
+    wgpuComputePassEncoderRelease(cp);
 }
 
 void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, int height) {
@@ -795,13 +933,40 @@ void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height
     UploadRGBA8ToReadTexture(data, width, height);
 }
 
-// ARCH: [Medium] UpdateDepthMap is declared in header but not implemented.
-// This will cause linker errors if called.
 void WebGPURenderer::UpdateDepthMap(const float* data, int width, int height) {
-    // TODO: Implement depth map upload to depthTextureRead_
-    (void)data;
-    (void)width;
-    (void)height;
+    if (!queue_ || !depthTextureRead_ || !data) return;
+
+    // Clamp copy dimensions to the texture size.
+    const int dstW = canvasWidth_;
+    const int dstH = canvasHeight_;
+    const int copyW = (width  < dstW) ? width  : dstW;
+    const int copyH = (height < dstH) ? height : dstH;
+
+    // Build a full-size float buffer (zeros for any uncovered region).
+    std::vector<float> buf(static_cast<size_t>(dstW) * dstH, 0.0f);
+    for (int y = 0; y < copyH; y++) {
+        for (int x = 0; x < copyW; x++) {
+            buf[y * dstW + x] = data[y * width + x];
+        }
+    }
+
+    WGPUTexelCopyTextureInfo dest = {};
+    dest.texture  = depthTextureRead_;
+    dest.mipLevel = 0;
+    dest.origin   = {0, 0, 0};
+    dest.aspect   = WGPUTextureAspect_All;
+
+    WGPUTexelCopyBufferLayout layout = {};
+    layout.offset       = 0;
+    layout.bytesPerRow  = static_cast<uint32_t>(dstW) * sizeof(float);
+    layout.rowsPerImage = static_cast<uint32_t>(dstH);
+
+    WGPUExtent3D extent = {};
+    extent.width              = static_cast<uint32_t>(dstW);
+    extent.height             = static_cast<uint32_t>(dstH);
+    extent.depthOrArrayLayers = 1;
+
+    wgpuQueueWriteTexture(queue_, &dest, buf.data(), buf.size() * sizeof(float), &layout, &extent);
 }
 
 void WebGPURenderer::SetTime(float time) {
@@ -818,6 +983,10 @@ void WebGPURenderer::SetResolution(float width, float height) {
 void WebGPURenderer::SetMouse(float x, float y, bool down) {
     mouseX_ = x;
     mouseY_ = y;
+    mouseDown_ = down;
+}
+
+void WebGPURenderer::SetMouseDown(bool down) {
     mouseDown_ = down;
 }
 
@@ -845,33 +1014,29 @@ void WebGPURenderer::SetAudioData(float bass, float mid, float treble) {
     audioMid_    = mid;
     audioTreble_ = treble;
 }
-
 void WebGPURenderer::UpdateUniformBuffer() {
     if (!uniformBuffer_) return;
 
-    // Build uniform data
-    // ARCH: [Critical] VLA (Variable Length Array) - non-standard C++.
-    // Use std::vector or std::array for portability.
-    float uniformData[12 + MAX_RIPPLES * 4];
-    
+    float uniformData[12 + MAX_RIPPLES * 4] = {};
+
     // config: time, rippleCount, resolutionX, resolutionY
     uniformData[0] = currentTime_;
     uniformData[1] = static_cast<float>(ripples_.size());
     uniformData[2] = static_cast<float>(canvasWidth_);
     uniformData[3] = static_cast<float>(canvasHeight_);
-    
+
     // zoom_config: time, mouseX, mouseY, mouseDown
     uniformData[4] = currentTime_;
     uniformData[5] = mouseX_;
     uniformData[6] = mouseY_;
     uniformData[7] = mouseDown_ ? 1.0f : 0.0f;
-    
-    // zoom_params
-    uniformData[8] = zoomParams_[0];
-    uniformData[9] = zoomParams_[1];
+
+    // zoom_params (global defaults; per-slot params are patched via WriteSlotParams)
+    uniformData[8]  = zoomParams_[0];
+    uniformData[9]  = zoomParams_[1];
     uniformData[10] = zoomParams_[2];
     uniformData[11] = zoomParams_[3];
-    
+
     // ripples
     for (size_t i = 0; i < MAX_RIPPLES; i++) {
         if (i < ripples_.size()) {
@@ -889,143 +1054,184 @@ void WebGPURenderer::UpdateUniformBuffer() {
 
     wgpuQueueWriteBuffer(queue_, uniformBuffer_, 0, uniformData, sizeof(uniformData));
 
-    // Upload audio data to extraBuffer_ (first 3 floats: bass, mid, treble).
-    // Shaders can read this via the extraBuffer binding.
+    // Upload audio to extraBuffer_ (binding 10).
+    // Some shaders read bass/mid/treble from the first three floats here.
     if (extraBuffer_) {
         float audioData[3] = { audioBass_, audioMid_, audioTreble_ };
         wgpuQueueWriteBuffer(queue_, extraBuffer_, 0, audioData, sizeof(audioData));
     }
+
+    // Upload audio to plasmaBuffer_ (binding 12) as vec4(bass, mid, treble, 0)
+    // at index 0.  Shaders using the AGENTS.md audio convention read from here:
+    //   let bass = plasmaBuffer[0].x;
+    //   let mids = plasmaBuffer[0].y;
+    //   let treble = plasmaBuffer[0].z;
+    if (plasmaBuffer_) {
+        float audioVec4[4] = { audioBass_, audioMid_, audioTreble_, 0.0f };
+        wgpuQueueWriteBuffer(queue_, plasmaBuffer_, 0, audioVec4, sizeof(audioVec4));
+    }
 }
 
-// MISSING: Multi-slot render pipeline
-// The TypeScript renderer supports chaining 3 shader slots:
-//   Slot 0 (e.g., 'liquid') -> pingPongTexture1
-//   Slot 1 (e.g., 'distortion') -> pingPongTexture2  
-//   Slot 2 (e.g., 'glow') -> writeTexture -> screen
+// ─── Render ──────────────────────────────────────────────────────────────────
 //
-// Each slot has its own:
-//   - Shader selection
-//   - Parameters (zoomParam1-4, lightStrength, etc.)
-//   - Texture bindings (read from previous slot)
+// Multi-slot rendering pipeline (Phase 1):
 //
-// Current implementation only supports single shader execution.
-// Need to add:
-//   - Slot state array (3 slots)
-//   - Chained compute pass execution
-//   - Per-slot parameter binding
-// Priority: CRITICAL
-// Effort: 2-3 weeks
+//   source (readTexture_)
+//     -> Slot 0 compute -> pingPong0_
+//     -> Slot 1 compute -> pingPong1_
+//     -> Slot 2 compute -> writeTexture_
+//   Then: writeTexture_ -> readTexture_  (temporal feedback for next frame)
+//         depthWrite_   -> depthRead_
+//         dataTextureA_ -> dataTextureC_  (data-texture feedback)
+//
+// Each slot submission is a separate wgpuQueueSubmit so that per-slot
+// zoom_params can be patched in the shared uniform buffer between passes
+// while preserving queue FIFO ordering.
+//
+// Slots that reference the same texture as their output and the next slot's
+// input are safe because wgpuQueueSubmit flushes operations in order.
+
+// Helper: copy one texture to another within an already-open encoder.
+static void CopyTex(WGPUCommandEncoder enc,
+                    WGPUTexture src, WGPUTexture dst,
+                    uint32_t w, uint32_t h) {
+    WGPUTexelCopyTextureInfo s = {};
+    s.texture = src; s.mipLevel = 0; s.origin = {0,0,0}; s.aspect = WGPUTextureAspect_All;
+    WGPUTexelCopyTextureInfo d = {};
+    d.texture = dst; d.mipLevel = 0; d.origin = {0,0,0}; d.aspect = WGPUTextureAspect_All;
+    WGPUExtent3D ext = { w, h, 1 };
+    wgpuCommandEncoderCopyTextureToTexture(enc, &s, &d, &ext);
+}
 
 void WebGPURenderer::Render() {
-    if (!initialized_ || activeShaderId_.empty()) return;
+    if (!initialized_) return;
 
-    auto it = shaders_.find(activeShaderId_);
-    if (it == shaders_.end()) return;
-
-    // Update uniforms
+    // Upload all per-frame global uniforms (time, mouse, ripples, audio).
     UpdateUniformBuffer();
-    
-    // MISSING: Audio data integration
-    // Audio analyzer data (bass, mid, treble) should be uploaded to
-    // extraBuffer_ or added to uniform structure for shader access.
-    // TypeScript: updateAudioData(bass, mid, treble) -> uniform/extraBuffer
-    // Priority: HIGH
 
-    // Create command encoder
-    WGPUCommandEncoderDescriptor encoderDesc = {};
-    encoderDesc.nextInChain = nullptr;
-    encoderDesc.label = MakeStringView("Render Encoder");
-    WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(device_, &encoderDesc);
+    const uint32_t W = static_cast<uint32_t>(canvasWidth_);
+    const uint32_t H = static_cast<uint32_t>(canvasHeight_);
 
-    // Begin compute pass
-    WGPUComputePassDescriptor computeDesc = {};
-    computeDesc.nextInChain = nullptr;
-    computeDesc.label = MakeStringView("Compute Pass");
-    WGPUComputePassEncoder computePass = wgpuCommandEncoderBeginComputePass(encoder, &computeDesc);
+    // Fixed output texture per slot index.
+    WGPUTexture slotOutput[MAX_SHADER_SLOTS] = { pingPong0_, pingPong1_, writeTexture_ };
 
-    wgpuComputePassEncoderSetPipeline(computePass, it->second.pipeline);
-    wgpuComputePassEncoderSetBindGroup(computePass, 0, computeBindGroup_, 0, nullptr);
-    
-    // ARCH: [Medium] Magic numbers 7 and 8 for workgroup size calculation.
-    // Use named constants: constexpr int WorkgroupSize = 8;
-    wgpuComputePassEncoderDispatchWorkgroups(
-        computePass, 
-        (canvasWidth_ + 7) / 8, 
-        (canvasHeight_ + 7) / 8, 
-        1
-    );
-    wgpuComputePassEncoderEnd(computePass);
+    // Determine the first enabled slot and the last enabled slot.
+    // If no slot is configured, fall back to the legacy activeShaderId_.
+    int firstEnabled = -1;
+    int lastEnabled  = -1;
+    for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
+        if (slots_[i].enabled && !slots_[i].shaderId.empty() &&
+            shaders_.find(slots_[i].shaderId) != shaders_.end()) {
+            if (firstEnabled < 0) firstEnabled = i;
+            lastEnabled = i;
+        }
+    }
 
-    // Copy writeTexture to readTexture for next frame (ping-pong)
-    // ARCH: [High] Code duplication for texture copying.
-    // Refactor into helper method: CopyTexture(encoder, src, dst, extent)
-    WGPUTexelCopyTextureInfo srcCopy1 = {};
-    srcCopy1.texture = writeTexture_;
-    srcCopy1.mipLevel = 0;
-    srcCopy1.origin = {0, 0, 0};
-    srcCopy1.aspect = WGPUTextureAspect_All;
-    
-    WGPUTexelCopyTextureInfo dstCopy1 = {};
-    dstCopy1.texture = readTexture_;
-    dstCopy1.mipLevel = 0;
-    dstCopy1.origin = {0, 0, 0};
-    dstCopy1.aspect = WGPUTextureAspect_All;
-    
-    WGPUExtent3D extent1 = {};
-    extent1.width = static_cast<uint32_t>(canvasWidth_);
-    extent1.height = static_cast<uint32_t>(canvasHeight_);
-    extent1.depthOrArrayLayers = 1;
-    
-    wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy1, &dstCopy1, &extent1);
+    // ── Legacy single-shader fallback ────────────────────────────────────────
+    if (firstEnabled < 0) {
+        if (!activeShaderId_.empty()) {
+            auto it = shaders_.find(activeShaderId_);
+            if (it != shaders_.end()) {
+                // Single pass: readTexture_ -> writeTexture_
+                WriteSlotParams(zoomParams_);
+                WGPUBindGroup bg = CreateComputeBindGroup(readTexture_, writeTexture_);
 
-    // Also copy depth texture
-    WGPUTexelCopyTextureInfo srcCopy2 = {};
-    srcCopy2.texture = depthTextureWrite_;
-    srcCopy2.mipLevel = 0;
-    srcCopy2.origin = {0, 0, 0};
-    srcCopy2.aspect = WGPUTextureAspect_All;
-    
-    WGPUTexelCopyTextureInfo dstCopy2 = {};
-    dstCopy2.texture = depthTextureRead_;
-    dstCopy2.mipLevel = 0;
-    dstCopy2.origin = {0, 0, 0};
-    dstCopy2.aspect = WGPUTextureAspect_All;
-    
-    wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy2, &dstCopy2, &extent1);
+                WGPUCommandEncoderDescriptor encDesc = {};
+                encDesc.label = MakeStringView("Single Encoder");
+                WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
 
-    // Also copy dataTextureA to dataTextureC for feedback effects
-    WGPUTexelCopyTextureInfo srcCopy3 = {};
-    srcCopy3.texture = dataTextureA_;
-    srcCopy3.mipLevel = 0;
-    srcCopy3.origin = {0, 0, 0};
-    srcCopy3.aspect = WGPUTextureAspect_All;
-    
-    WGPUTexelCopyTextureInfo dstCopy3 = {};
-    dstCopy3.texture = dataTextureC_;
-    dstCopy3.mipLevel = 0;
-    dstCopy3.origin = {0, 0, 0};
-    dstCopy3.aspect = WGPUTextureAspect_All;
-    
-    wgpuCommandEncoderCopyTextureToTexture(encoder, &srcCopy3, &dstCopy3, &extent1);
-    
-    WGPUCommandBufferDescriptor cmdBufferDesc = {};
-    cmdBufferDesc.nextInChain = nullptr;
-    cmdBufferDesc.label = MakeStringView("Command Buffer");
-    WGPUCommandBuffer cmdBuffer = wgpuCommandEncoderFinish(encoder, &cmdBufferDesc);
-    
-    wgpuQueueSubmit(queue_, 1, &cmdBuffer);
+                DispatchComputePass(enc, it->second.pipeline, bg);
+                wgpuBindGroupRelease(bg);
 
-    // Cleanup
-    // ARCH: [High] Releasing encoder before cmdBuffer is questionable ordering.
-    // Typically release cmdBuffer after submit, then encoder.
-    wgpuComputePassEncoderRelease(computePass);
-    wgpuCommandEncoderRelease(encoder);
-    wgpuCommandBufferRelease(cmdBuffer);
+                CopyTex(enc, writeTexture_, readTexture_, W, H);
+                CopyTex(enc, depthTextureWrite_, depthTextureRead_, W, H);
+                CopyTex(enc, dataTextureA_, dataTextureC_, W, H);
 
-    // Update FPS
+                WGPUCommandBufferDescriptor cbDesc = {};
+                cbDesc.label = MakeStringView("Single CmdBuf");
+                WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
+                wgpuQueueSubmit(queue_, 1, &cb);
+                wgpuCommandBufferRelease(cb);
+                wgpuCommandEncoderRelease(enc);
+            }
+        }
+    } else {
+        // ── Multi-slot pipeline ───────────────────────────────────────────────
+        // The "chain input" starts as readTexture_ (previous frame output).
+        WGPUTexture chainInput = readTexture_;
+
+        for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
+            if (!slots_[i].enabled || slots_[i].shaderId.empty()) continue;
+            auto it = shaders_.find(slots_[i].shaderId);
+            if (it == shaders_.end()) continue;
+
+            // Which texture does this slot read from?
+            WGPUTexture readFrom = (slots_[i].mode == SlotMode::Parallel)
+                                   ? readTexture_   // parallel: always from source
+                                   : chainInput;    // chained: previous slot output
+
+            // Which texture does this slot write to?
+            WGPUTexture writeTo = slotOutput[i];
+
+            // Patch per-slot zoom_params before submitting this slot's pass.
+            WriteSlotParams(slots_[i].params);
+
+            WGPUBindGroup bg = CreateComputeBindGroup(readFrom, writeTo);
+
+            WGPUCommandEncoderDescriptor encDesc = {};
+            encDesc.label = MakeStringView("Slot Encoder");
+            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
+
+            DispatchComputePass(enc, it->second.pipeline, bg);
+            wgpuBindGroupRelease(bg);
+
+            WGPUCommandBufferDescriptor cbDesc = {};
+            cbDesc.label = MakeStringView("Slot CmdBuf");
+            WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
+            // Submit this slot separately so the next WriteSlotParams (called
+            // before the next slot's encoder) takes effect on the GPU.
+            wgpuQueueSubmit(queue_, 1, &cb);
+            wgpuCommandBufferRelease(cb);
+            wgpuCommandEncoderRelease(enc);
+
+            // Update chain input for the next slot (if chained).
+            chainInput = writeTo;
+        }
+
+        // If the last slot did not write directly to writeTexture_, copy its
+        // output there so the render pipeline always reads from writeTexture_.
+        if (slotOutput[lastEnabled] != writeTexture_) {
+            WGPUCommandEncoderDescriptor encDesc = {};
+            encDesc.label = MakeStringView("Copy Encoder");
+            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
+            CopyTex(enc, slotOutput[lastEnabled], writeTexture_, W, H);
+            WGPUCommandBufferDescriptor cbDesc = {};
+            cbDesc.label = MakeStringView("Copy CmdBuf");
+            WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
+            wgpuQueueSubmit(queue_, 1, &cb);
+            wgpuCommandBufferRelease(cb);
+            wgpuCommandEncoderRelease(enc);
+        }
+
+        // End-of-frame texture copies for temporal feedback.
+        {
+            WGPUCommandEncoderDescriptor encDesc = {};
+            encDesc.label = MakeStringView("Feedback Encoder");
+            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
+            CopyTex(enc, writeTexture_,       readTexture_,      W, H);
+            CopyTex(enc, depthTextureWrite_,  depthTextureRead_, W, H);
+            CopyTex(enc, dataTextureA_,       dataTextureC_,     W, H);
+            WGPUCommandBufferDescriptor cbDesc = {};
+            cbDesc.label = MakeStringView("Feedback CmdBuf");
+            WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
+            wgpuQueueSubmit(queue_, 1, &cb);
+            wgpuCommandBufferRelease(cb);
+            wgpuCommandEncoderRelease(enc);
+        }
+    }
+
+    // Update FPS counter
     frameCount_++;
-    // ARCH: [Low] emscripten_get_now() returns time in milliseconds.
-    // Magic number 1000.0f should be named constant.
     float currentTime = emscripten_get_now() / 1000.0f;
     if (currentTime - lastFrameTime_ >= 1.0f) {
         fps_ = frameCount_ / (currentTime - lastFrameTime_);

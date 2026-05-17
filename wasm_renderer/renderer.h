@@ -11,44 +11,33 @@ namespace pixelocity {
 // ═══════════════════════════════════════════════════════════════════════════════
 // RENDERER ARCHITECTURE OVERVIEW
 // ═══════════════════════════════════════════════════════════════════════════════
-// This is the C++/WASM WebGPU renderer for Pixelocity. It aims to replace the
-// JavaScript renderer for better performance but is currently INCOMPLETE.
+// This is the C++/WASM WebGPU renderer for Pixelocity.
 //
-// See RENDERER_PLAN.md for the full development roadmap.
-//
-// Current Status:
+// Current Status (Phase 1):
 //   ✅ Single shader execution works
 //   ✅ Image/video upload works (basic)
-//   ❌ Multi-slot shader pipeline (3 slots) - NOT IMPLEMENTED
-//   ❌ Audio integration - NOT IMPLEMENTED  
-//   ❌ Depth map integration - STUB ONLY
-//   ❌ Recording/screenshots - NOT IMPLEMENTED
-//   ❌ Generative shader support - PARTIAL
-//
-// When to use JS renderer vs C++ renderer:
-//   - JS Renderer: Use for now (more features, stable)
-//   - C++ Renderer: Experimental, use for single-shader performance testing only
+//   ✅ Multi-slot shader pipeline (3 slots, chained/parallel) - Phase 1
+//   ✅ Audio integration (bass/mid/treble -> extraBuffer + plasmaBuffer) - Phase 1
+//   ✅ Depth map integration - Phase 1
+//   ✅ Generative shader support - Phase 1
+//   ❌ Recording/screenshots - NOT IMPLEMENTED (Phase 2)
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// TODO(Phase 2): Input source enum to match TypeScript
-// enum class InputSource { None = 0, Image = 1, Video = 2, Webcam = 3, Generative = 4 };
+// Slot execution mode: chained feeds output of slot N into slot N+1;
+// parallel makes every slot read from the same original source texture.
+enum class SlotMode { Chained = 0, Parallel = 1 };
 
-// TODO(Phase 2): Multi-slot shader state
-// struct ShaderSlot {
-//     std::string shaderId;      // Which shader is bound to this slot
-//     bool enabled = false;      // Is this slot active?
-//     float params[9] = {0};     // zoomParam1-4, lightStrength, etc.
-//     float audioResponse[3] = {0}; // How bass/mid/treble affects this slot
-// };
-// static constexpr int MAX_SHADER_SLOTS = 3;  // Match TypeScript
+// Input source for the renderer.  Generative shaders use a black texture.
+enum class InputSource { None = 0, Image = 1, Video = 2, Webcam = 3, Generative = 4 };
 
-// TODO(Phase 4): Audio data structure
-// struct AudioData {
-//     float bass, mid, treble;   // 0-1 normalized frequency bands
-//     float beat;                // Beat detection impulse
-//     float spectrum[16];        // FFT buckets for detailed analysis
-// };
+// Per-slot state: shader selection, parameters, and execution mode.
+struct ShaderSlot {
+    std::string shaderId;
+    bool        enabled = false;
+    float       params[4] = {0.5f, 0.5f, 0.5f, 0.5f};  // zoom_params
+    SlotMode    mode = SlotMode::Chained;
+};
 
 // Uniform structure matching the WGSL shaders
 // PERF: MEDIUM - Structure is 848 bytes (212 floats). Consider alignment hints
@@ -73,32 +62,14 @@ struct ShaderPipeline {
     std::string name;
 };
 
-// PERF: HIGH - Consider adding performance monitoring members:
-// - Frame time histogram for adaptive quality
-// - GPU timestamp queries for accurate GPU timing
-// - Memory usage tracking for leak detection
 // ═══════════════════════════════════════════════════════════════════════════════
 // WebGPURenderer Class
-// 
-// PURPOSE: High-performance WebGPU compute shader renderer for image/video effects
-// STATUS:  Partially functional - see RENDERER_PLAN.md for completion roadmap
 //
-// Current Limitations:
-//   - Single shader only (no multi-slot chaining like TypeScript)
-//   - No audio reactivity
-//   - No recording/screenshot capability
-//   - Depth map is stubbed
-//
-// Architecture:
-//   Input (Image/Video/Generative) 
-//     -> Compute Shader (effect processing)
-//     -> Ping-pong texture swap
-//     -> Render pass (blit to canvas)
-//
-// For multi-slot rendering (needed for production):
-//   Input -> Slot 0 -> Slot 1 -> Slot 2 -> Output
-//              ↓         ↓         ↓
-//           shaderA   shaderB   shaderC
+// Architecture (Phase 1 multi-slot):
+//   Input (readTexture_) -> Slot 0 -> pingPong0_
+//                        -> Slot 1 -> pingPong1_
+//                        -> Slot 2 -> writeTexture_
+//   Then: writeTexture_ -> readTexture_ (ping-pong for next frame)
 // ═══════════════════════════════════════════════════════════════════════════════
 class WebGPURenderer {
 public:
@@ -119,128 +90,110 @@ public:
     // ═══════════════════════════════════════════════════════════════════════════
     // SHADER MANAGEMENT
     // ═══════════════════════════════════════════════════════════════════════════
-    
-    // Compile and load a WGSL shader into memory
-    // Shader is identified by 'id' for later activation
+
+    // Compile and load a WGSL shader into memory.
     bool LoadShader(const char* id, const char* wgslCode);
-    
-    // Set the active shader for single-shader rendering
-    // TODO(Phase 2): DEPRECATE - use SetSlotShader(slot, id) instead
+
+    // Set the active shader for single-shader (legacy) rendering.
+    // Also enables slot 0 with this shader for backwards compatibility.
     void SetActiveShader(const char* id);
-    
-    // TODO(Phase 2): Multi-slot shader API - CRITICAL FOR PRODUCTION
-    // 
-    // The TypeScript renderer supports chaining 3 shader slots:
-    //   modes: RenderMode[] = ['liquid', 'distortion', 'glow']
-    // Each slot has independent parameters and feeds into the next.
-    //
-    // void SetSlotShader(int slotIndex, const char* id);  // slotIndex: 0-2
-    // void SetSlotEnabled(int slotIndex, bool enabled);   // Enable/disable slot
-    // void SetSlotParams(int slotIndex, const float* params);  // 9 floats per slot
-    // void ClearSlot(int slotIndex);  // Reset slot to empty
-    //
-    // Render() will then execute slots in order: Slot 0 -> Slot 1 -> Slot 2
-    // Each slot reads from the previous slot's output texture.
-    //
-    // Status: NOT IMPLEMENTED | Priority: CRITICAL | Est. Effort: 2-3 weeks
-    
+
+    // ── Multi-slot API (Phase 1) ──────────────────────────────────────────────
+    // Assign a previously loaded shader to a slot (0-2).
+    void SetSlotShader(int slotIndex, const char* id);
+    // Set the four zoom parameters for a specific slot.
+    void SetSlotParams(int slotIndex, float p1, float p2, float p3, float p4);
+    // Set execution mode: 0 = chained (default), 1 = parallel.
+    void SetSlotMode(int slotIndex, int mode);
+
     // ═══════════════════════════════════════════════════════════════════════════
     // INPUT SOURCES
     // ═══════════════════════════════════════════════════════════════════════════
-    
-    // TODO(Phase 3): Input source selection
-    // void SetInputSource(InputSource source);
-    // enum class InputSource { Image=1, Video=2, Webcam=3, Generative=4 };
-    // Status: NOT IMPLEMENTED - currently always uses last loaded image/video
-    
-    // Upload a static image (RGBA8) to the GPU
-    // The image will be used as input for shader processing
+
+    // Upload a static image (RGBA8) to the GPU.
     void LoadImage(const uint8_t* data, int width, int height);
-    
-    // Upload a video frame (RGBA8) to the GPU
-    // Call this every frame when playing video
+
+    // Upload a video frame (RGBA8) to the GPU (call every frame).
     void UpdateVideoFrame(const uint8_t* data, int width, int height);
-    
-    // TODO(Phase 5): Upload depth map from AI depth estimation
-    // The depth map enables parallax and 3D-aware effects
-    void UpdateDepthMap(const float* data, int width, int height);  // STUB ONLY
-    
+
+    // Upload a depth map (R32Float, one float per pixel) from the AI model.
+    void UpdateDepthMap(const float* data, int width, int height);
+
+    // Set the current input source so the renderer knows how to feed shaders.
+    void SetInputSource(InputSource source);
+
     // ═══════════════════════════════════════════════════════════════════════════
     // PARAMETERS & UNIFORMS
     // ═══════════════════════════════════════════════════════════════════════════
-    
-    // Set global time (in seconds) for time-based shader animations
+
+    // Set global time (seconds) for time-based shader animations.
     void SetTime(float time);
-    
-    // TODO: Dynamic resolution changes (currently fixed at initialization)
-    void SetResolution(float width, float height);  // STUB ONLY
-    
-    // Update mouse position and button state for interactive shaders
+
+    // Dynamic resolution changes are not yet supported (fixed at init).
+    void SetResolution(float width, float height);  // no-op stub
+
+    // Update mouse position and button state for interactive shaders.
     void SetMouse(float x, float y, bool down);
-    
-    // Set zoom/parameter values for the active shader
-    // TODO(Phase 2): Should be per-slot: SetSlotParams(slot, p1, p2, p3, p4)
+
+    // Update only the mouse button state (preserves existing x/y).
+    void SetMouseDown(bool down);
+
+    // Set global zoom/parameter values (used when no slot is configured).
     void SetZoomParams(float p1, float p2, float p3, float p4);
-    
-    // Add a ripple effect at normalized coordinates (0-1)
+
+    // Add a ripple effect at normalised coordinates (0-1).
     void AddRipple(float x, float y);
     void ClearRipples();
-    
-    // Audio frequency data from Web Audio API (bass/mid/treble → extraBuffer_)
+
+    // Audio frequency bands from Web Audio API.
+    // Data is written to both extraBuffer_ (binding 10) and plasmaBuffer_
+    // (binding 12, vec4(bass, mid, treble, 0) at index 0) so that all
+    // audio-reactive shader conventions are satisfied.
     void SetAudioData(float bass, float mid, float treble);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // RENDERING
     // ═══════════════════════════════════════════════════════════════════════════
-    
-    // Execute the render pipeline:
-    //   Single shader: Input -> Compute -> Output
-    //   TODO Multi shader: Input -> Slot 0 -> Slot 1 -> Slot 2 -> Output
+
+    // Execute one frame: update uniforms, dispatch compute passes for all
+    // enabled slots in order, then blit to the canvas.
     void Render();
-    
-    // Present is a no-op for WebGPU (browser handles canvas presentation)
+
+    // Present is a no-op for WebGPU (browser handles canvas presentation).
     void Present();
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SCREENSHOT & RECORDING (TODO Phase 6)
-    // ═══════════════════════════════════════════════════════════════════════════
-    //
-    // Capture current frame as RGBA8 data
-    // std::vector<uint8_t> CaptureScreenshot();
-    // TypeScript: getFrameImage() returns data URL for sharing
-    // Status: NOT IMPLEMENTED | Priority: MEDIUM | Est. Effort: 2-3 days
-    //
-    // Start/stop video recording
-    // void StartRecording();  // 8-second clip
-    // void StopRecording();
-    // TypeScript: Uses MediaRecorder API on canvas.captureStream()
-    // Status: NOT IMPLEMENTED | Priority: MEDIUM | Est. Effort: 1 week
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STATE QUERIES
     // ═══════════════════════════════════════════════════════════════════════════
-    
+
     bool IsInitialized() const { return initialized_; }
     float GetFPS() const { return fps_; }
-    
-    // TODO: Performance metrics
-    // float GetGPUTime() const { return gpuTimeMs_; }
-    // size_t GetMemoryUsage() const { return memoryUsage_; }
 
 private:
     // ═══════════════════════════════════════════════════════════════════════════
     // INITIALIZATION HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
-    bool CreateDevice();           // Create WebGPU instance, adapter, device
-    bool CreateResources();        // Create textures, buffers, samplers
-    void CreateBindGroupLayout();  // Define shader resource bindings
-    void CreateBindGroups();       // Instantiate bind groups from layout
-    void CreateRenderPipeline();   // Create final blit render pipeline
-    void UpdateUniformBuffer();    // Upload uniform data to GPU
-    
-    // TODO(Phase 2): Multi-slot pipeline setup
-    // void CreateSlotPipeline(int slotIndex);  // Per-slot bind groups
-    // void UpdateSlotUniforms(int slotIndex, const ShaderSlot& slot);
+    bool CreateDevice();
+    bool CreateResources();
+    void CreateBindGroupLayout();
+    void CreateBindGroups();
+    void CreateRenderPipeline();
+    void UpdateUniformBuffer();
+
+    // Create a temporary compute bind group that uses the supplied read/write
+    // textures for bindings 1 and 2; all other bindings are shared globals.
+    // Caller is responsible for releasing the returned object.
+    WGPUBindGroup CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex);
+
+    // Overwrite only the zoom_params portion (bytes 32-47) of the uniform
+    // buffer with the supplied four floats.
+    void WriteSlotParams(const float* params);
+
+    // Dispatch one compute pass using the given pipeline, bind group, and
+    // texture dimensions.  The caller owns encoder/bind-group lifetime.
+    void DispatchComputePass(WGPUCommandEncoder encoder,
+                             WGPUComputePipeline pipeline,
+                             WGPUBindGroup bindGroup);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // WebGPU OBJECTS
@@ -267,119 +220,89 @@ private:
     // ═══════════════════════════════════════════════════════════════════════════
     // TEXTURE RESOURCES
     // ═══════════════════════════════════════════════════════════════════════════
-    // TODO(Phase 3): Separate input texture from processing textures
-    // WGPUTexture inputImageTexture_ = nullptr;  // User-uploaded image/video
-    
-    WGPUTexture imageTexture_ = nullptr;     // DEPRECATED: Use inputImageTexture_
-    WGPUTexture videoTexture_ = nullptr;     // DEPRECATED: Use inputImageTexture_
-    
-    // Ping-pong textures for shader iteration
-    WGPUTexture readTexture_ = nullptr;      // Current frame input
-    WGPUTexture writeTexture_ = nullptr;     // Current frame output
-    
-    // Data textures for feedback effects
-    WGPUTexture dataTextureA_ = nullptr;     // Shader-accessible storage
-    WGPUTexture dataTextureB_ = nullptr;     // Shader-accessible storage  
-    WGPUTexture dataTextureC_ = nullptr;     // Shader-accessible storage
-    
+
+    WGPUTexture imageTexture_ = nullptr;
+    WGPUTexture videoTexture_ = nullptr;
+
+    // Primary ping-pong textures (source → compute → feedback for next frame)
+    WGPUTexture readTexture_ = nullptr;   // Previous-frame output / source image
+    WGPUTexture writeTexture_ = nullptr;  // Final composed output this frame
+
+    // Intermediate ping-pong textures for multi-slot chaining
+    WGPUTexture pingPong0_ = nullptr;  // Output of slot 0 / input of slot 1
+    WGPUTexture pingPong1_ = nullptr;  // Output of slot 1 / input of slot 2
+
+    // Data textures for feedback / multi-pass effects
+    WGPUTexture dataTextureA_ = nullptr;  // write-only storage (binding 7)
+    WGPUTexture dataTextureB_ = nullptr;  // write-only storage (binding 8)
+    WGPUTexture dataTextureC_ = nullptr;  // read-only texture  (binding 9)
+
     // Depth map (AI-generated from depth estimation model)
-    WGPUTexture depthTextureRead_ = nullptr;
+    WGPUTexture depthTextureRead_  = nullptr;
     WGPUTexture depthTextureWrite_ = nullptr;
-    
-    // 1x1 black texture for "empty" input
+
+    // 1×1 black texture used as placeholder input for generative shaders
     WGPUTexture emptyTexture_ = nullptr;
-    
-    // TODO(Phase 6): Screenshot readback texture/buffer
-    // WGPUTexture screenshotTexture_ = nullptr;
-    // WGPUBuffer readbackBuffer_ = nullptr;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // SAMPLERS
     // ═══════════════════════════════════════════════════════════════════════════
-    WGPUSampler filteringSampler_ = nullptr;      // For smooth interpolation
-    WGPUSampler nonFilteringSampler_ = nullptr;   // For pixel-perfect sampling
-    WGPUSampler comparisonSampler_ = nullptr;     // For depth comparisons
+    WGPUSampler filteringSampler_    = nullptr;
+    WGPUSampler nonFilteringSampler_ = nullptr;
+    WGPUSampler comparisonSampler_   = nullptr;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // BUFFERS
     // ═══════════════════════════════════════════════════════════════════════════
-    WGPUBuffer uniformBuffer_ = nullptr;   // Global uniforms (time, mouse, etc.)
-    WGPUBuffer extraBuffer_ = nullptr;     // Additional data (FFT spectrum, etc.)
-    WGPUBuffer plasmaBuffer_ = nullptr;    // Plasma effect parameters
-    
-    // TODO(Phase 3): Staging buffer for efficient uploads
-    // WGPUBuffer stagingBuffer_ = nullptr;   // Persistent staging memory
-    // size_t stagingBufferSize_ = 0;
-    
-    // Audio frequency data (written by SetAudioData, uploaded in UpdateUniformBuffer)
-    float audioBass_ = 0.0f;
-    float audioMid_ = 0.0f;
+    WGPUBuffer uniformBuffer_ = nullptr;  // Uniforms: time, mouse, params, ripples
+    WGPUBuffer extraBuffer_   = nullptr;  // Extra data: audio FFT, misc floats
+    WGPUBuffer plasmaBuffer_  = nullptr;  // Plasma / audio data (vec4 array)
+
+    // Audio frequency data (written by SetAudioData, flushed in UpdateUniformBuffer)
+    float audioBass_   = 0.0f;
+    float audioMid_    = 0.0f;
     float audioTreble_ = 0.0f;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // SHADER STORAGE
     // ═══════════════════════════════════════════════════════════════════════════
     std::unordered_map<std::string, ShaderPipeline> shaders_;
-    std::string activeShaderId_;
-    
-    // TODO(Phase 2): Multi-slot state
-    // ShaderSlot slots_[MAX_SHADER_SLOTS];
-    // int activeSlotCount_ = 0;
-    // int currentWriteSlot_ = 0;  // Track ping-pong for multi-slot
+    std::string activeShaderId_;  // legacy single-shader mode
+
+    // Multi-slot state (Phase 1)
+    static constexpr int MAX_SHADER_SLOTS = 3;
+    ShaderSlot slots_[MAX_SHADER_SLOTS];
 
     // ═══════════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
     void UploadRGBA8ToReadTexture(const uint8_t* data, int width, int height);
-    
-    // TODO(Phase 3): Optimized upload with staging buffer
-    // void UploadToTextureOptimized(WGPUTexture texture, const uint8_t* data, 
-    //                               int width, int height, WGPUTextureFormat format);
-    
-    // TODO(Phase 2): Multi-slot execution helpers
-    // WGPUTexture GetSlotInputTexture(int slotIndex);
-    // WGPUTexture GetSlotOutputTexture(int slotIndex);
-    // void ExecuteShaderSlot(WGPUCommandEncoder encoder, int slotIndex,
-    //                        WGPUTexture input, WGPUTexture output);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STATE
     // ═══════════════════════════════════════════════════════════════════════════
-    bool initialized_ = false;
-    int canvasWidth_ = 0;
-    int canvasHeight_ = 0;
-    
-    // TODO: Precompute workgroup counts
-    // uint32_t workgroupCountX_ = 0;
-    // uint32_t workgroupCountY_ = 0;
-    
+    bool        initialized_  = false;
+    int         canvasWidth_  = 0;
+    int         canvasHeight_ = 0;
+
     // Animation/interaction state
     float currentTime_ = 0.0f;
-    float mouseX_ = 0.5f;
-    float mouseY_ = 0.5f;
-    bool mouseDown_ = false;
+    float mouseX_      = 0.5f;
+    float mouseY_      = 0.5f;
+    bool  mouseDown_   = false;
     float zoomParams_[4] = {0.5f, 0.5f, 0.5f, 0.5f};
     std::vector<RipplePoint> ripples_;
-    
-    // TODO(Phase 3): Input source tracking
-    // InputSource inputSource_ = InputSource::None;
-    // bool hasInputFrame_ = false;
-    
-    // TODO(Phase 4): Audio state
-    // AudioData audioData_ = {};
-    
+
+    // Input source (generative shaders use black placeholder)
+    InputSource inputSource_ = InputSource::None;
+
     // Performance metrics
-    float fps_ = 0.0f;
+    float fps_           = 0.0f;
     float lastFrameTime_ = 0.0f;
-    int frameCount_ = 0;
-    
-    // TODO: GPU timing queries
-    // float gpuTimeMs_ = 0.0f;
-    // WGPUQuerySet timestampQuerySet_ = nullptr;
-    
-    static constexpr int MAX_RIPPLES = 50;
+    int   frameCount_    = 0;
+
+    static constexpr int MAX_RIPPLES     = 50;
     static constexpr int MAX_PLASMA_BALLS = 50;
-    static constexpr int MAX_SHADER_SLOTS = 3;  // TODO(Phase 2): Use this constant
 };
 
 } // namespace pixelocity

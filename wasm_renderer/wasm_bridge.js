@@ -1,6 +1,6 @@
 /**
  * Pixelocity WASM Renderer Bridge
- * 
+ *
  * This module provides a JavaScript interface to the C++ WebGPU renderer.
  * It mirrors the TypeScript Renderer API for drop-in compatibility.
  */
@@ -164,7 +164,8 @@ export function loadShader(id, wgslCode) {
 }
 
 /**
- * Set the active shader for rendering
+ * Set the active shader for rendering (legacy single-shader API).
+ * Also enables slot 0 with this shader for backwards compatibility.
  * @param {string} id - Shader identifier
  */
 export function setActiveShader(id) {
@@ -183,9 +184,54 @@ export function setActiveShader(id) {
 }
 
 /**
- * Update uniform values.
- * State setters (updateMousePos, updateAudioData) should be called before
- * this function to push values into C++ before the render call.
+ * Assign a loaded shader to a slot (0-2).
+ * @param {number} slotIndex - Slot index (0, 1, or 2)
+ * @param {string} id - Shader identifier (empty string to disable the slot)
+ */
+export function setSlotShader(slotIndex, id) {
+  if (!state.initialized || !wasmModule) return;
+
+  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
+  const idPtr = wasmModule._malloc(idLen);
+  wasmModule.stringToUTF8(id, idPtr, idLen);
+  try {
+    wasmModule.ccall('setSlotShader', null, ['number', 'number'], [slotIndex, idPtr]);
+  } finally {
+    wasmModule._free(idPtr);
+  }
+}
+
+/**
+ * Set the four zoom parameters for a specific slot.
+ * @param {number} slotIndex - Slot index (0, 1, or 2)
+ * @param {number} p1
+ * @param {number} p2
+ * @param {number} p3
+ * @param {number} p4
+ */
+export function setSlotParams(slotIndex, p1, p2, p3, p4) {
+  if (!state.initialized || !wasmModule) return;
+  wasmModule.ccall(
+    'setSlotParams',
+    null,
+    ['number', 'number', 'number', 'number', 'number'],
+    [slotIndex, p1, p2, p3, p4]
+  );
+}
+
+/**
+ * Set the execution mode for a slot.
+ * @param {number} slotIndex - Slot index (0, 1, or 2)
+ * @param {number|string} mode - 0 or 'chained' for chained mode; 1 or 'parallel' for parallel mode
+ */
+export function setSlotMode(slotIndex, mode) {
+  if (!state.initialized || !wasmModule) return;
+  const modeInt = (mode === 'parallel' || mode === 1) ? 1 : 0;
+  wasmModule.ccall('setSlotMode', null, ['number', 'number'], [slotIndex, modeInt]);
+}
+
+/**
+ * Update uniform values and trigger a render frame.
  * @param {Object} uniforms - Uniform values
  */
 export function updateUniforms(uniforms = {}) {
@@ -197,11 +243,22 @@ export function updateUniforms(uniforms = {}) {
   if (uniforms.mouseDown !== undefined) state.mouseDown = uniforms.mouseDown;
   if (uniforms.zoom_params) state.zoomParams = uniforms.zoom_params;
 
-  // Propagate mouse/param state to C++ before triggering the render.
-  wasmModule.ccall('updateMousePos', null, ['number', 'number'], [state.mouseX, state.mouseY]);
+  // Push current time to C++ so time-based animations advance.
+  wasmModule.ccall('setTime', null, ['number'], [state.time]);
 
-  // C++ updateUniforms() takes no parameters — it reads internal state and
-  // triggers a Render() call.
+  // Push global zoom params (per-slot params must be set via setSlotParams).
+  wasmModule.ccall(
+    'setZoomParams',
+    null,
+    ['number', 'number', 'number', 'number'],
+    state.zoomParams
+  );
+
+  // Push mouse state.
+  wasmModule.ccall('updateMousePos', null, ['number', 'number'], [state.mouseX, state.mouseY]);
+  wasmModule.ccall('setMouseDown', null, ['number'], [state.mouseDown ? 1 : 0]);
+
+  // Trigger one render frame.
   wasmModule.ccall('updateUniforms', null, [], []);
 }
 
@@ -226,6 +283,49 @@ export function updateMousePos(x, y) {
 export function updateAudioData(bass, mid, treble) {
   if (!state.initialized || !wasmModule) return;
   wasmModule.ccall('updateAudioData', null, ['number', 'number', 'number'], [bass, mid, treble]);
+}
+
+/**
+ * Upload a depth map (Float32Array, one float per pixel, row-major) from the
+ * AI depth estimation model.
+ * @param {Float32Array} float32Data - Depth values (0=far, 1=near)
+ * @param {number} width
+ * @param {number} height
+ */
+export function updateDepthMap(float32Data, width, height) {
+  if (!state.initialized || !wasmModule) return;
+
+  const byteLen = float32Data.length * 4;
+  const ptr = wasmModule._malloc(byteLen);
+  wasmModule.HEAPF32.set(float32Data, ptr >> 2);
+  try {
+    wasmModule.ccall(
+      'updateDepthMap',
+      null,
+      ['number', 'number', 'number'],
+      [ptr, width, height]
+    );
+  } finally {
+    wasmModule._free(ptr);
+  }
+}
+
+/**
+ * Set the active input source.
+ * @param {number|string} source
+ *   0 or 'none'       - no input (black placeholder)
+ *   1 or 'image'      - static image
+ *   2 or 'video'      - video / webcam frames
+ *   3 or 'webcam'     - webcam (same as video in WASM)
+ *   4 or 'generative' - procedural, no input required
+ */
+export function setInputSource(source) {
+  if (!state.initialized || !wasmModule) return;
+  const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4 };
+  const sourceInt = typeof source === 'string'
+    ? (sourceMap[source] ?? 0)
+    : source;
+  wasmModule.ccall('setInputSource', null, ['number'], [sourceInt]);
 }
 
 /**
@@ -262,8 +362,6 @@ export function getFPS() {
 
 /**
  * Check if renderer is initialized.
- * Returns the local JS state flag which is only set to true after the C++
- * renderer confirms successful initialization (ccall 'initWasmRenderer' returns 1).
  * @returns {boolean}
  */
 export function isInitialized() {
@@ -327,15 +425,20 @@ export function uploadVideoFrame(rgbaPixels, width, height) {
 }
 
 // Default export
-export default {
+const wasmBridge = {
   initWasmRenderer,
   shutdownWasmRenderer,
   loadShader,
   loadShaderFromURL,
   setActiveShader,
+  setSlotShader,
+  setSlotParams,
+  setSlotMode,
   updateUniforms,
   updateMousePos,
   updateAudioData,
+  updateDepthMap,
+  setInputSource,
   addRipple,
   clearRipples,
   getFPS,
@@ -343,4 +446,6 @@ export default {
   uploadImageData,
   uploadVideoFrame
 };
+
+export default wasmBridge;
 

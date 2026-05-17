@@ -47,9 +47,34 @@ export class WASMRenderer implements Renderer {
     return WasmBridge.loadShaderFromURL(id, url);
   }
 
-  /** Switch to a previously loaded shader. */
+  /** Switch to a previously loaded shader (legacy single-shader API). */
   setActiveShader(id: string): void {
     WasmBridge.setActiveShader(id);
+  }
+
+  /** Assign a loaded shader to a slot (0-2). */
+  setSlotShader(slotIndex: number, id: string): void {
+    WasmBridge.setSlotShader(slotIndex, id);
+  }
+
+  /** Set per-slot zoom parameters. */
+  setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
+    WasmBridge.setSlotParams(slotIndex, p1, p2, p3, p4);
+  }
+
+  /** Set slot execution mode: 'chained' (default) or 'parallel'. */
+  setSlotMode(slotIndex: number, mode: 'chained' | 'parallel'): void {
+    WasmBridge.setSlotMode(slotIndex, mode);
+  }
+
+  /** Upload a depth map from the AI model (Float32Array, one float per pixel). */
+  updateDepthMap(data: Float32Array, width: number, height: number): void {
+    WasmBridge.updateDepthMap(data, width, height);
+  }
+
+  /** Set the active input source for generative / procedural shaders. */
+  setInputSource(source: 'none' | 'image' | 'video' | 'webcam' | 'generative'): void {
+    WasmBridge.setInputSource(source);
   }
 
   addRipple(x: number, y: number): void {
