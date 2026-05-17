@@ -707,13 +707,13 @@ const Controls: React.FC<ControlsProps> = ({
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <span
                                         className="gold-badge"
-                                        title="Shader failed to compile. Click Retry to try again."
+                                        title="Shader failed to compile or load. Retry if it was a transient network error, or pick a different shader below."
                                         style={{color: '#ff4757', borderColor: 'rgba(255,71,87,0.3)', background: 'rgba(255,71,87,0.1)'}}
                                     >
                                         ✕ FAILED
                                     </span>
                                     <button
-                                        title="Retry loading this shader"
+                                        title="Retry loading this shader (useful for transient network errors)"
                                         onClick={(e) => { e.stopPropagation(); setMode(i, modes[i]); }}
                                         style={{
                                             background: 'rgba(255,71,87,0.15)',

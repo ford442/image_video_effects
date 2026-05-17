@@ -617,6 +617,9 @@ function MainApp() {
         const initialMode = modes[0];
         if (initialMode && initialMode !== 'none') {
             setMode(0, initialMode);
+        } else {
+            // All slots are none — guide the user to pick a shader from the dropdown
+            setStatus('Ready. Select a shader from Slot 1 to get started.');
         }
     }, [rendererReady, shadersReady, modes, setMode]);
 
