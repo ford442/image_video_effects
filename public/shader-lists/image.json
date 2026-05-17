@@ -8344,7 +8344,8 @@
     "url": "shaders/cyber-lattice.wgsl",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
     "params": [
@@ -9476,7 +9477,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "description": "Edges ripple and split into RGB components based on mouse proximity.",
     "params": [
@@ -11529,7 +11531,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -14571,7 +14574,8 @@
     "features": [
       "mouse-driven",
       "chromatic-aberration",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

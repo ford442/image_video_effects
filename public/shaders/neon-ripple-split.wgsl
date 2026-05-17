@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Ripple Split
 //  Category: distortion
-//  Features: branchless, vectorized-split, audio-reactive, depth-aware
+//  Features: branchless, vectorized-split, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Low
 //  Phase B / Optimizer
 // ═══════════════════════════════════════════════════════════════════
@@ -80,4 +80,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

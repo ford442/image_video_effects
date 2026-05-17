@@ -2,7 +2,7 @@
 //  Holographic Edge Ripple - Advanced Alpha with Edge-Preserve
 //  Category: edge-detection
 //  Alpha Mode: Edge-Preserve Alpha + Depth-Layered
-//  Features: advanced-alpha, holographic, ripple, edge
+//  Features: advanced-alpha, holographic, ripple, edge, upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -81,4 +81,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
 }

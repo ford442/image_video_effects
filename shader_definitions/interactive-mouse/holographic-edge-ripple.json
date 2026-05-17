@@ -6,7 +6,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "description": "Edges ripple and split into RGB components based on mouse proximity.",
   "params": [

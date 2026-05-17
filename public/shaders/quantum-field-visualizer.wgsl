@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Field Visualizer
 //  Category: visual-effects
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
 //  By: Shader Upgrade Swarm — Phase A
@@ -81,4 +81,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(final_color, alpha));
 }

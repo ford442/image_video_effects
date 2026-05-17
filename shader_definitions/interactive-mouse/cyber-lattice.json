@@ -5,7 +5,8 @@
   "url": "shaders/cyber-lattice.wgsl",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
   "params": [

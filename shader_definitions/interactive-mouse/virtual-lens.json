@@ -37,7 +37,8 @@
   "features": [
     "mouse-driven",
     "chromatic-aberration",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

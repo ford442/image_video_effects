@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Spectrogram Displace – Pass 2: Displacement & Compositing
 //  Category: artistic
-//  Features: multi-pass-2, image displacement, color grading,
+//  Features: multi-pass-2, image displacement, color grading,, upgraded-rgba
 //            vignette, audio-reactive
 //  Complexity: Medium
 //  Created: 2026-05-10
@@ -82,4 +82,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, vec2<i32>(i32(coord.x), i32(coord.y)), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), vec4<f32>(finalColor, alpha));
 }

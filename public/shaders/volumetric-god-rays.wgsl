@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Volumetric God Rays
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Phase A Upgrade Swarm
 //  Created: 2026-05-10
@@ -73,4 +73,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(finalColor.rgb, alpha));
 }

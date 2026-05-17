@@ -5,9 +5,26 @@
 
 ---
 
-## Recently Completed (35 shaders)
+## Recently Completed (45 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 3 (10 shaders) — 2026-05-17
+
+Completion pass on Phase A/B shaders: added `dataTextureA` temporal feedback writes, `upgraded-rgba` header tags, and fixed `luma-slice-interactive` scalar→vec4 depth write bug.
+
+| # | Shader | Batch | Changes Made |
+|---|--------|-------|--------------|
+| 36 | `volumetric-god-rays` | 3 | Added `dataTextureA` write with ray-accumulated RGBA. Header now tagged `upgraded-rgba`. |
+| 37 | `virtual-lens` | 3 | Added `dataTextureA` write with chromatic-aberration lens RGBA. Header now tagged `upgraded-rgba`. |
+| 38 | `cyber-lattice` | 3 | Added `dataTextureA` write with grid-glow RGBA. Header now tagged `upgraded-rgba`. |
+| 39 | `luma-slice-interactive` | 3 | Fixed `textureStore(writeDepthTexture, coords, depth)` scalar bug → `vec4<f32>(depth, 0.0, 0.0, 0.0)`. Added `dataTextureA` write. Header now tagged `upgraded-rgba`. |
+| 40 | `neon-ripple-split` | 3 | Added `dataTextureA` write with neon-split RGBA. Header now tagged `upgraded-rgba`. |
+| 41 | `dynamic-halftone` | 3 | Added `dataTextureA` write with halftone-dot RGBA. Header now tagged `upgraded-rgba`. |
+| 42 | `neon-flashlight` | 3 | Added `dataTextureA` write with edge-emission RGBA. Header now tagged `upgraded-rgba`. |
+| 43 | `quantum-field-visualizer` | 3 | Added `dataTextureA` write with quantum-chaos RGBA. Header now tagged `upgraded-rgba`. |
+| 44 | `holographic-edge-ripple` | 3 | Added `dataTextureA` write with holographic-foil RGBA. Header now tagged `upgraded-rgba`. |
+| 45 | `spectrogram-displace-pass2` | 3 | Added `dataTextureA` write with spectrogram-displaced RGBA. Header now tagged `upgraded-rgba`. |
 
 ### Batch 2 (10 shaders) — 2026-05-17
 

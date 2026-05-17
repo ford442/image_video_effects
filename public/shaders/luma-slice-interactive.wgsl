@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luma Slice Interactive
 //  Category: interactive-mouse
-//  Features: mouse-driven, glitch, audio-reactive
+//  Features: mouse-driven, glitch, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
 //  By: Phase A Upgrade Swarm
@@ -77,5 +77,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coords, vec4<f32>(finalColor, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coords, depth);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(finalColor, alpha));
 }

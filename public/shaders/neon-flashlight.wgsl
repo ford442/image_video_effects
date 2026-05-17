@@ -2,7 +2,7 @@
 //  Neon Flashlight - Advanced Alpha with Edge-Preserve
 //  Category: edge-detection
 //  Alpha Mode: Edge-Preserve Alpha + Luminance Key
-//  Features: advanced-alpha, flashlight, edge-reveal
+//  Features: advanced-alpha, flashlight, edge-reveal, upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -81,4 +81,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
 }
