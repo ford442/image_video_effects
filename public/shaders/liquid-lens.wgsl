@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Lens
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,86 +19,65 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let aspect = resolution.x / resolution.y;
+  let mouse = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
-    // Params
-    let strength = u.zoom_params.x; // Refraction Strength
-    let radius = u.zoom_params.y;   // Lens Radius
-    let abberation = u.zoom_params.z; // Chromatic Abberation
-    let edgeDarken = u.zoom_params.w; // Vignette/Edge darken of lens
+  let strength = u.zoom_params.x * (1.0 + bass * 0.2);
+  let radius = u.zoom_params.y;
+  let abberation = u.zoom_params.z;
+  let edgeDarken = u.zoom_params.w;
 
-    // Calculate distance to mouse
-    let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
-    let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
-    let dist = distance(uvCorrected, mouseCorrected);
+  let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
+  let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
+  let dist = distance(uvCorrected, mouseCorrected);
 
-    // Lens profile (spherical)
-    // 1.0 at center, 0.0 at radius
-    let lensMask = smoothstep(radius, radius * 0.8, dist); // Inside lens
+  let lensMask = smoothstep(radius, radius * 0.8, dist);
+  let h = sqrt(max(0.0, radius*radius - dist*dist));
+  let nd = dist / max(radius, 0.001);
+  let distortion = pow(nd, 2.0) * strength * 0.5 * (1.0 - smoothstep(radius*0.9, radius, dist));
 
-    // Calculate normal-ish offset
-    // As we move away from center, we distort more? Or standard magnifying glass?
-    // Magnifying glass: sample coordinates closer to center.
-    // offset = (uv - mouse) * factor.
+  var dir = normalize(uv - mouse + vec2<f32>(0.0001));
+  let baseOffset = -dir * distortion * lensMask;
+  let ca = abberation * 0.02 * lensMask * nd;
 
-    // Sphere height estimation
-    let h = sqrt(max(0.0, radius*radius - dist*dist));
-    // Refraction depends on gradient of h.
-    // Normalized distance
-    let nd = dist / radius;
-    // Simple distortion curve
-    let distortion = pow(nd, 2.0) * strength * 0.5 * (1.0 - smoothstep(radius*0.9, radius, dist));
+  let uvR = clamp(uv + baseOffset * (1.0 + ca), vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvG = clamp(uv + baseOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvB = clamp(uv + baseOffset * (1.0 - ca), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    var dir = normalize(uv - mouse);
-    // Magnify: pull sample towards center
-    // offset = -dir * distortion
+  let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+  var color = vec3<f32>(r, g, b);
 
-    let baseOffset = -dir * distortion * lensMask;
+  let rim = smoothstep(radius * 0.8, radius, dist);
+  let isInside = dist < radius;
+  color = select(color, color * (1.0 - rim * edgeDarken), isInside);
 
-    // Chromatic Abberation
-    let ca = abberation * 0.02 * lensMask * nd; // More aberration at edges of lens
+  let N = vec3<f32>((uvCorrected - mouseCorrected)/max(radius, 0.001), h/max(radius, 0.001));
+  let spec = pow(max(0.0, dot(normalize(N), vec3<f32>(-0.2, -0.2, 1.0))), 20.0);
+  color += select(vec3<f32>(0.0), vec3<f32>(spec * 0.2), isInside);
 
-    let uvR = uv + baseOffset * (1.0 + ca);
-    let uvG = uv + baseOffset;
-    let uvB = uv + baseOffset * (1.0 - ca);
+  let alpha = clamp(lensMask * 0.7 + (1.0 - lensMask) * 0.5 + mids * 0.1, 0.0, 1.0);
 
-    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    var color = vec3<f32>(r, g, b);
-
-    // Edge Darkening (simulate rim)
-    let rim = smoothstep(radius * 0.8, radius, dist);
-    if (dist < radius) {
-        color = color * (1.0 - rim * edgeDarken);
-        // Add a fake specular highlight?
-        // Simple dot product with a "light source"
-        let lightDir = normalize(vec2<f32>(-0.5, -0.5));
-        // Surface normal estimation
-        // sphere normal z is h/radius. xy is (uv-mouse)/radius
-        let N = vec3<f32>((uvCorrected - mouseCorrected)/radius, h/radius);
-        // This is rough but okay
-        let spec = pow(max(0.0, dot(normalize(N), vec3<f32>(0.0, 0.0, 1.0) + vec3<f32>(-0.2, -0.2, 0.5))), 20.0);
-        color += spec * 0.2;
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

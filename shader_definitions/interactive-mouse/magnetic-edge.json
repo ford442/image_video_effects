@@ -3,7 +3,9 @@
   "url": "shaders/magnetic-edge.wgsl",
   "icon": "edgesensor_high",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

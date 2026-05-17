@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Pixel Stretch Interactive
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Low
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -21,70 +29,50 @@ struct Uniforms {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
-    var mouse = u.zoom_config.yz; // Normalized mouse pos
+  let modeParam = u.zoom_params.x;
+  let jitterStr = u.zoom_params.y;
+  let rgbShift = u.zoom_params.z * (1.0 + mids * 0.3);
 
-    // Params
-    // x: Direction Mode (0.0-0.33: Right, 0.33-0.66: Left, 0.66-1.0: Cross)
-    // y: Jitter/Noise strength
-    // z: RGB Shift strength
+  let isRight = modeParam < 0.33;
+  let isLeft = modeParam >= 0.33 && modeParam < 0.66;
+  let isCross = modeParam >= 0.66;
 
-    let modeParam = u.zoom_params.x;
-    let jitterStr = u.zoom_params.y;
-    let rgbShift = u.zoom_params.z;
+  let stretchRight = isRight && uv.x > mouse.x;
+  let stretchLeft = isLeft && uv.x < mouse.x;
+  let stretchCrossX = isCross && uv.x > mouse.x;
+  let stretchCrossY = isCross && uv.y > mouse.y;
 
-    var sample_uv = uv;
-    var is_stretched = false;
+  var sample_uv = uv;
+  sample_uv.x = select(sample_uv.x, mouse.x, stretchRight || stretchLeft || stretchCrossX);
+  sample_uv.y = select(sample_uv.y, mouse.y, stretchCrossY);
+  let is_stretched = stretchRight || stretchLeft || stretchCrossX || stretchCrossY;
 
-    // Determine Stretch Direction
-    if (modeParam < 0.33) {
-        // Stretch Right: If pixel is to the right of mouse, use mouse X
-        if (uv.x > mouse.x) {
-            sample_uv.x = mouse.x;
-            is_stretched = true;
-        }
-    } else if (modeParam < 0.66) {
-        // Stretch Left: If pixel is to the left of mouse, use mouse X
-        if (uv.x < mouse.x) {
-            sample_uv.x = mouse.x;
-            is_stretched = true;
-        }
-    } else {
-        // Cross Stretch: Stretch outwards from mouse
-        if (uv.x > mouse.x) { sample_uv.x = mouse.x; is_stretched = true; }
-        if (uv.y > mouse.y) { sample_uv.y = mouse.y; is_stretched = true; }
-        // Note: Quadrants might overlap, simple logic here gives a "corner" stretch
-    }
+  let noise = fract(sin(dot(uv * time, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+  let jitter = select(vec2<f32>(0.0), vec2<f32>((noise - 0.5) * 0.1 * jitterStr), is_stretched && noise > 0.5 && jitterStr > 0.0);
+  sample_uv = clamp(sample_uv + jitter, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Apply effects only to stretched area
-    var color: vec4<f32>;
+  let shift = rgbShift * 0.02;
+  let r = textureSampleLevel(readTexture, u_sampler, sample_uv + vec2<f32>(shift, 0.0), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, sample_uv - vec2<f32>(shift, 0.0), 0.0).b;
+  let caColor = vec4<f32>(r, g, b, 1.0);
+  let normalColor = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
 
-    if (is_stretched) {
-        // Jitter
-        if (jitterStr > 0.0) {
-            let noise = fract(sin(dot(uv * time, vec2(12.9898, 78.233))) * 43758.5453);
-            if (noise > 0.5) {
-                sample_uv += (noise - 0.5) * 0.1 * jitterStr;
-            }
-        }
+  let color = select(normalColor, caColor, is_stretched && rgbShift > 0.0);
+  let alpha = clamp(color.a + select(0.0, 0.2 * bass, is_stretched), 0.0, 1.0);
 
-        // RGB Split
-        if (rgbShift > 0.0) {
-             let shift = rgbShift * 0.02;
-             let r = textureSampleLevel(readTexture, u_sampler, sample_uv + vec2(shift, 0.0), 0.0).r;
-             let g = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).g;
-             let b = textureSampleLevel(readTexture, u_sampler, sample_uv - vec2(shift, 0.0), 0.0).b;
-             color = vec4(r, g, b, 1.0);
-        } else {
-             color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
-        }
-    } else {
-        color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
-    }
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  textureStore(writeTexture, coord, vec4<f32>(color.rgb, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(color.rgb, alpha));
 }

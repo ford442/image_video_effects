@@ -5,9 +5,26 @@
 
 ---
 
-## Recently Completed (45 shaders)
+## Recently Completed (55 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 4 (10 shaders) — 2026-05-17
+
+Full rewrites of raw Phase A/B shaders: added `plasmaBuffer` audio reactivity, replaced hardcoded `vec4(..., 1.0)` with meaningful alpha, converted `if` blocks to branchless `select()`/`mix()`, added `writeDepthTexture` + `dataTextureA` writes.
+
+| # | Shader | Batch | Changes Made |
+|---|--------|-------|--------------|
+| 46 | `electric-contours` | 4 | Sobel edge detection with bass-driven glow, mids spark multiplier, meaningful alpha from edge strength + spark + base texture alpha. |
+| 47 | `luma-force` | 4 | Branchless attract/repel via `select()`, luma-weighted force, mids-driven swirl distortion, alpha blends toward 1.0 near mouse. |
+| 48 | `contour-flow` | 4 | Gradient-perpendicular flow with bass-driven speed, mids highlight tint, alpha from flow intensity + mouse factor + source alpha. |
+| 49 | `magnetic-edge` | 4 | Branchless edge pull with `select()` displacement, bass boost on pull strength, mids glow tint, alpha from glow + influence. |
+| 50 | `pixel-stretch-interactive` | 4 | Branchless mode selection (Right/Left/Cross), chromatic aberration with mids scaling, jitter gated by `select()`, alpha boosted on stretch. |
+| 51 | `magnetic-pixels` | 4 | Branchless repulsion with `select()`, bass force scaling, mids chromatic tint, chaos noise gated by `select()`, alpha from displacement magnitude. |
+| 52 | `spirograph-reveal` | 4 | Guilloche pattern reveal with bass-driven rotation speed, mids background boost, alpha blends pattern mask with source texture alpha. |
+| 53 | `psychedelic-noise-flow` | 4 | Per-channel noise displacement with bass speed scaling, mids distortion strength, clamped UV sampling, alpha from displacement + mouse influence. |
+| 54 | `liquid-lens` | 4 | Spherical lens refraction with chromatic aberration, branchless rim darkening/specular via `select()`, bass strength boost, alpha from lens mask. |
+| 55 | `polka-wave` | 4 | Halftone dots with wave ripple from mouse, bass amplitude boost, alpha preserves source texture in dots + transparent background. |
 
 ### Batch 3 (10 shaders) — 2026-05-17
 

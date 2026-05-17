@@ -5,7 +5,9 @@
   "url": "shaders/contour-flow.wgsl",
   "description": "Image pixels flow along their luminance contours, reacting to mouse proximity.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

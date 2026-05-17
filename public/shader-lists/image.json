@@ -6586,7 +6586,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -6678,7 +6680,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -7992,7 +7996,9 @@
     "url": "shaders/contour-flow.wgsl",
     "description": "Image pixels flow along their luminance contours, reacting to mouse proximity.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10643,7 +10649,9 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion"
+      "distortion",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -10738,7 +10746,9 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion"
+      "distortion",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -10962,7 +10972,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -14018,7 +14030,9 @@
     ],
     "features": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -17602,7 +17616,9 @@
     "url": "shaders/electric-contours.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Edge detection with electric glowing contours that react to mouse proximity.",
     "params": [

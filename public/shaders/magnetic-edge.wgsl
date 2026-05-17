@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Magnetic Edge
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,77 +19,63 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=Width, w=Height
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // Params
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Magnetic Edge
-// Detects edges and pulls them towards the mouse.
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let mouse = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w > 0.5;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
+  let pullStrength = (0.05 + u.zoom_params.x * 0.2) * (1.0 + bass * 0.3);
+  let radius = 0.3 + u.zoom_params.y * 0.5;
+  let edgeThreshold = 0.1 + u.zoom_params.z * 0.4;
+  let glow = u.zoom_params.w * (1.0 + mids);
 
-    // Params
-    let pullStrength = 0.05 + u.zoom_params.x * 0.2;
-    let radius = 0.3 + u.zoom_params.y * 0.5;
-    let edgeThreshold = 0.1 + u.zoom_params.z * 0.4; // Sensitivity
-    let glow = u.zoom_params.w;
+  let texel = 1.0 / resolution.x;
+  let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let cl = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel, 0.0), 0.0).rgb;
+  let cr = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel, 0.0), 0.0).rgb;
+  let ct = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texel), 0.0).rgb;
+  let cb = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel), 0.0).rgb;
 
-    // Edge Detection (Sobel-ish)
-    let texel = 1.0 / resolution;
-    let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).rgb;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb;
-    let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).rgb;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb;
+  let dX = length(cr - cl);
+  let dY = length(cb - ct);
+  let edge = sqrt(dX*dX + dY*dY);
 
-    let dX = length(r - l);
-    let dY = length(b - t);
-    let edge = sqrt(dX*dX + dY*dY);
+  let aspect = resolution.x / resolution.y;
+  let dVec = mouse - uv;
+  let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
-    var finalUV = uv;
+  let isEdge = edge > edgeThreshold;
+  let isNear = dist < radius;
+  let influence = smoothstep(radius, 0.0, dist);
+  let clickBoost = select(1.0, 2.0, mouseDown);
 
-    // If pixel is an edge, and near mouse, displace it
-    if (edge > edgeThreshold && mouse.x >= 0.0) {
-        var aspect = resolution.x / resolution.y;
-        var dVec = mouse - uv; // Vector pointing TO mouse
-        var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+  let displacement = select(vec2<f32>(0.0), dVec * influence * pullStrength * clickBoost, isEdge && isNear && mouse.x >= 0.0);
+  let finalUV = clamp(uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
 
-        if (dist < radius) {
-            let influence = smoothstep(radius, 0.0, dist); // 1 at center, 0 at radius
-            // Pull towards mouse
-            finalUV = uv + dVec * influence * pullStrength;
+  var finalColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-            if (mouseDown > 0.5) {
-                finalUV = uv + dVec * influence * pullStrength * 2.0;
-            }
-        }
-    }
+  let glowMask = select(0.0, glow * (1.0 - dist / radius) * influence, glow > 0.0 && isEdge && isNear);
+  finalColor += vec4<f32>(glowMask, glowMask * 0.5, 0.0, 0.0);
 
-    var finalColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
+  let alpha = clamp(finalColor.a + glowMask * 0.3 + influence * 0.2, 0.0, 1.0);
 
-    // Highlight edges that are being pulled
-    if (glow > 0.0 && edge > edgeThreshold) {
-         var aspect = resolution.x / resolution.y;
-         var dVec = mouse - uv;
-         var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
-         if (dist < radius) {
-             finalColor += vec4<f32>(glow * (1.0 - dist/radius), glow * 0.5, 0.0, 0.0);
-         }
-    }
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  textureStore(writeTexture, coord, vec4<f32>(finalColor.rgb, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor.rgb, alpha));
 }

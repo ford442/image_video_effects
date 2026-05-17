@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Contour Flow
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Low
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,77 +19,59 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / resolution.y;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    let aspect = resolution.x / resolution.y;
+  let flowSpeed = u.zoom_params.x * 5.0 * (1.0 + bass * 0.3);
+  let flowLength = u.zoom_params.y * 0.05;
+  let mouseRadius = u.zoom_params.z * 0.5 + 0.01;
+  let edgeDetect = u.zoom_params.w * 5.0;
+  let mouse = u.zoom_config.yz;
 
-    // Parameters
-    let flowSpeed = u.zoom_params.x * 5.0;      // Speed of the flow animation
-    let flowLength = u.zoom_params.y * 0.05;    // Max length of displacement
-    let mouseRadius = u.zoom_params.z * 0.5 + 0.01; // Radius of mouse influence
-    let edgeDetect = u.zoom_params.w * 5.0;     // Sensitivity to edges (gradient mag)
+  let texel = vec2<f32>(1.0) / resolution;
+  let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).r;
+  let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
+  let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).r;
+  let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
 
-    var mouse = u.zoom_config.yz; // Mouse coordinates (0-1)
+  let gradX = r - l;
+  let gradY = b - t;
+  let flowDir = normalize(vec2<f32>(-gradY, gradX) + vec2<f32>(0.0001));
+  let gradMag = length(vec2<f32>(gradX, gradY));
 
-    // 1. Calculate Luminance Gradient (Sobel-ish) to find contours
-    let texel = vec2<f32>(1.0) / resolution;
+  let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let dist = length(distVec);
+  let mouseFactor = smoothstep(mouseRadius, 0.0, dist);
 
-    // Sample neighbors
-    let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).r;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-    let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).r;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
+  let wave = sin(uv.x * 10.0 + uv.y * 10.0 + time * flowSpeed);
+  let strength = (gradMag * edgeDetect + 0.2) * mouseFactor * flowLength;
+  let offset = flowDir * strength * wave;
 
-    let gradX = r - l;
-    let gradY = b - t;
+  let color = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let highlight = length(offset) * 10.0;
+  let final_rgb = color.rgb + vec3<f32>(highlight * 0.1 * (1.0 + mids));
 
-    // Tangent (Flow direction) is perpendicular to gradient
-    // Gradient points uphill (brightest). Contours are perpendicular.
-    let flowDir = normalize(vec2<f32>(-gradY, gradX) + vec2<f32>(0.0001));
-    let gradMag = length(vec2<f32>(gradX, gradY));
+  let alpha = clamp(color.a + highlight * 0.2 + mouseFactor * 0.2, 0.0, 1.0);
 
-    // 2. Calculate Mouse Influence
-    let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
-    // Smooth falloff from center
-    let mouseFactor = smoothstep(mouseRadius, 0.0, dist);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // 3. Calculate Displacement
-    // Only flow where there is detail (gradient) and where mouse is near.
-    // Base flow on edges + mouse interaction.
-
-    // Oscillate the flow back and forth or continuously?
-    // Let's make it wiggle.
-    let wave = sin(uv.x * 10.0 + uv.y * 10.0 + time * flowSpeed);
-
-    // Strength combines:
-    // - edgeDetect * gradMag: only flow on actual edges
-    // - mouseFactor: only flow near mouse
-    // - flowLength: global scaler
-    let strength = (gradMag * edgeDetect + 0.2) * mouseFactor * flowLength;
-
-    // Apply offset
-    let offset = flowDir * strength * wave;
-
-    // Sample with offset
-    let color = textureSampleLevel(readTexture, u_sampler, uv - offset, 0.0);
-
-    // Optional: Add a slight highlight to the flowing areas
-    let highlight = length(offset) * 10.0; // visualize flow intensity
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color + vec4<f32>(highlight * 0.1));
+  textureStore(writeTexture, coord, vec4<f32>(final_rgb, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(final_rgb, alpha));
 }
