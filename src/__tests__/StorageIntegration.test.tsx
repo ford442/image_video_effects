@@ -9,6 +9,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../App';
 import { StorageBrowser } from '../components/StorageBrowser';
 import { useStorage } from '../hooks/useStorage';
+import StorageService from '../services/StorageService';
 
 // Mock the storage service
 jest.mock('../services/StorageService', () => ({
@@ -41,7 +42,13 @@ describe('Storage Integration', () => {
     });
 
     it('shows connection status', async () => {
-      render(<StorageBrowser />);
+      render(
+        <StorageBrowser
+          onSelectShader={jest.fn()}
+          onSelectImage={jest.fn()}
+          onSelectVideo={jest.fn()}
+        />
+      );
       
       await waitFor(() => {
         expect(screen.getByText(/Connected/i)).toBeInTheDocument();

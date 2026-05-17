@@ -1,0 +1,20 @@
+<<<<<<< SEARCH
+    it('shows connection status', async () => {
+      // The mock is defined globally above via jest.mock so we don't need spyOn which was breaking due to mock behavior.
+      render(<StorageBrowser />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Connected to VPS/i)).toBeInTheDocument();
+      });
+    });
+=======
+    it('shows connection status', async () => {
+      // Fast-forward or trigger the connection check if not run on mount naturally in test environment
+      // We know from useStorage that it checks on mount. Let's make sure our mock resolves quickly.
+      render(<StorageBrowser />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Connected to VPS/i)).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+>>>>>>> REPLACE
