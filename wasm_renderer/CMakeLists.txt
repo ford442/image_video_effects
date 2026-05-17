@@ -56,7 +56,7 @@ string(CONCAT EXPORTED_STR ${EXPORTED_FUNCTIONS})
 target_link_options(pixelocity_wasm PRIVATE
     --use-port=emdawnwebgpu
     "-sEXPORTED_FUNCTIONS=${EXPORTED_STR}"
-    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8"
+    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32"
     "-sALLOW_MEMORY_GROWTH=1"
     "-sNO_EXIT_RUNTIME=1"
     "-sMODULARIZE=1"

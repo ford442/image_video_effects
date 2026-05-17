@@ -275,6 +275,16 @@ export function updateMousePos(x, y) {
 }
 
 /**
+ * Update mouse button pressed state.
+ * @param {boolean} down - true when button is pressed
+ */
+export function setMouseDown(down) {
+  if (!state.initialized || !wasmModule) return;
+  state.mouseDown = down;
+  wasmModule.ccall('setMouseDown', null, ['number'], [down ? 1 : 0]);
+}
+
+/**
  * Update audio frequency bands (0-1 normalized).
  * @param {number} bass
  * @param {number} mid
@@ -686,6 +696,7 @@ const wasmBridge = {
   setSlotMode,
   updateUniforms,
   updateMousePos,
+  setMouseDown,
   updateAudioData,
   updateDepthMap,
   setInputSource,
@@ -695,7 +706,6 @@ const wasmBridge = {
   isInitialized,
   uploadImageData,
   uploadVideoFrame,
-  // Phase 2
   resizeCanvas,
   captureFrame,
   takeScreenshot,
