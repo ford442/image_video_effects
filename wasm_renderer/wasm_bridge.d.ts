@@ -12,8 +12,10 @@ export function updateUniforms(uniforms: {
   mouseX?: number;
   mouseY?: number;
   mouseDown?: boolean;
-  zoomParams?: [number, number, number, number];
+  zoom_params?: [number, number, number, number];
 }): void;
+export function updateMousePos(x: number, y: number): void;
+export function updateAudioData(bass: number, mid: number, treble: number): void;
 export function addRipple(x: number, y: number): void;
 export function clearRipples(): void;
 export function getFPS(): number;
@@ -32,8 +34,10 @@ export interface WasmRenderer {
     mouseX?: number;
     mouseY?: number;
     mouseDown?: boolean;
-    zoomParams?: [number, number, number, number];
+    zoom_params?: [number, number, number, number];
   }): void;
+  updateMousePos(x: number, y: number): void;
+  updateAudioData(bass: number, mid: number, treble: number): void;
   addRipple(x: number, y: number): void;
   clearRipples(): void;
   getFPS(): number;
