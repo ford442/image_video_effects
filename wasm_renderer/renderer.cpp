@@ -247,7 +247,12 @@ bool WebGPURenderer::CreateDevice() {
             switch (reason) {
                 case WGPUDeviceLostReason_Unknown:     reasonStr = "Unknown";     break;
                 case WGPUDeviceLostReason_Destroyed:   reasonStr = "Destroyed";   break;
+#ifdef WGPUDeviceLostReason_InstanceDropped
+                case WGPUDeviceLostReason_InstanceDropped: reasonStr = "InstanceDropped"; break;
+#endif
+#ifdef WGPUDeviceLostReason_FailedCreation
                 case WGPUDeviceLostReason_FailedCreation: reasonStr = "FailedCreation";  break;
+#endif
                 default: break;
             }
             printf("[WebGPU] Device lost (%s): %.*s\n", reasonStr,
