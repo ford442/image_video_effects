@@ -1,14 +1,10 @@
-// ═══════════════════════════════════════════════════════════════
-//  Chromatic Shockwave - Wave-based chromatic aberration with wavelength-alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Shockwave
 //  Category: distortion
-//  Features: shockwave, chromatic-dispersion, wavelength-dependent-alpha
-//
-//  SCIENTIFIC MODEL:
-//  - Shockwave dispersion affects both position AND alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,85 +21,98 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  SPECTRAL PHYSICS CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const WAVELENGTH_RED:    f32 = 650.0;  // nm
-const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
-const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
+// ═══════════════════════════════════════════════════════════════════
+const WAVELENGTH_RED:   f32 = 650.0;  // nm
+const WAVELENGTH_GREEN: f32 = 550.0;  // nm
+const WAVELENGTH_BLUE:  f32 = 450.0;  // nm
 
-// ═══════════════════════════════════════════════════════════════
-//  WAVELENGTH-DEPENDENT ALPHA
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  WAVELENGTH-DEPENDENT ALPHA (Beer-Lambert law)
+//  alpha = exp(-thickness * absorption)
+//  Red (650nm): lowest absorption, highest transmission
+//  Blue (450nm): highest absorption, lowest transmission
+// ═══════════════════════════════════════════════════════════════════
 fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
     let lambda_norm = (800.0 - wavelength) / 400.0;
-    let absorption = mix(0.3, 1.0, lambda_norm);
+    let absorption  = mix(0.3, 1.0, lambda_norm);
     return exp(-thickness * absorption);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let time = u.config.x;
-  var mouse = u.zoom_config.yz;
-  let aspect = resolution.x / resolution.y;
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
 
-  // Params
-  let speed = u.zoom_params.x * 10.0;
-  let freq = 10.0 + u.zoom_params.y * 50.0;
-  let aberr = u.zoom_params.z * 0.1;
+    let coord = vec2<i32>(global_id.xy);
+    let uv    = vec2<f32>(global_id.xy) / resolution;
+    let time  = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let aspect = resolution.x / max(resolution.y, 0.001);
 
-  let diff = uv - mouse;
-  let distSq = dot(diff, diff);
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-  var dir = vec2<f32>(1.0, 0.0);
-  if (distSq > 0.000001) {
-    dir = normalize(diff);
-  }
+    // Params — bass modulates speed, mids modulate frequency
+    let speed = u.zoom_params.x * 10.0 * (1.0 + bass * 0.3);
+    let freq  = (10.0 + u.zoom_params.y * 50.0) * (1.0 + mids * 0.2);
+    let aberr = u.zoom_params.z * 0.1;
 
-  let dist = sqrt(dot(diff * vec2<f32>(aspect, 1.0), diff * vec2<f32>(aspect, 1.0)));
+    let diff   = uv - mouse;
+    let distSq = dot(diff, diff);
 
-  // Wave function
-  let wave = sin(dist * freq - time * speed);
+    // Safe normalize: avoid divide-by-zero branchlessly
+    let safeLen = max(sqrt(distSq), 0.0001);
+    let dir     = diff / safeLen;
 
-  // Chromatic Aberration Offsets
-  let offsetR = dir * wave * aberr;
-  let offsetB = -dir * wave * aberr;
-  let offsetG = dir * wave * aberr * 0.3;
+    let diff_a  = diff * vec2<f32>(aspect, 1.0);
+    let dist    = sqrt(dot(diff_a, diff_a));
 
-  let r = textureSampleLevel(readTexture, u_sampler, uv + offsetR, 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, uv + offsetG, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, uv + offsetB, 0.0).b;
+    // Wave function
+    let wave = sin(dist * freq - time * speed);
 
-  // ═══════════════════════════════════════════════════════════════
-  //  WAVELENGTH-DEPENDENT ALPHA
-  //  Thickness derived from wave amplitude
-  // ═══════════════════════════════════════════════════════════════
-  let waveThickness = abs(wave) * aberr * 10.0;
-  let dispersionThickness = waveThickness + dist * 0.5;
-  
-  let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
-  let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
-  let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
-  
-  let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
-  let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
-  
-  let finalColor = vec3<f32>(
-      r * alphaR,
-      g * alphaG,
-      b * alphaB
-  );
+    // Chromatic aberration offsets
+    let offsetR = dir * wave * aberr;
+    let offsetB = -dir * wave * aberr;
+    let offsetG = dir * wave * aberr * 0.3;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    // Clamp displaced UVs before sampling
+    let uvR = clamp(uv + offsetR, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvG = clamp(uv + offsetG, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(uv + offsetB, vec2<f32>(0.0), vec2<f32>(1.0));
+
+    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+
+    // Wavelength-dependent Beer-Lambert alpha
+    let waveThickness      = abs(wave) * aberr * 10.0;
+    let dispersionThickness = waveThickness + dist * 0.5;
+
+    let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
+    let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
+    let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
+
+    let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
+    let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
+
+    let finalColor = vec4<f32>(r * alphaR, g * alphaG, b * alphaB, finalAlpha);
+
+    textureStore(writeTexture, coord, finalColor);
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, finalColor);
 }

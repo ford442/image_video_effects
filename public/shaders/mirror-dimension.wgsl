@@ -1,7 +1,10 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Mirror Dimension
-//  A kaleidoscope effect with rotating axes controllable by mouse.
-// ═══════════════════════════════════════════════════════════════
+//  Category: kaleidoscope
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,9 +21,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Segments, y=RotationSpeed, z=Offset, w=Zoom
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -30,79 +33,77 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+
+    let coord = vec2<i32>(global_id.xy);
+    let uv = vec2<f32>(global_id.xy) / resolution;
+
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Params
-    let segments = floor(mix(2.0, 12.0, u.zoom_params.x));
-    let rotSpeed = mix(-1.0, 1.0, u.zoom_params.y);
+    let segments  = floor(mix(2.0, 12.0, u.zoom_params.x));
+    let baseRotSpeed = mix(-1.0, 1.0, u.zoom_params.y);
+    // Bass modulates rotation speed
+    let rotSpeed  = baseRotSpeed * (1.0 + bass * 0.5);
     let offsetVal = u.zoom_params.z;
-    let zoom = mix(0.5, 2.0, u.zoom_params.w);
+    // Mids modulate zoom intensity
+    let zoom      = mix(0.5, 2.0, u.zoom_params.w) * (1.0 + mids * 0.15);
 
-    // Center UV
+    // Center UV and correct aspect
     var p = uv - 0.5;
-
-    // Correct Aspect?
-    // Kaleidoscopes often look better if we work in square space then stretch back
-    // or just distort everything. Let's correct aspect for rotation at least.
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 0.001);
     p.x *= aspect;
 
-    // Mouse Interaction: Mouse position offsets the center of symmetry?
-    // Or adds to rotation?
-    var mouse = u.zoom_config.yz;
-    if (u.zoom_config.y > 0.0) { // If mouse active
-        let m = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
-        // Let's make mouse offset the center
-        p -= m;
-    }
+    // Branchless mouse offset: apply when zoom_config.y > 0
+    let mouseActive = step(0.001, u.zoom_config.y);
+    let m = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+    p -= m * mouseActive;
 
-    // Polar Coords
+    // Polar coords
     let r = length(p);
     var a = atan2(p.y, p.x);
 
     // Animate rotation
     a += u.config.x * rotSpeed;
 
-    // Repeat Angle
-    let segmentAngle = 3.14159 * 2.0 / segments;
+    // Segment angle
+    let segmentAngle = 3.14159265 * 2.0 / max(segments, 1.0);
 
-    // Mirroring logic
-    // We map angle 'a' into [0, segmentAngle]
-    // Then reflect if needed
-
-    // Standard fold
-    a = a % segmentAngle;
-    if (a < 0.0) { a += segmentAngle; } // Handle negative modulo result
+    // Branchless modulo into [0, segmentAngle] using fract — handles negatives
+    a = fract(a / segmentAngle) * segmentAngle;
 
     // Triangle fold (mirror half of the segment)
     a = abs(a - segmentAngle * 0.5);
 
-    // Add offset (spiraling)
-    // a += r * offsetVal;
-
     // Convert back to cartesian
-    // We have 'a' (which is now folded) and 'r'.
-    // We map this back to UV space.
-
-    // We can sample a texture by reconstructing the vector
     var uv_new = vec2<f32>(cos(a), sin(a)) * r;
 
-    // Add spiraling offset here?
+    // Offset and zoom
     uv_new += vec2<f32>(offsetVal * 0.1);
-
-    // Apply zoom
     uv_new *= zoom;
 
     // Un-correct aspect and un-center
     uv_new.x /= aspect;
     uv_new += 0.5;
 
-    // Sample
-    // Use mirrored repeat for out of bounds?
-    // The sampler is 'repeat' by default usually (u_sampler).
-    // But let's verify. Renderer says 'addressModeU: repeat'. Good.
+    // Clamp displaced UV before sampling
+    let uv_clamped = clamp(uv_new, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let color = textureSampleLevel(readTexture, u_sampler, uv_new, 0.0);
+    let sampled = textureSampleLevel(readTexture, u_sampler, uv_clamped, 0.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Meaningful alpha: encodes radial position + fold angle closeness + bass energy
+    let foldCloseness = 1.0 - clamp(a / max(segmentAngle * 0.5, 0.001), 0.0, 1.0);
+    let radialFactor  = clamp(1.0 - r * 0.8, 0.0, 1.0);
+    let alpha = clamp(radialFactor * 0.5 + foldCloseness * 0.3 + bass * 0.2, 0.0, 1.0);
+
+    let finalColor = vec4<f32>(sampled.rgb, alpha);
+
+    textureStore(writeTexture, coord, finalColor);
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, finalColor);
 }
