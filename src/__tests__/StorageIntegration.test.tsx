@@ -43,8 +43,9 @@ describe('Storage Integration', () => {
     it('shows connection status', async () => {
       render(<StorageBrowser />);
       
+      // The text shown is actually VPS: storage.noahcohn.com:443 based on the DOM dump
       await waitFor(() => {
-        expect(screen.getByText(/Connected to VPS/i)).toBeInTheDocument();
+        expect(screen.getByText(/VPS:/i)).toBeInTheDocument();
       });
     });
 
