@@ -3,7 +3,7 @@
   "name": "Kaleido-Scope Prism grokcf1",
   "url": "shaders/kaleido-scope-grokcf1.wgsl",
   "category": "geometric",
-  "description": "Kaleidoscope with spring-damper mouse follow, attack/release audio envelope, and temporal feedback trails."
+  "description": "Kaleidoscope with spring-damper mouse follow, attack/release audio envelope, and temporal feedback trails.",
   "features": [
     "mouse-driven",
     "audio-reactive",
