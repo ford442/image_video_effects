@@ -55,6 +55,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const dragStartTime = useRef<number>(0);
     const streamRef = useRef<MediaStream | null>(null);
     const hlsVideoRef = useRef<HTMLVideoElement | null>(null); // NEW: Live stream video element
+    const bufferingStartedRef = useRef<boolean>(false); // Track if buffering triggered
 
     // Track the CSS display size of the canvas element
     const [displaySize, setDisplaySize] = useState({ width: 1, height: 1 });
@@ -343,6 +344,39 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             videoRef.current.muted = isMuted;
         }
     }, [isMuted]);
+
+    // Video buffering: Start buffering at 50% of segment duration (B3HD mode optimization)
+    useEffect(() => {
+        if (!videoRef.current || inputSource !== 'video' || !segment) {
+            bufferingStartedRef.current = false;
+            return;
+        }
+
+        const video = videoRef.current;
+        const onTimeUpdate = () => {
+            if (!video || !segment) return;
+
+            // Calculate the midpoint of the segment (50% through)
+            const segmentDuration = segment.end - segment.start;
+            const midpoint = segment.start + (segmentDuration * 0.5);
+
+            // If we've reached the midpoint and haven't buffered yet
+            if (video.currentTime >= midpoint && !bufferingStartedRef.current) {
+                bufferingStartedRef.current = true;
+                // In a real implementation, this would trigger loading the next video
+                // For now, just log it for debugging
+                console.log('[Video Buffering] Midpoint reached at', video.currentTime.toFixed(2), 's - ready for next video load');
+            }
+        };
+
+        video.addEventListener('timeupdate', onTimeUpdate);
+
+        // Reset buffering flag when segment changes
+        return () => {
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            bufferingStartedRef.current = false;
+        };
+    }, [inputSource, segment]);
 
     // Sync mouseDown state to renderer
     useEffect(() => {
