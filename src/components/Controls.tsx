@@ -159,6 +159,9 @@ const Controls: React.FC<ControlsProps> = ({
     const [historyOpen, setHistoryOpen] = useState(false);
     const prevAiVjStatusRef = React.useRef<AIStatus>(aiVjStatus);
 
+    // --- Dev Tools Visibility State ---
+    const [devToolsOpen, setDevToolsOpen] = useState(false);
+
     useEffect(() => {
         setHistory(loadVJHistory());
     }, []);
@@ -1165,23 +1168,30 @@ const Controls: React.FC<ControlsProps> = ({
 
             {/* --- 🔧 Dev Tools Section --- */}
             {onOpenShaderScanner && (
-                <div className="dev-tools-gold">
-                    <h4>
-                        🔧 Dev Tools
-                    </h4>
-                    <button
-                        onClick={onOpenShaderScanner}
+                <div className="dev-tools-container">
+                    <button 
+                        className="dev-tools-toggle"
+                        onClick={() => setDevToolsOpen(!devToolsOpen)}
                     >
-                        🔍 Scan Shaders for Errors
+                        🔧 Dev Tools {devToolsOpen ? '▼' : '▶'}
                     </button>
-                    <div style={{
-                        marginTop: '6px',
-                        fontSize: '10px',
-                        color: '#a0a0b0',
-                        textAlign: 'center'
-                    }}>
-                        Tests WGSL compilation on all shaders
-                    </div>
+                    {devToolsOpen && (
+                        <div className="dev-tools-gold">
+                            <button
+                                onClick={onOpenShaderScanner}
+                            >
+                                🔍 Scan Shaders for Errors
+                            </button>
+                            <div style={{
+                                marginTop: '6px',
+                                fontSize: '10px',
+                                color: '#a0a0b0',
+                                textAlign: 'center'
+                            }}>
+                                Tests WGSL compilation on all shaders
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

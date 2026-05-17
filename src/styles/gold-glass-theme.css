@@ -649,20 +649,54 @@
 }
 
 /* ─── Dev Tools Section ─── */
-.dev-tools-gold {
+.dev-tools-container {
   margin-top: 20px;
-  padding: 12px;
-  background: rgba(255, 215, 0, 0.05);
+  padding: 0;
+  background: transparent;
   border-radius: 8px;
-  border: 1px dashed rgba(255, 215, 0, 0.3);
 }
 
-.dev-tools-gold h4 {
+.dev-tools-toggle {
+  background: rgba(255, 215, 0, 0.05);
+  border: 1px dashed rgba(255, 215, 0, 0.3);
   color: var(--gold-primary);
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
   font-size: 12px;
-  margin: 0 0 8px 0;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dev-tools-toggle:hover {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+.dev-tools-gold {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(255, 215, 0, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dev-tools-gold button {
