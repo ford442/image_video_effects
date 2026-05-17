@@ -3,10 +3,11 @@
   "name": "Kaleido-Scope Prism grokcf1",
   "url": "shaders/kaleido-scope-grokcf1.wgsl",
   "category": "geometric",
-  "description": "Enhanced kaleidoscope with prism dispersion, reflections, chromatic effects, and audio-reactive bass modulation.",
+  "description": "Kaleidoscope with spring-damper mouse follow, attack/release audio envelope, and temporal feedback trails."
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal"
   ],
   "params": [
     {
@@ -41,6 +42,7 @@
   "tags": [
     "geometric",
     "pattern",
-    "audio"
+    "audio",
+    "feedback"
   ]
 }

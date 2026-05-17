@@ -3,16 +3,19 @@
   "name": "Polka Dot Reveal",
   "url": "shaders/polka-dot-reveal.wgsl",
   "category": "artistic",
-  "description": "Interactive halftone effect where mouse proximity increases the dot density, revealing more detail. Now with audio-reactive dot sizing and parameter-driven density, speed, and detail.",
+  "description": "Interactive halftone effect with spring-damped mouse follow, attack/release audio envelope driving dot radius and saturation, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal"
   ],
   "tags": [
     "filter",
     "image-processing",
     "halftone",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal",
+    "trails"
   ],
   "params": [
     {

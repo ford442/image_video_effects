@@ -2,8 +2,8 @@
   "id": "magnetic-interference",
   "name": "Magnetic Interference",
   "url": "shaders/magnetic-interference.wgsl",
-  "category": "image",
-  "description": "Simulates magnetic distortion on a CRT screen, pulling pixels and separating colors.",
+  "category": "interactive-mouse",
+  "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, audio-reactive bass envelope, and temporal feedback smearing.",
   "params": [
     {
       "id": "strength",
@@ -36,8 +36,9 @@
   ],
   "features": [
     "mouse-driven",
-    "chromatic-aberration",
-    "audio-reactive"
+    "audio-reactive",
+    "ripple-integration",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

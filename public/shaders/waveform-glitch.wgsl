@@ -1,12 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Waveform Glitch — May 2026 Batch D Upgrade
+//  Waveform Glitch — Alpha Translucency Re-Upgrade
 //  Category: retro-glitch
 //  Features: temporal, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Very High
-//  Chunks From: waveform-glitch (original)
-//  Created: 2026-04-25
-//  Upgraded: 2026-05-02
-//  Re-Upgraded: 2026-05-10
+//  Upgraded: 2026-05-17
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,8 +27,11 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// ── Hash & Noise ─────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+  var p3 = fract(vec3(p.x, p.y, p.x) * vec3(0.1031, 0.1030, 0.0973));
+  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -91,6 +91,7 @@ fn worleyNoise(p: vec2<f32>, time: f32) -> f32 {
   return sqrt(dist);
 }
 
+// ── VHS & Glitch Functions ───────────────────────────────────
 fn vhsTracking(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
   let warp = dwfBm(vec2<f32>(uv.y * 8.0, time * 0.3), time);
   let jitter = sin(time * 30.0 + uv.y * 1000.0 + warp * 6.28) * intensity * 0.02;
@@ -113,7 +114,12 @@ fn datamoshDisp(uv: vec2<f32>, time: f32, smearScale: f32) -> vec2<f32> {
   return uv + curl * n * smearScale * 0.08;
 }
 
-@compute @workgroup_size(8, 8, 1)
+// ── Spectral Tint ────────────────────────────────────────────
+fn wavelengthToRGB(w: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(vec3<f32>(w, w + 2.09, w + 4.18));
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -134,33 +140,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Depth-aware scaling: more glitch in foreground
   let depthScale = mix(1.0, 0.3, depth);
 
+  // Unified displacement pipeline
   var warped = vhsTracking(uv, time, vhsIntensity * depthScale);
   warped = blockCorruption(warped, blockGlitchSize, vhsIntensity * depthScale, time);
   warped = datamoshDisp(warped, time, waveIntensity * depthScale);
   warped = clamp(warped, vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // Waveform displacement magnitude
   let glitchMag = length(warped - uv);
-  let glitchStrength = clamp(glitchMag * 10.0, 0.0, 1.0);
+  let blockCorrup = smoothstep(0.0, blockGlitchSize, glitchMag);
+
+  // Temporal feedback via dataTextureC for persistence
+  let prevFrame = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let persistence = 0.85;
+  let temporalBlend = mix(prevFrame.rgb, vec3<f32>(0.0), 1.0 - persistence);
 
   // Quantized scanline artifact
   let scanQ = floor(uv.y * 240.0) / 240.0;
   let quant = step(0.5, hash21(vec2<f32>(scanQ, floor(time * 8.0)))) * 0.06 * vhsIntensity;
 
-  let cR = textureSampleLevel(readTexture, u_sampler, warped + vec2<f32>(0.003 * vhsIntensity + quant, 0.0), 0.0);
-  let cG = textureSampleLevel(readTexture, u_sampler, warped, 0.0);
-  let cB = textureSampleLevel(readTexture, u_sampler, warped - vec2<f32>(0.003 * vhsIntensity + quant, 0.0), 0.0);
+  // Single unified UV sample — no per-channel splitting
+  let displacedUV = clamp(warped + vec2<f32>(quant, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
   // VHS head-switching noise band at bottom 8% of frame
   let inBand = step(0.92, uv.y);
   let bandNoise = hash21(vec2<f32>(uv.x * 100.0, time * 30.0)) * inBand * vhsIntensity * 0.3;
 
   let flicker = 0.8 + 0.2 * fract(time * 2.0 + bandNoise * 10.0);
-  var col = vec3<f32>(cR.r, cG.g, cB.b) * flicker;
+  var col = baseColor * flicker;
 
   // Digital bit-crush on luma
   let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
   let crush = floor(luma * 16.0 * (1.0 + vhsIntensity * 2.0)) / (16.0 * (1.0 + vhsIntensity * 2.0));
-  col = mix(col, col * (crush / max(luma, 0.001)), glitchStrength * 0.4);
+  col = mix(col, col * (crush / max(luma, 0.001)), glitchMag * 4.0 * 0.4);
 
   // CRT shadow mask
   let shadowMask = 0.85 + 0.15 * step(0.33, fract(uv.x * resolution.x / 3.0));
@@ -169,10 +182,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Add head-switching noise band color tint
   col = col + vec3<f32>(bandNoise * 0.5, bandNoise * 0.3, bandNoise * 0.1);
 
-  // Effect-mask alpha based on glitch displacement magnitude
-  let alpha = cG.a * (1.0 - glitchStrength * 0.5);
-  let finalAlpha = clamp(alpha, 0.25, cG.a);
+  // Temporal feedback blend
+  col = mix(col, temporalBlend, 0.15);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(col, finalAlpha));
+  // Spectral tint via mix, NOT per-channel sampling
+  let spectralTint = wavelengthToRGB(time * 0.4 + glitchMag * 20.0);
+  col = mix(col, col * spectralTint, glitchMag * 2.0);
+
+  // Alpha = waveform displacement magnitude * block corruption intensity
+  let alpha = clamp(glitchMag * 5.0 * blockCorrup, 0.0, 1.0);
+
+  textureStore(writeTexture, global_id.xy, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -3,13 +3,16 @@
   "name": "Spectral Vortex",
   "url": "shaders/spectral-vortex.wgsl",
   "category": "image",
-  "description": "Spectral color vortex with twisted distortions.",
+  "description": "Spectral color vortex with twisted distortions and alpha-channel translucency blending. Alpha encodes curl magnitude / maxCurl for energy-based translucency, with depth-aware compositing and audio-reactive twist.",
   "tags": [
     "filter",
     "image-processing"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

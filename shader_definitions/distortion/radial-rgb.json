@@ -3,7 +3,7 @@
   "name": "Radial RGB",
   "url": "shaders/radial-rgb.wgsl",
   "category": "distortion",
-  "description": "Spectral chromatic aberration with lens distortion, anamorphic stretch, 7-wavelength sampling, and vignette.",
+  "description": "Spectral chromatic aberration with lens distortion, anamorphic stretch, single-sample spectral tint via mix(), alpha translucency blending, and vignette.",
   "params": [
     {
       "id": "k1",
@@ -40,7 +40,8 @@
   ],
   "features": [
     "mouse-driven",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "upgraded-rgba"
   ],
   "tags": [
     "lens",

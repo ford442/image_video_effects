@@ -3,8 +3,8 @@
 ## Metadata
 - **Shader ID**: quad-mirror
 - **Agent Role**: Optimizer
-- **Current Size**: 3256 bytes
-- **Target Line Count**: ~110 lines
+- **Current Size**: 2933 bytes
+- **Target Line Count**: ~123 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,6 +41,15 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  Quad Mirror — Batch D Upgrade
+//  Category: geometric
+//  Features: mouse-driven, geometry, upgraded-rgba, fbm-domain-warp,
+//            audio-reactive, seam-warp
+//  Complexity: Medium
+//  Created: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -56,82 +65,88 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
+const TAU: f32 = 6.28318530718;
+const MIN_ZOOM: f32 = 0.1;
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  var pp = p * vec2<f32>(0.1031, 0.1030);
+  let a = dot(pp, vec2<f32>(127.1, 311.7));
+  let b = dot(pp + 1.0, vec2<f32>(269.5, 183.3));
+  let c = sin(vec2<f32>(a, b));
+  return fract(c * 43758.5453 + pp);
+}
+
+fn fbm2(p: vec2<f32>, t: f32) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var pp = p;
+  for (var i: i32 = 0; i < 3; i = i + 1) {
+    let h = hash22(pp + t * 0.1 * f32(i + 1));
+    v += a * (h.x - 0.5);
+    pp = pp * 2.3 + h.yx;
+    a *= 0.5;
   }
+  return v;
+}
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  var mouse = u.zoom_config.yz;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let res = u.config.zw;
+  let px = vec2<i32>(global_id.xy);
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
-  // Quad Mirror Logic
-  // The mouse position defines the center of the coordinate system.
-  // We reflect everything around the X and Y axes defined by the mouse.
+  let uv = vec2<f32>(global_id.xy) / res;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
 
-  // Relative coordinates
+  let treble = plasmaBuffer[0].z;
+
+  // Parameters
+  let hOffset = (u.zoom_params.x - 0.5) * 0.4;
+  let vOffset = (u.zoom_params.y - 0.5) * 0.4;
+  let seamWarpAmt = u.zoom_params.z * 0.05;
+  let rotation = u.zoom_params.w * TAU + time * 0.1;
+
+  // Treble → seam warp shimmer
+  let warpShimmer = seamWarpAmt * (1.0 + treble * 0.5);
+
+  // Mirror transform with animated rotation
   let rel = uv - mouse;
-  let rot = mix(0.0, 6.283, u.zoom_params.z);
-  let c = cos(rot);
-  let s = sin(rot);
-  let rel_rot = vec2<f32>(rel.x * c - rel.y * s, rel.x * s + rel.y * c);
+  let c = cos(rotation);
+  let s = sin(rotation);
+  let rx = rel.x * c - rel.y * s;
+  let ry = rel.x * s + rel.y * c;
 
-  // Reflect: absolute distance from center
-  let abs_x = abs(rel_rot.x);
-  let abs_y = abs(rel_rot.y);
+  let zoom = max(MIN_ZOOM, 0.5);
+  var sampleUV = mouse - vec2<f32>(abs(rx + hOffset), abs(ry + vOffset)) / zoom;
 
-  // Sample Coordinate
-  // We want to sample from the "positive" quadrant (or whatever quadrant the source image is best in)
-  // relative to the mouse?
-  // Let's make it so that the image is mirrored around the mouse lines.
+  // FBM domain warp at seam boundaries (±5% around mirror lines)
+  let seamH = abs(rx);
+  let seamV = abs(ry);
+  let nearSeamH = smoothstep(0.0, 0.05 * zoom, seamH);
+  let nearSeamV = smoothstep(0.0, 0.05 * zoom, seamV);
+  let nearSeam = max(1.0 - nearSeamH, 1.0 - nearSeamV);
 
-  // Simple Kaleidoscope:
-  // sample_uv = mouse + vec2(abs_x, abs_y);
-  // This mirrors the bottom-right quadrant to all others.
+  let warpX = fbm2(sampleUV * 20.0 + time, time * 0.5) * warpShimmer * nearSeam;
+  let warpY = fbm2(sampleUV * 20.0 + vec2<f32>(5.2, 1.3), time * 0.5) * warpShimmer * nearSeam;
+  sampleUV = sampleUV + vec2<f32>(warpX, warpY);
 
-  // Params
-  let mode = u.zoom_params.x; // 0 = Mirror, 1 = Repeat?
-  let zoom = u.zoom_params.y; // Zoom into the center? 1.0 = Normal
+  var color = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
-  // Adjust zoom (avoid divide by zero)
-  let z = max(0.1, zoom);
+  // Alpha: preserves src.a, reduces at seams proportional to warp amount
+  let seamAlphaReduction = warpShimmer * nearSeam * 2.0;
+  color.a = max(0.3, color.a - seamAlphaReduction);
 
-  // Scaled offsets
-  let off_x = abs_x / z;
-  let off_y = abs_y / z;
+  textureStore(writeTexture, px, color);
 
-  // We need to map these back to valid UV space.
-  // If we just use mouse + off, we might sample out of bounds.
-  // u_sampler usually repeats or clamps. If repeat, we get tiling.
-
-  // Let's try to make a "Quad Mirror" where the image looks symmetrical.
-  // We sample at: mouse - offset (to look "inwards"?) or mouse + offset?
-
-  // Let's try:
-  let sample_uv = vec2<f32>(
-      mouse.x - off_x,
-      mouse.y - off_y
-  );
-
-  // If we want 4-way symmetry, we just use the calculated sample_uv.
-  // The sign of (uv - mouse) determined which quadrant we are in, but we took abs(), so now we are always sampling from top-left relative to mouse.
-
-  let color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
-
-  let edge_softness = mix(1.0, smoothstep(0.0, 0.1, min(abs_x, abs_y)), u.zoom_params.w);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color * edge_softness);
-
-  // Pass depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -142,57 +157,52 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "quad-mirror",
   "name": "Quad Mirror",
   "url": "shaders/quad-mirror.wgsl",
-  "category": "image",
-  "description": "Kaleidoscope-like 4-way mirror reflection centered on the mouse.",
+  "category": "geometric",
+  "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
   "params": [
     {
-      "id": "mode",
-      "name": "Mode",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Mirror mode blend"
-    },
-    {
-      "id": "zoom",
-      "name": "Zoom",
+      "id": "hOffset",
+      "name": "H Mirror Offset",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Zoom level of the mirrored image"
+      "max": 1.0
+    },
+    {
+      "id": "vOffset",
+      "name": "V Mirror Offset",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "seamWarp",
+      "name": "Seam Warp",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0
     },
     {
       "id": "rotation",
       "name": "Rotation",
       "default": 0.5,
       "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Rotation of the mirror pattern"
-    },
-    {
-      "id": "edge_softness",
-      "name": "Edge Softness",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Softness of mirror sector edges"
+      "max": 1.0
     }
   ],
   "features": [
     "mouse-driven",
-    "geometry"
+    "geometry",
+    "upgraded-rgba",
+    "fbm-domain-warp",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "kaleidoscope",
+    "mirror",
+    "geometric",
+    "audio-reactive"
   ]
 }
 
@@ -211,15 +221,62 @@ You are **The Optimizer**, a shader architect focused on performance, elegance, 
 ### Performance Techniques
 - Brute force → Early exit conditions
 - Full resolution → Quarter-res blur + full-res combine
-- Per-pixel noise → Blue noise sampling
+- Per-pixel pseudo-random → **Blue noise or Halton sequence** (same cost, less banding)
 - Redundant texture samples → Bilinear LOD
 - Nested loops → Unrolled small kernels
+- Expensive trig → Precomputed or polynomial approximations:
+  ```wgsl
+  // Fast atan2 approximation (max error ~0.0015 rad)
+  fn fast_atan2(y: f32, x: f32) -> f32 {
+      let a = min(abs(x), abs(y)) / (max(abs(x), abs(y)) + 1e-6);
+      let s = a * a;
+      var r = ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a;
+      if (abs(y) > abs(x)) { r = 1.5707963 - r; }
+      if (x < 0.0) { r = 3.1415927 - r; }
+      if (y < 0.0) { r = -r; }
+      return r;
+  }
+  // Fast exp approximation
+  fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
+  ```
+
+#### 7-tap hex bokeh kernel (perceptually equals 19-tap circular at lower cost)
+```wgsl
+const HEX_TAPS = array<vec2<f32>, 7>(
+    vec2<f32>( 0.0,  0.0),
+    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
+    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
+    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
+);
+```
+Use for radial-blur, DOF, and glow shaders. Scale each tap by `radius / res` before sampling `readTexture`.
+
+#### Anti-moiré LOD bias for procedural noise
+```wgsl
+let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
+let p = uv * (cell_freq * exp2(-lod));
+```
+Kills the shimmer that plagues high-frequency procedural patterns (fractal / kaleidoscope shaders) when zoomed out. `cell_freq` is the base tile frequency.
+
+### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
+```wgsl
+var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>,
+        @builtin(local_invocation_id) lid: vec3<u32>) {
+    // Load tile including borders, then sync
+    tile[lid.y+1][lid.x+1] = textureSampleLevel(readTexture, u_sampler,
+        vec2<f32>(gid.xy) / vec2<f32>(u.config.zw), 0.0);
+    workgroupBarrier();
+    // All accesses to tile[] now L1-cached — no global texture reads in hot loop
+}
+```
 
 ### Code Elegance
-- Magic numbers → Named constants
+- Magic numbers → Named constants (see Algorithmist for PI/TAU/PHI/etc.)
 - Duplicated code → Helper functions
 - Long functions → Logical sections with comments
-- Hard-coded params → Uniform-based tuning
+- Hard-coded params → Uniform-based tuning via `zoom_params`
 - GPU-unfriendly ops → Precomputed lookups
 
 ### Pipeline Integration
@@ -230,7 +287,7 @@ You are **The Optimizer**, a shader architect focused on performance, elegance, 
 - Fixed quality → Level-of-detail scaling
 
 ### Post-Process Ready
-- Expose bloom threshold metadata
+- Expose bloom threshold via alpha channel (`alpha = bloom_weight`)
 - Tag as "expects pp-tone-map" if HDR
 - Document slot recommendations
 - Provide quality presets (low/medium/high)
@@ -241,6 +298,8 @@ You are **The Optimizer**, a shader architect focused on performance, elegance, 
 - [ ] Workgroup size optimized (16x16 for Pixelocity)
 - [ ] Early exit for sky/background pixels
 - [ ] LOD quality scaling based on frame time
+- [ ] Anti-moiré LOD bias applied for high-frequency procedural patterns
+- [ ] Hex bokeh kernel used in place of naive circular sampling where applicable
 
 ## Output Rules
 - Keep the original "soul" of the shader while making it production-ready.
@@ -259,7 +318,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 110 lines (±20%).
+4. Ensure the upgraded shader is roughly 123 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

@@ -1048,6 +1048,57 @@
     "name": "Neon Topology"
   },
   {
+    "id": "pixel-sorter",
+    "name": "Pixel Sorter",
+    "url": "shaders/pixel-sorter.wgsl",
+    "category": "visual-effects",
+    "description": "Glitch art pixel sorting with alpha translucency blending. Single sort pass with spectral tinting, depth-aware compositing, and audio-reactive shimmer.",
+    "params": [
+      {
+        "id": "direction",
+        "name": "Sort Direction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "reverse",
+        "name": "Reverse Sort",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensityScale",
+        "name": "Intensity Scale",
+        "default": 1,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": "threshold",
+        "name": "Sort Threshold Luma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "audio-reactive",
+      "audio-driven",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "quantum-field-visualizer",
     "name": "Quantum Field Visualizer",
     "url": "shaders/quantum-field-visualizer.wgsl",

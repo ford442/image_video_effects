@@ -3,7 +3,7 @@
   "name": "CRT Magnet",
   "url": "shaders/crt-magnet.wgsl",
   "category": "retro-glitch",
-  "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse. Features color bloom, Gaussian blur, curl-noise field lines, barrel distortion, and bass-driven magnet pulse.",
+  "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse using unified displacement fields and alpha translucency blending. Features spring-damper mouse tracking, bass-driven magnet pulse via audio envelope, curl-noise field lines, barrel distortion, and bloom.",
   "params": [
     {
       "id": "magnet_strength",

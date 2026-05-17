@@ -338,7 +338,7 @@
     "name": "CRT Magnet",
     "url": "shaders/crt-magnet.wgsl",
     "category": "retro-glitch",
-    "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse. Features color bloom, Gaussian blur, curl-noise field lines, barrel distortion, and bass-driven magnet pulse.",
+    "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse using unified displacement fields and alpha translucency blending. Features spring-damper mouse tracking, bass-driven magnet pulse via audio envelope, curl-noise field lines, barrel distortion, and bloom.",
     "params": [
       {
         "id": "magnet_strength",
@@ -784,6 +784,68 @@
     ]
   },
   {
+    "id": "scan-distort",
+    "name": "Scan Distort",
+    "url": "shaders/scan-distort.wgsl",
+    "category": "retro-glitch",
+    "description": "CRT-style scanline distortion with unified displacement fields and alpha translucency blending. Features temporal feedback accumulation, bass-driven audio envelope, mouse-reactive glitch bursts, and block-edge quantization artifacts.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "glitch",
+      "crt",
+      "scanlines"
+    ],
+    "params": [
+      {
+        "id": "block_size",
+        "name": "Block Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Size of distortion blocks"
+      },
+      {
+        "id": "quant_level",
+        "name": "Quantization Levels",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Color quantization levels"
+      },
+      {
+        "id": "mv_visibility",
+        "name": "MV Visibility",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Motion vector visibility"
+      },
+      {
+        "id": "glitch_freq",
+        "name": "Glitch Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Frequency of glitch pulses"
+      }
+    ]
+  },
+  {
     "id": "scanline-drift",
     "name": "Scanline Drift",
     "category": "retro-glitch",
@@ -930,7 +992,7 @@
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
     "category": "retro-glitch",
-    "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, and displacement-magnitude alpha masking.",
+    "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
     "features": [
       "temporal",
       "audio-reactive",
@@ -1027,6 +1089,7 @@
     ],
     "features": [
       "glitch",
+      "branchless",
       "texture",
       "audio-reactive"
     ],

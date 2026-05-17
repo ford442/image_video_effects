@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Stereoscopic 3D
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, temporal
 //  Complexity: Medium
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-17
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,78 +28,91 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn bass_env(prev: f32, raw: f32) -> f32 {
+    let k = select(0.15, 0.8, raw > prev);
+    return mix(prev, raw, k);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coords = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+
+    // Read persistent state from previous frame (dataTextureC)
+    let prev = textureLoad(dataTextureC, coords, 0);
+
+    // Smoothed audio envelope eliminates raw bass strobe
+    let rawBass = plasmaBuffer[0].x;
+    let envBass = bass_env(prev.r, rawBass);
+    let treble = plasmaBuffer[0].z;
+
+    // Spring-damper mouse follow with per-pixel exponential smoothing
+    let rawMouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+    let snap = select(0.06, 0.3, mouseDown > 0.5);
+    let smoothMouse = mix(prev.gb, rawMouse, vec2<f32>(snap));
 
     // Params
-    let maxSep = u.zoom_params.x * 0.05; // Max 5% screen width
+    let maxSep = u.zoom_params.x * 0.05;
     let focusOffset = u.zoom_params.y;
     let glitchStr = u.zoom_params.z;
-    // Remap 0.0-1.0 to -0.2 to 0.2 radians
     let lensRot = (u.zoom_params.w - 0.5) * 0.4;
-    let time = u.config.x;
-    var mouse = u.zoom_config.yz;
-
-    // Audio reactivity: bass drives extra separation pulse
-    let bass = plasmaBuffer[0].x;
-    let audioPulse = 1.0 + bass * 0.3;
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // Separation Logic
-    // Mouse X creates a horizontal bias (convergence shift)
-    // Vertical UV creates a fake "ground plane" depth gradient
+    // Mouse affects convergence bias (X) and focal plane (Y)
+    let mouseBias = (smoothMouse.x - 0.5) * 2.0;
+    let focalWarp = (smoothMouse.y - 0.5) * 0.3;
+    let sceneDepth = (uv.y - focusOffset + focalWarp) + mouseBias;
 
-    let mouseBias = (mouse.x - 0.5) * 2.0;
-    let sceneDepth = (uv.y - focusOffset) + mouseBias;
-
+    // Beat-reactive separation with click boost
+    let clickBoost = select(1.0, 1.3, mouseDown > 0.5);
+    let audioPulse = 1.0 + envBass * 0.4 * clickBoost;
     var sepOffset = vec2<f32>(sceneDepth * maxSep * audioPulse, 0.0);
 
-    // Glitch Effect
-    if (glitchStr > 0.0) {
-        // High frequency jitter based on Y and Time
-        let jitter = sin(uv.y * 200.0 + time * 30.0) * cos(time * 15.0);
-        // Random blocky steps
-        let block = floor(uv.y * 20.0);
-        let blockNoise = fract(sin(block * 12.9898 + time) * 43758.5453);
+    // Glitch with envelope-driven amplitude
+    let jitter = sin(uv.y * 200.0 + time * 30.0) * cos(time * 15.0);
+    let block = floor(uv.y * 20.0);
+    let blockNoise = fract(sin(block * 12.9898 + time) * 43758.5453);
+    let glitchFactor = (jitter * 0.5 + blockNoise * 0.5) * (1.0 + envBass * 3.0);
+    sepOffset.x = sepOffset.x + glitchFactor * glitchStr * 0.02;
 
-        let glitchFactor = jitter * 0.5 + blockNoise * 0.5;
-        sepOffset.x = sepOffset.x + glitchFactor * glitchStr * 0.02;
-    }
+    // Rotation: param + mouse-driven nudge
+    let rot = lensRot + smoothMouse.x * 0.15 + (smoothMouse.y - 0.5) * 0.1;
+    let c = cos(rot);
+    let s = sin(rot);
+    sepOffset = vec2<f32>(sepOffset.x * c - sepOffset.y * s, sepOffset.x * s + sepOffset.y * c);
 
-    // Rotation
-    if (abs(lensRot) > 0.001) {
-        let c = cos(lensRot);
-        let s = sin(lensRot);
-        sepOffset = vec2<f32>(
-            sepOffset.x * c - sepOffset.y * s,
-            sepOffset.x * s + sepOffset.y * c
-        );
-    }
-
-    // Anaglyph Sampling
-    // Red channel (Left eye approximation)
-    let redUV = uv - sepOffset;
-    // Cyan channel (Right eye approximation)
-    let cyanUV = uv + sepOffset;
-
-    // Check bounds to avoid streaking if needed, but sampler usually clamps/repeats
-    // Depending on sampler configuration. Standard usually clamps to edge.
+    // Temporal feedback trails: ghost offset from previous intensity
+    let prevIntensity = prev.a;
+    let ghost = prevIntensity * 0.003;
+    let redUV = uv - sepOffset - vec2<f32>(ghost, 0.0);
+    let cyanUV = uv + sepOffset + vec2<f32>(ghost, 0.0);
 
     let redColor = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
     let cyanColor = textureSampleLevel(readTexture, u_sampler, cyanUV, 0.0).gb;
-
     var finalColor = vec3<f32>(redColor, cyanColor.x, cyanColor.y);
 
-    // Meaningful alpha based on effect intensity and luminance
-    let effectIntensity = clamp(abs(sceneDepth) * 2.0 + length(sepOffset) * 20.0 + glitchStr * 0.5, 0.0, 1.0);
+    // Treble sparkle on highlights
+    finalColor = finalColor + vec3<f32>(treble * 0.08, treble * 0.04, treble * 0.12);
+
+    // Smooth intensity for temporal trail decay
+    let currentIntensity = clamp(abs(sceneDepth) * 2.0 + length(sepOffset) * 20.0 + glitchStr * 0.5, 0.0, 1.0);
+    let trailIntensity = mix(prevIntensity, currentIntensity, 0.12);
     let luminance = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.75, 1.0, effectIntensity * 0.6 + luminance * 0.4);
+
+    // Audio-reactive color boost
+    finalColor = finalColor * (1.0 + envBass * 0.25);
+
+    // Alpha encodes trail age / interaction intensity
+    let alpha = mix(0.6, 1.0, trailIntensity * 0.5 + luminance * 0.3 + envBass * 0.2);
 
     textureStore(writeTexture, coords, vec4<f32>(finalColor, alpha));
+
+    // Persist state for next frame (bass envelope, smooth mouse, trail intensity)
+    textureStore(dataTextureA, coords, vec4<f32>(envBass, smoothMouse, trailIntensity));
 }

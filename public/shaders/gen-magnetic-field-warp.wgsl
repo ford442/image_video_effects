@@ -28,38 +28,85 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PHI = 1.618033988749895;
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let ip = floor(p);
+    let fp = fract(p);
+    let u = fp * fp * (3.0 - 2.0 * fp);
+    let h = vec4<f32>(dot(ip, vec2<f32>(127.1, 311.7)),
+                      dot(ip + vec2<f32>(1.0, 0.0), vec2<f32>(127.1, 311.7)),
+                      dot(ip + vec2<f32>(0.0, 1.0), vec2<f32>(127.1, 311.7)),
+                      dot(ip + vec2<f32>(1.0, 1.0), vec2<f32>(127.1, 311.7)));
+    let n = fract(sin(h) * 43758.5453123);
+    return mix(mix(n.x, n.y, u.x), mix(n.z, n.w, u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5;
+    var s = 0.0;
+    var q = p;
+    for (var i = 0; i < 5; i = i + 1) {
+        s = s + a * valueNoise(q);
+        q = q * 2.02;
+        a = a * 0.5;
+    }
+    return s;
+}
+
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)), fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2)), fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0 * r);
+}
+
+fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
+    let eps = 0.005;
+    let dx = warpedFBM(p + vec2<f32>(eps, 0.0), t) - warpedFBM(p - vec2<f32>(eps, 0.0), t);
+    let dy = warpedFBM(p + vec2<f32>(0.0, eps), t) - warpedFBM(p - vec2<f32>(0.0, eps), t);
+    return vec2<f32>(dy, -dx) / (2.0 * eps + 1e-6);
+}
+
+fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
+    return vec2<f32>(sin(a * p.y) + c * cos(a * p.x), sin(b * p.x) + d * cos(b * p.y));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coords = vec2<i32>(global_id.xy);
-    let res = vec2<i32>(u.config.z, u.config.w);
-
-    if (coords.x >= res.x || coords.y >= res.y) {
-        return;
-    }
+    let res = vec2<i32>(i32(u.config.z), i32(u.config.w));
+    if (coords.x >= res.x || coords.y >= res.y) { return; }
 
     let uv = vec2<f32>(coords) / vec2<f32>(res);
     let time = u.config.x;
-
-    // Audio reactivity via bass
     let bass = plasmaBuffer[0].x;
-    let audio = u.config.y;
 
-    // Mouse dipole
+    // Domain-warped FBM turbulence on UV
+    let warp = warpedFBM(uv * 3.0, time * 0.3);
+    let turbUV = uv + (warp - 0.5) * 0.2 * u.zoom_params.z;
+
+    // Mouse dipole field
     let mouse = u.zoom_config.yz;
-    let delta = uv - mouse;
+    let delta = turbUV - mouse;
     let dist = length(delta);
     let safe_dist = max(dist, 0.001);
-    let warp_strength = u.zoom_params.x * 2.0 * (1.0 + bass);
-
-    // Quadratic distortion based on mouse and audio
     let field_dir = select(vec2<f32>(0.0, 0.0), delta / safe_dist, dist > 0.001);
-    let field = field_dir * (warp_strength / (safe_dist * safe_dist + 0.1)) * max(audio, 0.01);
-    let warped_uv = uv + field * 0.05;
+    let warp_strength = u.zoom_params.x * 2.5 * (1.0 + bass);
+    let dipole = field_dir * (warp_strength / (safe_dist * safe_dist + 0.05));
 
-    // Clamp warped UVs to avoid out-of-bounds sampling
+    // Divergence-free curl-noise vorticity
+    let curl = curl2D(uv * 4.0 + time * 0.2, time) * 0.3 * (1.0 + bass);
+
+    // Clifford strange-attractor modulation
+    let ca = 1.5 + bass * 0.5;
+    let cd = -1.5 + sin(time * 0.1) * 0.3;
+    let attractor = clifford(uv * 6.2831853, ca, -1.8, 1.2, cd);
+    let a_weight = 0.12 * u.zoom_params.w;
+
+    let field = dipole + curl + attractor * a_weight;
+    let warped_uv = uv + field * 0.04;
+
     let safe_uv = clamp(warped_uv, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    // Fetch image
     let read_coords = vec2<i32>(safe_uv * vec2<f32>(res));
     let color = textureLoad(readTexture, read_coords, 0);
 
@@ -69,18 +116,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Spectral remapping
     let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let spectral_idx = u32(clamp(luma + audio * 0.5, 0.0, 1.0) * 255.0) % 256u;
+    let spectral_idx = u32(clamp(luma + bass * 0.5, 0.0, 1.0) * 255.0) % 256u;
     let plasma = plasmaBuffer[spectral_idx];
 
     let mix_factor = clamp(u.zoom_params.y, 0.0, 1.0);
     let mixed_color = mix(color, plasma, mix_factor);
 
-    // Meaningful alpha based on effect intensity and luminance
-    let effect_intensity = clamp(length(field) * 5.0, 0.0, 1.0);
-    let target_alpha = clamp(0.6 + luma * 0.4 + bass * 0.2, 0.0, 1.0);
-    let final_alpha = clamp(mix(color.a, target_alpha, effect_intensity * mix_factor), 0.0, 1.0);
+    // Alpha encodes total field energy
+    let energy = clamp(length(field) * 4.0 + length(attractor) * a_weight * 6.0, 0.0, 1.0);
+    let target_alpha = clamp(0.5 + luma * 0.4 + bass * 0.25, 0.0, 1.0);
+    let final_alpha = clamp(mix(color.a, target_alpha, energy * mix_factor), 0.0, 1.0);
 
-    let final_color = vec4<f32>(mixed_color.rgb, final_alpha);
-
-    textureStore(writeTexture, coords, final_color);
+    textureStore(writeTexture, coords, vec4<f32>(mixed_color.rgb, final_alpha));
 }

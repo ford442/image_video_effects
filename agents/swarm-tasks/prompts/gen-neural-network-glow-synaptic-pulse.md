@@ -41,7 +41,22 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>; };
+// ═══════════════════════════════════════════════════════════════════
+//  Neural Network Glow - Synaptic Pulse
+//  Category: generative
+//  Features: audio-reactive, mouse-driven
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Phase A Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -67,12 +82,15 @@ fn main(@builtin(global_invocation_id) coords: vec3<u32>) {
     if (coords.x >= res.x || coords.y >= res.y) { return; }
     let uv = vec2<f32>(coords.xy) / vec2<f32>(res);
 
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
     // Neural network layout
     let p = uv * 5.0;
     let i = floor(p);
     let f = fract(p);
 
-    var glow = 0.0;
     var min_dist = 1.0;
 
     for (var y = -1; y <= 1; y++) {
@@ -86,20 +104,23 @@ fn main(@builtin(global_invocation_id) coords: vec3<u32>) {
         }
     }
 
-    // Audio driven pulsing
-    let audio_pulse = u.config.x * 2.0;
-    let pulse_ring = fract(min_dist * 5.0 - u.config.w * u.zoom_params.x * 0.1);
+    // Audio driven pulsing using bass from plasmaBuffer
+    let bass = plasmaBuffer[0].x;
+    let audio_pulse = 1.0 + bass * 2.0;
+    let pulse_speed = u.zoom_params.x;
+    let glow_intensity = u.zoom_params.y;
+    let pulse_ring = fract(min_dist * 5.0 - u.config.x * pulse_speed * 0.1);
 
     let edge_intensity = smoothstep(0.05, 0.0, min_dist);
     let wave = smoothstep(0.9, 1.0, pulse_ring) * audio_pulse;
 
-    let intensity = (edge_intensity + wave) * u.zoom_params.y;
+    let intensity = (edge_intensity + wave) * glow_intensity;
 
     let color_idx = u32(clamp(intensity * 128.0, 0.0, 255.0));
     var col = plasmaBuffer[color_idx].rgb;
 
     // Mouse interaction via ripples
-    for(var k=0; k<50; k++) {
+    for(var k = 0; k < 50; k++) {
         let r = u.ripples[k];
         if(r.w > 0.0) {
             let d = length(uv - r.xy);
@@ -109,7 +130,10 @@ fn main(@builtin(global_invocation_id) coords: vec3<u32>) {
         }
     }
 
-    textureStore(writeTexture, coords.xy, vec4<f32>(col, 1.0));
+    // Meaningful alpha based on luminance and intensity
+    let luminance = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(max(luminance * 2.0, intensity * 0.5), 0.0, 1.0);
+    textureStore(writeTexture, coords.xy, vec4<f32>(col, alpha));
 }
 
 ```
@@ -125,7 +149,24 @@ fn main(@builtin(global_invocation_id) coords: vec3<u32>) {
   "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers.",
   "tags": ["neural", "glow", "audio-reactive", "network", "mesh"],
   "features": ["audio-reactive", "mouse-driven"],
-  "params": []
+  "params": [
+    {
+      "id": "pulse_speed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.01
+    }
+  ]
 }
 
 ```
@@ -164,6 +205,14 @@ You are **The Interactivist**, a shader architect focused on input reactivity, f
 - Flat shading → Ambient occlusion darkening
 - Screen space → Volumetric depth fog
 
+#### Depth-aware compositing for slot-2/3 effects
+```wgsl
+let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
+let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
+let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
+```
+Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
+
 ### Feedback Loops
 - Single pass → Temporal accumulation
 - Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
@@ -201,6 +250,15 @@ plasmaBuffer[0].z = treble  (4000–20000 Hz)
 plasmaBuffer[0].w = overall RMS amplitude
 ```
 
+#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
+```wgsl
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+```
+Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
+
 Reactive patterns:
 - Bass → scale, brightness pulse, warp radius
 - Mids → rotation speed, color shift, pattern morphing
@@ -209,7 +267,7 @@ Reactive patterns:
 
 ## Quality Checklist
 - [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element (with decay, not raw value)
+- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
 - [ ] Video input influences the effect
 - [ ] Temporal feedback creates trails/smoothing
 - [ ] Emergent behavior (not 1:1 input mapping)

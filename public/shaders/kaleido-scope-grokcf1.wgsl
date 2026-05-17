@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Kaleido-Scope Prism grokcf1
 //  Category: geometric
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, temporal-feedback
 //  Complexity: Medium
+//  Upgrades: spring-damper mouse, attack/release envelope, feedback trails
 //  Created: 2026-05-10
-//  By: Shader Upgrade Agent
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -34,18 +34,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
 
+    // ── Global state update (pixel 0,0) ────────────────────────────
+    var env = prev.r;
+    var spring = prev.gb;
+    var vel = prev.a;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        let bass = plasmaBuffer[0].x;
+        let attack = select(0.15, 0.8, bass > env);
+        env = mix(prev.r, bass, attack);
+
+        let mouse_target = u.zoom_config.yz;
+        let dt = 0.016;
+        let dir = mouse_target - spring;
+        let dist_to_target = length(dir);
+        let ndir = select(vec2<f32>(0.0), dir / dist_to_target, dist_to_target > 0.001);
+        let force = dist_to_target * 12.0 - vel * 3.0;
+        vel = vel + force * dt;
+        spring = spring + ndir * vel * dt;
+
+        textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(env, spring, vel));
+    }
+
+    // ── Read back global state ─────────────────────────────────────
+    let state = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    env = state.r;
+    let mouse = state.gb;
+
+    // ── Kaleidoscope core ──────────────────────────────────────────
     let segments_param = u.zoom_params.x;
     let rot_speed = u.zoom_params.y;
     let zoom = u.zoom_params.z;
     let offset_param = u.zoom_params.w;
 
     let num_segments = 3.0 + floor(segments_param * 12.0);
-
-    var mouse = u.zoom_config.yz;
-
     let rel_uv = uv - mouse;
     let aspect_uv = vec2<f32>(rel_uv.x * aspect, rel_uv.y);
 
@@ -53,7 +78,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var angle = atan2(aspect_uv.y, aspect_uv.x);
 
     let segment_angle = 6.28318 / num_segments;
-
     let time = u.config.x * (rot_speed - 0.5) * 2.0;
     angle = angle + time;
 
@@ -63,35 +87,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let scale = 2.0 - zoom * 1.8;
-    let radius = dist * scale;
-    let ring_offset = offset_param * 0.5;
-    let final_radius = radius + ring_offset;
-
-    let new_vec = vec2<f32>(cos(angle), sin(angle)) * final_radius;
+    let radius = dist * scale + offset_param * 0.5;
+    let new_vec = vec2<f32>(cos(angle), sin(angle)) * radius;
     let sample_uv = vec2<f32>(0.5, 0.5) + vec2<f32>(new_vec.x / aspect, new_vec.y);
 
+    // ── Sample & prism ─────────────────────────────────────────────
     var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
 
-    // Audio reactivity via bass
-    let bass = plasmaBuffer[0].x;
-
-    // Add prism effects
-    let prism_shift = sin(angle * 6.0 + time) * (0.02 + bass * 0.03);
+    let prism_shift = sin(angle * 6.0 + time) * (0.02 + env * 0.06);
     let r = textureSampleLevel(readTexture, u_sampler, sample_uv + vec2<f32>(prism_shift, 0.0), 0.0).r;
     let b = textureSampleLevel(readTexture, u_sampler, sample_uv - vec2<f32>(prism_shift, 0.0), 0.0).b;
     color = vec3<f32>(r, color.g, b);
 
-    // Add reflections
+    // ── Reflections ────────────────────────────────────────────────
     let reflect_uv = vec2<f32>(0.5, 0.5) - vec2<f32>(new_vec.x / aspect, new_vec.y);
-    let reflect_color = textureSampleLevel(readTexture, u_sampler, reflect_uv, 0.0).rgb * (0.3 + bass * 0.2);
+    let reflect_color = textureSampleLevel(readTexture, u_sampler, reflect_uv, 0.0).rgb * (0.3 + env * 0.4);
     color += reflect_color;
 
-    // Meaningful alpha based on luminance and effect intensity
+    // ── Mouse click burst ──────────────────────────────────────────
+    let click_pulse = select(1.0, 1.3, u.zoom_config.w > 0.5);
+    color *= click_pulse;
+
+    // ── Alpha ──────────────────────────────────────────────────────
     let luminance = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let effect_intensity = clamp(0.5 + dist * 0.5, 0.0, 1.0);
     let alpha = clamp(0.25 + luminance * 0.7 * effect_intensity, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    // ── Temporal feedback trails ───────────────────────────────────
+    var out = vec4<f32>(color, alpha);
+    if (global_id.x != 0u || global_id.y != 0u) {
+        let decay = 0.88;
+        let trail_rgb = mix(color, prev.rgb * decay, 0.35);
+        let trail_alpha = mix(alpha, prev.a * decay, 0.35);
+        out = vec4<f32>(trail_rgb, trail_alpha);
+        textureStore(dataTextureA, vec2<i32>(global_id.xy), out);
+    }
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), out);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

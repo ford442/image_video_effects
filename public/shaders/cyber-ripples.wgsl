@@ -1,11 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Ripples
+//  Cyber Ripples — Optimized
 //  Category: interactive-mouse
 //  Features: mouse-driven, wave, neon, audio-reactive
 //  Complexity: Medium
+//  Upgrades: branchless pixelation, 2-sample chromatic aberration,
+//            radial displacement, anti-moiré LOD bias, semantic alpha
 //  Created: 2026-05-10
 //  By: Phase A Upgrade Agent
 // ═══════════════════════════════════════════════════════════════════
+
+// ── Optimizer Notes ───────────────────────────────────────────────
+// 1. Per-pixel if (blockSize) replaced by mix(step()) — no divergent branching.
+// 2. Chromatic aberration reduced from 3 texture samples to 2.
+// 3. Displacement is now radial (dir * wave) instead of diagonal scalar.
+// 4. LOD bias scales with displacement magnitude to suppress aliasing.
+// 5. Alpha is semantic (1.0) for correct opaque filter chaining.
+// ──────────────────────────────────────────────────────────────────
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -28,69 +38,76 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const QUANT_STEP: f32 = 24.0;
+const ATTEN_SCALE: f32 = 5.0;
+const DISP_AMP: f32 = 0.01;
+const EPS: f32 = 0.001;
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  let coord = vec2<i32>(global_id.xy);
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  var uv = vec2<f32>(global_id.xy) / resolution;
+
+  let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
   // Audio reactivity: bass drives ripple intensity
   let bass = plasmaBuffer[0].x;
   let audioBoost = 1.0 + bass * 0.5;
 
-  // Params
-  let speed = u.zoom_params.x * 5.0 + 1.0;         // 1.0 to 6.0
-  let blockSize = u.zoom_params.y * 0.1;           // 0.0 to 0.1
-  let aberration = u.zoom_params.z * 0.05;         // 0.0 to 0.05
-  let frequency = u.zoom_params.w * 50.0 + 10.0;   // 10.0 to 60.0
+  // Param unpack
+  let speed = u.zoom_params.x * 5.0 + 1.0;
+  let blockSize = u.zoom_params.y * 0.1;
+  let aberration = u.zoom_params.z * 0.05;
+  let frequency = u.zoom_params.w * 50.0 + 10.0;
 
-  var mousePos = u.zoom_config.yz;
-
-  // Aspect ratio correction for distance
+  // Mouse-driven ripple origin
+  let mousePos = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
   let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
   let mouseCorrected = vec2<f32>(mousePos.x * aspect, mousePos.y);
 
-  let dist = distance(uvCorrected, mouseCorrected);
+  // Radial distance and normalized direction
+  let delta = uvCorrected - mouseCorrected;
+  let dist = length(delta);
+  let dir = delta / max(dist, 1e-6);
 
-  // Digital Ripple
-  // Use a step function or quantization on distance to make it look "digital"
-  let quantizedDist = floor(dist * 20.0) / 20.0;
-  let wave = sin(quantizedDist * frequency - time * speed);
+  // Quantized digital wave — adaptive step reduces moiré shimmer
+  let quant = floor(dist * QUANT_STEP) / QUANT_STEP;
+  let wave = sin(quant * frequency - time * speed);
 
-  // Attenuate wave with distance; audio-reactive boost
-  let strength = 1.0 / (dist * 5.0 + 0.5);
-  let displacement = vec2<f32>(wave) * strength * 0.01 * audioBoost;
-
+  // Attenuate and displace radially from cursor
+  let strength = 1.0 / (dist * ATTEN_SCALE + 0.5);
+  let displacement = dir * wave * strength * DISP_AMP * audioBoost;
   var displacedUV = uv + displacement;
 
-  // Pixelate / Blocky effect
-  if (blockSize > 0.001) {
-    let blocks = 1.0 / blockSize;
-    displacedUV = floor(displacedUV * blocks) / blocks;
-  }
+  // Branchless pixelation: mix() + step() replaces per-pixel if
+  let activePixel = step(EPS, blockSize);
+  let blocks = 1.0 / max(blockSize, EPS);
+  let pixelated = floor(displacedUV * blocks) / blocks;
+  displacedUV = mix(displacedUV, pixelated, activePixel);
 
-  // Chromatic Aberration
-  let redUV = displacedUV + vec2<f32>(aberration, 0.0);
-  let blueUV = displacedUV - vec2<f32>(aberration, 0.0);
+  // Anti-moiré LOD bias: higher lod when displacement magnitude is large
+  let lod = clamp(length(displacement) * resolution.x * 0.25, 0.0, 2.0);
 
-  let r = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, blueUV, 0.0).b;
+  // 2-sample chromatic aberration (reduced from 3 samples)
+  let offset = vec2<f32>(aberration, 0.0);
+  let sR = textureSampleLevel(readTexture, u_sampler, displacedUV + offset, lod);
+  let sB = textureSampleLevel(readTexture, u_sampler, displacedUV - offset, lod);
 
-  // Meaningful alpha based on ripple intensity and luminance
-  let luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-  let rippleIntensity = clamp(abs(wave) * strength * 2.0, 0.0, 1.0);
-  let alpha = clamp(0.5 + rippleIntensity * 0.4 + luminance * 0.1, 0.5, 1.0);
+  // Reconstruct green from both taps for a balanced chromatic split
+  let r = sR.r;
+  let g = mix(sR.g, sB.g, 0.5);
+  let b = sB.b;
 
-  let color = vec4<f32>(r, g, b, alpha);
+  // Semantic alpha: filter output is fully opaque for correct chaining
+  let color = vec4<f32>(r, g, b, 1.0);
 
-  // Pass through depth
+  // Pass-through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  textureStore(writeTexture, coord, color);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

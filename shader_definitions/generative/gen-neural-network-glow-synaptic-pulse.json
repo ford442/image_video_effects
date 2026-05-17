@@ -5,8 +5,8 @@
   "category": "generative",
   "coordinate": 873,
   "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers.",
-  "tags": ["neural", "glow", "audio-reactive", "network", "mesh"],
-  "features": ["audio-reactive", "mouse-driven"],
+  "tags": ["neural", "glow", "audio-reactive", "network", "mesh", "feedback", "trails"],
+  "features": ["audio-reactive", "mouse-driven", "temporal"],
   "params": [
     {
       "id": "pulse_speed",
@@ -22,6 +22,14 @@
       "default": 1.0,
       "min": 0.0,
       "max": 3.0,
+      "step": 0.01
+    },
+    {
+      "id": "trail_decay",
+      "name": "Trail Decay",
+      "default": 0.93,
+      "min": 0.80,
+      "max": 0.99,
       "step": 0.01
     }
   ]

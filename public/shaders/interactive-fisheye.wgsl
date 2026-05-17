@@ -3,8 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware
 //  Complexity: Low
-//  Created: 2026-05-10
-//  By: Shader Upgrade Agent - Phase A
+//  Chunks From: interactive-fisheye (original)
+//  Created: 2026-05-17
+//  By: The Optimizer
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let coords = vec2<i32>(global_id.xy);
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  let uv = vec2<f32>(global_id.xy) / resolution;
   let mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
 
@@ -46,53 +47,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let curve = u.zoom_params.z * 2.0 + 0.5;
   let vignetteStrength = u.zoom_params.w;
 
+  // Early exit when effect is fully disabled
+  if (strength < 0.001 && vignetteStrength < 0.001 && radius < 0.001) {
+    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, coords, color);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    return;
+  }
+
   // Audio reactivity: bass expands the lens radius
   let bass = plasmaBuffer[0].x;
   let reactiveRadius = radius * (1.0 + bass * 0.2);
 
-  // Fisheye distortion logic
+  // Fisheye distortion logic — branchless
   let uvCentered = uv - mouse;
   let uvAspect = vec2<f32>(uvCentered.x * aspect, uvCentered.y);
   let dist = length(uvAspect);
 
-  var sampleUV = uv;
-  var distortionWeight = 0.0;
-
-  if (dist < reactiveRadius && reactiveRadius > 0.001) {
-    let normDist = dist / reactiveRadius;
-    distortionWeight = pow(1.0 - normDist, curve);
-    let factor = 1.0 - (strength * distortionWeight);
-    sampleUV = mouse + uvCentered * factor;
-  }
+  let inLens = f32(dist < reactiveRadius && reactiveRadius > 0.001);
+  let normDist = min(dist / max(reactiveRadius, 0.0001), 1.0);
+  let distortionWeight = pow(1.0 - normDist, curve) * inLens;
+  let factor = 1.0 - strength * distortionWeight;
+  let sampleUV = mouse + uvCentered * factor;
 
   let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-
-  // Sample depth from the distorted UV (so depth follows the warp)
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
 
   // ── Meaningful Alpha ──
-  // Combine: original alpha, vignette at distortion edge,
-  // depth-based modulation (closer objects feel more solid under the lens),
-  // and effect-intensity scaling.
-  var finalAlpha = color.a;
+  // Branchless vignette, depth modulation, and intensity scaling
+  let edgeFade = smoothstep(reactiveRadius * 0.85, reactiveRadius, dist);
+  let vignetteAlpha = color.a * mix(1.0, 0.85, edgeFade);
+  let depthMod = mix(0.92, 1.0, depth);
+  let intensityMod = mix(1.0, 1.05, strength * distortionWeight);
+  let modulatedAlpha = vignetteAlpha * depthMod * intensityMod;
+  let finalAlpha = mix(color.a, modulatedAlpha, vignetteStrength * inLens);
 
-  if (dist < reactiveRadius && reactiveRadius > 0.001) {
-    // Vignette alpha falloff at the distortion radius edge
-    let edgeFade = smoothstep(reactiveRadius * 0.85, reactiveRadius, dist);
-    let vignetteAlpha = color.a * mix(1.0, 0.85, edgeFade);
-
-    // Depth modulation: foreground (depth near 1.0) retains more alpha,
-    // background (depth near 0.0) gets slightly more transparent under the lens
-    let depthMod = mix(0.92, 1.0, depth);
-
-    // Effect-intensity scaling: stronger distortion slightly boosts alpha contrast
-    let intensityMod = mix(1.0, 1.05, strength * distortionWeight);
-
-    finalAlpha = mix(color.a, vignetteAlpha * depthMod * intensityMod, vignetteStrength);
-    finalAlpha = clamp(finalAlpha, 0.0, 1.0);
-  }
-
-  textureStore(writeTexture, coords, vec4<f32>(color.rgb, finalAlpha));
+  textureStore(writeTexture, coords, vec4<f32>(color.rgb, clamp(finalAlpha, 0.0, 1.0)));
 
   // Depth pass-through
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));

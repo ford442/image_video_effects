@@ -3,7 +3,7 @@
   "name": "RGB Glitch Trail",
   "url": "shaders/rgb-glitch-trail.wgsl",
   "category": "image",
-  "description": "Mouse leaves chromatic aberration trails. Creates retro TV glitch artifacts with RGB split.",
+  "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence.",
   "params": [
     {
       "id": "decay_rate",
@@ -38,7 +38,8 @@
     "mouse-driven",
     "chromatic",
     "trail",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

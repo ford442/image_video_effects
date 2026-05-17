@@ -451,9 +451,10 @@
     "name": "Chromatic Crawler",
     "url": "shaders/chromatic-crawler.wgsl",
     "category": "image",
-    "description": "Chaotic color-swapping regions that crawl across the screen with Voronoi-based patterns.",
+    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -854,7 +855,7 @@
     "name": "Double Exposure Zoom",
     "url": "shaders/double-exposure-zoom.wgsl",
     "category": "image",
-    "description": "Blends the image with a zoomed and rotated copy of itself, pivoting around the mouse cursor.",
+    "description": "Blends the image with a zoomed and rotated copy of itself, pivoting around a spring-damped mouse cursor. Features attack/release audio envelope, temporal feedback trails with alpha-aging, and mouse-distance zoom modulation.",
     "params": [
       {
         "id": "rotation",
@@ -888,7 +889,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -3356,13 +3358,16 @@
     "name": "Spectral Vortex",
     "url": "shaders/spectral-vortex.wgsl",
     "category": "image",
-    "description": "Spectral color vortex with twisted distortions.",
+    "description": "Spectral color vortex with twisted distortions and alpha-channel translucency blending. Alpha encodes curl magnitude / maxCurl for energy-based translucency, with depth-aware compositing and audio-reactive twist.",
     "tags": [
       "filter",
       "image-processing"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8719,10 +8724,10 @@
   },
   {
     "id": "double-exposure",
-    "name": "Double Exposure Zoom",
+    "name": "Double Exposure Warp",
     "category": "image",
     "url": "shaders/double-exposure.wgsl",
-    "description": "Blends the image with a zoomed and rotated version of itself, pivoted around the mouse cursor. Reacts subtly to audio bass.",
+    "description": "Blends the image with a domain-warped, zoomed and rotated version of itself. Voronoi cellular ridges modulate the overlay intensity. Reacts to audio bass.",
     "features": [
       "mouse-driven",
       "audio-reactive"
@@ -8750,9 +8755,9 @@
         "max": 1
       },
       {
-        "name": "Saturation",
-        "id": "saturation",
-        "default": 0.8,
+        "name": "Warp Strength",
+        "id": "warp",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
@@ -8761,7 +8766,9 @@
       "filter",
       "image-processing",
       "zoom",
-      "overlay"
+      "overlay",
+      "organic",
+      "abstract"
     ]
   },
   {
@@ -8913,7 +8920,7 @@
     "name": "Entropy Grid",
     "url": "shaders/entropy-grid.wgsl",
     "category": "image",
-    "description": "Scrambles the image into a chaotic grid. Mouse restores order (or creates chaos) with audio-reactive chaos.",
+    "description": "Scrambles the image into a chaotic grid using domain-warped FBM, Voronoi cellular ridges, and Clifford strange-attractor chaos. Mouse restores order (or creates chaos) with audio-reactive entropy.",
     "params": [
       {
         "id": "gridSize",
@@ -9299,13 +9306,15 @@
     "url": "shaders/glass-wall.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
     "name": "Glass Wall",
+    "description": "Physical glass refraction with single-sample spectral tint, depth-aware mortar edges, and alpha translucency from refraction strength and glass thickness.",
     "params": [
       {
         "id": "param1",
@@ -10010,7 +10019,7 @@
     "name": "Interactive Fisheye",
     "url": "shaders/interactive-fisheye.wgsl",
     "category": "image",
-    "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius and depth-aware alpha modulation.",
+    "description": "Branchless barrel distortion lens that magnifies the area under the mouse with audio-reactive radius and depth-aware alpha modulation.",
     "params": [
       {
         "id": "strength",
@@ -10842,53 +10851,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ]
-  },
-  {
-    "id": "magnetic-interference",
-    "name": "Magnetic Interference",
-    "url": "shaders/magnetic-interference.wgsl",
-    "category": "image",
-    "description": "Simulates magnetic distortion on a CRT screen, pulling pixels and separating colors.",
-    "params": [
-      {
-        "id": "strength",
-        "name": "Strength",
-        "default": 1,
-        "min": 0,
-        "max": 2
-      },
-      {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "scanlines",
-        "name": "Scanlines",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "chromatic-aberration",
-      "audio-reactive"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio-reactive"
     ]
   },
   {
@@ -13429,56 +13391,6 @@
     ]
   },
   {
-    "id": "scanline-sorting",
-    "name": "Scanline Sorting",
-    "url": "shaders/scanline-sorting.wgsl",
-    "category": "image",
-    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting.",
-    "params": [
-      {
-        "id": "thresh",
-        "name": "Sort Threshold",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "width",
-        "name": "Scan Width",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Auto Speed",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "dir",
-        "name": "Dir (H/V)",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "labels": [
-          "Horizontal",
-          "Vertical"
-        ]
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "sorting",
-      "audio-reactive"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "selective-color",
     "name": "Voronoi Multi-Focal Selective",
     "url": "shaders/selective-color.wgsl",
@@ -13576,7 +13488,7 @@
     "name": "Signal Tuner",
     "url": "shaders/signal-tuner.wgsl",
     "category": "image",
-    "description": "Applies TV-style signal interference and wave distortion localized around the mouse.",
+    "description": "TV-style signal interference with smoothed audio envelope, spring-damped mouse follow, and temporal feedback trails.",
     "params": [
       {
         "id": "frequency",
@@ -13609,7 +13521,8 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -14174,55 +14087,6 @@
     ]
   },
   {
-    "id": "swirling-void",
-    "name": "Swirling Void",
-    "url": "shaders/swirling-void.wgsl",
-    "category": "image",
-    "description": "A powerful vortex that twists the image around the mouse cursor, simulating a black hole accretion disk with audio-reactive strength.",
-    "params": [
-      {
-        "id": "strength",
-        "name": "Vortex Strength",
-        "default": 0.5,
-        "min": -1,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Event Horizon",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "darkness",
-        "name": "Void Darkness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "audioReact",
-        "name": "Audio Reactivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
     "id": "temporal-rift",
     "name": "Temporal Rift",
     "url": "shaders/temporal-rift.wgsl",
@@ -14554,7 +14418,7 @@
     "name": "Virtual Lens",
     "url": "shaders/virtual-lens.wgsl",
     "category": "image",
-    "description": "A virtual magnifying glass with chromatic aberration and audio-reactive pulse.",
+    "description": "A virtual magnifying glass with alpha translucency blending. Single magnification displacement plus spectral tint via mix. Alpha driven by lens edge falloff and Fresnel reflectance with depth-aware attenuation.",
     "params": [
       {
         "id": "mag",
@@ -15755,7 +15619,7 @@
     "name": "Liquid Rainbow",
     "url": "shaders/liquid-rainbow.wgsl",
     "category": "image",
-    "description": "",
+    "description": "Liquid rainbow refraction with single-sample spectral tint mixing, Fresnel-based alpha translucency, and depth-aware compositing.",
     "tags": [
       "filter",
       "image-processing"
@@ -15803,7 +15667,8 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -16920,7 +16785,7 @@
     "name": "RGB Glitch Trail",
     "url": "shaders/rgb-glitch-trail.wgsl",
     "category": "image",
-    "description": "Mouse leaves chromatic aberration trails. Creates retro TV glitch artifacts with RGB split.",
+    "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence.",
     "params": [
       {
         "id": "decay_rate",
@@ -16955,66 +16820,12 @@
       "mouse-driven",
       "chromatic",
       "trail",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
-  },
-  {
-    "id": "scan-distort",
-    "name": "Scan Distort",
-    "url": "shaders/scan-distort.wgsl",
-    "category": "image",
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "params": [
-      {
-        "id": "block_size",
-        "name": "Block Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Size of distortion blocks"
-      },
-      {
-        "id": "quant_level",
-        "name": "Quantization Levels",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Color quantization levels"
-      },
-      {
-        "id": "mv_visibility",
-        "name": "MV Visibility",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Motion vector visibility"
-      },
-      {
-        "id": "glitch_freq",
-        "name": "Glitch Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Frequency of glitch pulses"
-      }
     ]
   },
   {
@@ -17949,56 +17760,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ]
-  },
-  {
-    "id": "pixel-sorter",
-    "name": "Pixel Sorter",
-    "url": "shaders/pixel-sorter.wgsl",
-    "category": "image",
-    "description": "Glitch art pixel sorting effect.",
-    "params": [
-      {
-        "id": "direction",
-        "name": "Sort Direction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "reverse",
-        "name": "Reverse Sort",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensityScale",
-        "name": "Intensity Scale",
-        "default": 1,
-        "min": 0,
-        "max": 2
-      },
-      {
-        "id": "threshold",
-        "name": "Sort Threshold Luma",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "glitch",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
     ]
   },
   {

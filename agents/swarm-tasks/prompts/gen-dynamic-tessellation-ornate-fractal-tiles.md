@@ -41,11 +41,20 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  Dynamic Tessellation (Ornate Fractal Tiles)
+//  Category: generative
+//  Features: audio-reactive, fractal, tiled
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Pixelocity Upgrade Swarm — Phase A
+// ═══════════════════════════════════════════════════════════════════
+
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -90,8 +99,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         cos(tile_id.y * 0.1 + u.config.x * 0.5)
     );
 
-    // Iterations driven by u.config.y (audio) and u.zoom_params.x
-    let iter = i32(max(5.0, 10.0 + u.zoom_params.x * 10.0 + u.config.y * 5.0));
+    // Audio-reactive iterations via plasmaBuffer bass (plasmaBuffer[0].x)
+    let bass = plasmaBuffer[0].x;
+    let iter = i32(max(5.0, 10.0 + u.zoom_params.x * 10.0 + bass * 5.0));
     var n = 0;
     for (var i = 0; i < 20; i++) {
         if (i >= iter) { break; }
@@ -100,16 +110,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         n++;
     }
 
-    let f_val = f32(n) / f32(iter);
-    let color_idx = u32(f_val * 255.0) % 256u;
+    let f_val = f32(n) / max(f32(iter), 1.0);
+    let color_idx = u32(clamp(f_val * 255.0, 0.0, 255.0)) % 256u;
     let col = plasmaBuffer[color_idx].rgb;
 
-    // Store tile parameters in dataTextureA
-    textureStore(dataTextureA, coords, vec4<f32>(tile_id, f_val, 1.0));
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // Write final color
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Store tile parameters in dataTextureA — alpha based on fractal intensity
+    let data_alpha = clamp(0.3 + f_val * 0.7, 0.0, 1.0);
+    textureStore(dataTextureA, coords, vec4<f32>(tile_id, f_val, data_alpha));
+
+    // Write final color — alpha derived from luminance + fractal intensity
+    let luminance = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.25 + luminance * 0.6 + f_val * 0.25, 0.25, 1.0);
+    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
 }
+
 ```
 
 ## Current JSON Definition
@@ -120,9 +138,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "category": "generative",
   "type": "compute",
   "coordinate": 874,
-  "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes.",
-  "parameters": []
+  "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
+  "features": ["audio-reactive"],
+  "parameters": [
+    {
+      "id": "iterations",
+      "name": "Fractal Iterations",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "density",
+      "name": "Tile Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
 }
+
 ```
 
 ---
@@ -215,6 +252,47 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 - Natural → Iridescent thin-film: wavelength-dependent phase shift
 - Flat mix → OkLab interpolation (prevents muddy mid-tone blending)
 
+### Tonemap & Dither Stack (kimi-cli reference snippets)
+
+Always process in this order: accumulate HDR → hue-preserve clamp → ACES tonemap → dither → premultiplied write.
+
+#### 1. Hue-preserving HDR clamp (prevents desaturation on bright highlights)
+```wgsl
+fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let s = min(1.0, max_lum / max(l, 1e-4));
+    return c * s;
+}
+```
+Apply after additive accumulation, before ACES. Beats `min(c, 1.0)` which desaturates to white.
+
+#### 2. ACES filmic tonemap (drop-in, no LUT required)
+```wgsl
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+```
+Pair with sRGB gamma `pow(c, vec3<f32>(1.0/2.2))` on write if the display is sRGB.
+
+#### 3. Interleaved-gradient (IGN) blue-noise dither (kills 8-bit banding)
+```wgsl
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+// before textureStore:
+let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
+let outRGB = aces(hdr) + vec3<f32>(dither);
+```
+Cheaper than a blue-noise texture lookup and visually identical at 8-bit precision.
+
+#### Premultiplied-alpha writeback — tactic #12 (correct compositing in the slot chain)
+```wgsl
+let a = clamp(alpha, 0.0, 1.0);
+textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
+```
+The renderer expects premultiplied output downstream of slot 1. Straight alpha causes dark fringes after the next slot's blur/blend.
+
 ## RGBA Channel Strategy
 
 **Alpha = bloom weight** is the most useful convention for generative shaders:
@@ -234,10 +312,13 @@ Other useful alpha encodings:
 ## Quality Checklist
 - [ ] HDR values exceed 1.0 in highlights before tone mapping
 - [ ] At least 2 light sources with different color temperatures
+- [ ] `hue_preserve_clamp` applied before ACES to avoid highlight desaturation
 - [ ] ACES tone mapping applied as the final step
+- [ ] IGN dither added before `textureStore` to kill 8-bit banding
 - [ ] Atmospheric depth (fog/haze/dust via Beer-Lambert or Rayleigh)
 - [ ] Color gradients use OkLab mixing to avoid muddy transitions
 - [ ] Alpha channel encodes bloom weight or compositing info
+- [ ] Premultiplied-alpha writeback (`vec4(rgb * a, a)`) when alpha < 1
 
 ## Output Rules
 - Keep the original "soul" of the shader while making it visually stunning.

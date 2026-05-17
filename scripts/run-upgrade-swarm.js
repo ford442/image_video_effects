@@ -259,7 +259,12 @@ function loadQueue() {
 
 function loadProgress() {
   if (fs.existsSync(PROGRESS_PATH)) {
-    return JSON.parse(fs.readFileSync(PROGRESS_PATH, 'utf8'));
+    const raw = JSON.parse(fs.readFileSync(PROGRESS_PATH, 'utf8'));
+    // Ensure the loaded progress has the expected schema (handles legacy formats)
+    if (!Array.isArray(raw.runs)) {
+      return { runs: [], current: {}, legacy: raw };
+    }
+    return raw;
   }
   return { runs: [], current: {} };
 }

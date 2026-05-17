@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "created": "2026-05-17",
+  "description": "RGB→Alpha translucency upgrade swarm: 16 RGB-split shaders + 8 new generative shaders",
+  "batch_size": 4,
+  "wolfram_math": {
+    "fresnel_f0_n1_5": 0.04,
+    "gaussian_sigma_0_5": "exp(-dist*dist / 0.5)",
+    "beer_lambert_density_0_3": "exp(-0.3 * distance)",
+    "tent_alpha_curve": "smoothstep(0.0, 0.4, x) * (1.0 - smoothstep(0.4, 1.0, x))",
+    "spectral_approximation": "wavelength_to_rgb uses 3-segment linear approximation: 380-500nm=blue->cyan, 500-600nm=green->yellow, 600-780nm=orange->red"
+  },
+  "upgrades": [
+    {"id": "radial-rgb", "agent": "visualist", "target_lines": 180},
+    {"id": "interactive-rgb-split", "agent": "visualist", "target_lines": 160},
+    {"id": "rgb-glitch-trail", "agent": "algorithmist", "target_lines": 160},
+    {"id": "neon-ripple-split", "agent": "interactivist", "target_lines": 150},
+    {"id": "chromatic-crawler", "agent": "visualist", "target_lines": 200},
+    {"id": "mouse-chromatic-explosion", "agent": "interactivist", "target_lines": 170},
+    {"id": "liquid-rainbow-prismatic", "agent": "visualist", "target_lines": 200},
+    {"id": "spectral-vortex", "agent": "algorithmist", "target_lines": 170},
+    {"id": "glass-wall", "agent": "visualist", "target_lines": 170},
+    {"id": "chroma-shift-grid", "agent": "algorithmist", "target_lines": 160},
+    {"id": "crt-magnet", "agent": "interactivist", "target_lines": 160},
+    {"id": "scan-distort", "agent": "algorithmist", "target_lines": 200},
+    {"id": "pixel-sorter", "agent": "visualist", "target_lines": 190},
+    {"id": "waveform-glitch", "agent": "algorithmist", "target_lines": 190},
+    {"id": "magnetic-interference", "agent": "interactivist", "target_lines": 150},
+    {"id": "virtual-lens", "agent": "visualist", "target_lines": 150}
+  ],
+  "new_generative": [
+    {"id": "gen-alpha-aurora", "agent": "visualist", "target_lines": 250},
+    {"id": "gen-translucent-nebula", "agent": "algorithmist", "target_lines": 250},
+    {"id": "gen-prismatic-crystal-growth", "agent": "visualist", "target_lines": 250},
+    {"id": "gen-ghost-flame", "agent": "algorithmist", "target_lines": 250},
+    {"id": "gen-spectral-ferrofluid", "agent": "interactivist", "target_lines": 250},
+    {"id": "gen-holographic-membrane", "agent": "visualist", "target_lines": 250},
+    {"id": "gen-bio-luminescent-jelly", "agent": "algorithmist", "target_lines": 250},
+    {"id": "gen-quantum-foam-alpha", "agent": "interactivist", "target_lines": 250}
+  ]
+}

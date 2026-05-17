@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sonic Boom
 //  Category: distortion
-//  Features: multi-shock, persistent-tail, gaussian-ring, audio-reactive, branchless
+//  Features: multi-shock, persistent-tail, gaussian-ring, audio-reactive, branchless, hex-bokeh, early-exit
 //  Complexity: Medium
 //  Phase B / Optimizer
 // ═══════════════════════════════════════════════════════════════════
@@ -27,9 +27,14 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI:  f32 = 3.14159265358979323846;
-const TAU: f32 = 6.28318530717958647692;
 const PHI: f32 = 1.61803398874989484820;
+
+const HEX_TAPS = array<vec2<f32>, 7>(
+    vec2<f32>( 0.0,  0.0),
+    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
+    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
+    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
+);
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -40,7 +45,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(coord) / vec2<f32>(f32(dim.x), f32(dim.y));
     let aspect = vec2<f32>(f32(dim.x) / f32(dim.y), 1.0);
     let bass = plasmaBuffer[0].x;
-    let time = u.config.x;
 
     let radius   = u.zoom_params.x;
     let width    = u.zoom_params.y;
@@ -50,43 +54,58 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let to_pixel = (uv - mouse_pos) * aspect;
     let dist = length(to_pixel);
-    // Branchless normalize via guarded reciprocal
     let dir = to_pixel / max(dist, 1e-4);
 
-    // 3 concentric shock rings (front + 2 reflected) — golden-ratio spaced radii
-    let widthHalf = max(width * 0.5, 1e-4);
-    let r0 = radius;
-    let r1 = radius / PHI;
-    let r2 = radius / (PHI * PHI);
-    let x0 = (dist - r0) / widthHalf;
-    let x1 = (dist - r1) / widthHalf;
-    let x2 = (dist - r2) / widthHalf;
-    let ring0 = exp(-x0 * x0 * 4.0);
-    let ring1 = exp(-x1 * x1 * 6.0) * 0.55;
-    let ring2 = exp(-x2 * x2 * 8.0) * 0.30;
-    let ringSum = ring0 + ring1 + ring2;
-
-    // Persistent shock tail from last frame (decays branchlessly)
+    // Coarse tail sample for cheap early-exit test
     let prevTail = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+
+    // Three golden-ratio-spaced gaussian shock rings
+    let widthHalf = max(width * 0.5, 1e-4);
+    let invWH = 1.0 / widthHalf;
+    let d0 = (dist - radius) * invWH;
+    let d1 = (dist - radius / PHI) * invWH;
+    let d2 = (dist - radius / (PHI * PHI)) * invWH;
+    let ring0 = exp(-d0 * d0 * 4.0);
+    let ring1 = exp(-d1 * d1 * 6.0) * 0.55;
+    let ring2 = exp(-d2 * d2 * 8.0) * 0.30;
+    let ringSum = ring0 + ring1 + ring2;
     let ringFinal = max(ringSum, prevTail * 0.85);
 
-    let distortion = dir * ringFinal * strength * 0.1;
-    // Doppler-style spectral shift: outer ring redshifts, inner blueshifts
+    // Early exit: skip expensive samples where effect is negligible
+    if (ringFinal < 1e-3 && strength < 1e-3) {
+        let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        textureStore(writeTexture, coord, src);
+        textureStore(dataTextureA, coord, vec4<f32>(0.0, 0.0, dist, 1.0));
+        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+        return;
+    }
+
+    // Hex-bokeh refined tail for active pixels (perceptually smoother echo)
+    let texel = 1.0 / vec2<f32>(dim);
+    var hTail: f32 = 0.0;
+    for (var i: i32 = 0; i < 7; i = i + 1) {
+        hTail = hTail + textureSampleLevel(dataTextureC, non_filtering_sampler, uv + HEX_TAPS[i] * texel * 2.0, 0.0).r;
+    }
+    let ringBlur = max(ringSum, (hTail / 7.0) * 0.85);
+
+    // Doppler-style spectral shift: outer redshift, inner blueshift
+    let distortion = dir * ringBlur * strength * 0.1;
     let doppler = (ring0 - ring2) * split * 8.0;
     let uv_r = uv - distortion * (1.0 + split * 10.0 + doppler);
     let uv_g = uv - distortion;
     let uv_b = uv - distortion * (1.0 - split * 10.0 - doppler);
 
+    // Minimize samples: center tap provides green; displaced taps provide R/B
+    let c = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0);
     let r = textureSampleLevel(readTexture, u_sampler, uv_r, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
 
-    let luminance = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luminance + 0.2 + ringFinal * 0.4 + abs(doppler) * 0.3, 0.0, 1.0);
+    // Semantic alpha = effect intensity / bloom weight
+    let alpha = clamp(ringBlur * 0.7 + abs(doppler) * 0.5, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(r, g, b, alpha));
-    // Persist ring tail for next-frame echo
-    textureStore(dataTextureA, coord, vec4<f32>(ringFinal, ringSum, dist, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(r, c.g, b, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(ringBlur, ringSum, dist, 1.0));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

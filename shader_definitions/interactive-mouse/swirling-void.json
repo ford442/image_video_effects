@@ -2,8 +2,8 @@
   "id": "swirling-void",
   "name": "Swirling Void",
   "url": "shaders/swirling-void.wgsl",
-  "category": "image",
-  "description": "A powerful vortex that twists the image around the mouse cursor, simulating a black hole accretion disk with audio-reactive strength.",
+  "category": "interactive-mouse",
+  "description": "A powerful vortex that twists the image around the mouse cursor, now with a photorealistic accretion disk via blackbody temperature, OkLab color mixing, and ACES filmic tonemapping.",
   "params": [
     {
       "id": "strength",

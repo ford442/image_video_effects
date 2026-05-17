@@ -1,0 +1,15 @@
+{
+  "id": "gen-spectral-ferrofluid",
+  "name": "Spectral Ferrofluid",
+  "url": "shaders/gen-spectral-ferrofluid.wgsl",
+  "category": "generative",
+  "description": "Magnetic ferrofluid simulation with field-strength alpha translucency and audio-reactive spikes. Mouse acts as a magnetic source while temporal feedback creates organic fluid memory.",
+  "features": ["mouse-driven", "audio-reactive", "temporal", "upgraded-rgba"],
+  "tags": ["ferrofluid", "magnetic", "organic", "spikes", "translucent", "field-lines"],
+  "params": [
+    {"id": "field_strength", "name": "Field Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "viscosity", "name": "Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "spike_height", "name": "Spike Height", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "turbulence", "name": "Turbulence", "default": 0.5, "min": 0, "max": 1, "step": 0.01}
+  ]
+}

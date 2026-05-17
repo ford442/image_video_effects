@@ -2,7 +2,7 @@
   "id": "scanline-sorting",
   "name": "Scanline Sorting",
   "url": "shaders/scanline-sorting.wgsl",
-  "category": "image",
+  "category": "interactive-mouse",
   "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting.",
   "params": [
     {

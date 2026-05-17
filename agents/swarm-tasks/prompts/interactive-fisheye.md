@@ -41,6 +41,15 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive Fisheye
+//  Category: image
+//  Features: mouse-driven, audio-reactive, depth-aware
+//  Complexity: Low
+//  Created: 2026-05-10
+//  By: Shader Upgrade Agent - Phase A
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -56,9 +65,9 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -69,50 +78,67 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
+  let coords = vec2<i32>(global_id.xy);
   var uv = vec2<f32>(global_id.xy) / resolution;
-  var mouse = u.zoom_config.yz;
+  let mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
 
-  // Fisheye Logic
-  var center = mouse;
-  let uv_centered = uv - center;
-
-  // Aspect corrected vector
-  let uv_aspect = vec2<f32>(uv_centered.x * aspect, uv_centered.y);
-  let dist = length(uv_aspect);
-
+  // Parameters
   let strength = u.zoom_params.x;
   let radius = u.zoom_params.y;
   let curve = u.zoom_params.z * 2.0 + 0.5;
   let vignetteStrength = u.zoom_params.w;
 
-  // Audio reactivity
+  // Audio reactivity: bass expands the lens radius
   let bass = plasmaBuffer[0].x;
   let reactiveRadius = radius * (1.0 + bass * 0.2);
 
+  // Fisheye distortion logic
+  let uvCentered = uv - mouse;
+  let uvAspect = vec2<f32>(uvCentered.x * aspect, uvCentered.y);
+  let dist = length(uvAspect);
+
   var sampleUV = uv;
-  if (dist < reactiveRadius) {
-      let norm_dist = dist / reactiveRadius;
-      let weight = pow(1.0 - norm_dist, curve);
-      let factor = 1.0 - (strength * weight);
-      sampleUV = mouse + uv_centered * factor;
+  var distortionWeight = 0.0;
+
+  if (dist < reactiveRadius && reactiveRadius > 0.001) {
+    let normDist = dist / reactiveRadius;
+    distortionWeight = pow(1.0 - normDist, curve);
+    let factor = 1.0 - (strength * distortionWeight);
+    sampleUV = mouse + uvCentered * factor;
   }
 
   let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
-  // Subtle vignette alpha falloff at the distortion radius edge
+  // Sample depth from the distorted UV (so depth follows the warp)
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+
+  // ── Meaningful Alpha ──
+  // Combine: original alpha, vignette at distortion edge,
+  // depth-based modulation (closer objects feel more solid under the lens),
+  // and effect-intensity scaling.
   var finalAlpha = color.a;
-  if (dist < reactiveRadius) {
-      let edgeFade = smoothstep(reactiveRadius * 0.85, reactiveRadius, dist);
-      let vignetteAlpha = color.a * mix(1.0, 0.85, edgeFade);
-      finalAlpha = mix(color.a, vignetteAlpha, vignetteStrength);
+
+  if (dist < reactiveRadius && reactiveRadius > 0.001) {
+    // Vignette alpha falloff at the distortion radius edge
+    let edgeFade = smoothstep(reactiveRadius * 0.85, reactiveRadius, dist);
+    let vignetteAlpha = color.a * mix(1.0, 0.85, edgeFade);
+
+    // Depth modulation: foreground (depth near 1.0) retains more alpha,
+    // background (depth near 0.0) gets slightly more transparent under the lens
+    let depthMod = mix(0.92, 1.0, depth);
+
+    // Effect-intensity scaling: stronger distortion slightly boosts alpha contrast
+    let intensityMod = mix(1.0, 1.05, strength * distortionWeight);
+
+    finalAlpha = mix(color.a, vignetteAlpha * depthMod * intensityMod, vignetteStrength);
+    finalAlpha = clamp(finalAlpha, 0.0, 1.0);
   }
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, finalAlpha));
+  textureStore(writeTexture, coords, vec4<f32>(color.rgb, finalAlpha));
 
-  // Depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Depth pass-through
+  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -124,7 +150,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "name": "Interactive Fisheye",
   "url": "shaders/interactive-fisheye.wgsl",
   "category": "image",
-  "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius.",
+  "description": "Barrel distortion lens that magnifies the area under the mouse with audio-reactive radius and depth-aware alpha modulation.",
   "params": [
     {
       "id": "strength",
@@ -159,7 +185,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     "mouse-driven",
     "geometry",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "depth-aware"
   ],
   "tags": [
     "filter",
@@ -204,6 +231,24 @@ You are **The Optimizer**, a shader architect focused on performance, elegance, 
   fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
   ```
 
+#### 7-tap hex bokeh kernel (perceptually equals 19-tap circular at lower cost)
+```wgsl
+const HEX_TAPS = array<vec2<f32>, 7>(
+    vec2<f32>( 0.0,  0.0),
+    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
+    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
+    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
+);
+```
+Use for radial-blur, DOF, and glow shaders. Scale each tap by `radius / res` before sampling `readTexture`.
+
+#### Anti-moiré LOD bias for procedural noise
+```wgsl
+let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
+let p = uv * (cell_freq * exp2(-lod));
+```
+Kills the shimmer that plagues high-frequency procedural patterns (fractal / kaleidoscope shaders) when zoomed out. `cell_freq` is the base tile frequency.
+
 ### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
 ```wgsl
 var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
@@ -244,6 +289,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
 - [ ] Workgroup size optimized (16x16 for Pixelocity)
 - [ ] Early exit for sky/background pixels
 - [ ] LOD quality scaling based on frame time
+- [ ] Anti-moiré LOD bias applied for high-frequency procedural patterns
+- [ ] Hex bokeh kernel used in place of naive circular sampling where applicable
 
 ## Output Rules
 - Keep the original "soul" of the shader while making it production-ready.

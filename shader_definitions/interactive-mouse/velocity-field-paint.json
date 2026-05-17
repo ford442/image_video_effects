@@ -6,7 +6,6 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven",
     "temporal"
   ],
   "params": [

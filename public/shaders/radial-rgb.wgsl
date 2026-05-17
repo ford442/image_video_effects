@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Radial RGB
+//  Radial RGB — Upgraded with Alpha-Channel Translucency Blending
 //  Category: distortion
-//  Features: mouse-driven, chromatic-aberration
+//  Features: mouse-driven, chromatic-aberration, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-04-25
+//  Upgraded: 2026-05-17
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,76 +28,33 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ Utility Module ═══
-fn hash21(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3(p.x, p.y, p.x) * vec3(0.1031, 0.1030, 0.0973));
-  p3 = p3 + dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+// ═══ Math Snippets ═══
+fn tentAlpha(x: f32) -> f32 {
+  return smoothstep(0.0, 0.4, x) * (1.0 - smoothstep(0.4, 1.0, x));
 }
 
-fn hash11(x: f32) -> f32 {
-  return fract(sin(x * 127.1) * 43758.5453);
+fn gaussianMask(dist: f32, sigma: f32) -> f32 {
+  return exp(-dist * dist / (2.0 * sigma * sigma));
 }
 
-fn valueNoise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), u.x),
-             mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var v = 0.0;
-  var a = 0.5;
-  var f = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
-    v = v + a * valueNoise(p * f);
-    a = a * 0.5;
-    f = f * 2.0;
-  }
-  return v;
+fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
+  var r = 0.0; var g = 0.0; var b = 0.0;
+  if (lambda < 440.0) { r = (440.0 - lambda) / 60.0; b = 1.0; }
+  else if (lambda < 490.0) { g = (lambda - 440.0) / 50.0; b = 1.0; }
+  else if (lambda < 510.0) { g = 1.0; b = (510.0 - lambda) / 20.0; }
+  else if (lambda < 580.0) { r = (lambda - 510.0) / 70.0; g = 1.0; }
+  else if (lambda < 645.0) { r = 1.0; g = (645.0 - lambda) / 65.0; }
+  else { r = 1.0; }
+  var intensity = 1.0;
+  if (lambda < 420.0) { intensity = 0.3 + 0.7 * (lambda - 380.0) / 40.0; }
+  else if (lambda > 700.0) { intensity = 0.3 + 0.7 * (780.0 - lambda) / 80.0; }
+  return clamp(vec3(r, g, b) * intensity, vec3(0.0), vec3(1.0));
 }
 
-fn rgbToLuma(c: vec3<f32>) -> f32 {
-  return dot(c, vec3(0.299, 0.587, 0.114));
-}
-
-fn rgbToYuv(c: vec3<f32>) -> vec3<f32> {
-  return vec3(dot(c, vec3(0.299, 0.587, 0.114)),
-              dot(c, vec3(-0.14713, -0.28886, 0.436)),
-              dot(c, vec3(0.615, -0.51499, -0.10001)));
-}
-
-fn yuvToRgb(c: vec3<f32>) -> vec3<f32> {
-  return vec3(c.x + 1.13983 * c.z,
-              c.x - 0.39465 * c.y - 0.58060 * c.z,
-              c.x + 2.03211 * c.y);
-}
-
-fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
-  let k = vec3(1.0, 2.0 / 3.0, 1.0 / 3.0);
-  let p = abs(fract(c.xxx + k) * 6.0 - 3.0);
-  return c.z * mix(vec3(1.0), clamp(p - vec3(1.0), vec3(0.0), vec3(1.0)), c.y);
-}
-
-fn sdCircle(p: vec2<f32>, r: f32) -> f32 {
-  return length(p) - r;
-}
-
-fn sdBox(p: vec2<f32>, b: vec2<f32>) -> f32 {
-  let d = abs(p) - b;
-  return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0);
-}
-
-fn sdLine(p: vec2<f32>, a: vec2<f32>, b2: vec2<f32>) -> f32 {
-  let pa = p - a;
-  let ba = b2 - a;
-  let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-  return length(pa - ba * h);
-}
-
-// ═══ Radial RGB Functions ═══
 fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32) -> vec2<f32> {
   let d = uv - center;
   let r2 = dot(d, d);
@@ -105,55 +63,41 @@ fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32) -> vec2<f32> 
   return center + d * dist;
 }
 
-fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
-  var r = 0.0;
-  var g = 0.0;
-  var b = 0.0;
-  if (lambda < 440.0) {
-    r = (440.0 - lambda) / 60.0;
-    b = 1.0;
-  } else if (lambda < 490.0) {
-    g = (lambda - 440.0) / 50.0;
-    b = 1.0;
-  } else if (lambda < 510.0) {
-    g = 1.0;
-    b = (510.0 - lambda) / 20.0;
-  } else if (lambda < 580.0) {
-    r = (lambda - 510.0) / 70.0;
-    g = 1.0;
-  } else if (lambda < 645.0) {
-    r = 1.0;
-    g = (645.0 - lambda) / 65.0;
-  } else {
-    r = 1.0;
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var f = 1.0;
+  for (var i = 0; i < octaves; i = i + 1) {
+    let n = sin(p * f * 3.14159) * cos(p.yx * f * 2.71828);
+    v = v + a * (n.x * n.y * 0.5 + 0.5);
+    a = a * 0.5;
+    f = f * 2.0;
   }
-  var intensity = 1.0;
-  if (lambda < 420.0) {
-    intensity = 0.3 + 0.7 * (lambda - 380.0) / 40.0;
-  } else if (lambda > 700.0) {
-    intensity = 0.3 + 0.7 * (780.0 - lambda) / 80.0;
-  }
-  return clamp(vec3(r, g, b) * intensity, vec3(0.0), vec3(1.0));
+  return v;
 }
 
-fn sampleSpectral(uv: vec2<f32>, dispersion: f32, direction: vec2<f32>) -> vec3<f32> {
-  var color = vec3(0.0);
-  let wavelengths = array(380.0, 450.0, 500.0, 550.0, 600.0, 650.0, 700.0);
-  for (var i = 0; i < 7; i = i + 1) {
-    let lambda = wavelengths[i];
-    let offset = (lambda - 550.0) / 250.0 * dispersion;
-    let sampleUV = uv + direction * offset;
-    let sampleCol = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-    let w = wavelengthToRGB(lambda);
-    color = color + sampleCol * w;
-  }
-  return color * 0.25;
-}
-
-fn applyVignette(color: vec3<f32>, uv: vec2<f32>, intensity: f32, roundness: f32) -> vec3<f32> {
+fn smoothVignette(uv: vec2<f32>, intensity: f32, roundness: f32) -> f32 {
   let dist = length(uv - 0.5);
-  let v = 1.0 - smoothstep(0.3 * roundness, 0.85, dist * intensity);
-  return color * v;
+  let inner = 0.3 * roundness;
+  let outer = 0.85;
+  let v = 1.0 - smoothstep(inner, outer, dist * intensity);
+  let softEdge = smoothstep(0.0, inner, dist * intensity);
+  return v * softEdge;
+}
+
+fn smoothFalloff(x: f32, edge0: f32, edge1: f32) -> f32 {
+  let t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+  return t * t * (3.0 - 2.0 * t);
+}
+
+fn audioPulse(audio: vec4<f32>, uv: vec2<f32>, intensity: f32) -> f32 {
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
+  let dist = length(uv - 0.5);
+  let bassPulse = bass * gaussianMask(dist, 0.25);
+  let trebleSparkle = treble * gaussianMask(dist, 0.08);
+  return 1.0 + (bassPulse + trebleSparkle) * intensity;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -163,6 +107,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
   let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
 
   let center = vec2(0.5);
   let k1 = (u.zoom_params.x - 0.5) * 2.0;
@@ -170,29 +115,62 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let anamorphic = 1.0 + u.zoom_params.z * 2.0;
   let dispersion = u.zoom_params.w * 0.05;
 
-  // Lens distortion
+  // ── Single smooth displacement field ──
   var distortedUV = lensDistort(uv, center, k1, k2);
-
-  // Anamorphic stretch
   distortedUV.y = (distortedUV.y - 0.5) / anamorphic + 0.5;
 
-  // Direction from mouse
   let mouseDir = normalize(u.zoom_config.yz - 0.5 + vec2(0.0001));
+  let displacementMag = length(distortedUV - uv);
+  let smoothOffset = (distortedUV - uv) * (1.0 + dispersion * 2.0);
+  let displacedUV = uv + smoothOffset;
 
-  // Spectral sampling
-  var color = sampleSpectral(distortedUV, dispersion, mouseDir);
+  // Single RGB sample at displaced UV — no per-channel splitting
+  let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
-  // Vignette
+  // Spectral tint derived from displacement magnitude via wavelength mapping
+  let wavelength = mix(520.0, 680.0, clamp(displacementMag * 20.0, 0.0, 1.0));
+  let spectralTint = wavelengthToRGB(wavelength);
+  let tintStrength = tentAlpha(displacementMag * 8.0) * dispersion * 10.0;
+  var color = mix(baseColor, baseColor * spectralTint, tintStrength);
+
+  // Audio-reactive pulse from plasmaBuffer: bass drives brightness, treble adds sparkle
+  let audio = plasmaBuffer[0];
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
+  let pulse = 1.0 + bass * 0.3 * gaussianMask(displacementMag, 0.15);
+  let sparkle = treble * 0.2 * gaussianMask(displacementMag, 0.08);
+  color = color * pulse + vec3<f32>(sparkle);
+  color = color * (1.0 + mids * 0.1 * smoothFalloff(displacementMag, 0.0, 0.05));
+
+  // Depth-aware compositing: pull background through in deep regions
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthFade = smoothstep(0.0, 0.5, depth);
+  let depthMid = smoothstep(0.2, 0.6, depth);
+  color = mix(color, baseColor, depthFade * 0.35);
+  color = mix(color, color * 1.15, depthMid * mids * 0.5);
+
+  // Multi-zone vignette falloff with smooth inner/outer curves
   let vignetteIntensity = 1.0 + abs(k1) * 0.5;
-  color = applyVignette(color, uv, vignetteIntensity, 1.0);
+  let vignette = smoothVignette(uv, vignetteIntensity, 1.0);
+  color = color * vignette;
 
-  // Alpha: lens transmission based on vignette
-  let dist = length(uv - 0.5);
-  let transmission = 1.0 - smoothstep(0.4, 0.9, dist * (1.0 + abs(k1) * 0.3));
-  let alpha = clamp(transmission, 0.4, 1.0);
+  // Additional smoothstep falloff for edge darkening near frame boundaries
+  let edgeX = smoothstep(0.0, 0.08, uv.x) * (1.0 - smoothstep(0.92, 1.0, uv.x));
+  let edgeY = smoothstep(0.0, 0.08, uv.y) * (1.0 - smoothstep(0.92, 1.0, uv.y));
+  let edgeMask = edgeX * edgeY;
+  color = mix(color * 0.85, color, edgeMask);
+
+  // Fresnel-style transmission for glass translucency
+  let viewDot = max(1.0 - length(uv - 0.5) * 2.0, 0.0);
+  let fresnel = schlickFresnel(viewDot, 0.04);
+  let edgeDist = length(uv - 0.5);
+  let transmission = 1.0 - smoothstep(0.4, 0.9, edgeDist * (1.0 + abs(k1) * 0.3));
+  let lensAlpha = smoothFalloff(displacementMag, 0.0, 0.08) * 0.6;
+  let alpha = clamp((transmission + lensAlpha) * (1.0 + displacementMag * 4.0) * (1.0 - fresnel * 0.25), 0.25, 0.95);
 
   textureStore(writeTexture, global_id.xy, vec4(color, alpha));
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, global_id.xy, vec4(color, alpha));
+  textureStore(dataTextureB, global_id.xy, vec4(displacementMag, bass, depth, alpha));
 }

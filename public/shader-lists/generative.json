@@ -919,6 +919,61 @@
     ]
   },
   {
+    "id": "gen-alpha-aurora",
+    "name": "Alpha Aurora",
+    "url": "shaders/gen-alpha-aurora.wgsl",
+    "category": "generative",
+    "description": "Procedural aurora borealis with spectral band blending and density-based alpha translucency. Curl noise drives organic flow across multiple spectral bands with audio-reactive brightness and atmospheric glow.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "aurora",
+      "spectral",
+      "atmospheric",
+      "organic",
+      "translucent",
+      "curl-noise"
+    ],
+    "params": [
+      {
+        "id": "band_speed",
+        "name": "Band Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_temp",
+        "name": "Color Temperature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Band Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Atmospheric Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-art-deco-sky",
     "name": "Art Deco Skyscraper",
     "url": "shaders/gen-art-deco-sky.wgsl",
@@ -1247,6 +1302,61 @@
         "id": "colorScheme",
         "name": "Color Scheme",
         "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-bio-luminescent-jelly",
+    "name": "Bio-Luminescent Jelly",
+    "url": "shaders/gen-bio-luminescent-jelly.wgsl",
+    "category": "generative",
+    "description": "SDF tentacle jellyfish with pulsing bio-luminescence and glow-intensity alpha encoding. Audio drives pulse rhythm and sparkle particles; mouse attracts the jellyfish and creates shockwaves.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "jellyfish",
+      "bioluminescence",
+      "tentacles",
+      "ocean",
+      "glow",
+      "translucent"
+    ],
+    "params": [
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "tentacle_length",
+        "name": "Tentacle Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "drift_speed",
+        "name": "Drift Speed",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -2616,6 +2726,61 @@
     ]
   },
   {
+    "id": "gen-ghost-flame",
+    "name": "Ghost Flame",
+    "url": "shaders/gen-ghost-flame.wgsl",
+    "category": "generative",
+    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "flame",
+      "fire",
+      "ghost",
+      "fluid",
+      "blackbody",
+      "ethereal"
+    ],
+    "params": [
+      {
+        "id": "flame_height",
+        "name": "Flame Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "cooling",
+        "name": "Cooling Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-gravitational-strain",
     "name": "Gravitational Strain Field",
     "url": "shaders/gen-gravitational-strain.wgsl",
@@ -2783,6 +2948,61 @@
         "min": 0,
         "max": 1,
         "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-holographic-membrane",
+    "name": "Holographic Membrane",
+    "url": "shaders/gen-holographic-membrane.wgsl",
+    "category": "generative",
+    "description": "Thin-film interference membrane that undulates with depth-based alpha translucency. Audio drives vibration and iridescence; mouse controls viewing angle for rainbow interference patterns.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "holographic",
+      "membrane",
+      "iridescence",
+      "thin-film",
+      "translucent",
+      "interference"
+    ],
+    "params": [
+      {
+        "id": "thickness",
+        "name": "Film Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "frequency",
+        "name": "Wave Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "amplitude",
+        "name": "Undulation Amp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -3633,7 +3853,7 @@
     "id": "gen-magnetic-field-warp",
     "name": "Magnetic Field Warp",
     "author": "Jules",
-    "description": "Treat the image as charged particles warped by a magnetic field.",
+    "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices, and Clifford strange-attractor modulation.",
     "category": "generative",
     "type": "wgsl",
     "coordinate": 876,
@@ -3641,7 +3861,10 @@
     "tags": [
       "magnetic",
       "warp",
-      "audio-reactive"
+      "audio-reactive",
+      "curl-noise",
+      "strange-attractor",
+      "domain-warp"
     ],
     "features": [
       "mouse-driven",
@@ -3661,6 +3884,22 @@
         "id": "plasma_mix",
         "name": "Plasma Mix",
         "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "attractor_mix",
+        "name": "Attractor Mix",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -4007,11 +4246,14 @@
       "glow",
       "audio-reactive",
       "network",
-      "mesh"
+      "mesh",
+      "feedback",
+      "trails"
     ],
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "temporal"
     ],
     "params": [
       {
@@ -4028,6 +4270,14 @@
         "default": 1,
         "min": 0,
         "max": 3,
+        "step": 0.01
+      },
+      {
+        "id": "trail_decay",
+        "name": "Trail Decay",
+        "default": 0.93,
+        "min": 0.8,
+        "max": 0.99,
         "step": 0.01
       }
     ]
@@ -4421,6 +4671,62 @@
     ]
   },
   {
+    "id": "gen-prismatic-crystal-growth",
+    "name": "Prismatic Crystal Growth",
+    "url": "shaders/gen-prismatic-crystal-growth.wgsl",
+    "category": "generative",
+    "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness — thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba",
+      "raymarched"
+    ],
+    "tags": [
+      "crystal",
+      "prismatic",
+      "glass",
+      "fresnel",
+      "growth",
+      "sdf"
+    ],
+    "params": [
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Crystal Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "prism",
+        "name": "Prism Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "caustics",
+        "name": "Caustic Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-prismatic-fractal-dunes",
     "name": "Prismatic Fractal-Dunes",
     "url": "shaders/gen-prismatic-fractal-dunes.wgsl",
@@ -4542,6 +4848,61 @@
         "min": 0,
         "max": 2,
         "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-quantum-foam-alpha",
+    "name": "Quantum Foam Alpha",
+    "url": "shaders/gen-quantum-foam-alpha.wgsl",
+    "category": "generative",
+    "description": "Particle positions rendered as quantum probability clouds with uncertainty-based alpha translucency. Audio drives vacuum fluctuations and pair creation; mouse measurement collapses the wavefunction.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "quantum",
+      "foam",
+      "probability",
+      "uncertainty",
+      "particles",
+      "translucent"
+    ],
+    "params": [
+      {
+        "id": "cloud_density",
+        "name": "Cloud Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "uncertainty",
+        "name": "Uncertainty",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "vacuum_energy",
+        "name": "Vacuum Energy",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "collapse_strength",
+        "name": "Collapse Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -4929,6 +5290,61 @@
     ]
   },
   {
+    "id": "gen-spectral-ferrofluid",
+    "name": "Spectral Ferrofluid",
+    "url": "shaders/gen-spectral-ferrofluid.wgsl",
+    "category": "generative",
+    "description": "Magnetic ferrofluid simulation with field-strength alpha translucency and audio-reactive spikes. Mouse acts as a magnetic source while temporal feedback creates organic fluid memory.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "ferrofluid",
+      "magnetic",
+      "organic",
+      "spikes",
+      "translucent",
+      "field-lines"
+    ],
+    "params": [
+      {
+        "id": "field_strength",
+        "name": "Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "spike_height",
+        "name": "Spike Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-stellar-plasma-ouroboros",
     "coordinate": 852,
     "type": "wgsl",
@@ -5242,6 +5658,61 @@
         "id": "trailPersistence",
         "name": "Trail Persistence",
         "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-translucent-nebula",
+    "name": "Translucent Nebula",
+    "url": "shaders/gen-translucent-nebula.wgsl",
+    "category": "generative",
+    "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "nebula",
+      "volumetric",
+      "gas",
+      "stars",
+      "translucent",
+      "worley-noise"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Cloud Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "scale",
+        "name": "Cloud Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "stars",
+        "name": "Star Density",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01

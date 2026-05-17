@@ -27,21 +27,11 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI:  f32 = 3.14159265358979323846;
-const PHI: f32 = 1.61803398874989484820;
-
 fn luma_of(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.299, 0.587, 0.114)); }
 
-// Compare-exchange step (one pass of an ordered stride-1 sort) on (a,b)
-// Returns the brighter sample for the upstream cell, dimmer for downstream.
-fn cmp_exchange(a: vec3<f32>, b: vec3<f32>, reverse: f32) -> vec3<f32> {
-    let la = luma_of(a);
-    let lb = luma_of(b);
-    let want_a_brighter = step(0.5, reverse);
-    let a_is_brighter = step(lb, la);
-    // Keep 'a' if its order matches reverse, else swap to 'b'
-    let keep_a = step(0.5, abs(want_a_brighter - 1.0 + a_is_brighter));
-    return mix(b, a, keep_a);
+// Return dimmer of a,b by luma (ascending sort step)
+fn dimmer(a: vec3<f32>, b: vec3<f32>) -> vec3<f32> {
+    return select(b, a, step(luma_of(a), luma_of(b)) > 0.5);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -50,14 +40,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let coord = vec2<i32>(global_id.xy);
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
 
     let sort_threshold   = clamp(u.zoom_params.x, 0.0, 1.0);
     let scan_width       = u.zoom_params.y * 0.2 * (1.0 + bass * 0.3);
     let scan_speed       = u.zoom_params.z;
-    let direction_toggle = step(0.5, u.zoom_params.w);  // 0 horizontal-band, 1 vertical-band
+    let direction_toggle = step(0.5, u.zoom_params.w);
     let mouseDown        = u.zoom_config.w;
     let mouse            = u.zoom_config.yz;
 
@@ -78,31 +68,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     var color = original.rgb;
 
-    if (band_t > 0.001) {
-        let luma = luma_of(color);
-        let sort_strength = smoothstep(sort_threshold, 1.0, luma) * (20.0 + bass * 20.0) * (1.0 + cursorBoost);
+    let luma = luma_of(color);
+    // Branchless band activation: zeros out offset math when pixel is outside band
+    let band_active = step(1e-4, band_t);
+    let sort_strength = smoothstep(sort_threshold, 1.0, luma) * (20.0 + bass * 20.0) * (1.0 + cursorBoost) * band_active;
 
-        // Sort axis (perpendicular to scan motion)
-        let pix = mix(vec2<f32>(0.0, -1.0 / resolution.y),
-                      vec2<f32>(-1.0 / resolution.x, 0.0),
-                      direction_toggle);
-        let sample_pos = clamp(uv + pix * sort_strength, vec2<f32>(0.0), vec2<f32>(1.0));
-        let neighbor = textureSampleLevel(readTexture, u_sampler, sample_pos, 0.0).rgb;
+    // Sort axis is perpendicular to scan motion
+    let pix = mix(vec2<f32>(0.0, -1.0 / resolution.y),
+                  vec2<f32>(-1.0 / resolution.x, 0.0),
+                  direction_toggle);
+    let sample_pos = clamp(uv + pix * sort_strength, vec2<f32>(0.0), vec2<f32>(1.0));
+    let neighbor = textureSampleLevel(readTexture, u_sampler, sample_pos, 0.0).rgb;
 
-        // Bitonic-style: order pair (color, neighbor); higher luma drifts upstream
-        color = cmp_exchange(color, neighbor, 0.0);
+    // Bitonic-style compare-exchange: dimmer pixel stays upstream
+    let sorted = dimmer(color, neighbor);
+    color = mix(color, sorted, band_t);
 
-        // Chromatic ghost on band edges — sample R/B with slight extra offset
-        let ghost = (1.0 - band_t) * scan_width * 8.0;
-        let r2 = textureSampleLevel(readTexture, u_sampler, sample_pos + pix * ghost, 0.0).r;
-        let b2 = textureSampleLevel(readTexture, u_sampler, sample_pos - pix * ghost, 0.0).b;
-        color = mix(color, vec3<f32>(r2, color.g, b2), band_t * 0.4);
+    // Chromatic ghost on band edges — branchless, samples fold to uv when inactive
+    let ghost = (1.0 - band_t) * scan_width * 8.0;
+    let r_uv = select(uv, sample_pos + pix * ghost, band_active > 0.5);
+    let b_uv = select(uv, sample_pos - pix * ghost, band_active > 0.5);
+    let r2 = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
+    let b2 = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
+    color = mix(color, vec3<f32>(r2, color.g, b2), band_t * 0.4);
 
-        // Plasma palette tint by sort displacement (ramps brightness through hue)
-        let pIdx = u32(clamp((luma + sort_strength * 0.005) * 255.0, 0.0, 255.0));
-        let palette = plasmaBuffer[pIdx % 256u].rgb;
-        color = mix(color, color * (0.6 + palette * 0.8), band_t * 0.5);
-    }
+    // Plasma palette tint by sort displacement
+    let pIdx = u32(clamp((luma + sort_strength * 0.005) * 255.0, 0.0, 255.0));
+    let palette = plasmaBuffer[pIdx].rgb;
+    color = mix(color, color * (0.6 + palette * 0.8), band_t * 0.5);
 
     // Bloom-style alpha: HDR shoulder above 0.7 for the sort streaks
     let lf = luma_of(color);

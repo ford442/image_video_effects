@@ -2,8 +2,8 @@
   "id": "pixel-sorter",
   "name": "Pixel Sorter",
   "url": "shaders/pixel-sorter.wgsl",
-  "category": "image",
-  "description": "Glitch art pixel sorting effect.",
+  "category": "visual-effects",
+  "description": "Glitch art pixel sorting with alpha translucency blending. Single sort pass with spectral tinting, depth-aware compositing, and audio-reactive shimmer.",
   "params": [
     {
       "id": "direction",
@@ -38,7 +38,8 @@
     "mouse-driven",
     "glitch",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

@@ -3,13 +3,15 @@
   "url": "shaders/glass-wall.wgsl",
   "category": "image",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
   ],
   "name": "Glass Wall",
+  "description": "Physical glass refraction with single-sample spectral tint, depth-aware mortar edges, and alpha translucency from refraction strength and glass thickness.",
   "params": [
     {
       "id": "param1",

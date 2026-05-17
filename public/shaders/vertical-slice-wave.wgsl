@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Vertical Slice Wave
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
-//  Complexity: Low
+//  Features: mouse-driven, audio-reactive, temporal
+//  Complexity: Medium
 //  Created: 2026-05-10
 // ═══════════════════════════════════════════════════════════════════
 
@@ -40,60 +40,84 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
+  let uv = vec2<f32>(global_id.xy) / resolution;
 
-  // Params
-  let strips_param = u.zoom_params.x;    // Strip Count
-  let speed_param = u.zoom_params.y;     // Base Speed
-  let rgb_split = u.zoom_params.z;       // RGB Split
-  let jitter_amt = u.zoom_params.w;      // Jitter
+  // ── Global state (env + spring mouse) at pixel (1,0) ───────────
+  if (global_id.x == 1u && global_id.y == 0u) {
+    let prev = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    let bass = plasmaBuffer[0].x;
+    let attack = select(0.15, 0.8, bass > prev.r);
+    let env_new = mix(prev.r, bass, attack);
+    let mouse_target = u.zoom_config.yz;
+    let spring = prev.gb;
+    let vel = prev.a;
+    let dir = mouse_target - spring;
+    let dist = length(dir);
+    let ndir = select(vec2<f32>(0.0), dir / dist, dist > 0.001);
+    let force = dist * 12.0 - vel * 3.0;
+    let vel_new = vel + force * 0.016;
+    let spring_new = spring + ndir * vel_new * 0.016;
+    textureStore(dataTextureA, vec2<i32>(1, 0), vec4<f32>(env_new, spring_new, vel_new));
+  }
 
+  // Read back global state
+  let state = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+  let env = state.r;
+  let mouse = state.gb;
+
+  // Parameters
+  let strips_param = u.zoom_params.x;
+  let speed_param = u.zoom_params.y;
+  let rgb_split = u.zoom_params.z;
+  let jitter_amt = u.zoom_params.w;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
 
-  // Mouse Interaction
-  var mouse = u.zoom_config.yz;
-  // Mouse X maps to Frequency (0.0 to 1.0 -> 1.0 to 50.0)
+  // Mouse drives frequency & amplitude via spring-damped follow
   let freq_mod = mouse.x * 40.0 + 1.0;
-  // Mouse Y maps to Amplitude (0.0 to 1.0 -> 0.0 to 0.5)
   let amp_mod = mouse.y * 0.2;
+  let click_burst = select(1.0, 1.8, u.zoom_config.w > 0.5);
 
-  let num_strips = floor(strips_param * 100.0) + 5.0; // Min 5 strips
+  let num_strips = floor(strips_param * 100.0) + 5.0;
   let strip_id = floor(uv.x * num_strips);
-  let strip_uv_x = strip_id / num_strips; // Normalized x of the strip
+  let strip_uv_x = strip_id / num_strips;
 
-  // Base wave with audio reactivity
+  // Wave with smoothed audio envelope
   let wave_speed = speed_param * 5.0;
   let wave_phase = strip_uv_x * freq_mod + time * wave_speed;
-  let audio_amp = amp_mod * (1.0 + bass * 0.3);
+  let audio_amp = amp_mod * (1.0 + env * 0.5) * click_burst;
   var offset = sin(wave_phase) * audio_amp;
 
-  // Jitter (flicker noise)
-  let noise_val = hash12(vec2<f32>(strip_id, floor(time * 10.0))); // Random per strip per 0.1s
+  // Jitter
+  let noise_val = hash12(vec2<f32>(strip_id, floor(time * 10.0)));
   offset = offset + (noise_val - 0.5) * jitter_amt * 0.2;
 
   // RGB Split
-  let split_factor = rgb_split * 0.05; // Max split 0.05 UV space
+  let split_factor = rgb_split * 0.05;
 
-  let r_offset = offset - split_factor;
-  let g_offset = offset;
-  let b_offset = offset + split_factor;
+  // Sample with vertical displacement
+  let r = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + offset - split_factor), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + offset), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + offset + split_factor), 0.0).b;
 
-  // Sample
-  // We only offset Y
-  let r = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + r_offset), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + g_offset), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + b_offset), 0.0).b;
+  // Temporal feedback trail
+  let prev = textureLoad(dataTextureC, coords, 0);
+  let feedback = 0.82;
+  var col = mix(vec3<f32>(r, g, b), prev.rgb, 0.18);
+  col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  // Meaningful alpha based on luminance and effect intensity
+  // Alpha encodes intensity + trail age
   let luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-  let effect_intensity = clamp(abs(offset) * 10.0 + rgb_split * 0.3 + jitter_amt * 0.2, 0.0, 1.0);
-  let alpha = mix(0.75, 0.98, luminance * (0.3 + effect_intensity * 0.7));
+  let intensity = clamp(abs(offset) * 10.0 + env * 0.3, 0.0, 1.0);
+  let base_alpha = mix(0.65, 0.98, luminance * 0.3 + intensity * 0.7);
+  let trail_age = prev.a * feedback + base_alpha * (1.0 - feedback);
 
   // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-  textureStore(writeTexture, coords, vec4<f32>(r, g, b, alpha));
+  // Write output and feedback state
+  textureStore(writeTexture, coords, vec4<f32>(col, trail_age));
+  if (!(global_id.x == 1u && global_id.y == 0u)) {
+    textureStore(dataTextureA, coords, vec4<f32>(col, trail_age));
+  }
 }

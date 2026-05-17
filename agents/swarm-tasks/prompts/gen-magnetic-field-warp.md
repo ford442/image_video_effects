@@ -41,10 +41,14 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// ----------------------------------------------------------------
-// Magnetic Field Warp
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Magnetic Field Warp
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, depth-aware
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Shader Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -61,10 +65,10 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=DiffusionA, y=DiffusionB, z=Feed, w=Kill
-    ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
 };
 
 @compute @workgroup_size(16, 16, 1)
@@ -78,28 +82,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = vec2<f32>(coords) / vec2<f32>(res);
     let time = u.config.x;
+
+    // Audio reactivity via bass
+    let bass = plasmaBuffer[0].x;
     let audio = u.config.y;
 
     // Mouse dipole
     let mouse = u.zoom_config.yz;
     let delta = uv - mouse;
     let dist = length(delta);
-    let warp_strength = u.zoom_params.x * 2.0;
+    let safe_dist = max(dist, 0.001);
+    let warp_strength = u.zoom_params.x * 2.0 * (1.0 + bass);
 
     // Quadratic distortion based on mouse and audio
-    let field = normalize(delta) * (warp_strength / (dist * dist + 0.1)) * audio;
+    let field_dir = select(vec2<f32>(0.0, 0.0), delta / safe_dist, dist > 0.001);
+    let field = field_dir * (warp_strength / (safe_dist * safe_dist + 0.1)) * max(audio, 0.01);
     let warped_uv = uv + field * 0.05;
 
+    // Clamp warped UVs to avoid out-of-bounds sampling
+    let safe_uv = clamp(warped_uv, vec2<f32>(0.0), vec2<f32>(1.0));
+
     // Fetch image
-    let read_coords = vec2<i32>(warped_uv * vec2<f32>(res));
+    let read_coords = vec2<i32>(safe_uv * vec2<f32>(res));
     let color = textureLoad(readTexture, read_coords, 0);
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
     // Spectral remapping
     let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
     let spectral_idx = u32(clamp(luma + audio * 0.5, 0.0, 1.0) * 255.0) % 256u;
     let plasma = plasmaBuffer[spectral_idx];
 
-    let final_color = mix(color, plasma, u.zoom_params.y);
+    let mix_factor = clamp(u.zoom_params.y, 0.0, 1.0);
+    let mixed_color = mix(color, plasma, mix_factor);
+
+    // Meaningful alpha based on effect intensity and luminance
+    let effect_intensity = clamp(length(field) * 5.0, 0.0, 1.0);
+    let target_alpha = clamp(0.6 + luma * 0.4 + bass * 0.2, 0.0, 1.0);
+    let final_alpha = clamp(mix(color.a, target_alpha, effect_intensity * mix_factor), 0.0, 1.0);
+
+    let final_color = vec4<f32>(mixed_color.rgb, final_alpha);
 
     textureStore(writeTexture, coords, final_color);
 }
@@ -121,6 +145,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     "magnetic",
     "warp",
     "audio-reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "warp_strength",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "plasma_mix",
+      "name": "Plasma Mix",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
   ]
 }
 
@@ -189,6 +236,38 @@ const INV_PI = 0.31830988618379067154;   // 1/π
   ```
 - Static → Temporal coherent noise (seed with `floor(t/period)`, lerp between seeds)
 
+#### Domain-warped FBM (organic flow, two-octave warp)
+```wgsl
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5; var s = 0.0; var q = p;
+    for (var i = 0; i < 5; i = i + 1) {
+        s = s + a * valueNoise(q);
+        q = q * 2.02; a = a * 0.5;
+    }
+    return s;
+}
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
+                      fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)),
+                      fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0*r);
+}
+```
+Strictly better than single-octave noise for "alive" generative shaders. Pass `u.config.x` as `t`.
+
+#### Polar kaleidoscope fold
+```wgsl
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+    let r = length(uv);
+    var a = atan2(uv.y, uv.x);
+    let seg = 6.2831853 / max(segs, 1.0);
+    a = abs(((a % seg) + seg) % seg - seg * 0.5);
+    return vec2<f32>(cos(a), sin(a)) * r;
+}
+```
+Cheap, branch-light fold that gives instant symmetry. Pair with `warpedFBM` or SDF sampling.
+
 ### Quasi-Random Sampling (better than pseudo-random)
 ```wgsl
 // Halton sequence – base 2 and 3, ideal for AA / Monte Carlo
@@ -221,6 +300,24 @@ fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
 - Static → Animated morphing fields (`mix(sdf_a, sdf_b, smoothstep(0,1,t))`)
 - Solid → Subsurface scattering: `exp(-thickness / scatterDist) * albedo`
 - New primitives: capsule, hexagonal prism, torus knot, Möbius strip SDF
+
+#### Smooth-min SDF union (`smin`) — round seams between primitives
+```wgsl
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0 - h);
+}
+```
+`k ≈ 0.1–0.3` of the smaller primitive radius. Replaces hard `min()` for organic blob unions.
+
+#### Anti-aliased SDF / line via `fwidth` (no MSAA needed in compute)
+```wgsl
+fn aa_step(edge: f32, x: f32) -> f32 {
+    let w = max(fwidth(x), 1e-4);
+    return smoothstep(edge - w, edge + w, x);
+}
+```
+Use wherever a hard `step()` would produce shimmering edges — kaleidoscope folds, SDF contours, grid lines.
 
 ### Fractal Upgrades
 - Basic Mandelbrot → Burning Ship (`abs(z)` before squaring)

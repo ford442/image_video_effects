@@ -3,7 +3,7 @@
   "name": "Liquid Rainbow",
   "url": "shaders/liquid-rainbow.wgsl",
   "category": "image",
-  "description": "",
+  "description": "Liquid rainbow refraction with single-sample spectral tint mixing, Fresnel-based alpha translucency, and depth-aware compositing.",
   "tags": [
     "filter",
     "image-processing"
@@ -51,6 +51,7 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ]
 }

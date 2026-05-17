@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Double Exposure Zoom
+//  Double Exposure Warp
 //  Category: image
 //  Features: mouse-driven, audio-reactive
-//  Complexity: Low
+//  Complexity: Medium
 //  Created: 2026-05-10
 //  By: Pixelocity Shader Upgrade Swarm — Phase A
 // ═══════════════════════════════════════════════════════════════════
@@ -28,84 +28,108 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI = 3.14159265358979323846;
+const TAU = 6.28318530717958647692;
+const PHI = 1.61803398874989484820;
+
+fn hash21(p: vec2<f32>) -> vec2<f32> {
+  let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
+  return fract(vec2<f32>(n, n * PHI)) * 2.0 - 1.0;
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash21(i).x;
+  let b = hash21(i + vec2<f32>(1.0, 0.0)).x;
+  let c = hash21(i + vec2<f32>(0.0, 1.0)).x;
+  let d = hash21(i + vec2<f32>(1.0, 1.0)).x;
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>) -> f32 {
+  var a = 0.5; var s = 0.0; var q = p;
+  for (var i = 0; i < 5; i = i + 1) {
+    s = s + a * valueNoise(q);
+    q = q * 2.02; a = a * 0.5;
+  }
+  return s;
+}
+
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+  let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)), fbm(p + vec2<f32>(5.2, 1.3)));
+  let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)), fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+  return fbm(p + 4.0*r);
+}
+
+fn voronoiF2minusF1(p: vec2<f32>) -> f32 {
+  var F1 = 1e9; var F2 = 1e9;
+  let ip = floor(p);
+  for (var i = -1; i <= 1; i = i + 1) {
+    for (var j = -1; j <= 1; j = j + 1) {
+      let n = ip + vec2<f32>(f32(i), f32(j));
+      let h = fract(sin(dot(n, vec2<f32>(127.1, 311.7))) * 43758.5453);
+      let off = vec2<f32>(h, fract(h * PHI));
+      let d = length(p - n - off);
+      if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+    }
+  }
+  return F2 - F1;
+}
+
 fn rotate2d(uv: vec2<f32>, angle: f32) -> vec2<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return vec2<f32>(
-        uv.x * c - uv.y * s,
-        uv.x * s + uv.y * c
-    );
+  let c = cos(angle); let s = sin(angle);
+  return vec2<f32>(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-
+  var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(1.0));
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let coords = vec2<i32>(global_id.xy);
 
-  // Sample depth and pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-  // Params
-  // Zoom: Map 0.0-1.0 to 0.5x - 3.0x
-  let zoomParam = u.zoom_params.x;
-  let zoom = 0.5 + zoomParam * 2.5;
-
-  // Rotation: Map 0.0-1.0 to -PI/4 to PI/4 (approx)
-  let rotParam = u.zoom_params.y;
-  let angle = (rotParam - 0.5) * 1.57; // +/- 45 degrees
-
+  let zoom = 0.5 + u.zoom_params.x * 2.5;
+  let angle = (u.zoom_params.y - 0.5) * PI * 0.5;
   let opacity = u.zoom_params.z;
-  let saturation = u.zoom_params.w;
+  let warpStrength = u.zoom_params.w;
+  let t = u.config.x * 0.2;
 
-  // Audio reactivity — bass drives a subtle zoom pulse
   let bass = plasmaBuffer[0].x;
   let audioZoom = zoom * (1.0 + bass * 0.15);
 
-  // Mouse interaction
-  var mouse = u.zoom_config.yz;
-  let aspect = resolution.x / resolution.y;
+  let mouse = u.zoom_config.yz;
+  let aspect = resolution.x / max(resolution.y, 1.0);
 
-  // Sample 1: Base Image
   let c1 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  // Sample 2: Transformed Image
-  // Correct aspect ratio for rotation/scale pivot
   var p = uv - mouse;
   p.x *= aspect;
-
-  // Rotate
   p = rotate2d(p, angle);
+  p = p / max(audioZoom, 0.001);
 
-  // Scale (Zoom)
-  // To zoom IN, we divide the UV coordinates
-  p = p / audioZoom;
+  let warpScale = 2.0 + warpStrength * 4.0;
+  let w = warpedFBM(p * warpScale, t) * 0.025 * (0.3 + warpStrength);
+  p = p + vec2<f32>(cos(t * 0.7 + w * TAU), sin(t * 0.5 + w * TAU)) * w;
 
-  // Restore aspect and origin
   p.x /= aspect;
-  let uv2 = p + mouse;
-
+  let uv2 = clamp(p + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
   let c2 = textureSampleLevel(readTexture, u_sampler, uv2, 0.0);
 
-  // Blend Logic
-  // Screen Blend: 1 - (1-a)*(1-b)
-  var blended = 1.0 - (1.0 - c1.rgb) * (1.0 - c2.rgb * opacity);
+  let voro = voronoiF2minusF1(uv * 3.0 + t * 0.15) * 2.0;
+  let mask = smoothstep(0.0, 0.5, voro + opacity * 0.5);
 
-  // Optional Saturation adjustment for the overlay effect
+  var blended = 1.0 - (1.0 - c1.rgb) * (1.0 - c2.rgb * opacity * (0.7 + mask * 0.3));
+
   let gray = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
-  blended = mix(vec3<f32>(gray), blended, 0.5 + saturation * 0.5);
+  blended = mix(vec3<f32>(gray), blended, 0.6 + opacity * 0.4);
 
-  // Meaningful alpha: derived from blended luminance, opacity, and depth
   let luminance = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
-  let effectIntensity = 0.5 + opacity * 0.5;
   let depthFactor = 0.7 + depth * 0.3;
-  let alpha = clamp(luminance * effectIntensity * depthFactor + 0.2, 0.3, 1.0);
+  let alpha = clamp(luminance * (0.5 + opacity * 0.5) * depthFactor + 0.15, 0.25, 1.0);
 
   textureStore(writeTexture, coords, vec4<f32>(blended, alpha));
 }

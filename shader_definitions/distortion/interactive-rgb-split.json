@@ -3,10 +3,11 @@
   "name": "Interactive RGB Split",
   "url": "shaders/interactive-rgb-split.wgsl",
   "category": "distortion",
-  "description": "Chromatic aberration that reacts to mouse position and audio bass.",
+  "description": "Smooth alpha-channel translucency blending driven by a single displacement field. Spectral tint via mix, depth-aware compositing, and audio-reactive bass response.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

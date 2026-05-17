@@ -3,9 +3,10 @@
   "name": "Chroma Shift Grid",
   "url": "shaders/chroma-shift-grid.wgsl",
   "category": "distortion",
-  "description": "Grid-based multi-mode chromatic aberration with temporal animation, per-cell lens distortion, and depth awareness.",
+  "description": "Grid-based multi-mode chromatic aberration with alpha-channel translucency blending. Uses single UV displacement + spectral tint via mix(), with Voronoi F2-F1 cell pattern variation. Alpha encodes grid distortion strength * cell activity.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

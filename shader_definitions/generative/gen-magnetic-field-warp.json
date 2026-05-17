@@ -2,7 +2,7 @@
   "id": "gen-magnetic-field-warp",
   "name": "Magnetic Field Warp",
   "author": "Jules",
-  "description": "Treat the image as charged particles warped by a magnetic field.",
+  "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices, and Clifford strange-attractor modulation.",
   "category": "generative",
   "type": "wgsl",
   "coordinate": 876,
@@ -10,7 +10,10 @@
   "tags": [
     "magnetic",
     "warp",
-    "audio-reactive"
+    "audio-reactive",
+    "curl-noise",
+    "strange-attractor",
+    "domain-warp"
   ],
   "features": [
     "mouse-driven",
@@ -30,6 +33,22 @@
       "id": "plasma_mix",
       "name": "Plasma Mix",
       "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "attractor_mix",
+      "name": "Attractor Mix",
+      "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01

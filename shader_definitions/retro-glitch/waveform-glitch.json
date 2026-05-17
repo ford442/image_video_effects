@@ -3,7 +3,7 @@
   "name": "Waveform Glitch",
   "url": "shaders/waveform-glitch.wgsl",
   "category": "retro-glitch",
-  "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, and displacement-magnitude alpha masking.",
+  "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
   "features": [
     "temporal",
     "audio-reactive",

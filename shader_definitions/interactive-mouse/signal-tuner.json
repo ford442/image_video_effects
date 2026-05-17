@@ -3,7 +3,7 @@
   "name": "Signal Tuner",
   "url": "shaders/signal-tuner.wgsl",
   "category": "image",
-  "description": "Applies TV-style signal interference and wave distortion localized around the mouse.",
+  "description": "TV-style signal interference with smoothed audio envelope, spring-damped mouse follow, and temporal feedback trails.",
   "params": [
     {
       "id": "frequency",
@@ -36,7 +36,8 @@
   ],
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal"
   ],
   "tags": [
     "filter",

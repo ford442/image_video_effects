@@ -5,9 +5,10 @@
   "category": "interactive-mouse",
   "features": [
     "mouse-driven",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "upgraded-rgba"
   ],
-  "description": "The mouse acts as a prism separating R, G, B channels by wavelength. Click ripples launch chromatic shockwaves. Creates rainbow halos and spectral fan-outs.",
+  "description": "The mouse drives a smooth displacement field with spectral tinting via mix and alpha translucency blending. Click ripples launch shockwaves. Audio-reactive bass pulses the entire field.",
   "params": [
     {
       "id": "prismStrength",

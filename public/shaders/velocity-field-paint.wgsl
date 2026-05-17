@@ -31,52 +31,62 @@ struct Uniforms {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    var mousePos = u.zoom_config.yz;
-    let isMouseDown = u.zoom_config.w;
+    let mousePos = u.zoom_config.yz;
 
-    let dissipation = 0.9 + u.zoom_params.x * 0.09;
+    // Read parameters — clamped to keep sim stable at extremes
+    let dissipation = clamp(0.9 + u.zoom_params.x * 0.09, 0.0, 1.0);
     let brushSize = 0.05 + u.zoom_params.y * 0.2;
-    let audioReact = u.zoom_params.w;
-    let bass = plasmaBuffer[0].x;
-    let force = u.zoom_params.z * 0.5 * (1.0 + bass * audioReact);
+    let audioReact = clamp(u.zoom_params.w, 0.0, 1.0);
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 8.0);
+    let force = clamp(u.zoom_params.z * 0.5 * (1.0 + bass * audioReact), 0.0, 4.0);
 
-    // Sample previous velocity field from dataTextureC (Red/Green channels = Velocity X/Y)
+    // Reconstruct velocity from previous frame (RG = XY, A = magnitude)
     let prevData = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
     var velocity = prevData.xy;
 
-    // Mouse Interaction: Add velocity
-    if (mousePos.x >= 0.0) {
-        let dVec = uv - mousePos;
-        let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+    // Branchless mouse interaction: select() replaces nested if-blocks
+    let mouseActive = select(0.0, 1.0, mousePos.x >= 0.0);
+    let dVec = uv - mousePos;
+    let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+    let inBrush = select(0.0, 1.0, dist < brushSize) * mouseActive;
+    let pushDir = select(vec2<f32>(0.0, 0.0), normalize(dVec), dist > 0.0001);
+    let influence = smoothstep(brushSize, 0.0, dist) * inBrush;
+    velocity += pushDir * force * influence;
 
-        if (dist < brushSize) {
-             // Randomization-safe: avoid division by zero
-             let pushDir = select(vec2<f32>(0.0, 0.0), normalize(dVec), dist > 0.0001);
-             let influence = smoothstep(brushSize, 0.0, dist);
-             velocity += pushDir * force * influence;
-        }
+    let velMag = length(velocity);
+    let coord = vec2<i32>(global_id.xy);
+
+    // Early exit: if pixel has no velocity and mouse is away, pass through unchanged
+    if (velMag < 0.0001 && mouseActive < 0.5) {
+        let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        textureStore(writeTexture, coord, color);
+        textureStore(dataTextureA, coord, vec4<f32>(0.0));
+        textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+        return;
     }
 
-    // Decouple velocity
+    // Decouple velocity and advect UVs
     velocity *= dissipation;
-
-    // Advect UVs
     let offsetUV = uv - velocity * 0.05;
-    let sampledColor = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
 
-    // Write to display — preserve source alpha from sampled texture
-    textureStore(writeTexture, vec2<i32>(global_id.xy), sampledColor);
+    // Anti-moiré LOD bias: blur sample proportionally to velocity magnitude
+    let lod = clamp(velMag * 8.0, 0.0, 3.0);
+    let sampledColor = textureSampleLevel(readTexture, u_sampler, offsetUV, lod);
 
-    // Store velocity for next frame with alpha = velocity magnitude (effect intensity)
-    let velMag = clamp(length(velocity), 0.0, 1.0);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(velocity, 0.0, velMag));
+    // Semantic alpha = displacement intensity for downstream compositing
+    let disp = length(offsetUV - uv);
+    let alpha = mix(sampledColor.a, 1.0, smoothstep(0.0, 0.05, disp));
 
-    // Pass depth through
+    textureStore(writeTexture, coord, vec4<f32>(sampledColor.rgb, alpha));
+
+    let newVelMag = clamp(length(velocity), 0.0, 1.0);
+    textureStore(dataTextureA, coord, vec4<f32>(velocity, 0.0, newVelMag));
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

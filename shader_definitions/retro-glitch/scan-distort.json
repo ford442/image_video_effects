@@ -2,13 +2,20 @@
   "id": "scan-distort",
   "name": "Scan Distort",
   "url": "shaders/scan-distort.wgsl",
-  "category": "image",
+  "category": "retro-glitch",
+  "description": "CRT-style scanline distortion with unified displacement fields and alpha translucency blending. Features temporal feedback accumulation, bass-driven audio envelope, mouse-reactive glitch bursts, and block-edge quantization artifacts.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-feedback",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "glitch",
+    "crt",
+    "scanlines"
   ],
   "params": [
     {

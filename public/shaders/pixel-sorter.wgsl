@@ -1,9 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Pixel Sorter
 //  Category: image
-//  Features: mouse-driven, audio-reactive, temporal-coherence, multi-criterion
+//  Features: mouse-driven, audio-reactive, temporal-coherence, multi-criterion, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: Phase B / Interactivist
+//  Upgraded: Single sort pass with alpha translucency blending
+// ═══════════════════════════════════════════════════════════════════
+//  Applies a single sort displacement field and derives spectral
+//  tint via mix() with wavelengthToRGB. Alpha encodes sort
+//  intensity and luma threshold for translucency compositing.
+//  Depth-aware blending and audio-reactive shimmer included.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,6 +35,28 @@ struct Uniforms {
 const PHI:    f32 = 1.61803398874989484820;
 const TAU:    f32 = 6.28318530717958647692;
 const INV_PI: f32 = 0.31830988618379067154;
+
+fn tentAlpha(x: f32) -> f32 {
+  return smoothstep(0.0, 0.4, x) * (1.0 - smoothstep(0.4, 1.0, x));
+}
+
+fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
+  var r = 0.0; var g = 0.0; var b = 0.0;
+  if (lambda < 440.0) { r = (440.0 - lambda) / 60.0; b = 1.0; }
+  else if (lambda < 490.0) { g = (lambda - 440.0) / 50.0; b = 1.0; }
+  else if (lambda < 510.0) { g = 1.0; b = (510.0 - lambda) / 20.0; }
+  else if (lambda < 580.0) { r = (lambda - 510.0) / 70.0; g = 1.0; }
+  else if (lambda < 645.0) { r = 1.0; g = (645.0 - lambda) / 65.0; }
+  else { r = 1.0; }
+  var intensity = 1.0;
+  if (lambda < 420.0) { intensity = 0.3 + 0.7 * (lambda - 380.0) / 40.0; }
+  else if (lambda > 700.0) { intensity = 0.3 + 0.7 * (780.0 - lambda) / 80.0; }
+  return clamp(vec3(r, g, b) * intensity, vec3(0.0), vec3(1.0));
+}
+
+fn gaussianMask(dist: f32, sigma: f32) -> f32 {
+  return exp(-dist * dist / (2.0 * sigma * sigma));
+}
 
 fn get_luma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -90,7 +117,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hue  = get_hue(c.rgb);
 
     // Multi-criterion sort key: luma dominant, hue modulates direction sign
-    // hueShift goes -0.5..0.5, lets warm/cool pixels slide opposite ways subtly
     let hueShift = (hue - 0.5);
 
     // Distance-to-mouse falloff — concentrates effect under cursor (Gaussian bell)
@@ -120,16 +146,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Temporal coherence: blend with prior frame to settle the sort smoothly
     let prevPixel = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
     let blend = clamp(0.55 + mouseSpeed * 0.3, 0.5, 0.95);
-    let finalColor = mix(prevPixel, sampled, blend);
+    let tempColor = mix(prevPixel, sampled, blend);
 
-    // Alpha: sort displacement magnitude + cursor proximity drives compositing weight
-    let dispMag = length(sampleUV - uv);
-    let alpha = clamp(get_luma(finalColor) * 0.4 + dispMag * 6.0 + cursorMask * 0.3 + 0.1, 0.0, 1.0);
+    // Spectral tint based on sort displacement magnitude
+    let sortLength = length(sampleUV - uv);
+    let wavelength = mix(420.0, 700.0, clamp(sortLength * 8.0 + hue, 0.0, 1.0));
+    let spectralTint = wavelengthToRGB(wavelength);
+    let tintedColor = mix(tempColor, tempColor * spectralTint, sortLength * 2.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    // Audio-reactive shimmer boosts saturation on bass hits
+    let shimmerBoost = 1.0 + bass * 0.3 * sin(uv.y * 20.0 + time * 4.0);
+    let shimmerColor = tintedColor * shimmerBoost;
+
+    // Depth-aware compositing: reduce effect on distant depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthFactor = mix(0.5, 1.0, 1.0 - depth * 0.6);
+    let finalColor = mix(tempColor, shimmerColor, depthFactor);
+
+    // Alpha: sort intensity * luma threshold + displacement magnitude
+    let dispMag = sortLength;
+    let alpha = clamp(get_luma(finalColor) * 0.4 + dispMag * 6.0 + cursorMask * 0.3 + tentAlpha(dispMag * 4.0) * 0.2, 0.0, 1.0);
+
+    // Apply gaussian soft mask around cursor for localized compositing
+    let softMask = gaussianMask(dMouse, 0.35);
+    let maskedAlpha = alpha * mix(0.6, 1.0, softMask);
+
+    // Vignette subtle darkening at frame edges for cinematic feel
+    let vignette = 1.0 - smoothstep(0.3, 1.0, length(uv - vec2<f32>(0.5)) * 1.1);
+    let finalMasked = finalColor * mix(0.92, 1.0, vignette);
+
+    textureStore(writeTexture, coord, vec4<f32>(finalMasked, maskedAlpha));
 
     // Persist current frame for next-frame coherence + mouse history at (0,0)
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalMasked, maskedAlpha));
     if (coord.x == 0 && coord.y == 0) {
         textureStore(dataTextureB, vec2<i32>(0, 0), vec4<f32>(mouse, mouseSpeed, 1.0));
     }

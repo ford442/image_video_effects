@@ -3,7 +3,7 @@
   "name": "Virtual Lens",
   "url": "shaders/virtual-lens.wgsl",
   "category": "image",
-  "description": "A virtual magnifying glass with chromatic aberration and audio-reactive pulse.",
+  "description": "A virtual magnifying glass with alpha translucency blending. Single magnification displacement plus spectral tint via mix. Alpha driven by lens edge falloff and Fresnel reflectance with depth-aware attenuation.",
   "params": [
     {
       "id": "mag",

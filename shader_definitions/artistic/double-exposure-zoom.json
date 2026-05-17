@@ -3,7 +3,7 @@
   "name": "Double Exposure Zoom",
   "url": "shaders/double-exposure-zoom.wgsl",
   "category": "image",
-  "description": "Blends the image with a zoomed and rotated copy of itself, pivoting around the mouse cursor.",
+  "description": "Blends the image with a zoomed and rotated copy of itself, pivoting around a spring-damped mouse cursor. Features attack/release audio envelope, temporal feedback trails with alpha-aging, and mouse-distance zoom modulation.",
   "params": [
     {
       "id": "rotation",
@@ -37,7 +37,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "temporal"
   ],
   "tags": [
     "filter",
