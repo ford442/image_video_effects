@@ -1017,7 +1017,7 @@ void WebGPURenderer::SetAudioData(float bass, float mid, float treble) {
 void WebGPURenderer::UpdateUniformBuffer() {
     if (!uniformBuffer_) return;
 
-    float uniformData[12 + MAX_RIPPLES * 4];
+    float uniformData[12 + MAX_RIPPLES * 4] = {};
 
     // config: time, rippleCount, resolutionX, resolutionY
     uniformData[0] = currentTime_;
@@ -1129,37 +1129,34 @@ void WebGPURenderer::Render() {
 
     // ── Legacy single-shader fallback ────────────────────────────────────────
     if (firstEnabled < 0) {
-        if (activeShaderId_.empty()) return;
-        auto it = shaders_.find(activeShaderId_);
-        if (it == shaders_.end()) return;
+        if (!activeShaderId_.empty()) {
+            auto it = shaders_.find(activeShaderId_);
+            if (it != shaders_.end()) {
+                // Single pass: readTexture_ -> writeTexture_
+                WriteSlotParams(zoomParams_);
+                WGPUBindGroup bg = CreateComputeBindGroup(readTexture_, writeTexture_);
 
-        // Single pass: readTexture_ -> writeTexture_
-        WriteSlotParams(zoomParams_);
-        WGPUBindGroup bg = CreateComputeBindGroup(readTexture_, writeTexture_);
+                WGPUCommandEncoderDescriptor encDesc = {};
+                encDesc.label = MakeStringView("Single Encoder");
+                WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
 
-        WGPUCommandEncoderDescriptor encDesc = {};
-        encDesc.label = MakeStringView("Single Encoder");
-        WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
+                DispatchComputePass(enc, it->second.pipeline, bg);
+                wgpuBindGroupRelease(bg);
 
-        DispatchComputePass(enc, it->second.pipeline, bg);
-        wgpuBindGroupRelease(bg);
+                CopyTex(enc, writeTexture_, readTexture_, W, H);
+                CopyTex(enc, depthTextureWrite_, depthTextureRead_, W, H);
+                CopyTex(enc, dataTextureA_, dataTextureC_, W, H);
 
-        CopyTex(enc, writeTexture_, readTexture_, W, H);
-        CopyTex(enc, depthTextureWrite_, depthTextureRead_, W, H);
-        CopyTex(enc, dataTextureA_, dataTextureC_, W, H);
-
-        WGPUCommandBufferDescriptor cbDesc = {};
-        cbDesc.label = MakeStringView("Single CmdBuf");
-        WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-        wgpuQueueSubmit(queue_, 1, &cb);
-        wgpuCommandBufferRelease(cb);
-        wgpuCommandEncoderRelease(enc);
-
-        goto update_fps;
-    }
-
-    // ── Multi-slot pipeline ───────────────────────────────────────────────────
-    {
+                WGPUCommandBufferDescriptor cbDesc = {};
+                cbDesc.label = MakeStringView("Single CmdBuf");
+                WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
+                wgpuQueueSubmit(queue_, 1, &cb);
+                wgpuCommandBufferRelease(cb);
+                wgpuCommandEncoderRelease(enc);
+            }
+        }
+    } else {
+        // ── Multi-slot pipeline ───────────────────────────────────────────────
         // The "chain input" starts as readTexture_ (previous frame output).
         WGPUTexture chainInput = readTexture_;
 
@@ -1233,7 +1230,6 @@ void WebGPURenderer::Render() {
         }
     }
 
-update_fps:
     // Update FPS counter
     frameCount_++;
     float currentTime = emscripten_get_now() / 1000.0f;
