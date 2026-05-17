@@ -704,8 +704,30 @@ const Controls: React.FC<ControlsProps> = ({
                                 </span>
                             )}
                             {slotStatus === 'error' && (
-                                <span className="gold-badge" style={{color: '#ff4757', borderColor: 'rgba(255,71,87,0.3)', background: 'rgba(255,71,87,0.1)'}}>
-                                    ✕ FAILED
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span
+                                        className="gold-badge"
+                                        title="Shader failed to compile or load. Retry if it was a transient network error, or pick a different shader below."
+                                        style={{color: '#ff4757', borderColor: 'rgba(255,71,87,0.3)', background: 'rgba(255,71,87,0.1)'}}
+                                    >
+                                        ✕ FAILED
+                                    </span>
+                                    <button
+                                        title="Retry loading this shader (useful for transient network errors)"
+                                        onClick={(e) => { e.stopPropagation(); setMode(i, modes[i]); }}
+                                        style={{
+                                            background: 'rgba(255,71,87,0.15)',
+                                            border: '1px solid rgba(255,71,87,0.4)',
+                                            borderRadius: '4px',
+                                            color: '#ff4757',
+                                            cursor: 'pointer',
+                                            fontSize: '10px',
+                                            padding: '2px 6px',
+                                            lineHeight: 1.4,
+                                        }}
+                                    >
+                                        ↺ Retry
+                                    </button>
                                 </span>
                             )}
                         </div>
