@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Pixel Drag Smear
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, temporal
+//  Complexity: Medium
+//  Chunks From: pixel-drag-smear.wgsl
+//  Created: 2026-05-17
+//  By: WGSL Upgrade Agent
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -19,62 +29,91 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn hash12(p: vec2<f32>) -> f32 {
+  var pp = fract(p * vec2(0.1031, 0.1030));
+  pp = pp + dot(pp, pp.yx + 33.33);
+  return fract((pp.x + pp.y) * pp.x);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let a = hash12(i);
+  let b = hash12(i + vec2(1.0, 0.0));
+  let c = hash12(i + vec2(0.0, 1.0));
+  let d = hash12(i + vec2(1.0, 1.0));
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
+}
+
+fn lumaMix(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+  let lumaA = dot(a, vec3(0.299, 0.587, 0.114));
+  let lumaB = dot(b, vec3(0.299, 0.587, 0.114));
+  let deltaL = lumaB - lumaA;
+  let adjust = 1.0 + deltaL * t * 0.3;
+  return mix(a, b, t) * adjust;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let aspect = resolution.x / resolution.y;
 
-    // Params
-    let brushRadius = mix(0.01, 0.25, u.zoom_params.x);
-    let strength = mix(0.1, 2.0, u.zoom_params.y);
-    // z used for decay? Or mode?
-    let decay = mix(0.8, 0.99, u.zoom_params.z);
+  let brushRadius = mix(0.01, 0.25, u.zoom_params.x);
+  let decay = mix(0.8, 0.99, u.zoom_params.z);
+  let audioBass = plasmaBuffer[0].x;
+  let baseStrength = mix(0.1, 2.0, u.zoom_params.y);
+  let clickBoost = select(0.0, 1.5, u.zoom_config.w > 0.5);
+  let strength = (baseStrength + audioBass * 0.8 + clickBoost) * 0.5;
 
-    var mouse = u.zoom_config.yz;
-    let dist = distance(uv * vec2(aspect, 1.0), mouse * vec2(aspect, 1.0));
+  let mouse = u.zoom_config.yz;
+  let dist = distance(uv * vec2(aspect, 1.0), mouse * vec2(aspect, 1.0));
 
-    // "Repel/Smear" logic:
-    // We want to sample from a position that pushes pixels away or drags them.
-    // Simple repel:
-    var dir = normalize(uv - mouse);
-    // Push amount drops with distance
-    let influence = (1.0 - smoothstep(0.0, brushRadius, dist)) * strength;
+  let toMouse = uv - mouse;
+  let dir = select(normalize(toMouse), vec2(0.0), length(toMouse) < 0.0001);
+  let influence = (1.0 - smoothstep(0.0, brushRadius, dist)) * strength;
 
-    // If influence is high, we sample from closer to mouse (pulling/dragging) or further (pushing)?
-    // Smear usually means: color at X comes from X - velocity.
-    // If we assume mouse acts as a brush pushing color, pixels should move in direction of push.
-    // So at `uv`, we want to sample `uv - push_dir`.
-    // Let's use `influence` to offset the sample from history.
+  let jitter = (valueNoise(uv * 12.0 + u.config.x) - 0.5) * 0.04;
+  let curlAngle = valueNoise(uv * 8.0 + u.config.x * 0.5) * 6.28318;
+  let curlDir = vec2(cos(curlAngle), sin(curlAngle));
+  let curlDisp = curlDir * influence * 0.03;
 
-    let offset = dir * influence * 0.05; // 0.05 scale factor
+  let offset = dir * influence * 0.05 + jitter + curlDisp;
 
-    // Sample history with offset
-    var historyColor = textureSampleLevel(dataTextureC, u_sampler, uv - offset, 0.0);
+  let historyColor = textureSampleLevel(dataTextureC, u_sampler, uv - offset, 0.0);
+  let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Sample current video
-    let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let smearWeight = select(0.0, 0.9, influence > 0.001);
+  let baseMix = mix(videoColor.rgb, historyColor.rgb, decay);
+  let smearMix = mix(baseMix, historyColor.rgb, smearWeight);
+  let blended = lumaMix(baseMix, smearMix, influence);
 
-    // Mix based on something?
-    // If we want the "smear" to persist, we rely heavily on history.
-    // Let's mix video into history slowly, unless we are smearing.
-    // If smearing (influence > 0), use history more.
+  let velocity = length(offset) * 20.0;
+  let warmTint = vec3(1.08, 1.02, 0.92);
+  let coolTint = vec3(0.92, 0.98, 1.06);
+  let tint = mix(warmTint, coolTint, clamp(velocity, 0.0, 1.0));
+  let tinted = blended * tint;
 
-    var finalColor = mix(videoColor, historyColor, decay);
+  let toneMapped = acesToneMap(tinted);
 
-    // Inject video if history gets too old?
-    // Or just simple feedback loop:
-    // result = mix(video, distorted_history, mix_ratio)
+  let alphaBoost = influence * 0.6;
+  let finalAlpha = mix(videoColor.a, clamp(videoColor.a + alphaBoost, 0.0, 1.0), smoothstep(0.0, 0.005, influence));
 
-    // If influence > 0, we want distorted history to dominate.
-    if (influence > 0.0) {
-        finalColor = mix(finalColor, historyColor, 0.9);
-    }
+  let finalColor = vec4(toneMapped, finalAlpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  textureStore(dataTextureA, global_id.xy, finalColor);
+  textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
 }

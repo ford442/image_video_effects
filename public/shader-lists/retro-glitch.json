@@ -690,7 +690,9 @@
     "url": "shaders/pixelate-blast.wgsl",
     "icon": "blur_on",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

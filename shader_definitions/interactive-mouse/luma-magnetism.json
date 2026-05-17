@@ -3,7 +3,9 @@
   "url": "shaders/luma-magnetism.wgsl",
   "category": "interactive-mouse",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

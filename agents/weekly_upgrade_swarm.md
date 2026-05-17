@@ -5,9 +5,26 @@
 
 ---
 
-## Recently Completed (25 shaders)
+## Recently Completed (35 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 2 (10 shaders) — 2026-05-17
+
+| # | Shader | Batch | Changes Made |
+|---|--------|-------|--------------|
+| 26 | `pixel-sort-radial` | 2 | Upgraded to 94 lines. Branchless `select()`/`mix()` logic, `hash22()` jitter, chromatic aberration (R/G/B offset sampling), audio reactivity (bass scales stretch, mids drive twist, click triggers 2.5x burst), HDR bloom alpha, writes `dataTextureA` for temporal feedback. |
+| 27 | `pixel-drag-smear` | 2 | Upgraded to 119 lines. Added curl noise jitter, ACES tone mapping, warm/cool velocity tint, `lumaMix()` helper, alpha boost from influence, `dataTextureA` writeback. |
+| 28 | `thermal-touch` | 2 | Upgraded to 88 lines. Branchless thermal palette via `smoothstep`+`mix()`, `hash21()` shimmer scaled by mids, bass-driven pulse, meaningful alpha (cold=0.5, hot=1.0), colorMode preserves original texture alpha. |
+| 29 | `luma-magnetism` | 2 | Upgraded to 87 lines. Anisotropic RGB stretch, chromatic aberration, `curl()` noise jitter, bass boosts strength 2x, mids drive swirl, click shockwave (`0.15/dist`), glow halo, safe normalize guard via `select()`. |
+| 30 | `pixel-scattering` | 2 | Upgraded to 84 lines. Branchless `smoothstep` radius, time-breathing radius, depth-based scatter boost, directional glow, bass/mids reactivity, click burst 3x, `size` param controls concentration alpha. |
+| 31 | `circular-pixelate` | 2 | Upgraded to 106 lines. Depth-based dot sizing, audio pulse on radius, per-cell `hash12()` tint, transparent gaps via `mix(vec4(0.0), dot_color, mask)`, ripple click boost, inner edge highlight. |
+| 32 | `mirror-drag` | 2 | Upgraded to 83 lines. Branchless `select()` mirror logic, kaleidoscope mode, neon seam glow, bass-driven axis oscillation, mids-driven sector rotation, click flip pulse, edge feathering via `smoothstep`. |
+| 33 | `hypnotic-spiral` | 2 | Upgraded to 86 lines. Branchless `hsv2rgb` via `mix()`+`fract()`, secondary counter-rotating spiral, `hash12` sparkle, bass drives rotation, mids drive color cycling, click reverses direction, ripple distortion. |
+| 34 | `pixelate-blast` | 2 | Upgraded to 83 lines. Ripple boost on pixel size, audio radius expansion, chromatic aberration at block edges, scanline + vignette, color crunch quantization, click shockwave. |
+| 35 | `temporal-distortion-field` | 2 | Upgraded to 105 lines. Temporal feedback via `dataTextureC` read + `dataTextureA` write, FBM warp twist, bass-driven warp strength, mids-driven ghosting, treble shimmer, depth-scaled field radius, warm/cool temperature shift, click freeze. |
+
+### Batch 1 (25 shaders)
 
 | # | Shader | Batch | Changes Made |
 |---|--------|-------|--------------|
@@ -625,13 +642,11 @@ Next smallest shaders not yet in any batch:
 - `voxel-grid` (3,357)
 - `polka-dot-reveal` (3,362)
 - `scanline-sorting` (3,363)
-- `pixel-scattering` (3,366)
 - `neon-cursor-trace` (3,373)
 - `directional-glitch` (3,382)
 - `stereoscopic-3d` (3,386)
 - `cyber-ripples` (3,390)
 - `quantized-ripples` (3,400)
-- `thermal-touch` (3,401)
 - `data-scanner` (3,405)
 - `vertical-slice-wave` (3,411)
 - `phantom-lag` (3,412)

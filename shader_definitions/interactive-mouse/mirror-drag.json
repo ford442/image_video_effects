@@ -4,7 +4,9 @@
   "url": "shaders/mirror-drag.wgsl",
   "category": "interactive-mouse",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "description": "Mirrors the image across an axis defined by the mouse position.",
   "params": [
