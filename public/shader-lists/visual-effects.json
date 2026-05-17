@@ -559,7 +559,9 @@
     "url": "shaders/cyber-grid-pulse.wgsl",
     "icon": "grid_on",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

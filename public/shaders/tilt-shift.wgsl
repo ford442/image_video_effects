@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Tilt Shift Miniature
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -42,66 +49,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
 
-    // Params
-    let strength = u.zoom_params.x * 20.0; // Max blur radius
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+
+    // Params — bass widens blur radius slightly
+    let strength    = u.zoom_params.x * 20.0 * (1.0 + bass * 0.2);
     let focus_width = u.zoom_params.y * 0.3 + 0.05;
-    let saturation = u.zoom_params.z * 2.0; // 0 to 2
-    let contrast = u.zoom_params.w * 2.0; // 0 to 2
+    let saturation  = u.zoom_params.z * 2.0 * (1.0 + mids * 0.1);
+    let contrast    = u.zoom_params.w * 2.0;
 
-    // Mouse Y defines the focus line
-    let focus_y = u.zoom_config.z; // Mouse Y is usually 0..1
-    // The memory said "u.zoom_config.yz, where y typically represents the X coordinate and z represents the Y coordinate."
+    let focus_y    = u.zoom_config.z;
+    let dist_focus = abs(uv.y - focus_y);
+    let blur_factor = smoothstep(focus_width * 0.5, focus_width * 1.5, dist_focus);
+    let radius      = strength * blur_factor;
 
-    // Calculate blur amount based on distance from focus line
-    let dist = abs(uv.y - focus_y);
-    // Smoothstep for transition
-    let blur_factor = smoothstep(focus_width * 0.5, focus_width * 1.5, dist);
+    var color_sum    = vec3<f32>(0.0);
+    var total_weight = 0.001; // Guard divide-by-zero
 
-    let radius = strength * blur_factor;
-
-    var color_sum = vec3<f32>(0.0);
-    var total_weight = 0.0;
-
-    // Simple box/gaussian blur
-    // To keep it performant, we limit samples.
-    // Quality depends on sample count.
-
-    // Directional blur or isotropic?
-    // Isotropic is better for bokeh.
-
-    // Spiral sampling to reduce artifacts
     let samples = 12.0;
     for (var i = 0.0; i < samples; i = i + 1.0) {
-        // Spiral
-        let r = sqrt(i + 0.5) / sqrt(samples) * radius;
-        let theta = 2.3999632 * i; // Golden angle
-
+        let r     = sqrt(i + 0.5) / sqrt(samples) * radius;
+        let theta = 2.3999632 * i;
         let offset = vec2<f32>(cos(theta), sin(theta)) * r / resolution;
-        // Aspect correction?
-        let offset_corr = offset * vec2<f32>(resolution.y / resolution.x, 1.0); // Wait, offset is in UV space.
-        // If we want circular blur in screen space, and UV is [0,1]x[0,1],
-        // we need to scale X offset by aspect ratio inverse?
-        // Let's assume offset is in "pixels / resolution".
-
-        let sample_uv = uv + offset;
-        let w = 1.0; // Gaussian weight could be applied here
-
-        color_sum = color_sum + textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb * w;
-        total_weight = total_weight + w;
+        let sample_uv = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+        color_sum    += textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
+        total_weight += 1.0;
     }
 
     var final_color = color_sum / total_weight;
 
-    // Saturation and Contrast
-    // Convert to HSV or just simple math
     var hsv = rgb2hsv(final_color);
-    hsv.y = hsv.y * saturation;
+    hsv.y = clamp(hsv.y * saturation, 0.0, 1.0);
     final_color = hsv2rgb(hsv);
+    final_color = clamp((final_color - 0.5) * contrast + 0.5, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    // Contrast
-    final_color = (final_color - 0.5) * contrast + 0.5;
+    // Depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+    // Meaningful alpha: blur band presence (out of focus = higher alpha overlay) + bass
+    let alpha = clamp(blur_factor * 0.5 + bass * 0.15 + 0.1, 0.0, 1.0);
+    let fc = vec4<f32>(final_color, alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), fc);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), fc);
 }

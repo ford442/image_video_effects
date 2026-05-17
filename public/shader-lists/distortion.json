@@ -565,7 +565,9 @@
     "category": "distortion",
     "features": [
       "mouse-driven",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Opens a dimensional rift at the mouse position, distorting space inside a rotating slice.",
     "params": [
