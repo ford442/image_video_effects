@@ -8,9 +8,6 @@
 // The WASM module instance
 let wasmModule = null;
 let canvas = null;
-let ctx = null;
-
-// ARCH: [Medium] ctx is declared but never used. Remove dead variable.
 
 // Renderer state
 const state = {
@@ -24,31 +21,7 @@ const state = {
   mouseDown: false,
   zoomParams: [0.5, 0.5, 0.5, 0.5],
   ripples: []
-  
-  // MISSING: Multi-slot state (CRITICAL)
-  // TypeScript: modes[3], slotParams[3], activeSlot
-  // Need arrays for 3 shader slots with independent params.
-  // Priority: CRITICAL
-  
-  // MISSING: Recording state (HIGH)
-  // TypeScript: isRecording, recordingMode ('loop'|'continuous')
-  // Need MediaRecorder + canvas.captureStream(60) integration.
-  // Priority: HIGH
-  
-  // MISSING: Audio state (HIGH)
-  // TypeScript: audioData {bass, mid, treble}
-  // Need real-time frequency analysis integration.
-  // Priority: HIGH
-  
-  // MISSING: Input source (HIGH)  
-  // TypeScript: inputSource ('image'|'video'|'webcam'|'live'|'generative')
-  // Need to track and handle different input types.
-  // Priority: HIGH
 };
-
-// ARCH: [Medium] State duplication: JS maintains state that C++ also maintains.
-// This can lead to synchronization issues. Consider making JS state read-only
-// and query C++ for authoritative values.
 
 /**
  * Initialize the WASM renderer
@@ -62,22 +35,64 @@ export async function initWasmRenderer(canvasElement) {
   }
 
   canvas = canvasElement;
-  // ARCH: [Medium] Hardcoded fallback 2048 should be named constant.
-  // Also, canvas.width may not reflect actual display size (use clientWidth).
   state.canvasWidth = canvas.width || 2048;
   state.canvasHeight = canvas.height || 2048;
 
-  try {
-    // Dynamically import the WASM module
-    // ARCH: [Low] Hardcoded path './pixelocity_wasm.js' assumes specific build output.
-    // Should be configurable via parameter or environment variable.
-    const wasm = await import('./pixelocity_wasm.js');
-    wasmModule = await wasm.default();
+  return new Promise((resolve) => {
+    const pathname = window.location.pathname;
+    const basePath = pathname.endsWith('/')
+      ? pathname.slice(0, -1)
+      : pathname.replace(/\/[^/]*$/, '');
+    const wasmJsPath = basePath + '/wasm/pixelocity_wasm.js';
+    const wasmBinaryPath = basePath + '/wasm/pixelocity_wasm.wasm';
 
-    // Initialize the C++ renderer
-    // ARCH: [High] Only passes width and height, but C++ function signature
-    // is initWasmRenderer(int width, int height, int agentCount).
-    // Missing third parameter causes undefined behavior!
+    console.log('[WASM] Loading from:', wasmJsPath);
+
+    if (window.PixelocityWASM) {
+      initializeModule(window.PixelocityWASM, wasmBinaryPath, resolve);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = wasmJsPath;
+    script.async = true;
+
+    script.onload = () => {
+      if (!window.PixelocityWASM) {
+        console.error('[WASM] PixelocityWASM not found on window after script load');
+        resolve(false);
+        return;
+      }
+      initializeModule(window.PixelocityWASM, wasmBinaryPath, resolve);
+    };
+
+    script.onerror = (err) => {
+      console.error('[WASM] Failed to load script:', err);
+      resolve(false);
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * Initialize the Emscripten module and the C++ renderer
+ */
+async function initializeModule(factory, wasmBinaryPath, resolve) {
+  try {
+    wasmModule = await factory({
+      locateFile: (path) => {
+        if (path.endsWith('.wasm')) return wasmBinaryPath;
+        return path;
+      }
+    });
+
+    if (typeof wasmModule.ccall !== 'function') {
+      console.warn('[WASM] Module loaded but ccall unavailable — stub build detected. Upload a real emcc binary to public/wasm/.');
+      resolve(false);
+      return;
+    }
+
     const result = wasmModule.ccall(
       'initWasmRenderer',
       'number',
@@ -85,17 +100,18 @@ export async function initWasmRenderer(canvasElement) {
       [state.canvasWidth, state.canvasHeight]
     );
 
-    if (result !== 0) {
-      console.error('Failed to initialize WASM renderer');
-      return false;
+    if (!result) {
+      console.error('Failed to initialize WASM renderer (C++ returned 0)');
+      resolve(false);
+      return;
     }
 
     state.initialized = true;
     console.log('✅ WASM Renderer initialized');
-    return true;
+    resolve(true);
   } catch (err) {
-    console.error('Failed to load WASM module:', err);
-    return false;
+    console.error('Failed to initialize module:', err);
+    resolve(false);
   }
 }
 
@@ -123,9 +139,6 @@ export function loadShader(id, wgslCode) {
     return false;
   }
 
-  // Allocate memory for the strings
-  // ARCH: [High] Memory allocation without try-catch.
-  // If _malloc fails (OOM), subsequent operations will crash.
   const idLen = wasmModule.lengthBytesUTF8(id) + 1;
   const idPtr = wasmModule._malloc(idLen);
   wasmModule.stringToUTF8(id, idPtr, idLen);
@@ -134,20 +147,20 @@ export function loadShader(id, wgslCode) {
   const codePtr = wasmModule._malloc(codeLen);
   wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
 
-  // ARCH: [Critical] If ccall throws exception, memory is leaked.
-  // Use try-finally to ensure _free is always called.
-  const result = wasmModule.ccall(
-    'loadShader',
-    'number',
-    ['number', 'number'],
-    [idPtr, codePtr]
-  );
+  let result;
+  try {
+    result = wasmModule.ccall(
+      'loadShader',
+      'number',
+      ['number', 'number'],
+      [idPtr, codePtr]
+    );
+  } finally {
+    wasmModule._free(idPtr);
+    wasmModule._free(codePtr);
+  }
 
-  // Free allocated memory
-  wasmModule._free(idPtr);
-  wasmModule._free(codePtr);
-
-  return result === 0;
+  return result !== 0;
 }
 
 /**
@@ -160,47 +173,59 @@ export function setActiveShader(id) {
   const idLen = wasmModule.lengthBytesUTF8(id) + 1;
   const idPtr = wasmModule._malloc(idLen);
   wasmModule.stringToUTF8(id, idPtr, idLen);
-  wasmModule.ccall('setActiveShader', null, ['number'], [idPtr]);
-  wasmModule._free(idPtr);
+  try {
+    wasmModule.ccall('setActiveShader', null, ['number'], [idPtr]);
+  } finally {
+    wasmModule._free(idPtr);
+  }
 
   state.activeShader = id;
 }
 
 /**
- * Update uniform values
+ * Update uniform values.
+ * State setters (updateMousePos, updateAudioData) should be called before
+ * this function to push values into C++ before the render call.
  * @param {Object} uniforms - Uniform values
  */
 export function updateUniforms(uniforms = {}) {
   if (!state.initialized || !wasmModule) return;
 
-  state.time = uniforms.time ?? state.time;
-  state.mouseX = uniforms.mouseX ?? state.mouseX;
-  state.mouseY = uniforms.mouseY ?? state.mouseY;
-  state.mouseDown = uniforms.mouseDown ?? state.mouseDown;
-  
-  if (uniforms.zoomParams) {
-    state.zoomParams = uniforms.zoomParams;
-  }
+  if (uniforms.time !== undefined) state.time = uniforms.time;
+  if (uniforms.mouseX !== undefined) state.mouseX = uniforms.mouseX;
+  if (uniforms.mouseY !== undefined) state.mouseY = uniforms.mouseY;
+  if (uniforms.mouseDown !== undefined) state.mouseDown = uniforms.mouseDown;
+  if (uniforms.zoom_params) state.zoomParams = uniforms.zoom_params;
 
-  // ARCH: [Critical] This ccall signature doesn't match C++ implementation!
-  // C++ has: void updateUniforms() - no parameters
-  // But this passes 8 arguments. This will cause stack corruption or crash.
-  // The C++ code ignores these values and reads from internal state instead.
-  wasmModule.ccall(
-    'updateUniforms',
-    null,
-    ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number'],
-    [
-      state.time,
-      state.mouseX,
-      state.mouseY,
-      state.mouseDown ? 1 : 0,
-      state.zoomParams[0],
-      state.zoomParams[1],
-      state.zoomParams[2],
-      state.zoomParams[3]
-    ]
-  );
+  // Propagate mouse/param state to C++ before triggering the render.
+  wasmModule.ccall('updateMousePos', null, ['number', 'number'], [state.mouseX, state.mouseY]);
+
+  // C++ updateUniforms() takes no parameters — it reads internal state and
+  // triggers a Render() call.
+  wasmModule.ccall('updateUniforms', null, [], []);
+}
+
+/**
+ * Update mouse position (normalized 0-1 coordinates).
+ * @param {number} x
+ * @param {number} y
+ */
+export function updateMousePos(x, y) {
+  if (!state.initialized || !wasmModule) return;
+  state.mouseX = x;
+  state.mouseY = y;
+  wasmModule.ccall('updateMousePos', null, ['number', 'number'], [x, y]);
+}
+
+/**
+ * Update audio frequency bands (0-1 normalized).
+ * @param {number} bass
+ * @param {number} mid
+ * @param {number} treble
+ */
+export function updateAudioData(bass, mid, treble) {
+  if (!state.initialized || !wasmModule) return;
+  wasmModule.ccall('updateAudioData', null, ['number', 'number', 'number'], [bass, mid, treble]);
 }
 
 /**
@@ -236,12 +261,13 @@ export function getFPS() {
 }
 
 /**
- * Check if renderer is initialized
+ * Check if renderer is initialized.
+ * Returns the local JS state flag which is only set to true after the C++
+ * renderer confirms successful initialization (ccall 'initWasmRenderer' returns 1).
  * @returns {boolean}
  */
 export function isInitialized() {
-  if (!wasmModule) return false;
-  return wasmModule.ccall('isRendererInitialized', 'number', [], []) !== 0;
+  return state.initialized;
 }
 
 /**
@@ -273,13 +299,13 @@ export async function loadShaderFromURL(id, url) {
 export function uploadImageData(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
 
-  // ARCH: [High] No validation that rgbaPixels.length matches width*height*4.
-  // Passing wrong size will cause memory corruption.
-  const byteLen = rgbaPixels.length;
-  const ptr = wasmModule._malloc(byteLen);
+  const ptr = wasmModule._malloc(rgbaPixels.length);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);
-  wasmModule.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, width, height]);
-  wasmModule._free(ptr);
+  try {
+    wasmModule.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, width, height]);
+  } finally {
+    wasmModule._free(ptr);
+  }
 }
 
 /**
@@ -291,45 +317,14 @@ export function uploadImageData(rgbaPixels, width, height) {
 export function uploadVideoFrame(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
 
-  // ARCH: [High] Same memory safety issue as uploadImageData.
-  // No size validation.
-  // ARCH: [Medium] Allocating and freeing every frame is inefficient.
-  // Consider using a persistent pinned buffer.
-  const byteLen = rgbaPixels.length;
-  const ptr = wasmModule._malloc(byteLen);
+  const ptr = wasmModule._malloc(rgbaPixels.length);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);
-  wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
-  wasmModule._free(ptr);
+  try {
+    wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
+  } finally {
+    wasmModule._free(ptr);
+  }
 }
-
-// ARCH: [High] Missing API functions that exist in C++ but not exposed:
-// - SetTime(float) - exists in C++, not in JS
-// - SetResolution(float, float) - exists in C++, not in JS
-// - SetMouse(float, float, bool) - exists in C++, not in JS
-// - SetZoomParams(float, float, float, float) - exists in C++, not in JS
-// - UpdateDepthMap - exists in C++, not in JS
-//
-// This means the JS bridge cannot fully control the renderer.
-
-// MISSING: Feature parity with TypeScript Renderer (COMPLETENESS ANALYSIS)
-//
-// CRITICAL Priority:
-// - setSlotShader(slotIndex, shaderId) - Multi-slot support (3 slots)
-// - setSlotParams(slotIndex, params) - Per-slot parameters
-// - updateDepthMap(data, width, height) - AI depth estimation integration
-//
-// HIGH Priority:
-// - updateAudioData(bass, mid, treble) - Audio analyzer integration
-// - startRecording(), stopRecording() - 8s video clip recording
-// - captureScreenshot() - Frame capture for sharing
-// - setInputSource(source) - 'image'|'video'|'webcam'|'live'|'generative'
-// - attachHLSStream(videoElement) - Live stream support
-//
-// MEDIUM Priority:
-// - preloadShaders(shaderList) - Shader caching/precompilation
-// - connectRemoteControl(channelName) - BroadcastChannel for remote control
-//
-// See COMPLETENESS_ANALYSIS.md for full details
 
 // Default export
 export default {
@@ -339,32 +334,13 @@ export default {
   loadShaderFromURL,
   setActiveShader,
   updateUniforms,
+  updateMousePos,
+  updateAudioData,
   addRipple,
   clearRipples,
   getFPS,
   isInitialized,
   uploadImageData,
   uploadVideoFrame
-  
-  // MISSING: Multi-slot API (CRITICAL)
-  // setSlotShader, setSlotParams, setActiveSlot,
-  
-  // MISSING: Recording API (HIGH)
-  // startRecording, stopRecording, captureScreenshot,
-  
-  // MISSING: Audio API (HIGH)
-  // updateAudioData,
-  
-  // MISSING: Depth API (CRITICAL)
-  // uploadDepthMap,
-  
-  // MISSING: Input source API (HIGH)
-  // setInputSource
 };
 
-// ARCH: OVERALL SUMMARY FOR wasm_bridge.js:
-// 1. C/JS API mismatch in updateUniforms() - Critical bug
-// 2. Missing memory safety validations
-// 3. Missing wrapper functions for several C++ APIs
-// 4. Inefficient per-frame memory allocation
-// 5. No TypeScript type definitions for better IDE support

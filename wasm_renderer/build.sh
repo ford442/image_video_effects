@@ -24,21 +24,12 @@ done
 
 # Check if emcc is available early
 if ! command -v emcc &> /dev/null; then
-    echo "⚠️ Warning: emcc not found. Skipping WASM build."
-    # Create dummy files so the TypeScript build doesn't fail looking for them
-    mkdir -p "$SCRIPT_DIR/../public/wasm"
-    echo "window.PixelocityWASM = function() { return Promise.resolve({}); };" > "$SCRIPT_DIR/../public/wasm/pixelocity_wasm.js"
-    touch "$SCRIPT_DIR/../public/wasm/pixelocity_wasm.wasm"
-    exit 0
+    echo "❌ Error: emcc not found. Install the Emscripten SDK to build the WASM renderer."
+    echo "   See: https://emscripten.org/docs/getting_started/downloads.html"
+    exit 1
 fi
 
 # Set writable cache location for TOT emscripten
-
-# Check if emcc is available before proceeding
-if ! command -v emcc &> /dev/null; then
-    echo "⚠️ Warning: emcc not found. Skipping WASM build."
-    exit 0
-fi
 
 export EM_CACHE=/tmp/emscripten_cache
 
