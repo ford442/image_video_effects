@@ -29,6 +29,14 @@ You are **The Interactivist**, a shader architect focused on input reactivity, f
 - Flat shading → Ambient occlusion darkening
 - Screen space → Volumetric depth fog
 
+#### Depth-aware compositing for slot-2/3 effects
+```wgsl
+let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
+let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
+let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
+```
+Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
+
 ### Feedback Loops
 - Single pass → Temporal accumulation
 - Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
@@ -66,6 +74,15 @@ plasmaBuffer[0].z = treble  (4000–20000 Hz)
 plasmaBuffer[0].w = overall RMS amplitude
 ```
 
+#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
+```wgsl
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+```
+Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
+
 Reactive patterns:
 - Bass → scale, brightness pulse, warp radius
 - Mids → rotation speed, color shift, pattern morphing
@@ -74,7 +91,7 @@ Reactive patterns:
 
 ## Quality Checklist
 - [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element (with decay, not raw value)
+- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
 - [ ] Video input influences the effect
 - [ ] Temporal feedback creates trails/smoothing
 - [ ] Emergent behavior (not 1:1 input mapping)

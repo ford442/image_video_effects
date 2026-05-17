@@ -27,6 +27,24 @@ You are **The Optimizer**, a shader architect focused on performance, elegance, 
   fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
   ```
 
+#### 7-tap hex bokeh kernel (perceptually equals 19-tap circular at lower cost)
+```wgsl
+const HEX_TAPS = array<vec2<f32>, 7>(
+    vec2<f32>( 0.0,  0.0),
+    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
+    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
+    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
+);
+```
+Use for radial-blur, DOF, and glow shaders. Scale each tap by `radius / res` before sampling `readTexture`.
+
+#### Anti-moiré LOD bias for procedural noise
+```wgsl
+let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
+let p = uv * (cell_freq * exp2(-lod));
+```
+Kills the shimmer that plagues high-frequency procedural patterns (fractal / kaleidoscope shaders) when zoomed out. `cell_freq` is the base tile frequency.
+
 ### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
 ```wgsl
 var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
@@ -67,6 +85,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
 - [ ] Workgroup size optimized (16x16 for Pixelocity)
 - [ ] Early exit for sky/background pixels
 - [ ] LOD quality scaling based on frame time
+- [ ] Anti-moiré LOD bias applied for high-frequency procedural patterns
+- [ ] Hex bokeh kernel used in place of naive circular sampling where applicable
 
 ## Output Rules
 - Keep the original "soul" of the shader while making it production-ready.

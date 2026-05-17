@@ -58,6 +58,38 @@ const INV_PI = 0.31830988618379067154;   // 1/π
   ```
 - Static → Temporal coherent noise (seed with `floor(t/period)`, lerp between seeds)
 
+#### Domain-warped FBM (organic flow, two-octave warp)
+```wgsl
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5; var s = 0.0; var q = p;
+    for (var i = 0; i < 5; i = i + 1) {
+        s = s + a * valueNoise(q);
+        q = q * 2.02; a = a * 0.5;
+    }
+    return s;
+}
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
+                      fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)),
+                      fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0*r);
+}
+```
+Strictly better than single-octave noise for "alive" generative shaders. Pass `u.config.x` as `t`.
+
+#### Polar kaleidoscope fold
+```wgsl
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+    let r = length(uv);
+    var a = atan2(uv.y, uv.x);
+    let seg = 6.2831853 / max(segs, 1.0);
+    a = abs(((a % seg) + seg) % seg - seg * 0.5);
+    return vec2<f32>(cos(a), sin(a)) * r;
+}
+```
+Cheap, branch-light fold that gives instant symmetry. Pair with `warpedFBM` or SDF sampling.
+
 ### Quasi-Random Sampling (better than pseudo-random)
 ```wgsl
 // Halton sequence – base 2 and 3, ideal for AA / Monte Carlo
@@ -90,6 +122,24 @@ fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
 - Static → Animated morphing fields (`mix(sdf_a, sdf_b, smoothstep(0,1,t))`)
 - Solid → Subsurface scattering: `exp(-thickness / scatterDist) * albedo`
 - New primitives: capsule, hexagonal prism, torus knot, Möbius strip SDF
+
+#### Smooth-min SDF union (`smin`) — round seams between primitives
+```wgsl
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0 - h);
+}
+```
+`k ≈ 0.1–0.3` of the smaller primitive radius. Replaces hard `min()` for organic blob unions.
+
+#### Anti-aliased SDF / line via `fwidth` (no MSAA needed in compute)
+```wgsl
+fn aa_step(edge: f32, x: f32) -> f32 {
+    let w = max(fwidth(x), 1e-4);
+    return smoothstep(edge - w, edge + w, x);
+}
+```
+Use wherever a hard `step()` would produce shimmering edges — kaleidoscope folds, SDF contours, grid lines.
 
 ### Fractal Upgrades
 - Basic Mandelbrot → Burning Ship (`abs(z)` before squaring)
