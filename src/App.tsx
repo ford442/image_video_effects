@@ -1328,12 +1328,12 @@ function MainApp() {
         <div className="App">
             <header className="header">
                 <div className="logo-section">
-                    <div style={{ height: '80px', overflow: 'hidden', display: 'flex', alignItems: 'flex-start' }}>
+                    <div style={{ height: '80px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img
                             src="https://test.1ink.us/image_video_effects/static/media/pixelocity_title_logo_glitch.gif"
                             alt="Pixelocity"
                             className="logo-img"
-                            style={{ height: '120px', width: 'auto', objectFit: 'contain', marginTop: '0px' }}
+                            style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
                         />
                     </div>
                     <div className="subtitle-text">Image Playpen</div>
