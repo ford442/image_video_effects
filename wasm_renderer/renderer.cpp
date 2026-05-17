@@ -5,6 +5,7 @@
 #include <math.h>
 #include <string>
 #include <cstring>
+#include <algorithm>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // renderer.cpp - WebGPU Compute Shader Renderer Implementation
@@ -76,6 +77,59 @@ static WGPUStringView MakeStringView(const char* str) {
     return view;
 }
 
+// Phase 2: Round `value` up to the nearest multiple of `align` (which must be a power-of-2).
+static inline uint32_t AlignUp(uint32_t value, uint32_t align) {
+    return (value + align - 1u) & ~(align - 1u);
+}
+
+// Phase 2: Parse @workgroup_size(x, y) from WGSL source.
+// Searches for the first @compute directive and then @workgroup_size after it.
+// Falls back to (16, 16) if parsing fails — matching the TypeScript renderer default.
+static void ParseWorkgroupSize(const char* wgslCode, uint32_t& x, uint32_t& y) {
+    x = 16; y = 16;
+    if (!wgslCode) return;
+
+    // Locate @compute
+    const char* p = strstr(wgslCode, "@compute");
+    if (!p) return;
+
+    // Locate @workgroup_size after @compute
+    const char* ws = strstr(p + 8, "@workgroup_size");
+    if (!ws) return;
+
+    // Skip to '('
+    const char* r = ws + 15;
+    while (*r == ' ' || *r == '\t' || *r == '\n' || *r == '\r') r++;
+    if (*r != '(') return;
+    r++;
+
+    // Skip whitespace, parse first integer
+    while (*r == ' ' || *r == '\t') r++;
+    if (*r < '0' || *r > '9') return;
+    uint32_t nx = 0;
+    while (*r >= '0' && *r <= '9') nx = nx * 10 + static_cast<uint32_t>(*r++ - '0');
+
+    // Skip whitespace, expect ','
+    while (*r == ' ' || *r == '\t') r++;
+    if (*r != ',') {
+        // Only one dimension specified — treat as 1-D workgroup
+        x = nx; y = 1;
+        return;
+    }
+    r++;
+
+    // Skip whitespace, parse second integer
+    while (*r == ' ' || *r == '\t') r++;
+    if (*r < '0' || *r > '9') {
+        x = nx; // partial success
+        return;
+    }
+    uint32_t ny = 0;
+    while (*r >= '0' && *r <= '9') ny = ny * 10 + static_cast<uint32_t>(*r++ - '0');
+
+    x = nx; y = ny;
+}
+
 WebGPURenderer::WebGPURenderer() = default;
 
 WebGPURenderer::~WebGPURenderer() {
@@ -145,6 +199,17 @@ void WebGPURenderer::Shutdown() {
     if (uniformBuffer_) wgpuBufferRelease(uniformBuffer_);
     if (extraBuffer_) wgpuBufferRelease(extraBuffer_);
     if (plasmaBuffer_) wgpuBufferRelease(plasmaBuffer_);
+
+    // Phase 2: release readback buffer used for frame capture.
+    if (readbackBuffer_) {
+        if (captureState_ == CaptureState::Pending) {
+            wgpuBufferUnmap(readbackBuffer_);
+        }
+        wgpuBufferRelease(readbackBuffer_);
+        readbackBuffer_ = nullptr;
+        readbackBufferSize_ = 0;
+    }
+    captureState_ = CaptureState::Idle;
 
     // Clean up layouts and pipelines
     if (computeBindGroup_) wgpuBindGroupRelease(computeBindGroup_);
@@ -727,9 +792,11 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     sp.pipeline = pipeline;
     sp.id = id;
     sp.name = id;
+    // Phase 2: parse and store workgroup dimensions so Render() can dispatch correctly.
+    ParseWorkgroupSize(wgslCode, sp.workgroupX, sp.workgroupY);
     shaders_[id] = sp;
 
-    printf("✅ Loaded shader: %s\n", id);
+    printf("✅ Loaded shader: %s (workgroup: %ux%u)\n", id, sp.workgroupX, sp.workgroupY);
     return true;
 }
 
@@ -856,19 +923,22 @@ void WebGPURenderer::WriteSlotParams(const float* params) {
     wgpuQueueWriteBuffer(queue_, uniformBuffer_, 32, params, 4 * sizeof(float));
 }
 
-// Dispatch a compute pass over the full canvas at 16×16 workgroups.
+// Dispatch a compute pass over the full canvas using the given workgroup dimensions.
 void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
                                           WGPUComputePipeline pipeline,
-                                          WGPUBindGroup bindGroup) {
+                                          WGPUBindGroup bindGroup,
+                                          uint32_t workgroupX,
+                                          uint32_t workgroupY) {
     WGPUComputePassDescriptor cpDesc = {};
     cpDesc.label = MakeStringView("Compute Pass");
     WGPUComputePassEncoder cp = wgpuCommandEncoderBeginComputePass(encoder, &cpDesc);
     wgpuComputePassEncoderSetPipeline(cp, pipeline);
     wgpuComputePassEncoderSetBindGroup(cp, 0, bindGroup, 0, nullptr);
+    // Phase 2: use the shader's actual workgroup size instead of hardcoded 16.
     wgpuComputePassEncoderDispatchWorkgroups(
         cp,
-        (static_cast<uint32_t>(canvasWidth_)  + 15) / 16,
-        (static_cast<uint32_t>(canvasHeight_) + 15) / 16,
+        (static_cast<uint32_t>(canvasWidth_)  + workgroupX - 1u) / workgroupX,
+        (static_cast<uint32_t>(canvasHeight_) + workgroupY - 1u) / workgroupY,
         1);
     wgpuComputePassEncoderEnd(cp);
     wgpuComputePassEncoderRelease(cp);
@@ -881,25 +951,46 @@ void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, in
     // Pixels outside the source image remain black.
     const int dstW = canvasWidth_;
     const int dstH = canvasHeight_;
-    // ARCH: [Low] Could use std::min instead of ternary for clarity.
     const int copyW = (width  < dstW) ? width  : dstW;
     const int copyH = (height < dstH) ? height : dstH;
 
-    // ARCH: [High] Large allocation every frame for video updates.
-    // Consider using a persistent staging buffer or texture pool.
-    std::vector<float> floatData(static_cast<size_t>(dstW) * dstH * 4, 0.0f);
+    // Phase 2: reuse persistent staging buffer to eliminate per-frame heap allocation.
+    const size_t needed = static_cast<size_t>(dstW) * dstH * 4;
+    if (videoStagingBuffer_.size() < needed) {
+        videoStagingBuffer_.assign(needed, 0.0f);
+    }
 
-    // ARCH: [Medium] Nested loops could be optimized with SIMD or
-    // GPU-based conversion using a compute shader.
+    // Zero only the pixels that will NOT be written by the copy loops below
+    // (right/bottom borders when source is smaller than the destination).
+    // This avoids zeroing the entire buffer on every frame.
+    if (copyW < dstW || copyH < dstH) {
+        // Zero the right border columns (all rows).
+        for (int y = 0; y < copyH; y++) {
+            const int rowBase = y * dstW * 4;
+            for (int x = copyW; x < dstW; x++) {
+                videoStagingBuffer_[rowBase + x * 4 + 0] = 0.0f;
+                videoStagingBuffer_[rowBase + x * 4 + 1] = 0.0f;
+                videoStagingBuffer_[rowBase + x * 4 + 2] = 0.0f;
+                videoStagingBuffer_[rowBase + x * 4 + 3] = 0.0f;
+            }
+        }
+        // Zero the bottom border rows entirely.
+        for (int y = copyH; y < dstH; y++) {
+            const size_t rowStart = static_cast<size_t>(y) * dstW * 4;
+            std::fill(videoStagingBuffer_.begin() + static_cast<std::ptrdiff_t>(rowStart),
+                      videoStagingBuffer_.begin() + static_cast<std::ptrdiff_t>(rowStart + static_cast<size_t>(dstW) * 4),
+                      0.0f);
+        }
+    }
+
     for (int y = 0; y < copyH; y++) {
         for (int x = 0; x < copyW; x++) {
             const int srcIdx = (y * width + x) * 4;
             const int dstIdx = (y * dstW  + x) * 4;
-            // ARCH: [Medium] Magic number 255.0f should be constant.
-            floatData[dstIdx + 0] = data[srcIdx + 0] / 255.0f;
-            floatData[dstIdx + 1] = data[srcIdx + 1] / 255.0f;
-            floatData[dstIdx + 2] = data[srcIdx + 2] / 255.0f;
-            floatData[dstIdx + 3] = data[srcIdx + 3] / 255.0f;
+            videoStagingBuffer_[dstIdx + 0] = data[srcIdx + 0] / 255.0f;
+            videoStagingBuffer_[dstIdx + 1] = data[srcIdx + 1] / 255.0f;
+            videoStagingBuffer_[dstIdx + 2] = data[srcIdx + 2] / 255.0f;
+            videoStagingBuffer_[dstIdx + 3] = data[srcIdx + 3] / 255.0f;
         }
     }
 
@@ -911,8 +1002,7 @@ void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, in
 
     WGPUTexelCopyBufferLayout layout = {};
     layout.offset = 0;
-    // ARCH: [Medium] Magic number 16 = sizeof(float) * 4
-    layout.bytesPerRow = static_cast<uint32_t>(dstW) * 16;
+    layout.bytesPerRow = static_cast<uint32_t>(dstW) * 16;  // 4 floats × 4 bytes
     layout.rowsPerImage = static_cast<uint32_t>(dstH);
 
     WGPUExtent3D extent = {};
@@ -920,8 +1010,8 @@ void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, in
     extent.height = static_cast<uint32_t>(dstH);
     extent.depthOrArrayLayers = 1;
 
-    wgpuQueueWriteTexture(queue_, &dest, floatData.data(),
-                          floatData.size() * sizeof(float), &layout, &extent);
+    wgpuQueueWriteTexture(queue_, &dest, videoStagingBuffer_.data(),
+                          needed * sizeof(float), &layout, &extent);
 }
 
 void WebGPURenderer::LoadImage(const uint8_t* data, int width, int height) {
@@ -974,10 +1064,142 @@ void WebGPURenderer::SetTime(float time) {
 }
 
 void WebGPURenderer::SetResolution(float width, float height) {
-    // ARCH: [Medium] Stubs should log warning or have [[deprecated]] attribute.
-    // Silent no-op can confuse developers expecting dynamic resolution changes.
-    (void)width;
-    (void)height;
+    if (width > 0.0f && height > 0.0f) {
+        ResizeCanvas(static_cast<int>(width), static_cast<int>(height));
+    }
+}
+
+// ─── Phase 2: Canvas resize ───────────────────────────────────────────────────
+
+void WebGPURenderer::RecreateTextures() {
+    // Release size-dependent textures.
+    // samplers, uniform/extra/plasma buffers, and the 1×1 emptyTexture_ are size-independent
+    // and do NOT need to be recreated.
+    auto releaseIfValid = [](WGPUTexture& tex) {
+        if (tex) { wgpuTextureRelease(tex); tex = nullptr; }
+    };
+    releaseIfValid(readTexture_);
+    releaseIfValid(writeTexture_);
+    releaseIfValid(pingPong0_);
+    releaseIfValid(pingPong1_);
+    releaseIfValid(dataTextureA_);
+    releaseIfValid(dataTextureB_);
+    releaseIfValid(dataTextureC_);
+    releaseIfValid(depthTextureRead_);
+    releaseIfValid(depthTextureWrite_);
+
+    // Release old bind group since it references the old texture views.
+    if (computeBindGroup_) {
+        wgpuBindGroupRelease(computeBindGroup_);
+        computeBindGroup_ = nullptr;
+    }
+
+    // Create new textures at the current canvas dimensions.
+    WGPUTextureDescriptor texDesc = {};
+    texDesc.nextInChain = nullptr;
+    texDesc.dimension = WGPUTextureDimension_2D;
+    texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), 1};
+    texDesc.mipLevelCount = 1;
+    texDesc.sampleCount = 1;
+
+    // Ping-pong textures (rgba32float)
+    texDesc.format = WGPUTextureFormat_RGBA32Float;
+    texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding
+                  | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
+    texDesc.label = MakeStringView("Read Texture");
+    readTexture_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Write Texture");
+    writeTexture_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Ping-Pong 0");
+    pingPong0_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Ping-Pong 1");
+    pingPong1_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Data Texture A");
+    dataTextureA_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Data Texture B");
+    dataTextureB_ = wgpuDeviceCreateTexture(device_, &texDesc);
+
+    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
+    texDesc.label = MakeStringView("Data Texture C");
+    dataTextureC_ = wgpuDeviceCreateTexture(device_, &texDesc);
+
+    // Depth textures (r32float)
+    texDesc.format = WGPUTextureFormat_R32Float;
+    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
+    texDesc.label = MakeStringView("Depth Texture Read");
+    depthTextureRead_ = wgpuDeviceCreateTexture(device_, &texDesc);
+    texDesc.label = MakeStringView("Depth Texture Write");
+    depthTextureWrite_ = wgpuDeviceCreateTexture(device_, &texDesc);
+
+    // Zero-initialise textures that must start black.
+    // Reuse videoStagingBuffer_ (rgba32float sized) to avoid a separate allocation.
+    const size_t floatCount = static_cast<size_t>(canvasWidth_) * canvasHeight_ * 4;
+    if (videoStagingBuffer_.size() < floatCount) {
+        videoStagingBuffer_.assign(floatCount, 0.0f);
+    } else {
+        std::fill(videoStagingBuffer_.begin(),
+                  videoStagingBuffer_.begin() + static_cast<std::ptrdiff_t>(floatCount),
+                  0.0f);
+    }
+
+    WGPUTexelCopyTextureInfo dest = {};
+    dest.mipLevel = 0;
+    dest.origin = {0, 0, 0};
+    dest.aspect = WGPUTextureAspect_All;
+
+    WGPUTexelCopyBufferLayout layout = {};
+    layout.offset = 0;
+    layout.bytesPerRow  = static_cast<uint32_t>(canvasWidth_) * 16;  // rgba32float
+    layout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
+
+    WGPUExtent3D extent = {};
+    extent.width  = static_cast<uint32_t>(canvasWidth_);
+    extent.height = static_cast<uint32_t>(canvasHeight_);
+    extent.depthOrArrayLayers = 1;
+
+    dest.texture = dataTextureC_;
+    wgpuQueueWriteTexture(queue_, &dest, videoStagingBuffer_.data(),
+                          floatCount * sizeof(float), &layout, &extent);
+
+    dest.texture = readTexture_;
+    wgpuQueueWriteTexture(queue_, &dest, videoStagingBuffer_.data(),
+                          floatCount * sizeof(float), &layout, &extent);
+
+    // Rebuild the bind group with the new texture views.
+    CreateBindGroups();
+}
+
+void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
+    if (newWidth <= 0 || newHeight <= 0) return;
+    if (newWidth == canvasWidth_ && newHeight == canvasHeight_) return;
+    if (!initialized_) return;
+
+    printf("🔄 Resizing canvas: %dx%d → %dx%d\n",
+           canvasWidth_, canvasHeight_, newWidth, newHeight);
+
+    canvasWidth_  = newWidth;
+    canvasHeight_ = newHeight;
+
+    // Recreate all size-dependent GPU resources.
+    RecreateTextures();
+
+    // Invalidate the persistent staging buffer so it gets resized on next upload.
+    videoStagingBuffer_.clear();
+
+    // Release the readback buffer; it will be recreated at the new size on next capture.
+    if (readbackBuffer_) {
+        if (captureState_ == CaptureState::Pending) {
+            // A capture was in progress — cancel it.
+            wgpuBufferUnmap(readbackBuffer_);
+        }
+        wgpuBufferRelease(readbackBuffer_);
+        readbackBuffer_ = nullptr;
+        readbackBufferSize_ = 0;
+        readbackBytesPerRow_ = 0;
+    }
+    captureState_ = CaptureState::Idle;
+
+    printf("✅ Canvas resized successfully\n");
 }
 
 void WebGPURenderer::SetMouse(float x, float y, bool down) {
@@ -1140,7 +1362,8 @@ void WebGPURenderer::Render() {
                 encDesc.label = MakeStringView("Single Encoder");
                 WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
 
-                DispatchComputePass(enc, it->second.pipeline, bg);
+                DispatchComputePass(enc, it->second.pipeline, bg,
+                                    it->second.workgroupX, it->second.workgroupY);
                 wgpuBindGroupRelease(bg);
 
                 CopyTex(enc, writeTexture_, readTexture_, W, H);
@@ -1182,7 +1405,8 @@ void WebGPURenderer::Render() {
             encDesc.label = MakeStringView("Slot Encoder");
             WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
 
-            DispatchComputePass(enc, it->second.pipeline, bg);
+            DispatchComputePass(enc, it->second.pipeline, bg,
+                                it->second.workgroupX, it->second.workgroupY);
             wgpuBindGroupRelease(bg);
 
             WGPUCommandBufferDescriptor cbDesc = {};
@@ -1241,8 +1465,134 @@ void WebGPURenderer::Render() {
 }
 
 void WebGPURenderer::Present() {
-    // ARCH: [Low] Method documented as no-op should have comment explaining why.
-    // WebGPU surface presentation is handled by browser's animation loop.
+    // WebGPU surface presentation is handled by the browser's animation loop.
+}
+
+// ─── Phase 2: Frame Capture ───────────────────────────────────────────────────
+
+void WebGPURenderer::BeginFrameCapture() {
+    if (captureState_ == CaptureState::Pending) return;  // already in flight
+    if (!initialized_ || !writeTexture_ || !queue_ || !device_) {
+        captureState_ = CaptureState::Error;
+        return;
+    }
+
+    const uint32_t W = static_cast<uint32_t>(canvasWidth_);
+    const uint32_t H = static_cast<uint32_t>(canvasHeight_);
+
+    // WebGPU requires bytesPerRow to be a multiple of 256.
+    // writeTexture_ is RGBA32Float: 4 channels × 4 bytes = 16 bytes per pixel.
+    const uint32_t bytesPerRow = AlignUp(W * 16u, 256u);
+    const size_t   needed      = static_cast<size_t>(bytesPerRow) * H;
+
+    // (Re)create the readback buffer if the size has changed.
+    if (!readbackBuffer_ || readbackBufferSize_ < needed) {
+        if (readbackBuffer_) wgpuBufferRelease(readbackBuffer_);
+        WGPUBufferDescriptor bufDesc = {};
+        bufDesc.label            = MakeStringView("Readback Buffer");
+        bufDesc.size             = needed;
+        bufDesc.usage            = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        bufDesc.mappedAtCreation = false;
+        readbackBuffer_    = wgpuDeviceCreateBuffer(device_, &bufDesc);
+        readbackBufferSize_ = needed;
+    }
+    readbackBytesPerRow_ = bytesPerRow;
+
+    // Encode CopyTextureToBuffer: writeTexture_ → readbackBuffer_
+    WGPUCommandEncoderDescriptor encDesc = {};
+    encDesc.label = MakeStringView("Readback Encoder");
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, &encDesc);
+
+    WGPUTexelCopyTextureInfo src = {};
+    src.texture  = writeTexture_;
+    src.mipLevel = 0;
+    src.origin   = {0, 0, 0};
+    src.aspect   = WGPUTextureAspect_All;
+
+    WGPUTexelCopyBufferInfo dst = {};
+    dst.buffer             = readbackBuffer_;
+    dst.layout.offset      = 0;
+    dst.layout.bytesPerRow = bytesPerRow;
+    dst.layout.rowsPerImage = H;
+
+    WGPUExtent3D extent = { W, H, 1 };
+    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+
+    WGPUCommandBufferDescriptor cbDesc = {};
+    cbDesc.label = MakeStringView("Readback CmdBuf");
+    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
+    wgpuQueueSubmit(queue_, 1, &cb);
+    wgpuCommandBufferRelease(cb);
+    wgpuCommandEncoderRelease(enc);
+
+    captureState_ = CaptureState::Pending;
+
+    // Request async mapping.  The callback fires when the browser has finished
+    // copying the GPU data to the CPU-accessible buffer.
+    wgpuBufferMapAsync(
+        readbackBuffer_,
+        WGPUMapMode_Read, 0, needed,
+        WGPUBufferMapCallbackInfo{
+            nullptr,
+            WGPUCallbackMode_AllowSpontaneous,
+            [](WGPUMapAsyncStatus status, WGPUStringView /*message*/,
+               void* userdata1, void* /*userdata2*/) {
+                WebGPURenderer* self = static_cast<WebGPURenderer*>(userdata1);
+                if (status == WGPUMapAsyncStatus_Success) {
+                    self->captureState_ = CaptureState::Ready;
+                } else {
+                    printf("❌ Frame readback map failed (status=%d)\n",
+                           static_cast<int>(status));
+                    self->captureState_ = CaptureState::Error;
+                }
+            },
+            this, nullptr
+        });
+}
+
+int WebGPURenderer::ReadCapturedFrame(uint8_t* outRGBA8, int maxBytes) {
+    if (captureState_ != CaptureState::Ready) return 0;
+    if (!readbackBuffer_ || !outRGBA8) return 0;
+
+    const uint32_t W = static_cast<uint32_t>(canvasWidth_);
+    const uint32_t H = static_cast<uint32_t>(canvasHeight_);
+    const int required = static_cast<int>(W * H * 4);
+    if (maxBytes < required) return 0;
+
+    const void* mapped = wgpuBufferGetConstMappedRange(readbackBuffer_, 0,
+                                                        readbackBufferSize_);
+    if (!mapped) {
+        captureState_ = CaptureState::Error;
+        return 0;
+    }
+
+    const float* src = static_cast<const float*>(mapped);
+    // readbackBytesPerRow_ is in bytes; divide by 4 to get float stride.
+    const uint32_t floatStride = readbackBytesPerRow_ / 4u;
+
+    for (uint32_t y = 0; y < H; y++) {
+        const float*  rowSrc = src + static_cast<size_t>(y) * floatStride;
+        uint8_t*      rowDst = outRGBA8 + static_cast<size_t>(y) * W * 4;
+        for (uint32_t x = 0; x < W; x++) {
+            // Clamp float [0,1] to uint8 [0,255].
+            const float r = rowSrc[x * 4 + 0];
+            const float g = rowSrc[x * 4 + 1];
+            const float b = rowSrc[x * 4 + 2];
+            const float a = rowSrc[x * 4 + 3];
+            rowDst[x * 4 + 0] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, r)) * 255.0f);
+            rowDst[x * 4 + 1] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, g)) * 255.0f);
+            rowDst[x * 4 + 2] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, b)) * 255.0f);
+            rowDst[x * 4 + 3] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, a)) * 255.0f);
+        }
+    }
+    return required;
+}
+
+void WebGPURenderer::EndFrameCapture() {
+    if (readbackBuffer_ && captureState_ == CaptureState::Ready) {
+        wgpuBufferUnmap(readbackBuffer_);
+    }
+    captureState_ = CaptureState::Idle;
 }
 
 } // namespace pixelocity

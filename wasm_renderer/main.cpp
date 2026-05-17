@@ -176,6 +176,63 @@ float getFPS() {
     return g_renderer ? g_renderer->GetFPS() : 0.0f;
 }
 
+// ─── Phase 2: Canvas resize ───────────────────────────────────────────────────
+
+// Resize the canvas and recreate all size-dependent GPU resources.
+// Safe to call at any time after initialization.
+EMSCRIPTEN_KEEPALIVE
+void resizeCanvas(int newWidth, int newHeight) {
+    if (g_renderer) {
+        g_renderer->ResizeCanvas(newWidth, newHeight);
+    }
+}
+
+// ─── Phase 2: Frame capture (screenshot readback) ────────────────────────────
+
+// Initiate an asynchronous GPU readback of the current frame.
+// Poll getFrameCaptureState() until it returns 2 (ready), then call
+// readCapturedFrame() to retrieve the RGBA8 pixel data.
+EMSCRIPTEN_KEEPALIVE
+void beginFrameCapture() {
+    if (g_renderer) {
+        g_renderer->BeginFrameCapture();
+    }
+}
+
+// Returns: 0=idle, 1=pending, 2=ready, 3=error.
+EMSCRIPTEN_KEEPALIVE
+int getFrameCaptureState() {
+    return g_renderer ? g_renderer->GetFrameCaptureState() : 0;
+}
+
+// Copy RGBA8 pixel data into the buffer pointed to by outPtr (must be >= w*h*4 bytes).
+// Returns the number of bytes written, or 0 on failure.
+EMSCRIPTEN_KEEPALIVE
+int readCapturedFrame(uint8_t* outPtr, int maxBytes) {
+    if (!g_renderer || !outPtr) return 0;
+    return g_renderer->ReadCapturedFrame(outPtr, maxBytes);
+}
+
+// Release the mapped readback buffer.  Must be called after readCapturedFrame().
+EMSCRIPTEN_KEEPALIVE
+void endFrameCapture() {
+    if (g_renderer) {
+        g_renderer->EndFrameCapture();
+    }
+}
+
+// Convenience: returns the current canvas width (needed by JS to allocate the read buffer).
+EMSCRIPTEN_KEEPALIVE
+int getCanvasWidth() {
+    return g_renderer ? g_renderer->GetCanvasWidth() : 0;
+}
+
+// Convenience: returns the current canvas height.
+EMSCRIPTEN_KEEPALIVE
+int getCanvasHeight() {
+    return g_renderer ? g_renderer->GetCanvasHeight() : 0;
+}
+
 } // extern "C"
 
 int main() {

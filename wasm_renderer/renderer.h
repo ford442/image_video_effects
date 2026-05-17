@@ -60,6 +60,9 @@ struct ShaderPipeline {
     WGPUComputePipeline pipeline = nullptr;
     std::string id;
     std::string name;
+    // Phase 2: workgroup dimensions parsed from @workgroup_size in WGSL source
+    uint32_t workgroupX = 16;
+    uint32_t workgroupY = 16;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -92,6 +95,7 @@ public:
     // ═══════════════════════════════════════════════════════════════════════════
 
     // Compile and load a WGSL shader into memory.
+    // Phase 2: @workgroup_size is parsed from wgslCode and stored for correct dispatch.
     bool LoadShader(const char* id, const char* wgslCode);
 
     // Set the active shader for single-shader (legacy) rendering.
@@ -130,7 +134,11 @@ public:
     void SetTime(float time);
 
     // Dynamic resolution changes are not yet supported (fixed at init).
-    void SetResolution(float width, float height);  // no-op stub
+    void SetResolution(float width, float height);  // delegates to ResizeCanvas
+
+    // Phase 2: Dynamically resize the canvas and recreate all size-dependent GPU resources.
+    // Safe to call at any time after Initialize(); no-op if dimensions are unchanged.
+    void ResizeCanvas(int newWidth, int newHeight);
 
     // Update mouse position and button state for interactive shaders.
     void SetMouse(float x, float y, bool down);
@@ -168,6 +176,26 @@ public:
 
     bool IsInitialized() const { return initialized_; }
     float GetFPS() const { return fps_; }
+    int GetCanvasWidth()  const { return canvasWidth_; }
+    int GetCanvasHeight() const { return canvasHeight_; }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 2: FRAME CAPTURE (async GPU readback for screenshots / recording)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Initiate an asynchronous readback of the current frame (writeTexture_).
+    // Call GetFrameCaptureState() to poll for completion.
+    void BeginFrameCapture();
+
+    // Returns capture state: 0=idle, 1=pending, 2=ready, 3=error.
+    int GetFrameCaptureState() const { return static_cast<int>(captureState_); }
+
+    // When state==2 (ready): copy RGBA8 pixels into outRGBA8 (must be >= W*H*4 bytes).
+    // Returns the number of bytes written, or 0 on failure.
+    int ReadCapturedFrame(uint8_t* outRGBA8, int maxBytes);
+
+    // Release the mapped readback buffer.  Call after ReadCapturedFrame().
+    void EndFrameCapture();
 
 private:
     // ═══════════════════════════════════════════════════════════════════════════
@@ -180,6 +208,10 @@ private:
     void CreateRenderPipeline();
     void UpdateUniformBuffer();
 
+    // Phase 2: Release and recreate all canvas-size-dependent textures.
+    // Called by ResizeCanvas().
+    void RecreateTextures();
+
     // Create a temporary compute bind group that uses the supplied read/write
     // textures for bindings 1 and 2; all other bindings are shared globals.
     // Caller is responsible for releasing the returned object.
@@ -191,9 +223,13 @@ private:
 
     // Dispatch one compute pass using the given pipeline, bind group, and
     // texture dimensions.  The caller owns encoder/bind-group lifetime.
+    // Phase 2: workgroupX/Y are read from the ShaderPipeline (parsed from WGSL source);
+    //          they default to 16 for backward compatibility.
     void DispatchComputePass(WGPUCommandEncoder encoder,
                              WGPUComputePipeline pipeline,
-                             WGPUBindGroup bindGroup);
+                             WGPUBindGroup bindGroup,
+                             uint32_t workgroupX = 16,
+                             uint32_t workgroupY = 16);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // WebGPU OBJECTS
@@ -262,6 +298,23 @@ private:
     float audioBass_   = 0.0f;
     float audioMid_    = 0.0f;
     float audioTreble_ = 0.0f;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 2: PERSISTENT STAGING BUFFER (avoids per-frame heap allocation)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Reused across frames for UploadRGBA8ToReadTexture().
+    // Grows on demand but never shrinks.
+    std::vector<float> videoStagingBuffer_;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 2: ASYNC FRAME CAPTURE STATE
+    // ═══════════════════════════════════════════════════════════════════════════
+    enum class CaptureState { Idle = 0, Pending = 1, Ready = 2, Error = 3 };
+    CaptureState captureState_      = CaptureState::Idle;
+    WGPUBuffer   readbackBuffer_    = nullptr;
+    size_t       readbackBufferSize_ = 0;
+    // Aligned bytes-per-row used when copying texture → readback buffer.
+    uint32_t     readbackBytesPerRow_ = 0;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // SHADER STORAGE
