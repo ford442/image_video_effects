@@ -1,10 +1,10 @@
 #pragma once
 
 #include <webgpu/webgpu.h>
+#include <array>
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include <functional>
 
 namespace pixelocity {
 
@@ -13,16 +13,81 @@ namespace pixelocity {
 // ═══════════════════════════════════════════════════════════════════════════════
 // This is the C++/WASM WebGPU renderer for Pixelocity.
 //
-// Current Status (Phase 1):
-//   ✅ Single shader execution works
-//   ✅ Image/video upload works (basic)
-//   ✅ Multi-slot shader pipeline (3 slots, chained/parallel) - Phase 1
-//   ✅ Audio integration (bass/mid/treble -> extraBuffer + plasmaBuffer) - Phase 1
-//   ✅ Depth map integration - Phase 1
-//   ✅ Generative shader support - Phase 1
-//   ❌ Recording/screenshots - NOT IMPLEMENTED (Phase 2)
+// Status (Phase 3):
+//   ✅ Single shader execution
+//   ✅ Image/video upload
+//   ✅ Multi-slot shader pipeline (3 slots, chained/parallel)
+//   ✅ Audio integration (bass/mid/treble -> extraBuffer + plasmaBuffer)
+//   ✅ Depth map integration
+//   ✅ Generative shader support
+//   ✅ Canvas resize
+//   ✅ Frame capture (async GPU readback)
+//   ✅ RAII wrappers for all WebGPU handles
+//   ✅ Device-lost and uncaptured-error callbacks
 //
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── RAII Handle Template ─────────────────────────────────────────────────────
+//
+// WGPUHandle<T, Release> is a move-only wrapper that calls Release(ptr) on
+// destruction.  Use the type aliases below for concrete WebGPU objects.
+//
+// Usage:
+//   WGPUTextureHandle tex;
+//   tex.reset(wgpuDeviceCreateTexture(device, &desc));
+//   // tex is auto-released when it goes out of scope
+//
+template<typename T, void (*Release)(T)>
+struct WGPUHandle {
+    T ptr = nullptr;
+
+    WGPUHandle() = default;
+    explicit WGPUHandle(T p) : ptr(p) {}
+    ~WGPUHandle() { if (ptr) Release(ptr); }
+
+    // Non-copyable
+    WGPUHandle(const WGPUHandle&) = delete;
+    WGPUHandle& operator=(const WGPUHandle&) = delete;
+
+    // Movable
+    WGPUHandle(WGPUHandle&& o) noexcept : ptr(o.ptr) { o.ptr = nullptr; }
+    WGPUHandle& operator=(WGPUHandle&& o) noexcept {
+        if (this != &o) { if (ptr) Release(ptr); ptr = o.ptr; o.ptr = nullptr; }
+        return *this;
+    }
+
+    // Implicit conversion to raw pointer for API calls
+    operator T() const { return ptr; }
+    // Returns true when the handle is null (no object managed)
+    bool operator!() const { return !ptr; }
+
+    // Replace managed object (releases old pointer)
+    void reset(T new_ptr = nullptr) {
+        if (ptr) Release(ptr);
+        ptr = new_ptr;
+    }
+
+    // Release ownership without destroying
+    T release() { T tmp = ptr; ptr = nullptr; return tmp; }
+
+    T get() const { return ptr; }
+};
+
+// Convenience type aliases for the most commonly used WebGPU objects
+using WGPUInstanceHandle         = WGPUHandle<WGPUInstance,         wgpuInstanceRelease>;
+using WGPUAdapterHandle          = WGPUHandle<WGPUAdapter,          wgpuAdapterRelease>;
+using WGPUDeviceHandle           = WGPUHandle<WGPUDevice,           wgpuDeviceRelease>;
+using WGPUSurfaceHandle          = WGPUHandle<WGPUSurface,          wgpuSurfaceRelease>;
+using WGPUQueueHandle            = WGPUHandle<WGPUQueue,            wgpuQueueRelease>;
+using WGPUTextureHandle          = WGPUHandle<WGPUTexture,          wgpuTextureRelease>;
+using WGPUSamplerHandle          = WGPUHandle<WGPUSampler,          wgpuSamplerRelease>;
+using WGPUBufferHandle           = WGPUHandle<WGPUBuffer,           wgpuBufferRelease>;
+using WGPUBindGroupLayoutHandle  = WGPUHandle<WGPUBindGroupLayout,  wgpuBindGroupLayoutRelease>;
+using WGPUPipelineLayoutHandle   = WGPUHandle<WGPUPipelineLayout,   wgpuPipelineLayoutRelease>;
+using WGPUBindGroupHandle        = WGPUHandle<WGPUBindGroup,        wgpuBindGroupRelease>;
+using WGPUComputePipelineHandle  = WGPUHandle<WGPUComputePipeline,  wgpuComputePipelineRelease>;
+using WGPURenderPipelineHandle   = WGPUHandle<WGPURenderPipeline,   wgpuRenderPipelineRelease>;
+using WGPUShaderModuleHandle     = WGPUHandle<WGPUShaderModule,     wgpuShaderModuleRelease>;
 
 // Slot execution mode: chained feeds output of slot N into slot N+1;
 // parallel makes every slot read from the same original source texture.
@@ -56,11 +121,12 @@ struct RipplePoint {
 };
 
 struct ShaderPipeline {
-    WGPUShaderModule module = nullptr;
-    WGPUComputePipeline pipeline = nullptr;
+    WGPUShaderModuleHandle    module;
+    WGPUComputePipelineHandle pipeline;
     std::string id;
     std::string name;
-    // Phase 2: workgroup dimensions parsed from @workgroup_size in WGSL source
+    // Workgroup dimensions parsed from @workgroup_size in WGSL source.
+    // Defaults to (16, 16) to match the TypeScript renderer.
     uint32_t workgroupX = 16;
     uint32_t workgroupY = 16;
 };
@@ -68,7 +134,7 @@ struct ShaderPipeline {
 // ═══════════════════════════════════════════════════════════════════════════════
 // WebGPURenderer Class
 //
-// Architecture (Phase 1 multi-slot):
+// Multi-slot pipeline architecture:
 //   Input (readTexture_) -> Slot 0 -> pingPong0_
 //                        -> Slot 1 -> pingPong1_
 //                        -> Slot 2 -> writeTexture_
@@ -79,12 +145,19 @@ public:
     WebGPURenderer();
     ~WebGPURenderer();
 
+    // Non-copyable, non-movable (manages GPU resources)
+    WebGPURenderer(const WebGPURenderer&) = delete;
+    WebGPURenderer& operator=(const WebGPURenderer&) = delete;
+    WebGPURenderer(WebGPURenderer&&) = delete;
+    WebGPURenderer& operator=(WebGPURenderer&&) = delete;
+
     // ═══════════════════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // Initialize WebGPU device, queues, and resources
-    // Returns false if WebGPU is not available
+    // Initialize WebGPU device, queues, and resources.
+    // Sets up device-lost and uncaptured-error callbacks.
+    // Returns false if WebGPU is not available.
     bool Initialize(int canvasWidth, int canvasHeight);
     
     // Cleanup all WebGPU resources
@@ -95,14 +168,15 @@ public:
     // ═══════════════════════════════════════════════════════════════════════════
 
     // Compile and load a WGSL shader into memory.
-    // Phase 2: @workgroup_size is parsed from wgslCode and stored for correct dispatch.
+    // Retrieves and logs compilation messages via wgpuShaderModuleGetCompilationInfo.
+    // @workgroup_size is parsed from wgslCode for correct dispatch.
     bool LoadShader(const char* id, const char* wgslCode);
 
     // Set the active shader for single-shader (legacy) rendering.
     // Also enables slot 0 with this shader for backwards compatibility.
     void SetActiveShader(const char* id);
 
-    // ── Multi-slot API (Phase 1) ──────────────────────────────────────────────
+    // ── Multi-slot API ────────────────────────────────────────────────────────
     // Assign a previously loaded shader to a slot (0-2).
     void SetSlotShader(int slotIndex, const char* id);
     // Set the four zoom parameters for a specific slot.
@@ -208,23 +282,21 @@ private:
     void CreateRenderPipeline();
     void UpdateUniformBuffer();
 
-    // Phase 2: Release and recreate all canvas-size-dependent textures.
+    // Release and recreate all canvas-size-dependent textures.
     // Called by ResizeCanvas().
     void RecreateTextures();
 
     // Create a temporary compute bind group that uses the supplied read/write
     // textures for bindings 1 and 2; all other bindings are shared globals.
-    // Caller is responsible for releasing the returned object.
+    // Caller is responsible for releasing the returned WGPUBindGroup.
     WGPUBindGroup CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex);
 
-    // Overwrite only the zoom_params portion (bytes 32-47) of the uniform
-    // buffer with the supplied four floats.
+    // Overwrite only the zoom_params portion (bytes 32-47) of the uniform buffer.
     void WriteSlotParams(const float* params);
 
     // Dispatch one compute pass using the given pipeline, bind group, and
     // texture dimensions.  The caller owns encoder/bind-group lifetime.
-    // Phase 2: workgroupX/Y are read from the ShaderPipeline (parsed from WGSL source);
-    //          they default to 16 for backward compatibility.
+    // workgroupX/Y default to 16 (parsed from WGSL source in LoadShader).
     void DispatchComputePass(WGPUCommandEncoder encoder,
                              WGPUComputePipeline pipeline,
                              WGPUBindGroup bindGroup,
@@ -232,67 +304,61 @@ private:
                              uint32_t workgroupY = 16);
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // WebGPU OBJECTS
+    // WebGPU OBJECTS  (RAII-managed via WGPUHandle<> wrappers)
     // ═══════════════════════════════════════════════════════════════════════════
-    WGPUInstance instance_ = nullptr;
-    WGPUSurface surface_ = nullptr;
-    WGPUAdapter adapter_ = nullptr;
-    WGPUDevice device_ = nullptr;
-    WGPUQueue queue_ = nullptr;
-    WGPUTextureFormat surfaceFormat_ = WGPUTextureFormat_Undefined;
+    WGPUInstanceHandle instance_;
+    WGPUSurfaceHandle  surface_;
+    WGPUAdapterHandle  adapter_;
+    WGPUDeviceHandle   device_;
+    WGPUQueueHandle    queue_;
+    WGPUTextureFormat  surfaceFormat_ = WGPUTextureFormat_Undefined;
 
     // Compute pipeline (single shared layout for all compute shaders)
-    WGPUBindGroupLayout computeBindGroupLayout_ = nullptr;
-    WGPUPipelineLayout computePipelineLayout_ = nullptr;
-    WGPUBindGroup computeBindGroup_ = nullptr;
-    
-    // TODO(Phase 2): Per-slot bind groups for multi-slot rendering
-    // WGPUBindGroup slotBindGroups_[MAX_SHADER_SLOTS] = {};
+    WGPUBindGroupLayoutHandle computeBindGroupLayout_;
+    WGPUPipelineLayoutHandle  computePipelineLayout_;
+    WGPUBindGroupHandle       computeBindGroup_;
 
-    // Render pipeline (full-screen triangle for final output)
-    WGPURenderPipeline renderPipeline_ = nullptr;
-    WGPUBindGroup renderBindGroup_ = nullptr;
+    // Render pipeline (full-screen triangle for final blit)
+    WGPURenderPipelineHandle renderPipeline_;
+    WGPUBindGroupHandle      renderBindGroup_;
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // TEXTURE RESOURCES
+    // TEXTURE RESOURCES  (RAII-managed)
     // ═══════════════════════════════════════════════════════════════════════════
-
-    WGPUTexture imageTexture_ = nullptr;
-    WGPUTexture videoTexture_ = nullptr;
 
     // Primary ping-pong textures (source → compute → feedback for next frame)
-    WGPUTexture readTexture_ = nullptr;   // Previous-frame output / source image
-    WGPUTexture writeTexture_ = nullptr;  // Final composed output this frame
+    WGPUTextureHandle readTexture_;   // Previous-frame output / source image
+    WGPUTextureHandle writeTexture_;  // Final composed output this frame
 
     // Intermediate ping-pong textures for multi-slot chaining
-    WGPUTexture pingPong0_ = nullptr;  // Output of slot 0 / input of slot 1
-    WGPUTexture pingPong1_ = nullptr;  // Output of slot 1 / input of slot 2
+    WGPUTextureHandle pingPong0_;  // Output of slot 0 / input of slot 1
+    WGPUTextureHandle pingPong1_;  // Output of slot 1 / input of slot 2
 
     // Data textures for feedback / multi-pass effects
-    WGPUTexture dataTextureA_ = nullptr;  // write-only storage (binding 7)
-    WGPUTexture dataTextureB_ = nullptr;  // write-only storage (binding 8)
-    WGPUTexture dataTextureC_ = nullptr;  // read-only texture  (binding 9)
+    WGPUTextureHandle dataTextureA_;  // write-only storage (binding 7)
+    WGPUTextureHandle dataTextureB_;  // write-only storage (binding 8)
+    WGPUTextureHandle dataTextureC_;  // read-only texture  (binding 9)
 
     // Depth map (AI-generated from depth estimation model)
-    WGPUTexture depthTextureRead_  = nullptr;
-    WGPUTexture depthTextureWrite_ = nullptr;
+    WGPUTextureHandle depthTextureRead_;
+    WGPUTextureHandle depthTextureWrite_;
 
     // 1×1 black texture used as placeholder input for generative shaders
-    WGPUTexture emptyTexture_ = nullptr;
+    WGPUTextureHandle emptyTexture_;
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // SAMPLERS
+    // SAMPLERS  (RAII-managed)
     // ═══════════════════════════════════════════════════════════════════════════
-    WGPUSampler filteringSampler_    = nullptr;
-    WGPUSampler nonFilteringSampler_ = nullptr;
-    WGPUSampler comparisonSampler_   = nullptr;
+    WGPUSamplerHandle filteringSampler_;
+    WGPUSamplerHandle nonFilteringSampler_;
+    WGPUSamplerHandle comparisonSampler_;
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // BUFFERS
+    // BUFFERS  (RAII-managed)
     // ═══════════════════════════════════════════════════════════════════════════
-    WGPUBuffer uniformBuffer_ = nullptr;  // Uniforms: time, mouse, params, ripples
-    WGPUBuffer extraBuffer_   = nullptr;  // Extra data: audio FFT, misc floats
-    WGPUBuffer plasmaBuffer_  = nullptr;  // Plasma / audio data (vec4 array)
+    WGPUBufferHandle uniformBuffer_;  // Uniforms: time, mouse, params, ripples
+    WGPUBufferHandle extraBuffer_;    // Extra data: audio FFT, misc floats
+    WGPUBufferHandle plasmaBuffer_;   // Plasma / audio data (vec4 array)
 
     // Audio frequency data (written by SetAudioData, flushed in UpdateUniformBuffer)
     float audioBass_   = 0.0f;
@@ -300,21 +366,21 @@ private:
     float audioTreble_ = 0.0f;
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 2: PERSISTENT STAGING BUFFER (avoids per-frame heap allocation)
+    // PERSISTENT STAGING BUFFER (avoids per-frame heap allocation)
     // ═══════════════════════════════════════════════════════════════════════════
     // Reused across frames for UploadRGBA8ToReadTexture().
     // Grows on demand but never shrinks.
     std::vector<float> videoStagingBuffer_;
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // PHASE 2: ASYNC FRAME CAPTURE STATE
+    // ASYNC FRAME CAPTURE STATE
     // ═══════════════════════════════════════════════════════════════════════════
     enum class CaptureState { Idle = 0, Pending = 1, Ready = 2, Error = 3 };
-    CaptureState captureState_      = CaptureState::Idle;
-    WGPUBuffer   readbackBuffer_    = nullptr;
-    size_t       readbackBufferSize_ = 0;
+    CaptureState     captureState_       = CaptureState::Idle;
+    WGPUBufferHandle readbackBuffer_;
+    size_t           readbackBufferSize_ = 0;
     // Aligned bytes-per-row used when copying texture → readback buffer.
-    uint32_t     readbackBytesPerRow_ = 0;
+    uint32_t         readbackBytesPerRow_ = 0;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // SHADER STORAGE
@@ -322,7 +388,7 @@ private:
     std::unordered_map<std::string, ShaderPipeline> shaders_;
     std::string activeShaderId_;  // legacy single-shader mode
 
-    // Multi-slot state (Phase 1)
+    // Multi-slot state
     static constexpr int MAX_SHADER_SLOTS = 3;
     ShaderSlot slots_[MAX_SHADER_SLOTS];
 

@@ -48,7 +48,7 @@ void setActiveShader(const char* id) {
     }
 }
 
-// ── Multi-slot shader API (Phase 1) ──────────────────────────────────────────
+// ── Multi-slot shader API ─────────────────────────────────────────────────────
 
 EMSCRIPTEN_KEEPALIVE
 void setSlotShader(int slotIndex, const char* id) {
