@@ -7,6 +7,12 @@ export function shutdownWasmRenderer(): void;
 export function loadShader(id: string, wgslCode: string): boolean;
 export function loadShaderFromURL(id: string, url: string): Promise<boolean>;
 export function setActiveShader(id: string): void;
+
+// Multi-slot shader API (Phase 1)
+export function setSlotShader(slotIndex: number, id: string): void;
+export function setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;
+export function setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void;
+
 export function updateUniforms(uniforms: {
   time?: number;
   mouseX?: number;
@@ -16,6 +22,10 @@ export function updateUniforms(uniforms: {
 }): void;
 export function updateMousePos(x: number, y: number): void;
 export function updateAudioData(bass: number, mid: number, treble: number): void;
+export function updateDepthMap(data: Float32Array, width: number, height: number): void;
+export function setInputSource(
+  source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative'
+): void;
 export function addRipple(x: number, y: number): void;
 export function clearRipples(): void;
 export function getFPS(): number;
@@ -29,6 +39,9 @@ export interface WasmRenderer {
   loadShader(id: string, wgslCode: string): boolean;
   loadShaderFromURL(id: string, url: string): Promise<boolean>;
   setActiveShader(id: string): void;
+  setSlotShader(slotIndex: number, id: string): void;
+  setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;
+  setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void;
   updateUniforms(uniforms: {
     time?: number;
     mouseX?: number;
@@ -38,6 +51,8 @@ export interface WasmRenderer {
   }): void;
   updateMousePos(x: number, y: number): void;
   updateAudioData(bass: number, mid: number, treble: number): void;
+  updateDepthMap(data: Float32Array, width: number, height: number): void;
+  setInputSource(source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative'): void;
   addRipple(x: number, y: number): void;
   clearRipples(): void;
   getFPS(): number;
