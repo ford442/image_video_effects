@@ -1,9 +1,10 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Dimension Slicer – Geometric Space Distortion
-//  - Opens a "dimensional slice" around the mouse position.
-//  - Inside the slice, space is warped, zoomed, and chromatically aberrated.
-//  - The slice orientation and width are controllable.
-// ────────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+//  Dimension Slicer
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -40,64 +41,63 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = vec2<f32>(global_id.xy) / dims;
-    var center = vec2<f32>(0.5);
-    let aspect = dims.x / dims.y;
+    let aspect = dims.x / max(dims.y, 0.001);
 
-    // Parameters
-    let sliceWidth = mix(0.05, 0.4, u.zoom_params.x);
-    let distortion = mix(0.0, 2.0, u.zoom_params.y);
-    let angle = u.zoom_params.z * 3.14159 * 2.0; // 0 to 360
-    let aberration = u.zoom_params.w * 0.05;
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
+    // Parameters — bass widens slice, mids boost aberration
+    let sliceWidth  = mix(0.05, 0.4, u.zoom_params.x) * (1.0 + bass * 0.15);
+    let distortion  = mix(0.0, 2.0, u.zoom_params.y);
+    let angle       = u.zoom_params.z * 3.14159 * 2.0;
+    let aberration  = u.zoom_params.w * 0.05 * (1.0 + mids * 0.3);
 
-    // Coordinate relative to mouse
+    let mouse = u.zoom_config.yz;
+
     var p = uv - mouse;
     p.x *= aspect;
 
-    // Rotate space to align with slice angle
     let pRot = rotate(p, angle);
-
-    // Distance from the "slice line" (vertical in rotated space)
     let dist = abs(pRot.x);
 
-    // Mask for the slice
     let inSlice = 1.0 - smoothstep(sliceWidth - 0.01, sliceWidth, dist);
 
-    var finalUV = uv;
-    var finalColor = vec3<f32>(0.0);
+    // Warp UVs inside slice
+    let zoom = 1.0 - distortion * 0.5 * cos(dist / max(sliceWidth, 0.001) * 3.14159);
+    let offset = (uv - mouse) * (1.0 / max(zoom, 0.001) - 1.0);
+    let warpedUV = clamp(uv + offset * inSlice, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    if (inSlice > 0.0) {
-        // Warp UVs inside slice
-        // e.g. a magnifying glass effect or directional stretch
-        let zoom = 1.0 - distortion * 0.5 * cos(dist / sliceWidth * 3.14159);
+    // Chromatic aberration — applied inside slice, zero outside
+    let aberAmt = vec2<f32>(aberration, 0.0) * inSlice;
+    let rUV = clamp(warpedUV + aberAmt, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bUV = clamp(warpedUV - aberAmt, vec2<f32>(0.0), vec2<f32>(1.0));
+    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+    let baseAlpha = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).a;
 
-        // Offset relative to mouse
-        let offset = (uv - mouse) * (1.0/zoom - 1.0);
+    // Slice edge glow
+    let edge = smoothstep(sliceWidth - 0.02, sliceWidth, dist) * (1.0 - smoothstep(sliceWidth, sliceWidth + 0.01, dist));
+    let sliceColor = vec3<f32>(r, g, b) + vec3<f32>(0.5, 0.8, 1.0) * edge * 2.0;
 
-        let warpedUV = uv + offset * inSlice;
+    // Outside slice: original image with soft darkening
+    let outsideColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let shadow = smoothstep(sliceWidth, sliceWidth + 0.1, dist);
+    let outsideDark = outsideColor * (0.5 + 0.5 * shadow);
 
-        // Chromatic Aberration
-        let r = textureSampleLevel(readTexture, u_sampler, warpedUV + vec2<f32>(aberration, 0.0) * inSlice, 0.0).r;
-        let g = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).g;
-        let b = textureSampleLevel(readTexture, u_sampler, warpedUV - vec2<f32>(aberration, 0.0) * inSlice, 0.0).b;
+    // Blend inside/outside — branchless
+    var finalColor = mix(outsideDark, sliceColor, inSlice);
+    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
-        finalColor = vec3<f32>(r, g, b);
+    // Depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-        // Add a glowing edge to the slice
-        let edge = smoothstep(sliceWidth - 0.02, sliceWidth, dist) * (1.0 - smoothstep(sliceWidth, sliceWidth + 0.01, dist));
-        finalColor += vec3<f32>(0.5, 0.8, 1.0) * edge * 2.0;
+    // Meaningful alpha: slice presence + edge glow + audio
+    let alpha = clamp(inSlice * 0.6 + edge * 0.8 + bass * 0.1 + baseAlpha * 0.1, 0.0, 1.0);
+    let fc = vec4<f32>(finalColor, alpha);
 
-    } else {
-        finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    }
-
-    // Soft shadow/darkening outside slice to emphasize it
-    if (inSlice < 1.0) {
-        let shadow = smoothstep(sliceWidth, sliceWidth + 0.1, dist);
-        finalColor *= (0.5 + 0.5 * shadow);
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), fc);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), fc);
 }

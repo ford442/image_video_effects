@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Bayer Dither Interactive
+//  Category: effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,12 +19,11 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -39,82 +45,62 @@ fn get_bayer_8x8(x: u32, y: u32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
-        return;
-    }
+    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
-    // Pixel coordinates
+    let coord     = vec2<i32>(gid.xy);
     let pixel_pos = vec2<f32>(gid.xy);
-    var uv = pixel_pos / resolution;
+    let uv        = pixel_pos / resolution;
 
-    // Params
-    // Mouse X: Dither Strength / Mix (1.0 = full dither)
-    // Mouse Y: Scale of the dither pattern (pixelation)
-    var mouse = u.zoom_config.yz;
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let mouse = u.zoom_config.yz;
 
     // Scale the coordinate system for pixelation effect
-    // Scale factor: 1.0 to 16.0
-    let scale = mix(4.0, 64.0, u.zoom_params.w);
+    let scale      = mix(4.0, 64.0, u.zoom_params.w);
     let scaled_pos = floor(pixel_pos / scale);
-    let sample_uv = (scaled_pos * scale + scale * 0.5) / resolution;
+    let sample_uv  = (scaled_pos * scale + scale * 0.5) / resolution;
 
     let original_color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
 
     // Pre-processing: Contrast
-    let contrast = u.zoom_params.y * 2.0 + 0.5; // 0.5 to 2.5
-    let c_color = (original_color - 0.5) * contrast + 0.5;
+    let contrast = u.zoom_params.y * 2.0 + 0.5;
+    let c_color  = (original_color - 0.5) * contrast + 0.5;
 
     // Get Bayer Threshold
     let bayer = get_bayer_8x8(u32(scaled_pos.x), u32(scaled_pos.y));
 
-    // Quantization Levels (Bit Depth)
-    // 1.0 (2 colors) to 8.0 (256 colors approx if logarithmic?)
-    // Linear: 2 to 32
-    let levels = max(1.0, u.zoom_params.x * 30.0 + 1.0);
+    // Quantization Levels — bass makes levels more extreme (fewer levels = more posterized)
+    let base_levels = max(1.0, u.zoom_params.x * 30.0 + 1.0);
+    let levels      = max(1.0, base_levels * (1.0 + bass * 0.5));
 
-    // Dithering logic
-    // Add noise based on bayer value before quantization
-    // Spread determines how much the dither affects the value
-    let spread = 1.0 / levels;
+    // Mids affect the t spread (dither threshold spread)
+    let t_spread = mix(0.0, 2.0, u.zoom_params.z) * (1.0 + mids * 0.4);
+    let L        = max(2.0, floor(levels));
+    let t        = bayer * t_spread;
 
-    let dither_val = (bayer - 0.5) * spread;
+    // Ordered dither per channel — vec3 component-wise
+    var final_dither: vec3<f32> = original_color;
+    final_dither.r = floor(c_color.r * (L - 1.0) + (t - 0.5) + 0.5) / max(L - 1.0, 0.001);
+    final_dither.g = floor(c_color.g * (L - 1.0) + (t - 0.5) + 0.5) / max(L - 1.0, 0.001);
+    final_dither.b = floor(c_color.b * (L - 1.0) + (t - 0.5) + 0.5) / max(L - 1.0, 0.001);
 
-    var dithered_color = c_color + dither_val;
+    // Mix: mouse.x controls original vs dithered
+    let mix_factor = mouse.x;
+    let final_rgb  = mix(original_color, final_dither, mix_factor);
 
-    // Quantize
-    dithered_color = floor(dithered_color * levels) / (levels - 1.0); // Normalize back to 0..1
-    // Actually standard quantization: floor(x * (L-1) + 0.5) / (L-1) ?
-    // With dither added, we just floor.
-    // Let's stick to standard dither formula:
-    // output = floor(input * (levels-1) + threshold) / (levels-1)
+    // Meaningful alpha: dither difference from original + bass pulse
+    let ditherDiff = length(final_dither - original_color);
+    let alpha      = clamp(ditherDiff * 3.0 + bass * 0.3 + bayer * 0.2, 0.0, 1.0);
 
-    // Re-calculating with standard formula
-    let L = max(2.0, floor(levels));
-    let t = bayer * mix(0.0, 2.0, u.zoom_params.z); // 0..1
-    // Ordered Dither: color + (t - 0.5)/L ?
-    // Or: if (color > t) 1 else 0 (for 1 bit)
+    let finalColor = vec4<f32>(final_rgb, alpha);
 
-    // For multi-level:
-    // val = color * (L - 1)
-    // val += (t - 0.5)
-    // val = floor(val + 0.5) / (L - 1)
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, coord, finalColor);
 
-    var final_dither = original_color;
-    final_dither.r = floor(c_color.r * (L - 1.0) + (t - 0.5) + 0.5) / (L - 1.0);
-    final_dither.g = floor(c_color.g * (L - 1.0) + (t - 0.5) + 0.5) / (L - 1.0);
-    final_dither.b = floor(c_color.b * (L - 1.0) + (t - 0.5) + 0.5) / (L - 1.0);
-
-    // Mix based on Mouse X
-    // Actually let's make Mouse X control the "Dither Influence" vs "Just Quantization"
-    // Or just mix with original.
-    // Let's assume Mouse X controls the "strength" of the effect overall?
-    // User requested "Mouse Responsive".
-    // Let's make Mouse X control the mix between Original and Dithered.
-    // And Mouse Y controls the Pixel Scale.
-
-    let mix_factor = mouse.x; // 0 = Original, 1 = Dithered
-
-    let final_color = mix(original_color, final_dither, mix_factor);
-
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(final_color, 1.0));
+    // Depth passthrough
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

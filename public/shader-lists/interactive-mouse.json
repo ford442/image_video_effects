@@ -339,7 +339,9 @@
     "category": "interactive-mouse",
     "url": "shaders/codebreaker-reveal.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1242,7 +1244,9 @@
       "interactive",
       "chromatic",
       "prism",
-      "warp"
+      "warp",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2829,7 +2833,9 @@
     "category": "interactive-mouse",
     "url": "shaders/pixel-explode.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

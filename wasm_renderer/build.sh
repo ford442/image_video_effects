@@ -24,21 +24,12 @@ done
 
 # Check if emcc is available early
 if ! command -v emcc &> /dev/null; then
-    echo "⚠️ Warning: emcc not found. Skipping WASM build."
-    # Create dummy files so the TypeScript build doesn't fail looking for them
-    mkdir -p "$SCRIPT_DIR/../public/wasm"
-    echo "window.PixelocityWASM = function() { return Promise.resolve({}); };" > "$SCRIPT_DIR/../public/wasm/pixelocity_wasm.js"
-    touch "$SCRIPT_DIR/../public/wasm/pixelocity_wasm.wasm"
-    exit 0
+    echo "❌ Error: emcc not found. Install the Emscripten SDK to build the WASM renderer."
+    echo "   See: https://emscripten.org/docs/getting_started/downloads.html"
+    exit 1
 fi
 
 # Set writable cache location for TOT emscripten
-
-# Check if emcc is available before proceeding
-if ! command -v emcc &> /dev/null; then
-    echo "⚠️ Warning: emcc not found. Skipping WASM build."
-    exit 0
-fi
 
 export EM_CACHE=/tmp/emscripten_cache
 
@@ -59,15 +50,30 @@ _initWasmRenderer,\
 _shutdownWasmRenderer,\
 _loadShader,\
 _setActiveShader,\
+_setSlotShader,\
+_setSlotParams,\
+_setSlotMode,\
 _updateUniforms,\
 _updateMousePos,\
+_setMouseDown,\
 _updateAudioData,\
+_updateDepthMap,\
+_setInputSource,\
 _addRipple,\
 _clearRipples,\
+_setTime,\
+_setZoomParams,\
 _getFPS,\
 _isRendererInitialized,\
 _loadImageData,\
 _uploadVideoFrame,\
+_resizeCanvas,\
+_beginFrameCapture,\
+_getFrameCaptureState,\
+_readCapturedFrame,\
+_endFrameCapture,\
+_getCanvasWidth,\
+_getCanvasHeight,\
 _malloc,\
 _free"
 
@@ -87,7 +93,7 @@ emcc -std=c++20 -O2 \
     "$SCRIPT_DIR/renderer.cpp" \
     "-I$SCRIPT_DIR" \
     -sEXPORTED_FUNCTIONS="${EXPORTED}" \
-    -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8 \
+    -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32 \
     -sALLOW_MEMORY_GROWTH=1 \
     -sNO_EXIT_RUNTIME=1 \
     -sMODULARIZE=1 \

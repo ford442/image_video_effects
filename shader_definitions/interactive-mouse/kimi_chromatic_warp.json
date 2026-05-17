@@ -9,7 +9,9 @@
     "interactive",
     "chromatic",
     "prism",
-    "warp"
+    "warp",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

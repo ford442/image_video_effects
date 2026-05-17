@@ -8,17 +8,6 @@ using namespace pixelocity;
 // ═══════════════════════════════════════════════════════════════════════════════
 // main.cpp - WASM JavaScript Bridge
 // ═══════════════════════════════════════════════════════════════════════════════
-//
-// PURPOSE:
-//   Provides the C API exports that JavaScript calls via Emscripten.
-//   This is the glue layer between the TypeScript app and C++ WebGPURenderer.
-//
-// API NAMING CONVENTION:
-//   - All exports use camelCase matching existing wasm_bridge.js calls
-//   - Return int for boolean status: 1=success, 0=failure
-//   - Use plain C types only in function signatures (no STL in exports)
-//
-// ═══════════════════════════════════════════════════════════════════════════════
 
 static WebGPURenderer* g_renderer = nullptr;
 
@@ -59,6 +48,29 @@ void setActiveShader(const char* id) {
     }
 }
 
+// ── Multi-slot shader API ─────────────────────────────────────────────────────
+
+EMSCRIPTEN_KEEPALIVE
+void setSlotShader(int slotIndex, const char* id) {
+    if (g_renderer && id) {
+        g_renderer->SetSlotShader(slotIndex, id);
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setSlotParams(int slotIndex, float p1, float p2, float p3, float p4) {
+    if (g_renderer) {
+        g_renderer->SetSlotParams(slotIndex, p1, p2, p3, p4);
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setSlotMode(int slotIndex, int mode) {
+    if (g_renderer) {
+        g_renderer->SetSlotMode(slotIndex, mode);
+    }
+}
+
 // ─── Input ────────────────────────────────────────────────────────────────────
 
 EMSCRIPTEN_KEEPALIVE
@@ -75,9 +87,24 @@ void uploadVideoFrame(const uint8_t* data, int width, int height) {
     }
 }
 
+EMSCRIPTEN_KEEPALIVE
+void updateDepthMap(const float* data, int width, int height) {
+    if (g_renderer && data) {
+        g_renderer->UpdateDepthMap(data, width, height);
+    }
+}
+
+// Set the active input source (0=none/generative, 1=image, 2=video, 3=webcam, 4=generative).
+EMSCRIPTEN_KEEPALIVE
+void setInputSource(int source) {
+    if (g_renderer) {
+        g_renderer->SetInputSource(static_cast<InputSource>(source));
+    }
+}
+
 // ─── Uniforms / interaction ───────────────────────────────────────────────────
 
-// Called by wasm_bridge.js every animation frame; triggers a Render() call.
+// Trigger one Render() call from the JavaScript animation loop.
 EMSCRIPTEN_KEEPALIVE
 void updateUniforms() {
     if (g_renderer) {
@@ -85,10 +112,34 @@ void updateUniforms() {
     }
 }
 
+// Set current time (seconds).  Must be called before updateUniforms().
+EMSCRIPTEN_KEEPALIVE
+void setTime(float time) {
+    if (g_renderer) {
+        g_renderer->SetTime(time);
+    }
+}
+
+// Set global zoom parameters (used when no per-slot params are configured).
+EMSCRIPTEN_KEEPALIVE
+void setZoomParams(float p1, float p2, float p3, float p4) {
+    if (g_renderer) {
+        g_renderer->SetZoomParams(p1, p2, p3, p4);
+    }
+}
+
 EMSCRIPTEN_KEEPALIVE
 void updateMousePos(float x, float y) {
     if (g_renderer) {
         g_renderer->SetMouse(x, y, false);
+    }
+}
+
+// Update mouse button state.  1 = pressed, 0 = released.
+EMSCRIPTEN_KEEPALIVE
+void setMouseDown(int down) {
+    if (g_renderer) {
+        g_renderer->SetMouseDown(down != 0);
     }
 }
 
@@ -125,22 +176,62 @@ float getFPS() {
     return g_renderer ? g_renderer->GetFPS() : 0.0f;
 }
 
-// ─── Stubs / future features ──────────────────────────────────────────────────
-// TODO(Phase 2): Multi-slot shader API
-//   void setSlotShader(int slotIndex, const char* shaderId);
-//   void setSlotMode(int slotIndex, int mode);
-//   void setSlotParams(int slotIndex, float p1, float p2, float p3, float p4);
-//
-// TODO(Phase 3): Input source selection
-//   void setInputSource(int source); // 0=image, 1=video, 2=webcam, 3=generative
-//
-// TODO(Phase 5): Depth map
-//   void updateDepthMap(const float* data, int width, int height);
-//
-// TODO(Phase 6): Screenshot / recording
-//   uint8_t* captureScreenshot(int* outWidth, int* outHeight);
-//   void startRecording();
-//   void stopRecording();
+// ─── Phase 2: Canvas resize ───────────────────────────────────────────────────
+
+// Resize the canvas and recreate all size-dependent GPU resources.
+// Safe to call at any time after initialization.
+EMSCRIPTEN_KEEPALIVE
+void resizeCanvas(int newWidth, int newHeight) {
+    if (g_renderer) {
+        g_renderer->ResizeCanvas(newWidth, newHeight);
+    }
+}
+
+// ─── Phase 2: Frame capture (screenshot readback) ────────────────────────────
+
+// Initiate an asynchronous GPU readback of the current frame.
+// Poll getFrameCaptureState() until it returns 2 (ready), then call
+// readCapturedFrame() to retrieve the RGBA8 pixel data.
+EMSCRIPTEN_KEEPALIVE
+void beginFrameCapture() {
+    if (g_renderer) {
+        g_renderer->BeginFrameCapture();
+    }
+}
+
+// Returns: 0=idle, 1=pending, 2=ready, 3=error.
+EMSCRIPTEN_KEEPALIVE
+int getFrameCaptureState() {
+    return g_renderer ? g_renderer->GetFrameCaptureState() : 0;
+}
+
+// Copy RGBA8 pixel data into the buffer pointed to by outPtr (must be >= w*h*4 bytes).
+// Returns the number of bytes written, or 0 on failure.
+EMSCRIPTEN_KEEPALIVE
+int readCapturedFrame(uint8_t* outPtr, int maxBytes) {
+    if (!g_renderer || !outPtr) return 0;
+    return g_renderer->ReadCapturedFrame(outPtr, maxBytes);
+}
+
+// Release the mapped readback buffer.  Must be called after readCapturedFrame().
+EMSCRIPTEN_KEEPALIVE
+void endFrameCapture() {
+    if (g_renderer) {
+        g_renderer->EndFrameCapture();
+    }
+}
+
+// Convenience: returns the current canvas width (needed by JS to allocate the read buffer).
+EMSCRIPTEN_KEEPALIVE
+int getCanvasWidth() {
+    return g_renderer ? g_renderer->GetCanvasWidth() : 0;
+}
+
+// Convenience: returns the current canvas height.
+EMSCRIPTEN_KEEPALIVE
+int getCanvasHeight() {
+    return g_renderer ? g_renderer->GetCanvasHeight() : 0;
+}
 
 } // extern "C"
 

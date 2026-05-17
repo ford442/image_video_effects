@@ -1,9 +1,10 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Spectral Glitch Sort – Interactive Luma Displacement
-//  - Simulates a pixel-sorting effect by displacing pixels based on their luminance.
-//  - Bright/Dark pixels are "dragged" in the direction of the mouse.
-//  - Uses noise to create glitchy artifacts.
-// ────────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Glitch Sort
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-17
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -45,60 +46,63 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(global_id.xy) / dims;
 
-    // Parameters
-    let strength = mix(0.0, 0.5, u.zoom_params.x);
-    let threshold = u.zoom_params.y;
-    let angleParam = u.zoom_params.z * 6.28;
-    let noiseAmt = u.zoom_params.w;
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
+    // Parameters — bass amplifies sort strength
+    let strength    = mix(0.0, 0.5, u.zoom_params.x) * (1.0 + bass * 0.4);
+    let threshold   = u.zoom_params.y;
+    let angleParam  = u.zoom_params.z * 6.28;
+    let noiseAmt    = u.zoom_params.w;
+
+    let mouse     = u.zoom_config.yz;
     let mouseDist = distance(uv, mouse);
 
-    // Calculate direction vector from angle or mouse position relative to center
-    // Let's make angle relative to mouse position?
-    // If angle param is used, it overrides. But let's mix.
-    var dir = vec2<f32>(cos(angleParam), sin(angleParam));
+    let dir = vec2<f32>(cos(angleParam), sin(angleParam));
 
-    // 1. Sample original color to get luma
-    let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let cSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let c = cSample.rgb;
     let luma = getLuma(c);
 
-    // 2. Determine displacement
-    // Only displace if luma is above/below threshold
-    var dispFactor = smoothstep(threshold, threshold + 0.2, luma);
+    let dispFactor = smoothstep(threshold, threshold + 0.2, luma);
 
-    // Reverse direction if below threshold? No, just mask.
-
-    // Noise to make it "glitchy" (blocky)
-    let blockUV = floor(uv * 20.0) / 20.0;
+    // Glitch noise block
+    let blockUV  = floor(uv * 20.0) / 20.0;
     let noiseVal = hash12(blockUV + u.config.x * 0.1);
 
     // Mouse proximity increases strength
     let influence = 1.0 - smoothstep(0.0, 0.5, mouseDist);
     var finalStrength = strength * (1.0 + influence * 2.0);
 
-    if (noiseAmt > 0.0) {
-        finalStrength *= mix(1.0, noiseVal * 2.0, noiseAmt);
-    }
+    // Branchless noise modulation
+    finalStrength *= mix(1.0, noiseVal * 2.0, noiseAmt);
 
-    // 3. Offset UV
-    // We offset the READ coordinate.
-    // If we want "bright pixels to move right", we read from the LEFT.
-    let offset = -dir * finalStrength * dispFactor;
-
+    let offset  = -dir * finalStrength * dispFactor;
     let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // 4. Sample again
     var finalColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
 
-    // Chromatic Aberration on edges of the sort
-    if (length(offset) > 0.01) {
-        var r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(0.002, 0.0), 0.0).r;
-        var b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(0.002, 0.0), 0.0).b;
-        finalColor.r = r;
-        finalColor.b = b;
-    }
+    // Chromatic aberration — branchless, scaled by offset magnitude
+    let aberScale = smoothstep(0.005, 0.03, length(offset));
+    let rSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.002, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let bSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(0.002, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    finalColor.r = mix(finalColor.r, rSample, aberScale);
+    finalColor.b = mix(finalColor.b, bSample, aberScale);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    // Treble adds subtle high-freq shimmer
+    finalColor += vec3<f32>(0.05) * treble * noiseVal;
+    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    // Meaningful alpha: sort displacement + luma + audio
+    let alpha = clamp(dispFactor * 0.5 + aberScale * 0.3 + bass * 0.1 + cSample.a * 0.15, 0.0, 1.0);
+    let fc = vec4<f32>(finalColor, alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), fc);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), fc);
 }

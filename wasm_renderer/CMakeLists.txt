@@ -3,20 +3,9 @@ project(PixelocityWASM CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-# ARCH: [Critical] Target 'pixelocity_wasm' is defined here...
-add_executable(pixelocity_wasm main.cpp)
+add_executable(pixelocity_wasm main.cpp renderer.cpp)
 
-# Compile options - use the old flag for header includes
-target_compile_options(pixelocity_wasm PRIVATE
-  -sUSE_WEBGPU=1
-  -O3
-)
-
-# ARCH: [Critical] ...but then redefined here without the source files!
-# This overwrites the previous add_executable, losing main.cpp.
-# The ${SOURCES} and ${HEADERS} variables are never defined.
-# Result: Build will fail with undefined symbol errors.
-add_executable(pixelocity_wasm ${SOURCES} ${HEADERS})
+target_compile_features(pixelocity_wasm PUBLIC cxx_std_20)
 
 # ── emdawnwebgpu ──────────────────────────────────────────────────────────────
 #
@@ -41,8 +30,6 @@ else()
     )
 endif()
 if(NOT EM_CACHE_DIR)
-    # ARCH: [Medium] Hardcoded fallback path may not work on all systems.
-    # Use cmake_path or file(TO_CMAKE_PATH) for cross-platform compatibility.
     set(EM_CACHE_DIR "/tmp/emscripten_cache")
 endif()
 
@@ -53,52 +40,28 @@ target_include_directories(pixelocity_wasm PRIVATE
 )
 
 # Port and all -s flags at link time only
-# ARCH: [Medium] Exported functions list is hardcoded and incomplete.
-# Several working functions in main.cpp are not exported:
-# - updateMousePos
-# - updateAudioData
-# - toggleRenderer
 set(EXPORTED_FUNCTIONS
     "_main,_initWasmRenderer,_shutdownWasmRenderer,_loadShader,_setActiveShader"
-    ",_updateUniforms,_addRipple,_clearRipples,_getFPS,_isRendererInitialized"
-    ",_loadImageData,_uploadVideoFrame,_malloc,_free"
+    ",_setSlotShader,_setSlotParams,_setSlotMode"
+    ",_updateUniforms,_updateMousePos,_setMouseDown,_updateAudioData,_updateDepthMap"
+    ",_setInputSource,_addRipple,_clearRipples,_setTime,_setZoomParams"
+    ",_getFPS,_isRendererInitialized,_loadImageData,_uploadVideoFrame"
+    ",_resizeCanvas"
+    ",_beginFrameCapture,_getFrameCaptureState,_readCapturedFrame,_endFrameCapture"
+    ",_getCanvasWidth,_getCanvasHeight"
+    ",_malloc,_free"
 )
 string(CONCAT EXPORTED_STR ${EXPORTED_FUNCTIONS})
 
 target_link_options(pixelocity_wasm PRIVATE
     --use-port=emdawnwebgpu
     "-sEXPORTED_FUNCTIONS=${EXPORTED_STR}"
-    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8"
+    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32"
     "-sALLOW_MEMORY_GROWTH=1"
     "-sNO_EXIT_RUNTIME=1"
     "-sMODULARIZE=1"
     "-sEXPORT_NAME=PixelocityWASM"
+    "-sASYNCIFY"
 )
 
-# ARCH: [Critical] Missing source file: renderer.cpp is not included!
-# The add_executable only lists main.cpp, but WebGPURenderer class
-# is defined in renderer.cpp. This will cause linker errors.
-
-# ARCH: [Medium] No target_sources() to properly organize source files.
-# No source_group() for IDE organization.
-
-# ARCH: [Medium] No installation rules (install() commands).
-# Cannot use cmake --install for deployment.
-
-# ARCH: [Low] No testing setup (enable_testing(), add_test()).
-# Cannot run automated tests on the renderer.
-
-# ARCH: [Medium] Missing compile features declaration:
-# target_compile_features(pixelocity_wasm PUBLIC cxx_std_20)
-# This would ensure C++20 is actually required, not just requested.
-
 set_target_properties(pixelocity_wasm PROPERTIES SUFFIX ".js")
-
-# ARCH: OVERALL SUMMARY FOR CMakeLists.txt:
-# This build file has critical errors that prevent it from working:
-# 1. Double add_executable() with the second one using undefined variables
-# 2. Missing renderer.cpp from source list
-# 3. Incomplete exported functions list
-# 
-# RECOMMENDATION: Use build.sh (which works) instead of CMake,
-# or fix the CMakeLists.txt with proper source definitions.
