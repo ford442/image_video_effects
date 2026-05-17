@@ -58,7 +58,7 @@ struct WGPUHandle {
 
     // Implicit conversion to raw pointer for API calls
     operator T() const { return ptr; }
-    // Address-of returns the raw pointer's address for wgpuXxx(..., &handle.ptr)
+    // Returns true when the handle is null (no object managed)
     bool operator!() const { return !ptr; }
 
     // Replace managed object (releases old pointer)

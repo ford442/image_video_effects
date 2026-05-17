@@ -94,17 +94,17 @@ export const useWASM = () => {
 
   /**
    * Initialize the C++ renderer against a canvas element.
-   * Must be called after loadWASM() succeeds.
+   * Automatically calls loadWASM() first if the bridge has not been loaded yet.
    */
   const initRenderer = useCallback(async (canvas: HTMLCanvasElement) => {
     if (!bridgeRef.current) {
-      console.error('[useWASM] initRenderer called before loadWASM()');
-      return false;
+      const loaded = await loadWASM();
+      if (!loaded) return false;
     }
-    const ok = await bridgeRef.current.initWasmRenderer(canvas);
+    const ok = await bridgeRef.current!.initWasmRenderer(canvas);
     if (ok) setIsWASM(true);
     return ok;
-  }, []);
+  }, [loadWASM]);
 
   const shutdown = useCallback(() => {
     if (bridgeRef.current) {
