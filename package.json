@@ -63,7 +63,7 @@
     "@playwright/test": "^1.58.2",
     "@types/hls.js": "^0.13.3",
     "react-scripts": "^5.0.1",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.1",
     "xml2js": "^0.6.2",
     "yaml": "^2.8.2"
   }
