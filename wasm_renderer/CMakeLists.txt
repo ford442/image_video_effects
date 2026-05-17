@@ -42,9 +42,14 @@ target_include_directories(pixelocity_wasm PRIVATE
 # Port and all -s flags at link time only
 set(EXPORTED_FUNCTIONS
     "_main,_initWasmRenderer,_shutdownWasmRenderer,_loadShader,_setActiveShader"
-    ",_updateUniforms,_updateMousePos,_updateAudioData"
-    ",_addRipple,_clearRipples,_getFPS,_isRendererInitialized"
-    ",_loadImageData,_uploadVideoFrame,_malloc,_free"
+    ",_setSlotShader,_setSlotParams,_setSlotMode"
+    ",_updateUniforms,_updateMousePos,_setMouseDown,_updateAudioData,_updateDepthMap"
+    ",_setInputSource,_addRipple,_clearRipples,_setTime,_setZoomParams"
+    ",_getFPS,_isRendererInitialized,_loadImageData,_uploadVideoFrame"
+    ",_resizeCanvas"
+    ",_beginFrameCapture,_getFrameCaptureState,_readCapturedFrame,_endFrameCapture"
+    ",_getCanvasWidth,_getCanvasHeight"
+    ",_malloc,_free"
 )
 string(CONCAT EXPORTED_STR ${EXPORTED_FUNCTIONS})
 

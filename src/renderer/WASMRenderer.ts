@@ -89,6 +89,65 @@ export class WASMRenderer implements Renderer {
     return WasmBridge.getFPS();
   }
 
+  // ── Phase 2: Canvas resizing ──────────────────────────────────────────────
+
+  /**
+   * Resize the rendering canvas and recreate all size-dependent GPU resources.
+   * Call this when the display canvas dimensions change.
+   */
+  resizeCanvas(newWidth: number, newHeight: number): void {
+    WasmBridge.resizeCanvas(newWidth, newHeight);
+  }
+
+  // ── Phase 2: Screenshot capture ───────────────────────────────────────────
+
+  /**
+   * Capture the current rendered frame as an ImageData (RGBA8).
+   * Asynchronous: triggers a GPU→CPU readback and resolves when complete.
+   */
+  captureFrame(): Promise<ImageData> {
+    return WasmBridge.captureFrame();
+  }
+
+  /**
+   * Take a screenshot and download it as a PNG file.
+   * @param filename - Optional filename (default: 'screenshot.png').
+   */
+  takeScreenshot(filename?: string): Promise<void> {
+    return WasmBridge.takeScreenshot(filename);
+  }
+
+  // ── Phase 2: Video recording ──────────────────────────────────────────────
+
+  /**
+   * Start recording the canvas output.
+   * @param canvasElement - The canvas to record.
+   * @param options       - Optional recording parameters (durationMs, frameRate, etc.).
+   * @returns Promise that resolves with the recorded Blob when recording stops.
+   */
+  startRecording(
+    canvasElement: HTMLCanvasElement,
+    options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
+  ): Promise<Blob> {
+    return WasmBridge.startRecording(canvasElement, options);
+  }
+
+  /** Stop an in-progress recording immediately. */
+  stopRecording(): void {
+    WasmBridge.stopRecording();
+  }
+
+  /**
+   * Record for `durationMs` milliseconds and automatically download the WebM.
+   */
+  recordAndDownload(
+    canvasElement: HTMLCanvasElement,
+    durationMs?: number,
+    filename?: string
+  ): Promise<void> {
+    return WasmBridge.recordAndDownload(canvasElement, durationMs, filename);
+  }
+
   // ── BaseRenderer interface ────────────────────────────────────────────────
 
   setVideo(video: HTMLVideoElement): void {

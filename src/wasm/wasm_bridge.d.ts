@@ -33,6 +33,70 @@ export function isInitialized(): boolean;
 export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 
+// ─── Phase 2: Canvas resizing ────────────────────────────────────────────────
+
+/**
+ * Resize the rendering canvas and recreate all size-dependent GPU resources.
+ * Call this whenever the display canvas dimensions change.
+ */
+export function resizeCanvas(newWidth: number, newHeight: number): void;
+
+// ─── Phase 2: Frame capture / screenshots ────────────────────────────────────
+
+/**
+ * Capture the current rendered frame as an ImageData object (RGBA8).
+ * The capture is asynchronous (GPU readback); the Promise resolves when the
+ * pixel data is available.
+ */
+export function captureFrame(): Promise<ImageData>;
+
+/**
+ * Take a screenshot of the current frame and trigger a PNG download.
+ * @param filename - Optional download filename (default: 'screenshot.png').
+ */
+export function takeScreenshot(filename?: string): Promise<void>;
+
+// ─── Phase 2: Video recording ────────────────────────────────────────────────
+
+export interface RecordingOptions {
+  /** Auto-stop recording after this many milliseconds. 0 = no auto-stop. Default: 8000 */
+  durationMs?: number;
+  /** Target capture frame rate. Default: 60 */
+  frameRate?: number;
+  /** MediaRecorder video bit-rate in bps. Default: 8_000_000 (8 Mbps) */
+  videoBitsPerSecond?: number;
+}
+
+/**
+ * Start recording the canvas output to a WebM video using the browser's
+ * MediaRecorder API.  Resolves with the recorded Blob when recording stops.
+ *
+ * @param canvasElement - The HTMLCanvasElement to capture.
+ * @param options       - Optional recording parameters.
+ */
+export function startRecording(
+  canvasElement: HTMLCanvasElement,
+  options?: RecordingOptions
+): Promise<Blob>;
+
+/**
+ * Stop an in-progress recording immediately.
+ * If no recording is in progress this is a no-op.
+ */
+export function stopRecording(): void;
+
+/**
+ * Record the canvas for `durationMs` milliseconds, then automatically
+ * download the resulting WebM file.
+ */
+export function recordAndDownload(
+  canvasElement: HTMLCanvasElement,
+  durationMs?: number,
+  filename?: string
+): Promise<void>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface WasmRenderer {
   initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
   shutdownWasmRenderer(): void;
@@ -59,6 +123,13 @@ export interface WasmRenderer {
   isInitialized(): boolean;
   uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
   uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
+  // Phase 2
+  resizeCanvas(newWidth: number, newHeight: number): void;
+  captureFrame(): Promise<ImageData>;
+  takeScreenshot(filename?: string): Promise<void>;
+  startRecording(canvasElement: HTMLCanvasElement, options?: RecordingOptions): Promise<Blob>;
+  stopRecording(): void;
+  recordAndDownload(canvasElement: HTMLCanvasElement, durationMs?: number, filename?: string): Promise<void>;
 }
 
 declare const wasmRenderer: WasmRenderer;
