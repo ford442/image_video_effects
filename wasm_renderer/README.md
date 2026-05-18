@@ -219,12 +219,20 @@ await renderer.initWasmRenderer(canvas);
 - [x] Shader loading and caching
 - [x] Compute pipeline execution
 - [x] Ping-pong texture copying
-- [ ] Surface/render pass to canvas
-- [ ] Image upload from JS
-- [ ] Video texture support
-- [ ] Multiple compute passes
-- [ ] Render pass support (vertex/fragment shaders)
-- [ ] Audio input support
+- [x] Surface/render pass to canvas
+- [x] Image upload from JS
+- [x] Video texture support
+- [x] Multiple compute passes (multi-slot pipeline)
+- [x] Audio input support
+- [x] Depth map support
+- [x] Frame capture / screenshot
+- [x] Video recording
+- [x] RAII resource management
+- [x] Error handling and validation
+- [ ] Formal performance benchmarks vs JS renderer
+- [ ] Full automated test suite
+
+See [`STATUS.md`](STATUS.md) for the authoritative current-state document.
 
 ## License
 

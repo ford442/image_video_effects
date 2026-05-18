@@ -11,6 +11,32 @@ export interface RendererMetrics {
   isWASM: boolean;
 }
 
+/** Supported renderer backend identifiers. */
+export type RendererType = 'webgpu' | 'wasm' | 'js';
+
+/**
+ * Read the preferred renderer type from the URL query string.
+ *
+ * Supported values for the `renderer` parameter:
+ *   - `wasm`   → C++ Emscripten WASM renderer
+ *   - `webgpu` → TypeScript native WebGPU renderer (default)
+ *   - `js`     → Canvas 2D fallback (no shaders)
+ *
+ * Example: `http://localhost:3000/?renderer=wasm`
+ */
+export function getRendererTypeFromURL(): RendererType | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get('renderer');
+    if (value === 'wasm' || value === 'webgpu' || value === 'js') {
+      return value as RendererType;
+    }
+  } catch {
+    // Not in a browser context (e.g. tests)
+  }
+  return null;
+}
+
 export class RendererManager {
   private currentRenderer: Renderer | null = null;
   private config: RendererConfig;
@@ -31,6 +57,26 @@ export class RendererManager {
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.canvas = canvas;
 
+    // Honour an explicit renderer preference from the URL query string
+    // (e.g. ?renderer=wasm) so the WASM path can be tested without code changes.
+    const urlPreference = getRendererTypeFromURL();
+
+    if (urlPreference === 'wasm') {
+      console.log('🔧 WASM renderer explicitly requested via ?renderer=wasm');
+      const wasmSuccess = await this.switchRenderer('wasm');
+      if (wasmSuccess) {
+        console.log('✅ Using C++ WASM renderer (forced via ?renderer=wasm)');
+        return true;
+      }
+      // Fall through to the normal priority order on failure
+      console.warn('⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU');
+    }
+
+    if (urlPreference === 'js') {
+      console.log('🔧 Canvas2D renderer explicitly requested via ?renderer=js');
+      return this.switchRenderer('js');
+    }
+
     // 1. Try native TypeScript WebGPU renderer (no WASM / Emscripten required)
     const gpuSuccess = await this.switchRenderer('webgpu');
     if (gpuSuccess) {
@@ -50,7 +96,7 @@ export class RendererManager {
     return this.switchRenderer('js');
   }
 
-  async switchRenderer(type: 'webgpu' | 'wasm' | 'js'): Promise<boolean> {
+  async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
 
     // Preserve video reference across renderer switches
@@ -211,6 +257,16 @@ export class RendererManager {
 
   isWASM(): boolean {
     return this.metrics.isWASM;
+  }
+
+  /**
+   * Returns the type identifier of the currently active renderer backend.
+   * Useful for UI components that need to display or react to the active renderer.
+   */
+  getActiveRendererType(): RendererType {
+    if (this.currentRenderer instanceof WASMRenderer) return 'wasm';
+    if (this.currentRenderer instanceof WebGPURenderer) return 'webgpu';
+    return 'js';
   }
 
   /**

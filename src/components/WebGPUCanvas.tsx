@@ -144,6 +144,13 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     (renderer as any).setVideo(videoRef.current);
                 }
 
+                // Expose renderer on window in development mode so developers can
+                // switch renderers from the browser console, e.g.:
+                //   window.__rendererManager?.switchRenderer('wasm')
+                if (process.env.NODE_ENV === 'development') {
+                    (window as any).__rendererManager = renderer;
+                }
+
                 if (onInit) onInit();
             } else {
                 // Init failed - clean up the renderer
@@ -154,6 +161,10 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             mounted = false;
             cancelAnimationFrame(animationFrameId.current);
             renderer.destroy();
+            // Remove the dev-mode console handle when the component unmounts
+            if (process.env.NODE_ENV === 'development') {
+                delete (window as any).__rendererManager;
+            }
             // Stop webcam stream if active
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
