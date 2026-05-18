@@ -1,3 +1,10 @@
+> **⚠️ OUTDATED — March 2026 snapshot, superseded by [`STATUS.md`](STATUS.md)**
+>
+> This document was written in March 2026 when the WASM renderer was in early development.
+> The C++ implementation has since reached Phase 3 (multi-slot pipeline, audio reactivity,
+> depth map support, frame capture, RAII resource management, and error handling).
+> Please refer to [`STATUS.md`](STATUS.md) for the current state.
+
 # WASM Renderer Completeness Analysis
 
 ## Executive Summary
