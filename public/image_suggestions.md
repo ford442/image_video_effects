@@ -4573,6 +4573,72 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Ideal for generating clean, stylized isometric assets and testing smooth glossy material rendering.
 
 
+
+### Suggestion: Cybernetic Zen Garden
+- **Date:** 2026-05-20
+- **Prompt:** "A tranquil zen garden where the raked sand is made of glowing fiber optic cables and the rocks are polished obsidian spheres. A lone android monk meditates in the center. Illuminated by soft, cool moonlight and the neon blue glow of the cables. The mood is serene yet surreal. Captured with a 50mm lens for a natural perspective."
+- **Negative prompt:** "cluttered, dirty, bright daylight, noisy, low resolution"
+- **Tags:** cyberpunk, landscape, 3D, moody, ethereal
+- **Style / Reference:** 3D render, minimalist
+- **Composition:** wide shot, rule of thirds
+- **Color palette:** cool blues, deep blacks, neon accents
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_cybernetic-zen-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for exploring contrasts between organic concepts and artificial materials.
+
+### Suggestion: Steampunk Alchemist's Laboratory
+- **Date:** 2026-05-20
+- **Prompt:** "A cluttered steampunk alchemist's laboratory filled with brass astrolabes, bubbling glass vials of luminescent green liquid, and ancient leather-bound books. Sunlight streams through a dusty stained-glass window, creating volumetric light rays that illuminate floating dust motes. The atmosphere is mysterious and intellectual. Highly detailed, photorealistic."
+- **Negative prompt:** "modern technology, clean, minimalistic, dull, flat lighting"
+- **Tags:** steampunk, interior, photorealistic, cinematic
+- **Style / Reference:** photorealistic, highly detailed
+- **Composition:** medium shot, cluttered foreground interest
+- **Color palette:** warm brass, amber, glowing greens
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_steampunk-alchemist-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing volumetric lighting and glass refraction.
+
+### Suggestion: Ethereal Floating Nebula Citadel
+- **Date:** 2026-05-20
+- **Prompt:** "A colossal, sprawling citadel carved from shimmering quartz, floating amidst a vibrant cosmic nebula. Cascading waterfalls of stardust fall from its edges into the void. The scene is lit by the radiant pink and purple glow of the surrounding gas clouds, casting soft, colorful shadows. The mood is epic and wondrous. Epic wide-angle landscape shot."
+- **Negative prompt:** "earth, ground, mundane, realistic sky, blurry"
+- **Tags:** sci-fi, fantasy, landscape, ethereal, bright
+- **Style / Reference:** digital concept art, painterly
+- **Composition:** wide shot, grand scale
+- **Color palette:** vibrant pinks, purples, shimmering white
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_floating-nebula-citadel.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use to test scale, celestial lighting, and grand architectural fantasy.
+
+### Suggestion: Macro Dewdrops on Bioluminescent Flora
+- **Date:** 2026-05-20
+- **Prompt:** "An extreme macro close-up of morning dew drops resting on the intricately veined leaf of an alien, bioluminescent plant. The veins pulse with a vibrant cyan light that refracts beautifully through the spherical water droplets. The background is a soft, dark bokeh. The mood is intimate and otherworldly. Shot with a 100mm macro lens."
+- **Negative prompt:** "wide shot, dry, dull, noisy, cartoon, out of focus"
+- **Tags:** sci-fi, macro, nature, photorealistic, dark
+- **Style / Reference:** photorealistic, macro photography
+- **Composition:** extreme close-up, shallow depth of field
+- **Color palette:** deep dark greens, vibrant cyan, crystal clear
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260520_macro-bioluminescent-dew.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing macro details, liquid refraction, and subsurface scattering.
+
+### Suggestion: Noir Detective in a Rain-Soaked Metropolis
+- **Date:** 2026-05-20
+- **Prompt:** "A weary detective in a classic trench coat standing under a flickering streetlamp in a rain-soaked, retro-futuristic city. Harsh, high-contrast shadows slash across their face, while the wet asphalt reflects the glaring red of a nearby neon sign. The mood is tense, moody, and cinematic. Captured in a classic film noir style with dramatic lighting."
+- **Negative prompt:** "sunny, cheerful, daytime, low contrast, flat lighting"
+- **Tags:** noir, portrait, retro, cinematic, moody
+- **Style / Reference:** noir, photorealistic, cinematic
+- **Composition:** medium shot, dramatic low angle
+- **Color palette:** stark black and white, splashes of crimson red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260520_noir-detective-rain.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing harsh lighting contrasts, rain effects, and wet reflections.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
