@@ -202,11 +202,14 @@ bool WebGPURenderer::CreateDevice() {
 
     WGPUAdapter rawAdapter = nullptr;
     auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
-                               WGPUStringView /*message*/, void* userdata1, void* /*userdata2*/) {
+                               WGPUStringView message, void* userdata1, void* /*userdata2*/) {
         if (status == WGPURequestAdapterStatus_Success) {
             *static_cast<WGPUAdapter*>(userdata1) = adapter;
         } else {
-            printf("❌ Adapter request failed\n");
+            printf("❌ Adapter request failed! Status: %d\n", status);
+            if (message.data && message.length > 0) {
+                printf("   Message: %.*s\n", (int)message.length, message.data);
+            }
         }
     };
 
@@ -284,11 +287,14 @@ bool WebGPURenderer::CreateDevice() {
 
     WGPUDevice rawDevice = nullptr;
     auto deviceCallback = [](WGPURequestDeviceStatus status, WGPUDevice device,
-                              WGPUStringView /*message*/, void* userdata1, void* /*userdata2*/) {
+                              WGPUStringView message, void* userdata1, void* /*userdata2*/) {
         if (status == WGPURequestDeviceStatus_Success) {
             *static_cast<WGPUDevice*>(userdata1) = device;
         } else {
-            printf("❌ Device request failed\n");
+            printf("❌ Device request failed! Status: %d\n", status);
+            if (message.data && message.length > 0) {
+                printf("   Message: %.*s\n", (int)message.length, message.data);
+            }
         }
     };
 
