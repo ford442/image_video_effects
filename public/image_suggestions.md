@@ -4639,6 +4639,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for testing harsh lighting contrasts, rain effects, and wet reflections.
 
+### Suggestion: Bismuth Exoplanet Core
+- **Date:** 2026-05-19
+- **Prompt:** "A breathtaking macro view of an exoplanet core entirely composed of shimmering, iridescent bismuth crystals. The fractal-like geometric structures reflect intense, vibrant rainbow hues against a dark, void-like background. The lighting is ethereal and internal, emanating from the depths of the core. Captured with a macro lens to emphasize the sharp, metallic edges and mesmerizing patterns."
+- **Negative prompt:** "blurry, lowres, soft, earthy, water, organic, people"
+- **Tags:** sci-fi, macro, photorealistic, dark
+- **Style / Reference:** photorealistic, 3D render, mineral photography
+- **Composition:** extreme close-up, centered
+- **Color palette:** vibrant rainbow, metallic pink, blue, yellow, deep black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260519_bismuth-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for generating sharp metallic textures and testing iridescence in shaders.
+
+### Suggestion: Steampunk Orbital Ring
+- **Date:** 2026-05-19
+- **Prompt:** "A majestic wide-angle shot of a colossal orbital ring encircling a distant planet, entirely constructed from polished brass and intricate gears. Huge smokestacks release vapor into space, while massive mechanical cogs slowly turn. Warm, cinematic lighting from a nearby star casts long shadows over the detailed metallic surface. The mood is epic and slightly moody."
+- **Negative prompt:** "modern, clean, digital, plastic, flat, simple"
+- **Tags:** steampunk, architecture, photorealistic, cinematic
+- **Style / Reference:** photorealistic, retro-futurism
+- **Composition:** wide shot, sweeping curve
+- **Color palette:** polished brass, copper, warm golds, deep space black
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260519_steampunk-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing large-scale mechanical textures and lighting on metallic curves.
+
+### Suggestion: Mother of Pearl Tsunami
+- **Date:** 2026-05-19
+- **Prompt:** "A surreal, towering tsunami wave frozen in time, made entirely of shimmering mother of pearl. The wave curves gracefully, catching bright, ethereal light that reveals complex swirling layers of pink, pearlescent white, and pale cyan. The ocean below is dark and moody, contrasting with the luminous wave. The sky is dark and stormy, adding to the cinematic tension."
+- **Negative prompt:** "water, splash, foam, ordinary, realistic ocean, daylight"
+- **Tags:** fantasy, nature, surreal, ethereal
+- **Style / Reference:** surrealism, 3D
+- **Composition:** rule of thirds, dynamic angle
+- **Color palette:** pearlescent whites, pale cyan, soft pink, dark teal
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260519_pearl-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for generating smooth, organic materials with subsurface scattering and pearlescent finishes.
+
+### Suggestion: Italian Futurism Supernova
+- **Date:** 2026-05-19
+- **Prompt:** "An abstract, explosive depiction of a supernova in space, rendered in the style of Italian Futurism. Sharp, intersecting geometric planes of bright energy blast outward in dynamic, fragmented motion lines. The composition is chaotic and energetic, emphasizing speed and explosive power. Brilliant contrasting colors slice through the dark, cinematic void."
+- **Negative prompt:** "soft, realistic, rounded, static, peaceful"
+- **Tags:** sci-fi, landscape, abstract, bright
+- **Style / Reference:** Italian Futurism, painterly, abstract geometry
+- **Composition:** explosive outward burst, central focal point
+- **Color palette:** brilliant yellow, crimson, electric blue, deep space black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260519_futurist-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing geometric displacement, fragmentation, and bold color contrasts.
+
+### Suggestion: Bioluminescent Aerogel Reef
+- **Date:** 2026-05-19
+- **Prompt:** "An ethereal, glowing underwater reef where the corals are made of translucent, weightless aerogel. The delicate structures are infused with internal, bioluminescent light that pulses in moody neon greens and blues. Tiny, crystalline fish swim through the misty, soft-focus water. The scene feels alien and intensely peaceful."
+- **Negative prompt:** "solid rock, ordinary coral, bright sunlight, murky water"
+- **Tags:** sci-fi, nature, 3D, moody
+- **Style / Reference:** 3D render, subsurface scattering focus
+- **Composition:** medium shot, balanced
+- **Color palette:** neon green, glowing blue, translucent gray, dark blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260519_aerogel-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for exploring volumetric lighting, transparency, and glowing subsurface materials.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
