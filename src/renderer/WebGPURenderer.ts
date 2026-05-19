@@ -1148,15 +1148,6 @@ export class WebGPURenderer implements Renderer {
       s => s.enabled && s.shaderId && this.pipelines.has(s.shaderId)
     );
 
-    // Debug logging for slot chain
-    if (this.frameCount % 60 === 0) {
-      console.log(`[WebGPURenderer] Frame ${this.frameCount}: ${enabled.length} enabled slots`);
-      console.log(`[WebGPURenderer] Slots:`, this.slots.map(s => ({ 
-        id: s.shaderId, 
-        enabled: s.enabled, 
-        hasPipeline: s.shaderId ? this.pipelines.has(s.shaderId) : false 
-      })));
-    }
 
     if (enabled.length === 0) {
       // No active shader — show whatever is in readTex (black initially)
