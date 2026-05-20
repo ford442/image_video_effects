@@ -4704,6 +4704,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Great for exploring volumetric lighting, transparency, and glowing subsurface materials.
 
+
+### Suggestion: Bismuth Crystal Exoplanet Core
+- **Date:** 2026-05-20
+- **Prompt:** "A majestic and surreal landscape deep within the core of an exoplanet, composed entirely of massive, geometric bismuth crystals. The iridescent, stepped structures of the bismuth glow with vibrant pinks, golds, and blues under an ethereal internal light source. A glowing, slow-moving river of molten gold winds its way through the crystalline valleys. Atmospheric, luminous fog fills the cavernous spaces."
+- **Negative prompt:** "water, greenery, people, sky, daylight, lowres"
+- **Tags:** sci-fi, landscape, ethereal, moody
+- **Style / Reference:** photorealistic, highly detailed, surreal
+- **Composition:** wide shot, grand scale
+- **Color palette:** vibrant pinks, blues, gold, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Great for testing metallic and crystalline material shaders with internal lighting.
+
+### Suggestion: Solar Sail Armada at Supernova
+- **Date:** 2026-05-20
+- **Prompt:** "A cinematic wide shot of a vast armada of sleek, futuristic spaceships with enormous, gossamer solar sails, silhouetted against the blinding, chaotic eruption of a nearby supernova. The supernova explosion fills the background with violent swirls of bright orange, crimson, and stark white plasma. The solar sails catch and refract the intense light, glowing with intense energy."
+- **Negative prompt:** "earth, planets, cartoon, simple, flat"
+- **Tags:** sci-fi, cinematic, bright
+- **Style / Reference:** photorealistic, epic sci-fi concept art
+- **Composition:** wide shot, dynamic angle, rule of thirds
+- **Color palette:** blinding whites, deep crimson, bright orange
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests bloom, intense highlights, and dramatic contrast.
+
+### Suggestion: Bioluminescent Ashcan School Alley
+- **Date:** 2026-05-20
+- **Prompt:** "A moody, gritty urban alleyway rendered in the gritty realism of the Ashcan School, but infused with futuristic bioluminescence. It is raining heavily. Puddles reflect the dim, naturalistic light of the scene mixed with the sudden, harsh neon-blue glow of genetically modified glowing moss and fungi creeping up the brick walls."
+- **Negative prompt:** "clean, modern, sunny, cheerful, flat"
+- **Tags:** cyberpunk, noir, moody
+- **Style / Reference:** Ashcan School, painterly realism mixed with sci-fi elements
+- **Composition:** ground-level perspective, looking down the alley
+- **Color palette:** muted grays and browns, striking neon-blue highlights
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests wet surface reflections and localized glowing elements against a muted background.
+
+### Suggestion: Steampunk Brass Beaver Dam
+- **Date:** 2026-05-20
+- **Prompt:** "A highly detailed, macro shot of an intricate beaver dam constructed entirely from polished brass cogs, copper pipes, and small clockwork mechanisms, situated across a clear, fast-flowing forest stream. Water cascades over the precise, mechanical structure. Small, brass, robotic beavers are visible maintaining the intricate machinery. Sunlight dapples through the forest canopy above."
+- **Negative prompt:** "wood, natural dam, cartoon, low detail"
+- **Tags:** steampunk, macro, nature, whimsical
+- **Style / Reference:** photorealistic, macro photography, highly detailed
+- **Composition:** macro close-up, focusing on water flowing over the brass mechanisms
+- **Color palette:** warm brass, copper, natural greens, sparkling water
+- **Aspect ratio:** 3:2
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex metallic reflections and water caustics.
+
+### Suggestion: Graphene Orbital Ring Megastructure
+- **Date:** 2026-05-20
+- **Prompt:** "An awe-inspiring view of an impossibly thin, massive orbital ring constructed from hyper-strong, translucent graphene, encircling a lush, green Earth-like planet. The structure is illuminated by the harsh, direct light of the sun, casting long, sharp shadows across the continents below. Tiny, bright lights mark docking ports along the ring's sleek surface against the deep black of space."
+- **Negative prompt:** "clouds obscuring the ring, messy, chaotic, lowres"
+- **Tags:** sci-fi, architecture, landscape, cinematic
+- **Style / Reference:** photorealistic, grand scale sci-fi illustration
+- **Composition:** wide shot, planet taking up lower half, ring curving overhead
+- **Color palette:** deep black space, lush greens/blues of planet, stark white highlights on the ring
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests sharp geometric lines, harsh lighting contrasts, and sheer scale.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
