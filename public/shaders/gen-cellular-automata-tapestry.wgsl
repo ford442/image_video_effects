@@ -20,80 +20,94 @@
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=DiffusionA, y=DiffusionB, z=Feed, w=Kill
+    zoom_params: vec4<f32>,  // x=diffA, y=diffB, z=feed, w=kill
     ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(16, 16)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let coords = vec2<i32>(global_id.xy);
-    let res = vec2<i32>(u.config.z, u.config.w);
-
-    if (coords.x >= res.x || coords.y >= res.y) {
+    let coord = vec2<i32>(global_id.xy);
+    let res = vec2<i32>(i32(u.config.z), i32(u.config.w));
+    if (coord.x >= res.x || coord.y >= res.y) {
         return;
     }
 
-    let uv = vec2<f32>(coords) / vec2<f32>(res);
+    let uv = vec2<f32>(f32(coord.x) / f32(res.x), f32(coord.y) / f32(res.y));
+    let frame = i32(u.config.x * 60.0);
 
-    // Ping-pong determination via dataTextureC
-    let center = textureLoad(dataTextureC, coords, 0).xy; // x=A, y=B
-    var a = center.x;
-    var b = center.y;
+    var sumA = 0.0;
+    var sumB = 0.0;
+    let weightCenter = -1.0;
+    let weightAdjacent = 0.2;
+    let weightDiagonal = 0.05;
 
-    if (u.config.x < 0.1) {
-        a = 1.0;
-        b = 0.0;
+    let currentCenter = textureLoad(dataTextureC, coord, 0).xy;
+
+    // Convolution 3x3
+    for(var i = -1; i <= 1; i++) {
+        for(var j = -1; j <= 1; j++) {
+            let offsetCoord = coord + vec2<i32>(i, j);
+            // periodic boundary or clamp, let's clamp
+            let clampedCoord = clamp(offsetCoord, vec2<i32>(0), res - vec2<i32>(1));
+            let val = textureLoad(dataTextureC, clampedCoord, 0).xy;
+
+            var weight = 0.0;
+            if (i == 0 && j == 0) { weight = weightCenter; }
+            else if (abs(i) == 1 && abs(j) == 1) { weight = weightDiagonal; }
+            else { weight = weightAdjacent; }
+
+            sumA += val.x * weight;
+            sumB += val.y * weight;
+        }
     }
 
-    // Laplacian
-    var lapl = vec2<f32>(0.0);
-    let weightAdj = 0.2;
-    let weightDiag = 0.05;
-    let weightCenter = -1.0;
-
-    lapl += center * weightCenter;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(1, 0), 0).xy * weightAdj;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(-1, 0), 0).xy * weightAdj;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(0, 1), 0).xy * weightAdj;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(0, -1), 0).xy * weightAdj;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(1, 1), 0).xy * weightDiag;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(-1, 1), 0).xy * weightDiag;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(1, -1), 0).xy * weightDiag;
-    lapl += textureLoad(dataTextureC, coords + vec2<i32>(-1, -1), 0).xy * weightDiag;
-
-    let vidColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let luma = dot(vidColor, vec3<f32>(0.299, 0.587, 0.114));
-
-    let feed = 0.055 + luma * 0.02;
-    let kill = 0.062 + luma * 0.01;
-
-    // Default values if params are 0
     var diffA = u.zoom_params.x;
-    if (diffA == 0.0) { diffA = 1.0; }
     var diffB = u.zoom_params.y;
-    if (diffB == 0.0) { diffB = 0.5; }
+    var feed = u.zoom_params.z;
+    var kill = u.zoom_params.w;
 
-    let dt = 1.0 + u.config.y * 2.0;
+    // Modulate feed/kill based on video luminance
+    let vidColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let luminance = dot(vidColor, vec3<f32>(0.299, 0.587, 0.114));
+    feed += (luminance * 0.02 - 0.01);
+    kill -= (luminance * 0.01);
 
-    let reaction = a * b * b;
+    // Modulate speed by audio
+    let dt = 1.0 + u.config.y * 0.5;
 
-    var nextA = a + (diffA * lapl.x - reaction + feed * (1.0 - a)) * dt;
-    var nextB = b + (diffB * lapl.y + reaction - (kill + feed) * b) * dt;
+    let A = currentCenter.x;
+    let B = currentCenter.y;
+    let reaction = A * B * B;
 
-    let mousePos = u.zoom_config.yz * vec2<f32>(res);
-    if (distance(vec2<f32>(coords), mousePos) < 20.0) {
-        nextB = 1.0;
+    var nextA = A + (diffA * sumA - reaction + feed * (1.0 - A)) * dt;
+    var nextB = B + (diffB * sumB + reaction - (kill + feed) * B) * dt;
+
+    // Mouse interaction
+    let mouseDist = distance(uv, u.zoom_config.yz);
+    if (mouseDist < 0.02 && u.zoom_config.z > 0.0) {
+        nextB = 1.0; // Inject chemical B at mouse
+    }
+
+
+    // Initial state
+    if (frame < 5) {
+        nextA = 1.0;
+        nextB = select(0.0, 1.0, fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453) > 0.99);
     }
 
     nextA = clamp(nextA, 0.0, 1.0);
     nextB = clamp(nextB, 0.0, 1.0);
 
-    textureStore(dataTextureA, coords, vec4<f32>(nextA, nextB, 0.0, 1.0));
+    // Write back ping pong
+    textureStore(dataTextureA, coord, vec4<f32>(nextA, nextB, 0.0, 1.0));
 
-    let val = abs(nextA - nextB);
-    let colorIndex = i32(val * 255.0) % 256;
-    let mappedColor = plasmaBuffer[colorIndex];
 
-    let finalColor = mix(vec4<f32>(vidColor, 1.0), mappedColor, val * 2.0);
-    textureStore(writeTexture, coords, finalColor);
+    // Plasma coloring based on B concentration
+    let plasmaIdx = min(u32(nextB * 255.0), 255u);
+    let mappedColor = plasmaBuffer[plasmaIdx].rgb;
+
+    // Composite
+    let outColor = mix(vidColor, mappedColor, nextB * 1.5);
+
+    textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
 }
