@@ -4770,6 +4770,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests sharp geometric lines, harsh lighting contrasts, and sheer scale.
 
+
+### Suggestion: Bioluminescent Underworld Cavern
+- **Date:** 2026-05-25
+- **Prompt:** "A vast subterranean cavern illuminated by gigantic, bioluminescent fungi and neon-glowing crystal formations. A dark underground river flows through the center, reflecting the vibrant pink, teal, and purple lights. Tiny, glowing insect-like creatures flutter in the air."
+- **Negative prompt:** "sunlight, sky, human architecture, realistic, boring"
+- **Tags:** sci-fi, fantasy, landscape, surreal, bright
+- **Style / Reference:** surreal, vibrant, hyper-detailed
+- **Composition:** wide angle, deep depth of field
+- **Color palette:** neon pink, vibrant teal, deep purple, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260525_neon-underworld.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing glow, reflection, and high-contrast volumetric lighting.
+
+### Suggestion: Steampunk Nebula Clockwork
+- **Date:** 2026-05-25
+- **Prompt:** "A colossal, intricate clockwork mechanism floating in the center of a vibrant, swirling nebula. Massive interlocking gears of polished brass and gold catch the starlight, while the heart of the mechanism houses a pulsing, miniature star."
+- **Negative prompt:** "earth, planets, simple, modern, organic"
+- **Tags:** steampunk, macro, 3D, ethereal
+- **Style / Reference:** highly detailed, cinematic lighting, 3D render style
+- **Composition:** central focus, symmetrical, macro scale
+- **Color palette:** warm brass, gold, fiery orange, deep space blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260525_clockwork-nebula.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests metallic reflections, bloom, and intricate geometric rendering.
+
+### Suggestion: Ethereal Frozen Desert
+- **Date:** 2026-05-25
+- **Prompt:** "A sprawling desert landscape where the dunes are made of sparkling, crystalline ice instead of sand. A pale, oversized moon hangs low in a gradient sky of pastel lavender and icy blue. Fragile, glass-like flora dot the frozen dunes."
+- **Negative prompt:** "hot, sand, yellow, sun, warm"
+- **Tags:** fantasy, landscape, surreal, ethereal, minimalist
+- **Style / Reference:** ethereal, soft lighting, photorealistic
+- **Composition:** rule of thirds, low angle
+- **Color palette:** pastel lavender, icy blue, pristine white, silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260525_frozen-desert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing refraction, subsurface scattering, and soft gradient blending.
+
+### Suggestion: Cybernetic Avian Construct
+- **Date:** 2026-05-25
+- **Prompt:** "A close-up portrait of a majestic owl constructed entirely from sleek, futuristic cybernetic parts. Its feathers are overlapping plates of brushed titanium, and its eyes are glowing, multi-faceted camera lenses. It sits against a backdrop of a blurred, rain-streaked neon city window."
+- **Negative prompt:** "organic, real bird, cartoon, flat"
+- **Tags:** cyberpunk, portrait, photorealistic, moody
+- **Style / Reference:** hyper-realistic, macro photography
+- **Composition:** close-up, shallow depth of field, bokeh background
+- **Color palette:** metallic gray, electric blue, neon reflections
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260525_cyber-owl.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use for testing sharp metallic textures, depth of field, and bokeh effects.
+
+### Suggestion: Liquid Crystal Geode
+- **Date:** 2026-05-25
+- **Prompt:** "The interior of a massive geode where the crystals are formed from a slowly shifting, iridescent liquid crystal. The walls ripple and change color like an oil slick, ranging from deep magenta to vibrant cyan, illuminated by an unknown internal light source."
+- **Negative prompt:** "matte, dull, ordinary rock, people, external light"
+- **Tags:** sci-fi, macro, abstract, bright
+- **Style / Reference:** macro, vibrant, surreal, abstract 3D
+- **Composition:** abstract, filling the frame
+- **Color palette:** iridescent, magenta, cyan, gold
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260525_liquid-geode.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing fluid simulations, iridescence, and complex color warping shaders.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
