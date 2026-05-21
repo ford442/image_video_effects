@@ -514,6 +514,13 @@
       "added": "2026-05-18T15:31:30.137181",
       "status": "completed",
       "completed_at": "2026-05-19T08:05:03.936764"
+    },
+    {
+      "filename": "2026-05-20_glacial-aether-quantum-cavern.md",
+      "title": "Glacial-Aether Quantum-Cavern",
+      "added": "2026-05-20T15:23:23.838885",
+      "status": "completed",
+      "completed_at": "2026-05-21T08:04:09.058349Z"
     }
   ],
   "rejected": [],
@@ -728,11 +735,6 @@
       "filename": "2026-05-19_radiant-quantum-crystalline-forge.md",
       "title": "Radiant Quantum-Crystalline Forge",
       "added": "2026-05-19T15:31:57.542248"
-    },
-    {
-      "filename": "2026-05-20_glacial-aether-quantum-cavern.md",
-      "title": "Glacial-Aether Quantum-Cavern",
-      "added": "2026-05-20T15:23:23.838885"
     }
   ],
   "in_progress": null
