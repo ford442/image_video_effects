@@ -1,46 +1,15 @@
 {
   "id": "fractal-glass-distort",
-  "name": "Fractal Glass Distort",
+  "name": "IFS Attractor Glass",
   "url": "shaders/fractal-glass-distort.wgsl",
   "category": "distortion",
-  "description": "Recursive refraction effect that creates a fractal-like kaleidoscope. Mouse position controls the distortion center.",
-  "features": [
-    "mouse-driven",
-    "audio-reactive"
-  ],
+  "description": "Iterated Function System (IFS) attractor density field drives refraction index. Barnsley-style 4-contraction IFS evaluated per-pixel with iridescent chromatic dispersion through the fractal structure. Audio-driven contraction modulation.",
+  "features": ["mouse-driven", "audio-reactive", "temporal"],
   "params": [
-    {
-      "id": "rotation",
-      "name": "Rotation Speed",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "scale",
-      "name": "Fractal Scale",
-      "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "refraction",
-      "name": "Refraction",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "aberration",
-      "name": "Aberration",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
-    }
+    { "id": "contraction", "name": "Contraction",  "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "rotation",    "name": "IFS Rotation",  "default": 0.3, "min": 0.0, "max": 1.0 },
+    { "id": "refraction",  "name": "Refraction",    "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "aberration",  "name": "Aberration",    "default": 0.3, "min": 0.0, "max": 1.0 }
   ],
-  "tags": [
-    "warp",
-    "distort",
-    "transform"
-  ]
+  "tags": ["warp", "distort", "fractal", "ifs", "attractor", "glass"]
 }

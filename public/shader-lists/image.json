@@ -9657,46 +9657,53 @@
   },
   {
     "id": "infinite-spiral-zoom",
-    "name": "Infinite Spiral Zoom",
+    "name": "Möbius–Droste Spiral",
     "url": "shaders/infinite-spiral-zoom.wgsl",
     "category": "image",
-    "description": "Applies a complex log-polar mapping to create an infinite spiral zoom into the mouse cursor.",
+    "description": "Möbius transformation f(z)=(az+b)/(cz+d) composed with log-polar mapping for a Droste self-similar infinite zoom. Animated parameter orbit, audio-driven rotation, multi-fold symmetry, chromatic ring fringing.",
     "params": [
       {
-        "id": "zoom_speed",
+        "id": "zoomSpeed",
         "name": "Zoom Speed",
-        "default": 0.5,
+        "default": 0.55,
         "min": 0,
         "max": 1
       },
       {
-        "id": "spiral_angle",
-        "name": "Spiral Twist",
-        "default": 0.5,
+        "id": "mobStrength",
+        "name": "Möbius Strength",
+        "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
         "id": "branches",
-        "name": "Branches",
+        "name": "Symmetry Folds",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "center_offset",
-        "name": "Center Offset",
-        "default": 0,
+        "id": "chromatic",
+        "name": "Chromatic Fringe",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "warp",
+      "distort",
+      "fractal",
+      "mobius",
+      "droste",
+      "spiral",
+      "zoom"
     ]
   },
   {
@@ -11485,55 +11492,6 @@
     "features": [
       "mouse-driven",
       "distortion",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
-    "id": "neon-strings",
-    "name": "Neon Strings",
-    "url": "shaders/neon-strings.wgsl",
-    "category": "image",
-    "description": "Vibrating neon strings generated from edge detection, agitated by the mouse.",
-    "params": [
-      {
-        "id": "thickness",
-        "name": "Edge Threshold",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "vibration",
-        "name": "Vibration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "neon",
-        "name": "Neon Intensity",
-        "default": 1,
-        "min": 0,
-        "max": 2
-      }
-    ],
-    "features": [
-      "mouse-driven",
       "audio-reactive",
       "audio-driven"
     ],

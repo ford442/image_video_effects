@@ -1,49 +1,16 @@
 {
   "id": "velocity-field-paint",
+  "name": "Velocity Field — Vorticity Confinement",
   "category": "interactive-mouse",
   "url": "shaders/velocity-field-paint.wgsl",
-  "description": "Uses mouse movement to paint a velocity field that distorts the image like fluid.",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "temporal"
-  ],
+  "description": "Mouse-driven velocity field with vorticity confinement (Fedkiw et al. 2001). Computes ω=∂v_y/∂x−∂v_x/∂y from 4-neighbour finite differences, applies F=ε·(η̂×ω̂) confinement force to restore turbulent detail. Enstrophy (ω²) colour coding: cyan=CCW, magenta=CW. Audio bass drives force, treble drives confinement strength.",
+  "features": ["mouse-driven", "audio-reactive", "temporal"],
   "params": [
-    {
-      "id": "param1",
-      "name": "Dissipation",
-      "default": 0.9,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "param2",
-      "name": "Brush Size",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "param3",
-      "name": "Force",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "param4",
-      "name": "Audio Reactivity",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
-    }
+    { "id": "dissipation",   "name": "Dissipation",        "default": 0.9, "min": 0.0, "max": 1.0 },
+    { "id": "brushSize",     "name": "Brush Size",         "default": 0.4, "min": 0.0, "max": 1.0 },
+    { "id": "force",         "name": "Force",              "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "vortConfinement","name": "Vort. Confinement", "default": 0.4, "min": 0.0, "max": 1.0 }
   ],
-  "tags": [
-    "mouse-driven",
-    "interactive",
-    "audio",
-    "music",
-    "reactive"
-  ],
-  "name": "Velocity Field Paint"
+  "tags": ["mouse-driven", "interactive", "fluid", "vorticity", "physics", "audio", "reactive"],
+  "name": "Velocity Field — Vorticity Confinement"
 }

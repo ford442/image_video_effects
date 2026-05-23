@@ -860,6 +860,63 @@
     ]
   },
   {
+    "id": "gen-acid-lissajous",
+    "name": "Acid Lissajous",
+    "url": "shaders/gen-acid-lissajous.wgsl",
+    "category": "generative",
+    "description": "Seven Lissajous curve strands rendered as glowing neon tubes with continuous acid-trip color cycling, harmonic drift, and soft bloom. Each strand traces a different frequency ratio pair that slowly evolves for ever-changing knotted patterns.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "neon",
+      "colorful",
+      "lissajous",
+      "oscilloscope",
+      "generative",
+      "abstract",
+      "glow"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Animation Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "complexity",
+        "name": "Harmonic Complexity",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedback",
+        "name": "Persistence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-alien-flora",
     "name": "Alien Flora",
     "url": "shaders/gen-alien-flora.wgsl",
@@ -2446,6 +2503,65 @@
         "min": 1,
         "max": 8,
         "step": 1
+      }
+    ]
+  },
+  {
+    "id": "gen-cycloid-bloom",
+    "name": "Cycloid Bloom",
+    "url": "shaders/gen-cycloid-bloom.wgsl",
+    "category": "generative",
+    "description": "Five nested hypotrochoid (Spirograph-style) curves layered into a blooming floral mandala. Each layer uses a different gear ratio that slowly evolves, petal glowing with prismatic hues that respond to audio. Feedback accumulation burns bright arcs.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural",
+      "spirograph"
+    ],
+    "tags": [
+      "psychedelic",
+      "colorful",
+      "spirograph",
+      "cycloid",
+      "mandala",
+      "floral",
+      "generative",
+      "abstract",
+      "prismatic"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Spin Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "petals",
+        "name": "Petal Multiplier",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedback",
+        "name": "Persistence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -5503,6 +5619,63 @@
     ]
   },
   {
+    "id": "gen-rgb-diffraction",
+    "name": "RGB Diffraction",
+    "url": "shaders/gen-rgb-diffraction.wgsl",
+    "category": "generative",
+    "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "colorful",
+      "diffraction",
+      "prismatic",
+      "spectral",
+      "interference",
+      "rainbow",
+      "generative",
+      "abstract"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Evolution Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "freq",
+        "name": "Fringe Frequency",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromab",
+        "name": "Chromatic Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-sentient-aether-flora-biosphere",
     "name": "Sentient Aether-Flora Biosphere",
     "author": "Jules",
@@ -5773,6 +5946,65 @@
     ]
   },
   {
+    "id": "gen-strange-field-flow",
+    "name": "Strange Field Flow",
+    "url": "shaders/gen-strange-field-flow.wgsl",
+    "category": "generative",
+    "description": "A strange-attractor flow field blending Peter de Jong and Clifford attractor maps. Each pixel evaluates iterated orbit density and paints acid-neon whorls. Attractor coefficients pulse to bass and treble, morphing the topology. Temporal persistence burns psychedelic trails.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "attractor",
+      "chaos",
+      "colorful",
+      "acid",
+      "neon",
+      "flow",
+      "generative",
+      "abstract",
+      "fractal"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Drift Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chaos",
+        "name": "Chaos Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Orbit Density",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedback",
+        "name": "Trail Persistence",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-string-theory",
     "name": "String Theory",
     "url": "shaders/gen-string-theory.wgsl",
@@ -5987,6 +6219,64 @@
         "id": "trailPersistence",
         "name": "Trail Persistence",
         "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-torus-knot-rainbow",
+    "name": "Torus Knot Rainbow",
+    "url": "shaders/gen-torus-knot-rainbow.wgsl",
+    "category": "generative",
+    "description": "A (p,q) torus knot projected onto the 2D plane with perspective. The knotted curve is rendered as a thick rainbow-hued ribbon that rotates and morphs its winding numbers over time. Audio modulates the longitude frequency for reactive topology shifts.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "colorful",
+      "torus",
+      "knot",
+      "rainbow",
+      "3d",
+      "generative",
+      "abstract",
+      "neon"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Spin Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "knotp",
+        "name": "P Winds",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "knotq",
+        "name": "Q Winds",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "tube",
+        "name": "Tube Radius",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -6591,49 +6881,52 @@
   },
   {
     "id": "gen-grok4-life",
-    "name": "Grok4 Cellular Life",
+    "name": "SmoothLife Predator-Prey",
     "url": "shaders/gen_grok4_life.wgsl",
     "category": "generative",
-    "description": "Conway's Game of Life simulation with mouse drawing and random seeding.",
+    "description": "Two-species SmoothLife cellular automaton with Lotka-Volterra predator-prey dynamics. Species A (green prey) uses Rafler 2011 birth/survival rules; species B (red predator) grows on prey density and decays without it. Audio bass drives prey birth-rate, treble drives predator decay, mids control coupling strength.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "simulation",
+      "life",
+      "predator-prey",
+      "audio-reactive",
+      "organic"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "id": "timeStep",
+        "name": "Time Step",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 1
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "sharpness",
+        "name": "Sharpness",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "colorSpeed",
+        "name": "Colour Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "initDensity",
+        "name": "Init Density",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       }
     ]
   },
@@ -6697,61 +6990,55 @@
   },
   {
     "id": "gen-grokcf-interference",
-    "name": "Chladni Plate Cymatics",
+    "name": "Cylindrical Drum Modes",
     "url": "shaders/gen_grokcf_interference.wgsl",
     "category": "generative",
-    "description": "Audio-reactive Chladni cymatics with modal synthesis, iridescent oil-slick interference, and Fibonacci spiral self-organization at high audio energy.",
+    "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring.",
     "features": [
-      "mouse-driven",
-      "depth-aware",
       "upgraded-rgba",
+      "depth-aware",
       "audio-reactive",
       "procedural",
-      "organic",
       "animated"
     ],
     "tags": [
       "procedural",
       "generative",
       "cymatics",
-      "interference",
+      "bessel",
+      "drum",
       "audio-reactive",
-      "stained-glass",
-      "vibration",
-      "vj"
+      "chladni",
+      "physics"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Sweep Speed",
+        "id": "modeScale",
+        "name": "Mode Scale",
         "default": 0.4,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param2",
+        "id": "colorMode",
+        "name": "Colour Mode",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "nodeSharpness",
+        "name": "Node Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "modeCount",
         "name": "Mode Count",
         "default": 0.6,
         "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Pattern Sharpness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Sand Density",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       }
     ]
   },
@@ -6865,49 +7152,52 @@
   },
   {
     "id": "gen-julia-set",
-    "name": "Julia Set",
+    "name": "Julia Set — Orbit Trap",
     "url": "shaders/gen_julia_set.wgsl",
     "category": "generative",
-    "description": "Animated Julia Set fractal controlled by mouse position.",
+    "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth (continuous) iteration count μ=i−log₂(log₂|z|), multi-trap orbit colouring (circle, line, cross traps), and animated Julia parameter c orbiting a Mandelbrot cardioid boundary. Audio-driven trap scale.",
     "features": [
-      "mouse-driven"
+      "audio-reactive",
+      "procedural",
+      "animated"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "fractal",
+      "julia",
+      "orbit-trap",
+      "abstract",
+      "colorful"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.35,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "id": "power",
+        "name": "Exponent n",
+        "default": 0,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "id": "trapMode",
+        "name": "Trap Mode",
+        "default": 0,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "trapScale",
+        "name": "Trap Scale",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       }
     ]
   },

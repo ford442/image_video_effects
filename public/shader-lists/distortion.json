@@ -665,26 +665,27 @@
   },
   {
     "id": "fractal-glass-distort",
-    "name": "Fractal Glass Distort",
+    "name": "IFS Attractor Glass",
     "url": "shaders/fractal-glass-distort.wgsl",
     "category": "distortion",
-    "description": "Recursive refraction effect that creates a fractal-like kaleidoscope. Mouse position controls the distortion center.",
+    "description": "Iterated Function System (IFS) attractor density field drives refraction index. Barnsley-style 4-contraction IFS evaluated per-pixel with iridescent chromatic dispersion through the fractal structure. Audio-driven contraction modulation.",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal"
     ],
     "params": [
       {
-        "id": "rotation",
-        "name": "Rotation Speed",
-        "default": 0.2,
+        "id": "contraction",
+        "name": "Contraction",
+        "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "scale",
-        "name": "Fractal Scale",
-        "default": 0.6,
+        "id": "rotation",
+        "name": "IFS Rotation",
+        "default": 0.3,
         "min": 0,
         "max": 1
       },
@@ -706,7 +707,10 @@
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "fractal",
+      "ifs",
+      "attractor",
+      "glass"
     ]
   },
   {
@@ -2039,40 +2043,40 @@
   },
   {
     "id": "vortex-distortion",
-    "name": "Vortex Distortion",
+    "name": "Lamb-Oseen Vortex",
     "url": "shaders/vortex-distortion.wgsl",
     "category": "distortion",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "temporal"
     ],
-    "description": "A swirling vortex centered on the mouse that twists the image and adds chromatic aberration.",
+    "description": "Lamb-Oseen vortex fluid dynamics with Kelvin-Helmholtz shear instability at vortex boundaries. Multiple interacting vortices from ripple history, velocity-magnitude and vorticity colour coding with chromatic aberration.",
     "params": [
       {
-        "id": "twistStrength",
-        "name": "Twist Strength",
+        "id": "circulation",
+        "name": "Circulation Γ",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
+        "id": "viscosity",
+        "name": "Viscosity ν",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "khAmplitude",
+        "name": "KH Instability",
+        "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
         "id": "aberration",
-        "name": "Aberration",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "darkness",
-        "name": "Center Darkness",
+        "name": "Chromatic Aber",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -2081,9 +2085,9 @@
     "tags": [
       "warp",
       "distort",
-      "transform",
-      "audio",
-      "music",
+      "fluid",
+      "physics",
+      "vortex",
       "reactive"
     ]
   },

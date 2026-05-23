@@ -1,50 +1,15 @@
 {
   "id": "vortex-distortion",
-  "name": "Vortex Distortion",
+  "name": "Lamb-Oseen Vortex",
   "url": "shaders/vortex-distortion.wgsl",
   "category": "distortion",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
-  ],
-  "description": "A swirling vortex centered on the mouse that twists the image and adds chromatic aberration.",
+  "features": ["mouse-driven", "audio-reactive", "temporal"],
+  "description": "Lamb-Oseen vortex fluid dynamics with Kelvin-Helmholtz shear instability at vortex boundaries. Multiple interacting vortices from ripple history, velocity-magnitude and vorticity colour coding with chromatic aberration.",
   "params": [
-    {
-      "id": "twistStrength",
-      "name": "Twist Strength",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "radius",
-      "name": "Radius",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "aberration",
-      "name": "Aberration",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "darkness",
-      "name": "Center Darkness",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
-    }
+    { "id": "circulation", "name": "Circulation Γ", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "viscosity",   "name": "Viscosity ν",   "default": 0.3, "min": 0.0, "max": 1.0 },
+    { "id": "khAmplitude", "name": "KH Instability","default": 0.4, "min": 0.0, "max": 1.0 },
+    { "id": "aberration",  "name": "Chromatic Aber","default": 0.3, "min": 0.0, "max": 1.0 }
   ],
-  "tags": [
-    "warp",
-    "distort",
-    "transform",
-    "audio",
-    "music",
-    "reactive"
-  ]
+  "tags": ["warp", "distort", "fluid", "physics", "vortex", "reactive"]
 }
