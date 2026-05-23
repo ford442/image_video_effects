@@ -2,7 +2,6 @@
   "id": "magnetic-field",
   "name": "Magnetic Field",
   "url": "shaders/magnetic-field.wgsl",
-  "category": "image",
   "description": "Magnetic field lines distortion effect.",
   "params": [
     {

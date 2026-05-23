@@ -2,7 +2,6 @@
   "id": "gen-grok41-mandelbrot",
   "name": "Buddhabrot Nebula",
   "url": "shaders/gen_grok41_mandelbrot.wgsl",
-  "category": "generative",
   "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation.",
   "features": [
     "mouse-driven",

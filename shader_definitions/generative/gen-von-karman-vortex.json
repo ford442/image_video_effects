@@ -2,7 +2,6 @@
   "id": "gen-von-karman-vortex",
   "name": "Von Kármán Vortex Street",
   "url": "shaders/gen-von-karman-vortex.wgsl",
-  "category": "generative",
   "description": "Analytic vortex-street flow visualization. Ten alternating point-vortex pairs shed behind the mouse-driven obstacle; their combined streamfunction ψ = U·y + Σ ±(Γ/2π)·ln(r) produces isocontours tracing the classic Kármán street wake. Bass drives shedding speed; mids vary vortex separation for staggered or aligned rows.",
   "tags": [
     "fluid-dynamics",
@@ -22,8 +21,8 @@
       "id": "flowSpeed",
       "name": "Flow Speed",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x"
     },
@@ -31,8 +30,8 @@
       "id": "vortexSeparation",
       "name": "Vortex Separation",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y"
     },
@@ -40,17 +39,17 @@
       "id": "vortexSpacing",
       "name": "Vortex Spacing",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z"
     },
     {
       "id": "hue",
       "name": "Colour Hue",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w"
     }

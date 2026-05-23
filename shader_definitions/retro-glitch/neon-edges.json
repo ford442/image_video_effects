@@ -2,15 +2,14 @@
   "id": "neon-edges",
   "name": "Neon Edges",
   "url": "shaders/neon-edges.wgsl",
-  "category": "image",
   "description": "Multi-scale Mach-band edge enhancement colorized by blackbody temperature and depth-aware spotlighting.",
   "params": [
     {
       "id": "edge_sensitivity",
       "name": "Edge Sensitivity",
       "default": 0.45,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Scales the multi-resolution Sobel response"
@@ -19,8 +18,8 @@
       "id": "mach_strength",
       "name": "Mach Strength",
       "default": 0.55,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Boosts the directional second-derivative Mach bands"
@@ -29,8 +28,8 @@
       "id": "spotlight_radius",
       "name": "Spotlight Radius",
       "default": 0.45,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Controls how tightly the mouse reveals depth edges"
@@ -39,8 +38,8 @@
       "id": "neon_gain",
       "name": "Neon Gain",
       "default": 0.65,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Overall blackbody glow intensity"

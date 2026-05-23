@@ -2,7 +2,6 @@
   "id": "rgb-glitch-displacement",
   "name": "RGB Glitch Displacement",
   "url": "shaders/rgb-glitch-displacement.wgsl",
-  "category": "retro-glitch",
   "description": "Digital glitch effect with RGB channel displacement, block glitches, scanlines, pixel sorting, and datamosh effects. Mouse-reactive wave displacement and chromatic aberration. Audio reactivity pulses glitch intensity and adds beat-synchronized flashes.",
   "tags": [
     "glitch",
@@ -27,24 +26,24 @@
       "id": "glitchIntensity",
       "name": "Glitch Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "scanlineDensity",
       "name": "Scanline Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "colorShift",
       "name": "Color Shift",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ]

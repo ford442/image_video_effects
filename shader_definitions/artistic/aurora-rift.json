@@ -2,7 +2,6 @@
   "id": "aurora-rift",
   "name": "Aurora Rift",
   "url": "shaders/aurora-rift.wgsl",
-  "category": "image",
   "description": "Aurora borealis-inspired lighting effects with atmospheric rifts.",
   "features": [
     "mouse-driven"

@@ -59,9 +59,9 @@ function validateWgslContent(wgslContent, id) {
 console.log("Generating shader lists...");
 
 if (fs.existsSync(DEFINITIONS_DIR)) {
-    // We'll group shaders by the `category` field inside each definition rather
-    // than relying on the filesystem layout.  This keeps the generated lists
-    // accurate even if files are stored in a different sub‑directory.
+    // Group shaders by their folder/directory name. The folder structure is the
+    // single source of truth for categorization; the category field in shader
+    // definitions is now ignored (and can be removed in a cleanup pass).
     const buckets = new Map(); // Map<category, Array<shaderDef>>
 
     // walk one level deep for json files
@@ -89,8 +89,8 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
                     }
                 }
 
-                const { id, url, category: declaredCategory } = shaderDef;
-                const category = declaredCategory || dir; // fallback if field missing
+                const { id, url } = shaderDef;
+                const category = dir; // folder name is the source of truth for categorization
 
                 // Validate required fields
                 if (!id) {
@@ -100,13 +100,6 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
                 if (!url) {
                     console.warn(`WARNING: Missing 'url' field in ${dir}/${file} (shader: ${id}) - SKIPPING`);
                     return;
-                }
-
-                // warn if the file is stored in a directory different from its
-                // declared category.  this was the root cause of the "49 vs 400"
-                // confusion and helps keep the repo organized.
-                if (declaredCategory && declaredCategory !== dir) {
-                    console.warn(`NOTE: ${dir}/${file} declares category '${declaredCategory}' but lives in '${dir}' folder`);
                 }
 
                 // 1. Check for Duplicate IDs

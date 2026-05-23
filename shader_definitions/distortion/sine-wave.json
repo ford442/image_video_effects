@@ -2,7 +2,6 @@
   "id": "sine-wave",
   "name": "Sine Wave Distortion",
   "url": "shaders/sine-wave.wgsl",
-  "category": "image",
   "tags": [
     "filter",
     "image-processing"

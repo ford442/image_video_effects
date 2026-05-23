@@ -2,7 +2,6 @@
   "id": "liquid-viscous",
   "name": "Liquid Viscous",
   "url": "shaders/liquid-viscous.wgsl",
-  "category": "image",
   "description": "",
   "tags": [
     "filter",
@@ -13,8 +12,8 @@
       "id": "viscosity",
       "name": "Viscosity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Liquid thickness/resistance"
@@ -23,8 +22,8 @@
       "id": "turbulence",
       "name": "Turbulence",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Chaotic flow intensity"
@@ -33,8 +32,8 @@
       "id": "ripple_strength",
       "name": "Ripple Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Wave distortion amount"
@@ -43,8 +42,8 @@
       "id": "color_shift",
       "name": "Color Shift",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Color manipulation amount"

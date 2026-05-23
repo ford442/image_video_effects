@@ -2,36 +2,35 @@
   "id": "data-slicer-interactive",
   "name": "Data Slicer",
   "url": "shaders/data-slicer-interactive.wgsl",
-  "category": "interactive-mouse",
   "description": "Glitchy horizontal slicing with FBM-warped torn edges, click-triggered slice bursts from ripple history, bass-modulated slice count, and semantic alpha at slice boundaries.",
   "params": [
     {
       "id": "slice_count",
       "name": "Slice Count",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "slice_width",
       "name": "Slice Width",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "fbm_warp",
       "name": "FBM Warp",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "color_shift",
       "name": "Color Shift",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

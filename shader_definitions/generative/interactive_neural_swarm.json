@@ -2,7 +2,6 @@
   "id": "interactive_neural_swarm",
   "name": "Neural Swarm",
   "url": "shaders/interactive_neural_swarm.wgsl",
-  "category": "interactive-mouse",
   "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
   "tags": [
     "neural",

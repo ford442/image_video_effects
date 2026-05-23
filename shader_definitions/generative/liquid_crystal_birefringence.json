@@ -2,7 +2,6 @@
   "id": "liquid_crystal_birefringence",
   "name": "Liquid Crystal",
   "url": "shaders/liquid_crystal_birefringence.wgsl",
-  "category": "distortion",
   "description": "Liquid crystal optical effects with birefringent double refraction, twisted nematic polarization rotation, and Schlieren texture",
   "tags": [
     "interactive",

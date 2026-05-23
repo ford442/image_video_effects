@@ -3,7 +3,6 @@
     "id": "aero-chromatics-prismatic",
     "name": "Aero Chromatics Prismatic",
     "url": "shaders/aero-chromatics-prismatic.wgsl",
-    "category": "advanced-hybrid",
     "description": "Wind-driven chromatic smoke trails enhanced with physical prismatic dispersion via Cauchy's equation. Each wavelength refracts at a different angle through a virtual lens, creating rainbow edge effects on advected smoke.",
     "tags": [
       "prismatic",
@@ -60,7 +59,6 @@
     "id": "aerogel-smoke-hdr",
     "name": "Aerogel Smoke HDR",
     "url": "shaders/aerogel-smoke-hdr.wgsl",
-    "category": "advanced-hybrid",
     "description": "Ethereal aerogel volumetric smoke with HDR bloom enhancement. Silica nanoparticle scattering combines with an HDR bloom kernel that amplifies overbright regions, creating luminous glow around dense scattering zones.",
     "tags": [
       "volumetric",
@@ -117,7 +115,6 @@
     "id": "anisotropic-kuwahara-nlm",
     "name": "Anisotropic Kuwahara + NLM",
     "url": "shaders/anisotropic-kuwahara-nlm.wgsl",
-    "category": "advanced-hybrid",
     "description": "Painterly anisotropic Kuwahara filter enhanced with Non-Local Means patch-similarity denoising. Structure tensor guides brush stroke direction while NLM preserves edges and creates an importance map.",
     "tags": [
       "painterly",
@@ -175,7 +172,6 @@
     "id": "ascii-flow-structure",
     "name": "ASCII Flow + Structure Tensor",
     "url": "shaders/ascii-flow-structure.wgsl",
-    "category": "advanced-hybrid",
     "description": "ASCII glyph rendering driven by structure tensor flow field. Glyphs align with image edges and orientations instead of random noise. Line Integral Convolution modulates brightness.",
     "tags": [
       "ascii",
@@ -232,7 +228,6 @@
     "id": "astral-kaleidoscope-morph",
     "name": "Astral Kaleidoscope + Morphological",
     "url": "shaders/astral-kaleidoscope-morph.wgsl",
-    "category": "advanced-hybrid",
     "description": "Psychedelic kaleidoscope with chromatic separation enhanced by morphological erosion/dilation operations. Morphological gradient creates glowing halos around segments, top-hat transform isolates bright sparkles.",
     "tags": [
       "kaleidoscope",
@@ -291,7 +286,6 @@
     "id": "atmos-fog-volumetric",
     "name": "Atmospheric Fog Volumetric",
     "url": "shaders/atmos-fog-volumetric.wgsl",
-    "category": "advanced-hybrid",
     "description": "Enhanced volumetric fog combining physical transmittance with interactive depth-layered alpha. Mouse clears fog locally, ripples create swirling disturbances, and height-based density mixes with Beer's Law for atmospheric realism.",
     "tags": [
       "volumetric",
@@ -346,10 +340,83 @@
     "target_rating": 4.7
   },
   {
+    "id": "audio-voronoi-displacement",
+    "name": "Audio Voronoi Displacement",
+    "url": "shaders/audio-voronoi-displacement.wgsl",
+    "description": "Audio-reactive Voronoi cells that displace the image. Image fractured into cells that pulse with music.",
+    "features": [
+      "mouse-driven",
+      "advanced-hybrid",
+      "voronoi",
+      "audio-fft",
+      "displacement-mapping",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "cell_count",
+        "name": "Cell Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of Voronoi cells"
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "How much audio affects the cells"
+      },
+      {
+        "id": "displacement",
+        "name": "Displacement Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Strength of displacement effect"
+      },
+      {
+        "id": "color_intensity",
+        "name": "Color Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Intensity of frequency-based coloring"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash22 (gen_grid.wgsl)",
+      "Voronoi pattern",
+      "Audio band simulation"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "interactive",
+      "cursor",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "audio-voronoi-gabor",
     "name": "Audio Voronoi Gabor",
     "url": "shaders/audio-voronoi-gabor.wgsl",
-    "category": "advanced-hybrid",
     "description": "Audio-reactive Voronoi displacement modulated by Gabor texture analysis. Gabor filter banks detect local texture orientation and strength, rotating and scaling cell displacement. Edges and textured regions displace differently than smooth areas.",
     "features": [
       "audio-reactive",
@@ -426,7 +493,6 @@
     "id": "aurora-borealis-iridescence",
     "name": "Aurora Borealis Iridescence",
     "url": "shaders/aurora-borealis-iridescence.wgsl",
-    "category": "advanced-hybrid",
     "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence. Each aurora ribbon shimmers with soap-bubble and oil-slick interference colors driven by ribbon intensity and animated turbulence.",
     "tags": [
       "aurora",
@@ -484,7 +550,6 @@
     "id": "aurora-rift-2-iridescence",
     "name": "Aurora Rift 2 Iridescence",
     "url": "shaders/aurora-rift-2-iridescence.wgsl",
-    "category": "advanced-hybrid",
     "description": "Iridescent aurora curtains combining volumetric aurora simulation with thin-film interference. Each aurora layer gets soap-bubble/oil-slick coloring from optical path difference. Optical depth modulates film thickness; viewing angle drives color shift. Beer's Law transmittance composites physically.",
     "features": [
       "thin-film-interference",
@@ -560,7 +625,6 @@
     "id": "aurora-rift-iridescence",
     "name": "Aurora Rift Iridescence",
     "url": "shaders/aurora-rift-iridescence.wgsl",
-    "category": "advanced-hybrid",
     "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence that rides the aurora's organic motion.",
     "tags": [
       "iridescence",
@@ -619,7 +683,6 @@
     "id": "bio-lenia-rgba",
     "name": "Bio Lenia RGBA",
     "url": "shaders/bio-lenia-rgba.wgsl",
-    "category": "advanced-hybrid",
     "description": "Four-species continuous cellular automata with Lenia-style smooth growth functions applied to each RGBA channel. Combines reaction-diffusion chemistry with biological emergence patterns. Cross-inhibition between species pairs creates complex multi-color morphologies.",
     "tags": [
       "lenia",
@@ -677,7 +740,6 @@
     "id": "bio-touch-em",
     "name": "Bio Touch EM",
     "url": "shaders/bio-touch-em.wgsl",
-    "category": "advanced-hybrid",
     "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors. Click ripples spawn orbiting secondary charges.",
     "features": [
       "mouse-driven",
@@ -727,7 +789,6 @@
     "id": "bioluminescent-blackbody",
     "name": "Bioluminescent Blackbody",
     "url": "shaders/bioluminescent-blackbody.wgsl",
-    "category": "advanced-hybrid",
     "description": "Living organic growth patterns with physically-correct thermal coloring. Growth energy maps to blackbody temperature — cooler regions glow deep red, active growth burns orange-yellow, and intense hotspots reach white-hot temperatures.",
     "tags": [
       "bioluminescent",
@@ -785,7 +846,6 @@
     "id": "black-hole-iridescence",
     "name": "Black Hole Iridescence",
     "url": "shaders/black-hole-iridescence.wgsl",
-    "category": "advanced-hybrid",
     "description": "Gravitational lensing black hole with iridescent accretion disk. The warped background and glowing disk receive thin-film interference coloring based on viewing angle, producing soap-bubble chromatic effects around the event horizon.",
     "tags": [
       "black-hole",
@@ -842,7 +902,6 @@
     "id": "block-distort-em",
     "name": "Block Distort EM",
     "url": "shaders/block-distort-em.wgsl",
-    "category": "advanced-hybrid",
     "description": "Grid blocks pushed by mouse proximity, distorted by electromagnetic field lines. Electric field displaces UVs, magnetic field rotates hue. Click ripples spawn orbiting secondary charges.",
     "features": [
       "mouse-driven",
@@ -892,7 +951,6 @@
     "id": "blueprint-reveal-guided",
     "name": "Blueprint Reveal + Guided Filter",
     "url": "shaders/blueprint-reveal-guided.wgsl",
-    "category": "advanced-hybrid",
     "description": "Blueprint effect with depth-guided edge-aware filtering. The guided filter smooths the image using depth as guide before Sobel edge detection, creating blueprint lines that respect true object boundaries.",
     "tags": [
       "blueprint",
@@ -948,7 +1006,6 @@
     "id": "boids-rgba-ecosystem",
     "name": "Boids RGBA Ecosystem",
     "url": "shaders/boids-rgba-ecosystem.wgsl",
-    "category": "advanced-hybrid",
     "description": "Boids-inspired flow-field flocking combined with continuous multi-species ecosystem simulation. RGBA channels store species densities that advect, flock, and compete. Species 1 (flockers) and Species 2 (predators) consume resources, produce toxins, and exhibit emergent flocking behavior through neighborhood vector fields.",
     "tags": [
       "boids",
@@ -1006,7 +1063,6 @@
     "id": "bubble-lens-coupled",
     "name": "Bubble Lens Coupled",
     "url": "shaders/bubble-lens-coupled.wgsl",
-    "category": "advanced-hybrid",
     "description": "Magnifying bubble lens warped by fluid dynamics. Mouse movement drags viscous fluid that distorts the lens boundary and creates vortices inside. Click ripples create fluid bursts.",
     "features": [
       "mouse-driven",
@@ -1056,7 +1112,6 @@
     "id": "byte-mosh-explosion",
     "name": "Byte Mosh Explosion",
     "url": "shaders/byte-mosh-explosion.wgsl",
-    "category": "advanced-hybrid",
     "description": "Bitwise pixel corruption meets chromatic prism explosion. XOR, AND, shift and rotate operations are applied to spectrally displaced channels radiating from mouse and ripple shockwaves.",
     "features": [
       "advanced-hybrid",
@@ -1125,10 +1180,81 @@
     ]
   },
   {
+    "id": "cellular-automata-3d",
+    "name": "Cellular Automata 3D",
+    "url": "shaders/cellular-automata-3d.wgsl",
+    "description": "3D Game of Life rendered with volume raymarching. Glowing 3D structures that evolve frame-by-frame.",
+    "features": [
+      "advanced-hybrid",
+      "3d-ca",
+      "volume-raymarching",
+      "transfer-function",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "evolution_speed",
+        "name": "Evolution Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Speed of CA evolution"
+      },
+      {
+        "id": "initial_density",
+        "name": "Initial Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Initial cell density"
+      },
+      {
+        "id": "color_cycling",
+        "name": "Color Cycling",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Speed of color cycling"
+      },
+      {
+        "id": "camera_rotation",
+        "name": "Camera Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Camera rotation speed"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash3 (gen-xeno-botanical-synth-flora.wgsl)",
+      "3D CA rules (26 neighbors)",
+      "Volume raymarching",
+      "Transfer function coloring"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "charcoal-rub-diffusion",
     "name": "Charcoal Rub + Anisotropic Diffusion",
     "url": "shaders/charcoal-rub-diffusion.wgsl",
-    "category": "advanced-hybrid",
     "description": "Physical charcoal media simulation with Perona-Malik anisotropic diffusion preprocessing. Diffusion creates smooth tonal regions before charcoal conversion, with diffusion coefficient modulating charcoal density.",
     "tags": [
       "charcoal",
@@ -1185,7 +1311,6 @@
     "id": "chromatic-focus-coupled",
     "name": "Chromatic Focus Coupled",
     "url": "shaders/chromatic-focus-coupled.wgsl",
-    "category": "advanced-hybrid",
     "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid that twists and blurs chromatic channels. Click ripples inject fluid bursts.",
     "features": [
       "mouse-driven",
@@ -1232,10 +1357,79 @@
     ]
   },
   {
+    "id": "chromatic-reaction-diffusion",
+    "name": "Chromatic Reaction-Diffusion",
+    "url": "shaders/chromatic-reaction-diffusion.wgsl",
+    "description": "Multi-channel Gray-Scott reaction-diffusion with chromatic separation. Each RGB channel has separate feed/kill rates.",
+    "features": [
+      "advanced-hybrid",
+      "gray-scott-rd",
+      "multi-channel",
+      "chromatic-separation",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "red_feed",
+        "name": "Red Feed Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Feed rate for red channel"
+      },
+      {
+        "id": "green_feed",
+        "name": "Green Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Feed rate for green channel"
+      },
+      {
+        "id": "blue_feed",
+        "name": "Blue Feed Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Feed rate for blue channel"
+      },
+      {
+        "id": "chromatic_sep",
+        "name": "Chromatic Separation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Amount of chromatic aberration"
+      }
+    ],
+    "chunks_used": [
+      "Gray-Scott reaction-diffusion",
+      "Laplacian operator",
+      "Multi-channel processing"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "circuit-breaker-explosion",
     "name": "Circuit Breaker Explosion",
     "url": "shaders/circuit-breaker-explosion.wgsl",
-    "category": "advanced-hybrid",
     "description": "Circuit board edges chromatically separated near the mouse prism. Overload flashes become spectral rainbows. Click ripples launch chromatic shockwaves through the circuit pattern.",
     "features": [
       "mouse-driven",
@@ -1285,7 +1479,6 @@
     "id": "cmyk-halftone-explosion",
     "name": "CMYK Halftone Explosion",
     "url": "shaders/cmyk-halftone-explosion.wgsl",
-    "category": "advanced-hybrid",
     "description": "CMYK halftone dots spectrally separated near the mouse via prism displacement. Click ripples launch chromatic shockwaves through the halftone pattern.",
     "features": [
       "mouse-driven",
@@ -1335,7 +1528,6 @@
     "id": "crt-tv-stipple",
     "name": "CRT TV Stipple",
     "url": "shaders/crt-tv-stipple.wgsl",
-    "category": "advanced-hybrid",
     "description": "Authentic CRT TV simulation with blue-noise stippled phosphor dots. Combines barrel distortion, chromatic aberration, scanlines, and phosphor decay with perceptually optimal blue-noise dot placement for each RGB subpixel triad.",
     "features": [
       "advanced-hybrid",
@@ -1410,7 +1602,6 @@
     "id": "datamosh-brush-diffusion",
     "name": "Datamosh Brush Diffusion",
     "url": "shaders/datamosh-brush-diffusion.wgsl",
-    "category": "advanced-hybrid",
     "description": "Interactive datamoshing brush with anisotropic diffusion. Paint to freeze or corrupt pixels while Perona-Malik diffusion smooths along edges, creating oil-painted MPEG artifact trails with temporal persistence.",
     "features": [
       "advanced-hybrid",
@@ -1482,7 +1673,6 @@
     "id": "deep-workgroup-multi-effect-blend",
     "name": "Deep-Workgroup Multi-Effect Blend",
     "url": "shaders/deep-workgroup-multi-effect-blend.wgsl",
-    "category": "advanced-hybrid",
     "description": "Uses a 16×16×4 workgroup (1024 invocations) to run four effects simultaneously in Z-lanes — edge detection, bloom, hue-shift, and phosphor glow — then blends them via workgroup shared memory. Requires a GPU with maxComputeInvocationsPerWorkgroup ≥ 1024 (Apple M1+, NVIDIA RTX, AMD RDNA2+).",
     "tags": [
       "deep-workgroup",
@@ -1537,7 +1727,6 @@
     "id": "digital-decay-rgba",
     "name": "Digital Decay RGBA",
     "url": "shaders/digital-decay-rgba.wgsl",
-    "category": "advanced-hybrid",
     "description": "Digital block corruption feeds into a 4-species reaction-diffusion system. Corrupted pixels become chemical seeds that evolve into organic decay patterns, merging glitch aesthetics with emergent biological forms.",
     "features": [
       "advanced-hybrid",
@@ -1609,7 +1798,6 @@
     "id": "double-exposure-hdr",
     "name": "Double Exposure HDR",
     "url": "shaders/double-exposure-hdr.wgsl",
-    "category": "advanced-hybrid",
     "description": "Ghostly double exposure blending combined with HDR bloom chain. The image overlays a zoomed/rotated version of itself, then luminous halos form around bright overlap regions with ACES tone mapping. Mouse sets the pivot point.",
     "features": [
       "mouse-driven",
@@ -1661,7 +1849,6 @@
     "id": "encaustic-wax-blackbody",
     "name": "Encaustic Wax Blackbody",
     "url": "shaders/encaustic-wax-blackbody.wgsl",
-    "category": "advanced-hybrid",
     "description": "Physical encaustic wax simulation combined with blackbody thermal radiation coloring. Thick wax pools glow like cooling magma with physically-correct color temperature, while thin glaze remains translucent amber. Mouse melts wax creating localized thermal hotspots.",
     "features": [
       "mouse-driven",
@@ -1714,7 +1901,6 @@
     "id": "engraving-stipple-blue-noise",
     "name": "Engraving Stipple Blue Noise",
     "url": "shaders/engraving-stipple-blue-noise.wgsl",
-    "category": "advanced-hybrid",
     "description": "Traditional copper-plate engraving stipple fused with blue-noise dithered pointillism. Golden-ratio low-discrepancy sequences create perceptually optimal dot distributions. Mouse acts as raking light revealing engraved depth.",
     "features": [
       "mouse-driven",
@@ -1766,7 +1952,6 @@
     "id": "fabric-step-gabor",
     "name": "Fabric Step Gabor",
     "url": "shaders/fabric-step-gabor.wgsl",
-    "category": "advanced-hybrid",
     "description": "Mass-spring cloth simulation deforms the image into flowing folds, then Gabor filter banks detect oriented texture patterns across the fabric. Strain creates visual texture mapped to psychedelic orientation colors. Mouse pulls and tears the textile.",
     "features": [
       "mouse-driven",
@@ -1817,10 +2002,160 @@
     "target_rating": 4.6
   },
   {
+    "id": "fractal-boids-field-coupled",
+    "name": "Fractal Boids Field + Fluid Coupling",
+    "url": "shaders/fractal-boids-field-coupled.wgsl",
+    "description": "Flocking behavior on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples spawn shockwaves through the flock.",
+    "features": [
+      "advanced-hybrid",
+      "boids",
+      "fractal-flow-field",
+      "mouse-driven",
+      "fluid-coupling",
+      "interactive",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "boid_count",
+        "name": "Boid Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of simulated boids and ripple force"
+      },
+      {
+        "id": "flow_strength",
+        "name": "Flow Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Fractal flow field strength and mouse radius"
+      },
+      {
+        "id": "fluid_influence",
+        "name": "Fluid Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How much mouse fluid pushes boids"
+      },
+      {
+        "id": "separation",
+        "name": "Separation Distance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Boid separation distance and vortex strength"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "boids",
+      "flocking",
+      "fluid",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp",
+      "Boids separation/alignment/cohesion",
+      "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
+    ],
+    "performance_target": "40-55 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
+  },
+  {
+    "id": "fractal-boids-field",
+    "name": "Fractal Boids Field",
+    "url": "shaders/fractal-boids-field.wgsl",
+    "description": "Flocking behavior on a fractal vector field. Swarms of particles flowing through organic fractal currents.",
+    "features": [
+      "advanced-hybrid",
+      "boids",
+      "fractal-flow-field",
+      "gpu-particles",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "boid_count",
+        "name": "Boid Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of simulated boids"
+      },
+      {
+        "id": "flow_strength",
+        "name": "Flow Field Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Influence of fractal flow field"
+      },
+      {
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How long trails persist"
+      },
+      {
+        "id": "separation",
+        "name": "Separation Distance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Boid separation distance"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp",
+      "Boids separation/alignment/cohesion"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "gen-astro-orrery-blackbody",
     "name": "Astro Orrery Blackbody",
     "url": "shaders/gen-astro-orrery-blackbody.wgsl",
-    "category": "advanced-hybrid",
     "description": "A kinetic astronomical orrery where each ring's thermal energy determines its blackbody color. Rotating rings glow with physically accurate star temperatures from cool red dwarfs to blazing blue giants.",
     "tags": [
       "astronomical",
@@ -1876,7 +2211,6 @@
     "id": "gen-audio-spirograph-julia",
     "name": "Audio Spirograph Julia",
     "url": "shaders/gen-audio-spirograph-julia.wgsl",
-    "category": "advanced-hybrid",
     "description": "Audio-reactive spirograph curves that unfold into mouse-driven Julia set fractals. Each harmonic ring breathes with audio while the Julia constant morphs via mouse position.",
     "tags": [
       "audio-reactive",
@@ -1931,7 +2265,6 @@
     "id": "gen-biomechanical-hive-julia",
     "name": "Biomechanical Hive Julia",
     "url": "shaders/gen-biomechanical-hive-julia.wgsl",
-    "category": "advanced-hybrid",
     "description": "A biomechanical hive where each cell contains a living quaternion Julia fractal core. The chitinous exoskeleton surrounds morphing 4D fractal organisms that pulse with bioluminescence.",
     "tags": [
       "biomechanical",
@@ -1986,7 +2319,6 @@
     "id": "gen-raptor-mini-flow",
     "name": "Raptor Mini Flow",
     "url": "shaders/gen-raptor-mini-flow.wgsl",
-    "category": "advanced-hybrid",
     "description": "Predatory raptor agents navigate structure-tensor flow fields, hunting along image edges and orientations. Their trails follow dominant eigenvectors while audio rage pulses through the swarm.",
     "tags": [
       "predator",
@@ -2041,7 +2373,6 @@
     "id": "gen-xeno-botanical-ecosystem",
     "name": "Xeno Botanical Ecosystem",
     "url": "shaders/gen-xeno-botanical-ecosystem.wgsl",
-    "category": "advanced-hybrid",
     "description": "Botanical flora patterns host a living RGBA ecosystem simulation. Species colonize branch structures, competing for photosynthetic resources while toxins accumulate in dense growth regions.",
     "tags": [
       "botanical",
@@ -2097,7 +2428,6 @@
     "id": "glass-bead-curtain-iridescence",
     "name": "Glass Bead Curtain Iridescence",
     "url": "shaders/glass-bead-curtain-iridescence.wgsl",
-    "category": "advanced-hybrid",
     "description": "A curtain of refractive glass beads where each bead surface exhibits thin-film iridescence (soap-bubble colors). Combines physical Beer-Lambert transmission with spectral interference.",
     "tags": [
       "glass",
@@ -2154,7 +2484,6 @@
     "id": "glass-refraction-prismatic",
     "name": "Glass Refraction Prismatic",
     "url": "shaders/glass-refraction-prismatic.wgsl",
-    "category": "advanced-hybrid",
     "description": "Raymarched glass blobs with 4-band spectral dispersion using Cauchy's equation and CIE color matching. Each wavelength refracts at a different angle through animated SDF glass surfaces.",
     "features": [
       "advanced-hybrid",
@@ -2228,7 +2557,6 @@
     "id": "glass-shatter-morph",
     "name": "Glass Shatter Morph",
     "url": "shaders/glass-shatter-morph.wgsl",
-    "category": "advanced-hybrid",
     "description": "Interactive shattered glass where Voronoi shards are sculpted by morphological erosion/dilation on edges. Combines physical glass transmission with mathematical morphology for cracked-edge detail.",
     "tags": [
       "glass",
@@ -2287,7 +2615,6 @@
     "id": "glass-wall-prismatic",
     "name": "Glass Wall Prismatic",
     "url": "shaders/glass-wall-prismatic.wgsl",
-    "category": "advanced-hybrid",
     "description": "A grid of glass tiles where each tile acts as a prismatic lens with 4-band spectral dispersion via Cauchy's equation. Mouse interaction tilts tiles, refracting light into rainbow spectra.",
     "tags": [
       "glass",
@@ -2344,7 +2671,6 @@
     "id": "glass-wipes-coupled",
     "name": "Glass Wipes Coupled",
     "url": "shaders/glass-wipes-coupled.wgsl",
-    "category": "advanced-hybrid",
     "description": "Rain on glass combined with viscous fluid coupling physics. Rain drops feed a fluid simulation that creates realistic water streaks, while the mouse wiper clears fluid with vortex dynamics.",
     "tags": [
       "glass",
@@ -2400,7 +2726,6 @@
     "id": "gravitational-lensing-nlm",
     "name": "Gravitational Lensing NLM",
     "url": "shaders/gravitational-lensing-nlm.wgsl",
-    "category": "advanced-hybrid",
     "description": "Black hole gravitational lensing with non-local means artistic overdrive. Patch-similarity filtering smooths background starfields while preserving unique features like the event horizon and Einstein ring.",
     "features": [
       "advanced-hybrid",
@@ -2512,10 +2837,82 @@
     ]
   },
   {
+    "id": "gravitational-lensing",
+    "name": "Gravitational Lensing",
+    "url": "shaders/gravitational-lensing.wgsl",
+    "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
+    "features": [
+      "mouse-driven",
+      "advanced-hybrid",
+      "schwarzschild-metric",
+      "geodesic-raytracing",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "black_hole_mass",
+        "name": "Black Hole Mass",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Mass of the black hole"
+      },
+      {
+        "id": "disk_brightness",
+        "name": "Accretion Disk Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Brightness of accretion disk"
+      },
+      {
+        "id": "camera_orbit",
+        "name": "Camera Orbit",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Camera orbit position"
+      },
+      {
+        "id": "redshift",
+        "name": "Gravitational Redshift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Intensity of gravitational redshift"
+      }
+    ],
+    "chunks_used": [
+      "Schwarzschild metric",
+      "Geodesic raytracing",
+      "Accretion disk rendering",
+      "Doppler beaming"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "interactive",
+      "cursor",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "holographic-failure-iridescence",
     "name": "Holographic Failure Iridescence",
     "url": "shaders/holographic-failure-iridescence.wgsl",
-    "category": "advanced-hybrid",
     "description": "Simulated hologram projection failure merged with thin-film interference iridescence. Flickering artifacts and block noise overlay soap-bubble spectral colors driven by depth, viewing angle, and time.",
     "features": [
       "advanced-hybrid",
@@ -2588,7 +2985,6 @@
     "id": "holographic-interferometry-bilateral",
     "name": "Holographic Interferometry Bilateral",
     "url": "shaders/holographic-interferometry-bilateral.wgsl",
-    "category": "advanced-hybrid",
     "description": "Simulated hologram with interference fringes and edge-preserving bilateral smoothing. Speckle noise is softly reduced while sharp interference fringe edges remain crisp.",
     "features": [
       "advanced-hybrid",
@@ -2691,10 +3087,79 @@
     ]
   },
   {
+    "id": "holographic-interferometry",
+    "name": "Holographic Interferometry",
+    "url": "shaders/holographic-interferometry.wgsl",
+    "description": "Simulated hologram with interference fringe patterns. Rainbow interference fringes with speckled laser light.",
+    "features": [
+      "advanced-hybrid",
+      "interference-patterns",
+      "holography",
+      "phase-coloring",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "fringe_density",
+        "name": "Fringe Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of interference fringes"
+      },
+      {
+        "id": "coherence",
+        "name": "Coherence Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Laser coherence (affects speckle size)"
+      },
+      {
+        "id": "reconstruction_angle",
+        "name": "Reconstruction Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Hologram reconstruction angle"
+      },
+      {
+        "id": "saturation",
+        "name": "Color Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Saturation of holographic colors"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "Interference pattern math",
+      "Speckle noise generation"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "hybrid-spectral-decomposed",
     "name": "Hybrid Spectral Decomposed",
     "url": "shaders/hybrid-spectral-decomposed.wgsl",
-    "category": "advanced-hybrid",
     "description": "4-band spectral decomposition combined with audio-reactive pixel sorting. Image decomposed into low/mid-low/mid-high/high frequencies. Each band sorted independently with unique spectral color tints, then recomposed with per-band gains.",
     "features": [
       "advanced-hybrid",
@@ -2766,10 +3231,160 @@
     "created_date": "2026-04-18"
   },
   {
+    "id": "hyper-tensor-fluid-coupled",
+    "name": "Hyper Tensor Fluid + Mouse Coupling",
+    "url": "shaders/hyper-tensor-fluid-coupled.wgsl",
+    "description": "Tensor-field fluid dynamics with viscous mouse stirring. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
+    "features": [
+      "advanced-hybrid",
+      "tensor-field",
+      "navier-stokes",
+      "mouse-driven",
+      "fluid-coupling",
+      "interactive",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "tensor_strength",
+        "name": "Tensor Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Strength of tensor field influence on flow"
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Fluid viscosity and mouse radius"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "FBM turbulence and fluid influence"
+      },
+      {
+        "id": "advection_speed",
+        "name": "Advection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Fluid advection speed and vortex strength"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "fluid",
+      "tensor",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "Structure tensor eigendecomposition",
+      "Velocity advection",
+      "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
+    ],
+    "performance_target": "40-55 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
+  },
+  {
+    "id": "hyper-tensor-fluid",
+    "name": "Hyper Tensor Fluid",
+    "url": "shaders/hyper-tensor-fluid.wgsl",
+    "description": "Fluid flows according to image structure via tensor eigendecomposition. Combines tensor fields with Navier-Stokes dynamics.",
+    "features": [
+      "advanced-hybrid",
+      "tensor-field",
+      "navier-stokes",
+      "depth-aware",
+      "fbm",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "tensor_strength",
+        "name": "Tensor Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Strength of tensor field influence on flow"
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Fluid viscosity (flow resistance)"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of FBM turbulence"
+      },
+      {
+        "id": "advection_speed",
+        "name": "Advection Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Speed of fluid advection"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "Structure tensor eigendecomposition",
+      "Velocity advection"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "ink-dispersion-guided",
     "name": "Ink Dispersion Guided",
     "url": "shaders/ink-dispersion-guided.wgsl",
-    "category": "advanced-hybrid",
     "description": "Depth-guided edge-preserving filter combined with ink-style halftone rendering. The guided filter smooths based on depth boundaries, then the result is rendered as ink dots with paper texture.",
     "features": [
       "advanced-hybrid",
@@ -2843,7 +3458,6 @@
     "id": "liquid-magnetic-ferro-em",
     "name": "Liquid Magnetic Ferro EM",
     "url": "shaders/liquid-magnetic-ferro-em.wgsl",
-    "category": "advanced-hybrid",
     "description": "Ferrofluid simulation coupled with electromagnetic wave propagation. Rosensweig instability spikes are driven by both static magnetic dipoles and time-varying EM waves, with metallic iridescence colored by field direction.",
     "features": [
       "advanced-hybrid",
@@ -2917,7 +3531,6 @@
     "id": "liquid-metal-prismatic",
     "name": "Liquid Metal Prismatic",
     "url": "shaders/liquid-metal-prismatic.wgsl",
-    "category": "advanced-hybrid",
     "description": "Liquid metal ripple distortion combined with 4-band spectral prismatic dispersion. Curved metal surface acts as a dynamic liquid prism — ripples create varying curvature that refracts light into separated wavelength bands via Cauchy's equation.",
     "tags": [
       "prismatic",
@@ -2972,10 +3585,163 @@
     "target_rating": 4.8
   },
   {
+    "id": "multi-fractal-compositor-lens",
+    "name": "Multi-Fractal Compositor + Gravitational Lens",
+    "url": "shaders/multi-fractal-compositor-lens.wgsl",
+    "description": "Multi-layer fractal compositor with mouse-controlled gravitational lensing. Mouse mass bends UV coordinates; ripples create temporary mass concentrations with Einstein ring glow.",
+    "features": [
+      "advanced-hybrid",
+      "mandelbrot",
+      "julia",
+      "mouse-driven",
+      "gravitational-lens",
+      "interactive",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "lens_mass",
+        "name": "Lens Mass",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Mouse gravitational mass and zoom level"
+      },
+      {
+        "id": "ring_glow",
+        "name": "Ring Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Einstein ring glow strength and iteration count"
+      },
+      {
+        "id": "ripple_mass",
+        "name": "Ripple Mass",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Temporary mass from clicks and domain warp"
+      },
+      {
+        "id": "chroma_boost",
+        "name": "Chroma Boost",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Lens-driven chromatic aberration and fractal blend"
+      }
+    ],
+    "tags": [
+      "interactive",
+      "mouse-driven",
+      "physics",
+      "gravitational",
+      "lens",
+      "fractal",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "ping_pong wrapping",
+      "Depth compositing",
+      "gravitationalBend (gravitational-lensing.wgsl)"
+    ],
+    "performance_target": "40-55 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
+  },
+  {
+    "id": "multi-fractal-compositor",
+    "name": "Multi-Fractal Compositor",
+    "url": "shaders/multi-fractal-compositor.wgsl",
+    "description": "Smoothly blend between multiple fractal types. Mandelbrot, Julia, Burning Ship, and Newton fractals.",
+    "features": [
+      "advanced-hybrid",
+      "mandelbrot",
+      "julia",
+      "burning-ship",
+      "smooth-blend",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "zoom",
+        "name": "Zoom Level",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Zoom level into fractal"
+      },
+      {
+        "id": "iterations",
+        "name": "Iteration Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Maximum iterations"
+      },
+      {
+        "id": "domain_warp",
+        "name": "Domain Warp",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of domain warping"
+      },
+      {
+        "id": "fractal_blend",
+        "name": "Fractal Blend",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend between fractal types"
+      }
+    ],
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "Mandelbrot iteration",
+      "Julia iteration",
+      "Burning Ship iteration",
+      "Newton fractal"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "nano-assembler-crystal",
     "name": "Nano Assembler Crystal",
     "url": "shaders/nano-assembler-crystal.wgsl",
-    "category": "advanced-hybrid",
     "description": "Grid-based nanobots assemble into crystalline structures using phase-field dynamics. RGBA stores assembly phase, temperature, crystal orientation, and impurity. Mouse disrupts assembly causing scatter; ripples trigger nucleation. Displays nanobot glow when disassembled and orientation-dependent crystal color when assembled.",
     "tags": [
       "nano-assembler",
@@ -3033,7 +3799,6 @@
     "id": "neural-raymarcher-gabor",
     "name": "Neural Raymarcher Gabor",
     "url": "shaders/neural-raymarcher-gabor.wgsl",
-    "category": "advanced-hybrid",
     "description": "Raymarched neural network visualization with Gabor oriented texture detection. Gabor responses highlight connection directions and layer boundaries with psychedelic color mapping.",
     "features": [
       "advanced-hybrid",
@@ -3138,10 +3903,80 @@
     ]
   },
   {
+    "id": "neural-raymarcher",
+    "name": "Neural Raymarcher",
+    "url": "shaders/neural-raymarcher.wgsl",
+    "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness.",
+    "features": [
+      "advanced-hybrid",
+      "sdf-raymarching",
+      "neural-patterns",
+      "volumetric",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "network_depth",
+        "name": "Network Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of neural network layers"
+      },
+      {
+        "id": "activation_vis",
+        "name": "Activation Visualization",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Visibility of activation patterns"
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Volumetric glow intensity"
+      },
+      {
+        "id": "camera_rotation",
+        "name": "Camera Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Camera orbit position"
+      }
+    ],
+    "chunks_used": [
+      "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
+      "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "Activation functions (tanh, ReLU, sigmoid)"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "painterly-oil-bilateral",
     "name": "Painterly Oil + Bilateral Dream",
     "url": "shaders/painterly-oil-bilateral.wgsl",
-    "category": "advanced-hybrid",
     "description": "Oil painting simulation with anisotropic Kuwahara, color quantization, and impasto texture, post-processed with edge-preserving bilateral filter for a dreamy smoothness. Mouse focus aperture controls sharpness.",
     "tags": [
       "oil",
@@ -3199,7 +4034,6 @@
     "id": "particle-dreams-hdr",
     "name": "Particle Dreams HDR",
     "url": "shaders/particle-dreams-hdr.wgsl",
-    "category": "advanced-hybrid",
     "description": "Multi-layer depth particle accumulation with HDR bloom chain. 5 depth layers with flow noise and vortex distortion, combined with exposure-based radial bloom and ACES tone mapping.",
     "features": [
       "advanced-hybrid",
@@ -3273,7 +4107,6 @@
     "id": "photonic-caustics-iridescence",
     "name": "Photonic Caustics Iridescence",
     "url": "shaders/photonic-caustics-iridescence.wgsl",
-    "category": "advanced-hybrid",
     "description": "Backward photon-traced caustics combined with thin-film interference iridescence. Caustic intensity modulates film thickness, creating soap-bubble colors on light concentrations. Features chromatic dispersion, Fresnel reflections, and temporal accumulation.",
     "tags": [
       "caustics",
@@ -3332,7 +4165,6 @@
     "id": "predator-prey-rgba",
     "name": "Predator-Prey RGBA",
     "url": "shaders/predator-prey-rgba.wgsl",
-    "category": "advanced-hybrid",
     "description": "Continuous-density predator-prey ecosystem simulation packed into RGBA32FLOAT. Plants photosynthesize using source image luminance, herbivores graze, carnivores hunt, and toxins accumulate from overpopulation. Species diffuse across the grid creating emergent spatial waves.",
     "tags": [
       "predator-prey",
@@ -3389,7 +4221,6 @@
     "id": "quantum-foam-bilateral",
     "name": "Quantum Foam Bilateral",
     "url": "shaders/quantum-foam-bilateral.wgsl",
-    "category": "advanced-hybrid",
     "description": "Quantum foam chromatic parallax diffusion with edge-preserving bilateral smoothing. Cell boundaries and emissive edges remain crisp while foam interiors are dreamily smoothed.",
     "features": [
       "advanced-hybrid",
@@ -3495,7 +4326,6 @@
     "id": "retro-phosphor-hdr",
     "name": "Retro Phosphor HDR",
     "url": "shaders/retro-phosphor-hdr.wgsl",
-    "category": "advanced-hybrid",
     "description": "Authentic CRT phosphor simulation enhanced with HDR bloom chain. RGB triads, barrel distortion, scanlines, and temporal persistence combine with exposure-based bloom and ACES tone mapping for dramatic glowing phosphors.",
     "features": [
       "advanced-hybrid",
@@ -3567,7 +4397,6 @@
     "id": "retro-phosphor-stipple",
     "name": "Retro Phosphor Stipple",
     "url": "shaders/retro-phosphor-stipple.wgsl",
-    "category": "advanced-hybrid",
     "description": "CRT phosphor simulation with blue-noise stippled dot triads. Authentic barrel distortion, scanlines, and temporal persistence combined with perceptually optimal blue-noise dot placement for each RGB channel.",
     "features": [
       "advanced-hybrid",
@@ -3640,7 +4469,6 @@
     "id": "sim-heat-haze-blackbody",
     "name": "Heat Haze Blackbody",
     "url": "shaders/sim-heat-haze-blackbody.wgsl",
-    "category": "advanced-hybrid",
     "description": "Temperature field convection simulation with physically-correct blackbody thermal glow. Hot ground and rising convection plumes radiate with Planck's law colors — cool air stays neutral while intense heat sources glow from red ember to blue-white.",
     "tags": [
       "blackbody",
@@ -3699,7 +4527,6 @@
     "id": "sim-smoke-trails-thermal",
     "name": "Smoke Trails Thermal",
     "url": "shaders/sim-smoke-trails-thermal.wgsl",
-    "category": "advanced-hybrid",
     "description": "Volumetric smoke fluid simulation with physically-correct blackbody thermal coloring. Smoke temperature maps to Kelvin via Planck's law — cool wisps glow ember-red, hot cores burn blue-white with Stefan-Boltzmann radiance scaling.",
     "tags": [
       "blackbody",
@@ -3758,7 +4585,6 @@
     "id": "spec-blackbody-thermal",
     "name": "Blackbody Thermal",
     "url": "shaders/spec-blackbody-thermal.wgsl",
-    "category": "advanced-hybrid",
     "description": "Maps image luminance to physically-correct blackbody radiation colors using Planck's law. Dark regions glow like embers, medium = white heat, bright = blue plasma.",
     "tags": [
       "blackbody",
@@ -3814,7 +4640,6 @@
     "id": "spec-importance-sampled-bokeh",
     "name": "Importance Sampled Bokeh",
     "url": "shaders/spec-importance-sampled-bokeh.wgsl",
-    "category": "advanced-hybrid",
     "description": "Bokeh blur guided by image brightness using importance sampling. Bright pixels act as point light sources creating crisp bokeh highlights with smooth backgrounds via golden angle spiral distribution.",
     "tags": [
       "bokeh",
@@ -3870,7 +4695,6 @@
     "id": "spec-iridescence-engine",
     "name": "Iridescence Engine",
     "url": "shaders/spec-iridescence-engine.wgsl",
-    "category": "advanced-hybrid",
     "description": "Thin-film interference simulation creating soap-bubble and oil-slick iridescence. Uses depth texture for film thickness and physically-correct optical path difference.",
     "tags": [
       "iridescence",
@@ -3927,7 +4751,6 @@
     "id": "spec-prismatic-dispersion",
     "name": "Prismatic Dispersion",
     "url": "shaders/spec-prismatic-dispersion.wgsl",
-    "category": "advanced-hybrid",
     "description": "4-band spectral dispersion through glass using Cauchy's equation. Treats RGBA as physical wavelengths with refractive index variation, reconstructing color via CIE color matching.",
     "tags": [
       "spectral",
@@ -3983,7 +4806,6 @@
     "id": "spec-spherical-harmonics-light",
     "name": "Spherical Harmonics Light",
     "url": "shaders/spec-spherical-harmonics-light.wgsl",
-    "category": "advanced-hybrid",
     "description": "Spherical harmonics lighting derived from image content. Computes SH coefficients from local image samples and applies them to depth-derived normals for realistic ambient lighting.",
     "tags": [
       "spherical-harmonics",
@@ -4038,7 +4860,6 @@
     "id": "spec-temporal-path-tracer",
     "name": "Temporal Path Tracer",
     "url": "shaders/spec-temporal-path-tracer.wgsl",
-    "category": "advanced-hybrid",
     "description": "2D path tracer with temporal accumulation. Casts light rays that bounce off image edges, accumulating Monte Carlo samples over time for soft global illumination and color bleeding.",
     "tags": [
       "path-tracing",
@@ -4092,10 +4913,82 @@
     "target_rating": 4.9
   },
   {
+    "id": "spectral-flow-sorting",
+    "name": "Spectral Flow Sorting",
+    "url": "shaders/spectral-flow-sorting.wgsl",
+    "description": "Optical flow-based pixel sorting with spectral analysis. Pixels flow and sort along motion vectors.",
+    "features": [
+      "mouse-driven",
+      "advanced-hybrid",
+      "pixel-sorting",
+      "optical-flow",
+      "fft",
+      "randomization-safe",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "flow_sensitivity",
+        "name": "Flow Sensitivity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Sensitivity to motion"
+      },
+      {
+        "id": "sort_threshold",
+        "name": "Sort Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Pixel sorting threshold"
+      },
+      {
+        "id": "freq_influence",
+        "name": "Frequency Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Influence of frequency analysis"
+      },
+      {
+        "id": "smoothing",
+        "name": "Temporal Smoothing",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Temporal smoothing amount"
+      }
+    ],
+    "chunks_used": [
+      "Optical flow calculation",
+      "Local frequency analysis",
+      "Pixel sorting along lines"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22",
+    "tags": [
+      "interactive",
+      "cursor",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "spectral-flow-structure",
     "name": "Spectral Flow Structure",
     "url": "shaders/spectral-flow-structure.wgsl",
-    "category": "advanced-hybrid",
     "description": "Structure-tensor-guided pixel sorting with Line Integral Convolution. Eigenvectors from the structure tensor drive sort direction; coherency modulates blend strength. LIC adds flow-line texture. Audio-reactive with mouse vortices.",
     "features": [
       "advanced-hybrid",
@@ -4170,7 +5063,6 @@
     "id": "stellar-plasma-blackbody",
     "name": "Stellar Plasma Blackbody",
     "url": "shaders/stellar-plasma-blackbody.wgsl",
-    "category": "advanced-hybrid",
     "description": "Cosmic nebula domain-warped FBM blended with Planck's law blackbody thermal coloring. Energy intensity drives temperature mapping — cool voids glow ember-red, hot plasma cores burn blue-white with physically-correct radiance scaling.",
     "tags": [
       "blackbody",
@@ -4230,7 +5122,6 @@
     "id": "tensor-flow-morphological",
     "name": "Tensor Flow Morphological",
     "url": "shaders/tensor-flow-morphological.wgsl",
-    "category": "advanced-hybrid",
     "description": "Depth-aware tensor eigenwarp with morphological post-processing. Erosion darkens compressed tensor regions, dilation brightens tensile regions. Gradient highlights edges created by tensor warping.",
     "features": [
       "advanced-hybrid",
@@ -4348,7 +5239,6 @@
     "id": "thermal-touch-blackbody",
     "name": "Thermal Touch Blackbody",
     "url": "shaders/thermal-touch-blackbody.wgsl",
-    "category": "advanced-hybrid",
     "description": "Mouse-driven thermal camera with blackbody radiation coloring. The cursor acts as a localized heat source and image brightness maps to physically-correct temperature via Planck's law.",
     "tags": [
       "thermal",
@@ -4404,7 +5294,6 @@
     "id": "thermal-vision-blackbody",
     "name": "Thermal Vision Blackbody",
     "url": "shaders/thermal-vision-blackbody.wgsl",
-    "category": "advanced-hybrid",
     "description": "Physically-correct thermal vision camera using blackbody radiation via Planck's law. Image luminance maps to real temperature colors, with mouse acting as a localized heat source and configurable sensor contrast.",
     "tags": [
       "thermal",
@@ -4461,7 +5350,6 @@
     "id": "vhs-tracking-bilateral",
     "name": "VHS Tracking Bilateral",
     "url": "shaders/vhs-tracking-bilateral.wgsl",
-    "category": "advanced-hybrid",
     "description": "Full VHS signal chain physics with edge-preserving bilateral smoothing. Timebase jitter, chroma noise, and control track dropouts are filtered through a bilateral dream, creating a soft analog degradation while preserving edges.",
     "features": [
       "advanced-hybrid",
@@ -4533,7 +5421,6 @@
     "id": "wave-equation-rgba-fluid",
     "name": "Wave Equation RGBA Fluid",
     "url": "shaders/wave-equation-rgba-fluid.wgsl",
-    "category": "advanced-hybrid",
     "description": "Coupled wave equation and incompressible fluid simulation packed into RGBA32FLOAT. Wave height and velocity drive fluid motion while fluid pressure dampens waves. Dye advection visualizes the combined flow field with rainbow phase coloring.",
     "tags": [
       "wave",

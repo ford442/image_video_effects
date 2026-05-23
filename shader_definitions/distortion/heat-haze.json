@@ -2,7 +2,6 @@
   "id": "heat-haze",
   "name": "Heat Haze",
   "url": "shaders/heat-haze.wgsl",
-  "category": "distortion",
   "description": "Interactive heat distortion with thermal glow, mouse-driven heat injection, diffusion, and audio-reactive shimmer.",
   "params": [
     {

@@ -1,7 +1,6 @@
 {
   "id": "double-exposure",
   "name": "Double Exposure Warp",
-  "category": "image",
   "url": "shaders/double-exposure.wgsl",
   "description": "Blends the image with a domain-warped, zoomed and rotated version of itself. Voronoi cellular ridges modulate the overlay intensity. Reacts to audio bass.",
   "features": [
@@ -14,29 +13,29 @@
       "name": "Zoom Level",
       "id": "zoom",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "name": "Rotation",
       "id": "rotation",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "name": "Opacity",
       "id": "opacity",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "name": "Warp Strength",
       "id": "warp",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

@@ -2,7 +2,6 @@
   "id": "pp-bloom",
   "name": "PP Bloom",
   "url": "shaders/pp-bloom.wgsl",
-  "category": "post-processing",
   "description": "High-quality HDR bloom with multi-tap Gaussian blur, anamorphic stretch, and lens dirt effects",
   "tags": [
     "post-process",

@@ -2,7 +2,6 @@
   "id": "aurora-rift-pass2",
   "name": "Aurora Rift (Pass 2: Atmospheric Scattering)",
   "url": "shaders/aurora-rift-pass2.wgsl",
-  "category": "lighting-effects",
   "description": "Atmospheric scattering, color grading, and tone mapping. Second pass of 2-pass system.",
   "features": [
     "multi-pass-2",

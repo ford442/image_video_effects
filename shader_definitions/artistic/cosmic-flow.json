@@ -2,7 +2,6 @@
   "id": "cosmic-flow",
   "name": "Cosmic Flow Pro",
   "url": "shaders/cosmic-flow.wgsl",
-  "category": "image",
   "description": "Depth-aware ethereal energy field with domain warping, temporal trails, chromatic aberration, and multiple color modes ranges.",
   "params": [
     {

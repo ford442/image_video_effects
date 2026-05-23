@@ -2,7 +2,6 @@
   "id": "breathing-kaleidoscope",
   "name": "Breathing Kaleidoscope",
   "url": "shaders/breathing-kaleidoscope.wgsl",
-  "category": "image",
   "description": "Smoothly folds and unfolds the image into mirrored segments with a breathing animation; center and rotation are controllable.",
   "params": [
     {

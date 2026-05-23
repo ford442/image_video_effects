@@ -2,7 +2,6 @@
   "id": "fire_smoke_volumetric",
   "name": "Fire Smoke Volumetric",
   "url": "shaders/fire_smoke_volumetric.wgsl",
-  "category": "simulation",
   "description": "Volumetric fire and smoke with ray marching, curl noise turbulence, blackbody temperature coloring, and density-based alpha",
   "tags": [
     "fire",

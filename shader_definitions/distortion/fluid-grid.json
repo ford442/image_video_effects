@@ -2,7 +2,6 @@
   "id": "fluid-grid",
   "name": "Fluid Grid",
   "url": "shaders/fluid-grid.wgsl",
-  "category": "image",
   "description": "Flowing grid distortion with fluid dynamics.",
   "params": [
     {

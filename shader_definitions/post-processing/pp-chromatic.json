@@ -2,7 +2,6 @@
   "id": "pp-chromatic",
   "name": "PP Chromatic",
   "url": "shaders/pp-chromatic.wgsl",
-  "category": "post-processing",
   "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
   "tags": [
     "post-process",

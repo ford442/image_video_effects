@@ -2,36 +2,35 @@
   "id": "steampunk-gear-lens",
   "name": "Steampunk Gear Lens",
   "url": "shaders/steampunk-gear-lens.wgsl",
-  "category": "image",
   "description": "A rotating mechanical gear lens with sepia filter and audio-reactive rotation.",
   "params": [
     {
       "id": "size",
       "name": "Gear Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "teeth",
       "name": "Teeth Count",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "speed",
       "name": "Rotation Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "sepia",
       "name": "Sepia Strength",
       "default": 0.8,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

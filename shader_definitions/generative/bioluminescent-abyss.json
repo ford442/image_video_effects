@@ -2,41 +2,54 @@
   "id": "gen-bioluminescent-abyss",
   "name": "Bioluminescent Abyss",
   "url": "shaders/gen-bioluminescent-abyss.wgsl",
-  "category": "generative",
   "description": "An infinite deep underwater landscape with swaying tube worms and thermal vents, featuring bioluminescence and deep sea atmosphere.",
-  "tags": ["underwater", "generative", "3d", "bioluminescence", "raymarching", "volumetric", "audio", "music", "reactive"],
-  "features": ["mouse-driven", "audio-reactive", "audio-driven"],
+  "tags": [
+    "underwater",
+    "generative",
+    "3d",
+    "bioluminescence",
+    "raymarching",
+    "volumetric",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
   "params": [
     {
       "id": "param1",
       "name": "Worm Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.1
     },
     {
       "id": "param2",
       "name": "Current Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "step": 0.1
     },
     {
       "id": "param3",
       "name": "Glow Intensity",
       "default": 0.8,
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "step": 0.1
     },
     {
       "id": "param4",
       "name": "Water Clarity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.05
     }
   ]

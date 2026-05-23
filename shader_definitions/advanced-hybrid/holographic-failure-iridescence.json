@@ -2,7 +2,6 @@
   "id": "holographic-failure-iridescence",
   "name": "Holographic Failure Iridescence",
   "url": "shaders/holographic-failure-iridescence.wgsl",
-  "category": "advanced-hybrid",
   "description": "Simulated hologram projection failure merged with thin-film interference iridescence. Flickering artifacts and block noise overlay soap-bubble spectral colors driven by depth, viewing angle, and time.",
   "features": [
     "advanced-hybrid",
@@ -18,8 +17,8 @@
       "id": "failure",
       "name": "Failure Amount",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Holographic projection failure intensity"
@@ -28,8 +27,8 @@
       "id": "holographic",
       "name": "Holographic Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Base holographic color strength"
@@ -38,8 +37,8 @@
       "id": "film_ior",
       "name": "Film IOR",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Thin film index of refraction"
@@ -48,8 +47,8 @@
       "id": "turbulence",
       "name": "Turbulence",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Film thickness noise variation"

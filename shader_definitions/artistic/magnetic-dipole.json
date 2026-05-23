@@ -2,7 +2,6 @@
   "id": "magnetic-dipole",
   "name": "Magnetic Dipole Field",
   "url": "shaders/magnetic-dipole.wgsl",
-  "category": "simulation",
   "description": "Magnetic field visualization with iron filing alignment and dipole physics.",
   "params": [
     {

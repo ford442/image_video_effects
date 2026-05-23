@@ -2,7 +2,6 @@
   "id": "radiating-haze",
   "name": "Radiating Haze",
   "url": "shaders/radiating-haze.wgsl",
-  "category": "image",
   "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
   "params": [
     {

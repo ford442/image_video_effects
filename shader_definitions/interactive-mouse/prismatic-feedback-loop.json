@@ -2,7 +2,6 @@
   "id": "prismatic-feedback-loop",
   "name": "Prismatic Feedback Loop (Pass 2)",
   "url": "shaders/prismatic-feedback-loop.wgsl",
-  "category": "image",
   "description": "Consumes displacement from Pass 1 to create chromatic aberration, temporal feedback, and glowing halos.",
   "params": [
     {

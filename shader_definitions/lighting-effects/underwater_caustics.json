@@ -2,7 +2,6 @@
   "id": "underwater_caustics",
   "name": "Underwater Caustics",
   "url": "shaders/underwater_caustics.wgsl",
-  "category": "lighting-effects",
   "description": "Realistic underwater caustics with Gerstner wave surface simulation, refracted light patterns, god rays, and depth-based alpha",
   "tags": [
     "water",

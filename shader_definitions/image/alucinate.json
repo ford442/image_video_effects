@@ -2,7 +2,6 @@
   "id": "alucinate",
   "name": "Alucinate",
   "url": "shaders/alucinate.wgsl",
-  "category": "image",
   "description": "Reaction-Diffusion Psychedelia with Gray-Scott Turing patterns, domain-warped FBM, kaleidoscopic IFS fractals, conformal mapping, and audio-reactive color science.",
   "features": [
     "upgraded-rgba",

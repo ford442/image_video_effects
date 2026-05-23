@@ -2,7 +2,6 @@
   "id": "interactive-origami",
   "name": "Interactive Origami",
   "url": "shaders/interactive-origami.wgsl",
-  "category": "geometric",
   "description": "Simulates folded paper with triangle-wave crease planes radiating from the mouse. Normal-map facet shading, depth-aware fold amplitude (far objects fold more), audio-reactive bass amplitude, and ripple-triggered expanding crease rings.",
   "features": [
     "mouse-driven",
@@ -15,32 +14,32 @@
       "id": "fold_scale",
       "name": "Fold Scale",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "fold_depth",
       "name": "Fold Depth",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "light_intensity",
       "name": "Light Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "depth_influence",
       "name": "Depth Influence",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

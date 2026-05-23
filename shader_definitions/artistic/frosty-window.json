@@ -2,7 +2,6 @@
   "id": "frosty-window",
   "name": "Frosty Window",
   "url": "shaders/frosty-window.wgsl",
-  "category": "artistic",
   "description": "Animated frost crystal patterns on glass with audio-reactive growth and mouse-driven melting.",
   "params": [
     {

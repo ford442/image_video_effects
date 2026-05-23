@@ -2,7 +2,6 @@
   "id": "gen_mandelbulb_3d",
   "name": "Mandelbulb 3D",
   "url": "shaders/gen_mandelbulb_3d.wgsl",
-  "category": "generative",
   "description": "3D Mandelbulb fractal with ray marching, orbit trap coloring, soft shadows, and distance-based alpha for atmospheric depth",
   "tags": [
     "mandelbulb",

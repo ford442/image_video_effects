@@ -2,7 +2,6 @@
   "id": "matrix_digital_rain",
   "name": "Matrix Digital Rain",
   "url": "shaders/matrix_digital_rain.wgsl",
-  "category": "retro-glitch",
   "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
   "tags": [
     "matrix",

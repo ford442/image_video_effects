@@ -2,7 +2,6 @@
   "id": "gen-orb",
   "name": "Lorenz Strange Attractor",
   "url": "shaders/gen_orb.wgsl",
-  "category": "generative",
   "description": "Audio-reactive Lorenz strange attractor (σ, ρ, β) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
   "features": [
     "mouse-driven",

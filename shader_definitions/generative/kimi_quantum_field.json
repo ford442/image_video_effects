@@ -2,7 +2,6 @@
   "id": "kimi-quantum-field",
   "name": "Kimi Quantum Field",
   "url": "shaders/kimi_quantum_field.wgsl",
-  "category": "generative",
   "description": "Wave interference patterns with uncertainty visualization and probability densities.",
   "features": [
     "mouse-driven",

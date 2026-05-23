@@ -2,7 +2,6 @@
   "id": "anisotropic-kuwahara-nlm",
   "name": "Anisotropic Kuwahara + NLM",
   "url": "shaders/anisotropic-kuwahara-nlm.wgsl",
-  "category": "advanced-hybrid",
   "description": "Painterly anisotropic Kuwahara filter enhanced with Non-Local Means patch-similarity denoising. Structure tensor guides brush stroke direction while NLM preserves edges and creates an importance map.",
   "tags": [
     "painterly",

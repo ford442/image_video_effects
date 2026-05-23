@@ -2,7 +2,6 @@
   "id": "gen-celestial-forge",
   "name": "Celestial Forge",
   "url": "shaders/gen-celestial-forge.wgsl",
-  "category": "generative",
   "description": "A massive sci-fi megastructure enclosing a miniature star, featuring contra-rotating rings, plasma arcs, and glowing panels.",
   "tags": [
     "space",
@@ -26,17 +25,17 @@
     {
       "id": "param1",
       "name": "Rotation Speed",
-      "min": 0.0,
-      "max": 2.0,
-      "default": 1.0,
+      "min": 0,
+      "max": 2,
+      "default": 1,
       "step": 0.01,
       "description": "Speed of the contra-rotating ring structure."
     },
     {
       "id": "param2",
       "name": "Complexity",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5,
       "step": 0.01,
       "description": "Number of rings and surface detail density."
@@ -45,17 +44,17 @@
       "id": "param3",
       "name": "Ring Scale",
       "min": 0.5,
-      "max": 2.0,
-      "default": 1.0,
+      "max": 2,
+      "default": 1,
       "step": 0.01,
       "description": "Overall size of the ring structure."
     },
     {
       "id": "param4",
       "name": "Core Intensity",
-      "min": 0.0,
-      "max": 5.0,
-      "default": 1.0,
+      "min": 0,
+      "max": 5,
+      "default": 1,
       "step": 0.01,
       "description": "Brightness of the central star and emitted light."
     }

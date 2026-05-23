@@ -2,7 +2,6 @@
   "id": "gravitational-lensing",
   "name": "Gravitational Lensing",
   "url": "shaders/gravitational-lensing.wgsl",
-  "category": "distortion",
   "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
   "features": [
     "mouse-driven",
@@ -18,8 +17,8 @@
       "id": "black_hole_mass",
       "name": "Black Hole Mass",
       "default": 0.25,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Mass of the black hole"
@@ -28,8 +27,8 @@
       "id": "disk_brightness",
       "name": "Accretion Disk Brightness",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Brightness of accretion disk"
@@ -37,9 +36,9 @@
     {
       "id": "camera_orbit",
       "name": "Camera Orbit",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Camera orbit position"
@@ -48,8 +47,8 @@
       "id": "redshift",
       "name": "Gravitational Redshift",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Intensity of gravitational redshift"

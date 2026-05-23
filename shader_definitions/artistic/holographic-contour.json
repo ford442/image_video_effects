@@ -2,7 +2,6 @@
   "id": "holographic-contour",
   "name": "Holographic Contour",
   "url": "shaders/holographic-contour.wgsl",
-  "category": "artistic",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -19,23 +18,23 @@
     {
       "id": "glow_strength",
       "name": "Glow Strength",
-      "default": 2.0,
-      "min": 0.0,
-      "max": 5.0
+      "default": 2,
+      "min": 0,
+      "max": 5
     },
     {
       "id": "shift_amount",
       "name": "Hologram Shift",
       "default": 0.05,
-      "min": 0.0,
+      "min": 0,
       "max": 0.2
     },
     {
       "id": "dim_bg",
       "name": "Darken Background",
       "default": 0.8,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

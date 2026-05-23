@@ -3,7 +3,6 @@
   "label": "Moiré Interference",
   "name": "Moiré Interference",
   "url": "shaders/moire-interference.wgsl",
-  "category": "image",
   "icon": "wifi",
   "description": "Generates dynamic interference patterns between the center and the mouse position.",
   "features": [
@@ -15,30 +14,30 @@
     {
       "name": "Frequency",
       "id": "x",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5
     },
     {
       "name": "Distortion",
       "id": "y",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5
     },
     {
       "name": "Aberration",
       "id": "z",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.2
     },
     {
       "name": "Complexity",
       "id": "w",
-      "min": 0.0,
-      "max": 1.0,
-      "default": 0.0
+      "min": 0,
+      "max": 1,
+      "default": 0
     }
   ],
   "tags": [

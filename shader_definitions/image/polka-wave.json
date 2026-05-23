@@ -1,7 +1,6 @@
 {
   "id": "polka-wave",
   "name": "Polka Wave",
-  "category": "image",
   "description": "Halftone effect where dot size responds to image brightness and interactive ripples.",
   "url": "shaders/polka-wave.wgsl",
   "params": [

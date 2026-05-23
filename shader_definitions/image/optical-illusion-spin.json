@@ -1,7 +1,6 @@
 {
   "id": "optical-illusion-spin",
   "name": "Optical Illusion Spin",
-  "category": "image",
   "description": "Slices the image into rotating concentric rings. Mouse adds a twisting force.",
   "url": "shaders/optical-illusion-spin.wgsl",
   "params": [

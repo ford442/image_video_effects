@@ -2,7 +2,6 @@
   "id": "pyramid-downsample-pass1",
   "name": "Gaussian-Laplacian Pyramid (Pass 1: Gaussian Blur)",
   "url": "shaders/pyramid-downsample-pass1.wgsl",
-  "category": "image",
   "description": "Pass 1 of 3: Separable Gaussian blur via 18×18 shared-memory tile. Stores the blurred image for the next frame's Laplacian decomposition. Chain with pyramid-bandprocess-pass2.",
   "features": [
     "multi-pass-1",

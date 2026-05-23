@@ -2,7 +2,6 @@
   "id": "elastic-surface",
   "name": "Elastic Surface",
   "url": "shaders/elastic-surface.wgsl",
-  "category": "distortion",
   "description": "Spring-mass elastic membrane with wave propagation, surface tension coupling, depth-aware deformation, and ripple-reactive impulses.",
   "params": [
     {

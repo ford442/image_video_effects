@@ -2,36 +2,35 @@
   "id": "rgb-glitch-trail",
   "name": "RGB Glitch Trail",
   "url": "shaders/rgb-glitch-trail.wgsl",
-  "category": "image",
   "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence.",
   "params": [
     {
       "id": "decay_rate",
       "name": "Trail Decay",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "radius",
       "name": "Effect Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "shift_strength",
       "name": "RGB Shift",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "chaos",
       "name": "Chaos / Noise",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

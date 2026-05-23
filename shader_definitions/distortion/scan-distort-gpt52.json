@@ -2,36 +2,35 @@
   "id": "scan-distort-gpt52",
   "name": "Scan Distort Matrix gpt52",
   "url": "shaders/scan-distort-gpt52.wgsl",
-  "category": "distortion",
   "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, and mids-driven band distortion.",
   "params": [
     {
       "id": "scan_intensity",
       "name": "Scan Intensity",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "band_split",
       "name": "Band Split",
       "default": 0.35,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "fbm_scale",
       "name": "FBM Scale",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "chromatic_mix",
       "name": "Chromatic Mix",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

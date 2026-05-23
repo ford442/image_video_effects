@@ -2,16 +2,28 @@
   "id": "crt-scanline-damage",
   "name": "CRT Scanline Damage",
   "url": "/shaders/crt-scanline-damage.wgsl",
-  "category": "image",
   "description": "Damaged CRT monitor simulation with scanlines, phosphor mask, barrel distortion, flicker, and occasional vertical roll.",
-  "tags": ["crt", "scanline", "retro", "distortion", "glitch", "phosphor", "monitor", "damaged"],
-  "features": ["upgraded-rgba", "temporal", "glitch"],
+  "tags": [
+    "crt",
+    "scanline",
+    "retro",
+    "distortion",
+    "glitch",
+    "phosphor",
+    "monitor",
+    "damaged"
+  ],
+  "features": [
+    "upgraded-rgba",
+    "temporal",
+    "glitch"
+  ],
   "params": [
     {
       "id": "scanline_intensity",
       "name": "Scanline Intensity",
       "default": 0.8,
-      "min": 0.0,
+      "min": 0,
       "max": 1.5,
       "step": 0.01
     },
@@ -19,7 +31,7 @@
       "id": "distortion_amount",
       "name": "Distortion Amount",
       "default": 0.15,
-      "min": 0.0,
+      "min": 0,
       "max": 0.5,
       "step": 0.01
     },
@@ -27,16 +39,16 @@
       "id": "flicker_speed",
       "name": "Flicker Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "step": 0.01
     },
     {
       "id": "rgb_separation",
       "name": "RGB Separation",
       "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "step": 0.01
     }
   ]

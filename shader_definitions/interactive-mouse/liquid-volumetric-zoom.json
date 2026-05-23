@@ -2,7 +2,6 @@
   "id": "liquid-volumetric-zoom",
   "name": "Liquid Volumetric Zoom",
   "url": "shaders/liquid-volumetric-zoom.wgsl",
-  "category": "image",
   "description": "Unified 3D fluid zoom that merges parallax, vortex dynamics, plasma flow and chromatic aberration into a single volumetric zoom.",
   "params": [
     {

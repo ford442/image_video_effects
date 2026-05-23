@@ -2,7 +2,6 @@
   "id": "rain-ripples",
   "name": "Rain Ripples",
   "url": "shaders/rain-ripples.wgsl",
-  "category": "image",
   "description": "Interactive water ripples and raindrops.",
   "params": [
     {

@@ -2,7 +2,6 @@
   "id": "astral-veins",
   "name": "Astral Veins",
   "url": "shaders/astral-veins.wgsl",
-  "category": "image",
   "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
   "params": [
     {

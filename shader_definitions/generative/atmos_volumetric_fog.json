@@ -2,7 +2,6 @@
   "id": "atmos_volumetric_fog",
   "name": "Volumetric Fog",
   "url": "shaders/atmos_volumetric_fog.wgsl",
-  "category": "lighting-effects",
   "description": "Volumetric fog with ray marching, Mie/Rayleigh scattering, height-based density, god rays, and mouse-controlled light source",
   "tags": [
     "volumetric",

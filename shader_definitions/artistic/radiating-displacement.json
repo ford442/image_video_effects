@@ -2,7 +2,6 @@
   "id": "radiating-displacement",
   "name": "Radiating Displacement",
   "url": "shaders/radiating-displacement.wgsl",
-  "category": "image",
   "description": "Rippling displacement waves emanate only from strong colours; neutrals stay sharp. Mouse-click to seed ripples.",
   "params": [
     {

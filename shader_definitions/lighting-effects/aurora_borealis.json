@@ -2,7 +2,6 @@
   "id": "aurora_borealis",
   "name": "Aurora Borealis",
   "url": "shaders/aurora_borealis.wgsl",
-  "category": "generative",
   "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
   "tags": [
     "aurora",

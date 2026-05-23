@@ -2,7 +2,6 @@
   "id": "pp-ssao",
   "name": "PP SSAO",
   "url": "shaders/pp-ssao.wgsl",
-  "category": "post-processing",
   "description": "Screen-space ambient occlusion for added depth, with color bleeding from occluding surfaces",
   "tags": [
     "post-process",

@@ -1,6 +1,5 @@
 {
   "id": "ascii-flow",
-  "category": "retro-glitch",
   "url": "shaders/ascii-flow.wgsl",
   "features": [
     "mouse-driven"

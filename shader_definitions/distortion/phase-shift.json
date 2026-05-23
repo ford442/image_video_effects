@@ -2,7 +2,6 @@
   "id": "phase-shift",
   "name": "Phase Shift",
   "url": "shaders/phase-shift.wgsl",
-  "category": "image",
   "features": [
     "mouse-driven"
   ],

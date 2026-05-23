@@ -2,7 +2,6 @@
   "id": "interactive-rgb-split",
   "name": "Interactive RGB Split",
   "url": "shaders/interactive-rgb-split.wgsl",
-  "category": "distortion",
   "description": "Smooth alpha-channel translucency blending driven by a single displacement field. Spectral tint via mix, depth-aware compositing, and audio-reactive bass response.",
   "features": [
     "mouse-driven",
@@ -14,29 +13,29 @@
       "id": "strength",
       "name": "Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "falloff",
       "name": "Localization",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "mode",
       "name": "Mode (Rad/Dir)",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "angle",
       "name": "Angle Offset",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

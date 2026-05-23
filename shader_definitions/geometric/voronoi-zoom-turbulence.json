@@ -2,7 +2,6 @@
   "id": "voronoi-zoom-turbulence",
   "name": "Voronoi Zoom Turbulence",
   "url": "shaders/voronoi-zoom-turbulence.wgsl",
-  "category": "image",
   "description": "Divides the screen into Voronoi cells where each cell applies a chaotic, time-varying zoom. Mouse proximity calms or agitates the turbulence.",
   "params": [
     {

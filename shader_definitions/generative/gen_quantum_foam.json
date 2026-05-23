@@ -2,7 +2,6 @@
   "id": "gen_quantum_foam",
   "name": "Quantum Foam",
   "url": "shaders/gen_quantum_foam.wgsl",
-  "category": "generative",
   "description": "Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow",
   "tags": [
     "quantum",

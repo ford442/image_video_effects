@@ -2,7 +2,6 @@
   "id": "wave-equation",
   "name": "Wave Tank",
   "url": "shaders/wave-equation.wgsl",
-  "category": "image",
   "description": "2D wave equation simulation with ripple physics, refraction effects, and rainbow phase coloring.",
   "params": [
     {

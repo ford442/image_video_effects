@@ -2,7 +2,6 @@
   "id": "bio_lenia_continuous",
   "name": "Lenia Continuous",
   "url": "shaders/bio_lenia_continuous.wgsl",
-  "category": "simulation",
   "description": "Continuous cellular automata (Lenia) with smooth growth functions, multiple kernel radii, and biological emergence patterns",
   "tags": [
     "lenia",

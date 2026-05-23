@@ -1,7 +1,6 @@
 {
   "id": "voronoi-shatter",
   "name": "Voronoi Shatter",
-  "category": "image",
   "features": [
     "mouse-driven"
   ],
@@ -10,29 +9,29 @@
       "id": "density",
       "name": "Shard Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "force",
       "name": "Shatter Force",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "rotation",
       "name": "Rotation",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "gaps",
       "name": "Shard Gaps",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "url": "shaders/voronoi-shatter.wgsl",

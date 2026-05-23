@@ -2,7 +2,6 @@
   "id": "pyramid-bandprocess-pass2",
   "name": "Gaussian-Laplacian Pyramid (Pass 2: Band Processing)",
   "url": "shaders/pyramid-bandprocess-pass2.wgsl",
-  "category": "image",
   "description": "Pass 2 of 3: Extracts Laplacian (high-freq residual = original − prev-frame blur) and applies per-band creative effects: neon edge saturation (L0), audio-bass hue rotation (L1), slow LFO colour breathing (L2). Audio-reactive via plasmaBuffer.",
   "features": [
     "multi-pass-2",

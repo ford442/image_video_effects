@@ -2,7 +2,6 @@
   "id": "vhs-tracking-bilateral",
   "name": "VHS Tracking Bilateral",
   "url": "shaders/vhs-tracking-bilateral.wgsl",
-  "category": "advanced-hybrid",
   "description": "Full VHS signal chain physics with edge-preserving bilateral smoothing. Timebase jitter, chroma noise, and control track dropouts are filtered through a bilateral dream, creating a soft analog degradation while preserving edges.",
   "features": [
     "advanced-hybrid",
@@ -17,8 +16,8 @@
       "id": "tracking",
       "name": "Tracking Error",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "VHS tracking error intensity"
@@ -27,8 +26,8 @@
       "id": "chroma_noise",
       "name": "Chroma Noise",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Chroma channel noise amount"
@@ -37,8 +36,8 @@
       "id": "spatial_sigma",
       "name": "Spatial Sigma",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Bilateral spatial spread"
@@ -47,8 +46,8 @@
       "id": "color_sigma",
       "name": "Color Sigma",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Bilateral color range sensitivity"

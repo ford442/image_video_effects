@@ -2,7 +2,6 @@
   "id": "speed-lines-focus",
   "name": "Speed Lines Focus",
   "url": "shaders/speed-lines-focus.wgsl",
-  "category": "image",
   "description": "Applies a radial zoom blur and manga-style speed lines focused on the mouse.",
   "params": [
     {

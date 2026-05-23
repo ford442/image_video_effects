@@ -2,7 +2,6 @@
   "id": "chromatic-infection",
   "name": "Chromatic Infection",
   "url": "shaders/chromatic-infection.wgsl",
-  "category": "image",
   "description": "Strong colours spread like a living organism, infecting neutral regions with organic, pulsing tendrils. Watch vibrant hues consume the dull!",
   "params": [
     {

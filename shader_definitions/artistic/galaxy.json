@@ -2,7 +2,6 @@
   "id": "galaxy-sim",
   "name": "Galaxy Simulation",
   "url": "shaders/galaxy.wgsl",
-  "category": "generative",
   "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow.",
   "features": [
     "depth-aware",

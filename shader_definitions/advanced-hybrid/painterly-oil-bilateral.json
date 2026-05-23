@@ -2,7 +2,6 @@
   "id": "painterly-oil-bilateral",
   "name": "Painterly Oil + Bilateral Dream",
   "url": "shaders/painterly-oil-bilateral.wgsl",
-  "category": "advanced-hybrid",
   "description": "Oil painting simulation with anisotropic Kuwahara, color quantization, and impasto texture, post-processed with edge-preserving bilateral filter for a dreamy smoothness. Mouse focus aperture controls sharpness.",
   "tags": [
     "oil",

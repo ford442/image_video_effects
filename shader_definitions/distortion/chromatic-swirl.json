@@ -30,13 +30,12 @@
     {
       "id": "param4",
       "name": "Auto Rotation",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
-      "step": 1.0
+      "step": 1
     }
   ],
-  "category": "distortion",
   "tags": [
     "warp",
     "distort",

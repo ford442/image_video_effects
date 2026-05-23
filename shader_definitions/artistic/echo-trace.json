@@ -2,36 +2,35 @@
   "id": "echo-trace",
   "name": "Temporal Velocity Echo",
   "url": "shaders/echo-trace.wgsl",
-  "category": "artistic",
   "description": "Predictive velocity echo field combining structure-tensor advection, smoothed mouse-motion extrapolation, deformed brush trails, curl-noise flow, and temporal feedback displacement.",
   "params": [
     {
       "id": "prediction_horizon",
       "name": "Prediction Horizon",
       "default": 0.35,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "velocity_smoothing",
       "name": "Velocity Smoothing",
       "default": 0.55,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "trail_deformation",
       "name": "Trail Deformation",
       "default": 0.45,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "velocity_threshold",
       "name": "Velocity Threshold",
       "default": 0.15,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

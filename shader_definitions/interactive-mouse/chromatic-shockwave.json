@@ -2,36 +2,35 @@
   "id": "chromatic-shockwave",
   "name": "Chromatic Shockwave",
   "url": "shaders/chromatic-shockwave.wgsl",
-  "category": "image",
   "description": "Continuous chromatic ripples emanating from the mouse.",
   "params": [
     {
       "id": "speed",
       "name": "Wave Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "freq",
       "name": "Frequency",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "aberration",
       "name": "Aberration",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "ring_count",
       "name": "Ring Count",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Number of shockwave rings"

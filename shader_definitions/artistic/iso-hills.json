@@ -2,38 +2,37 @@
   "id": "iso-hills",
   "name": "Iso Hills",
   "url": "shaders/iso-hills.wgsl",
-  "category": "artistic",
   "description": "Renders the image as stepped topographic terraces. Mouse controls the lighting direction.",
   "params": [
     {
       "name": "Steps",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.3,
       "id": "steps"
     },
     {
       "name": "Height Scale",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.5,
       "id": "height_scale"
     },
     {
       "name": "Smoothness",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
-      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "default": 0,
       "id": "smoothness"
     },
     {
       "name": "Shadow Strength",
       "type": "f32",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "default": 0.8,
       "id": "shadow_strength"
     }

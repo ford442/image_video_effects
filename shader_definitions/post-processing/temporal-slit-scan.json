@@ -2,7 +2,6 @@
   "id": "temporal-slit-scan",
   "name": "Temporal Slit Scan",
   "url": "shaders/temporal-slit-scan.wgsl",
-  "category": "post-processing",
   "description": "Classic slit-scan time-smear: each column (or row) samples a different point in the 8-frame history ring. One edge shows the current frame, the opposite edge shows 7 frames ago. Creates the flowing painterly time-smear of Radiohead's Street Spirit video on any motion.",
   "tags": [
     "temporal",
@@ -25,7 +24,7 @@
     {
       "id": "param1",
       "name": "Scan Axis",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
       "step": 0.01
@@ -33,7 +32,7 @@
     {
       "id": "param2",
       "name": "Temporal Spread",
-      "default": 1.0,
+      "default": 1,
       "min": 0,
       "max": 1,
       "step": 0.01
@@ -41,7 +40,7 @@
     {
       "id": "param3",
       "name": "Reverse",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
       "step": 1
@@ -49,7 +48,7 @@
     {
       "id": "param4",
       "name": "Original Blend",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
       "step": 0.01

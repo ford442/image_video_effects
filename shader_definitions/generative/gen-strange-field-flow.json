@@ -2,7 +2,6 @@
   "id": "gen-strange-field-flow",
   "name": "Strange Field Flow",
   "url": "shaders/gen-strange-field-flow.wgsl",
-  "category": "generative",
   "description": "A strange-attractor flow field blending Peter de Jong and Clifford attractor maps. Each pixel evaluates iterated orbit density and paints acid-neon whorls. Attractor coefficients pulse to bass and treble, morphing the topology. Temporal persistence burns psychedelic trails.",
   "features": [
     "audio-reactive",

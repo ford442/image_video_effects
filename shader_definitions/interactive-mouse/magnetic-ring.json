@@ -1,6 +1,5 @@
 {
   "id": "magnetic-ring",
-  "category": "image",
   "url": "shaders/magnetic-ring.wgsl",
   "features": [
     "mouse-driven"
@@ -10,8 +9,8 @@
       "id": "base_radius",
       "name": "Base Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Base radius of the magnetic ring"
@@ -20,8 +19,8 @@
       "id": "strength",
       "name": "Distortion Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Strength of the distortion effect"
@@ -30,8 +29,8 @@
       "id": "pulse_speed",
       "name": "Pulse Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Speed of the ring pulse animation"

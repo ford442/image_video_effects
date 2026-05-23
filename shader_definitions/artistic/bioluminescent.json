@@ -2,7 +2,6 @@
   "id": "bioluminescent",
   "name": "Bioluminescent Growth",
   "url": "shaders/bioluminescent.wgsl",
-  "category": "image",
   "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching.",
   "params": [
     {

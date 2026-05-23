@@ -2,7 +2,6 @@
   "id": "cyber-lens",
   "name": "Cyber Lens",
   "url": "shaders/cyber-lens.wgsl",
-  "category": "image",
   "description": "Digital fisheye with scan lines and chromatic aberration.",
   "params": [
     {

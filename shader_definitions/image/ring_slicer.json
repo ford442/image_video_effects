@@ -1,7 +1,6 @@
 {
   "id": "ring-slicer",
   "name": "Ring Slicer",
-  "category": "image",
   "description": "Slices the image into rotating concentric rings centered on the mouse.",
   "url": "shaders/ring_slicer.wgsl",
   "params": [

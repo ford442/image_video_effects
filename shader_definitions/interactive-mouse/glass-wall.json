@@ -1,7 +1,6 @@
 {
   "id": "glass-wall",
   "url": "shaders/glass-wall.wgsl",
-  "category": "image",
   "features": [
     "mouse-driven",
     "upgraded-rgba"

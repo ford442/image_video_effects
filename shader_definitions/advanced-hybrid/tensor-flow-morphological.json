@@ -2,7 +2,6 @@
   "id": "tensor-flow-morphological",
   "name": "Tensor Flow Morphological",
   "url": "shaders/tensor-flow-morphological.wgsl",
-  "category": "advanced-hybrid",
   "description": "Depth-aware tensor eigenwarp with morphological post-processing. Erosion darkens compressed tensor regions, dilation brightens tensile regions. Gradient highlights edges created by tensor warping.",
   "features": [
     "advanced-hybrid",
@@ -17,8 +16,8 @@
       "id": "strain_scale",
       "name": "Strain Scale",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Amplitude of tensor-field deformation"
@@ -27,8 +26,8 @@
       "id": "detail_preserve",
       "name": "Detail Preserve",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "How much high-frequency detail is preserved"
@@ -37,8 +36,8 @@
       "id": "depth_weight",
       "name": "Depth Weight",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Influence of depth on deformation"
@@ -46,9 +45,9 @@
     {
       "id": "tensor_mode",
       "name": "Tensor Mode",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Blend from stretch-dominant to shear-dominant"
@@ -59,8 +58,8 @@
       "id": "kernel_radius",
       "name": "Kernel Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_config.x",
       "description": "Morphological structuring element radius"
@@ -69,8 +68,8 @@
       "id": "erosion_dilation_blend",
       "name": "Erosion/Dilation Blend",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_config.y",
       "description": "0=erosion, 1=dilation"
@@ -79,8 +78,8 @@
       "id": "gradient_boost",
       "name": "Gradient Boost",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_config.z",
       "description": "Morphological gradient amplification"
@@ -89,8 +88,8 @@
       "id": "morph_blend",
       "name": "Morphology Blend",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_config.w",
       "description": "Blend between sculpted and morphological result"

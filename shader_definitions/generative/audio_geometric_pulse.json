@@ -2,7 +2,6 @@
   "id": "audio_geometric_pulse",
   "name": "Geometric Pulse",
   "url": "shaders/audio_geometric_pulse.wgsl",
-  "category": "geometric",
   "description": "Audio-reactive geometric patterns with kaleidoscope symmetry, shape morphing, neon glow, and frequency band visualization",
   "tags": [
     "geometric",

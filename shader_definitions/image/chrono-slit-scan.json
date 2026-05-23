@@ -2,36 +2,35 @@
   "id": "chrono-slit-scan",
   "name": "Chrono Slit Scan",
   "url": "shaders/chrono-slit-scan.wgsl",
-  "category": "artistic",
   "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, and audio-reactive speed modulation.",
   "params": [
     {
       "id": "slitCount",
       "name": "Slit Count",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "slitWidth",
       "name": "Slit Width",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "slitSpeed",
       "name": "Slit Speed",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "feather",
       "name": "Feather",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

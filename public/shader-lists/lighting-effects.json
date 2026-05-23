@@ -1,228 +1,8 @@
 [
   {
-    "id": "atmos_volumetric_fog",
-    "name": "Volumetric Fog",
-    "url": "shaders/atmos_volumetric_fog.wgsl",
-    "category": "lighting-effects",
-    "description": "Volumetric fog with ray marching, Mie/Rayleigh scattering, height-based density, god rays, and mouse-controlled light source",
-    "tags": [
-      "volumetric",
-      "fog",
-      "god-rays",
-      "scattering",
-      "atmosphere"
-    ],
-    "features": [
-      "ray-marching",
-      "mouse-control",
-      "audio-reactive",
-      "temporal"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Fog Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Light Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Scattering",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "God Rays",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.7
-  },
-  {
-    "id": "gen-velocity-bloom",
-    "name": "Velocity Bloom",
-    "url": "shaders/gen-velocity-bloom.wgsl",
-    "category": "lighting-effects",
-    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity",
-    "tags": [
-      "temporal",
-      "bloom",
-      "velocity",
-      "motion",
-      "glow",
-      "audio",
-      "music"
-    ],
-    "features": [
-      "temporal",
-      "motion-aware",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "threshold",
-        "name": "Velocity Threshold",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "intensity",
-        "name": "Bloom Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "radius",
-        "name": "Bloom Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "decay",
-        "name": "Decay Rate",
-        "default": 0.85,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "holographic_interference",
-    "name": "Holographic Interference",
-    "url": "shaders/holographic_interference.wgsl",
-    "category": "lighting-effects",
-    "description": "Holographic rainbow patterns with interference fringes, multi-layer ghosting with staggered alpha, and wavelength-dependent diffraction",
-    "tags": [
-      "holographic",
-      "interference",
-      "rainbow",
-      "ghosting",
-      "diffraction"
-    ],
-    "features": [
-      "rgba",
-      "interference",
-      "diffraction",
-      "hologram",
-      "rainbow"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Layers",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Rainbow Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Coherence",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "Ghost Offset",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.6
-  },
-  {
-    "id": "neon-strings",
-    "name": "Neon Strings — Blackbody Wire",
-    "url": "shaders/neon-strings.wgsl",
-    "category": "lighting-effects",
-    "description": "Plucked-string vibration with Planck blackbody thermal emission. Temperature proportional to squared displacement amplitude (kinetic energy density), Stefan-Boltzmann glow (T⁴) per string segment, Newton cooling from antinodes to clamped ends. Audio bass adds vibrato; treble drives plasma shimmer.",
-    "params": [
-      {
-        "id": "stringCount",
-        "name": "String Count",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "tension",
-        "name": "Tension",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "coolRate",
-        "name": "Cooling Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven",
-      "upgraded-rgba"
-    ],
-    "tags": [
-      "glow",
-      "neon",
-      "strings",
-      "blackbody",
-      "thermal",
-      "audio",
-      "reactive"
-    ]
-  },
-  {
     "id": "alpha-aurora-bands",
     "name": "Alpha Aurora Bands",
     "url": "shaders/alpha-aurora-bands.wgsl",
-    "category": "lighting-effects",
     "description": "Physically-motivated aurora borealis simulation with emission-line spectral decomposition. RGB stores oxygen green, oxygen red, and nitrogen blue emission intensities. Alpha tracks altitude layer index. Mouse controls solar wind direction; ripples trigger magnetic reconnection substorms.",
     "tags": [
       "aurora",
@@ -281,7 +61,6 @@
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
     "url": "shaders/aurora-rift-2-pass1.wgsl",
-    "category": "lighting-effects",
     "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -339,7 +118,6 @@
     "id": "aurora-rift-2-pass2",
     "name": "Aurora Rift 2 (Pass 2: Enhanced Scattering)",
     "url": "shaders/aurora-rift-2-pass2.wgsl",
-    "category": "lighting-effects",
     "description": "Enhanced atmospheric scattering with richer color grading. Second pass of 2-pass system.",
     "features": [
       "multi-pass-2",
@@ -397,7 +175,6 @@
     "id": "aurora-rift-pass1",
     "name": "Aurora Rift (Pass 1: Volumetric)",
     "url": "shaders/aurora-rift-pass1.wgsl",
-    "category": "lighting-effects",
     "description": "Raymarches volumetric aurora with curl-driven flow. First pass of 2-pass system.",
     "features": [
       "multi-pass-1",
@@ -455,7 +232,6 @@
     "id": "aurora-rift-pass2",
     "name": "Aurora Rift (Pass 2: Atmospheric Scattering)",
     "url": "shaders/aurora-rift-pass2.wgsl",
-    "category": "lighting-effects",
     "description": "Atmospheric scattering, color grading, and tone mapping. Second pass of 2-pass system.",
     "features": [
       "multi-pass-2",
@@ -510,10 +286,64 @@
     ]
   },
   {
+    "id": "aurora_borealis",
+    "name": "Aurora Borealis",
+    "url": "shaders/aurora_borealis.wgsl",
+    "description": "Northern lights with flowing ribbon curves, curl noise turbulence, altitude-based coloring (green to red), and starfield background",
+    "tags": [
+      "aurora",
+      "northern-lights",
+      "atmospheric",
+      "nature",
+      "sky"
+    ],
+    "features": [
+      "rgba",
+      "aurora",
+      "curl-noise",
+      "ribbons",
+      "atmospheric"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Ribbons",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Ribbon Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Glow",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.8
+  },
+  {
     "id": "divine-light-gpt52",
     "name": "Divine Light Cathedral gpt52",
     "url": "shaders/divine-light-gpt52.wgsl",
-    "category": "lighting-effects",
     "description": "Expanded volumetric rays with dust motes and warm cinematic bloom.",
     "params": [
       {
@@ -561,10 +391,253 @@
     ]
   },
   {
+    "id": "divine-light",
+    "name": "Divine Light",
+    "url": "shaders/divine-light.wgsl",
+    "description": "Volumetric god rays emanating from cursor position. Creates cinematic light beam effects.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Ray Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Ray Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Ray Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "threshold",
+        "name": "Brightness Filter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "volumetric",
+      "atmospheric"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "dynamic-lens-flares",
+    "name": "Dynamic Lens Flares",
+    "url": "shaders/dynamic-lens-flares.wgsl",
+    "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "threshold",
+        "name": "Brightness Filter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spread",
+        "name": "Ghost Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ghost_count",
+        "name": "Ghost Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "optical",
+      "cinematic"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "lens-flare-brush",
+    "name": "Lens Flare Brush",
+    "url": "shaders/lens-flare-brush.wgsl",
+    "description": "Generates anamorphic lens flares from bright pixels near the mouse.",
+    "params": [
+      {
+        "name": "Threshold",
+        "type": "float",
+        "default": 0.8,
+        "min": 0.5,
+        "max": 1,
+        "id": "threshold"
+      },
+      {
+        "name": "Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "id": "intensity"
+      },
+      {
+        "name": "Stretch",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "id": "stretch"
+      },
+      {
+        "name": "Color Shift",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "id": "color_shift"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "matrix_digital_rain",
+    "name": "Matrix Digital Rain",
+    "url": "shaders/matrix_digital_rain.wgsl",
+    "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
+    "tags": [
+      "matrix",
+      "digital",
+      "rain",
+      "cyberpunk",
+      "retro",
+      "code"
+    ],
+    "features": [
+      "rgba",
+      "matrix",
+      "digital-rain",
+      "decoding",
+      "retro"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Glow Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Scanlines",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "neon-light",
+    "name": "Neon Light",
+    "url": "shaders/neon-light.wgsl",
+    "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
+    "params": [
+      {
+        "id": "base_temperature",
+        "name": "Base Temperature",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edge_heating",
+        "name": "Edge Heating",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "emissive_gain",
+        "name": "Emission Gain",
+        "default": 0.65,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "thermal_fog",
+        "name": "Thermal Fog",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "glow",
+      "neon",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "blackbody",
+      "fresnel"
+    ]
+  },
+  {
     "id": "neon-pulse-edge",
     "name": "Neon Pulse Edge",
     "url": "shaders/neon-pulse-edge.wgsl",
-    "category": "lighting-effects",
     "description": "3×3 Sobel edge detection with multi-layer bloom (tight core + wide halo + diffuse), direction-based hue cycling, depth-aware glow intensity, and audio-reactive pulsing.",
     "features": [
       "mouse-driven",
@@ -620,7 +693,6 @@
     "id": "sim-volumetric-fake-em",
     "name": "Volumetric Fake + EM Field",
     "url": "shaders/sim-volumetric-fake-em.wgsl",
-    "category": "lighting-effects",
     "description": "God rays with mouse electromagnetic field distortion. Electric field bends light rays; magnetic field causes chromatic RGB separation. Click ripples spawn secondary light charges.",
     "features": [
       "simulation",
@@ -695,7 +767,6 @@
     "id": "temporal_echo",
     "name": "Temporal Echo",
     "url": "shaders/temporal_echo.wgsl",
-    "category": "lighting-effects",
     "description": "Multi-frame echo accumulation with hue-rotating trails, chromatic aberration on older echoes, depth-layered decay, and audio-reactive beat flash.",
     "tags": [
       "temporal",
@@ -750,7 +821,6 @@
     "id": "underwater_caustics",
     "name": "Underwater Caustics",
     "url": "shaders/underwater_caustics.wgsl",
-    "category": "lighting-effects",
     "description": "Realistic underwater caustics with Gerstner wave surface simulation, refracted light patterns, god rays, and depth-based alpha",
     "tags": [
       "water",
@@ -801,70 +871,5 @@
       }
     ],
     "target_rating": 4.7
-  },
-  {
-    "id": "sim-volumetric-fake",
-    "name": "Volumetric Fake (God Rays)",
-    "url": "shaders/sim-volumetric-fake.wgsl",
-    "category": "lighting-effects",
-    "description": "Fast approximation of volumetric lighting. Radial blur from light source with depth-based scattering.",
-    "features": [
-      "simulation",
-      "fake-volumetrics",
-      "radial-blur",
-      "god-rays",
-      "randomization-safe"
-    ],
-    "params": [
-      {
-        "id": "light_intensity",
-        "name": "Light Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Light source intensity"
-      },
-      {
-        "id": "dust",
-        "name": "Dust Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Dust particle density"
-      },
-      {
-        "id": "scattering",
-        "name": "Scattering",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Scattering amount"
-      },
-      {
-        "id": "noise_speed",
-        "name": "Noise Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Dust movement speed"
-      }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "noise",
-      "Radial blur",
-      "Depth-based occlusion"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
   }
 ]

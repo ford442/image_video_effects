@@ -2,7 +2,6 @@
   "id": "stella-orbit",
   "name": "Stellar Orbit",
   "url": "shaders/stella-orbit.wgsl",
-  "category": "image",
   "description": "Orbital motion patterns with stellar particle systems.",
   "tags": [
     "filter",

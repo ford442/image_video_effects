@@ -2,7 +2,6 @@
   "id": "gen-cymatic-plasma-mandalas",
   "name": "Cymatic Plasma-Mandalas",
   "url": "shaders/gen-cymatic-plasma-mandalas.wgsl",
-  "category": "generative",
   "description": "A hyper-intricate, unfolding kaleidoscope of glowing liquid geometry that dances and weaves complex, sacred-geometry-inspired mandalas in direct response to audio frequencies.",
   "tags": [
     "generative",
@@ -26,33 +25,33 @@
     {
       "id": "symmetryOrder",
       "name": "Symmetry Order",
-      "default": 6.0,
-      "min": 1.0,
-      "max": 12.0,
-      "step": 1.0
+      "default": 6,
+      "min": 1,
+      "max": 12,
+      "step": 1
     },
     {
       "id": "plasmaDensity",
       "name": "Plasma Density",
-      "default": 2.0,
+      "default": 2,
       "min": 0.1,
-      "max": 5.0,
+      "max": 5,
       "step": 0.1
     },
     {
       "id": "cymaticFrequency",
       "name": "Cymatic Frequency",
-      "default": 10.0,
+      "default": 10,
       "min": 0.5,
-      "max": 30.0,
+      "max": 30,
       "step": 0.1
     },
     {
       "id": "swirlChaos",
       "name": "Swirl Chaos",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 3.0,
+      "default": 1,
+      "min": 0,
+      "max": 3,
       "step": 0.1
     }
   ]

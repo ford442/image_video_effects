@@ -2,7 +2,6 @@
   "id": "byte-mosh",
   "name": "Byte-Mosh Glitch",
   "url": "shaders/byte-mosh.wgsl",
-  "category": "image",
   "description": "Bitwise XOR, AND, shift, and rotate operations creating digital corruption effects.",
   "params": [
     {

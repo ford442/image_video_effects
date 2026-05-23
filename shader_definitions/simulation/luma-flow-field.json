@@ -2,7 +2,6 @@
   "id": "luma-flow-field",
   "name": "Luma Flow Field",
   "url": "shaders/luma-flow-field.wgsl",
-  "category": "simulation",
   "description": "Luma-gradient curl-noise flow field. Pixels stream along iso-luminance curves driven by multi-octave divergence-free noise, with depth-aware vortices, audio-reactive speed/turbulence, and iridescent palette streaks.",
   "features": [
     "audio-reactive",
@@ -15,32 +14,32 @@
       "id": "flow_scale",
       "name": "Flow Scale",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "trail_decay",
       "name": "Trail Decay",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "curl_strength",
       "name": "Curl Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "audio_sensitivity",
       "name": "Audio Sensitivity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

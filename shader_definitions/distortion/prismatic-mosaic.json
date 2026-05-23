@@ -2,15 +2,14 @@
   "id": "prismatic-mosaic",
   "name": "Prismatic Mosaic",
   "url": "shaders/prismatic-mosaic.wgsl",
-  "category": "image",
   "description": "Color tiles break apart and reassemble into shifting prisms, turning strong colors into a kaleidoscopic mosaic that ripples across the image.",
   "params": [
     {
       "id": "min_speed",
       "name": "Min Speed",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Minimum layer animation speed"
@@ -19,8 +18,8 @@
       "id": "max_speed",
       "name": "Max Speed",
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Maximum layer animation speed"
@@ -29,8 +28,8 @@
       "id": "saturation_boost",
       "name": "Saturation Boost",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Saturation boost amount"
@@ -39,8 +38,8 @@
       "id": "fog_density",
       "name": "Fog Density",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Volumetric fog density"

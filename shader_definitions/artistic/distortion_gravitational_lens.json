@@ -2,7 +2,6 @@
   "id": "distortion_gravitational_lens",
   "name": "Gravitational Lens",
   "url": "shaders/distortion_gravitational_lens.wgsl",
-  "category": "distortion",
   "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration",
   "tags": [
     "gravity",

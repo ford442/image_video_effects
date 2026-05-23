@@ -2,7 +2,6 @@
   "id": "liquid-perspective",
   "name": "Liquid Perspective",
   "url": "shaders/liquid-perspective.wgsl",
-  "category": "image",
   "description": "",
   "params": [
     {

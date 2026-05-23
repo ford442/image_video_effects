@@ -2,7 +2,6 @@
   "id": "chromatic-reaction-diffusion",
   "name": "Chromatic Reaction-Diffusion",
   "url": "shaders/chromatic-reaction-diffusion.wgsl",
-  "category": "artistic",
   "description": "Multi-channel Gray-Scott reaction-diffusion with chromatic separation. Each RGB channel has separate feed/kill rates.",
   "features": [
     "advanced-hybrid",
@@ -18,8 +17,8 @@
       "id": "red_feed",
       "name": "Red Feed Rate",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Feed rate for red channel"
@@ -28,8 +27,8 @@
       "id": "green_feed",
       "name": "Green Feed Rate",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Feed rate for green channel"
@@ -38,8 +37,8 @@
       "id": "blue_feed",
       "name": "Blue Feed Rate",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Feed rate for blue channel"
@@ -48,8 +47,8 @@
       "id": "chromatic_sep",
       "name": "Chromatic Separation",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Amount of chromatic aberration"

@@ -2,7 +2,6 @@
   "id": "gen-rgb-diffraction",
   "name": "RGB Diffraction",
   "url": "shaders/gen-rgb-diffraction.wgsl",
-  "category": "generative",
   "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
   "features": [
     "audio-reactive",

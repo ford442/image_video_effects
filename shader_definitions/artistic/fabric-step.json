@@ -2,7 +2,6 @@
   "id": "fabric-step",
   "name": "Fabric of Reality",
   "url": "shaders/fabric-step.wgsl",
-  "category": "simulation",
   "description": "Mass-spring cloth simulation with Verlet integration, constraint solving, and interactive tearing mechanics.",
   "params": [
     {

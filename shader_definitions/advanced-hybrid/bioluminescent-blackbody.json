@@ -2,7 +2,6 @@
   "id": "bioluminescent-blackbody",
   "name": "Bioluminescent Blackbody",
   "url": "shaders/bioluminescent-blackbody.wgsl",
-  "category": "advanced-hybrid",
   "description": "Living organic growth patterns with physically-correct thermal coloring. Growth energy maps to blackbody temperature — cooler regions glow deep red, active growth burns orange-yellow, and intense hotspots reach white-hot temperatures.",
   "tags": [
     "bioluminescent",
@@ -25,32 +24,32 @@
       "id": "spread",
       "name": "Spread Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "density",
       "name": "Branch Density",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "glow",
       "name": "Glow Intensity",
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "spores",
       "name": "Spore Count",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

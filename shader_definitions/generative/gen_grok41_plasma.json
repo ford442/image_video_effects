@@ -2,7 +2,6 @@
   "id": "gen-grok41-plasma",
   "name": "Spherical Harmonics Plasma",
   "url": "shaders/gen_grok41_plasma.wgsl",
-  "category": "generative",
   "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils.",
   "features": [
     "mouse-driven",
@@ -51,7 +50,7 @@
     {
       "id": "param4",
       "name": "Hue Shift",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
       "step": 0.01

@@ -2,7 +2,6 @@
   "id": "photonic-caustics",
   "name": "Photonic Caustics",
   "url": "shaders/photonic-caustics.wgsl",
-  "category": "image",
   "description": "Light caustics simulation with chromatic dispersion, Fresnel reflections, and refractive surfaces.",
   "params": [
     {

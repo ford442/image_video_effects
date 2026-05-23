@@ -2,7 +2,6 @@
   "id": "kimi-fractal-dreams",
   "name": "Kimi Fractal Dreams",
   "url": "shaders/kimi_fractal_dreams.wgsl",
-  "category": "generative",
   "description": "Multi-layer fractal with orbit traps, burning ship variant, and smooth color cycling.",
   "features": [
     "mouse-driven",

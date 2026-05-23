@@ -2,15 +2,14 @@
   "id": "cyber-physical-portal",
   "name": "Cyber Physical Portal",
   "url": "shaders/cyber-physical-portal.wgsl",
-  "category": "image",
   "description": "Reveals a cybernetic wireframe world through a glitchy portal at your mouse cursor.",
   "params": [
     {
       "id": "radius",
       "name": "Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Base radius of the portal"
@@ -19,8 +18,8 @@
       "id": "glitch_speed",
       "name": "Glitch Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Speed of portal edge glitch jitter"
@@ -29,8 +28,8 @@
       "id": "glow_sharpness",
       "name": "Glow Sharpness",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Sharpness of the portal edge glow"
@@ -39,8 +38,8 @@
       "id": "grid_density",
       "name": "Grid Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Density of the cyber grid inside the portal"

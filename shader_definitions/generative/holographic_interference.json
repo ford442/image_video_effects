@@ -2,7 +2,6 @@
   "id": "holographic_interference",
   "name": "Holographic Interference",
   "url": "shaders/holographic_interference.wgsl",
-  "category": "lighting-effects",
   "description": "Holographic rainbow patterns with interference fringes, multi-layer ghosting with staggered alpha, and wavelength-dependent diffraction",
   "tags": [
     "holographic",

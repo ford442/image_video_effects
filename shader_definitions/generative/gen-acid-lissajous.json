@@ -2,7 +2,6 @@
   "id": "gen-acid-lissajous",
   "name": "Acid Lissajous",
   "url": "shaders/gen-acid-lissajous.wgsl",
-  "category": "generative",
   "description": "Seven Lissajous curve strands rendered as glowing neon tubes with continuous acid-trip color cycling, harmonic drift, and soft bloom. Each strand traces a different frequency ratio pair that slowly evolves for ever-changing knotted patterns.",
   "features": [
     "audio-reactive",

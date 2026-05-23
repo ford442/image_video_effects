@@ -2,7 +2,6 @@
   "id": "cellular-automata-3d",
   "name": "Cellular Automata 3D",
   "url": "shaders/cellular-automata-3d.wgsl",
-  "category": "generative",
   "description": "3D Game of Life rendered with volume raymarching. Glowing 3D structures that evolve frame-by-frame.",
   "features": [
     "advanced-hybrid",
@@ -18,8 +17,8 @@
       "id": "evolution_speed",
       "name": "Evolution Speed",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Speed of CA evolution"
@@ -28,8 +27,8 @@
       "id": "initial_density",
       "name": "Initial Density",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Initial cell density"
@@ -38,8 +37,8 @@
       "id": "color_cycling",
       "name": "Color Cycling",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Speed of color cycling"
@@ -47,9 +46,9 @@
     {
       "id": "camera_rotation",
       "name": "Camera Rotation",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Camera rotation speed"

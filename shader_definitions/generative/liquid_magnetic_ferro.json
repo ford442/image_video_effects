@@ -2,7 +2,6 @@
   "id": "liquid_magnetic_ferro",
   "name": "Magnetic Ferrofluid",
   "url": "shaders/liquid_magnetic_ferro.wgsl",
-  "category": "liquid-effects",
   "description": "Interactive ferrofluid simulation with magnetic field lines, Rosensweig instability spike formation, and metallic iridescent rendering",
   "tags": [
     "ferrofluid",

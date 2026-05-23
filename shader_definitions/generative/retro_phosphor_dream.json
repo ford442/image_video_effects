@@ -2,7 +2,6 @@
   "id": "retro_phosphor_dream",
   "name": "Phosphor Dream",
   "url": "shaders/retro_phosphor_dream.wgsl",
-  "category": "retro-glitch",
   "description": "Authentic CRT simulation with RGB phosphor triads, persistence afterglow, interlaced flicker, barrel distortion, and chromatic aberration",
   "tags": [
     "crt",

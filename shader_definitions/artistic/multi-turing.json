@@ -2,7 +2,6 @@
   "id": "multi-turing",
   "name": "Multiscale Turing Patterns",
   "url": "shaders/multi-turing.wgsl",
-  "category": "simulation",
   "description": "Multiple reaction-diffusion systems at different scales combined for organic pattern generation.",
   "params": [
     {

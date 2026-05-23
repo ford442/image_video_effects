@@ -2,7 +2,6 @@
   "id": "time-lag-map",
   "name": "Time-Lag Map",
   "url": "shaders/time-lag-map.wgsl",
-  "category": "image",
   "description": "Per-pixel temporal delay creating echo, smear, and time-displacement effects.",
   "params": [
     {

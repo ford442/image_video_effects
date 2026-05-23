@@ -2,7 +2,6 @@
   "id": "voronoi-chaos",
   "name": "Voronoi Chaos",
   "url": "shaders/voronoi-chaos.wgsl",
-  "category": "distortion",
   "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
   "params": [
     {

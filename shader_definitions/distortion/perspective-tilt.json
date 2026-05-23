@@ -2,15 +2,14 @@
   "id": "perspective-tilt",
   "name": "Perspective Tilt",
   "url": "shaders/perspective-tilt.wgsl",
-  "category": "image",
   "description": "Rotates the image plane in 3D space based on mouse position (Pitch/Yaw). Zoom param adjusts distance.",
   "params": [
     {
       "id": "tilt_sensitivity",
       "name": "Tilt Sensitivity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Sensitivity of the tilt effect"
@@ -19,8 +18,8 @@
       "id": "distance",
       "name": "Distance (FOV)",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Camera distance / field of view"
@@ -29,8 +28,8 @@
       "id": "pitch_enable",
       "name": "Y-Axis Tilt (Pitch)",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Enable or scale pitch tilt amount"
@@ -38,9 +37,9 @@
     {
       "id": "plane_scale",
       "name": "Plane Scale",
-      "default": 1.0,
+      "default": 1,
       "min": 0.5,
-      "max": 2.0,
+      "max": 2,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Scale of the projected plane"

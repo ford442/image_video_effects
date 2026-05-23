@@ -1,7 +1,6 @@
 {
   "id": "gravity-lens",
   "name": "Gravity Lens",
-  "category": "image",
   "url": "shaders/gravity-lens.wgsl",
   "params": [
     {

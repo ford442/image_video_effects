@@ -2,7 +2,6 @@
   "id": "signal-noise",
   "name": "Signal Noise",
   "url": "shaders/signal-noise.wgsl",
-  "category": "retro-glitch",
   "description": "Multi-octave analog noise with VHS head-switching bands, DCT block artifacts, datamoshing smear, and directional chromatic aberration with YUV chroma noise.",
   "features": [
     "temporal"

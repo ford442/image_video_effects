@@ -2,7 +2,6 @@
   "id": "particle_dreams_alpha",
   "name": "Particle Dreams RGBA",
   "url": "shaders/particle_dreams_alpha.wgsl",
-  "category": "generative",
   "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
   "tags": [
     "particles",

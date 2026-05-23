@@ -2,7 +2,6 @@
   "id": "blueprint-reveal-guided",
   "name": "Blueprint Reveal + Guided Filter",
   "url": "shaders/blueprint-reveal-guided.wgsl",
-  "category": "advanced-hybrid",
   "description": "Blueprint effect with depth-guided edge-aware filtering. The guided filter smooths the image using depth as guide before Sobel edge detection, creating blueprint lines that respect true object boundaries.",
   "tags": [
     "blueprint",

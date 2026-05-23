@@ -2,7 +2,6 @@
   "id": "gen-cycloid-bloom",
   "name": "Cycloid Bloom",
   "url": "shaders/gen-cycloid-bloom.wgsl",
-  "category": "generative",
   "description": "Five nested hypotrochoid (Spirograph-style) curves layered into a blooming floral mandala. Each layer uses a different gear ratio that slowly evolves, petal glowing with prismatic hues that respond to audio. Feedback accumulation burns bright arcs.",
   "features": [
     "audio-reactive",

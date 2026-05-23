@@ -2,7 +2,6 @@
   "id": "rorschach-inkblot",
   "name": "Rorschach Inkblot",
   "url": "shaders/rorschach-inkblot.wgsl",
-  "category": "image",
   "description": "Symmetrical inkblot visualization using the Rorschach test aesthetic.",
   "params": [
     {

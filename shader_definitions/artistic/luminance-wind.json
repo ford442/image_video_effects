@@ -1,7 +1,6 @@
 {
   "id": "luminance-wind",
   "name": "Luminance Wind",
-  "category": "image",
   "url": "shaders/luminance-wind.wgsl",
   "description": "Pixels are blown by a digital wind. Lighter pixels are lighter weight and travel further. Mouse controls wind direction.",
   "params": [
