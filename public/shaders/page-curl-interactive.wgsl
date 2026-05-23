@@ -52,7 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   let time  = u.config.x;
 
-  // params: x=CurlRadius, y=ShadowStrength, z=FeedbackAmount, w=DepthInfluence
+  // params: x=CurlRadiusScale(0–0.35), y=ShadowStrength, z=FeedbackAmount, w=DepthInfluence
   let curlRadius      = max(0.03, u.zoom_params.x * 0.35);
   let shadowIntensity = u.zoom_params.y;
   let feedbackAmt     = u.zoom_params.z;
@@ -61,6 +61,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass   = plasmaBuffer[0].x;
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+
+  let EPSILON = 0.001;
 
   // Bass snaps the radius on strong beats
   let snap   = 1.0 + bass * 0.4 * step(0.6, bass);
@@ -89,14 +91,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let frontSampUV = clamp(uv + vec2<f32>(shockDisp, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
   let frontColor  = textureSampleLevel(readTexture, u_sampler, frontSampUV, 0.0);
   // Depth-aware shadow: deeper foreground pixels cast stronger shadow toward fold
-  let frontShadow = (1.0 - smoothstep(0.0, max(radius, 0.001), -dx)) * 0.5
+  let frontShadow = (1.0 - smoothstep(0.0, max(radius, EPSILON), -dx)) * 0.5
                     * shadowIntensity * (1.0 + depth * depthInfluence);
   let frontRGB    = frontColor.rgb * (1.0 - frontShadow);
   let frontAlpha  = clamp(frontColor.a * (1.0 - frontShadow * 0.4), 0.0, 1.0);
   let frontResult = vec4<f32>(frontRGB, frontAlpha);
 
   // ── Zone 2: Curl cylinder (0 ≤ dx < radius) ──────────────────────
-  let theta   = asin(clamp(dx / max(radius, 0.001), -1.0, 1.0));
+  let theta   = asin(clamp(dx / max(radius, EPSILON), -1.0, 1.0));
   let srcX    = clamp(curlX + radius * theta, 0.0, 1.0);
   let srcUV   = vec2<f32>(srcX, uv.y);
   let paperNoise = fbm(srcUV * 40.0 + vec2<f32>(time * 0.01, 0.0), 3) * 0.15;

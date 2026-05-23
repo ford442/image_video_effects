@@ -92,7 +92,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let distToSlice = min(abs(uv.y - sliceY), abs(uv.y - nextSliceY));
     // strength naturally 0 outside boundary — no branch needed
-    let strength = 1.0 - smoothstep(0.0, max(warpedSliceWidth, 0.001), distToSlice);
+    let strength = 1.0 - smoothstep(0.0, max(warpedSliceWidth, 1e-3), distToSlice);
 
     // Click-triggered slice bursts — branchless
     var burst = 0.0;
