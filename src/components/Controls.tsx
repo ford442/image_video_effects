@@ -91,6 +91,9 @@ interface ControlsProps {
     onExitLiveStream?: () => void;
     // Dev Tools Props
     onOpenShaderScanner?: () => void;
+    // Renderer Switch Props
+    activeRendererType?: 'webgpu' | 'wasm' | 'js';
+    onSwitchRenderer?: (type: 'webgpu' | 'wasm' | 'js') => void;
     // Storage Browser Props
     onOpenStorageBrowser?: () => void;
 }
@@ -143,6 +146,8 @@ const Controls: React.FC<ControlsProps> = ({
     onLiveStreamLoaded,
     onExitLiveStream,
     onOpenShaderScanner,
+    activeRendererType = 'webgpu',
+    onSwitchRenderer,
     onOpenStorageBrowser
 }) => {
     // --- Coordinate System State ---
@@ -1212,6 +1217,37 @@ const Controls: React.FC<ControlsProps> = ({
                             }}>
                                 Tests WGSL compilation on all shaders
                             </div>
+                            {onSwitchRenderer && (
+                                <div style={{ marginTop: '10px' }}>
+                                    <div style={{ fontSize: '10px', color: '#a0a0b0', marginBottom: '5px', textAlign: 'center' }}>
+                                        Renderer Backend
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {(['webgpu', 'wasm', 'js'] as const).map(type => (
+                                            <button
+                                                key={type}
+                                                onClick={() => onSwitchRenderer(type)}
+                                                style={{
+                                                    flex: 1,
+                                                    fontSize: '10px',
+                                                    padding: '4px 0',
+                                                    background: activeRendererType === type
+                                                        ? 'rgba(255,215,0,0.25)'
+                                                        : 'transparent',
+                                                    border: `1px solid ${activeRendererType === type ? '#FFD700' : 'rgba(255,215,0,0.3)'}`,
+                                                    color: activeRendererType === type ? '#FFD700' : '#a0a0b0',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em',
+                                                }}
+                                            >
+                                                {type}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
