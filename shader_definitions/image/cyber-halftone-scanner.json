@@ -34,7 +34,7 @@
       "max": 1.0
     }
   ],
-  "features": [],
+  "features": ["audio-reactive", "upgraded-rgba"],
   "tags": [
     "filter",
     "image-processing"

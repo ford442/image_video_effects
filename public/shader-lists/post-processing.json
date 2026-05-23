@@ -1,5 +1,66 @@
 [
   {
+    "id": "long-exposure",
+    "name": "Long Exposure Light Painting",
+    "url": "shaders/long-exposure.wgsl",
+    "category": "post-processing",
+    "description": "Simulates an open camera shutter accumulating light over time. Bright regions of each frame persist and blend into a glowing exposure buffer stored in dataTextureC; darker regions fade slowly, leaving luminous light-painting trails. Mouse click resets the exposure. Bass brightens incoming frames for punchier accumulation; mids control bloom halo radius; treble adds sparkle to the brightest traces.",
+    "tags": [
+      "long-exposure",
+      "light-painting",
+      "temporal",
+      "accumulation",
+      "glow",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "accumSpeed",
+        "name": "Accumulation Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "decayRate",
+        "name": "Decay Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "threshold",
+        "name": "Brightness Threshold",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "coordinate": 890
+  },
+  {
     "id": "luma-pixel-sort",
     "name": "Luma Pixel Sort",
     "url": "shaders/luma-pixel-sort.wgsl",

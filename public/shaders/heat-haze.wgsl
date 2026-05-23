@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Heat Haze
 //  Category: distortion
-//  Features: animated, atmospheric, mouse-driven, audio-reactive
+//  Features: animated, atmospheric, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 //  By: Phase A Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
 
@@ -31,12 +32,12 @@ struct Uniforms {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let texel = 1.0 / resolution;
-
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
+  let coord = vec2<i32>(global_id.xy);
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  let texel = 1.0 / resolution;
 
   // Params with randomization guards
   let heatGain = max(u.zoom_params.x, 0.001);
@@ -46,6 +47,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Audio reactivity
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let audioBoost = 1.0 + bass * 0.5;
 
   // 1. Read previous heat (from Depth)
@@ -59,17 +62,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let avg = (l + r + t + b) * 0.25;
   let diffusedHeat = mix(c, avg, diffusion);
 
-  // 2. Add Mouse Heat
+  // 2. Add Mouse Heat (branchless)
   var mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
   let aspect = resolution.x / max(resolution.y, 1.0);
   let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));
 
-  var mouseHeat = 0.0;
-  // If mouse is down, inject heat
-  if (mouseDown > 0.5 && dist < 0.05) {
-      mouseHeat = heatGain * (1.0 - dist / 0.05);
-  }
+  let inRadius = select(0.0, 1.0, dist < 0.05);
+  let mouseHeat = select(0.0, heatGain * (1.0 - dist / 0.05), mouseDown > 0.5) * inRadius;
 
   let newHeat = (diffusedHeat + mouseHeat) * decayRate;
 
@@ -77,7 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let finalHeat = clamp(newHeat, 0.0, 1.0);
 
   // Write Heat to Depth (for next frame)
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), finalHeat);
+  textureStore(writeDepthTexture, coord, vec4<f32>(finalHeat, 0.0, 0.0, 0.0));
 
   // 3. Render
   // Distort UV based on Heat Gradient (refraction)
@@ -98,5 +98,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lum = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let outAlpha = clamp(color.a + finalHeat * 0.5 * audioBoost, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb + thermalTint, outAlpha));
+  let outColor = vec4<f32>(color.rgb + thermalTint, outAlpha);
+
+  textureStore(writeTexture, coord, outColor);
+  textureStore(dataTextureA, coord, outColor);
 }

@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Fiber Optic Weave
 //  Category: image
-//  Features: woven-fibers, mouse-pluck, audio-reactive, signal-pulse
+//  Features: woven-fibers, mouse-pluck, audio-reactive, signal-pulse, upgraded-rgba
 //  Complexity: Medium
 //  Phase B / Interactivist
 // ═══════════════════════════════════════════════════════════════════
@@ -36,10 +36,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let coord = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let aspect = resolution.x / max(resolution.y, 1.0);
+
+    // Audio reactivity
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Params — bass amplifies fiber pulse
     let density = u.zoom_params.x * 100.0 + 10.0;
@@ -96,10 +100,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                   + pulseColor * pulseGlow * glow;
     col = vec4<f32>(col.rgb + glowColor, col.a);
 
-    // Alpha: glow + pluck + signal pulse drive fiber compositing weight
+    // Semantic alpha: glow + pluck + signal pulse drive fiber compositing weight
     let alpha = clamp(0.5 + glowFactor * 0.3 + pulseGlow * 0.4 + pluck * 0.2 + lum * 0.1, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(col.rgb, alpha));
+    let finalRGB = col.rgb;
+
+    textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

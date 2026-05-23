@@ -36,21 +36,24 @@ fn noise1(p: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(global_id.xy);
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
+    // Audio reactivity
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let aspect = resolution.x / resolution.y;
+    var mouse = u.zoom_config.yz;
 
     // Params
     let blurStrength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.2);
     let lineDensity = u.zoom_params.y * 50.0 + 10.0;
     let lineSpeed = u.zoom_params.z * 10.0 + 2.0;
-    let contrast = u.zoom_params.w + 0.5;
+    let contrast = (u.zoom_params.w + 0.5) * (1.0 + treble * 0.2);
 
     // Center on mouse
     let uvCenter = uv - mouse;
@@ -63,47 +66,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let samples = 16;
     for (var i = 0; i < samples; i++) {
         let t = f32(i) / f32(samples - 1);
-        let scale = 1.0 - t * blurStrength * dist; // Blur increases with distance
+        let scale = 1.0 - t * blurStrength * dist;
         let sampleUV = mouse + uvCenter * scale;
         blurColor += textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
     }
     blurColor = blurColor / f32(samples);
 
     // 2. Speed Lines
-    // Noise based on angle and time
-    // We want the lines to streak outwards
-
-    // Animate lines moving outward? Or just flickering?
-    // Usually speed lines are static radial streaks that jitter.
-
     let n = noise1(angle * lineDensity + time * lineSpeed);
-
-    // Threshold to create sharp lines
     let lines = smoothstep(0.6, 0.8, n);
-
-    // Mask: No lines in center
     let centerMask = smoothstep(0.2, 0.5, dist);
-
     let lineEffect = lines * centerMask * contrast;
 
     // Composite
-    // Add white lines
-    // Or invert color?
-    // Let's do Multiply (Dark lines) and Add (Bright lines)
-    // Classic is Black lines on white, or White on dark.
-
-    // Let's add bright lines
     var finalColor = blurColor + vec3<f32>(lineEffect);
 
     // Optional: Darken edges (Vignette)
     finalColor *= (1.0 - dist * 0.5);
 
-    // Alpha: speed line intensity + radial blur haze drives motion effect blend weight
+    // Semantic alpha
     let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(lineEffect * 0.5 + dist * blurStrength * 3.0 + luma * 0.2, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-
+    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

@@ -6,7 +6,9 @@
   "description": "Splits the screen into two dimensions. One side is normal, the other is a glitched negative. The split follows the mouse.",
   "features": [
     "mouse-driven",
-    "glitch"
+    "glitch",
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "params": [
     {

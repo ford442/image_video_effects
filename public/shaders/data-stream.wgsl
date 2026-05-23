@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Data Stream
 //  Category: interactive-mouse
-//  Features: mouse-driven, glitch, audio-reactive
+//  Features: mouse-driven, glitch, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 //  By: Phase A Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
 
@@ -34,9 +35,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
 
+    // Audio reactivity
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Params
     let speed = max(u.zoom_params.x * (1.0 + bass * 0.3), 0.001); // Flow Speed
@@ -73,10 +78,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Wrap Y
     sampleUV.y = fract(sampleUV.y);
 
-    // Glitch effect on strips
-    if (rand > 0.8) {
-        sampleUV.y = sampleUV.y + sin(time * 10.0) * 0.01;
-    }
+    // Glitch effect on strips (branchless)
+    sampleUV.y = sampleUV.y + select(0.0, sin(time * 10.0) * 0.01, rand > 0.8);
 
     let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
@@ -98,9 +101,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let streamLuma = dot(outputColor, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(glow * 0.5 + bright * 0.3 + streamLuma * 0.3, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outputColor, alpha));
+    let outColor = vec4<f32>(outputColor, alpha);
+
+    textureStore(writeTexture, coord, outColor);
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

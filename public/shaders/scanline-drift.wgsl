@@ -30,45 +30,40 @@ fn hash11(p: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let coord = vec2<i32>(global_id.xy);
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    var mouse = u.zoom_config.yz;
 
+    // Audio reactivity
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    var mouse = u.zoom_config.yz;
 
     // Params
     let driftSpeed = u.zoom_params.x * 2.0 * (1.0 + bass * 0.2);
-    let lineHeight = mix(0.001, 0.1, u.zoom_params.y); // Height of the scanline strip
-    let jitter = u.zoom_params.z * 0.1;
+    let lineHeight = mix(0.001, 0.1, u.zoom_params.y);
+    let jitter = u.zoom_params.z * 0.1 * (1.0 + mids * 0.3);
     let colorShift = u.zoom_params.w * 0.05;
 
     // Determine which horizontal strip we are in
     let stripId = floor(uv.y / lineHeight);
-
-    // Each strip drifts independently based on time and its ID
     let stripRand = hash11(stripId);
 
-    // Mouse Interaction:
-    // Mouse Y selects a "bad" zone with more drift?
-    // Or mouse proximity increases jitter.
+    // Mouse proximity increases jitter
     let distY = abs(uv.y - mouse.y);
-    let mouseEffect = smoothstep(0.2, 0.0, distY); // Stronger near mouse Y
+    let mouseEffect = smoothstep(0.2, 0.0, distY);
 
     // Calculate horizontal offset
-    // Sine wave movement + random jitter
     var offset = sin(time * driftSpeed + stripRand * 6.28) * jitter;
-
-    // Add mouse influence
     offset += (hash11(stripId + time) - 0.5) * mouseEffect * jitter * 2.0;
 
-    // Color separation (drift R, G, B differently)
+    // Color separation
     let rOffset = offset + colorShift;
     let gOffset = offset;
     let bOffset = offset - colorShift;
 
-    // Sample with wrap around or clamp?
-    // Usually glitch effects wrap.
     let rUV = vec2<f32>(fract(uv.x + rOffset), uv.y);
     let gUV = vec2<f32>(fract(uv.x + gOffset), uv.y);
     let bUV = vec2<f32>(fract(uv.x + bOffset), uv.y);
@@ -77,25 +72,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
-    // Scanline darkness (optional)
-    // Make boundaries between strips dark
+    // Scanline darkness at strip boundaries
     let stripUVy = fract(uv.y / lineHeight);
     let lineDark = smoothstep(0.0, 0.1, stripUVy) * smoothstep(1.0, 0.9, stripUVy);
-    // Actually standard scanline look is better:
-    // let scanline = sin(uv.y * resolution.y * 0.5) * 0.1;
 
     var color = vec3<f32>(r, g, b);
-
-    // Apply line separation darkness
     color *= mix(0.8, 1.0, lineDark);
 
-    // Alpha: scanline glitch drift intensity and mouse proximity drive compositing weight
+    // Semantic alpha
     let driftMag = abs(rOffset - bOffset);
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(driftMag * 10.0 + mouseEffect * 0.3 + luma * 0.2, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-
+    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

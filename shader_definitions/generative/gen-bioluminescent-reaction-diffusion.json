@@ -4,5 +4,11 @@
   "coordinate": 871,
   "type": "wgsl",
   "category": "generative",
-  "url": "shaders/gen-bioluminescent-reaction-diffusion.wgsl"
+  "url": "shaders/gen-bioluminescent-reaction-diffusion.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "simulation",
+    "upgraded-rgba"
+  ]
 }

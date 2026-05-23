@@ -13,6 +13,10 @@
     "description": "Overlay multiple delayed copies of the video, each with a different color offset and evolving distortion.",
     "coordinate": 877,
     "source": "Jules",
+    "features": [
+        "upgraded-rgba",
+        "audio-reactive"
+    ],
     "parameters": [
         {
             "name": "Layer Count",

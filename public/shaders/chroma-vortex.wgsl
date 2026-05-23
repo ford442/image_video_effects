@@ -37,50 +37,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     let bass = plasmaBuffer[0].x;
-    let twist = u.zoom_params.x * 3.14159 * 2.0 * (1.0 + bass * 0.2);
-    let spread = u.zoom_params.y * 0.1;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let twist = u.zoom_params.x * 3.14159 * 2.0 * (1.0 + bass * 0.2 + mids * 0.1);
+    let spread = u.zoom_params.y * 0.1 * (1.0 + treble * 0.1);
     let radius = max(u.zoom_params.z, 0.01);
     let centerBias = u.zoom_params.w;
 
     let diff = uv - mousePos;
-    // Aspect corrected distance for circular effect
     let dist = length(vec2<f32>(diff.x * aspect, diff.y));
 
-    // Calculate rotation angle based on distance
-    // smoothstep from Radius to 0 creates a soft falloff
     var factor = smoothstep(radius, 0.0, dist);
-
-    // Bias: factor^power. If bias > 1, factor drops off quicker.
-    // If bias < 1, factor stays high longer.
-    // Let's map param4 (0..1) to power (0.2..5.0)
     let power = centerBias * 4.8 + 0.2;
     factor = pow(factor, power);
 
-    // Three different angles for RGB
     let angleBase = factor * twist;
     let angleR = angleBase - spread * factor * 10.0;
     let angleG = angleBase;
     let angleB = angleBase + spread * factor * 10.0;
 
-    // To rotate around mouse:
-    // 1. diff = UV - Mouse
-    // 2. rotate diff
-    // 3. NewUV = Mouse + rotatedDiff
-
-    // We adjust diff for aspect before rotation? No, rotation is 2D.
-    // Ideally we rotate in square space.
     let diffSq = vec2<f32>(diff.x * aspect, diff.y);
 
     let rotR_sq = rotate(diffSq, angleR);
     let rotG_sq = rotate(diffSq, angleG);
     let rotB_sq = rotate(diffSq, angleB);
 
-    // Convert back to UV space
     let rotR = vec2<f32>(rotR_sq.x / aspect, rotR_sq.y);
     let rotG = vec2<f32>(rotG_sq.x / aspect, rotG_sq.y);
     let rotB = vec2<f32>(rotB_sq.x / aspect, rotB_sq.y);
@@ -93,13 +81,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    // Alpha: vortex rotation factor drives chromatic swirl compositing weight
     let chromaSplit = length(uvR - uvB);
     let luma = dot(vec3<f32>(colR, colG, colB), vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(factor * 0.5 + chromaSplit * 6.0 + luma * 0.2, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(colR, colG, colB, alpha));
-
+    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, coord, vec4<f32>(colR, colG, colB, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(colR, colG, colB, alpha));
 }

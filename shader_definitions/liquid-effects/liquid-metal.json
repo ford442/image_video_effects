@@ -8,7 +8,8 @@
     "mouse-driven",
     "depth-aware",
     "temporal",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "liquid",

@@ -4,7 +4,7 @@
   "url": "shaders/fractal-glass-distort.wgsl",
   "category": "distortion",
   "description": "Iterated Function System (IFS) attractor density field drives refraction index. Barnsley-style 4-contraction IFS evaluated per-pixel with iridescent chromatic dispersion through the fractal structure. Audio-driven contraction modulation.",
-  "features": ["mouse-driven", "audio-reactive", "temporal"],
+  "features": ["mouse-driven", "audio-reactive", "temporal", "upgraded-rgba"],
   "params": [
     { "id": "contraction", "name": "Contraction",  "default": 0.5, "min": 0.0, "max": 1.0 },
     { "id": "rotation",    "name": "IFS Rotation",  "default": 0.3, "min": 0.0, "max": 1.0 },

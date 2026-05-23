@@ -7,7 +7,9 @@
   "icon": "wifi",
   "description": "Generates dynamic interference patterns between the center and the mouse position.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "params": [
     {

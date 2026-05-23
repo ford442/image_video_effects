@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid Metal — Phase A Upgrade
 //  Category: liquid-effects
-//  Features: mouse-driven, depth-aware, temporal, audio-reactive
+//  Features: mouse-driven, depth-aware, temporal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: original liquid-metal.wgsl
 //  Created: 2026-05-23
@@ -54,7 +54,7 @@ fn vnoise(p: vec2<f32>) -> f32 {
 // FBM height field for liquid surface
 fn fbmHeight(p: vec2<f32>, t: f32) -> f32 {
     var v = 0.0; var amp = 0.5; var pp = p;
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 4; i = i + 1) {
         v += amp * vnoise(pp + vec2<f32>(t * 0.07, t * 0.05));
         pp = pp * 2.1 + vec2<f32>(1.7, 9.2);
         amp *= 0.5;
@@ -90,15 +90,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect  = resolution.x / resolution.y;
     let mouse   = u.zoom_config.yz;
 
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Params
     let viscosity      = u.zoom_params.x * 0.9 + 0.05;
     let reflectivity   = u.zoom_params.y;
     let chromaSpread   = u.zoom_params.z * 0.025;
     let flowSpeed      = u.zoom_params.w;
-
-    // Audio
-    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
-    let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
 
     // Depth (1=near foreground, 0=far background)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -130,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Ripple impulses add height
     let rippleCount = min(u32(u.config.y), 50u);
-    for (var ri = 0u; ri < rippleCount; ri++) {
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
         let r = u.ripples[ri];
         let elapsed = time - r.z;
         if (elapsed >= 0.0 && elapsed < 1.5) {
@@ -185,13 +186,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spec = pow(max(dot(normal, halfV), 0.0), mix(16.0, 128.0, reflectivity));
 
     // Blend refracted image with metallic reflection via Fresnel
-    var finalColor = mix(refractedColor, metalColor, F);
-    finalColor += vec3<f32>(spec * reflectivity * (0.8 + bass * 0.4));
+    var finalRGB = mix(refractedColor, metalColor, F);
+    finalRGB += vec3<f32>(spec * reflectivity * (0.8 + bass * 0.4));
 
-    // RGBA alpha: wetness / reflectivity drives opacity
-    let wetness = F * (0.6 + newH * 0.4);
+    // Semantic alpha: wetness / reflectivity drives opacity
+    let alpha = F * (0.6 + newH * 0.4);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, wetness));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy),
-                 vec4<f32>(depth * 0.7 + newH * 0.3, 0.0, 0.0, 1.0));
+                 vec4<f32>(depth * 0.7 + newH * 0.3, 0.0, 0.0, 0.0));
 }

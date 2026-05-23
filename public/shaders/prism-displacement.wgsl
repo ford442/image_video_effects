@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Prism Lens
 //  Category: distortion
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Upgraded: 2026-05-10
 //  By: Phase A Upgrade Swarm
@@ -33,11 +33,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     var mousePos = u.zoom_config.yz;
 
+    // Audio reactivity
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters
     let size = max(u.zoom_params.x * 0.5, 0.05);
@@ -94,9 +98,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(lensMask * 0.6 + edge * edgeShine * 0.3 + luma * 0.15, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    let outColor = vec4<f32>(finalColor, alpha);
 
     // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

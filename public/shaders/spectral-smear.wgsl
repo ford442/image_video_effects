@@ -25,6 +25,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     var mouse = u.zoom_config.yz;
@@ -35,17 +36,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Params (mids speeds hue shift, treble lifts smear intensity)
-    let trailDecay = u.zoom_params.x; // 0.0 to 1.0 (Higher = longer trail)
+    let trailDecay = u.zoom_params.x;
     let brushSize = u.zoom_params.y * (1.0 + bass * 0.2);
-    let shiftSpeed = u.zoom_params.z * (1.0 + mids * 0.8); // Hue shift speed
-    let intensity = u.zoom_params.w * (1.0 + treble * 0.5);  // Mix intensity
+    let shiftSpeed = u.zoom_params.z * (1.0 + mids * 0.8);
+    let intensity = u.zoom_params.w * (1.0 + treble * 0.5);
 
     // Check mouse distance
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
     let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
     let dist = distance(uvCorrected, mouseCorrected);
 
-    let inBrush = smoothstep(brushSize, brushSize * 0.8, dist); // 1.0 inside, 0.0 outside
+    let inBrush = smoothstep(brushSize, brushSize * 0.8, dist);
 
     // Get current video frame
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -54,7 +55,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
     // Create the "paint" color
-    // We can invert the current color, or shift its hue
     let hue = fract(time * shiftSpeed);
     let shiftColor = vec3<f32>(
         0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
@@ -62,39 +62,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
     );
 
-    // If under mouse, add to the trail
-    // We mix the current video with the shift color
-    let paint = mix(current.rgb, shiftColor, 0.5); // Blend with shift color
+    let paint = mix(current.rgb, shiftColor, 0.5);
 
-    // If inside brush, current pixel value becomes 'paint'. Else it's 'history'.
-    // But we also want the underlying video to show through.
-
-    // Logic:
-    // 1. New History = Old History * Decay.
-    // 2. If mouse is here, add Paint to History.
-
-    let historyDecayed = history.rgb * (0.9 + 0.09 * trailDecay); // Never fully 1.0 or it saturates
+    let historyDecayed = history.rgb * (0.9 + 0.09 * trailDecay);
 
     var newHistory = historyDecayed;
     if (inBrush > 0.01) {
-        newHistory = mix(newHistory, shiftColor * 2.0, inBrush * intensity); // Add brightness
+        newHistory = mix(newHistory, shiftColor * 2.0, inBrush * intensity);
     }
 
-    // Clamp
-    newHistory = clamp(newHistory, vec3<f32>(0.0), vec3<f32>(2.0)); // Allow some bloom
+    newHistory = clamp(newHistory, vec3<f32>(0.0), vec3<f32>(2.0));
 
     // Final composite: Video + History
-    // Use history as an additive overlay or difference?
-    // Let's do additive (screen-like)
     let finalColor = current.rgb + newHistory * 0.5;
 
     // Alpha: smear trail brightness and brush coverage drive paint compositing weight
     let historyLuma = dot(newHistory, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(inBrush * 0.4 + historyLuma * 0.4 + 0.1, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(newHistory, 1.0));
-
+    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

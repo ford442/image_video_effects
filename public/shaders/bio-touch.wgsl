@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bio-Luminescent Touch
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: original bio-touch
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 //  By: Phase A Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
 
@@ -61,10 +62,15 @@ fn voronoi(p: vec2<f32>) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let coord = vec2<i32>(global_id.xy);
 
     var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001, 0.001));
     let time = u.config.x;
+
+    // Audio reactivity
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Mouse Interaction
     var mousePos = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -101,10 +107,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sample Image
     let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    // Color Tinting
+    // Color Tinting (branchless)
     var tint = vec3<f32>(0.2, 0.8, 0.6); // Default teal
-    if (colorShift > 0.3) { tint = vec3<f32>(0.8, 0.2, 0.6); } // Pink
-    if (colorShift > 0.6) { tint = vec3<f32>(0.2, 0.4, 0.9); } // Blue
+    tint = select(vec3<f32>(0.8, 0.2, 0.6), tint, colorShift <= 0.3);
+    tint = select(vec3<f32>(0.2, 0.4, 0.9), tint, colorShift <= 0.6);
 
     // Composite
     // Add glow to original color
@@ -113,9 +119,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Alpha: bioluminescent glow intensity as compositing weight
     let alpha = clamp(finalGlow * 0.7 + influence * 0.2 + 0.1, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
+    let outRGBA = vec4<f32>(outColor, alpha);
+
+    textureStore(writeTexture, coord, outRGBA);
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outRGBA);
 }

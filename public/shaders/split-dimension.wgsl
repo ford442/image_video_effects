@@ -49,77 +49,65 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     var mouse = get_mouse();
 
     let bass = plasmaBuffer[0].x;
-    let glitch_amt = u.zoom_params.x * (1.0 + bass * 0.3);
-    let color_shift = u.zoom_params.y;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let glitch_amt = u.zoom_params.x * (1.0 + bass * 0.3 + treble * 0.15);
+    let color_shift = u.zoom_params.y * (1.0 + mids * 0.1);
     let neg_str = u.zoom_params.z;
-    let angle_param = u.zoom_params.w; // -1 to 1
+    let angle_param = u.zoom_params.w;
 
     let time = u.config.x;
 
     // Calculate Split Line
-    // Use dot product with normal vector
-    // angle 0 = vertical split (normal = 1,0)
-    let angle = angle_param * 3.14159 * 0.5; // -90 to 90 deg
+    let angle = angle_param * 3.14159 * 0.5;
     let normal = vec2<f32>(cos(angle), sin(angle));
 
-    // Point on line: mouse
-    // Distance from line = dot(uv - mouse, normal)
-    // Adjust aspect for correct visual angle
     let p_vec = vec2<f32>((uv.x - mouse.x) * aspect, uv.y - mouse.y);
     let d = dot(p_vec, normal);
 
-    var finalColor = vec4<f32>(0.0);
+    // Normal side
+    let normalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    if (d < 0.0) {
-        // Dimension A: Normal
-        finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    } else {
-        // Dimension B: Glitched / Negative
+    // Glitch side
+    let n = noise(vec2<f32>(uv.y * 50.0, time * 20.0));
+    let glitchActive = select(0.0, 1.0, n > 0.8 && glitch_amt > 0.0);
+    let glitchOffset = (n - 0.5) * glitch_amt * 0.2 * glitchActive;
+    var glitch_uv = uv;
+    glitch_uv.x = glitch_uv.x + glitchOffset;
 
-        // Glitch Offset
-        var glitch_uv = uv;
-        if (glitch_amt > 0.0) {
-            let n = noise(vec2<f32>(uv.y * 50.0, time * 20.0)); // Horizontal strips
-            if (n > 0.8) {
-                glitch_uv.x += (n - 0.5) * glitch_amt * 0.2;
-            }
-        }
+    let shift = color_shift * 0.05;
+    var col = vec3<f32>(0.0);
+    col.r = textureSampleLevel(readTexture, u_sampler, glitch_uv + vec2<f32>(shift, 0.0), 0.0).r;
+    col.g = textureSampleLevel(readTexture, u_sampler, glitch_uv, 0.0).g;
+    col.b = textureSampleLevel(readTexture, u_sampler, glitch_uv - vec2<f32>(shift, 0.0), 0.0).b;
+    col = mix(col, 1.0 - col, neg_str);
 
-        // RGB Split
-        var col = vec3<f32>(0.0);
-        let shift = color_shift * 0.05;
-        col.r = textureSampleLevel(readTexture, u_sampler, glitch_uv + vec2<f32>(shift, 0.0), 0.0).r;
-        col.g = textureSampleLevel(readTexture, u_sampler, glitch_uv, 0.0).g;
-        col.b = textureSampleLevel(readTexture, u_sampler, glitch_uv - vec2<f32>(shift, 0.0), 0.0).b;
+    var glitchColor = vec4<f32>(col, 1.0);
 
-        // Negative
-        col = mix(col, 1.0 - col, neg_str);
+    // Add split line highlight
+    let lineHighlight = select(vec4<f32>(0.5, 0.5, 0.5, 0.0), vec4<f32>(0.0), d >= 0.01);
+    glitchColor = glitchColor + lineHighlight;
 
-        finalColor = vec4<f32>(col, 1.0);
-
-        // Add split line highlight
-        if (d < 0.01) {
-            finalColor += vec4<f32>(0.5, 0.5, 0.5, 0.0);
-        }
-    }
+    let isNormal = select(0.0, 1.0, d < 0.0);
+    let finalColor = mix(glitchColor, normalColor, isNormal);
 
     // Alpha: glitch dimension = effect intensity drives blend; normal dimension = source luma
     let luma = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    var alpha: f32;
-    if (d < 0.0) {
-        alpha = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
-    } else {
-        alpha = clamp(glitch_amt * 0.3 + luma * 0.5 + 0.15, 0.0, 1.0);
-    }
+    let alphaNormal = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
+    let alphaGlitch = clamp(glitch_amt * 0.3 + luma * 0.5 + 0.15, 0.0, 1.0);
+    let alpha = mix(alphaGlitch, alphaNormal, isNormal);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, alpha));
-
+    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, coord, vec4<f32>(finalColor.rgb, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor.rgb, alpha));
 }

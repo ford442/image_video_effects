@@ -26,15 +26,18 @@ const TAU: f32 = 6.28318530717958647692;
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
+  let coord = vec2<i32>(global_id.xy);
   var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let aspect = resolution.x / resolution.y;
+
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Params
-  let freq = mix(20.0, 200.0, u.zoom_params.x) * (1.0 + bass * 0.1);
-  let strength = u.zoom_params.y * 0.05;
+  let freq = mix(20.0, 200.0, u.zoom_params.x) * (1.0 + bass * 0.1 + mids * 0.05);
+  let strength = u.zoom_params.y * 0.05 * (1.0 + treble * 0.1);
   let abb = u.zoom_params.z * 0.02;
   let complexity = u.zoom_params.w;
 
@@ -56,7 +59,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Complexity adds a third point or modulates freq
   if (complexity > 0.0) {
-      let d3 = distance(current_uv, mix(center, mouse, 0.5)); // midpoint
+      let d3 = distance(current_uv, mix(center, mouse, 0.5));
       let w3 = sin(d3 * freq * 1.5 + time);
       interference += w3 * complexity;
   }
@@ -65,13 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   interference = interference * 0.5;
 
   // Distortion Vector
-  // We displace along the gradient of the interference, or just radially?
-  // Let's displace based on the interference value acting as a height map.
-  // Simple hack: displace towards center masked by interference.
   var dir = normalize(uv - vec2<f32>(0.5));
-
-  // Or better: Displace based on the derivative of the pattern?
-  // Simpler: Use the interference value to offset UVs directly.
   let displacement = vec2<f32>(cos(interference * 3.14), sin(interference * 3.14)) * strength;
 
   // Sample with Aberration
@@ -85,18 +82,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = vec3<f32>(r, g, b);
 
-  // Add interference bands visual overlay (optional)
-  // Makes the "waves" visible as light/dark bands
-  let bands = smoothstep(0.0, 0.1, abs(interference)) * 0.2 + 0.8;
-  // color *= bands; // Maybe too intrusive? Let's keep it clean glass-like.
-
   // Alpha: interference pattern intensity drives moire compositing weight
   let dispMag = length(displacement);
   let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(dispMag * 15.0 + abs(interference) * 0.1 + luma * 0.2, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-
+  // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

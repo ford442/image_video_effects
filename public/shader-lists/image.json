@@ -2079,7 +2079,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -5566,7 +5568,10 @@
         "max": 1
       }
     ],
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "tags": [
       "filter",
       "image-processing"
@@ -7095,7 +7100,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -7452,7 +7459,8 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -9447,7 +9455,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -11459,7 +11469,9 @@
     "icon": "wifi",
     "description": "Generates dynamic interference patterns between the center and the mouse position.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -11795,33 +11807,33 @@
     "name": "Neon Echo",
     "url": "shaders/neon-echo.wgsl",
     "category": "image",
-    "description": "Creates glowing trails from moving edges in the video, with colors influenced by mouse position.",
+    "description": "Per-channel CRT phosphor persistence with blackbody-aged echoes, cursor drift, and scanline halation.",
     "params": [
       {
-        "id": "decay",
-        "name": "Trail Decay",
-        "default": 0.1,
+        "id": "persistence_gain",
+        "name": "Persistence Gain",
+        "default": 0.55,
         "min": 0,
         "max": 1
       },
       {
-        "id": "threshold",
-        "name": "Edge Sense",
-        "default": 0.2,
+        "id": "cursor_drift",
+        "name": "Cursor Drift",
+        "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
-        "id": "hue",
-        "name": "Color Shift",
-        "default": 0.5,
+        "id": "excitation_threshold",
+        "name": "Excitation Threshold",
+        "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "mix",
-        "name": "Echo Mix",
-        "default": 0.8,
+        "id": "halation",
+        "name": "Halation",
+        "default": 0.45,
         "min": 0,
         "max": 1
       }
@@ -11829,14 +11841,15 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "temporal",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
-      "music",
-      "reactive"
+      "crt",
+      "phosphor"
     ]
   },
   {
@@ -11993,33 +12006,33 @@
     "name": "Neon Warp",
     "url": "shaders/neon-warp.wgsl",
     "category": "image",
-    "description": "Mouse movement warps the image fabric, revealing neon edges and glowing trails.",
+    "description": "Thermal mirage refraction driven by diffusing heat sources, ripples, and blackbody plasma glow.",
     "params": [
       {
-        "id": "strength",
-        "name": "Warp Strength",
+        "id": "refraction_strength",
+        "name": "Refraction Strength",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "neon",
-        "name": "Neon Intensity",
-        "default": 0.5,
+        "id": "emission_gain",
+        "name": "Emission Gain",
+        "default": 0.55,
         "min": 0,
         "max": 1
       },
       {
-        "id": "speed",
-        "name": "Color Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "decay",
-        "name": "Warp Decay",
-        "default": 0.8,
+        "id": "cooling",
+        "name": "Cooling",
+        "default": 0.45,
         "min": 0,
         "max": 1
       }
@@ -12028,14 +12041,14 @@
       "mouse-driven",
       "temporal-persistence",
       "audio-reactive",
-      "audio-driven"
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
-      "music",
-      "reactive"
+      "thermal",
+      "mirage"
     ]
   },
   {
@@ -14306,7 +14319,9 @@
     "description": "Splits the screen into two dimensions. One side is normal, the other is a glitched negative. The split follows the mouse.",
     "features": [
       "mouse-driven",
-      "glitch"
+      "glitch",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -15293,33 +15308,33 @@
     "name": "Neon Light",
     "url": "shaders/neon-light.wgsl",
     "category": "image",
-    "description": "Neon glow and bloom effect.",
+    "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
     "params": [
       {
-        "id": "intensity",
-        "name": "Glow Intensity",
-        "default": 0.5,
+        "id": "base_temperature",
+        "name": "Base Temperature",
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "threshold",
-        "name": "Glow Threshold",
-        "default": 0.5,
+        "id": "edge_heating",
+        "name": "Edge Heating",
+        "default": 0.55,
         "min": 0,
         "max": 1
       },
       {
-        "id": "saturation",
-        "name": "Color Boost",
-        "default": 0.5,
+        "id": "emissive_gain",
+        "name": "Emission Gain",
+        "default": 0.65,
         "min": 0,
         "max": 1
       },
       {
-        "id": "bloom",
-        "name": "Bloom Size",
-        "default": 0.5,
+        "id": "thermal_fog",
+        "name": "Thermal Fog",
+        "default": 0.4,
         "min": 0,
         "max": 1
       }
@@ -15329,14 +15344,14 @@
       "neon",
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
-      "music",
-      "reactive"
+      "blackbody",
+      "fresnel"
     ]
   },
   {
@@ -16840,59 +16855,59 @@
     "name": "Neon Edges",
     "url": "shaders/neon-edges.wgsl",
     "category": "image",
-    "description": "",
+    "description": "Multi-scale Mach-band edge enhancement colorized by blackbody temperature and depth-aware spotlighting.",
     "params": [
       {
-        "id": "min_speed",
-        "name": "Min Speed",
-        "default": 0.3,
+        "id": "edge_sensitivity",
+        "name": "Edge Sensitivity",
+        "default": 0.45,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Minimum layer animation speed"
+        "description": "Scales the multi-resolution Sobel response"
       },
       {
-        "id": "max_speed",
-        "name": "Max Speed",
-        "default": 0.7,
+        "id": "mach_strength",
+        "name": "Mach Strength",
+        "default": 0.55,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Maximum layer animation speed"
+        "description": "Boosts the directional second-derivative Mach bands"
       },
       {
-        "id": "edge_threshold",
-        "name": "Edge Threshold",
-        "default": 0.3,
+        "id": "spotlight_radius",
+        "name": "Spotlight Radius",
+        "default": 0.45,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Edge detection threshold"
+        "description": "Controls how tightly the mouse reveals depth edges"
       },
       {
-        "id": "neon_intensity",
-        "name": "Neon Intensity",
-        "default": 0.3,
+        "id": "neon_gain",
+        "name": "Neon Gain",
+        "default": 0.65,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Intensity of the neon glow effect"
+        "description": "Overall blackbody glow intensity"
       }
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
-      "music",
-      "reactive"
+      "mach-band",
+      "blackbody"
     ],
     "features": [
       "audio-reactive",
-      "audio-driven",
+      "depth-aware",
       "mouse-driven"
     ]
   },

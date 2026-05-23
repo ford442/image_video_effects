@@ -708,7 +708,9 @@
     "category": "simulation",
     "description": "Velocity advection and dye injection with a pressure-like solve placeholder.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "simulation",

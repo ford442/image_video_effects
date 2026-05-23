@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cyber Halftone Scanner
-//  Category: retro-glitch
-//  Features: rotated screens, scanline, audio-reactive, plasma-tint
+//  Category: image
+//  Features: rotated screens, scanline, audio-reactive, plasma-tint, upgraded-rgba
 //  Complexity: Medium
 //  Phase B / Algorithmist
 // ═══════════════════════════════════════════════════════════════════
@@ -44,18 +44,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let coord = vec2<i32>(global_id.xy);
-
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
 
-    // Params — bass amplifies dot density and scan speed
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Params — bass amplifies dot density and scan speed, treble boosts brightness
     let dotScale   = mix(50.0, 400.0, u.zoom_params.x) * (1.0 + bass * 0.2);
     let scanSpeed  = u.zoom_params.y * 2.0 * (1.0 + bass * 0.4);
     let sep        = u.zoom_params.z * 0.05;
-    let brightness = u.zoom_params.w * 2.0;
+    let brightness = u.zoom_params.w * 2.0 * (1.0 + treble * 0.2);
 
-    // Scanline (cosine-wrapped for smoother loop)
+    // Scanline
     let scanY = fract(time * scanSpeed * 0.5);
     let scanDist = abs(uv.y - scanY);
     let scanIntensity = exp(-scanDist * scanDist * 90.0);
@@ -65,36 +68,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let texG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     let texB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>( sep,  sep), 0.0).b;
 
-    // Canonical CMYK screen angles (15°, 75°, 0°, 45°)
+    // Canonical CMYK screen angles
     let patR = grid(uv, 15.0  * PI / 180.0, dotScale);
     let patG = grid(uv, 75.0  * PI / 180.0, dotScale);
     let patB = grid(uv,  0.0,                dotScale);
     let patK = grid(uv, 45.0  * PI / 180.0, dotScale * 1.05);
 
-    // Branchless threshold
     let boost = scanIntensity * 0.4;
     let r = step(patR, texR * brightness + boost);
     let g = step(patG, texG * brightness + boost);
     let b = step(patB, texB * brightness + boost);
     let k = step(patK, dot(vec3<f32>(texR, texG, texB), vec3<f32>(0.299, 0.587, 0.114)) * brightness + boost);
 
-    // Cyber-tinted: cyan + magenta + yellow (CMY) mixed with key-black mask
+    // Cyber-tinted
     let cyan    = vec3<f32>(0.0, 0.85, 1.0) * r;
     let magenta = vec3<f32>(1.0, 0.0, 0.7)  * g;
     let yellow  = vec3<f32>(1.0, 0.85, 0.0) * b;
     let halftone = (cyan + magenta + yellow) * (1.0 - k * 0.4);
 
-    // Plasma palette tint along scan stripe (electric blue→magenta sweep)
+    // Plasma palette tint along scan stripe
     let palIdx = u32(clamp((scanY + time * 0.05) * 255.0, 0.0, 255.0));
     let scanTint = plasmaBuffer[palIdx % 256u].rgb;
     let finalColor = halftone + scanTint * scanIntensity * 0.4;
 
-    // Alpha: ink coverage + scan brightness drives compositing weight
+    // Semantic alpha
     let coverage = (r + g + b) / 3.0;
     let alpha = clamp(coverage * 0.6 + scanIntensity * 0.3 + 0.1, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
-
+    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

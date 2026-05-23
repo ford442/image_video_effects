@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Steampunk Gear Lens
 //  Category: image
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Phase A Upgrade Swarm
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -34,6 +35,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
@@ -42,6 +44,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio reactivity
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let size = mix(0.1, 0.6, clamp(u.zoom_params.x, 0.0, 1.0));
     let teeth_count = mix(6.0, 20.0, clamp(u.zoom_params.y, 0.0, 1.0));
@@ -74,29 +78,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p_rot = vec2<f32>(p.x * c - p.y * s, p.x * s + p.y * c);
     let uv_lens = center + p_rot / aspectVec;
 
-    var color: vec4<f32>;
+    // Sample both inside and outside
+    let col_lens = textureSampleLevel(readTexture, u_sampler, uv_lens, 0.0);
+    let col_bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    if (mask > 0.0) {
-        // Inside Gear
-        var col = textureSampleLevel(readTexture, u_sampler, uv_lens, 0.0);
+    // Sepia Filter (applied to lens sample)
+    let gray = dot(col_lens.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let sepia_col = vec3<f32>(gray * 1.2, gray * 1.0, gray * 0.8);
+    let sepiaAlpha = mix(0.85, 1.0, gray);
+    var col = mix(col_lens, vec4<f32>(sepia_col, sepiaAlpha), sepia_str);
 
-        // Sepia Filter
-        let gray = dot(col.rgb, vec3<f32>(0.299, 0.587, 0.114));
-        let sepia_col = vec3<f32>(gray * 1.2, gray * 1.0, gray * 0.8);
-        let sepiaAlpha = mix(0.85, 1.0, gray);
-        col = mix(col, vec4<f32>(sepia_col, sepiaAlpha), sepia_str);
+    // Add Metallic Rim
+    let metal = vec4<f32>(0.8, 0.6, 0.3, 0.9);
+    col = mix(col, metal, rim);
 
-        // Add Metallic Rim
-        let metal = vec4<f32>(0.8, 0.6, 0.3, 0.9);
-        color = mix(col, metal, rim);
-    } else {
-        // Outside Gear
-        color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    }
+    // Blend inside/outside using mask
+    let color = mix(col_bg, col, mask);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Semantic alpha: gear presence + rim + luminance
+    let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(mask * 0.5 + rim * 0.3 + luma * 0.2, 0.0, 1.0);
 
-    // writeDepthTexture pass-through
-    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 1.0));
+    let finalRGB = mix(col_bg.rgb, color.rgb, mask);
+
+    let outColor = vec4<f32>(finalRGB, alpha);
+
+    // Depth pass-through
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

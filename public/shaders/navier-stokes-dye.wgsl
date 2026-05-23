@@ -52,10 +52,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(gid.xy) / dimF;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let mouseDown = u.zoom_config.w;
 
     let dyeStrength    = u.zoom_params.x * 2.0 + 0.3;
-    let vorticityScale = u.zoom_params.y * 5.0 + 0.5;        // vorticity confinement strength
+    let vorticityScale = u.zoom_params.y * 5.0 + 0.5;
     let diffusion      = u.zoom_params.z * 0.4 + 0.1;
     let paletteShift   = u.zoom_params.w;
 
@@ -65,12 +67,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var added_energy = vec2<f32>(0.0);
     for (var i = 0; i < 8; i++) {
         let rip = u.ripples[i];
-        let active = step(1e-4, rip.z);
+        let isActive = step(1e-4, rip.z);
         let age = max(time - rip.z, 0.0);
         let alive = step(age, 2.0);
         let toR = uv - rip.xy;
         let dr = length(toR);
-        let force = exp(-dr * dr * 800.0) * (1.0 - age * 0.5) * active * alive;
+        let force = exp(-dr * dr * 800.0) * (1.0 - age * 0.5) * isActive * alive;
         let dir = toR / max(dr, 1e-4);
         added_energy += dir * 20.0 * force;
     }
@@ -79,7 +81,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let toMouse = uv - mouse;
     let dM2 = dot(toMouse, toMouse);
-    let mouseSrc = exp(-dM2 * 900.0) * (8.0 + mouseDown * 12.0) * (1.0 + bass * 0.4);
+    let mouseSrc = exp(-dM2 * 900.0) * (8.0 + mouseDown * 12.0) * (1.0 + bass * 0.4 + mids * 0.2);
     added_energy += (toMouse / max(length(toMouse), 1e-4)) * mouseSrc;
 
     var vel = textureLoad(dataTextureC, coord, 0).rg + added_energy * dyeStrength;
@@ -102,7 +104,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     textureStore(dataTextureA, coord, vec4<f32>(vel, curl, 1.0));
 
     // Dye coloring: source image tinted by curl phase via plasma palette
-    let palIdx = u32(clamp((curl * 0.1 + 0.5 + paletteShift + time * 0.05) * 255.0, 0.0, 255.0));
+    let palIdx = u32(clamp((curl * 0.1 + 0.5 + paletteShift + time * 0.05 + treble * 0.1) * 255.0, 0.0, 255.0));
     let palette = plasmaBuffer[palIdx % 256u].rgb;
     let saturation = clamp(length(vel) * 0.05, 0.0, 1.0);
     let dyed = mix(src.rgb, src.rgb * (0.6 + palette * 0.8), saturation);
@@ -114,8 +116,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Alpha: vorticity magnitude + dye saturation drives compositing weight
     let lumaOut = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(0.4 + lumaOut * 0.3 + abs(curl) * 0.4 + saturation * 0.3, 0.0, 1.0);
-    textureStore(writeTexture, coord, vec4<f32>(blended, alpha));
 
+    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(writeTexture, coord, vec4<f32>(blended, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(blended, alpha));
 }
