@@ -8532,5 +8532,11 @@
     ],
     "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl",
     "type": "compute"
+  },
+  {
+    "id": "gen-radiant-quantum-crystalline-forge",
+    "name": "Radiant Quantum-Crystalline Forge",
+    "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl",
+    "category": "generative"
   }
 ]

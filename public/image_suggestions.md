@@ -4901,6 +4901,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Good for testing soft character lighting and subsurface scattering.
 
+### Suggestion: Neon Cyber-Monastery
+- **Date:** 2026-05-28
+- **Prompt:** "A sprawling cyber-monastery perched on a foggy mountain peak at dawn. Traditional ornate wooden architecture fused seamlessly with glowing neon magenta and cyan circuitry. Cyber-monks in flowing robes walk across a wet stone courtyard. The lighting is cinematic, with harsh neon contrasting with soft, hazy morning sunlight."
+- **Negative prompt:** "ugly, simple, flat, lowres, bright daylight"
+- **Tags:** cyberpunk, architecture, landscape, cinematic
+- **Style / Reference:** photorealistic, 3D render, dark sci-fi
+- **Composition:** wide shot, low angle
+- **Color palette:** neon magenta, cyan, warm sunrise orange, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_cyber-monastery.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing volumetric fog and mixed natural/artificial lighting.
+
+### Suggestion: Solarpunk Aerial Windmill City
+- **Date:** 2026-05-28
+- **Prompt:** "A utopian solarpunk city built into massive, floating wind turbines soaring high above the clouds in a bright blue sky. lush greenery, hanging gardens, and solar panels cover the white, curved organic architecture. People fly in small gliders between the platforms."
+- **Negative prompt:** "dystopian, dark, polluted, ground, cars, gritty"
+- **Tags:** solarpunk, architecture, bright, surreal
+- **Style / Reference:** photorealistic, highly detailed, Ghibli-inspired lighting
+- **Composition:** wide shot, high altitude perspective
+- **Color palette:** sky blue, bright white, vibrant green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_solarpunk-windmill.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing bright lighting, clean shadows, and organic curves.
+
+### Suggestion: Eldritch Steampunk Clockmaker's Desk
+- **Date:** 2026-05-28
+- **Prompt:** "A cluttered steampunk clockmaker's desk littered with glowing brass gears, magnifying glasses, and strange alchemy bottles. In the center, a complex pocket watch is open, revealing a miniature, glowing purple galaxy spinning inside its gears. The room is dimly lit by a flickering oil lamp."
+- **Negative prompt:** "clean, modern, digital, minimalist, empty"
+- **Tags:** steampunk, still life, macro, dark
+- **Style / Reference:** photorealistic, cinematic, macro photography
+- **Composition:** close-up, shallow depth of field on the pocket watch
+- **Color palette:** warm brass, dark wood, glowing purple
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260528_eldritch-clockmaker.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing macro depth of field and small glowing light sources.
+
+### Suggestion: Surreal Isometric Floating Desert
+- **Date:** 2026-05-28
+- **Prompt:** "A perfectly square isometric slice of a surreal desert floating against a flat pastel pink background. A large, twisting sand dune curls around a single, massive, glowing blue crystal monolith. A tiny caravan of robotic camels walks across the sand."
+- **Negative prompt:** "realistic sky, horizon line, normal perspective, messy"
+- **Tags:** surreal, landscape, isometric, 3D, minimalist
+- **Style / Reference:** 3D render, minimalist, clean lighting
+- **Composition:** isometric, perfectly centered square slice
+- **Color palette:** pastel pink, warm sand, glowing blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260528_isometric-desert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for testing clean, stylized 3D geometry and isometric perspective generation.
+
+### Suggestion: Bioluminescent Crystal Cave Explorer
+- **Date:** 2026-05-28
+- **Prompt:** "A solitary explorer in a futuristic hazard suit standing in a massive, ancient subterranean cave filled with towering, jagged crystal formations. The crystals emit a brilliant, shifting bioluminescent aura of emerald green and sapphire blue, illuminating the dark stone walls. Tiny glowing spores drift through the air."
+- **Negative prompt:** "sunlight, surface, flat lighting, simple"
+- **Tags:** sci-fi, nature, landscape, moody
+- **Style / Reference:** photorealistic, cinematic, detailed 3D environment
+- **Composition:** wide shot, showcasing the massive scale of the cave
+- **Color palette:** emerald green, sapphire blue, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_crystal-cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing particle effects, subsurface scattering, and multi-colored bioluminescence.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
