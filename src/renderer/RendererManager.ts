@@ -1,6 +1,6 @@
 import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
-import { WASMRenderer } from './WASMRenderer';
+import { WASMRenderer, WASMDiagnostics } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { ShaderEntry } from './types';
 
@@ -9,6 +9,14 @@ export interface RendererMetrics {
   frameTime: number;
   agentCount: number;
   isWASM: boolean;
+}
+
+export interface RendererDiagnostics {
+  rendererType: RendererType;
+  metrics: RendererMetrics;
+  timestamp: string;
+  wasm?: WASMDiagnostics;
+  webgpu?: Record<string, any>;
 }
 
 /** Supported renderer backend identifiers. */
@@ -268,9 +276,9 @@ export class RendererManager {
    * Get diagnostic information about the currently active renderer.
    * Useful for debugging, testing, and monitoring renderer health.
    */
-  getDiagnostics(): Record<string, any> {
+  getDiagnostics(): RendererDiagnostics {
     const rendererType = this.getActiveRendererType();
-    const baseDiagnostics = {
+    const baseDiagnostics: RendererDiagnostics = {
       rendererType,
       metrics: this.metrics,
       timestamp: new Date().toISOString(),

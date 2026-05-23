@@ -2,6 +2,18 @@ import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 
+/**
+ * Diagnostic information from the WASM renderer.
+ */
+export interface WASMDiagnostics {
+  initialized: boolean;
+  initAttempts: number;
+  errorCount: number;
+  lastErrorTime: string | null;
+  fps: number;
+  hasModule: boolean;
+}
+
 export class WASMRenderer implements Renderer {
   private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
@@ -21,6 +33,8 @@ export class WASMRenderer implements Renderer {
   private errorCount = 0;
   private initAttempts = 0;
   private maxInitAttempts = 3;
+  private consecutiveRenderErrors = 0;
+  private maxRenderErrorsBeforeStopping = 10;
 
   constructor(config: RendererConfig) {
     this.config = config;
@@ -65,7 +79,7 @@ export class WASMRenderer implements Renderer {
    * Get diagnostic information about the WASM renderer status.
    * Useful for debugging and verifying renderer health.
    */
-  getDiagnostics(): Record<string, any> {
+  getDiagnostics(): WASMDiagnostics {
     return {
       initialized: this.initialized,
       initAttempts: this.initAttempts,
@@ -286,10 +300,24 @@ export class WASMRenderer implements Renderer {
           mouseY: this.mouseY,
           mouseDown: this.mouseDown,
         });
+        // Reset error counter on success
+        this.consecutiveRenderErrors = 0;
       } catch (err) {
         this.errorCount++;
+        this.consecutiveRenderErrors++;
         this.lastErrorTime = Date.now();
-        console.error('[WASM] Error during render loop update:', err);
+        
+        // Only log the first error and every 10th error to avoid console spam
+        if (this.consecutiveRenderErrors === 1 || this.consecutiveRenderErrors % 10 === 0) {
+          console.error('[WASM] Error during render loop update (attempt', this.consecutiveRenderErrors, '):', err);
+        }
+        
+        // Stop the render loop after too many consecutive errors
+        if (this.consecutiveRenderErrors >= this.maxRenderErrorsBeforeStopping) {
+          console.error('[WASM] Stopping render loop after', this.maxRenderErrorsBeforeStopping, 'consecutive errors');
+          this.initialized = false;
+          return;
+        }
       }
 
       this.animationId = requestAnimationFrame(loop);

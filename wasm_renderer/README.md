@@ -262,13 +262,13 @@ The enhanced error handling reports:
 ```
 [WASM] Loading from: http://localhost:3000/wasm/pixelocity_wasm.js
 [WASM] PixelocityWASM found on window after script load (stub module?)
-⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU
+⚠️ WASM renderer requested but failed to initialize — falling back to TypeScript WebGPU
 ```
 
 #### Build missing:
 ```
 [WASM] Failed to load WASM script: 404 Not Found
-⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU
+⚠️ WASM renderer requested but failed to initialize — falling back to TypeScript WebGPU
 ```
 
 ### Runtime Switching for Testing
