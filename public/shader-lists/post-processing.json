@@ -931,7 +931,7 @@
       },
       {
         "id": "psychedelic",
-        "name": "Psychedelic Mode",
+        "name": "Dynamic Hue Mode",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -990,7 +990,7 @@
       },
       {
         "id": "psychedelic",
-        "name": "Psychedelic Mode",
+        "name": "Dynamic Hue Mode",
         "default": 0,
         "min": 0,
         "max": 1,

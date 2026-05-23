@@ -43,16 +43,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let uv = (vec2<f32>(gid.xy) + 0.5) / res;
   let coord = vec2<i32>(gid.xy);
-  let px = 1.0 / res;
+  let maxCoord = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
 
   let state = textureLoad(dataTextureC, coord, 0);
   let b = clamp(state.g, 0.0, 1.0);
   let lumaSeed = clamp(state.b, 0.0, 1.0);
 
-  let leftB = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-  let rightB = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-  let downB = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-  let upB = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+  let leftB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0, 0), maxCoord), 0).g;
+  let rightB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0, 0), maxCoord), 0).g;
+  let downB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0, 0), maxCoord), 0).g;
+  let upB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0, 0), maxCoord), 0).g;
   let edge = clamp(abs((leftB + rightB + downB + upB) - 4.0 * b) * 4.0, 0.0, 1.0);
 
   let pattern = clamp(pow(b, 0.8) + edge * 0.35 + lumaSeed * 0.20, 0.0, 1.0);

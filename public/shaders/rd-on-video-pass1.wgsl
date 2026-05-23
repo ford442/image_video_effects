@@ -25,6 +25,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const RESET_TIME: f32 = 0.1;
+
 fn safeState(uv: vec2<f32>) -> vec4<f32> {
   return textureSampleLevel(dataTextureC, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 }
@@ -44,7 +46,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var a = state.r;
   var b = state.g;
 
-  if (u.config.x < 0.1 || (a < 0.001 && b < 0.001)) {
+  if (u.config.x < RESET_TIME || (a < 0.001 && b < 0.001)) {
     let seed = smoothstep(0.2, 0.85, luma);
     a = 1.0 - seed * 0.35;
     b = seed * 0.65;

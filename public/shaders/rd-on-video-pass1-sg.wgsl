@@ -27,6 +27,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const RESET_TIME: f32 = 0.1;
+
 var<workgroup> tileA: array<f32, 256>;
 var<workgroup> tileB: array<f32, 256>;
 
@@ -51,7 +53,7 @@ fn main(
   var state = textureLoad(dataTextureC, vec2<i32>(safeCoord), 0);
   var a = state.r;
   var b = state.g;
-  if (u.config.x < 0.1 || (a < 0.001 && b < 0.001)) {
+  if (u.config.x < RESET_TIME || (a < 0.001 && b < 0.001)) {
     let seed = smoothstep(0.2, 0.85, luma);
     a = 1.0 - seed * 0.35;
     b = seed * 0.65;
