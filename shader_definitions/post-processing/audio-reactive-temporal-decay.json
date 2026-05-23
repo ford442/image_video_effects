@@ -1,0 +1,43 @@
+{
+  "id": "audio-reactive-temporal-decay",
+  "name": "Audio Reactive Temporal Decay",
+  "url": "shaders/audio-reactive-temporal-decay.wgsl",
+  "category": "post-processing",
+  "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range. Low-band energy → long ghostly trails; high-band energy → fast fade. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+  "tags": ["audio-reactive", "temporal", "trails", "feedback", "fft", "decay", "frequency"],
+  "features": ["audio-reactive", "temporal", "fft-bins"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Decay Base",
+      "default": 0.15,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Audio Drive",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Bin Range Lo",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.008
+    },
+    {
+      "id": "param4",
+      "name": "Bin Range Hi",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.008
+    }
+  ]
+}

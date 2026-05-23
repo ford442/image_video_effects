@@ -25,7 +25,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   const [agentCount, setAgentCount] = useState(DEFAULT_CONFIG.agentCount);
 
   const { fps, frameTime, startMonitoring, stopMonitoring } = usePerformanceMonitor();
-  const { startAudio, stopAudio, getAudioData } = useAudioAnalyzer();
+  const { startAudio, stopAudio, getAudioData, getAudioBins } = useAudioAnalyzer();
 
   // Initialize renderer
   const initRenderer = useCallback(async (wasmMode: boolean) => {
@@ -74,10 +74,13 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
     const interval = setInterval(() => {
       const audio = getAudioData();
       rendererRef.current?.updateAudioData(audio.bass, audio.mid, audio.treble);
+      // Push full FFT bin array so audio-reactive shaders can access per-bin data
+      const bins = getAudioBins();
+      rendererRef.current?.updateAudioFrequencyBins?.(bins);
     }, 50);
 
     return () => clearInterval(interval);
-  }, [getAudioData]);
+  }, [getAudioData, getAudioBins]);
 
   // Handle mouse movement
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {

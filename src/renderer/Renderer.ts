@@ -13,6 +13,15 @@ export interface Renderer {
 
   // Audio input
   updateAudioData(bass: number, mid: number, treble: number): void;
+  /**
+   * Push a full N-bin FFT magnitude array from the audio source (e.g. flac_player).
+   * Values should be normalised to [0, 1]. Bins are written into
+   * extraBuffer[5 .. 5+N-1] so that WGSL shaders can access them as:
+   *   extraBuffer[5 + binIndex]
+   * N should be ≤ 251 (EXTRA_FLOATS=256 minus the first 5 reserved slots).
+   * The canonical size used by useAudioAnalyzer is 128.
+   */
+  updateAudioFrequencyBins?(bins: Float32Array): void;
 
   // Mouse input
   updateMouse(x: number, y: number): void;
