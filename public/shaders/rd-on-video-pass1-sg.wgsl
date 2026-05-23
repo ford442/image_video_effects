@@ -30,6 +30,7 @@ struct Uniforms {
 // Short bootstrap window for cold-start seeding; zero-state check below
 // also re-seeds when this pass is loaded after startup.
 const RESET_TIME: f32 = 0.1;
+const WG_SIZE: u32 = 16u;
 
 var<workgroup> tileA: array<f32, 256>;
 var<workgroup> tileB: array<f32, 256>;
@@ -70,8 +71,8 @@ fn main(
   let leftB = subgroupShuffleUp(b, 1u);
   let rightB = subgroupShuffleDown(b, 1u);
 
-  let upIdx = select(lidx, lidx - 16u, lid.y > 0u);
-  let dnIdx = select(lidx, lidx + 16u, lid.y < 15u);
+  let upIdx = select(lidx, lidx - WG_SIZE, lid.y > 0u);
+  let dnIdx = select(lidx, lidx + WG_SIZE, lid.y < WG_SIZE - 1u);
 
   var lA = leftA;
   var rA = rightA;
@@ -83,7 +84,7 @@ fn main(
     lA = s.r;
     lB = s.g;
   }
-  if (lid.x == 15u) {
+  if (lid.x == WG_SIZE - 1u) {
     let s = loadState(uv + vec2<f32>(px.x, 0.0));
     rA = s.r;
     rB = s.g;
@@ -99,7 +100,7 @@ fn main(
     dA = s.r;
     dB = s.g;
   }
-  if (lid.y == 15u) {
+  if (lid.y == WG_SIZE - 1u) {
     let s = loadState(uv + vec2<f32>(0.0, px.y));
     uA = s.r;
     uB = s.g;

@@ -27,6 +27,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const WG_SIZE: u32 = 16u;
+
 var<workgroup> tileTrail: array<f32, 256>;
 var<workgroup> tileFood: array<f32, 256>;
 
@@ -58,8 +60,8 @@ fn main(
   tileFood[lidx] = centerFood;
   workgroupBarrier();
 
-  let upIdx = select(lidx, lidx - 16u, lid.y > 0u);
-  let dnIdx = select(lidx, lidx + 16u, lid.y < 15u);
+  let upIdx = select(lidx, lidx - WG_SIZE, lid.y > 0u);
+  let dnIdx = select(lidx, lidx + WG_SIZE, lid.y < WG_SIZE - 1u);
 
   var trailL = subgroupShuffleUp(centerTrail, 1u);
   var trailR = subgroupShuffleDown(centerTrail, 1u);
@@ -70,7 +72,7 @@ fn main(
     trailL = trailAt(uv - vec2<f32>(px.x, 0.0));
     foodL = lumaAt(uv - vec2<f32>(px.x, 0.0));
   }
-  if (lid.x == 15u) {
+  if (lid.x == WG_SIZE - 1u) {
     trailR = trailAt(uv + vec2<f32>(px.x, 0.0));
     foodR = lumaAt(uv + vec2<f32>(px.x, 0.0));
   }
@@ -84,7 +86,7 @@ fn main(
     trailD = trailAt(uv - vec2<f32>(0.0, px.y));
     foodD = lumaAt(uv - vec2<f32>(0.0, px.y));
   }
-  if (lid.y == 15u) {
+  if (lid.y == WG_SIZE - 1u) {
     trailU = trailAt(uv + vec2<f32>(0.0, px.y));
     foodU = lumaAt(uv + vec2<f32>(0.0, px.y));
   }

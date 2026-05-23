@@ -13,9 +13,9 @@
   },
   "tags": ["reaction-diffusion", "turing", "palette", "organic"],
   "params": [
-    { "id": "feed", "name": "Feed", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "kill", "name": "Kill", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "diffusion", "name": "Diffusion", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "dt", "name": "Time Step", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+    { "id": "gamma", "name": "Pattern Gamma", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "edge_gain", "name": "Edge Gain", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "seed_gain", "name": "Seed Gain", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "hue_shift", "name": "Hue Shift", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ]
 }

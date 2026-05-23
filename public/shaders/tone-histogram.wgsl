@@ -34,6 +34,8 @@ fn main(
   // Intentional single-workgroup reducer: binding(10) is shared with generic
   // float storage usage across the renderer, so this pass uses one cooperative
   // workgroup to avoid requiring a separate atomic histogram buffer binding.
+  // This also guarantees deterministic histogram accumulation without needing
+  // cross-workgroup synchronization primitives (which WGSL does not provide).
   if (wid.x != 0u || wid.y != 0u) { return; }
 
   let res = vec2<u32>(u32(max(u.config.z, 1.0)), u32(max(u.config.w, 1.0)));

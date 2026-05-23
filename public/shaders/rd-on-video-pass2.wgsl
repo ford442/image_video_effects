@@ -36,6 +36,10 @@ fn palette(t: f32) -> vec3<f32> {
   return mix(mix(c1, c2, a), mix(c3, c4, c), b);
 }
 
+fn loadNeighborB(coord: vec2<i32>, offset: vec2<i32>, maxCoord: vec2<i32>) -> f32 {
+  return textureLoad(dataTextureC, clamp(coord + offset, vec2<i32>(0, 0), maxCoord), 0).g;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -49,10 +53,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = clamp(state.g, 0.0, 1.0);
   let lumaSeed = clamp(state.b, 0.0, 1.0);
 
-  let leftB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0, 0), maxCoord), 0).g;
-  let rightB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0, 0), maxCoord), 0).g;
-  let downB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0, 0), maxCoord), 0).g;
-  let upB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0, 0), maxCoord), 0).g;
+  let leftB = loadNeighborB(coord, vec2<i32>(-1, 0), maxCoord);
+  let rightB = loadNeighborB(coord, vec2<i32>(1, 0), maxCoord);
+  let downB = loadNeighborB(coord, vec2<i32>(0, -1), maxCoord);
+  let upB = loadNeighborB(coord, vec2<i32>(0, 1), maxCoord);
   let edge = clamp(abs((leftB + rightB + downB + upB) - 4.0 * b) * 4.0, 0.0, 1.0);
 
   let concentrationGamma = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));

@@ -30,6 +30,7 @@ var<workgroup> wgMeanLuma: f32;
 var<workgroup> wgContrast: f32;
 var<workgroup> wgSaturation: f32;
 var<workgroup> wgPeakBinNorm: f32;
+var<workgroup> wgPeakBin: u32;
 
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
   let p = select(vec4<f32>(c.bg, -1.0, 2.0 / 3.0), vec4<f32>(c.gb, 0.0, -1.0 / 3.0), c.b < c.g);
@@ -88,6 +89,7 @@ fn main(
     wgContrast = contrast;
     wgSaturation = saturation;
     wgPeakBinNorm = f32(peakBin) / 255.0;
+    wgPeakBin = peakBin;
   }
   workgroupBarrier();
 
@@ -98,7 +100,7 @@ fn main(
   var hsv = rgb2hsv(color);
   hsv.y = clamp(hsv.y * wgSaturation, 0.0, 1.0);
 
-  let peakBin = u32(wgPeakBinNorm * 255.0);
+  let peakBin = wgPeakBin;
   let psychoMode = u.zoom_params.w > 0.5;
   if (psychoMode && (peakBin < 40u || peakBin > 215u)) {
     let shift = 0.08 * sin(u.config.x * 0.9 + f32(peakBin) * 0.05);
