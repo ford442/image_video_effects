@@ -153,8 +153,9 @@ fn applyPyramid(
   return clamp(result, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Width of the ROI boundary ring expressed as a fraction of the ROI radius
-// (i.e. the ring occupies the zone from normDist = 1 ± RING_WIDTH/2).
+// Width of the ROI boundary ring in normalised distance units (not a fraction
+// of roiR, but an absolute threshold in the normDist = dist/roiR space).
+// At normDist = 1.0 the ring peaks; it fades over ±RING_WIDTH from that peak.
 const RING_WIDTH: f32 = 0.06;
 
 @compute @workgroup_size(16, 16, 1)
@@ -238,5 +239,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
 
   // Propagate depth for downstream effects.
-  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
+  // r32float only stores the R channel; other vec4 components are discarded.
+  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

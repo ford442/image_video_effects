@@ -80,7 +80,7 @@ fn fillTile(gid: vec3<u32>, lid: vec3<u32>) {
   // offset by HALO so the tile covers a 1-pixel border on every side.
   // Using (gid.xy - lid.xy) gives the workgroup origin so all 256 threads
   // share exactly the same base and cooperate on ONE 18×18 tile.
-  let base = vec2<i32>(gid.xy - lid.xy) - vec2<i32>(i32(HALO));
+  let base = vec2<i32>(gid.xy - lid.xy) - vec2<i32>(i32(HALO), i32(HALO));
 
   // Centre texel for this thread (at tile[lid.y+1][lid.x+1]).
   tile[lid.y + HALO][lid.x + HALO] = loadPixelRGB(base + vec2<i32>(lid.xy));
