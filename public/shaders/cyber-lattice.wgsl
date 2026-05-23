@@ -4,7 +4,7 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  By: Shader Upgrade Swarm — Phase A
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -68,15 +68,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var glowColor = select(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), mouseDown > 0.5);
 
     let totalGlow = glowIntensity * (0.5 + 0.5 * mouseInfluence);
-    let finalColor = mix(baseColor.rgb, glowColor, gridMask * totalGlow);
+    let latticeColor = mix(baseColor.rgb, glowColor, gridMask * totalGlow);
 
-    // Alpha encodes glow contribution: grid lines and mouse proximity boost weight
-    let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.4 + gridMask * 0.4 + mouseInfluence * 0.15 + luma * 0.05, 0.0, 1.0);
+    // Alpha: preserve original alpha, boost where lattice glow is strongest
+    let latticeAlpha = clamp(gridMask * totalGlow + baseColor.a, 0.0, 1.0);
 
-    textureStore(writeTexture, coords, vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(latticeColor, latticeAlpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(latticeColor, latticeAlpha));
 }

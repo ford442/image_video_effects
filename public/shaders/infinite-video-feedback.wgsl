@@ -1,9 +1,10 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Infinite Video Feedback - Advanced Alpha with Accumulative
-//  Category: feedback/temporal
-//  Alpha Mode: Accumulative Alpha + Depth-Layered
-//  Features: advanced-alpha, infinite-feedback, recursive
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Infinite Video Feedback
+//  Category: image
+//  Features: mouse-driven, temporal-persistence, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -61,11 +62,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let accumulationRate = u.zoom_params.x;
-    let recursionDepth = u.zoom_params.y * 0.02 * (1.0 + bass * 0.3);
+    let recursionDepth = u.zoom_params.y * 0.02 * (1.0 + bass * 0.3 + mids * 0.3);
     let depthWeight = u.zoom_params.z;
-    let colorShift = u.zoom_params.w;
+    let colorShift = u.zoom_params.w + treble * 0.2;
     
     let current = textureLoad(readTexture, coord, 0);
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
@@ -103,11 +106,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         accumulationRate
     );
     
-    let result = mix(accumulated, current, 0.05);
+    let rgbResult = mix(accumulated.rgb, current.rgb, 0.05);
+    let finalAlpha = mix(current.a, 1.0, accumulationRate * 0.7);
+    let result = vec4<f32>(rgbResult, finalAlpha);
     
     textureStore(dataTextureA, coord, result);
     textureStore(writeTexture, global_id.xy, result);
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0, 0, 0.0));
 }

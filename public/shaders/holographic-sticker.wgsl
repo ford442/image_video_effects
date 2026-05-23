@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Holographic Sticker - Advanced Alpha with Depth-Layered
-//  Category: complex-multi-effect
-//  Alpha Mode: Depth-Layered Alpha + Luminance Key
-//  Features: advanced-alpha, holographic, sticker-effect
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Holographic Sticker
+//  Category: visual-effects
+//  Features: advanced-alpha, holographic, sticker-effect, mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -86,7 +88,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthAlpha = depthLayeredAlpha(holographicColor, uv, depthWeight);
     let lumaAlpha = luminanceKeyAlpha(holographicColor, 0.1, 0.05);
     let alpha = clamp(depthAlpha * lumaAlpha * edgeGlow, 0.0, 1.0);
+    let finalAlpha = mix(baseSample.a, alpha, holographicIntensity * 0.7);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(holographicColor, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(holographicColor, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(holographicColor, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

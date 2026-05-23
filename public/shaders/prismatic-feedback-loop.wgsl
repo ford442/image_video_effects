@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Prismatic Feedback Loop - Advanced Alpha with Accumulative
-//  Category: feedback/temporal
-//  Alpha Mode: Accumulative Alpha + Effect Intensity
-//  Features: advanced-alpha, prismatic, feedback, chromatic
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Prismatic Feedback Loop
+//  Category: image
+//  Features: advanced-alpha, prismatic, feedback, chromatic, multi-pass
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -54,13 +56,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let accumulationRate = u.zoom_params.x;
-    let prismStrength = u.zoom_params.y * 0.1 * (1.0 + bass * 0.4);
-    let rotation = u.zoom_params.z * TAU;
+    let prismStrength = u.zoom_params.y * 0.1 * (1.0 + bass * 0.4 + treble * 0.3);
+    let rotation = u.zoom_params.z * TAU * (1.0 + mids * 0.3);
     let feedback = u.zoom_params.w;
     
-    let current = textureLoad(readTexture, coord, 0);
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     
     // Prismatic chromatic separation
@@ -81,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blended = mix(prev.rgb, prismColor, feedback);
     
     let brightness = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
-    let newAlpha = brightness;
+    let newAlpha = mix(baseColor.a, brightness, feedback);
     
     let accumulated = accumulativeAlpha(blended, newAlpha, prev.rgb, prev.a, accumulationRate);
     

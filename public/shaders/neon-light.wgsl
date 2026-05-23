@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-//  Neon Light - Interactive Edge Glow with Alpha Emission
+// ═══════════════════════════════════════════════════════════════════
+//  Neon Light
 //  Category: lighting-effects
-//  Physics: Emissive edge glow with mouse light falloff
-//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
-// ═══════════════════════════════════════════════════════════════
+//  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, blackbody-emission, fresnel-edges
+//  Complexity: High
+//  Scientific: Planck-inspired blackbody edge emission with Sobel depth normals and Schlick Fresnel heating.
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -20,88 +22,137 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// Inverse square law for physical light falloff
-fn inverseSquareFalloff(dist: f32, maxDist: f32) -> f32 {
-    let d = max(dist, 0.001);
-    return 1.0 / (1.0 + d * d * 4.0) * smoothstep(maxDist, 0.0, dist);
+fn luminance(color: vec3<f32>) -> f32 {
+  return dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
-// Alpha calculation for emissive materials
-fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
-    let coreAlpha = 0.3 * glowIntensity;
-    let glowAlpha = 0.0;
-    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+fn sampleColor(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+}
+
+fn sampleDepth(uv: vec2<f32>) -> f32 {
+  return textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+}
+
+fn blackbodyRGB(T: f32) -> vec3<f32> {
+  let t = clamp(T, 1000.0, 15000.0);
+  let tt = t / 100.0;
+  var r = 1.0;
+  var g = 1.0;
+  var b = 1.0;
+
+  if (t <= 6600.0) {
+    r = 1.0;
+    g = 0.39008157 * log(tt) - 0.63184144;
+    if (t < 2000.0) {
+      b = 0.0;
+    } else {
+      b = 0.54320679 * log(max(tt - 10.0, 0.01)) - 1.19625408;
+    }
+  } else {
+    r = 1.29293618 * pow(tt - 60.0, -0.1332047592);
+    g = 1.12989086 * pow(tt - 60.0, -0.0755148492);
+    b = 1.0;
+  }
+
+  return clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
+  let m = clamp(1.0 - cosTheta, 0.0, 1.0);
+  let m2 = m * m;
+  let m5 = m2 * m2 * m;
+  return F0 + (1.0 - F0) * m5;
+}
+
+fn sobelLuma(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
+  let tl = luminance(sampleColor(uv + vec2<f32>(-texel.x, -texel.y)).rgb);
+  let  t = luminance(sampleColor(uv + vec2<f32>(0.0, -texel.y)).rgb);
+  let tr = luminance(sampleColor(uv + vec2<f32>(texel.x, -texel.y)).rgb);
+  let  l = luminance(sampleColor(uv + vec2<f32>(-texel.x, 0.0)).rgb);
+  let  r = luminance(sampleColor(uv + vec2<f32>(texel.x, 0.0)).rgb);
+  let bl = luminance(sampleColor(uv + vec2<f32>(-texel.x, texel.y)).rgb);
+  let  b = luminance(sampleColor(uv + vec2<f32>(0.0, texel.y)).rgb);
+  let br = luminance(sampleColor(uv + vec2<f32>(texel.x, texel.y)).rgb);
+
+  let gx = (tr + 2.0 * r + br) - (tl + 2.0 * l + bl);
+  let gy = (bl + 2.0 * b + br) - (tl + 2.0 * t + tr);
+  return vec2<f32>(gx, gy);
+}
+
+fn sobelDepth(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
+  let tl = sampleDepth(uv + vec2<f32>(-texel.x, -texel.y));
+  let  t = sampleDepth(uv + vec2<f32>(0.0, -texel.y));
+  let tr = sampleDepth(uv + vec2<f32>(texel.x, -texel.y));
+  let  l = sampleDepth(uv + vec2<f32>(-texel.x, 0.0));
+  let  r = sampleDepth(uv + vec2<f32>(texel.x, 0.0));
+  let bl = sampleDepth(uv + vec2<f32>(-texel.x, texel.y));
+  let  b = sampleDepth(uv + vec2<f32>(0.0, texel.y));
+  let br = sampleDepth(uv + vec2<f32>(texel.x, texel.y));
+
+  let gx = (tr + 2.0 * r + br) - (tl + 2.0 * l + bl);
+  let gy = (bl + 2.0 * b + br) - (tl + 2.0 * t + tr);
+  return vec2<f32>(gx, gy);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
 
-  // Parameters
-  // x: edgeThreshold, y: lightRadius, z: glowIntensity, w: occlusionBalance
-  let edgeThreshold = u.zoom_params.x;
-  let lightRadius = u.zoom_params.y;
-  let glowIntensity = u.zoom_params.z;
-  let colorCycle = u.zoom_params.w;
-  let occlusionBalance = 0.5; // Fixed for this shader
+  let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let texel = 1.0 / resolution;
+  let time = u.config.x;
 
-  // Mouse Position
-  var mousePos = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
-  // Aspect Ratio Correction for distance
-  let aspect = resolution.x / resolution.y;
-  let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-  let dist = length(distVec);
+  let base = sampleColor(uv);
+  let depth = sampleDepth(uv);
+  let colorGrad = sobelLuma(uv, texel);
+  let depthGrad = sobelDepth(uv, texel * 1.5);
 
-  // Sobel Edge Detection
-  let texelSize = 1.0 / resolution;
-  let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0).rgb;
-  let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).rgb;
-  let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0).rgb;
-  let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).rgb;
+  let edgeMetric = length(colorGrad) * 0.9 + length(depthGrad) * 2.0;
+  let edgeStrength = smoothstep(0.05, 0.55, edgeMetric);
 
-  let lum = vec3<f32>(0.299, 0.587, 0.114);
-  let gx = dot(r - l, lum);
-  let gy = dot(b - t, lum);
-  let edge = sqrt(gx*gx + gy*gy);
+  let normal = normalize(vec3<f32>(-depthGrad.x * 3.0, -depthGrad.y * 3.0, 1.0));
+  let fresnel = schlickFresnel(clamp(dot(normal, vec3<f32>(0.0, 0.0, 1.0)), 0.0, 1.0), 0.04 + 0.08 * u.zoom_params.y);
 
-  // Threshold
-  let isEdge = smoothstep(edgeThreshold, edgeThreshold + 0.05, edge);
+  let mousePos = u.zoom_config.yz;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let mouseDelta = vec2<f32>((uv.x - mousePos.x) * aspect, uv.y - mousePos.y);
+  let mouseHot = exp(-dot(mouseDelta, mouseDelta) * mix(14.0, 84.0, u.zoom_params.w)) * (0.35 + 0.65 * u.zoom_config.w);
 
-  // Light falloff with inverse square law
-  let light = inverseSquareFalloff(dist, lightRadius);
+  let bassPulse = 1.0 + bass * 0.75 + 0.08 * sin(time * 12.0 + length(mouseDelta) * 28.0);
+  let baseTemp = mix(800.0, 12000.0, u.zoom_params.x);
+  let deltaTemp = mix(1400.0, 6800.0, u.zoom_params.y);
+  let temperature = baseTemp
+    + edgeStrength * deltaTemp * bassPulse
+    + mouseHot * (2600.0 + 3400.0 * mids)
+    + bass * 1800.0;
 
-  // Edge Color - Rainbow cycle based on time/colorCycle param + angle
-  let angle = atan2(distVec.y, distVec.x);
-  let hue = u.config.x * colorCycle + angle * 0.5;
-  let rgb = vec3<f32>(
-      0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
-      0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
-      0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
-  );
+  let spectral = blackbodyRGB(temperature);
+  let fogSpectral = blackbodyRGB(baseTemp * 0.45 + 1200.0 + mouseHot * 2200.0);
+  let edgeGain = mix(0.9, 4.5, u.zoom_params.z);
+  let fogAmount = u.zoom_params.w * (0.08 + 0.22 * (1.0 - depth)) + mouseHot * 0.12;
 
-  // Emission calculation - HDR capable
-  let edgeGlow = rgb * isEdge * glowIntensity * 2.0 * (light + 0.2);
+  let emission = spectral * edgeStrength * edgeGain * (0.35 + 1.65 * fresnel);
+  let hotSpot = spectral * mouseHot * (0.08 + 0.24 * u.zoom_params.z);
+  let fog = fogSpectral * fogAmount * (0.45 + 0.55 * mids);
 
-  // Calculate alpha based on emission intensity
-  let emissionStrength = length(edgeGlow);
-  let finalAlpha = calculateEmissiveAlpha(emissionStrength, occlusionBalance);
+  let finalColor = base.rgb * (1.0 - 0.18 * edgeStrength) + fog + emission + hotSpot;
+  let alpha = clamp(max(base.a, 0.6) + edgeStrength * 0.12 + fogAmount * 0.2, 0.0, 1.0);
 
-  // Output RGBA: RGB = emission (HDR), A = physical occlusion
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(edgeGlow, finalAlpha));
-
-  // Pass through depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>((temperature - 800.0) / 11200.0, edgeStrength, fresnel, mouseHot));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

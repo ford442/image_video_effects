@@ -80,18 +80,23 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
 }
 
 // ═══ HYBRID LOGIC ═══
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    
+
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
+
+    // Audio: bass scales noise, mids adds segments, treble widens chromatic split
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameter extraction (randomization-safe)
-    let noiseScale = mix(1.0, 8.0, u.zoom_params.x);       // x: Noise scale
-    let segments = mix(3.0, 16.0, u.zoom_params.y);        // y: Kaleidoscope segments  
-    let chromaticStrength = u.zoom_params.z * 0.05;        // z: RGB split amount
+    let noiseScale = mix(1.0, 8.0, u.zoom_params.x) * (1.0 + bass * 0.3);       // x: Noise scale
+    let segments = mix(3.0, 16.0, u.zoom_params.y) * (1.0 + mids * 0.25);        // y: Kaleidoscope segments
+    let chromaticStrength = u.zoom_params.z * 0.05 * (1.0 + treble * 0.8);        // z: RGB split amount
     let hueSpeed = mix(0.1, 1.0, u.zoom_params.w);         // w: Hue rotation speed
     
     // Center UVs
@@ -141,5 +146,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = mix(0.6, 1.0, luma);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(noiseVal, 0.0, 0.0, 0.0));
 }

@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Kimi Ripple Touch
 //  Category: interactive-mouse
-//  Features: mouse-driven, interactive, ripple, water, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Created: 2026-05-10
+//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Complexity: Very High
+//  Scientific: Dispersive de Broglie-style wave packets use gravity-capillary group and phase velocities to spread interactive ripples with spectral interference.
 //  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
@@ -23,123 +23,138 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+const PI: f32 = 3.14159265359;
+
+fn clamp_uv(uv: vec2<f32>) -> vec2<f32> {
+  return clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
+}
+
+fn clamp_coord(c: vec2<i32>, max_coord: vec2<i32>) -> vec2<i32> {
+  return clamp(c, vec2<i32>(0, 0), max_coord);
+}
+
+fn load_signed(coord: vec2<i32>, max_coord: vec2<i32>) -> vec4<f32> {
+  let s = textureLoad(dataTextureC, clamp_coord(coord, max_coord), 0);
+  return vec4<f32>(s.r * 2.0 - 1.0, s.g * 2.0 - 1.0, s.b, s.a);
+}
+
+fn packet_source(pos: vec2<f32>, src: vec2<f32>, age: f32, k0: f32, amp: f32, sigma: f32, gravity: f32, capillary: f32) -> f32 {
+  if (age < 0.0) {
+    return 0.0;
+  }
+  let r = length(pos - src);
+  let omega0 = sqrt(max(gravity * k0 + capillary * k0 * k0 * k0, 1e-4));
+  let width = sigma + age * (0.03 + 0.04 * capillary * k0);
+  let envelope = exp(-(r * r) / max(width * width, 1e-4));
+  return amp * envelope * cos(k0 * r - omega0 * age) * exp(-age * 0.45);
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-    let coords = vec2<i32>(global_id.xy);
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
+  if (global_id.x >= size.x || global_id.y >= size.y) {
+    return;
+  }
 
-    let uv     = vec2<f32>(global_id.xy) / u.config.zw;
-    let time   = u.config.x;
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let coord = vec2<i32>(global_id.xy);
+  let maxCoord = vec2<i32>(i32(size.x) - 1, i32(size.y) - 1);
+  let resolution = vec2<f32>(f32(size.x), f32(size.y));
+  let uv = (vec2<f32>(f32(global_id.x), f32(global_id.y)) + 0.5) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let pos = vec2<f32>(uv.x * aspect, uv.y);
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+  let mouse = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
 
-    let mouse     = u.zoom_config.yz;
-    let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
-    let aspect    = u.config.z / max(u.config.w, 0.001);
+  let state = load_signed(coord, maxCoord);
+  let left = load_signed(coord + vec2<i32>(-1, 0), maxCoord).r;
+  let right = load_signed(coord + vec2<i32>(1, 0), maxCoord).r;
+  let up = load_signed(coord + vec2<i32>(0, -1), maxCoord).r;
+  let down = load_signed(coord + vec2<i32>(0, 1), maxCoord).r;
 
-    // Wave physics parameters
-    let k      = mix(8.0, 40.0, u.zoom_params.x) * (1.0 + treble * 0.3);
-    let omega  = mix(2.0, 12.0, u.zoom_params.y) * (1.0 + bass * 0.4);
-    let amp    = mix(0.002, 0.025, u.zoom_params.z);
-    let gamma  = mix(0.3, 2.5, u.zoom_params.w);
-    let alpha_r = 1.5;
+  let h = state.r;
+  let v = state.g;
+  let lap = left + right + up + down - 4.0 * h;
+  let grad = vec2<f32>(right - left, down - up) * 0.5;
+  let kLocal = clamp(6.0 + abs(lap) * 40.0 + treble * 28.0 + u.zoom_params.x * 12.0, 0.6, 72.0);
+  let gravity = 0.24 + bass * 1.6;
+  let capillary = 0.012 + treble * 0.11;
+  let omega = sqrt(max(gravity * kLocal + capillary * kLocal * kLocal * kLocal, 1e-4));
+  let vp = omega / max(kLocal, 1e-4);
+  let vg = (gravity + 3.0 * capillary * kLocal * kLocal) / max(2.0 * omega, 1e-4);
 
-    var p = vec2<f32>(uv.x * aspect, uv.y);
+  var sourceTerm = 0.0;
+  let k0 = mix(8.0, 34.0, u.zoom_params.y) + treble * 18.0;
+  let sigma0 = mix(0.02, 0.09, u.zoom_params.z);
+  let amp0 = mix(0.04, 0.16, u.zoom_params.w);
 
-    // ─── Sum all 50 ripple sources (Huygens superposition) ───
-    let numSources = i32(u.config.y);
-    var waveX  = 0.0;
-    var waveY  = 0.0;
-    var energy = 0.0;
+  for (var i: u32 = 0u; i < 50u; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let src = vec2<f32>(ripple.x * aspect, ripple.y);
+    let age = u.config.x - ripple.z;
+    sourceTerm = sourceTerm + packet_source(pos, src, age, k0, amp0, sigma0, gravity, capillary);
+  }
 
-    for (var i = 0; i < 50; i++) {
-        let rip   = u.ripples[i];
-        let src   = vec2<f32>(rip.x * aspect, rip.y);
-        let t0    = rip.z;
-        let age   = time - t0;
+  sourceTerm = sourceTerm + packet_source(pos, mouse, 0.0, k0 * 1.1, amp0 * 1.4 * mouseDown, sigma0 * 0.7, gravity, capillary);
+  let bassWave = packet_source(pos, vec2<f32>(0.5 * aspect, 0.5), max(u.config.x * 0.15, 0.0), 4.0 + bass * 5.0, 0.06 * bass, 0.18, gravity, capillary * 0.3);
+  let trebleWave = packet_source(pos, mouse, 0.0, 22.0 + treble * 24.0, 0.04 * mouseDown + 0.03 * treble, 0.03, gravity * 0.6, capillary * 1.6);
+  sourceTerm = sourceTerm + bassWave + trebleWave;
 
-        let validIdx   = i < numSources;
-        let validAge   = age >= 0.0 && age <= 8.0;
-        let r          = length(p - src);
-        let waveFront  = max(0.0, age * omega / max(k, 0.001) - r);
-        let validFront = waveFront >= 0.001;
+  let prevHeight = h - v * (1.0 / 60.0);
+  let accel = lap * (0.25 * vg + 0.12 * vp) + sourceTerm - h * 0.018;
+  var hNext = 2.0 * h - prevHeight + accel * (1.0 / 3600.0);
+  hNext = hNext * 0.995;
+  let vNext = clamp((hNext - h) * 60.0, -1.0, 1.0);
 
-        let isActive  = validIdx && validAge && validFront;
-        let activeF = f32(isActive);
+  let kR = kLocal * 0.78;
+  let kG = kLocal;
+  let kB = kLocal * 1.22;
+  let omegaR = sqrt(max(gravity * kR + capillary * kR * kR * kR, 1e-4));
+  let omegaG = sqrt(max(gravity * kG + capillary * kG * kG * kG, 1e-4));
+  let omegaB = sqrt(max(gravity * kB + capillary * kB * kB * kB, 1e-4));
+  let vgR = (gravity + 3.0 * capillary * kR * kR) / max(2.0 * omegaR, 1e-4);
+  let vgG = (gravity + 3.0 * capillary * kG * kG) / max(2.0 * omegaG, 1e-4);
+  let vgB = (gravity + 3.0 * capillary * kB * kB) / max(2.0 * omegaB, 1e-4);
 
-        // Wave amplitude with geometric spreading and temporal decay
-        let A = amp * exp(-gamma * age) * exp(-alpha_r * r) / max(sqrt(r * k), 0.1);
+  let disp = grad * vec2<f32>(1.0 / aspect, 1.0) * 0.18;
+  let uvR = clamp_uv(uv + disp * vgR * 0.3);
+  let uvG = clamp_uv(uv + disp * vgG * 0.3);
+  let uvB = clamp_uv(uv + disp * vgB * 0.3);
+  let base = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv), 0.0);
+  var color = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+  );
 
-        // Phase: φ = k·r − ω·age
-        let phase   = k * r - omega * age;
-        let waveSin = sin(phase) * A * activeF;
+  let phase = atan2(vNext, hNext + 1e-4);
+  let slope = clamp(length(grad) * 18.0, 0.0, 1.0);
+  let peak = smoothstep(0.01, 0.09, hNext);
+  let trough = smoothstep(0.01, 0.09, -hNext);
+  var phaseColor = mix(vec3<f32>(0.02, 0.07, 0.22), vec3<f32>(0.15, 0.78, 0.95), slope);
+  phaseColor = mix(phaseColor, vec3<f32>(1.0, 0.97, 0.92), peak);
+  phaseColor = mix(phaseColor, vec3<f32>(0.02, 0.05, 0.3), trough);
+  phaseColor = phaseColor + vec3<f32>(1.0, 0.55, 0.15) * slope * (0.5 + 0.5 * sin(phase + 1.2));
+  color = mix(color, phaseColor, clamp(abs(hNext) * 4.0 + slope * 0.35, 0.0, 0.75));
+  color = mix(color, base.rgb, 0.18);
 
-        // Gradient direction (radially outward from source)
-        let dir = select(vec2<f32>(1.0, 0.0), normalize(p - src), r > 0.0001);
-        waveX += dir.x * waveSin;
-        waveY += dir.y * waveSin;
-        energy += waveSin * waveSin;
-    }
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  color = color * mix(0.75, 1.0, depth);
+  let alpha = clamp(base.a * (0.86 + 0.14 * dot(color, vec3<f32>(0.299, 0.587, 0.114))) + abs(hNext) * 0.15, 0.0, 1.0);
 
-    // Add real-time mouse position wave (continuous while held) — branchless
-    let msrc   = vec2<f32>(mouse.x * aspect, mouse.y);
-    let mr     = length(p - msrc);
-    let mA     = amp * 1.5 * exp(-alpha_r * mr * 0.5) / max(sqrt(mr * k + 0.1), 0.1);
-    let mPhase = k * mr - omega * time;
-    let mW     = sin(mPhase) * mA;
-    let mDir   = select(vec2<f32>(1.0, 0.0), normalize(p - msrc), mr > 0.0001);
-    let mouseActive = mouseDown > 0.5;
-    waveX += mDir.x * mW * f32(mouseActive);
-    waveY += mDir.y * mW * f32(mouseActive);
-    energy += mW * mW * f32(mouseActive);
-
-    // Audio-reactive: bass adds ring pulse from centre — branchless
-    let centreR = length(p - vec2<f32>(aspect * 0.5, 0.5));
-    let audioWave = bass * amp * 2.0 * sin(k * centreR - omega * time * 0.5)
-                    * exp(-centreR * 2.0) / max(centreR, 0.05);
-    let cDir = select(vec2<f32>(1.0, 0.0), normalize(p - vec2<f32>(aspect * 0.5, 0.5)), centreR > 0.001);
-    waveX += cDir.x * audioWave;
-    waveY += cDir.y * audioWave;
-
-    // Refraction: displace sample UV by summed gradient
-    let dispUV = vec2<f32>(waveX / aspect, waveY);
-    let sampUV = clamp(uv + dispUV, vec2<f32>(0.001), vec2<f32>(0.999));
-
-    // Chromatic aberration scales with interference energy
-    let caS = min(sqrt(energy) * 0.01, 0.015);
-    let cR  = textureSampleLevel(readTexture, u_sampler, clamp(sampUV + vec2<f32>( caS, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let cG  = textureSampleLevel(readTexture, u_sampler, sampUV, 0.0).g;
-    let cB  = textureSampleLevel(readTexture, u_sampler, clamp(sampUV - vec2<f32>( caS, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-    var color = vec3<f32>(cR, cG, cB);
-
-    // Interference fringe overlay: bright at constructive maxima
-    let fringeIntensity = clamp(energy * 40.0, 0.0, 1.0);
-    let fringeOrder = sqrt(energy) * k / (2.0 * 3.14159);
-    let fringeHue = fract(fringeOrder * 0.5 + time * 0.05);
-    let fringeCol = vec3<f32>(
-        0.5 + 0.5 * sin(fringeHue * 6.28318),
-        0.5 + 0.5 * sin(fringeHue * 6.28318 + 2.0944),
-        0.5 + 0.5 * sin(fringeHue * 6.28318 + 4.1888)
-    );
-    color += fringeCol * fringeIntensity * 0.6;
-
-    // Depth modulation
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    color *= mix(0.7, 1.0, depth);
-
-    let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
-
-    // Alpha derived from interference energy and luminance
-    let alpha = clamp(0.4 + fringeIntensity * 0.3 + luma * 0.3, 0.0, 1.0);
-    let finalRGBA = vec4<f32>(color, alpha);
-
-    textureStore(writeTexture, coords, finalRGBA);
-    textureStore(dataTextureA, coords, finalRGBA);
-    textureStore(writeDepthTexture, coords, vec4<f32>(clamp(fringeIntensity * 0.5 + depth * 0.5, 0.0, 1.0), 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(
+    clamp(hNext * 0.5 + 0.5, 0.0, 1.0),
+    clamp(vNext * 0.5 + 0.5, 0.0, 1.0),
+    clamp(vg / 2.5, 0.0, 1.0),
+    clamp((phase / PI) * 0.5 + 0.5, 0.0, 1.0)
+  ));
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * 0.85 + abs(hNext) * 0.35 + slope * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

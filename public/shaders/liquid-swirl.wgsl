@@ -50,7 +50,7 @@ fn hash12_(p: vec2<f32>) -> f32 {
     return fract(((_e18 + _e20) * _e23));
 }
 
-@compute @workgroup_size(16, 16, 1) 
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv: vec2<f32>;
     var mousePos: vec2<f32>;
@@ -74,12 +74,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _e20 = u.zoom_config;
     mousePos = _e20.yz;
     let time = u.config.x;
+    // Audio: bass enlarges dots, mids sharpens edges, treble adds posterize levels
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let _e30 = u.zoom_params.x;
-    let dotSize = ((_e30 * 20.0) + 2.0);
+    let dotSize = ((_e30 * 20.0) + 2.0) * (1.0 + bass * 0.3);
     let _e40 = u.zoom_params.y;
-    let edgeThresh = max(0.01, ((1.0 - _e40) * 0.5));
+    let edgeThresh = max(0.01, ((1.0 - _e40) * 0.5) * (1.0 - mids * 0.3));
     let _e48 = u.zoom_params.z;
-    let levels = (floor((_e48 * 10.0)) + 2.0);
+    let levels = (floor((_e48 * 10.0)) + 2.0) + floor(treble * 4.0);
     let inkDensity = u.zoom_params.w;
     let pixelSize = (vec2(1.0) / resolution);
     loop {
@@ -211,6 +215,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _e272 = finalColor;
     let _e273 = ink_alpha;
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(_e272, _e273));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(_e272, _e273));
     let _e277 = ink_alpha;
     let _e280 = ink_alpha;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(_e277, 0.0, 0.0, _e280));

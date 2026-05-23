@@ -748,7 +748,7 @@
     {
       "id": "chroma-vortex",
       "size": 3853,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 146,
@@ -766,7 +766,7 @@
     {
       "id": "split-dimension",
       "size": 3869,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 147,
@@ -775,7 +775,7 @@
     {
       "id": "spectral-smear",
       "size": 3888,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 147,

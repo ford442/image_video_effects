@@ -41,7 +41,10 @@
   "features": [
     "mouse-driven",
     "alpha-transmission",
-    "persistence"
+    "persistence",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "crystal",

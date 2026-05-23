@@ -43,7 +43,7 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -52,11 +52,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     var mouse = u.zoom_config.yz;
 
+    // Audio: bass fogs faster, mids widens wipe, treble adds blur shimmer
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Params
-    let steamAccumulationRate = u.zoom_params.x * 0.02;  // How fast steam builds
+    let steamAccumulationRate = u.zoom_params.x * 0.02 * (1.0 + bass * 0.5);  // How fast steam builds
     let fadeSpeed = u.zoom_params.y * 0.05;              // Natural dissipation
-    let wipeRadius = u.zoom_params.z * 0.3 + 0.05;       // Mouse wipe size
-    let blurAmount = u.zoom_params.w;
+    let wipeRadius = (u.zoom_params.z * 0.3 + 0.05) * (1.0 + mids * 0.3);       // Mouse wipe size
+    let blurAmount = u.zoom_params.w * (1.0 + treble * 0.4);
 
     // ═══════════════════════════════════════════════════════════════
     //  Steam Density Simulation (Participating Medium)

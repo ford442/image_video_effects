@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Chroma Vortex
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, audio-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -18,12 +27,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Twist, y=Spread, z=Radius, w=CenterBias
   ripples: array<vec4<f32>, 50>,
 };
-
-// Chroma Vortex
-// Param1: Twist Amount
-// Param2: RGB Separation (Spread)
-// Param3: Radius
-// Param4: Center Bias (how much the center stays intact)
 
 fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
@@ -50,6 +53,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spread = u.zoom_params.y * 0.1 * (1.0 + treble * 0.1);
     let radius = max(u.zoom_params.z, 0.01);
     let centerBias = u.zoom_params.w;
+
+    // Base color for alpha preservation
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     let diff = uv - mousePos;
     let dist = length(vec2<f32>(diff.x * aspect, diff.y));
@@ -82,13 +88,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
     let chromaSplit = length(uvR - uvB);
-    let luma = dot(vec3<f32>(colR, colG, colB), vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(factor * 0.5 + chromaSplit * 6.0 + luma * 0.2, 0.0, 1.0);
+
+    // Alpha: preserve input transparency while blending vortex intensity
+    let finalAlpha = mix(baseColor.a, 1.0, factor * 0.7);
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, vec4<f32>(colR, colG, colB, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(colR, colG, colB, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(colR, colG, colB, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 1));
+    textureStore(dataTextureA, coord, vec4<f32>(colR, colG, colB, finalAlpha));
 }

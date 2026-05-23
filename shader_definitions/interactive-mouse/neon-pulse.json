@@ -38,7 +38,9 @@
     "mouse-driven",
     "distortion",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba",
+    "depth-aware"
   ],
   "tags": [
     "filter",

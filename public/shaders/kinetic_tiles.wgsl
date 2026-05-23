@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -30,15 +30,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
+    // Audio: bass densifies the grid, mids widens influence, treble spins tiles harder
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
     // x: Grid Density (10.0 to 100.0)
     // y: Influence Radius (0.1 to 1.0)
     // z: Rotation Amount (0.0 to PI)
     // w: Scale/Inset (0.5 to 1.0)
 
-    let gridDensity = u.zoom_params.x * 90.0 + 10.0;
-    let radius = u.zoom_params.y * 0.8 + 0.05;
-    let maxRotation = u.zoom_params.z * 3.14159 * 2.0;
+    let gridDensity = (u.zoom_params.x * 90.0 + 10.0) * (1.0 + bass * 0.3);
+    let radius = (u.zoom_params.y * 0.8 + 0.05) * (1.0 + mids * 0.3);
+    let maxRotation = u.zoom_params.z * 3.14159 * 2.0 * (1.0 + treble * 0.4);
     let scale = u.zoom_params.w * 0.5 + 0.5;
 
     // Mouse
@@ -120,6 +125,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

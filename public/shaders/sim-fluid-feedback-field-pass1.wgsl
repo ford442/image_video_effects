@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: simulation, multi-pass-1, navier-stokes, velocity-advection
 //  Complexity: Very High
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 //  Pass 1: Advect velocity field through itself
 //  Add curl noise for turbulence
@@ -100,5 +100,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Pass-through input to maintain chain (Pass 2 will do final compositing)
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     textureStore(writeTexture, gid.xy, inputColor);
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(1.0, 0.0, 0.0, 0.0));
+    
+    // Pass depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0, 0, 0.0));
 }

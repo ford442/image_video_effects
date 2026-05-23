@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -28,6 +28,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var uv = vec2<f32>(global_id.xy) / resolution;
   let texel = vec2<f32>(1.0) / resolution;
+
+  // Audio: bass deepens relief, mids the sample reach, treble the rim glow
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Mouse acts as the light source
   var mouse = u.zoom_config.yz;
@@ -45,9 +50,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Parameters
-  let strength = u.zoom_params.x * 5.0; // Scale up for visibility. Default 0.5 -> 2.5
+  let strength = u.zoom_params.x * 5.0 * (1.0 + bass * 0.5); // Scale up for visibility. Default 0.5 -> 2.5
   let mix_amt = u.zoom_params.y;        // 0.0 = Emboss only, 1.0 = Original image
   let color_mode = u.zoom_params.z;     // 0.0 = Gray Emboss, 1.0 = Color Emboss
+  let reliefContrast = 0.5 + u.zoom_params.w * 1.5;  // w: relief contrast / depth pop
 
   // Sample neighbors for Sobel-ish gradient
   // -1 0 1
@@ -74,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let grad = vec2<f32>(dx, dy);
 
   // Emboss value: dot product of gradient and light direction
-  let diff = dot(grad, light_dir) * strength;
+  let diff = dot(grad, light_dir) * strength * reliefContrast * (1.0 + mids * 0.3);
 
   // Gray emboss base
   let gray_emboss = vec3<f32>(0.5 + diff);
@@ -90,7 +96,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Wait, I said param y is "mix_amt". Let's name it "Intensity" in JSON.
   // If Intensity = 1.0, we see full emboss.
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+  // Relief-magnitude alpha: embossed ridges opaque, flat areas recede (treble adds rim glow)
+  let alpha = clamp(abs(diff) * 2.0 + mix_amt * 0.3 + treble * 0.2 + 0.15, 0.0, 1.0);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
 
   // Pass depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

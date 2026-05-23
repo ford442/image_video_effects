@@ -47,7 +47,7 @@ fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -57,6 +57,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let aspect = resolution.x / resolution.y;
 
+    // Audio: bass thickens freeze persistence, mids densifies crystals, treble cools the tint
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // ═══════════════════════════════════════════════════════════════
     // Parameters:
     // x: decay / Freeze persistence
@@ -65,10 +70,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // w: ice purity (affects transmission)
     // ═══════════════════════════════════════════════════════════════
     
-    let decay = u.zoom_params.x;
-    let crystalScale = 10.0 + u.zoom_params.y * 40.0;
+    let decay = clamp(u.zoom_params.x + bass * 0.1, 0.0, 1.0);
+    let crystalScale = (10.0 + u.zoom_params.y * 40.0) * (1.0 + mids * 0.4);
     let iorMix = u.zoom_params.z; // 0 = ice, 1 = glass
-    let icePurity = 1.0 - u.zoom_params.w * 0.5; // Purity decreases with param
+    let icePurity = (1.0 - u.zoom_params.w * 0.5) * (1.0 - treble * 0.2); // Purity decreases with param
     
     // Fixed brush radius
     let brushRadius = 0.08;

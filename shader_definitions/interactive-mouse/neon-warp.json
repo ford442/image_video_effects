@@ -3,33 +3,33 @@
   "name": "Neon Warp",
   "url": "shaders/neon-warp.wgsl",
   "category": "image",
-  "description": "Mouse movement warps the image fabric, revealing neon edges and glowing trails.",
+  "description": "Thermal mirage refraction driven by diffusing heat sources, ripples, and blackbody plasma glow.",
   "params": [
     {
-      "id": "strength",
-      "name": "Warp Strength",
+      "id": "refraction_strength",
+      "name": "Refraction Strength",
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "diffusion",
+      "name": "Diffusion",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "neon",
-      "name": "Neon Intensity",
-      "default": 0.5,
+      "id": "emission_gain",
+      "name": "Emission Gain",
+      "default": 0.55,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "speed",
-      "name": "Color Speed",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
-    },
-    {
-      "id": "decay",
-      "name": "Warp Decay",
-      "default": 0.8,
+      "id": "cooling",
+      "name": "Cooling",
+      "default": 0.45,
       "min": 0.0,
       "max": 1.0
     }
@@ -38,13 +38,13 @@
     "mouse-driven",
     "temporal-persistence",
     "audio-reactive",
-    "audio-driven"
+    "depth-aware"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
-    "music",
-    "reactive"
+    "thermal",
+    "mirage"
   ]
 }

@@ -84,17 +84,22 @@ fn applyDragColorShift(
     return color * compressionTint * shearTint;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
     var uv = vec2<f32>(global_id.xy) / resolution;
 
+    // Audio: bass pumps the twist, mids widens the vortex, treble sharpens the pinch
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Params
-    let twistStrength = (u.zoom_params.x - 0.5) * 20.0; // -10 to +10
-    let radius = mix(0.1, 0.8, u.zoom_params.y);
-    let pinchStrength = (u.zoom_params.z - 0.5) * 2.0; // -1 to +1
+    let twistStrength = (u.zoom_params.x - 0.5) * 20.0 * (1.0 + bass * 0.5); // -10 to +10
+    let radius = mix(0.1, 0.8, u.zoom_params.y) * (1.0 + mids * 0.3);
+    let pinchStrength = (u.zoom_params.z - 0.5) * 2.0 * (1.0 + treble * 0.4); // -1 to +1
     let hardness = mix(0.0, 0.95, u.zoom_params.w);
 
     var mousePos = u.zoom_config.yz;
@@ -153,6 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Output RGBA
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalRGB, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4(finalRGB, finalAlpha));
 
     // Pass depth with distortion-based modification
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

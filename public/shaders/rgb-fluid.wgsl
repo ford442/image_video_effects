@@ -47,7 +47,7 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
     return exp(-thickness * absorption);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -59,11 +59,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   var mouse = u.zoom_config.yz;
 
+  // Audio: bass quickens flow, mids pushes the fluid, treble shifts color
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
   // Params
-  let flow_speed = u.zoom_params.x * 0.01;
+  let flow_speed = u.zoom_params.x * 0.01 * (1.0 + bass * 0.6);
   let decay = u.zoom_params.y;
-  let mouse_force = u.zoom_params.z;
-  let color_shift = u.zoom_params.w;
+  let mouse_force = u.zoom_params.z * (1.0 + mids * 0.5);
+  let color_shift = u.zoom_params.w + treble * 0.2;
 
   // Generate flow field
   let scale = 5.0;

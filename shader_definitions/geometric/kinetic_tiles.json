@@ -5,7 +5,10 @@
   "url": "shaders/kinetic_tiles.wgsl",
   "description": "Grid of tiles that rotate and scale responsively to mouse proximity.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "params": [
     {

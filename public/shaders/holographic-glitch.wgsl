@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Holographic Glitch - Advanced Alpha with Depth-Layered
-//  Category: complex-multi-effect
-//  Alpha Mode: Depth-Layered Alpha + Luminance Key
-//  Features: advanced-alpha, holographic, glitch, digital
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Holographic Glitch
+//  Category: image
+//  Features: advanced-alpha, holographic, glitch, digital, depth-aware, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -75,6 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         glitchOffset.x = (rand(vec2<f32>(time)) - 0.5) * glitchAmount * 0.2;
     }
     
+    let baseAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
     let warpedUV = uv + glitchOffset;
     let sample = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     
@@ -91,7 +94,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthAlpha = depthLayeredAlpha(finalColor, uv, depthWeight);
     let lumaAlpha = luminanceKeyAlpha(finalColor, 0.1, 0.05);
     let alpha = clamp(depthAlpha * lumaAlpha, 0.0, 1.0);
+    let finalAlpha = mix(baseAlpha, 1.0, holographicIntensity * 0.7);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

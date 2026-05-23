@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Neon Edge Radar - Advanced Alpha with Edge-Preserve
-//  Category: edge-detection
-//  Alpha Mode: Edge-Preserve Alpha + Effect Intensity
-//  Features: advanced-alpha, radar-sweep, edge-detection
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Neon Edge Radar
+//  Category: interactive-mouse
+//  Features: advanced-alpha, radar-sweep, edge-detection, mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -71,6 +73,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let angleDiff = abs(angle - sweepAngle);
     let sweep = exp(-angleDiff * angleDiff / (sweepWidth * sweepWidth));
     
+    let baseAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    
     // Edge detection
     let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
     let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
@@ -83,8 +87,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeAlpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold);
     let effectAlpha = effectIntensityAlpha(sweep * edge, intensity);
     let alpha = clamp(edgeAlpha * effectAlpha, 0.0, 1.0);
+    let finalAlpha = mix(baseAlpha, 1.0, sweep * edge * intensity * 0.7);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -3946,7 +3946,10 @@
     "url": "shaders/kinetic_tiles.wgsl",
     "description": "Grid of tiles that rotate and scale responsively to mouse proximity.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "params": [
       {
@@ -4079,7 +4082,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -8479,7 +8485,10 @@
     "features": [
       "mouse-driven",
       "alpha-transmission",
-      "persistence"
+      "persistence",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "crystal",
@@ -8917,7 +8926,10 @@
     ],
     "features": [
       "mouse-driven",
-      "glitch"
+      "glitch",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -10232,7 +10244,10 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -10328,7 +10343,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -10566,7 +10584,10 @@
     ],
     "features": [
       "mouse-driven",
-      "glitch"
+      "glitch",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -11995,7 +12016,9 @@
       "mouse-driven",
       "distortion",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -12876,7 +12899,10 @@
       "multi-pass",
       "feedback",
       "chromatic",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -13543,7 +13569,10 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -14774,7 +14803,10 @@
     ],
     "features": [
       "mouse-driven",
-      "glitch"
+      "glitch",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -15102,7 +15134,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -15160,7 +15194,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -15348,7 +15385,8 @@
       "neon",
       "mouse-driven",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

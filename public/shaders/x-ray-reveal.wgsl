@@ -24,7 +24,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
@@ -33,10 +33,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     var mouse = u.zoom_config.yz;
 
+    // Audio: bass widens the lens, mids boosts edges, treble raises contrast
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
-    let lensRadius = u.zoom_params.x * 0.5; // 0.0 to 0.5
-    let edgeStrength = u.zoom_params.y * 5.0;
-    let contrast = u.zoom_params.z + 0.5; // 0.5 to 1.5
+    let lensRadius = u.zoom_params.x * 0.5 * (1.0 + bass * 0.3); // 0.0 to 0.5
+    let edgeStrength = u.zoom_params.y * 5.0 * (1.0 + mids * 0.6);
+    let contrast = u.zoom_params.z + 0.5 + treble * 0.3; // 0.5 to 1.5
 
     // Calculate Distance to Mouse (Lens)
     // Adjust for aspect ratio so lens is circular
@@ -105,7 +110,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add ring on top
     let result = finalColor + ringColor;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(result, 1.0));
+    // Reveal-mask alpha: lens interior and ring opaque, dimmed surround recedes
+    let ringMag = smoothstep(0.005, 0.0, d);
+    let alpha = clamp(mask * 0.7 + ringMag + dot(result, vec3<f32>(0.299, 0.587, 0.114)) * 0.3 + 0.1, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(result, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(result, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

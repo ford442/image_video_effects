@@ -34,7 +34,7 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -44,10 +44,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     var mouse = u.zoom_config.yz;
 
+    // Audio: bass packs cells tighter, mids speeds turbulence, treble lifts intensity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Params
-    let density = 3.0 + u.zoom_params.x * 5.0; // 3 to 8
-    let speed = u.zoom_params.y;
-    let intensity = u.zoom_params.z;
+    let density = (3.0 + u.zoom_params.x * 5.0) * (1.0 + bass * 0.3); // 3 to 8
+    let speed = u.zoom_params.y * (1.0 + mids * 0.5);
+    let intensity = u.zoom_params.z * (1.0 + treble * 0.5);
     let mouseInfl = u.zoom_params.w;
 
     let aspect = resolution.x / resolution.y;
@@ -133,6 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
 
     // Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r;

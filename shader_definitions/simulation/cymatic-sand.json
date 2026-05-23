@@ -7,7 +7,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "temporal"
+    "temporal",
+    "upgraded-rgba",
+    "depth-aware"
   ],
   "params": [
     {

@@ -36,7 +36,10 @@
   ],
   "features": [
     "mouse-driven",
-    "feedback"
+    "feedback",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "simulation",

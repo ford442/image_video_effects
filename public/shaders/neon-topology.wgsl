@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Neon Topology - Advanced Alpha with Edge-Preserve
-//  Category: edge-detection
-//  Alpha Mode: Edge-Preserve Alpha + Luminance Key
-//  Features: advanced-alpha, topology, neon, contours
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Neon Topology
+//  Category: visual-effects
+//  Features: advanced-alpha, topology, neon, contours, mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -73,14 +75,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let neonColor = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
 
     // Composite onto desaturated background image (preserve photo context)
-    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let bgSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let bg = bgSample.rgb;
     let bgGray = vec3<f32>(dot(bg, vec3<f32>(0.299, 0.587, 0.114))) * 0.4;
     let emission = neonColor * lineWithMajor * intensity;
     let final_color = bgGray + emission;
 
     let alpha = clamp(edgePreserveAlpha(uv, pixelSize, edgeThreshold) * lineWithMajor
                       + dot(emission, vec3<f32>(0.299, 0.587, 0.114)) * 0.3, 0.0, 1.0);
+    let finalAlpha = mix(bgSample.a, 1.0, intensity * lineWithMajor * 0.7);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(final_color, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,44 +1,52 @@
 {
   "id": "gen-fluffy-raincloud",
-  "name": "Fluffy Raincloud",
+  "name": "Vorticity Raincloud",
   "url": "shaders/gen_fluffy_raincloud.wgsl",
   "category": "generative",
-  "description": "Move the cloud with your mouse and watch it rain (try clicking!).",
+  "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
   "features": [
-    "mouse-driven"
+    "upgraded-rgba",
+    "depth-aware",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "clouds",
+    "rain",
+    "storm",
+    "audio-reactive"
   ],
   "params": [
     {
       "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "name": "Coverage",
+      "default": 0.6,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "name": "Turbulence",
+      "default": 0.65,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "name": "Rain",
+      "default": 0.55,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
       "id": "param4",
-      "name": "Detail",
+      "name": "Wind",
       "default": 0.5,
       "min": 0,
       "max": 1,

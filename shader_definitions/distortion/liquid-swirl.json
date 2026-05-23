@@ -4,7 +4,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba",
+    "depth-aware"
   ],
   "url": "shaders/liquid-swirl.wgsl",
   "description": "Swirls the image around the cursor like mixing paint.",

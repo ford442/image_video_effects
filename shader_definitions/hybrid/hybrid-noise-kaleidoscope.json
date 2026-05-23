@@ -4,7 +4,17 @@
   "url": "shaders/hybrid-noise-kaleidoscope.wgsl",
   "category": "generative",
   "description": "Domain-warped FBM noise fed through kaleidoscope symmetry with dynamic hue shifting and RGB channel splits",
-  "features": ["hybrid", "fbm-noise", "kaleidoscope", "chromatic-aberration", "hue-shift", "randomization-safe"],
+  "features": [
+    "hybrid",
+    "fbm-noise",
+    "kaleidoscope",
+    "chromatic-aberration",
+    "hue-shift",
+    "randomization-safe",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
+  ],
   "params": [
     {
       "id": "noise_scale",

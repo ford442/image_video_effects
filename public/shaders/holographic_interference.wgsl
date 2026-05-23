@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Holographic Interference - Advanced Alpha with Depth-Layered
-//  Category: complex-multi-effect
-//  Alpha Mode: Depth-Layered Alpha + Physical Transmittance
-//  Features: advanced-alpha, interference-patterns, thin-film
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Holographic Interference
+//  Category: lighting-effects
+//  Features: advanced-alpha, interference-patterns, thin-film, depth-aware
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -98,8 +100,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // ═══ ADVANCED ALPHA CALCULATION ═══
     let alpha = calculateInterferenceAlpha(uv, opticalPath, u.zoom_params);
+    let finalAlpha = mix(baseSample.a, 1.0, interferenceStrength * 0.7);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     
     // Pass through depth
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

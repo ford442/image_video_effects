@@ -3,6 +3,7 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, ripple-integration, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-05-23
 //  Transform: Replaced per-channel magnetic pull with unified
 //             displacement field. Alpha encodes magnetic field
 //             strength * distance falloff. Added ripple shockwave
@@ -59,11 +60,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isMouseDown = u.zoom_config.w > 0.5;
     let bass = plasmaBuffer[0].x;
 
-    // ─── Audio envelope with attack/release ───
-    var prevEnv = 0.0;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        prevEnv = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).r;
-    }
+    // ─── Audio envelope with attack/release (read from feedback pixel 0,0) ───
+    let prevEnv = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).r;
     let env = bass_env(prevEnv, bass, 0.8, 0.15);
 
     let aspect = resolution.x / resolution.y;

@@ -3,9 +3,8 @@
 //  Category: image
 //  Features: cooperative-workgroup, histogram, CLAHE
 //  Complexity: High
-//  Chunks From: none
-//  Created: 2026-04-18
-//  By: Agent 3C — Spectral Computation Pioneer
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 //  Real-Time Histogram Equalization via Workgroup Reduction
 //  Computes a local histogram within each 8x8 workgroup tile, then
@@ -97,11 +96,11 @@ fn main(
     // Tone map and clamp
     outColor = clamp(outColor, vec3<f32>(0.0), vec3<f32>(3.0));
 
-    // Alpha stores CDF value (statistical importance map)
+    // Preserve input alpha
     if (inBounds) {
-        textureStore(writeTexture, gid.xy, vec4<f32>(outColor, f32(cdf) / f32(totalPixels)));
+        textureStore(writeTexture, gid.xy, vec4<f32>(outColor, color.a));
         textureStore(dataTextureA, gid.xy, vec4<f32>(equalizedLuma, luma, scaleFactor, f32(cdf) / f32(totalPixels)));
         let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0, 0, 0.0));
     }
 }

@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Fire Smoke Volumetric - Advanced Alpha with Physical Transmittance
-//  Category: volumetric/atmospheric
-//  Alpha Mode: Physical Transmittance (Beer's Law) + Depth-Layered
+// ═══════════════════════════════════════════════════════════════════
+//  Fire Smoke Volumetric
+//  Category: simulation
 //  Features: advanced-alpha, fire, smoke, volumetric
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -75,6 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthWeight = u.zoom_params.z;
     let turbulence = u.zoom_params.w * (1.0 + bass * 0.3);
     
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
     // Fire/Smoke noise
@@ -94,15 +97,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Smoke color
     let smokeColor = vec3<f32>(0.3, 0.3, 0.35) * density;
     
-    let finalColor = mix(smokeColor, fireColor, fireShape);
+    let effectColor = mix(smokeColor, fireColor, fireShape);
     
     let opticalDepth = density * (1.0 + turbulence);
     let absorptionCoeff = vec3<f32>(0.5, 0.6, 0.7);
-    let transmitted = physicalTransmittance(finalColor, opticalDepth, absorptionCoeff);
+    let transmitted = physicalTransmittance(effectColor, opticalDepth, absorptionCoeff);
     
     let volAlpha = volumetricAlpha(density, 1.0);
-    let alpha = volAlpha * depthLayeredAlpha(uv, depthWeight);
+    let effectAlpha = volAlpha * depthLayeredAlpha(uv, depthWeight);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(transmitted, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Blend with input image, preserving base transparency
+    let finalColor = mix(baseColor.rgb, transmitted, effectAlpha);
+    let finalAlpha = mix(baseColor.a, 1.0, effectAlpha * 0.7);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 0.0));
 }

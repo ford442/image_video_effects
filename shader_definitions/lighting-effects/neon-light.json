@@ -3,33 +3,33 @@
   "name": "Neon Light",
   "url": "shaders/neon-light.wgsl",
   "category": "image",
-  "description": "Neon glow and bloom effect.",
+  "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
   "params": [
     {
-      "id": "intensity",
-      "name": "Glow Intensity",
-      "default": 0.5,
+      "id": "base_temperature",
+      "name": "Base Temperature",
+      "default": 0.45,
       "min": 0,
       "max": 1
     },
     {
-      "id": "threshold",
-      "name": "Glow Threshold",
-      "default": 0.5,
+      "id": "edge_heating",
+      "name": "Edge Heating",
+      "default": 0.55,
       "min": 0,
       "max": 1
     },
     {
-      "id": "saturation",
-      "name": "Color Boost",
-      "default": 0.5,
+      "id": "emissive_gain",
+      "name": "Emission Gain",
+      "default": 0.65,
       "min": 0,
       "max": 1
     },
     {
-      "id": "bloom",
-      "name": "Bloom Size",
-      "default": 0.5,
+      "id": "thermal_fog",
+      "name": "Thermal Fog",
+      "default": 0.4,
       "min": 0,
       "max": 1
     }
@@ -39,13 +39,14 @@
     "neon",
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
-    "music",
-    "reactive"
+    "blackbody",
+    "fresnel"
   ]
 }

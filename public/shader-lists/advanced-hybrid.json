@@ -2242,7 +2242,10 @@
     "features": [
       "mouse-driven",
       "chromatic-aberration",
-      "advanced-convolution"
+      "advanced-convolution",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "params": [
       {

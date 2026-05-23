@@ -5,6 +5,7 @@
 //  Complexity: Medium
 //  Phase A Upgrade Swarm
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

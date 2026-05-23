@@ -3,33 +3,33 @@
   "name": "Neon Echo",
   "url": "shaders/neon-echo.wgsl",
   "category": "image",
-  "description": "Creates glowing trails from moving edges in the video, with colors influenced by mouse position.",
+  "description": "Per-channel CRT phosphor persistence with blackbody-aged echoes, cursor drift, and scanline halation.",
   "params": [
     {
-      "id": "decay",
-      "name": "Trail Decay",
-      "default": 0.1,
+      "id": "persistence_gain",
+      "name": "Persistence Gain",
+      "default": 0.55,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "threshold",
-      "name": "Edge Sense",
-      "default": 0.2,
+      "id": "cursor_drift",
+      "name": "Cursor Drift",
+      "default": 0.4,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "hue",
-      "name": "Color Shift",
-      "default": 0.5,
+      "id": "excitation_threshold",
+      "name": "Excitation Threshold",
+      "default": 0.3,
       "min": 0.0,
       "max": 1.0
     },
     {
-      "id": "mix",
-      "name": "Echo Mix",
-      "default": 0.8,
+      "id": "halation",
+      "name": "Halation",
+      "default": 0.45,
       "min": 0.0,
       "max": 1.0
     }
@@ -37,13 +37,14 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "temporal",
+    "depth-aware"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
-    "music",
-    "reactive"
+    "crt",
+    "phosphor"
   ]
 }

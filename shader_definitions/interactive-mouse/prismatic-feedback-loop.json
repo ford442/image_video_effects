@@ -38,7 +38,10 @@
     "multi-pass",
     "feedback",
     "chromatic",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",

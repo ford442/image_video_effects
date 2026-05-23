@@ -3,59 +3,59 @@
   "name": "Neon Edges",
   "url": "shaders/neon-edges.wgsl",
   "category": "image",
-  "description": "",
+  "description": "Multi-scale Mach-band edge enhancement colorized by blackbody temperature and depth-aware spotlighting.",
   "params": [
     {
-      "id": "min_speed",
-      "name": "Min Speed",
-      "default": 0.3,
+      "id": "edge_sensitivity",
+      "name": "Edge Sensitivity",
+      "default": 0.45,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "Minimum layer animation speed"
+      "description": "Scales the multi-resolution Sobel response"
     },
     {
-      "id": "max_speed",
-      "name": "Max Speed",
-      "default": 0.7,
+      "id": "mach_strength",
+      "name": "Mach Strength",
+      "default": 0.55,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.y",
-      "description": "Maximum layer animation speed"
+      "description": "Boosts the directional second-derivative Mach bands"
     },
     {
-      "id": "edge_threshold",
-      "name": "Edge Threshold",
-      "default": 0.3,
+      "id": "spotlight_radius",
+      "name": "Spotlight Radius",
+      "default": 0.45,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Edge detection threshold"
+      "description": "Controls how tightly the mouse reveals depth edges"
     },
     {
-      "id": "neon_intensity",
-      "name": "Neon Intensity",
-      "default": 0.3,
+      "id": "neon_gain",
+      "name": "Neon Gain",
+      "default": 0.65,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Intensity of the neon glow effect"
+      "description": "Overall blackbody glow intensity"
     }
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
-    "music",
-    "reactive"
+    "mach-band",
+    "blackbody"
   ],
   "features": [
     "audio-reactive",
-    "audio-driven",
+    "depth-aware",
     "mouse-driven"
   ]
 }

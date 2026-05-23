@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Hybrid Fractal Feedback - Advanced Alpha with Accumulative
-//  Category: feedback/temporal
-//  Alpha Mode: Accumulative Alpha + Effect Intensity
+// ═══════════════════════════════════════════════════════════════════
+//  Hybrid Fractal Feedback
+//  Category: generative
 //  Features: advanced-alpha, fractal, feedback, hybrid
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -99,8 +101,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let accumulated = accumulativeAlpha(blended, newAlpha, prev.rgb, prev.a, accumulationRate);
     
     textureStore(dataTextureA, coord, accumulated);
-    textureStore(writeTexture, global_id.xy, accumulated);
+    
+    // Blend feedback over current input, preserving base transparency
+    let blend = accumulated.a;
+    let finalColor = mix(current.rgb, accumulated.rgb, blend);
+    let finalAlpha = mix(current.a, 1.0, blend * 0.7);
+    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, finalAlpha));
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0, 0, 0.0));
 }

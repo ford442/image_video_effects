@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Smear
+//  Category: image
+//  Features: mouse-driven, history, upgraded-rgba, audio-reactive, depth-aware
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -19,7 +28,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -76,14 +85,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Final composite: Video + History
     let finalColor = current.rgb + newHistory * 0.5;
 
-    // Alpha: smear trail brightness and brush coverage drive paint compositing weight
-    let historyLuma = dot(newHistory, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(inBrush * 0.4 + historyLuma * 0.4 + 0.1, 0.0, 1.0);
+    // Alpha: preserve input transparency while blending smear intensity
+    let finalAlpha = mix(current.a, 1.0, inBrush * intensity * 0.7);
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 1));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
 }

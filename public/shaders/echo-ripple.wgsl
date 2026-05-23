@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Echo Ripple (Upgraded)
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, temporal, depth-aware
-//  Upgrades: gravity wells, bass pulse, click shockwaves, FFT tint,
-//            multi-source echoes, depth parallax, semantic alpha
+//  Echo Ripple
+//  Category: image
+//  Features: mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,7 +26,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
   if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
@@ -94,7 +94,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sampleUV = uv - dir * distort + grav;
 
   // Sample video input
-  var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+  var color = baseColor.rgb;
 
   // FFT multi-band color tinting at ripple edges
   let fftTint = vec3<f32>(bass * 0.5, mids * 0.3, treble * 0.6) * totalWave * atten * strength * 10.0;
@@ -109,10 +110,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   let mixed = mix(color, history.rgb, decay * (1.0 - atten * 0.25));
 
-  // Alpha encodes trail age modulated by interaction intensity and beat pulse
-  let alpha = mix(decay * history.a, 1.0, atten * (0.4 + beat));
+  // Alpha: preserve input transparency, blend toward opaque based on ripple intensity
+  let finalAlpha = mix(baseColor.a, 1.0, atten * 0.7);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(mixed, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(mixed, alpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(mixed, finalAlpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(mixed, finalAlpha));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0, 0, 0.0));
 }

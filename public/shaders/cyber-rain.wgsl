@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber Rain
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -88,12 +96,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add rain drops as blue/white overlay
     finalColor += vec4<f32>(0.5, 0.7, 1.0, 0.0) * drop * rainMask;
 
-    // Alpha: rain density + bloom + wiper drives wet-glass compositing weight
-    let lumaOut = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.5 + drop * 0.4 + lumaOut * 0.2 + (1.0 - wiper) * rainIntensity * 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, alpha));
+    // Alpha: preserve input transparency, blend toward opaque based on rain intensity
+    let finalAlpha = mix(baseColor.a, 1.0, rainIntensity * 0.7);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, finalAlpha));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0, 0, 1));
 }

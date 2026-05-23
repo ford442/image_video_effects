@@ -4,6 +4,7 @@
 //  Features: mouse-driven, glitch, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 //  By: Phase A Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
 

@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Split Dimension
+//  Category: image
+//  Features: mouse-driven, glitch, upgraded-rgba, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -18,12 +27,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=GlitchIntensity, y=ColorShift, z=NegativeStr, w=SplitAngle
   ripples: array<vec4<f32>, 50>,
 };
-
-// Split Dimension
-// Param 1: Glitch Intensity
-// Param 2: Color Shift
-// Param 3: Negative Strength
-// Param 4: Split Angle
 
 fn get_mouse() -> vec2<f32> {
     var mouse = u.zoom_config.yz;
@@ -65,6 +68,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
 
+    // Base color for alpha preservation
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+
     // Calculate Split Line
     let angle = angle_param * 3.14159 * 0.5;
     let normal = vec2<f32>(cos(angle), sin(angle));
@@ -73,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let d = dot(p_vec, normal);
 
     // Normal side
-    let normalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let normalColor = baseColor;
 
     // Glitch side
     let n = noise(vec2<f32>(uv.y * 50.0, time * 20.0));
@@ -89,7 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col.b = textureSampleLevel(readTexture, u_sampler, glitch_uv - vec2<f32>(shift, 0.0), 0.0).b;
     col = mix(col, 1.0 - col, neg_str);
 
-    var glitchColor = vec4<f32>(col, 1.0);
+    var glitchColor = vec4<f32>(col, mix(baseColor.a, 1.0, glitch_amt * 0.7));
 
     // Add split line highlight
     let lineHighlight = select(vec4<f32>(0.5, 0.5, 0.5, 0.0), vec4<f32>(0.0), d >= 0.01);
@@ -98,16 +104,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isNormal = select(0.0, 1.0, d < 0.0);
     let finalColor = mix(glitchColor, normalColor, isNormal);
 
-    // Alpha: glitch dimension = effect intensity drives blend; normal dimension = source luma
-    let luma = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let alphaNormal = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
-    let alphaGlitch = clamp(glitch_amt * 0.3 + luma * 0.5 + 0.15, 0.0, 1.0);
-    let alpha = mix(alphaGlitch, alphaNormal, isNormal);
-
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor.rgb, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor.rgb, alpha));
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 1));
+    textureStore(dataTextureA, coord, finalColor);
 }

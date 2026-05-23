@@ -55,7 +55,7 @@ fn hash11(p: f32) -> f32 {
     return fract(sin(p * 127.1 + 311.7) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }

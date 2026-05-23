@@ -50,23 +50,24 @@ fn halation(uv: vec2<f32>, spread: f32) -> vec3<f32> {
     return c;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
     let uv   = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
 
-    // Params
-    let decayBase   = 0.82 + u.zoom_params.x * 0.17;
-    let scanlineStr = u.zoom_params.y;
-    let haloSpread  = u.zoom_params.z * 4.0 + 0.5;
-    let audioSens   = u.zoom_params.w;
-
     // Audio
     let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let audioSens   = u.zoom_params.w;
     let bass   = select(0.0, plasmaBuffer[0].x, hasAudio) * audioSens;
+    let mids   = select(0.0, plasmaBuffer[0].y, hasAudio) * audioSens;
     let treble = select(0.0, plasmaBuffer[0].z, hasAudio) * audioSens;
+
+    // Params (mids deepens scanlines)
+    let decayBase   = 0.82 + u.zoom_params.x * 0.17;
+    let scanlineStr = u.zoom_params.y * (1.0 + mids * 0.5);
+    let haloSpread  = u.zoom_params.z * 4.0 + 0.5;
 
     // Depth — near phosphors (depth→1) bloom more
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -116,5 +117,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
     textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outCol, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

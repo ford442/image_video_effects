@@ -1,9 +1,10 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Optical Feedback - Advanced Alpha with Accumulative
-//  Category: feedback/temporal
-//  Alpha Mode: Accumulative Alpha + Physical Transmittance
-//  Features: advanced-alpha, optical-feedback, camera-feedback
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Optical Feedback
+//  Category: image
+//  Features: mouse-driven, temporal-persistence, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -96,11 +97,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         accumulationRate
     );
     
-    let finalResult = mix(accumulated, current, 0.1);
+    let rgbResult = mix(accumulated.rgb, current.rgb, 0.1);
+    let finalAlpha = mix(current.a, 1.0, accumulationRate * 0.7);
+    let finalResult = vec4<f32>(rgbResult, finalAlpha);
     
     textureStore(dataTextureA, coord, finalResult);
     textureStore(writeTexture, global_id.xy, finalResult);
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0, 0, 0.0));
 }
