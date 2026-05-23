@@ -28,7 +28,7 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -37,11 +37,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
+    // Audio: bass boosts brightness, mids feeds grain, treble drives scanline shimmer
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
     let scope_size = u.zoom_params.x; // Size of the clear area
-    let grain_amt = u.zoom_params.y;  // Noise intensity outside scope
-    let brightness = u.zoom_params.z; // Brightness boost inside scope
-    let scanline_str = u.zoom_params.w; // Scanline intensity
+    let grain_amt = u.zoom_params.y * (1.0 + mids * 0.6);  // Noise intensity outside scope
+    let brightness = u.zoom_params.z + bass * 0.5; // Brightness boost inside scope
+    let scanline_str = u.zoom_params.w * (1.0 + treble * 0.4); // Scanline intensity
 
     // Mouse Interaction
     var mouse = u.zoom_config.yz;
@@ -94,7 +99,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Scanline parameter application
     final_color = final_color * (1.0 - scanline_str * (1.0 - scanline) * 0.5);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, 1.0));
+    // Luminance-key alpha (green NV glow is additive over dark scope)
+    let alpha = clamp(dot(final_color, vec3<f32>(0.299, 0.587, 0.114)) + scope_mask * 0.3, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

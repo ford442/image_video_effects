@@ -21,9 +21,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
@@ -31,11 +32,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
+    // Audio: bass nudges spin, mids feeds wobble, treble adds groove noise
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
-    let rotationSpeed = (u.zoom_params.x - 0.5) * 4.0; // Speed of auto-rotation
+    let rotationSpeed = (u.zoom_params.x - 0.5) * 4.0 * (1.0 + bass * 0.5); // Speed of auto-rotation
     let scratchAmount = u.zoom_params.y; // How much mouse X affects rotation (Scratching)
-    let wobble = u.zoom_params.z;
-    let noiseIntensity = u.zoom_params.w;
+    let wobble = u.zoom_params.z * (1.0 + mids * 0.7);
+    let noiseIntensity = u.zoom_params.w * (1.0 + treble * 0.6);
 
     // Center of the record
     var center = vec2<f32>(0.5, 0.5);
@@ -87,7 +93,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grooveNoise = fract(sin(dot(uv * time, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     let grooveIntensity = (sin(dist * 400.0) * 0.5 + 0.5) * noiseIntensity;
 
-    color = mix(color, vec4<f32>(grooveNoise, grooveNoise, grooveNoise, 1.0), grooveIntensity * 0.2);
+    color = mix(color, vec4<f32>(grooveNoise, grooveNoise, grooveNoise, color.a), grooveIntensity * 0.2);
+    // Semantic alpha: preserve source, lift on groove energy
+    color.a = clamp(color.a + grooveIntensity * 0.15, 0.0, 1.0);
 
     // Fade out edges if rotated outside
     // Simple bounds check? textureSample usually clamps or repeats.

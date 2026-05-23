@@ -35,8 +35,8 @@ fn hash12(p: vec2<f32>) -> f32 {
 fn hexCoord(uv: vec2<f32>, size: f32) -> vec2<f32> {
   let s = vec2<f32>(1.0, 1.7320508);
   let h = s * 0.5;
-  let a = mod(uv, s) - h;
-  let b = mod(uv - h, s) - h;
+  let a = (uv - s * floor(uv / s)) - h;
+  let b = ((uv - h) - s * floor((uv - h) / s)) - h;
   let g = select(a, b, dot(a, a) > dot(b, b));
   return (uv - g) / size;
 }
@@ -52,11 +52,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
 
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Parameters
+  // Parameters (mids → reveal speed, treble → edge glow shimmer)
   let cellSize = mix(15.0, 150.0, u.zoom_params.x);
-  let revealSpeed = u.zoom_params.y * 2.0 + 0.2;
-  let edgeGlow = u.zoom_params.z;
+  let revealSpeed = (u.zoom_params.y * 2.0 + 0.2) * (1.0 + mids * 0.8);
+  let edgeGlow = u.zoom_params.z * (1.0 + treble * 0.7);
   let gridType = u.zoom_params.w;
 
   let mouse = u.zoom_config.yz;

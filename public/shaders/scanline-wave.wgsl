@@ -49,12 +49,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let mousePos = u.zoom_config.yz;
 
-  let freq = mix(10.0, 200.0, u.zoom_params.x);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let freq = mix(10.0, 200.0, u.zoom_params.x) * (1.0 + mids * 0.6);
   let amp = u.zoom_params.y * 0.1;
-  let speed = (u.zoom_params.z - 0.5) * 20.0;
+  let speed = (u.zoom_params.z - 0.5) * 20.0 * (1.0 + treble * 0.5);
   let mouse_influence = u.zoom_params.w;
 
-  let bass = plasmaBuffer[0].x;
   let ampPulse = amp * (1.0 + bass * 0.4);
 
   let wave = sin(uv.y * freq + time * speed) * ampPulse *

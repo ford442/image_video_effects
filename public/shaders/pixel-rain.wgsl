@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -30,10 +30,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
 
+    // Audio: bass speeds the fall, mids feeds glitch, treble thickens columns
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
-    let speed = u.zoom_params.x * 2.0 + 0.1; // Range 0.1 to 2.1
-    let glitchIntensity = u.zoom_params.y;   // Range 0.0 to 1.0
-    let density = u.zoom_params.z * 50.0 + 10.0; // Range 10.0 to 60.0
+    let speed = (u.zoom_params.x * 2.0 + 0.1) * (1.0 + bass * 0.6); // Range 0.1 to 2.1
+    let glitchIntensity = clamp(u.zoom_params.y * (1.0 + mids * 0.5), 0.0, 1.0);   // Range 0.0 to 1.0
+    let density = u.zoom_params.z * 50.0 + 10.0 + treble * 20.0; // Range 10.0 to 60.0
 
     // Mouse
     var mouse = u.zoom_config.yz;

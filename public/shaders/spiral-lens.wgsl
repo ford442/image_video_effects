@@ -36,12 +36,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
 
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Parameters
+  // Parameters (mids → chromatic split, treble → rotation speed)
   let spiralTightness = u.zoom_params.x * 4.0 + 1.0;
   let lensStrength = (u.zoom_params.y * 3.0 + 0.1) * (1.0 + bass * 0.4);
-  let chromatic = u.zoom_params.z * 0.06;
-  let rotationSpeed = u.zoom_params.w * 2.0;
+  let chromatic = u.zoom_params.z * 0.06 * (1.0 + mids * 1.2);
+  let rotationSpeed = u.zoom_params.w * 2.0 * (1.0 + treble * 0.5);
 
   let asp = res.x / res.y;
   let dvec = (uv - mouse) * vec2<f32>(asp, 1.0);
