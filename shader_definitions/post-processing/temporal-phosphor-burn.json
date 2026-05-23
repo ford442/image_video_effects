@@ -1,0 +1,44 @@
+{
+  "id": "temporal-phosphor-burn",
+  "name": "Temporal Phosphor Burn",
+  "url": "shaders/temporal-phosphor-burn.wgsl",
+  "category": "post-processing",
+  "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
+  "tags": ["temporal", "crt", "phosphor", "persistence", "glow", "retro", "amber"],
+  "features": ["temporal", "history-ring"],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "R Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "G Decay",
+      "default": 0.79,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "B Decay",
+      "default": 0.93,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Luma Floor",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}
