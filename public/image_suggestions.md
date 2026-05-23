@@ -4836,6 +4836,136 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for testing fluid simulations, iridescence, and complex color warping shaders.
 
+### Suggestion: Solarpunk Floating Garden
+- **Date:** 2026-05-26
+- **Prompt:** "A sweeping landscape of a solarpunk city featuring massive, stepped floating gardens hovering above a crystalline lake. Dappled morning sunlight illuminates the lush greenery, solar panels, and wind turbines integrated into the futuristic architecture. The mood is hopeful, serene, and bright, captured with a wide-angle drone perspective."
+- **Negative prompt:** "dystopian, smog, dark, gloomy, dirty, ruins"
+- **Tags:** solarpunk, landscape, architecture, bright
+- **Style / Reference:** photorealistic, highly detailed, utopian concept art
+- **Composition:** wide shot, dynamic angle, rule of thirds
+- **Color palette:** vibrant greens, clear blues, bright whites
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260526_solarpunk-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing lush vegetation and bright, clean environmental lighting.
+
+### Suggestion: Isometric Noir Detective Office
+- **Date:** 2026-05-26
+- **Prompt:** "An isometric view of a classic 1940s noir detective's office. A single desk lamp casts harsh shadows across a cluttered desk covered in case files and a typewriter. Moonlight streams through half-open blinds from a rainy city night outside. The mood is moody, tense, and atmospheric."
+- **Negative prompt:** "bright, modern, flat lighting, sunny, clean"
+- **Tags:** noir, interior, isometric, moody
+- **Style / Reference:** 3D isometric, stylized realism, cinematic lighting
+- **Composition:** isometric, top-down angled, contained room
+- **Color palette:** high contrast black and white, warm amber lamp light
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260526_noir-office.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing volumetric lighting and harsh shadow generation in confined spaces.
+
+### Suggestion: Biomechanical Insect Macro
+- **Date:** 2026-05-26
+- **Prompt:** "An extreme macro close-up of a biomechanical beetle resting on an oversized neon-lit leaf. The insect's shell is made of iridescent carbon fiber and polished chrome, with glowing microscopic circuitry pulsing beneath its wings. The depth of field is incredibly shallow, focusing on the intricate mechanical compound eyes."
+- **Negative prompt:** "blurry, low quality, wide shot, natural insect"
+- **Tags:** sci-fi, macro, nature, cyberpunk
+- **Style / Reference:** macro photography, hyper-detailed, metallic
+- **Composition:** extreme close-up, shallow depth of field, center focus
+- **Color palette:** chrome, neon green, iridescent blues
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260526_biomech-insect.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex micro-textures, bokeh, and material reflections.
+
+### Suggestion: Steampunk Alchemist Laboratory
+- **Date:** 2026-05-26
+- **Prompt:** "The chaotic interior of a steampunk alchemist's laboratory filled with bubbling glass flasks, brass pipes, and glowing mystical potions. Thick steam and magical smoke curl around heavy wooden tables. Warm, flickering candlelight and the ethereal glow of the potions illuminate the scene, creating a whimsical and mysterious mood."
+- **Negative prompt:** "modern lab, clean, digital screens, sterile"
+- **Tags:** steampunk, fantasy, interior, whimsical
+- **Style / Reference:** intricate concept art, cozy, detailed 3D environment
+- **Composition:** wide room view, cluttered foreground to background
+- **Color palette:** brass, warm amber, glowing green and purple
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260526_alchemist-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing layered transparency, glowing liquids, and smoke effects.
+
+### Suggestion: Ethereal Crystal Cave Portrait
+- **Date:** 2026-05-26
+- **Prompt:** "A beautiful portrait of an ethereal elf-like being inside a giant, glowing crystal cave. The subject is partially illuminated by the soft, cascading blue light radiating from the giant quartz structures around them. The lighting is soft and magical. Captured with a portrait lens, creating a gentle blur on the distant crystals."
+- **Negative prompt:** "harsh lighting, outdoors, modern clothing, scary"
+- **Tags:** fantasy, portrait, interior, ethereal
+- **Style / Reference:** cinematic portrait photography, magical realism
+- **Composition:** medium shot, eye-level, soft focus background
+- **Color palette:** deep blues, glowing whites, soft skin tones
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260526_crystal-portrait.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing soft character lighting and subsurface scattering.
+
+### Suggestion: Neon Cyber-Monastery
+- **Date:** 2026-05-28
+- **Prompt:** "A sprawling cyber-monastery perched on a foggy mountain peak at dawn. Traditional ornate wooden architecture fused seamlessly with glowing neon magenta and cyan circuitry. Cyber-monks in flowing robes walk across a wet stone courtyard. The lighting is cinematic, with harsh neon contrasting with soft, hazy morning sunlight."
+- **Negative prompt:** "ugly, simple, flat, lowres, bright daylight"
+- **Tags:** cyberpunk, architecture, landscape, cinematic
+- **Style / Reference:** photorealistic, 3D render, dark sci-fi
+- **Composition:** wide shot, low angle
+- **Color palette:** neon magenta, cyan, warm sunrise orange, deep shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_cyber-monastery.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing volumetric fog and mixed natural/artificial lighting.
+
+### Suggestion: Solarpunk Aerial Windmill City
+- **Date:** 2026-05-28
+- **Prompt:** "A utopian solarpunk city built into massive, floating wind turbines soaring high above the clouds in a bright blue sky. lush greenery, hanging gardens, and solar panels cover the white, curved organic architecture. People fly in small gliders between the platforms."
+- **Negative prompt:** "dystopian, dark, polluted, ground, cars, gritty"
+- **Tags:** solarpunk, architecture, bright, surreal
+- **Style / Reference:** photorealistic, highly detailed, Ghibli-inspired lighting
+- **Composition:** wide shot, high altitude perspective
+- **Color palette:** sky blue, bright white, vibrant green
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_solarpunk-windmill.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing bright lighting, clean shadows, and organic curves.
+
+### Suggestion: Eldritch Steampunk Clockmaker's Desk
+- **Date:** 2026-05-28
+- **Prompt:** "A cluttered steampunk clockmaker's desk littered with glowing brass gears, magnifying glasses, and strange alchemy bottles. In the center, a complex pocket watch is open, revealing a miniature, glowing purple galaxy spinning inside its gears. The room is dimly lit by a flickering oil lamp."
+- **Negative prompt:** "clean, modern, digital, minimalist, empty"
+- **Tags:** steampunk, still life, macro, dark
+- **Style / Reference:** photorealistic, cinematic, macro photography
+- **Composition:** close-up, shallow depth of field on the pocket watch
+- **Color palette:** warm brass, dark wood, glowing purple
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260528_eldritch-clockmaker.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing macro depth of field and small glowing light sources.
+
+### Suggestion: Surreal Isometric Floating Desert
+- **Date:** 2026-05-28
+- **Prompt:** "A perfectly square isometric slice of a surreal desert floating against a flat pastel pink background. A large, twisting sand dune curls around a single, massive, glowing blue crystal monolith. A tiny caravan of robotic camels walks across the sand."
+- **Negative prompt:** "realistic sky, horizon line, normal perspective, messy"
+- **Tags:** surreal, landscape, isometric, 3D, minimalist
+- **Style / Reference:** 3D render, minimalist, clean lighting
+- **Composition:** isometric, perfectly centered square slice
+- **Color palette:** pastel pink, warm sand, glowing blue
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260528_isometric-desert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for testing clean, stylized 3D geometry and isometric perspective generation.
+
+### Suggestion: Bioluminescent Crystal Cave Explorer
+- **Date:** 2026-05-28
+- **Prompt:** "A solitary explorer in a futuristic hazard suit standing in a massive, ancient subterranean cave filled with towering, jagged crystal formations. The crystals emit a brilliant, shifting bioluminescent aura of emerald green and sapphire blue, illuminating the dark stone walls. Tiny glowing spores drift through the air."
+- **Negative prompt:** "sunlight, surface, flat lighting, simple"
+- **Tags:** sci-fi, nature, landscape, moody
+- **Style / Reference:** photorealistic, cinematic, detailed 3D environment
+- **Composition:** wide shot, showcasing the massive scale of the cave
+- **Color palette:** emerald green, sapphire blue, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_crystal-cave.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing particle effects, subsurface scattering, and multi-colored bioluminescence.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
