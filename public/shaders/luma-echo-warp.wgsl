@@ -57,8 +57,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dir = select(vec2<f32>(0.0, 0.0), dVec / max(lenD, 0.0001), lenD > 0.0001);
     let influence = smoothstep(radius, 0.0, dist);
     let weight = mix(1.0, luma, lumaWeight);
-    let active = select(0.0, 1.0, mousePos.x >= 0.0);
-    let warp = dir * influence * strength * weight * 0.1 * active;
+    let mouseActive = select(0.0, 1.0, mousePos.x >= 0.0);
+    let warp = dir * influence * strength * weight * 0.1 * mouseActive;
 
     let distortedUV = clamp(uv - warp, vec2<f32>(0.0), vec2<f32>(1.0));
     let warpedColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);

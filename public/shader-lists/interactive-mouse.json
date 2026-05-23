@@ -2968,7 +2968,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3566,7 +3567,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "description": "Reveals the original image in a radius around the mouse, with a scanning radar ring. Reactive to audio.",
     "params": [

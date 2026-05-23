@@ -456,7 +456,9 @@
     "url": "shaders/luma-melt-interactive.wgsl",
     "category": "liquid-effects",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
