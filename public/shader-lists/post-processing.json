@@ -1,66 +1,5 @@
 [
   {
-    "id": "long-exposure",
-    "name": "Long Exposure Light Painting",
-    "url": "shaders/long-exposure.wgsl",
-    "category": "post-processing",
-    "description": "Simulates an open camera shutter accumulating light over time. Bright regions of each frame persist and blend into a glowing exposure buffer stored in dataTextureC; darker regions fade slowly, leaving luminous light-painting trails. Mouse click resets the exposure. Bass brightens incoming frames for punchier accumulation; mids control bloom halo radius; treble adds sparkle to the brightest traces.",
-    "tags": [
-      "long-exposure",
-      "light-painting",
-      "temporal",
-      "accumulation",
-      "glow",
-      "audio-reactive",
-      "mouse-driven"
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "temporal",
-      "upgraded-rgba"
-    ],
-    "params": [
-      {
-        "id": "accumSpeed",
-        "name": "Accumulation Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "decayRate",
-        "name": "Decay Rate",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "glowRadius",
-        "name": "Glow Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "threshold",
-        "name": "Brightness Threshold",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
-    ],
-    "coordinate": 890
-  },
-  {
     "id": "luma-pixel-sort",
     "name": "Luma Pixel Sort",
     "url": "shaders/luma-pixel-sort.wgsl",
@@ -938,6 +877,124 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "tone-histogram-apply",
+    "name": "Tone Histogram (Pass 2: Apply)",
+    "url": "shaders/tone-histogram-apply.wgsl",
+    "category": "post-processing",
+    "description": "Reads histogram buckets, computes auto-exposure and tone curve, and applies histogram-driven grading.",
+    "features": [
+      "multi-pass-2",
+      "histogram",
+      "auto-exposure",
+      "color-grade"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2,
+      "prevShader": "tone-histogram"
+    },
+    "tags": [
+      "tone",
+      "histogram",
+      "grading",
+      "auto-exposure",
+      "psychedelic"
+    ],
+    "params": [
+      {
+        "id": "target",
+        "name": "Target Luma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "psychedelic",
+        "name": "Psychedelic Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 1
+      }
+    ]
+  },
+  {
+    "id": "tone-histogram",
+    "name": "Tone Histogram (Pass 1)",
+    "url": "shaders/tone-histogram.wgsl",
+    "category": "post-processing",
+    "description": "Builds a 256-bucket luminance histogram in extraBuffer using atomics for auto-exposure.",
+    "features": [
+      "multi-pass-1",
+      "histogram",
+      "auto-exposure",
+      "atomic-buffer"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "tone-histogram-apply"
+    },
+    "tags": [
+      "tone",
+      "histogram",
+      "exposure",
+      "luminance",
+      "grading"
+    ],
+    "params": [
+      {
+        "id": "target",
+        "name": "Target Luma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "psychedelic",
+        "name": "Psychedelic Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 1
       }
     ]
   }

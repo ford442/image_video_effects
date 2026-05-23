@@ -1,0 +1,20 @@
+{
+  "id": "rd-on-video-pass1",
+  "name": "RD on Video (Pass 1: State Update)",
+  "url": "shaders/rd-on-video-pass1.wgsl",
+  "category": "simulation",
+  "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance.",
+  "features": ["multi-pass-1", "temporal", "video-driven", "webcam-friendly"],
+  "multipass": {
+    "pass": 1,
+    "totalPasses": 3,
+    "nextShader": "rd-on-video-pass2"
+  },
+  "tags": ["reaction-diffusion", "video", "luminance", "organic", "turing"],
+  "params": [
+    { "id": "feed", "name": "Feed", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "kill", "name": "Kill", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "diffusion", "name": "Diffusion", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "dt", "name": "Time Step", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ]
+}
