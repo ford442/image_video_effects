@@ -10,6 +10,7 @@ import { ShaderStarRating } from './ShaderStarRating';
 import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from './LiveStreamPanel';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../services/vjHistory';
+import { VJPreset, loadPresets, deletePreset } from '../services/vjPresets';
 import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
@@ -66,6 +67,8 @@ interface ControlsProps {
     onGenerateFromVibe?: (vibe: string) => void;
     onUpdateStack?: (ids: string[]) => void;
     onUpdateParams?: (params: Record<string, number>[]) => void;
+    onRandomizeParams?: () => void;
+    onSavePreset?: (name: string) => void;
     // Webcam Props
     isWebcamActive?: boolean;
     onStartWebcam?: () => void;
@@ -123,6 +126,8 @@ const Controls: React.FC<ControlsProps> = ({
     onGenerateFromVibe,
     onUpdateStack,
     onUpdateParams,
+    onRandomizeParams,
+    onSavePreset,
     isWebcamActive = false,
     onStartWebcam,
     onStopWebcam,
@@ -161,6 +166,11 @@ const Controls: React.FC<ControlsProps> = ({
 
     // --- Dev Tools Visibility State ---
     const [devToolsOpen, setDevToolsOpen] = useState(false);
+
+    // --- Presets State ---
+    const [presets, setPresets] = useState<VJPreset[]>(() => loadPresets());
+    const [presetsOpen, setPresetsOpen] = useState(false);
+    const [presetName, setPresetName] = useState('');
 
     useEffect(() => {
         setHistory(loadVJHistory());
@@ -279,6 +289,8 @@ const Controls: React.FC<ControlsProps> = ({
             }
         };
     }, [typedNumber, availableModes, activeSlot, setMode, findShaderByCoordinate]);
+
+    const activeShaderIds = modes;
 
     const currentModes = useMemo(() => {
         if (shaderCategory === 'image') {
@@ -978,12 +990,42 @@ const Controls: React.FC<ControlsProps> = ({
                                 >
                                     Generate
                                 </button>
+                                <button
+                                    className="gold-outline-btn"
+                                    onClick={() => onRandomizeParams?.()}
+                                    disabled={!activeShaderIds || activeShaderIds.length === 0}
+                                >
+                                    Randomize Params
+                                </button>
                             </div>
                             {aiVjMessage && (
                                 <div style={{fontSize: '11px', color: '#a0a0b0', marginTop: '8px', fontStyle: 'italic'}}>
                                     {aiVjMessage}
                                 </div>
                             )}
+                            <div style={{display: 'flex', gap: '8px', marginTop: '10px'}}>
+                                <input
+                                    type="text"
+                                    className="glass-input"
+                                    placeholder="Preset name…"
+                                    value={presetName}
+                                    onChange={(e) => setPresetName(e.target.value)}
+                                    style={{flex: 1}}
+                                />
+                                <button
+                                    className="gold-outline-btn"
+                                    onClick={() => {
+                                        if (presetName.trim() && onSavePreset) {
+                                            onSavePreset(presetName.trim());
+                                            setPresets(loadPresets());
+                                            setPresetName('');
+                                        }
+                                    }}
+                                    disabled={!presetName.trim()}
+                                >
+                                    Save Preset
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -1059,6 +1101,67 @@ const Controls: React.FC<ControlsProps> = ({
                                     })}
                                 </div>
                             </>
+                        )}
+                    </div>
+
+                    {/* Presets Panel */}
+                    <div className="control-group glass-panel" style={{padding: '12px', marginTop: '10px'}}>
+                        <div
+                            className="gold-section-header"
+                            style={{fontSize: '12px', marginTop: '0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer'}}
+                            onClick={() => setPresetsOpen(o => !o)}
+                        >
+                            <span>Presets</span>
+                            <span style={{transform: presetsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s'}}>▼</span>
+                        </div>
+                        {presetsOpen && (
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto', marginTop: '8px'}}>
+                                {presets.length === 0 && (
+                                    <div style={{fontSize: '12px', color: '#a0a0b0', fontStyle: 'italic', textAlign: 'center'}}>
+                                        No presets saved yet
+                                    </div>
+                                )}
+                                {presets.map(preset => {
+                                    const idDisplay = preset.shaderIds.slice(0, 3).join(', ') + (preset.shaderIds.length > 3 ? ` …+${preset.shaderIds.length - 3}` : '');
+                                    return (
+                                        <div key={preset.id} style={{
+                                            background: 'rgba(20, 20, 30, 0.6)',
+                                            border: '1px solid rgba(255, 215, 0, 0.1)',
+                                            borderRadius: '6px',
+                                            padding: '8px',
+                                        }}>
+                                            <div style={{fontSize: '12px', color: '#FFD700', fontWeight: 500, marginBottom: '4px'}}>
+                                                {preset.name}
+                                            </div>
+                                            <div style={{fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px'}}>
+                                                {idDisplay} • {formatRelativeTime(preset.timestamp)}
+                                            </div>
+                                            <div style={{display: 'flex', gap: '6px'}}>
+                                                <button
+                                                    className="gold-outline-btn"
+                                                    style={{fontSize: '11px', padding: '3px 8px', flex: 1}}
+                                                    onClick={() => {
+                                                        if (onUpdateStack) onUpdateStack(preset.shaderIds);
+                                                        if (onUpdateParams) onUpdateParams(preset.params);
+                                                    }}
+                                                >
+                                                    Restore
+                                                </button>
+                                                <button
+                                                    className="gold-outline-btn"
+                                                    style={{fontSize: '11px', padding: '3px 8px', flex: 1}}
+                                                    onClick={() => {
+                                                        deletePreset(preset.id);
+                                                        setPresets(loadPresets());
+                                                    }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
 
