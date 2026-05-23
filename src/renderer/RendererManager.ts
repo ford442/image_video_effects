@@ -157,6 +157,10 @@ export class RendererManager {
     this.currentRenderer?.updateAudioData(bass, mid, treble);
   }
 
+  updateAudioFrequencyBins(bins: Float32Array): void {
+    this.currentRenderer?.updateAudioFrequencyBins?.(bins);
+  }
+
   updateMouse(x: number, y: number): void {
     this.currentRenderer?.updateMouse(x, y);
   }

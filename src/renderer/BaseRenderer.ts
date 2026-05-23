@@ -10,6 +10,7 @@ export interface BaseRenderer {
   
   // Audio input
   updateAudioData(bass: number, mid: number, treble: number): void;
+  updateAudioFrequencyBins?(bins: Float32Array): void;
   
   // Mouse input
   updateMouse(x: number, y: number): void;

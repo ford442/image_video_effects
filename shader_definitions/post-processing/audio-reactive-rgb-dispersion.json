@@ -1,0 +1,43 @@
+{
+  "id": "audio-reactive-rgb-dispersion",
+  "name": "Audio Reactive RGB Dispersion",
+  "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
+  "category": "post-processing",
+  "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+  "tags": ["audio-reactive", "chromatic-aberration", "dispersion", "fft", "spectral-centroid", "rgb", "frequency"],
+  "features": ["audio-reactive", "fft-bins"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Dispersion Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Angle Offset",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Edge Falloff",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Original Blend",
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

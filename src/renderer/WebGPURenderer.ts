@@ -18,7 +18,11 @@
  *   7  texture_storage …    dataTextureA  (rgba32float, write-only)
  *   8  texture_storage …    dataTextureB  (rgba32float, write-only)
  *   9  texture_2d<f32>      dataTextureC  (readable copy of A from prev frame)
- *  10  storage read_write   extraBuffer   (256 floats; [0-2] = bass/mid/treble; [4] = historyHead)
+ *  10  storage read_write   extraBuffer   (256 floats)
+ *       [0]=bass, [1]=mid, [2]=treble, [3]=reserved, [4]=historyHead
+ *       [5..132] = 128 FFT frequency bins (normalised 0-1, from useAudioAnalyzer
+ *                  or any compatible source such as ford442/flac_player)
+ *                  bin 0 → ~86 Hz, bin 127 → ~22 kHz (at 44.1 kHz, fftSize=256)
  *  11  sampler_comparison   comparison sampler
  *  12  storage read         plasmaBuffer
  *  13  texture_2d_array<f32> historyTexture  (HISTORY_DEPTH=8 past frames; opt-in)
@@ -37,6 +41,20 @@ import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 const MAX_PLASMA_BALLS   = 50;
 const EXTRA_FLOATS       = 256;                     // 1024 bytes
 const PLASMA_BYTES       = MAX_PLASMA_BALLS * 48;   // 2400 bytes
+
+/**
+ * extraBuffer layout:
+ *   [0]    bass            (0-1, averaged over bass frequency range)
+ *   [1]    mid             (0-1, averaged over mid frequency range)
+ *   [2]    treble          (0-1, averaged over treble frequency range)
+ *   [3]    reserved
+ *   [4]    historyHead     (u32 cast from f32, ring-buffer write pointer)
+ *   [5..132] FFT_BINS[0..127]  (128 per-bin magnitudes normalised to [0,1])
+ *            bin 0  → ~86 Hz, bin 127 → ~22 kHz (44.1 kHz / fftSize=256)
+ *            Wire format matches ford442/flac_player FFT output (N=128 bins).
+ */
+const EXTRA_BIN_OFFSET   = 5;    // First FFT bin index in extraBuffer
+const AUDIO_FFT_BINS     = 128;  // Number of FFT bins stored in extraBuffer
 
 /** Number of frames kept in the temporal history ring buffer (binding 13). */
 const HISTORY_DEPTH = 8;
@@ -158,6 +176,8 @@ export class WebGPURenderer implements Renderer {
   private audioBass   = 0;
   private audioMid    = 0;
   private audioTreble = 0;
+  /** 128-bin FFT magnitude array written into extraBuffer[5..132] each frame. */
+  private audioFreqBins: Float32Array = new Float32Array(AUDIO_FFT_BINS);
 
   // Canvas dimensions
   private canvasW = 0;
@@ -1143,6 +1163,21 @@ export class WebGPURenderer implements Renderer {
     this.audioBass = bass; this.audioMid = mid; this.audioTreble = treble;
   }
 
+  /**
+   * Push a full 128-bin FFT magnitude array to the renderer.
+   * Values must be normalised to [0, 1]. They are flushed into
+   * extraBuffer[5..132] on the next frame upload.
+   *
+   * Compatible with ford442/flac_player wire format (N=128 bins).
+   */
+  updateAudioFrequencyBins(bins: Float32Array): void {
+    const len = Math.min(bins.length, AUDIO_FFT_BINS);
+    this.audioFreqBins.set(bins.subarray(0, len), 0);
+    if (len < AUDIO_FFT_BINS) {
+      this.audioFreqBins.fill(0, len);
+    }
+  }
+
   updateMouse(x: number, y: number): void {
     this.mouseX = x; this.mouseY = y;
   }
@@ -1444,10 +1479,20 @@ export class WebGPURenderer implements Renderer {
     
     this.device.queue.writeBuffer(this.uniformBuf, 0, u.data);
 
-    // Extra buffer: [0]=bass, [1]=mid, [2]=treble, [3]=reserved, [4]=historyHead
-    this.device.queue.writeBuffer(
-      this.extraBuf, 0,
-      new Float32Array([this.audioBass, this.audioMid, this.audioTreble, 0, this.historyHead]),
-    );
+    // Extra buffer layout (256 floats = 1024 bytes):
+    //   [0]    bass
+    //   [1]    mid
+    //   [2]    treble
+    //   [3]    reserved
+    //   [4]    historyHead
+    //   [5..132] FFT bins [0..127] (128 bins normalised to [0,1])
+    const extraData = new Float32Array(EXTRA_FLOATS);
+    extraData[0] = this.audioBass;
+    extraData[1] = this.audioMid;
+    extraData[2] = this.audioTreble;
+    extraData[3] = 0;
+    extraData[4] = this.historyHead;
+    extraData.set(this.audioFreqBins, EXTRA_BIN_OFFSET);
+    this.device.queue.writeBuffer(this.extraBuf, 0, extraData);
   }
 }

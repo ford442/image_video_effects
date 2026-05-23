@@ -1,0 +1,43 @@
+{
+  "id": "audio-reactive-pyramid",
+  "name": "Audio Reactive Pyramid",
+  "url": "shaders/audio-reactive-pyramid.wgsl",
+  "category": "post-processing",
+  "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+  "tags": ["audio-reactive", "sharpening", "pyramid", "fft", "frequency", "laplacian", "detail"],
+  "features": ["audio-reactive", "fft-bins"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Bass Gain",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Mid Gain",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Treble Gain",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Blend",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}
