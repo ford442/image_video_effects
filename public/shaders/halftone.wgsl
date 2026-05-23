@@ -39,6 +39,7 @@ fn ellipDot(uv: vec2<f32>, center: vec2<f32>, radius: f32, axis: vec2<f32>, stre
     let along = dot(d, axis);
     let perp  = vec2<f32>(d.x - along * axis.x, d.y - along * axis.y);
     let dStretched = sqrt((along * along) / max(stretch * stretch, 1e-3) + dot(perp, perp));
+    if (radius < 1e-4) { return 0.0; }
     return smoothstep(radius, max(radius - 0.02, 0.0), dStretched);
 }
 

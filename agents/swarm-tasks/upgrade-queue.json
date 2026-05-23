@@ -402,7 +402,7 @@
     {
       "id": "halftone",
       "size": 3595,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 140,
@@ -411,7 +411,7 @@
     {
       "id": "interactive-glitch-brush",
       "size": 3595,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 140,
@@ -420,7 +420,7 @@
     {
       "id": "vhs-tracking-mouse",
       "size": 3597,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 140,
@@ -429,7 +429,7 @@
     {
       "id": "chroma-kinetic",
       "size": 3608,
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 140,
