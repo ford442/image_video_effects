@@ -90,7 +90,7 @@ fn spring(current: vec2<f32>, targetPos: vec2<f32>, velocity: ptr<function,vec2<
     return current + *velocity * dt;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -99,6 +99,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uvRaw = vec2<f32>(global_id.xy) / resolution;
   let mousePos = u.zoom_config.yz;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let magnetStrength = u.zoom_params.x;
   let bloomIntensity = u.zoom_params.y;
@@ -171,7 +173,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let luma = dot(tintedColor, vec3<f32>(0.299, 0.587, 0.114));
   let bloomThreshold = smoothstep(0.6, 1.0, luma);
-  let finalColor = tintedColor + bloom * bloomThreshold * bloomIntensity * 2.0;
+  let finalColor = tintedColor + bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
 
   // SDF vignette with smooth radial falloff
   let vigUV = uvRaw - 0.5;

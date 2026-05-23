@@ -236,7 +236,8 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -637,7 +638,8 @@
       "mouse-driven",
       "wave",
       "neon",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -895,7 +897,8 @@
     "features": [
       "mouse-driven",
       "glitch",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3732,7 +3735,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "mouse-driven",
@@ -3886,7 +3890,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "mouse-driven",

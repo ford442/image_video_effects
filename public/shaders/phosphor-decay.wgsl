@@ -78,9 +78,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let decayG = 0.96 - decayRateParam * 0.1;
   let decayB = 0.98 - decayRateParam * 0.05;
 
-  // Audio reactivity: bass drives bloom burst
+  // Audio reactivity: bass drives bloom burst, mids modulates shadow mask, treble adds scan flicker
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let bloomBurst = 1.0 + bass * 2.0;
+  let shadowMaskMod = shadowMaskStrength * (1.0 + mids * 0.6);
+  let scanBlankMod = scanBlanking * (1.0 + treble * 0.4);
 
   // Sample history in linear
   let histSample = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
@@ -117,11 +121,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (maskX == 0) { mask = vec3(1.0, 0.6, 0.6); }
   else if (maskX == 1) { mask = vec3(0.6, 1.0, 0.6); }
   else { mask = vec3(0.6, 0.6, 1.0); }
-  merged = mix(merged, merged * mask, shadowMaskStrength * 0.5);
+  merged = mix(merged, merged * mask, shadowMaskMod * 0.5);
 
   // Scan-line blanking
   let scanLine = sin(uv.y * resolution.y * 0.5) * 0.5 + 0.5;
-  let blanking = mix(1.0, scanLine, scanBlanking * 0.4);
+  let blanking = mix(1.0, scanLine, scanBlankMod * 0.4);
   merged = merged * blanking;
 
   // Depth-based atmospheric haze

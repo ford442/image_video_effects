@@ -119,7 +119,7 @@ fn wavelengthToRGB(w: f32) -> vec3<f32> {
   return 0.5 + 0.5 * cos(vec3<f32>(w, w + 2.09, w + 4.18));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -128,12 +128,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  // Audio: bass drives wave intensity spike
+  // Audio: bass drives wave intensity spike, mids modulates VHS, treble adds head-switch jitter
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Parameters: x=Wave Intensity, y=VHS Intensity, z=Block Glitch Size, w=Shadow Mask
   let waveIntensity = u.zoom_params.x * (1.0 + bass * 0.8);
-  let vhsIntensity = u.zoom_params.y;
+  let vhsIntensity = u.zoom_params.y * (1.0 + mids * 0.5);
   let blockGlitchSize = mix(0.02, 0.16, u.zoom_params.z);
   let shadowMaskAmount = u.zoom_params.w;
 
@@ -165,7 +167,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // VHS head-switching noise band at bottom 8% of frame
   let inBand = step(0.92, uv.y);
-  let bandNoise = hash21(vec2<f32>(uv.x * 100.0, time * 30.0)) * inBand * vhsIntensity * 0.3;
+  let bandNoise = hash21(vec2<f32>(uv.x * 100.0, time * 30.0)) * inBand * vhsIntensity * (0.3 + treble * 0.4);
 
   let flicker = 0.8 + 0.2 * fract(time * 2.0 + bandNoise * 10.0);
   var col = baseColor * flicker;

@@ -38,7 +38,8 @@
     "mouse-driven",
     "wave",
     "neon",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

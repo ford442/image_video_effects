@@ -38,7 +38,8 @@
     "mouse-driven",
     "volumetric",
     "atmospheric",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

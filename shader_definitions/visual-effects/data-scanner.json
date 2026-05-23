@@ -4,7 +4,8 @@
   "url": "shaders/data-scanner.wgsl",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

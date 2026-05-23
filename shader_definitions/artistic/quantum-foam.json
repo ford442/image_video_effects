@@ -5,7 +5,9 @@
   "category": "image",
   "description": "Quantum foam texture with spacetime fluctuations.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

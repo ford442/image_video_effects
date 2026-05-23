@@ -1,32 +1,31 @@
-// ===============================================================
-// Quantum Foam – Chromatic Parallax Diffusion
-// Color fragments exist in superposition across depth planes,
-// collapsing into observation through fractal interference.
-// Features 4D gradient noise, curl advection, Voronoi-FBM hybrid,
-// quaternion rotation, and anisotropic diffusion trails.
-// ===============================================================
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Foam
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Created: 2026-04-15
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config:      vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,       // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,       // x=foamScale, y=flowSpeed, z=diffusionRate, w=octaveCount
-    ripples:     array<vec4<f32>, 50>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
 };
 
 const PI:    f32 = 3.14159265358979323846;
@@ -34,9 +33,6 @@ const TAU:   f32 = 6.28318530717958647692;
 const PHI:   f32 = 1.61803398874989484820;
 const HBAR:  f32 = 1.0545718e-34;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hash functions
-// ─────────────────────────────────────────────────────────────────────────────
 fn hash3(p: vec3<f32>) -> f32 {
     let p3 = fract(p * vec3<f32>(443.897, 441.423, 997.731));
     return fract(p3.x * p3.y * p3.z + dot(p3, p3 + 19.19));
@@ -48,9 +44,6 @@ fn hash2(p: vec2<f32>) -> f32 {
     return fract(p2.x * p2.y);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  4D gradient noise for hyper-dimensional structure
-// ─────────────────────────────────────────────────────────────────────────────
 fn noise4d(p: vec4<f32>) -> f32 {
     var i = floor(p);
     var f = fract(p);
@@ -76,9 +69,6 @@ fn noise4d(p: vec4<f32>) -> f32 {
     return mix(nxy0, nxy1, u.z);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Fractal Brownian Motion
-// ─────────────────────────────────────────────────────────────────────────────
 fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     var value = 0.0;
     var amp = 0.5;
@@ -91,9 +81,6 @@ fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
     return value;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Curl noise for divergence-free flow
-// ─────────────────────────────────────────────────────────────────────────────
 fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
     let eps = 0.01;
     let n1 = fbm(p + vec2<f32>(eps, 0.0), time, 4);
@@ -103,9 +90,6 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
     return vec2<f32>((n2 - n4) / (2.0 * eps), (n1 - n3) / (2.0 * eps));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Voronoi with feature detection
-// ─────────────────────────────────────────────────────────────────────────────
 fn voronoi(p: vec2<f32>, time: f32) -> vec3<f32> {
     var i = floor(p);
     var f = fract(p);
@@ -119,23 +103,21 @@ fn voronoi(p: vec2<f32>, time: f32) -> vec3<f32> {
             let seed = hash3(vec3<f32>(i + neighbor, time * 0.1)) * 2.0 - 1.0;
             let point = neighbor + vec2<f32>(seed, seed * 0.7);
             let dist = length(point - f);
-            if (dist < minDist1) {
-                minDist2 = minDist1;
-                minDist1 = dist;
-                minPoint = vec2<f32>(seed, seed);
-            } else if (dist < minDist2) {
-                minDist2 = dist;
-            }
+            
+            let isCloser = f32(dist < minDist1);
+            let isSecond = f32(dist < minDist2) * (1.0 - isCloser);
+            
+            minDist2 = mix(minDist2, minDist1, isCloser);
+            minDist2 = mix(minDist2, dist, isSecond);
+            minDist1 = mix(minDist1, dist, isCloser);
+            minPoint = mix(minPoint, vec2<f32>(seed, seed), isCloser);
         }
     }
     return vec3<f32>(minDist1, minDist2, minPoint.x);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Quaternion rotation for 4D color space
-// ─────────────────────────────────────────────────────────────────────────────
 fn quaternionRotate(color: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> {
-    var c = cos(angle);
+    let c = cos(angle);
     let s = sin(angle);
     let oneMinusC = 1.0 - c;
     let ax = normalize(axis);
@@ -164,26 +146,22 @@ fn quaternionRotate(color: vec3<f32>, angle: f32, axis: vec3<f32>) -> vec3<f32> 
     );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  HSV to RGB
-// ─────────────────────────────────────────────────────────────────────────────
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
-    var c = v * s;
+    let c = v * s;
     let h6 = h * 6.0;
-    var x = c * (1.0 - abs(fract(h6) * 2.0 - 1.0));
+    let f = fract(h6);
+    let x = c * (1.0 - abs(f * 2.0 - 1.0));
+    let i = u32(h6) % 6u;
     var rgb = vec3<f32>(0.0);
-    if (h6 < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
-    else if (h6 < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
-    else if (h6 < 3.0) { rgb = vec3<f32>(0.0, c, x); }
-    else if (h6 < 4.0) { rgb = vec3<f32>(0.0, x, c); }
-    else if (h6 < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-    else               { rgb = vec3<f32>(c, 0.0, x); }
+    rgb = mix(rgb, vec3<f32>(c, x, 0.0), f32(i == 0u));
+    rgb = mix(rgb, vec3<f32>(x, c, 0.0), f32(i == 1u));
+    rgb = mix(rgb, vec3<f32>(0.0, c, x), f32(i == 2u));
+    rgb = mix(rgb, vec3<f32>(0.0, x, c), f32(i == 3u));
+    rgb = mix(rgb, vec3<f32>(x, 0.0, c), f32(i == 4u));
+    rgb = mix(rgb, vec3<f32>(c, 0.0, x), f32(i == 5u));
     return rgb + vec3<f32>(v - c);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Spectral power distribution
-// ─────────────────────────────────────────────────────────────────────────────
 fn spectralPower(color: vec3<f32>, pattern: f32) -> vec3<f32> {
     let safeColor = max(color, vec3<f32>(0.001));
     let highPass = pow(safeColor, vec3<f32>(2.0));
@@ -192,44 +170,34 @@ fn spectralPower(color: vec3<f32>, pattern: f32) -> vec3<f32> {
     return mix(lowPass, highPass, pattern) + bandPass * pattern * 0.1;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
-// ─────────────────────────────────────────────────────────────────────────────
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dims = u.config.zw;
-    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
-    var uv = vec2<f32>(gid.xy) / dims;
+    let dims = u.config.zw;
+    var uv = vec2<f32>(global_id.xy) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let globalIntensity = clamp(0.4 + bass * 0.6, 0.0, 1.0);  // bass drives quantum foam intensity
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ────────────────────────────────────────────────────────────────────────
-    let foamScale = u.zoom_params.x * 3.0 + 1.0;            // 1 - 4
-    let flowSpeed = u.zoom_params.y;                         // 0 - 1
-    let diffusionRate = u.zoom_params.z * 0.9;               // 0 - 0.9
-    let octaveCount = i32(u.zoom_params.w * 4.0 + 3.0);     // 3 - 7
-    let rotationSpeed = u.zoom_config.x * 2.0;               // 0 - 2
-    let depthParallax = u.zoom_config.y * 0.2;               // 0 - 0.2
-    let emissionThreshold = u.zoom_config.z * 0.5 + 0.3;    // 0.3 - 0.8
-    let chromaticSpread = u.zoom_config.w * 2.0 + 0.5;      // 0.5 - 2.5
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let globalIntensity = clamp(0.4 + bass * 0.6, 0.0, 1.0);
     
-    // Sample depth and source
+    let foamScale = u.zoom_params.x * 3.0 + 1.0;
+    let flowSpeed = u.zoom_params.y;
+    let diffusionRate = u.zoom_params.z * 0.9;
+    let octaveCount = i32(u.zoom_params.w * 4.0 + 3.0);
+    let rotationSpeed = u.zoom_config.x * 2.0;
+    let depthParallax = u.zoom_config.y * 0.2;
+    let emissionThreshold = u.zoom_config.z * 0.5 + 0.3;
+    let chromaticSpread = u.zoom_config.w * 2.0 + 0.5;
+    
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Curl noise for divergence-free flow field
-    // ────────────────────────────────────────────────────────────────────────
     let curl = curlNoise(uv * foamScale * 0.5, time * flowSpeed);
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Multi-layer parallax warp with curl advection
-    // ────────────────────────────────────────────────────────────────────────
     var totalWarp = vec2<f32>(0.0);
     var parallaxWeight = 0.0;
     
@@ -252,40 +220,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     totalWarp = totalWarp / max(parallaxWeight, 0.001);
     totalWarp = totalWarp + curl * 0.05;
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Voronoi-FBM hybrid with feature detection
-    // ────────────────────────────────────────────────────────────────────────
     let cell = voronoi(uv * foamScale + totalWarp * 2.0, time);
     let cellPattern = 1.0 - smoothstep(0.0, 0.08, cell.x);
     let cellBoundary = smoothstep(0.08, 0.12, cell.y - cell.x);
     let cellInterior = fbm(uv * foamScale * 5.0 + cell.z * 2.0, time, max(octaveCount - 2, 2));
     let hybridPattern = mix(cellInterior, cellPattern, cellBoundary);
     
-    // 4D hyper-noise
     let hyperNoise = noise4d(vec4<f32>(uv * foamScale * 2.0, time * 0.3, time * 0.1));
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Phase interference from three wavefronts
-    // ────────────────────────────────────────────────────────────────────────
     let wave1 = sin(length(uv - 0.5) * 25.0 - time * 4.0);
     let wave2 = sin(atan2(uv.y - 0.5, uv.x - 0.5) * 18.0 + time * 3.0);
     let wave3 = sin(dot(uv - 0.5, vec2<f32>(1.0, 1.0)) * 30.0 - time * 5.0);
     let interference = (wave1 * wave2 * wave3 + 1.0) * 0.5;
     
-    // Depth-aware pattern combination
     let depthWeight = 1.0 + (1.0 - depth) * 2.0;
     let pattern = (hybridPattern * 0.4 + interference * 0.3 + hyperNoise * 0.3) * depthWeight;
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Quaternion rotation with pattern modulation
-    // ────────────────────────────────────────────────────────────────────────
     let luminance = dot(srcColor, vec3<f32>(0.2126, 0.7152, 0.0722));
     let rotationAxis = normalize(srcColor + vec3<f32>(0.1, 0.2, 0.3));
     let rotatedColor = quaternionRotate(srcColor, time * rotationSpeed + pattern * 3.0, rotationAxis);
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Chromatic dispersion with curl offsets
-    // ────────────────────────────────────────────────────────────────────────
     let dispersion = pattern * chromaticSpread * texel * 30.0;
     let depthDispersion = depth * dispersion;
     let rUV = clamp(uv + totalWarp * dispersion + depthDispersion + curl * 0.02, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -297,35 +251,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
     let dispersedColor = vec3<f32>(r, g, b);
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Emissive quantum foam at cell boundaries
-    // ────────────────────────────────────────────────────────────────────────
     let emission = smoothstep(emissionThreshold, 1.0, cellBoundary * pattern * luminance);
     let plasmaColor = hsv2rgb(fract(time * 0.05 + pattern + cell.z), 0.9, 1.0);
     let emissiveColor = mix(dispersedColor, plasmaColor, emission * 0.5);
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Temporal anisotropic diffusion
-    // ────────────────────────────────────────────────────────────────────────
     let historyUV = clamp(uv + totalWarp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
     let flowDirection = normalize(totalWarp + curl + vec2<f32>(0.001));
     let anisotropicFactor = 1.0 - abs(dot(flowDirection, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
     let anisotropicBlend = mix(emissiveColor, history, diffusionRate * anisotropicFactor);
     
-    // Spectral power distribution
     let spectralColor = spectralPower(anisotropicBlend, pattern);
     
-    // Final intensity modulation
     let finalColor = mix(srcColor, spectralColor, globalIntensity);
     
-    // ────────────────────────────────────────────────────────────────────────
-    //  Output
-    // ────────────────────────────────────────────────────────────────────────
-    // Alpha: foam emission energy + chromatic spread drives quantum compositing weight
     let lumaOut = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
     let alphaOut = clamp(0.4 + lumaOut * 0.3 + globalIntensity * 0.3 + bass * 0.1, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, alphaOut));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(anisotropicBlend, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alphaOut));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, alphaOut));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

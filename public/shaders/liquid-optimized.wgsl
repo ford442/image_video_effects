@@ -1,43 +1,36 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Surface Tension Liquid Shader with Alpha Physics - SHARED MEMORY OPTIMIZED
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Surface Tension (Optimized)
 //  Category: liquid-effects
-//  Features: capillary waves, Laplace pressure, fluid transparency, Beer-Lambert,
-//            audio-reactive ambient waves and virtual ripple sources
-//
-//  OPTIMIZATION: Uses workgroup shared memory to reduce texture fetches by ~80%
-//  - 18×18 tile cache for 16×16 workgroup (1-pixel halo for neighbors)
-//  - Laplacian: 25 texture reads → 1 shared memory read per pixel
-//  - Biharmonic: 125 texture reads → 5 shared memory reads per pixel
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Created: 2026-03-27
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=SurfaceTension, y=GravityScale, z=Damping, w=Turbidity
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SHARED MEMORY TILE CACHE
-// ═══════════════════════════════════════════════════════════════════════════════
 const TILE_SIZE: u32 = 16u;
 const HALO: u32 = 1u;
 const TILE_PADDED: u32 = TILE_SIZE + 2u * HALO;
@@ -236,10 +229,6 @@ fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
   return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN ENTRY POINT WITH SHARED MEMORY
-// ═══════════════════════════════════════════════════════════════════════════════
-
 @compute @workgroup_size(16, 16, 1)
 fn main(
   @builtin(global_invocation_id) gid: vec3<u32>,
@@ -251,21 +240,17 @@ fn main(
   let currentTime = u.config.x;
   let pixelSize = vec2<f32>(1.0) / resolution;
 
-  // Bounds check
   if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
     return;
   }
 
-  // ═══ AUDIO INPUT — bass from canonical plasmaBuffer ═══
-  let audioBass = plasmaBuffer[0].x;
-  let audioOverall = audioBass * 0.85;
-  let audioPulse = 1.0 + audioBass * 0.5;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Get depth for depth-aware effects
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let backgroundFactor = 1.0 - smoothstep(0.0, 0.1, depth);
 
-  // Parameters
   let surfaceTension = u.zoom_params.x * 0.5 + 0.1;
   let gravityScale = u.zoom_params.y * 2.0 + 0.5;
   let damping = u.zoom_params.z * 0.15 + 0.02;
@@ -273,21 +258,13 @@ fn main(
   let density = 1.0;
   let dt = 0.016;
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // LOAD HEIGHT FIELD INTO SHARED MEMORY (OPTIMIZED PATH)
-  // ═══════════════════════════════════════════════════════════════════════════════
   loadTileToSharedMemory(gid, lid, resolution);
 
-  // Read persistent data for this pixel
   let persistentData = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   let h_prev = persistentData.r;
   let h_curr = persistentData.g;
   let velocity = persistentData.b;
   let age = persistentData.a;
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // CAPILLARY WAVE PHYSICS USING SHARED MEMORY
-  // ═══════════════════════════════════════════════════════════════════════════════
 
   let activeMask = f32(backgroundFactor > 0.01);
 
@@ -307,13 +284,9 @@ fn main(
   newHeight = mix(newHeight, clamp(newHeight, -0.5, 0.5), activeMask);
   newVelocity = mix(newVelocity, clamp(newVelocity, -1.0, 1.0), activeMask);
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // RIPPLE SOURCES (Mouse-driven + Ambient + Audio-driven)
-  // ═══════════════════════════════════════════════════════════════════════════════
   var sourceHeight = 0.0;
   var sourceVelocity = 0.0;
 
-  // Mouse-driven Ripples
   let rippleCount = u32(u.config.y);
 
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -351,7 +324,6 @@ fn main(
     sourceVelocity += velocityContrib * contribMask;
   }
 
-  // Ambient Capillary Waves - Audio reactive
   let ambientMask = f32(backgroundFactor > 0.0);
   let time = currentTime * 0.5;
   let ambientFreq = 25.0;
@@ -363,21 +335,15 @@ fn main(
   let microRipple = (wave1 + wave2 + wave3) / 3.0;
   let microEnvelope = smoothstep(0.0, 0.3, backgroundFactor);
 
-  var ambientHeight = microRipple * 0.003 * microEnvelope * surfaceTension * ambientMask * audioPulse;
+  var ambientHeight = microRipple * 0.003 * microEnvelope * surfaceTension * ambientMask * (1.0 + bass * 0.5);
 
-  // Audio-driven virtual ripple at screen center
   let audioDist = distance(uv, vec2<f32>(0.5));
   let audioWave = sin(audioDist * 30.0 - currentTime * 8.0) * exp(-audioDist * 3.0);
-  let audioRipple = audioWave * audioBass * 0.015 * microEnvelope;
+  let audioRipple = audioWave * bass * 0.015 * microEnvelope;
   ambientHeight += audioRipple;
 
-  // Apply sources
   newHeight += sourceHeight + ambientHeight;
   newVelocity += sourceVelocity;
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // FLUID RENDERING WITH PHYSICS-BASED ALPHA
-  // ═══════════════════════════════════════════════════════════════════════════════
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
@@ -417,18 +383,14 @@ fn main(
 
   let finalColor = mix(baseColor, finalLiquidColor, finalAlpha);
 
-  // Beat flash on liquid surface
-  let isBeat = step(0.7, audioBass);
+  let isBeat = step(0.7, bass);
   let beatColor = finalColor + vec3<f32>(0.05, 0.03, 0.02) * isBeat * finalAlpha;
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // WRITE OUTPUTS
-  // ═══════════════════════════════════════════════════════════════════════════════
-
-  // Alpha: surface height + velocity drives liquid compositing weight
   let beatLuma = dot(beatColor, vec3<f32>(0.299, 0.587, 0.114));
-  let alphaOut = clamp(finalAlpha * 0.6 + beatLuma * 0.3 + abs(newVelocity) * 0.2 + 0.1, 0.0, 1.0);
-  textureStore(writeTexture, gid.xy, vec4<f32>(beatColor, alphaOut));
+  let alphaOut = clamp(finalAlpha * 0.6 + beatLuma * 0.3 + abs(newVelocity) * 0.2 + 0.1 + mids * 0.05, 0.0, 1.0);
+  let outColor = vec4<f32>(beatColor, alphaOut);
+
+  textureStore(writeTexture, gid.xy, outColor);
   textureStore(dataTextureA, gid.xy, vec4<f32>(h_curr, newHeight, newVelocity, age + dt));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

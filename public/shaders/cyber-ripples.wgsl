@@ -1,21 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Ripples — Optimized
+//  Cyber Ripples
 //  Category: interactive-mouse
-//  Features: mouse-driven, wave, neon, audio-reactive
+//  Features: mouse-driven, wave, neon, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgrades: branchless pixelation, 2-sample chromatic aberration,
-//            radial displacement, anti-moiré LOD bias, semantic alpha
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Agent
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
-
-// ── Optimizer Notes ───────────────────────────────────────────────
-// 1. Per-pixel if (blockSize) replaced by mix(step()) — no divergent branching.
-// 2. Chromatic aberration reduced from 3 texture samples to 2.
-// 3. Displacement is now radial (dir * wave) instead of diagonal scalar.
-// 4. LOD bias scales with displacement magnitude to suppress aliasing.
-// 5. Alpha is semantic (1.0) for correct opaque filter chaining.
-// ──────────────────────────────────────────────────────────────────
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -32,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -43,20 +33,24 @@ const ATTEN_SCALE: f32 = 5.0;
 const DISP_AMP: f32 = 0.01;
 const EPS: f32 = 0.001;
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  let coord = vec2<i32>(global_id.xy);
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) {
     return;
   }
 
+  let resolution = u.config.zw;
+  let coord = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  // Audio reactivity: bass drives ripple intensity
-  let bass = plasmaBuffer[0].x;
-  let audioBoost = 1.0 + bass * 0.5;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  // Audio reactivity: bass drives ripple intensity, mids add warmth, treble sharpens edges
+  let audioBoost = 1.0 + bass * 0.5 + mids * 0.2;
+  let sparkle = treble * 0.15;
 
   // Param unpack
   let speed = u.zoom_params.x * 5.0 + 1.0;
@@ -90,10 +84,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixelated = floor(displacedUV * blocks) / blocks;
   displacedUV = mix(displacedUV, pixelated, activePixel);
 
+  // Clamp displaced UVs before sampling
+  displacedUV = clamp(displacedUV, vec2<f32>(0.0), vec2<f32>(1.0));
+
   // Anti-moiré LOD bias: higher lod when displacement magnitude is large
   let lod = clamp(length(displacement) * resolution.x * 0.25, 0.0, 2.0);
 
-  // 2-sample chromatic aberration (reduced from 3 samples)
+  // 2-sample chromatic aberration
   let offset = vec2<f32>(aberration, 0.0);
   let sR = textureSampleLevel(readTexture, u_sampler, displacedUV + offset, lod);
   let sB = textureSampleLevel(readTexture, u_sampler, displacedUV - offset, lod);
@@ -103,11 +100,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = mix(sR.g, sB.g, 0.5);
   let b = sB.b;
 
-  // Semantic alpha: filter output is fully opaque for correct chaining
-  let color = vec4<f32>(r, g, b, 1.0);
+  var color = vec3<f32>(r, g, b);
+
+  // Treble sparkle on highlights
+  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  color = color + vec3<f32>(sparkle * luma);
+
+  // Semantic alpha: effect strength fades with distance and displacement magnitude
+  let effectStrength = clamp(strength * 2.0 + length(displacement) * 50.0 + luma * 0.3, 0.0, 1.0);
+  let alpha = clamp(mix(0.5, 1.0, effectStrength), 0.0, 1.0);
+
+  let finalColor = vec4<f32>(color, alpha);
 
   // Pass-through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeTexture, coord, color);
+
+  textureStore(writeTexture, coord, finalColor);
+  textureStore(dataTextureA, global_id.xy, finalColor);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

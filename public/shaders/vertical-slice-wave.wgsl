@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Vertical Slice Wave
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -33,48 +34,48 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  let coords = vec2<i32>(global_id.xy);
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) {
     return;
   }
+
+  let resolution = u.config.zw;
+  let coords = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
 
-  // ── Global state (env + spring mouse) at pixel (1,0) ───────────
-  if (global_id.x == 1u && global_id.y == 0u) {
-    let prev = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
-    let bass = plasmaBuffer[0].x;
-    let attack = select(0.15, 0.8, bass > prev.r);
-    let env_new = mix(prev.r, bass, attack);
-    let mouse_target = u.zoom_config.yz;
-    let spring = prev.gb;
-    let vel = prev.a;
-    let dir = mouse_target - spring;
-    let dist = length(dir);
-    let ndir = select(vec2<f32>(0.0), dir / dist, dist > 0.001);
-    let force = dist * 12.0 - vel * 3.0;
-    let vel_new = vel + force * 0.016;
-    let spring_new = spring + ndir * vel_new * 0.016;
-    textureStore(dataTextureA, vec2<i32>(1, 0), vec4<f32>(env_new, spring_new, vel_new));
-  }
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Read back global state
-  let state = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
-  let env = state.r;
-  let mouse = state.gb;
+  // Per-pixel temporal state read from previous frame
+  let prev = textureLoad(dataTextureC, coords, 0);
+
+  // Attack/release audio envelope per-pixel
+  let attack = select(0.15, 0.8, bass > prev.r);
+  let env = mix(prev.r, bass, attack);
+
+  // Spring-damped mouse follow per-pixel
+  let mouse_target = u.zoom_config.yz;
+  let spring = prev.gb;
+  let vel = prev.a;
+  let dir = mouse_target - spring;
+  let dist = length(dir);
+  let ndir = select(vec2<f32>(0.0), dir / max(dist, 0.001), dist > 0.001);
+  let force = dist * 12.0 - vel * 3.0;
+  let vel_new = vel + force * 0.016;
+  let spring_new = spring + ndir * vel_new * 0.016;
 
   // Parameters
   let strips_param = u.zoom_params.x;
   let speed_param = u.zoom_params.y;
   let rgb_split = u.zoom_params.z;
   let jitter_amt = u.zoom_params.w;
-  let time = u.config.x;
 
   // Mouse drives frequency & amplitude via spring-damped follow
-  let freq_mod = mouse.x * 40.0 + 1.0;
-  let amp_mod = mouse.y * 0.2;
+  let freq_mod = spring_new.x * 40.0 + 1.0;
+  let amp_mod = spring_new.y * 0.2;
   let click_burst = select(1.0, 1.8, u.zoom_config.w > 0.5);
 
   let num_strips = floor(strips_param * 100.0) + 5.0;
@@ -94,30 +95,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // RGB Split
   let split_factor = rgb_split * 0.05;
 
-  // Sample with vertical displacement
-  let r = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + offset - split_factor), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + offset), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y + offset + split_factor), 0.0).b;
+  // Sample with vertical displacement — clamp UVs
+  let r_uv = clamp(vec2<f32>(uv.x, uv.y + offset - split_factor), vec2<f32>(0.0), vec2<f32>(1.0));
+  let g_uv = clamp(vec2<f32>(uv.x, uv.y + offset), vec2<f32>(0.0), vec2<f32>(1.0));
+  let b_uv = clamp(vec2<f32>(uv.x, uv.y + offset + split_factor), vec2<f32>(0.0), vec2<f32>(1.0));
+
+  let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
 
   // Temporal feedback trail
-  let prev = textureLoad(dataTextureC, coords, 0);
   let feedback = 0.82;
   var col = mix(vec3<f32>(r, g, b), prev.rgb, 0.18);
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  // Alpha encodes intensity + trail age
+  // Alpha encodes intensity + trail age + mids/treble sparkle
   let luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-  let intensity = clamp(abs(offset) * 10.0 + env * 0.3, 0.0, 1.0);
+  let intensity = clamp(abs(offset) * 10.0 + env * 0.3 + treble * 0.1, 0.0, 1.0);
   let base_alpha = mix(0.65, 0.98, luminance * 0.3 + intensity * 0.7);
   let trail_age = prev.a * feedback + base_alpha * (1.0 - feedback);
 
   // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-  // Write output and feedback state
-  textureStore(writeTexture, coords, vec4<f32>(col, trail_age));
-  if (!(global_id.x == 1u && global_id.y == 0u)) {
-    textureStore(dataTextureA, coords, vec4<f32>(col, trail_age));
-  }
+  let outColor = vec4<f32>(col, clamp(trail_age, 0.0, 1.0));
+
+  // Persist per-pixel state for next frame (env, spring, velocity)
+  let stateColor = vec4<f32>(env, spring_new, vel_new);
+
+  textureStore(writeTexture, coords, outColor);
+  textureStore(dataTextureA, coords, stateColor);
+  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
