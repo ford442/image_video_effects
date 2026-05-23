@@ -1,9 +1,10 @@
-// ═══════════════════════════════════════════════════════════════
-//  Neon Edge Reveal - Flashlight Reveal with Alpha Emission
+// ═══════════════════════════════════════════════════════════════════
+//  Neon Edge Reveal
 //  Category: lighting-effects
-//  Physics: Mouse-revealed emissive edges with alpha occlusion
-//  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -30,85 +31,74 @@ fn getLuminance(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-// Alpha calculation for emissive materials
-fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
-    let coreAlpha = 0.3 * glowIntensity;
-    let glowAlpha = 0.0;
-    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
-}
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
+
+    let coord = vec2<i32>(global_id.xy);
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
+
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioReactivity = 1.0 + mids * 0.3;
 
     // Params
-    // x: revealRadius, y: edgeBoost, z: glowIntensity, w: occlusionBalance
-    let revealRadius = 0.2 + u.zoom_params.x * 0.3;
-    let edgeBoost = u.zoom_params.y * 2.0;
+    let revealRadius = (0.2 + u.zoom_params.x * 0.3) * (1.0 + bass * 0.4);
+    let edgeBoost = u.zoom_params.y * 2.0 * (1.0 + treble * 0.3);
     let glowIntensity = u.zoom_params.z * 2.0;
     let occlusionBalance = u.zoom_params.w;
 
-    // Sobel kernels
-    let stepX = 1.0 / resolution.x;
-    let stepY = 1.0 / resolution.y;
+    let stepX = 1.0 / max(resolution.x, 1.0);
+    let stepY = 1.0 / max(resolution.y, 1.0);
 
-    let t_l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, -stepY), 0.0).rgb;
-    let t_c = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -stepY), 0.0).rgb;
-    let t_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, -stepY), 0.0).rgb;
-    let m_l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, 0.0), 0.0).rgb;
-    let m_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, 0.0), 0.0).rgb;
-    let b_l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-stepX, stepY), 0.0).rgb;
-    let b_c = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, stepY), 0.0).rgb;
-    let b_r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(stepX, stepY), 0.0).rgb;
+    // Sample neighbors as full vec4 (preserve alpha)
+    let s_tl = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(-stepX, -stepY), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let s_tc = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, -stepY), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let s_tr = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(stepX, -stepY), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let s_ml = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(-stepX, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let s_mc = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let s_mr = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(stepX, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let s_bl = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(-stepX, stepY), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let s_bc = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, stepY), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let s_br = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(stepX, stepY), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
-    // Use luminance for edge detection
-    let gx = -1.0 * getLuminance(t_l) - 2.0 * getLuminance(m_l) - 1.0 * getLuminance(b_l) +
-              1.0 * getLuminance(t_r) + 2.0 * getLuminance(m_r) + 1.0 * getLuminance(b_r);
-
-    let gy = -1.0 * getLuminance(t_l) - 2.0 * getLuminance(t_c) - 1.0 * getLuminance(t_r) +
-              1.0 * getLuminance(b_l) + 2.0 * getLuminance(b_c) + 1.0 * getLuminance(b_r);
-
+    // Sobel on luminance
+    let gx = -getLuminance(s_tl.rgb) - 2.0 * getLuminance(s_ml.rgb) - getLuminance(s_bl.rgb)
+           + getLuminance(s_tr.rgb) + 2.0 * getLuminance(s_mr.rgb) + getLuminance(s_br.rgb);
+    let gy = -getLuminance(s_tl.rgb) - 2.0 * getLuminance(s_tc.rgb) - getLuminance(s_tr.rgb)
+           + getLuminance(s_bl.rgb) + 2.0 * getLuminance(s_bc.rgb) + getLuminance(s_br.rgb);
     let edgeStrength = sqrt(gx * gx + gy * gy);
 
-    // Mouse interaction: "Flashlight"
-    var mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    // Mouse flashlight
+    let mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let aspect = resolution.x / resolution.y;
-
-    // Correct distance for aspect ratio
     let distToMouse = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mousePos.x * aspect, mousePos.y));
+    let revealFalloff = 1.0 - smoothstep(0.0, max(revealRadius, 0.0001), distToMouse);
 
-    // Reveal falloff
-    let revealFalloff = 1.0 - smoothstep(0.0, revealRadius, distToMouse);
-
-    // Neon color cycling
+    // Neon color cycling (mids drives hue speed)
     let neonColor1 = vec3<f32>(1.0, 0.0, 0.8);
     let neonColor2 = vec3<f32>(0.0, 1.0, 1.0);
     let mixFactor = 0.5 + 0.5 * sin(time * 2.0 * audioReactivity + uv.x * 3.0);
     let neonColor = mix(neonColor1, neonColor2, mixFactor);
 
-    // Emission calculation
-    var emission = vec3<f32>(0.0);
-    
-    if (edgeStrength > 0.05) {
-        // Boost edge
-        let edge = smoothstep(0.05, 0.3, edgeStrength);
+    // Emission (branchless)
+    let edge = smoothstep(0.05, 0.3, edgeStrength);
+    let glow = 0.3 + (2.0 + bass * 1.5) * revealFalloff;
+    let emission = neonColor * glow * edge * edgeBoost * glowIntensity;
 
-        // Intensity depends on mouse proximity
-        let glow = 0.3 + 2.0 * revealFalloff;
-
-        emission = neonColor * glow * edge * edgeBoost * 2.0;
-    }
-
-    // Calculate alpha based on emission intensity
     let glowStrength = length(emission);
-    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
 
-    // Output with emission alpha
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
+    // Meaningful alpha: edge strength + reveal + source alpha + audio sparkle
+    let baseAlpha = s_mc.a;
+    let alpha = clamp(edge * 0.5 + revealFalloff * 0.3 + baseAlpha * 0.2 + glowStrength * 0.1 * occlusionBalance + treble * 0.1, 0.0, 1.0);
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(writeTexture, coord, vec4<f32>(emission, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(emission, alpha));
 }
