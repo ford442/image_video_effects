@@ -83,6 +83,16 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
     "totalPasses": 2,
     "nextShader": null
   },
+  "tone-histogram-apply": {
+    "pass": 2,
+    "totalPasses": 2,
+    "nextShader": null
+  },
+  "tone-histogram": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "tone-histogram-apply"
+  },
   "digital-glitch-pass1": {
     "pass": 1,
     "totalPasses": 2,
@@ -104,6 +114,21 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
     "nextShader": "quantum-foam-pass3"
   },
   "quantum-foam-pass3": {
+    "pass": 3,
+    "totalPasses": 3,
+    "nextShader": null
+  },
+  "rd-on-video-pass1": {
+    "pass": 1,
+    "totalPasses": 3,
+    "nextShader": "rd-on-video-pass2"
+  },
+  "rd-on-video-pass2": {
+    "pass": 2,
+    "totalPasses": 3,
+    "nextShader": "rd-on-video-pass3"
+  },
+  "rd-on-video-pass3": {
     "pass": 3,
     "totalPasses": 3,
     "nextShader": null

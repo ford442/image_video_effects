@@ -2293,6 +2293,181 @@
     ]
   },
   {
+    "id": "rd-on-video-pass1",
+    "name": "RD on Video (Pass 1: State Update)",
+    "url": "shaders/rd-on-video-pass1.wgsl",
+    "category": "simulation",
+    "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance.",
+    "features": [
+      "multi-pass-1",
+      "temporal",
+      "video-driven",
+      "webcam-friendly"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 3,
+      "nextShader": "rd-on-video-pass2"
+    },
+    "tags": [
+      "reaction-diffusion",
+      "video",
+      "luminance",
+      "organic",
+      "turing"
+    ],
+    "params": [
+      {
+        "id": "feed",
+        "name": "Feed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "kill",
+        "name": "Kill",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "diffusion",
+        "name": "Diffusion",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dt",
+        "name": "Time Step",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "rd-on-video-pass2",
+    "name": "RD on Video (Pass 2: Turing Color Map)",
+    "url": "shaders/rd-on-video-pass2.wgsl",
+    "category": "simulation",
+    "description": "Color-maps reaction-diffusion chemistry into vivid Turing pattern fields.",
+    "features": [
+      "multi-pass-2",
+      "temporal",
+      "color-map"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 3,
+      "prevShader": "rd-on-video-pass1",
+      "nextShader": "rd-on-video-pass3"
+    },
+    "tags": [
+      "reaction-diffusion",
+      "turing",
+      "palette",
+      "organic"
+    ],
+    "params": [
+      {
+        "id": "gamma",
+        "name": "Pattern Gamma",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "edge_gain",
+        "name": "Edge Gain",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "seed_gain",
+        "name": "Seed Gain",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "hue_shift",
+        "name": "Hue Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "rd-on-video-pass3",
+    "name": "RD on Video (Pass 3: Composite)",
+    "url": "shaders/rd-on-video-pass3.wgsl",
+    "category": "simulation",
+    "description": "Composites Turing color output over video using luminance-aware masking.",
+    "features": [
+      "multi-pass-3",
+      "video-composite",
+      "luma-mask",
+      "webcam-friendly"
+    ],
+    "multipass": {
+      "pass": 3,
+      "totalPasses": 3,
+      "prevShader": "rd-on-video-pass2"
+    },
+    "tags": [
+      "reaction-diffusion",
+      "composite",
+      "video",
+      "luma-mask"
+    ],
+    "params": [
+      {
+        "id": "luma_gate",
+        "name": "Luma Gate",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mask_softness",
+        "name": "Mask Softness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "blend",
+        "name": "Blend",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "sim-decay-system-rgba",
     "name": "Sim: Decay System RGBA",
     "url": "shaders/sim-decay-system-rgba.wgsl",
@@ -2903,6 +3078,62 @@
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
     "created_date": "2026-03-22"
+  },
+  {
+    "id": "slime-mold-on-video",
+    "name": "Slime Mold on Video",
+    "url": "shaders/slime-mold-on-video.wgsl",
+    "category": "simulation",
+    "description": "Video luminance acts as a food field for a slime-mold style trail simulation with persistent tendrils.",
+    "features": [
+      "simulation",
+      "temporal",
+      "video-driven",
+      "trail-feedback",
+      "webcam-friendly"
+    ],
+    "tags": [
+      "slime",
+      "physarum",
+      "video",
+      "food-map",
+      "tendrils",
+      "glow"
+    ],
+    "params": [
+      {
+        "id": "follow",
+        "name": "Trail Follow",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "food_gain",
+        "name": "Food Gain",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "spec-runge-kutta-advection",
