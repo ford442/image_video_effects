@@ -42,7 +42,8 @@
     "depth-aware",
     "spring-mass",
     "velocity-sensitive",
-    "splash-response"
+    "splash-response",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

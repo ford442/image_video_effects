@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Polka Dot Reveal
 //  Category: artistic
-//  Features: mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  By: Shader Upgrade Swarm Phase A
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -33,17 +33,19 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
     return mix(prev, bass, k);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
+    let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let mouse = u.zoom_config.yz;
     let time = u.config.x;
     let mouseDown = u.zoom_config.w > 0.5;
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
     let speed = clamp(u.zoom_params.y, 0.0, 1.0);
@@ -55,8 +57,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prevMouse = prev.gb;
     let prevAlpha = prev.a;
 
-    let rawBass = plasmaBuffer[0].x;
-    let bass = bass_env(prevBass, rawBass, 0.8, 0.15);
+    let bass_smooth = bass_env(prevBass, bass, 0.8, 0.15);
 
     let smoothMouse = mix(prevMouse, mouse, 0.12);
     let mouseVel = length(mouse - smoothMouse);
@@ -77,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color = textureSampleLevel(readTexture, u_sampler, cell_center, 0.0);
     let lum = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    let audioBoost = 1.0 + bass * 0.5;
+    let audioBoost = 1.0 + bass_smooth * 0.5 + mids * 0.2;
     let clickBoost = select(1.0, 1.4, mouseDown);
     let radius = lum * 0.5 * audioBoost * clickBoost;
 
@@ -92,23 +93,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let trailDecay = mix(0.72, 0.96, intensity);
     let trailAlpha = prevAlpha * trailDecay;
-    let dotAlpha = max(mix(0.2, 1.0, lum) * intensity * (1.0 + bass * 0.2), trailAlpha);
+    let dotAlpha = max(mix(0.2, 1.0, lum) * intensity * (1.0 + bass_smooth * 0.2), trailAlpha);
 
-    let satBoost = 1.0 + bass * 0.3;
+    let satBoost = 1.0 + bass_smooth * 0.3 + treble * 0.1;
     let dotColor = vec4<f32>(color.rgb * satBoost, dotAlpha);
 
     var final_color = mix(vec4<f32>(0.0, 0.0, 0.0, 0.0), dotColor, circle);
 
-    let interaction = clamp(bass * 0.5 + mouseVel * 2.0, 0.0, 1.0);
-    final_color.a = mix(final_color.a, 1.0, interaction * 0.25);
-
+    let interaction = clamp(bass_smooth * 0.5 + mouseVel * 2.0 + treble * 0.1, 0.0, 1.0);
+    final_color.a = clamp(final_color.a + interaction * 0.25, 0.0, 1.0);
     final_color = clamp(final_color, vec4<f32>(0.0), vec4<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
-
-    let state = vec4<f32>(bass, smoothMouse.x, smoothMouse.y, final_color.a);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), state);
+    let state = vec4<f32>(bass_smooth, smoothMouse.x, smoothMouse.y, final_color.a);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), state);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

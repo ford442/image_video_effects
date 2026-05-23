@@ -5,7 +5,10 @@
   "type": "compute",
   "coordinate": 874,
   "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
-  "features": ["audio-reactive"],
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "parameters": [
     {
       "id": "iterations",

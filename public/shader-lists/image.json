@@ -890,7 +890,8 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -8603,7 +8604,8 @@
     "description": "Blends the image with a domain-warped, zoomed and rotated version of itself. Voronoi cellular ridges modulate the overlay intensity. Reacts to audio bass.",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8827,7 +8829,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -9938,7 +9941,8 @@
       "depth-aware",
       "spring-mass",
       "velocity-sensitive",
-      "splash-response"
+      "splash-response",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -13368,7 +13372,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -13610,7 +13615,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "description": "Reveals a spectral dimension where you paint with the mouse. Reacts to audio bass.",
     "params": [

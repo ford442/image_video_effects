@@ -3784,7 +3784,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3803,7 +3804,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {

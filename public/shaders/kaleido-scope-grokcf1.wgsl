@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Kaleido-Scope Prism grokcf1
 //  Category: geometric
-//  Features: mouse-driven, audio-reactive, temporal-feedback
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Upgrades: spring-damper mouse, attack/release envelope, feedback trails
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,47 +22,46 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
 
-    // ── Global state update (pixel 0,0) ────────────────────────────
-    var env = prev.r;
-    var spring = prev.gb;
-    var vel = prev.a;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        let bass = plasmaBuffer[0].x;
-        let attack = select(0.15, 0.8, bass > env);
-        env = mix(prev.r, bass, attack);
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-        let mouse_target = u.zoom_config.yz;
-        let dt = 0.016;
-        let dir = mouse_target - spring;
-        let dist_to_target = length(dir);
-        let ndir = select(vec2<f32>(0.0), dir / dist_to_target, dist_to_target > 0.001);
-        let force = dist_to_target * 12.0 - vel * 3.0;
-        vel = vel + force * dt;
-        spring = spring + ndir * vel * dt;
+    // ── Global state update (branchless) ───────────────────────────
+    let isStatePixel = global_id.x == 0u && global_id.y == 0u;
+    let stateRead = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
 
-        textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(env, spring, vel));
-    }
+    let mouse_target = u.zoom_config.yz;
+    let dt = 0.016;
+    let dir = mouse_target - stateRead.gb;
+    let dist_to_target = length(dir);
+    let ndir = select(vec2<f32>(0.0), dir / max(dist_to_target, 0.0001), dist_to_target > 0.001);
+    let prevVel = stateRead.a;
+    let force = dist_to_target * 12.0 - prevVel * 3.0;
+    let newVel = prevVel + force * dt;
+    let newSpring = stateRead.gb + ndir * newVel * dt;
+    let attack = select(0.15, 0.8, bass > stateRead.r);
+    let newEnv = mix(stateRead.r, bass, attack);
 
-    // ── Read back global state ─────────────────────────────────────
-    let state = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
-    env = state.r;
-    let mouse = state.gb;
+    let env = select(stateRead.r, newEnv, isStatePixel);
+    let mouseX = select(stateRead.g, newSpring.x, isStatePixel);
+    let mouseY = select(stateRead.b, newSpring.y, isStatePixel);
+    let mouse = vec2<f32>(mouseX, mouseY);
+    let stateOut = vec4<f32>(newEnv, newSpring, newVel);
 
     // ── Kaleidoscope core ──────────────────────────────────────────
     let segments_param = u.zoom_params.x;
@@ -82,25 +81,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     angle = angle + time;
 
     angle = angle - segment_angle * floor(angle / segment_angle);
-    if (angle > segment_angle * 0.5) {
-        angle = segment_angle - angle;
-    }
+    angle = select(angle, segment_angle - angle, angle > segment_angle * 0.5);
 
     let scale = 2.0 - zoom * 1.8;
     let radius = dist * scale + offset_param * 0.5;
     let new_vec = vec2<f32>(cos(angle), sin(angle)) * radius;
-    let sample_uv = vec2<f32>(0.5, 0.5) + vec2<f32>(new_vec.x / aspect, new_vec.y);
+    let sample_uv = clamp(vec2<f32>(0.5, 0.5) + vec2<f32>(new_vec.x / aspect, new_vec.y), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // ── Sample & prism ─────────────────────────────────────────────
     var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
 
     let prism_shift = sin(angle * 6.0 + time) * (0.02 + env * 0.06);
-    let r = textureSampleLevel(readTexture, u_sampler, sample_uv + vec2<f32>(prism_shift, 0.0), 0.0).r;
-    let b = textureSampleLevel(readTexture, u_sampler, sample_uv - vec2<f32>(prism_shift, 0.0), 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv + vec2<f32>(prism_shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv - vec2<f32>(prism_shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     color = vec3<f32>(r, color.g, b);
 
     // ── Reflections ────────────────────────────────────────────────
-    let reflect_uv = vec2<f32>(0.5, 0.5) - vec2<f32>(new_vec.x / aspect, new_vec.y);
+    let reflect_uv = clamp(vec2<f32>(0.5, 0.5) - vec2<f32>(new_vec.x / aspect, new_vec.y), vec2<f32>(0.0), vec2<f32>(1.0));
     let reflect_color = textureSampleLevel(readTexture, u_sampler, reflect_uv, 0.0).rgb * (0.3 + env * 0.4);
     color += reflect_color;
 
@@ -108,23 +105,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let click_pulse = select(1.0, 1.3, u.zoom_config.w > 0.5);
     color *= click_pulse;
 
+    // ── Audio modulation ───────────────────────────────────────────
+    color *= (1.0 + bass * 0.1 + mids * 0.05 + treble * 0.05);
+
     // ── Alpha ──────────────────────────────────────────────────────
     let luminance = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let effect_intensity = clamp(0.5 + dist * 0.5, 0.0, 1.0);
     let alpha = clamp(0.25 + luminance * 0.7 * effect_intensity, 0.0, 1.0);
 
     // ── Temporal feedback trails ───────────────────────────────────
-    var out = vec4<f32>(color, alpha);
-    if (global_id.x != 0u || global_id.y != 0u) {
-        let decay = 0.88;
-        let trail_rgb = mix(color, prev.rgb * decay, 0.35);
-        let trail_alpha = mix(alpha, prev.a * decay, 0.35);
-        out = vec4<f32>(trail_rgb, trail_alpha);
-        textureStore(dataTextureA, vec2<i32>(global_id.xy), out);
-    }
+    let decay = 0.88;
+    let trail_rgb = mix(color, prev.rgb * decay, 0.35);
+    let trail_alpha = mix(alpha, prev.a * decay, 0.35);
+    let trailColor = vec4<f32>(trail_rgb, trail_alpha);
+    let centerColor = vec4<f32>(color, alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), out);
+    let finalColor = select(trailColor, centerColor, isStatePixel);
+    let dataAOut = select(trailColor, stateOut, isStatePixel);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    textureStore(dataTextureA, global_id.xy, dataAOut);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

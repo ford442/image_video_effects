@@ -1,13 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Spectral Brush
 //  Category: image
-//  Features: mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: spectral-brush
 //  Created: 2026-05-10
-//  By: Phase A Shader Upgrade Agent
-//  Optimized: 2026-05-17 — early exits, textureLoad where possible,
-//            branchless alpha, reduced redundant constructors
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -38,21 +35,21 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
   return color * c + cross(k, color) * s + k * dot(k, color) * (1.0 - c);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
   let resolution = u.config.zw;
   let coord = vec2<i32>(global_id.xy);
-
-  if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) {
-    return;
-  }
-
   let uv = vec2<f32>(coord) / resolution;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
 
-  let brushSize = u.zoom_params.x * 0.2;
-  let spectralShift = u.zoom_params.y * 6.28 + bass;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let brushSize = u.zoom_params.x * 0.2 * (1.0 + bass * 0.2);
+  let spectralShift = u.zoom_params.y * 6.28 + bass + mids * 0.3;
   let decay = 0.005 + (1.0 - u.zoom_params.z) * 0.1;
   let edgeHardness = u.zoom_params.w;
 
@@ -63,30 +60,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevMask = textureLoad(dataTextureC, coord, 0).r;
   let mask = max(0.0, prevMask - decay);
 
-  // Early exit for untouched pixels: no residual mask and outside brush radius
-  if (mask <= 0.0 && dist > brushSize) {
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let depth = textureLoad(readDepthTexture, coord, 0).r;
-    textureStore(dataTextureA, coord, vec4<f32>(0.0));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(writeTexture, coord, original);
-    return;
-  }
+  let untouched = select(0.0, 1.0, mask <= 0.0 && dist > brushSize);
 
   let innerRadius = brushSize * (1.0 - edgeHardness * 0.9);
   let brushVal = 1.0 - smoothstep(innerRadius, brushSize, dist);
   let finalMask = max(mask, brushVal);
-
-  textureStore(dataTextureA, coord, vec4<f32>(finalMask, 0.0, 0.0, finalMask));
+  let effectiveMask = mix(finalMask, 0.0, untouched);
 
   let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let spectral = hueShift(1.0 - original.rgb, spectralShift + time);
-  let finalColor = mix(original.rgb, spectral, finalMask);
+  let brushRGB = mix(original.rgb, spectral, effectiveMask);
+  let sparkle = treble * 0.15 * effectiveMask;
+  let brushRGBSparkle = clamp(brushRGB + vec3<f32>(sparkle), vec3<f32>(0.0), vec3<f32>(1.0));
 
-  let luminance = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = mix(original.a, clamp(luminance + 0.3, 0.0, 1.0), finalMask);
+  let luminance = dot(brushRGBSparkle, vec3<f32>(0.299, 0.587, 0.114));
+  let brushAlpha = mix(original.a, clamp(luminance + 0.3, 0.0, 1.0), effectiveMask);
 
-  let depth = textureLoad(readDepthTexture, coord, 0).r;
+  let finalColor = mix(vec4<f32>(brushRGBSparkle, brushAlpha), original, untouched);
+  let dataA = mix(vec4<f32>(effectiveMask, 0.0, 0.0, effectiveMask), vec4<f32>(0.0), untouched);
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, finalColor);
+  textureStore(dataTextureA, coord, dataA);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
 }

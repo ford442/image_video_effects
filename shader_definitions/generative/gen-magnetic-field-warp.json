@@ -18,7 +18,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {

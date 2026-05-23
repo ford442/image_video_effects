@@ -1,19 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Swirling Void
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: OkLab mix, blackbody temperature, ACES tonemap, IGN dither
 //  Created: 2026-05-10
-//  By: The Visualist
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -28,6 +20,13 @@ struct Uniforms {
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
 
 fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
   let l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
@@ -52,14 +51,13 @@ fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
 }
 fn blackbodyRGB(T: f32) -> vec3<f32> {
   let t = clamp(T, 1000.0, 40000.0) / 100.0;
-  var r = 0.0; var g = 0.0; var b = 0.0;
-  if (t <= 66.0) { r = 1.0; }
-  else { r = clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0); }
-  if (t <= 66.0) { g = clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0); }
-  else { g = clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0); }
-  if (t >= 66.0) { b = 1.0; }
-  else if (t <= 19.0) { b = 0.0; }
-  else { b = clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0); }
+  let r = select(clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0), 1.0, t <= 66.0);
+  let g_low = clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0);
+  let g_high = clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0);
+  let g = select(g_high, g_low, t <= 66.0);
+  let b_mid = clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0);
+  let b_low = select(b_mid, 0.0, t <= 19.0);
+  let b = select(1.0, b_low, t < 66.0);
   return vec3<f32>(r, g, b);
 }
 fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
@@ -75,51 +73,55 @@ fn ign(p: vec2<f32>) -> f32 {
   return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let dims = vec2<i32>(textureDimensions(writeTexture));
-  if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) { return; }
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
   let coord = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(coord) / vec2<f32>(dims);
-  let aspect = u.config.z / u.config.w;
+  let resolution = u.config.zw;
+  let uv = vec2<f32>(coord) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0);
   let mouse = u.zoom_config.yz;
   let strength = u.zoom_params.x * 5.0;
   let radius = u.zoom_params.y;
   let darkness = u.zoom_params.z;
   let audioReact = u.zoom_params.w;
-  let bass = plasmaBuffer[0].x;
   let reactiveStrength = strength * (1.0 + bass * audioReact);
   let uv_centered = uv - mouse;
   let uv_corrected = vec2<f32>(uv_centered.x * aspect, uv_centered.y);
   let dist = length(uv_corrected);
   let angle = atan2(uv_corrected.y, uv_corrected.x);
   let influence = exp(-dist * (10.0 * (1.1 - radius)));
-  let twist = reactiveStrength * influence;
+  let twist = reactiveStrength * influence * (1.0 + mids * 0.3);
   let final_angle = angle + twist;
   let new_uv_corrected = vec2<f32>(cos(final_angle), sin(final_angle)) * dist;
-  let new_uv = vec2<f32>(new_uv_corrected.x / aspect, new_uv_corrected.y) + mouse;
+  let new_uv = clamp(vec2<f32>(new_uv_corrected.x / aspect, new_uv_corrected.y) + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
   let color = textureSampleLevel(readTexture, u_sampler, new_uv, 0.0).rgb;
-  // Event horizon sizing
+
   let hole_size = 0.04 + 0.08 * darkness;
   let voidEdge = smoothstep(hole_size, hole_size * 3.0, dist);
-  // Accretion disk: blackbody glow peaking just outside horizon
   let glowRing = hole_size * 1.6;
-  let glowDist = abs(dist - glowRing) / glowRing;
+  let glowDist = abs(dist - glowRing) / max(glowRing, 1e-4);
   let glowT = 1200.0 + 6800.0 * (1.0 - smoothstep(0.0, 0.8, glowDist));
-  let glowRGB = blackbodyRGB(glowT) * 4.0;
+  let glowRGB = blackbodyRGB(glowT) * 4.0 * (1.0 + treble * 0.2);
   let glowMix = (1.0 - smoothstep(0.0, 0.6, glowDist)) * (1.0 - voidEdge) * darkness;
-  // Volumetric darkening toward void center
   let darken = mix(0.15, 1.0, voidEdge * (1.0 - darkness * 0.3));
-  // Process in linear, OkLab mix toward blackbody glow
   let linearColor = pow(color, vec3<f32>(2.2));
   let mixed = mixOkLab(linearColor * darken, glowRGB, glowMix * (1.0 + bass * audioReact * 0.5));
-  // HDR clamp, ACES tonemap, IGN dither
   let clamped = hue_preserve_clamp(mixed, 6.0);
   let tonemapped = aces(clamped);
   let dither = (ign(vec2<f32>(coord)) - 0.5) / 255.0;
   let srgb = pow(max(tonemapped + vec3<f32>(dither), vec3<f32>(0.0)), vec3<f32>(1.0/2.2));
-  let a = clamp(voidEdge, 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(srgb * a, a));
+  let luminance = dot(srgb, vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = clamp(voidEdge * 0.7 + luminance * 0.3 + glowMix * 0.3, 0.0, 1.0);
+  let finalColor = vec4<f32>(srgb * alpha, alpha);
+
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, finalColor);
+  textureStore(dataTextureA, global_id.xy, finalColor);
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

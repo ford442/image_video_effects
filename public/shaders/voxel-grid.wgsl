@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Voxel Grid
 //  Category: visual-effects
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Agent
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -52,10 +52,10 @@ fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
 
 fn blackbodyRGB(T: f32) -> vec3<f32> {
     let t = clamp(T, 1000.0, 40000.0) / 100.0;
-    var r = select(clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0), 1.0, t <= 66.0);
-    var g = select(clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0),
+    let r = select(clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0), 1.0, t <= 66.0);
+    let g = select(clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0),
                    clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0), t <= 66.0);
-    var b = select(select(clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0), 0.0, t <= 19.0), 1.0, t >= 66.0);
+    let b = select(select(clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0), 0.0, t <= 19.0), 1.0, t >= 66.0);
     return vec3<f32>(r, g, b);
 }
 
@@ -68,19 +68,25 @@ fn ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
     let dimensions = textureDimensions(writeTexture);
     let coords = vec2<i32>(global_id.xy);
-    if (coords.x >= i32(dimensions.x) || coords.y >= i32(dimensions.y)) { return; }
     let uv = vec2<f32>(coords) / vec2<f32>(dimensions);
     let aspect = u.config.z / u.config.w;
     let time = u.config.x;
-    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let grid_density = u.zoom_params.x;
     let touch_radius = u.zoom_params.y;
     let rotation_strength = u.zoom_params.z;
     let cell_gap = u.zoom_params.w;
+
     let grid_uv = floor(uv * grid_density) / grid_density;
     let cell_center = grid_uv + (0.5 / grid_density);
     let mouse = u.zoom_config.yz;
@@ -93,38 +99,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let local_uv = fract(uv * grid_density);
     let centered = local_uv - 0.5;
     let rotated = vec2<f32>(centered.x * c - centered.y * s, centered.x * s + centered.y * c);
-    let cell_color = textureSampleLevel(readTexture, u_sampler, cell_center, 0.0).rgb;
+    let cell_color = textureSampleLevel(readTexture, u_sampler, clamp(cell_center, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let scale = 0.5 - (cell_gap * 0.5);
     let pop = influence * 0.2 + bass * 0.15;
     let current_scale = scale + pop;
     let box_dist = max(abs(rotated.x), abs(rotated.y)) - current_scale;
-    var final_color: vec4<f32>;
-    if (box_dist < 0.0) {
-        let key_temp = mix(3500.0, 6500.0, bass + influence * 0.5);
-        let key_col = blackbodyRGB(key_temp);
-        let fill_col = blackbodyRGB(8500.0);
-        let nx = rotated.x / max(current_scale, 0.001);
-        let ny = rotated.y / max(current_scale, 0.001);
-        let nz = sqrt(max(0.0, 1.0 - nx*nx - ny*ny));
-        let normal = vec3<f32>(nx, ny, nz);
-        let key_lit = max(dot(normal, normalize(vec3<f32>(-0.5, 0.7, 0.5))), 0.0);
-        let fill_lit = max(dot(normal, normalize(vec3<f32>(0.6, 0.2, 0.4))), 0.0) * 0.35;
-        let fresnel = pow(1.0 - max(dot(normal, vec3<f32>(0.0, 0.0, 1.0)), 0.0), 3.0);
-        let edge_dist = -box_dist / (cell_gap + 0.02);
-        let irid = sin(fresnel * 12.0 + time * 2.0 + bass * 4.0) * 0.5 + 0.5;
-        let irid_col = vec3<f32>(0.4, 0.7, 1.0) * irid * fresnel * edge_dist;
-        let lit = cell_color * (key_col * key_lit + fill_col * fill_lit);
-        let shaded = mixOkLab(lit, irid_col, fresnel * edge_dist * 0.5);
-        let hdr = shaded * (1.4 + influence * 0.6 + bass * 0.5);
-        let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
-        let alpha = clamp(luma + influence * 0.3 + bass * 0.2, 0.2, 1.0);
-        let mapped = aces(hdr);
-        let dither = (ign(vec2<f32>(coords)) - 0.5) / 255.0;
-        final_color = vec4<f32>((mapped + vec3<f32>(dither)) * alpha, alpha);
-    } else {
-        final_color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-    }
-    textureStore(writeTexture, coords, final_color);
+
+    let inside = select(0.0, 1.0, box_dist < 0.0);
+
+    let key_temp = mix(3500.0, 6500.0, bass + influence * 0.5);
+    let key_col = blackbodyRGB(key_temp);
+    let fill_col = blackbodyRGB(8500.0);
+    let nx = rotated.x / max(current_scale, 0.001);
+    let ny = rotated.y / max(current_scale, 0.001);
+    let nz = sqrt(max(0.0, 1.0 - nx*nx - ny*ny));
+    let normal = vec3<f32>(nx, ny, nz);
+    let key_lit = max(dot(normal, normalize(vec3<f32>(-0.5, 0.7, 0.5))), 0.0);
+    let fill_lit = max(dot(normal, normalize(vec3<f32>(0.6, 0.2, 0.4))), 0.0) * 0.35;
+    let fresnel = pow(1.0 - max(dot(normal, vec3<f32>(0.0, 0.0, 1.0)), 0.0), 3.0);
+    let edge_dist = -box_dist / max(cell_gap + 0.02, 0.001);
+    let irid = sin(fresnel * 12.0 + time * 2.0 + bass * 4.0 + mids * 2.0) * 0.5 + 0.5;
+    let irid_col = vec3<f32>(0.4, 0.7, 1.0) * irid * fresnel * edge_dist;
+    let lit = cell_color * (key_col * key_lit + fill_col * fill_lit);
+    let shaded = mixOkLab(lit, irid_col, fresnel * edge_dist * 0.5);
+    let hdr = shaded * (1.4 + influence * 0.6 + bass * 0.5 + treble * 0.2);
+    let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let alpha = clamp(luma + influence * 0.3 + bass * 0.2, 0.2, 1.0);
+    let mapped = aces(hdr);
+    let dither = (ign(vec2<f32>(coords)) - 0.5) / 255.0;
+    let inside_color = vec4<f32>((mapped + vec3<f32>(dither)) * alpha, alpha);
+
+    let final_color = mix(vec4<f32>(0.0, 0.0, 0.0, 0.0), inside_color, inside);
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, coords, final_color);
+    textureStore(dataTextureA, coords, final_color);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

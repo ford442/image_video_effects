@@ -6,7 +6,8 @@
   "description": "Blends the image with a domain-warped, zoomed and rotated version of itself. Voronoi cellular ridges modulate the overlay intensity. Reacts to audio bass.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

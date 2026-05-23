@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Magnetic Field Warp
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, depth-aware
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  By: Shader Upgrade Agent
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -71,15 +71,18 @@ fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
     return vec2<f32>(sin(a * p.y) + c * cos(a * p.x), sin(b * p.x) + d * cos(b * p.y));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
     let coords = vec2<i32>(global_id.xy);
     let res = vec2<i32>(i32(u.config.z), i32(u.config.w));
-    if (coords.x >= res.x || coords.y >= res.y) { return; }
-
     let uv = vec2<f32>(coords) / vec2<f32>(res);
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Domain-warped FBM turbulence on UV
     let warp = warpedFBM(uv * 3.0, time * 0.3);
@@ -110,9 +113,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let read_coords = vec2<i32>(safe_uv * vec2<f32>(res));
     let color = textureLoad(readTexture, read_coords, 0);
 
-    // Depth pass-through
+    // Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
     // Spectral remapping
     let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -124,8 +126,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Alpha encodes total field energy
     let energy = clamp(length(field) * 4.0 + length(attractor) * a_weight * 6.0, 0.0, 1.0);
-    let target_alpha = clamp(0.5 + luma * 0.4 + bass * 0.25, 0.0, 1.0);
+    let target_alpha = clamp(0.5 + luma * 0.4 + bass * 0.25 + mids * 0.1 + treble * 0.05, 0.0, 1.0);
     let final_alpha = clamp(mix(color.a, target_alpha, energy * mix_factor), 0.0, 1.0);
 
-    textureStore(writeTexture, coords, vec4<f32>(mixed_color.rgb, final_alpha));
+    let finalColor = vec4<f32>(mixed_color.rgb, final_alpha);
+
+    textureStore(writeTexture, coords, finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

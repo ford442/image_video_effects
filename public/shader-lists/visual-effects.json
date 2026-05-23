@@ -1372,7 +1372,8 @@
     "url": "shaders/voxel-grid.wgsl",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

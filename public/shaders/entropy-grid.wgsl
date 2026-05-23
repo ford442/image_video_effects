@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Entropy Grid
 //  Category: image
-//  Features: mouse-driven, audio-reactive, audio-driven
+//  Features: mouse-driven, audio-reactive, audio-driven, upgraded-rgba
 //  Complexity: High
 //  Chunks From: Algorithmist upgrade — domain-warped FBM, Voronoi F2-F1, Clifford attractor
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Agent
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,8 +23,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -72,7 +72,9 @@ fn voronoiF2minusF1(p: vec2<f32>) -> f32 {
         for (var j = -1; j <= 1; j = j + 1) {
             let n = ip + vec2<f32>(f32(i), f32(j));
             let d = length(p - n - hash21(n));
-            if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+            let lt_F1 = d < F1;
+            F2 = select(select(F2, d, d < F2), F1, lt_F1);
+            F1 = select(F1, d, lt_F1);
         }
     }
     return F2 - F1;
@@ -82,10 +84,11 @@ fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
     return vec2<f32>(sin(a * p.y) + c * cos(a * p.x), sin(b * p.x) + d * cos(b * p.y));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = textureDimensions(writeTexture);
-    let uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
+    let uv = vec2<f32>(global_id.xy) / vec2<f32>(u.config.zw);
     let aspect = u.config.z / max(u.config.w, 1.0);
     let uv_c = vec2<f32>(uv.x * aspect, uv.y);
     let mouse = u.zoom_config.yz;
@@ -98,9 +101,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radius = max(u.zoom_params.z, 0.001);
     let invert = u.zoom_params.w > 0.5;
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let reactiveChaos = clamp(chaos * (1.0 + bass * 0.5 + mids * 0.25), 0.0, 1.0);
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let reactiveChaos = clamp(chaos * (1.0 + bass * 0.5 + mids * 0.25 + treble * 0.1), 0.0, 1.0);
 
     let gridUV = floor(uv * gridSize);
     let cellCenter = (gridUV + 0.5) / max(gridSize, 0.001);
@@ -120,15 +125,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var influence = smoothstep(radius, radius * 0.3, dist);
     influence = select(influence, 1.0 - influence, invert);
 
-    let sampleUV = uv + offset * influence;
+    let sampleUV = clamp(uv + offset * influence, vec2<f32>(0.0), vec2<f32>(1.0));
     let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
     let effectIntensity = influence * reactiveChaos;
     let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(color.a, clamp(luma * 0.35 + 0.65 + cellRidge * 0.2, 0.4, 1.0), effectIntensity);
+    let alpha = mix(color.a, clamp(luma * 0.35 + 0.65 + cellRidge * 0.2 + mids * 0.05 + treble * 0.03, 0.4, 1.0), effectIntensity);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, alpha));
+    let finalColor = vec4<f32>(color.rgb, alpha);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

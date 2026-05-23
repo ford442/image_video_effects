@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Double Exposure Warp
 //  Category: image
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  By: Pixelocity Shader Upgrade Swarm — Phase A
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -71,7 +71,10 @@ fn voronoiF2minusF1(p: vec2<f32>) -> f32 {
       let h = fract(sin(dot(n, vec2<f32>(127.1, 311.7))) * 43758.5453);
       let off = vec2<f32>(h, fract(h * PHI));
       let d = length(p - n - off);
-      if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+      let oldF1 = F1;
+      F1 = min(F1, d);
+      let promoted = F1 != oldF1;
+      F2 = select(min(F2, d), oldF1, promoted);
     }
   }
   return F2 - F1;
@@ -82,32 +85,31 @@ fn rotate2d(uv: vec2<f32>, angle: f32) -> vec2<f32> {
   return vec2<f32>(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(1.0));
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-  let coords = vec2<i32>(global_id.xy);
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let resolution = u.config.zw;
+  let uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(1.0));
+  let coords = vec2<i32>(global_id.xy);
+  let mouse = u.zoom_config.yz;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let t = u.config.x * 0.2;
 
   let zoom = 0.5 + u.zoom_params.x * 2.5;
   let angle = (u.zoom_params.y - 0.5) * PI * 0.5;
   let opacity = u.zoom_params.z;
   let warpStrength = u.zoom_params.w;
-  let t = u.config.x * 0.2;
-
-  let bass = plasmaBuffer[0].x;
-  let audioZoom = zoom * (1.0 + bass * 0.15);
-
-  let mouse = u.zoom_config.yz;
-  let aspect = resolution.x / max(resolution.y, 1.0);
+  let audioZoom = zoom * (1.0 + bass * 0.15 + mids * 0.05);
 
   let c1 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   var p = uv - mouse;
-  p.x *= aspect;
+  p.x = p.x * aspect;
   p = rotate2d(p, angle);
   p = p / max(audioZoom, 0.001);
 
@@ -115,11 +117,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let w = warpedFBM(p * warpScale, t) * 0.025 * (0.3 + warpStrength);
   p = p + vec2<f32>(cos(t * 0.7 + w * TAU), sin(t * 0.5 + w * TAU)) * w;
 
-  p.x /= aspect;
+  p.x = p.x / aspect;
   let uv2 = clamp(p + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
   let c2 = textureSampleLevel(readTexture, u_sampler, uv2, 0.0);
 
-  let voro = voronoiF2minusF1(uv * 3.0 + t * 0.15) * 2.0;
+  let voro = voronoiF2minusF1(uv * 3.0 + t * 0.15) * 2.0 * (1.0 + treble * 0.2);
   let mask = smoothstep(0.0, 0.5, voro + opacity * 0.5);
 
   var blended = 1.0 - (1.0 - c1.rgb) * (1.0 - c2.rgb * opacity * (0.7 + mask * 0.3));
@@ -127,9 +129,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gray = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
   blended = mix(vec3<f32>(gray), blended, 0.6 + opacity * 0.4);
 
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let luminance = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
   let depthFactor = 0.7 + depth * 0.3;
   let alpha = clamp(luminance * (0.5 + opacity * 0.5) * depthFactor + 0.15, 0.25, 1.0);
+  let finalColor = vec4<f32>(blended, alpha);
 
-  textureStore(writeTexture, coords, vec4<f32>(blended, alpha));
+  textureStore(writeTexture, coords, finalColor);
+  textureStore(dataTextureA, global_id.xy, finalColor);
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
