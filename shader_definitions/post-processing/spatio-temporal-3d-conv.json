@@ -1,0 +1,60 @@
+{
+  "id": "spatio-temporal-3d-conv",
+  "name": "Spatio-Temporal 3D Convolution",
+  "url": "shaders/spatio-temporal-3d-conv.wgsl",
+  "category": "post-processing",
+  "description": "3×3×T spatio-temporal convolution using the history ring buffer. A Gaussian spatial kernel is applied at each of T past frames and blended with temporal weights. Param 3 selects the operation mode: Temporal Noise Reduction (averages frames to kill flicker), Motion Blur (exponential frame accumulation), or Temporal Sharpening (subtracts the temporal mean to amplify transient changes).",
+  "tags": [
+    "temporal",
+    "convolution",
+    "noise-reduction",
+    "motion-blur",
+    "sharpening",
+    "3d-kernel",
+    "spatio-temporal"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "advanced-convolution",
+    "audio-reactive",
+    "upgraded-rgba",
+    "spatio-temporal"
+  ],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "Spatial Sigma",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Temporal Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Mode (0=Denoise 0.5=MotionBlur 1=Sharpen)",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "labels": ["Denoise", "Motion Blur", "Sharpen"]
+    },
+    {
+      "id": "param4",
+      "name": "Effect Strength",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

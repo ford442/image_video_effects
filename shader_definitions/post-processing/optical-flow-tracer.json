@@ -1,0 +1,59 @@
+{
+  "id": "optical-flow-tracer",
+  "name": "Optical Flow Tracer",
+  "url": "shaders/optical-flow-tracer.wgsl",
+  "category": "post-processing",
+  "description": "Lucas-Kanade optical flow tracer: computes per-pixel motion vectors between the current frame and the previous history frame, then warps after-images along those trajectories. Moving objects leave physically-accurate ghost trails that follow actual motion paths rather than fading in place.",
+  "tags": [
+    "temporal",
+    "optical-flow",
+    "motion",
+    "tracer",
+    "ghost",
+    "after-image",
+    "motion-vector"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "audio-reactive",
+    "mouse-driven",
+    "optical-flow",
+    "upgraded-rgba"
+  ],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "Trail Decay",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Flow Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Trail Age",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Current Blend",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}
