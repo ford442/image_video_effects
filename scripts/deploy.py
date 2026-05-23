@@ -21,42 +21,6 @@ USERNAME = "ford442"          # Your DreamHost username
 LOCAL_DIRECTORY = "build"
 REMOTE_DIRECTORY = "test.1ink.us/image_video_effects"  # Change to: yourdomain.com or yourdomain.com/subfolder
 
-# Pre-deploy hook: Create .htaccess for Apache cache control
-APACHE_HTACCESS = """# Cache busting for React/Vue bundles
-<IfModule mod_headers.c>
-    # Never cache HTML (contains bundle references)
-    <FilesMatch "\\.(html)$">
-        Header set Cache-Control "no-cache, no-store, must-revalidate"
-        Header set Pragma "no-cache"
-        Header set Expires "0"
-    </FilesMatch>
-    
-    # Cache hashed assets (JS/CSS with content hash) for 1 year
-    <FilesMatch "\\.[0-9a-f]{8,}\\.(js|css)$">
-        Header set Cache-Control "public, max-age=31536000, immutable"
-    </FilesMatch>
-    
-    # Cache media files for 30 days
-    <FilesMatch "\\.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|wasm)$">
-        Header set Cache-Control "public, max-age=2592000"
-    </FilesMatch>
-</IfModule>
-
-# Enable gzip compression
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json application/wasm
-</IfModule>
-
-# Handle client-side routing (React Router)
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
-    RewriteRule ^index\\.html$ - [L]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . /index.html [L]
-</IfModule>
-"""
 MANIFEST_FILE = ".deploy_manifest.json"
 
 # File patterns to skip (e.g., source maps if not needed)
@@ -224,14 +188,6 @@ def clean_remote(sftp_client, remote_path: str, manifest: dict):
     return removed
 
 
-def create_htaccess():
-    """Create .htaccess file in build directory for Apache cache control."""
-    htaccess_path = os.path.join(LOCAL_DIRECTORY, ".htaccess")
-    with open(htaccess_path, 'w') as f:
-        f.write(APACHE_HTACCESS)
-    print(f"✅ Created {htaccess_path} for Apache cache control")
-
-
 def verify_build_integrity():
     """
     Verify that index.html references bundles that actually exist.
@@ -285,9 +241,6 @@ def verify_build_integrity():
     return True
 
 def main():
-    # Create .htaccess before deploying
-    create_htaccess()
-    
     # Verify build integrity before deploying
     print("🔍 Verifying build integrity...")
     if not verify_build_integrity():
