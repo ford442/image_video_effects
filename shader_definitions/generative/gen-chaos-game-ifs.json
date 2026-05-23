@@ -1,0 +1,47 @@
+{
+  "id": "gen-chaos-game-ifs",
+  "name": "Chaos Game IFS",
+  "url": "shaders/gen-chaos-game-ifs.wgsl",
+  "category": "generative",
+  "description": "Iterated function system chaos game generating fractal attractors. Audio drives iteration depth and attractor scale. Rotating attractor points.",
+  "tags": ["generative", "ifs", "chaos-game", "fractal", "attractor", "audio", "music"],
+  "features": ["generative", "audio-reactive", "upgraded-rgba"],
+  "params": [
+    {
+      "id": "iterations",
+      "name": "Iterations",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "description": "IFS iteration depth"
+    },
+    {
+      "id": "glowSize",
+      "name": "Glow Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "description": "Attractor glow radius"
+    },
+    {
+      "id": "ringCount",
+      "name": "Ring Count",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "description": "Density of concentric rings"
+    },
+    {
+      "id": "saturation",
+      "name": "Saturation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "description": "Color saturation"
+    }
+  ]
+}

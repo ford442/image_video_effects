@@ -4,7 +4,9 @@
   "url": "shaders/luma-echo-warp.wgsl",
   "description": "Distorts the image based on pixel brightness and mouse position, creating a warping echo effect.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

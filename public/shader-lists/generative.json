@@ -1031,6 +1031,66 @@
     ]
   },
   {
+    "id": "gen-aperiodic-monotile",
+    "name": "Aperiodic Monotile Hat",
+    "url": "shaders/gen-aperiodic-monotile.wgsl",
+    "category": "generative",
+    "description": "Aperiodic hat tiling (monotile) with animated edge glow and audio-reactive color cycling. Rotates and scales with parameters.",
+    "tags": [
+      "generative",
+      "tiling",
+      "aperiodic",
+      "monotile",
+      "hat",
+      "geometric",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "scale",
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Density of tiling"
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Speed of tiling rotation"
+      },
+      {
+        "id": "edgeWidth",
+        "name": "Edge Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Width of tile edge glow"
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Color saturation intensity"
+      }
+    ]
+  },
+  {
     "id": "gen-art-deco-sky",
     "name": "Art Deco Skyscraper",
     "url": "shaders/gen-art-deco-sky.wgsl",
@@ -1929,6 +1989,65 @@
     ]
   },
   {
+    "id": "gen-chaos-game-ifs",
+    "name": "Chaos Game IFS",
+    "url": "shaders/gen-chaos-game-ifs.wgsl",
+    "category": "generative",
+    "description": "Iterated function system chaos game generating fractal attractors. Audio drives iteration depth and attractor scale. Rotating attractor points.",
+    "tags": [
+      "generative",
+      "ifs",
+      "chaos-game",
+      "fractal",
+      "attractor",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "IFS iteration depth"
+      },
+      {
+        "id": "glowSize",
+        "name": "Glow Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Attractor glow radius"
+      },
+      {
+        "id": "ringCount",
+        "name": "Ring Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Density of concentric rings"
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Color saturation"
+      }
+    ]
+  },
+  {
     "id": "gen-chromatic-metamorphosis",
     "name": "Chromatic Metamorphosis",
     "url": "shaders/gen-chromatic-metamorphosis.wgsl",
@@ -2623,6 +2742,66 @@
         "step": 0.1
       }
     ]
+  },
+  {
+    "id": "gen-de-jong-attractor",
+    "name": "Peter de Jong Attractor",
+    "url": "shaders/gen-de-jong-attractor.wgsl",
+    "category": "generative",
+    "description": "Strange attractor density accumulation for the 2D Peter de Jong map: x' = sin(a·y)−cos(b·x), y' = sin(c·x)−cos(d·y). Parameters slowly morph through time, continuously transforming the attractor topology through butterflies, snowflakes, spirographs, and alien lace-work. Temporal Monte Carlo builds density; bass warps the geometry; mouse pans and click-zooms.",
+    "tags": [
+      "chaos",
+      "strange-attractor",
+      "de-jong",
+      "temporal",
+      "fractal",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "speedA",
+        "name": "Morph Speed A",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speedB",
+        "name": "Morph Speed B",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "coordinate": 888
   },
   {
     "id": "gen-depth-refracted-liquid-stained-glass",
@@ -3539,6 +3718,66 @@
     ]
   },
   {
+    "id": "gen-hyperbolic-tree",
+    "name": "Hyperbolic Tree Fractal",
+    "url": "shaders/gen-hyperbolic-tree.wgsl",
+    "category": "generative",
+    "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. Möbius-transformed space.",
+    "tags": [
+      "generative",
+      "hyperbolic",
+      "tree",
+      "fractal",
+      "poincare",
+      "nature",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "depth",
+        "name": "Tree Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Recursion depth of branching"
+      },
+      {
+        "id": "branchAngle",
+        "name": "Branch Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Angle between child branches"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Base hue rotation"
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Color saturation"
+      }
+    ]
+  },
+  {
     "id": "gen-inverse-mandelbrot",
     "name": "Inverse Mandelbrot Realm",
     "url": "shaders/gen-inverse-mandelbrot.wgsl",
@@ -3712,6 +3951,65 @@
         "min": 0,
         "max": 5,
         "step": 0.1
+      }
+    ]
+  },
+  {
+    "id": "gen-klein-bottle-walk",
+    "name": "Klein Bottle Walk",
+    "url": "shaders/gen-klein-bottle-walk.wgsl",
+    "category": "generative",
+    "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation.",
+    "tags": [
+      "generative",
+      "klein-bottle",
+      "parametric",
+      "3d",
+      "surface",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "walkSpeed",
+        "name": "Walk Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Speed of surface traversal"
+      },
+      {
+        "id": "textureDensity",
+        "name": "Texture Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "FBM surface texture detail"
+      },
+      {
+        "id": "lightIntensity",
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Specular highlight strength"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Base color offset"
       }
     ]
   },
@@ -3938,6 +4236,66 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "gen-lorenz-attractor",
+    "name": "Lorenz Attractor",
+    "url": "shaders/gen-lorenz-attractor.wgsl",
+    "category": "generative",
+    "description": "Strange attractor density accumulation. Each pixel seeds a short Lorenz trajectory near an equilibrium lobe; Gaussian kernel splatting onto the x-z projection builds the iconic butterfly over many frames of temporal Monte Carlo integration. Bass widens the rho parameter for more chaotic spread; mouse pans the view.",
+    "tags": [
+      "chaos",
+      "strange-attractor",
+      "lorenz",
+      "temporal",
+      "physics",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "sigma",
+        "name": "Sigma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "rhoMod",
+        "name": "Rho (Chaos)",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "coordinate": 886
   },
   {
     "id": "gen-luminous-fluid-chladni-resonator",
@@ -6400,6 +6758,65 @@
     ]
   },
   {
+    "id": "gen-von-karman-vortex",
+    "name": "Von Kármán Vortex Street",
+    "url": "shaders/gen-von-karman-vortex.wgsl",
+    "category": "generative",
+    "description": "Analytic vortex-street flow visualization. Ten alternating point-vortex pairs shed behind the mouse-driven obstacle; their combined streamfunction ψ = U·y + Σ ±(Γ/2π)·ln(r) produces isocontours tracing the classic Kármán street wake. Bass drives shedding speed; mids vary vortex separation for staggered or aligned rows.",
+    "tags": [
+      "fluid-dynamics",
+      "vortex",
+      "karman",
+      "analytic",
+      "physics",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "vortexSeparation",
+        "name": "Vortex Separation",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "vortexSpacing",
+        "name": "Vortex Spacing",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue",
+        "name": "Colour Hue",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "coordinate": 887
+  },
+  {
     "id": "gen-voronoi-crystal",
     "name": "Voronoi Crystal",
     "url": "shaders/gen-voronoi-crystal.wgsl",
@@ -6559,6 +6976,66 @@
         "min": 0.1,
         "max": 5,
         "step": 0.1
+      }
+    ]
+  },
+  {
+    "id": "gen-zeta-function-landscape",
+    "name": "Zeta Function Landscape",
+    "url": "shaders/gen-zeta-function-landscape.wgsl",
+    "category": "generative",
+    "description": "Riemann zeta function visualization on the critical line. Magnitude creates landscape height, zeros form valleys. Audio reactivity modulates term count and color cycling.",
+    "tags": [
+      "generative",
+      "mathematical",
+      "zeta",
+      "riemann",
+      "landscape",
+      "abstract",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "sigma",
+        "name": "Sigma Offset",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Deviation from critical line (0.5)"
+      },
+      {
+        "id": "range",
+        "name": "T Range",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Width of t-axis exploration"
+      },
+      {
+        "id": "heightScale",
+        "name": "Height Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Vertical exaggeration of landscape"
+      },
+      {
+        "id": "terms",
+        "name": "Term Precision",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Zeta series term count"
       }
     ]
   },
