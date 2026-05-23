@@ -8480,40 +8480,39 @@
     ]
   },
   {
-    "id": "gen-glacial-aether-quantum-cavern",
-    "name": "Glacial-Aether Quantum-Cavern",
+    "id": "gen-celestial-nanite-swarm-nebula",
+    "name": "Celestial Nanite-Swarm Nebula",
     "category": "generative",
     "tags": [
-      "fractal",
-      "ice",
-      "quantum",
-      "reactive",
-      "volumetric",
-      "cavern"
+      "cosmic",
+      "particle-system",
+      "geometric",
+      "audio-reactive",
+      "nanites"
     ],
-    "description": "An infinitely deep, freezing subterranean cavern of quantum ice that glows with auroral aether-plasma, physically cracking and echoing with kaleidoscopic light refractions upon heavy bass impulses.",
+    "description": "A majestic, slowly churning nebula constructed entirely from trillions of glowing, synchronized nanites that dynamically self-assemble into intricate, shifting geometric constellations and colossal architectural megastructures in deep space.",
     "params": [
       {
         "id": "param1",
-        "name": "Ice Density",
+        "name": "Swarm Density",
         "type": "slider",
         "default": 0.5,
-        "min": 0.1,
+        "min": 0.0,
         "max": 1.0,
         "step": 0.01
       },
       {
         "id": "param2",
-        "name": "Plasma Glow",
+        "name": "Constellation Link",
         "type": "slider",
-        "default": 0.8,
+        "default": 0.3,
         "min": 0.0,
-        "max": 2.0,
+        "max": 1.0,
         "step": 0.01
       },
       {
         "id": "param3",
-        "name": "Fracture Rate",
+        "name": "Wind Speed",
         "type": "slider",
         "default": 0.2,
         "min": 0.0,
@@ -8522,21 +8521,15 @@
       },
       {
         "id": "param4",
-        "name": "Cavern Scale",
+        "name": "Geometric Order",
         "type": "slider",
-        "default": 1.5,
-        "min": 0.5,
-        "max": 3.0,
-        "step": 0.05
+        "default": 0.7,
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01
       }
     ],
-    "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl",
-    "type": "compute"
-  },
-  {
-    "id": "gen-radiant-quantum-crystalline-forge",
-    "name": "Radiant Quantum-Crystalline Forge",
-    "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl",
-    "category": "generative"
+    "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl",
+    "type": "generative"
   }
 ]
