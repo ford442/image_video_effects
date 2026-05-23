@@ -2235,6 +2235,61 @@
     ]
   },
   {
+    "id": "gen-crystalline-mandala-bloom",
+    "name": "Crystalline Mandala Bloom",
+    "url": "shaders/gen-crystalline-mandala-bloom.wgsl",
+    "category": "generative",
+    "description": "Audio-reactive kaleidoscopic mandala that folds the source image through a rotating polar symmetry. Crystalline petal SDFs, hue-rotated chroma, concentric bass-rings, and treble sparkles bloom outward from a mouse-anchored center.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "generative",
+      "mandala",
+      "kaleidoscope",
+      "crystal",
+      "bloom",
+      "audio-reactive"
+    ],
+    "coordinate": 885,
+    "params": [
+      {
+        "id": "symmetry",
+        "name": "Symmetry Segments",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "facet_zoom",
+        "name": "Facet Zoom",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloom_strength",
+        "name": "Bloom Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "hue_rotation",
+        "name": "Hue Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-cyber-terminal",
     "name": "Procedural Cyber Terminal (ASCII)",
     "url": "shaders/gen-cyber-terminal.wgsl",
@@ -4865,6 +4920,61 @@
         "default": 1,
         "min": 0,
         "max": 3,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-prismatic-ion-cascade",
+    "name": "Prismatic Ion Cascade",
+    "url": "shaders/gen-prismatic-ion-cascade.wgsl",
+    "category": "generative",
+    "description": "Mouse-anchored cascade of prismatic ion streams. Curl-warped angular bands radiate from the cursor with chromatic spectral split, fbm-driven shimmer, and audio-reactive flicker. Bass pulses the radial core, mids drive flow speed, treble adds sparkle.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "generative",
+      "prismatic",
+      "ion",
+      "cascade",
+      "spectral",
+      "audio-reactive"
+    ],
+    "coordinate": 884,
+    "params": [
+      {
+        "id": "stream_density",
+        "name": "Stream Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "cascade_speed",
+        "name": "Cascade Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ion_thickness",
+        "name": "Ion Thickness",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       }
     ]
