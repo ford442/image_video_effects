@@ -278,6 +278,15 @@ function MainApp() {
 
     // --- Refs ---
     const rendererRef = useRef<Renderer | null>(null);
+
+    // --- Renderer backend state ---
+    const [activeRendererType, setActiveRendererType] = useState<'webgpu' | 'wasm' | 'js'>('webgpu');
+    const handleSwitchRenderer = useCallback(async (type: 'webgpu' | 'wasm' | 'js') => {
+        const manager = rendererRef.current as any;
+        if (!manager?.switchRenderer) return;
+        const ok = await manager.switchRenderer(type);
+        if (ok) setActiveRendererType(type);
+    }, []);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
     const channelRef = useRef<BroadcastChannel | null>(null);
@@ -1413,6 +1422,9 @@ function MainApp() {
                         onStopRecording={stopRecording}
                         // Dev Tools props
                         onOpenShaderScanner={() => setShowShaderScanner(true)}
+                        // Renderer switch props
+                        activeRendererType={activeRendererType}
+                        onSwitchRenderer={handleSwitchRenderer}
                         // Storage Browser props
                         onOpenStorageBrowser={() => setShowStorageBrowser(true)}
                     />

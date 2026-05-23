@@ -84,15 +84,10 @@ export class RendererManager {
       return true;
     }
 
-    // 2. Try compiled WASM renderer (requires a real Emscripten binary)
-    const wasmSuccess = await this.switchRenderer('wasm');
-    if (wasmSuccess) {
-      console.log('✅ Using WASM renderer with shader support');
-      return true;
-    }
-
-    // 3. Canvas2D fallback — no shader effects, but app stays functional
-    console.warn('⚠️ WebGPU and WASM unavailable — falling back to Canvas2D (shaders disabled)');
+    // 2. Canvas2D fallback — no shader effects, but app stays functional.
+    // WASM renderer is NOT an automatic fallback; use switchRenderer('wasm') explicitly
+    // or pass ?renderer=wasm in the URL to opt in.
+    console.warn('⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)');
     return this.switchRenderer('js');
   }
 
