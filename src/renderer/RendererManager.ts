@@ -288,7 +288,7 @@ export class RendererManager {
     if (this.currentRenderer instanceof WASMRenderer) {
       return {
         ...baseDiagnostics,
-        wasm: (this.currentRenderer as any).getDiagnostics?.() ?? {},
+        wasm: (this.currentRenderer as WASMRenderer).getDiagnostics(),
       };
     }
 

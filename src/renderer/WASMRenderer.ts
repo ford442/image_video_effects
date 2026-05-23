@@ -85,7 +85,7 @@ export class WASMRenderer implements Renderer {
       initAttempts: this.initAttempts,
       errorCount: this.errorCount,
       lastErrorTime: this.lastErrorTime > 0 ? new Date(this.lastErrorTime).toISOString() : null,
-      fps: WasmBridge.getFPS?.() ?? 0,
+      fps: (WasmBridge && WasmBridge.getFPS?.()) ?? 0,
       hasModule: !!WasmBridge,
     };
   }
