@@ -339,25 +339,25 @@ hr {
 }
 .renderer-badge:hover { opacity: 0.8; }
 
-/* WebGPU (TypeScript native) — blue */
+/* WebGPU (TypeScript native) — full gold: this is the recommended default */
 .renderer-badge--webgpu {
-    background: rgba(41, 121, 255, 0.2);
-    color: #448aff;
-    border: 1px solid rgba(41, 121, 255, 0.4);
+    background: rgba(255, 215, 0, 0.15);
+    color: var(--color-primary-gold, #FFD700);
+    border: 1px solid rgba(255, 215, 0, 0.35);
 }
 
-/* C++ WASM renderer — green */
+/* C++ WASM renderer — antique gold (D4AF37): experimental path */
 .renderer-badge--wasm {
-    background: rgba(0, 200, 83, 0.2);
-    color: #00c853;
-    border: 1px solid rgba(0, 200, 83, 0.4);
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--color-gold-light, #D4AF37);
+    border: 1px solid rgba(212, 175, 55, 0.35);
 }
 
-/* Canvas2D fallback — amber */
+/* Canvas2D fallback — dim gold (B8860B): degraded / no-shader mode */
 .renderer-badge--js {
-    background: rgba(255, 165, 0, 0.2);
-    color: #ffa500;
-    border: 1px solid rgba(255, 165, 0, 0.4);
+    background: rgba(184, 134, 11, 0.12);
+    color: var(--color-gold-dark, #B8860B);
+    border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
 /* Scrollbar for sidebar and remote content */
