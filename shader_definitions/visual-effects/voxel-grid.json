@@ -11,9 +11,9 @@
     {
       "id": "grid",
       "name": "Grid Density",
-      "default": 40.0,
-      "min": 10.0,
-      "max": 100.0
+      "default": 40,
+      "min": 10,
+      "max": 100
     },
     {
       "id": "radius",
@@ -25,20 +25,19 @@
     {
       "id": "strength",
       "name": "Rotation Force",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 2.0
+      "default": 1,
+      "min": 0,
+      "max": 2
     },
     {
       "id": "gap",
       "name": "Cell Gap",
       "default": 0.05,
-      "min": 0.0,
+      "min": 0,
       "max": 0.4
     }
   ],
   "description": "Transforms the image into a grid of rotating 3D voxels that react to mouse proximity and audio bass.",
-  "category": "visual-effects",
   "tags": [
     "vfx",
     "particles",

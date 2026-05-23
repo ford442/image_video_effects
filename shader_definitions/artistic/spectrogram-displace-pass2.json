@@ -2,7 +2,6 @@
   "id": "spectrogram-displace-pass2",
   "name": "Spectrogram Displace (Pass 2)",
   "url": "shaders/spectrogram-displace-pass2.wgsl",
-  "category": "artistic",
   "description": "Image displacement and compositing pass: applies spectrogram-driven displacement to the input image, blends with spectrogram colors, applies frequency-based color grading and vignette, and reacts to bass audio input.",
   "tags": [
     "spectrogram",

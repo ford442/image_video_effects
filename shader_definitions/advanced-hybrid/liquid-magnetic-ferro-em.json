@@ -2,7 +2,6 @@
   "id": "liquid-magnetic-ferro-em",
   "name": "Liquid Magnetic Ferro EM",
   "url": "shaders/liquid-magnetic-ferro-em.wgsl",
-  "category": "advanced-hybrid",
   "description": "Ferrofluid simulation coupled with electromagnetic wave propagation. Rosensweig instability spikes are driven by both static magnetic dipoles and time-varying EM waves, with metallic iridescence colored by field direction.",
   "features": [
     "advanced-hybrid",
@@ -18,8 +17,8 @@
       "id": "field_strength",
       "name": "Field Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Base magnetic field strength"
@@ -28,8 +27,8 @@
       "id": "spike_sharpness",
       "name": "Spike Sharpness",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Ferrofluid peak sharpness"
@@ -38,8 +37,8 @@
       "id": "em_coupling",
       "name": "EM Coupling",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "How much EM wave affects the fluid"
@@ -48,8 +47,8 @@
       "id": "dipoles",
       "name": "Dipole Count",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Number of orbiting magnetic dipoles"

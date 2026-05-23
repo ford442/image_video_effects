@@ -1,7 +1,6 @@
 {
   "id": "halftone-reveal",
   "name": "Halftone Reveal",
-  "category": "image",
   "url": "shaders/halftone-reveal.wgsl",
   "description": "Renders the image as a coarse halftone pattern that resolves into a clear image near the mouse.",
   "params": [

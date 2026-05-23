@@ -2,7 +2,6 @@
   "id": "ink_dispersion_alpha",
   "name": "Ink Dispersion RGBA",
   "url": "shaders/ink_dispersion_alpha.wgsl",
-  "category": "liquid-effects",
   "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
   "tags": [
     "ink",

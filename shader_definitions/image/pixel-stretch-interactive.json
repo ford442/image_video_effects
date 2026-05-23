@@ -1,7 +1,6 @@
 {
   "id": "pixel-stretch-interactive",
   "name": "Pixel Stretch",
-  "category": "image",
   "description": "Stretches pixels from the mouse position to the screen edge, creating a spatial slit-scan effect.",
   "url": "shaders/pixel-stretch-interactive.wgsl",
   "params": [

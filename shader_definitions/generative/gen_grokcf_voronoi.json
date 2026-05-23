@@ -2,7 +2,6 @@
   "id": "gen-grokcf-voronoi",
   "name": "Worley Cellular",
   "url": "shaders/gen_grokcf_voronoi.wgsl",
-  "category": "generative",
   "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell.",
   "features": [
     "mouse-driven",
@@ -43,7 +42,7 @@
     {
       "id": "param3",
       "name": "Color Shift",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
       "step": 0.01

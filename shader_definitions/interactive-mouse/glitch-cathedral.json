@@ -2,7 +2,6 @@
   "id": "glitch-cathedral",
   "name": "Glitch Cathedral",
   "url": "shaders/glitch-cathedral.wgsl",
-  "category": "image",
   "description": "Stained-glass geometric patterns with glitch artifacts; mouse triggers channel separation and pixel sorting.",
   "params": [
     {

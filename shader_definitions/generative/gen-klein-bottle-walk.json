@@ -2,17 +2,28 @@
   "id": "gen-klein-bottle-walk",
   "name": "Klein Bottle Walk",
   "url": "shaders/gen-klein-bottle-walk.wgsl",
-  "category": "generative",
   "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation.",
-  "tags": ["generative", "klein-bottle", "parametric", "3d", "surface", "audio", "music"],
-  "features": ["generative", "audio-reactive", "upgraded-rgba"],
+  "tags": [
+    "generative",
+    "klein-bottle",
+    "parametric",
+    "3d",
+    "surface",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "walkSpeed",
       "name": "Walk Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Speed of surface traversal"
     },
@@ -20,8 +31,8 @@
       "id": "textureDensity",
       "name": "Texture Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "FBM surface texture detail"
     },
@@ -29,8 +40,8 @@
       "id": "lightIntensity",
       "name": "Light Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Specular highlight strength"
     },
@@ -38,8 +49,8 @@
       "id": "colorShift",
       "name": "Color Shift",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Base color offset"
     }

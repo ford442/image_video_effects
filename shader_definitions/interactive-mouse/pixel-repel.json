@@ -1,6 +1,5 @@
 {
   "id": "pixel-repel",
-  "category": "interactive-mouse",
   "url": "shaders/pixel-repel.wgsl",
   "features": [
     "mouse-driven",
@@ -20,22 +19,22 @@
       "id": "param2",
       "name": "Repel Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "param3",
       "name": "Aberration",
       "default": 0.05,
-      "min": 0.0,
+      "min": 0,
       "max": 0.2
     },
     {
       "id": "param4",
       "name": "Smoothing",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

@@ -2,7 +2,6 @@
   "id": "aurora-rift-2-pass1",
   "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
   "url": "shaders/aurora-rift-2-pass1.wgsl",
-  "category": "lighting-effects",
   "description": "Enhanced volumetric aurora with improved flow dynamics. First pass of 2-pass system.",
   "features": [
     "multi-pass-1",

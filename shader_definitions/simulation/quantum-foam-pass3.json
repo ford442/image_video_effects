@@ -2,7 +2,6 @@
   "id": "quantum-foam-pass3",
   "name": "Quantum Foam (Pass 3: Compositing)",
   "url": "shaders/quantum-foam-pass3.wgsl",
-  "category": "simulation",
   "description": "Volumetric rendering and final compositing with glow and tone mapping. Third pass of 3-pass system.",
   "features": [
     "multi-pass-3",

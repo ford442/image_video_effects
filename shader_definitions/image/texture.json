@@ -2,7 +2,6 @@
   "id": "texture",
   "name": "Procedural Texture Analyzer",
   "url": "shaders/texture.wgsl",
-  "category": "image",
   "description": "Multi-scale texture analyzer with Laplacian edge enhancement, unsharp mask, temporal smoothing, golden-ratio vignette, and audio-reactive sparkle/glitch.",
   "features": [
     "depth-aware",

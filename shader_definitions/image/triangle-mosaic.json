@@ -1,7 +1,6 @@
 {
   "id": "triangle-mosaic",
   "name": "Triangle Mosaic",
-  "category": "image",
   "description": "Breaks the image into an equilateral triangle grid. Mouse controls scale and twist.",
   "url": "shaders/triangle-mosaic.wgsl",
   "params": [

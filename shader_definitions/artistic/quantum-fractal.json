@@ -2,7 +2,6 @@
   "id": "quantum-fractal",
   "name": "Quantum Fractal",
   "url": "shaders/quantum-fractal.wgsl",
-  "category": "image",
   "description": "Fractal quantum interference patterns.",
   "tags": [
     "filter",
@@ -21,8 +20,8 @@
       "id": "scale",
       "name": "Scale",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Fractal scale"
@@ -31,8 +30,8 @@
       "id": "iterations",
       "name": "Iterations",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Iteration depth"
@@ -41,8 +40,8 @@
       "id": "entanglement",
       "name": "Entanglement",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Quantum entanglement strength"
@@ -51,8 +50,8 @@
       "id": "edge_glow",
       "name": "Edge Glow",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Glow on fractal edges"

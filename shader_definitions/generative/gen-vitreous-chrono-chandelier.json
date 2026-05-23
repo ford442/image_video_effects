@@ -2,7 +2,6 @@
   "id": "gen-vitreous-chrono-chandelier",
   "name": "Vitreous Chrono-Chandelier",
   "url": "shaders/gen-vitreous-chrono-chandelier.wgsl",
-  "category": "generative",
   "description": "An infinite, abyssal cavern illuminated by a colossal, self-assembling chandelier of hyper-refractive glass chimes and glowing quantum pendulums that shatter and reform to the rhythm of time and sound.",
   "tags": [
     "crystal",
@@ -24,23 +23,23 @@
       "id": "shatterThreshold",
       "name": "Shatter Threshold",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "chimeDensity",
       "name": "Chime Density",
-      "default": 4.0,
-      "min": 1.0,
-      "max": 10.0,
+      "default": 4,
+      "min": 1,
+      "max": 10,
       "step": 0.1
     },
     {
       "id": "refractionIndex",
       "name": "Refraction Index",
       "default": 1.3,
-      "min": 1.0,
+      "min": 1,
       "max": 2.5,
       "step": 0.01
     },
@@ -48,8 +47,8 @@
       "id": "transmission",
       "name": "Transmission",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ]

@@ -2,7 +2,6 @@
   "id": "engraving-stipple",
   "name": "Engraving Stipple",
   "url": "shaders/engraving-stipple.wgsl",
-  "category": "artistic",
   "description": "Transforms the image into a stippled engraving style. Mouse acts as a light source to reveal details.",
   "features": [
     "mouse-driven"
@@ -12,8 +11,8 @@
       "id": "density",
       "name": "Stipple Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Density of stipple dots"
@@ -22,8 +21,8 @@
       "id": "bias",
       "name": "Ink Threshold",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Threshold for ink vs paper"
@@ -32,8 +31,8 @@
       "id": "light",
       "name": "Mouse Light",
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Strength of mouse light source"
@@ -42,8 +41,8 @@
       "id": "burr_texture",
       "name": "Burr Texture",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Engraving burr and texture amount"

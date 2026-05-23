@@ -2,7 +2,6 @@
   "id": "lens-flare-brush",
   "name": "Lens Flare Brush",
   "url": "shaders/lens-flare-brush.wgsl",
-  "category": "image",
   "description": "Generates anamorphic lens flares from bright pixels near the mouse.",
   "params": [
     {

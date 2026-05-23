@@ -2,7 +2,6 @@
   "id": "gen-rainbow-smoke",
   "name": "Rainbow Smoke with Dual Scattering",
   "url": "shaders/gen_rainbow_smoke.wgsl",
-  "category": "generative",
   "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble.",
   "features": [
     "upgraded-rgba",

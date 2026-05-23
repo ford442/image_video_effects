@@ -2,7 +2,6 @@
   "id": "gen-cyclic-automaton",
   "name": "Greenberg-Hastings Automaton",
   "url": "shaders/gen_cyclic_automaton.wgsl",
-  "category": "generative",
   "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, and mouse-triggered wavefronts.",
   "features": [
     "upgraded-rgba",

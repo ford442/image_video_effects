@@ -2,7 +2,6 @@
   "id": "glitch-slice-mirror",
   "name": "Glitch Slice Mirror",
   "url": "shaders/glitch-slice-mirror.wgsl",
-  "category": "distortion",
   "description": "Mirrors the image at the mouse position with digital glitch artifacts, chromatic aberration, and scanlines along the seam. Audio-reactive intensity boost.",
   "features": [
     "mouse-driven",

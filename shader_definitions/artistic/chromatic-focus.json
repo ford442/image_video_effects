@@ -2,7 +2,6 @@
   "id": "chromatic-focus",
   "name": "Chromatic Focus",
   "url": "shaders/chromatic-focus.wgsl",
-  "category": "artistic",
   "features": [
     "mouse-driven"
   ],
@@ -12,29 +11,29 @@
       "id": "aberStrength",
       "name": "Aberration",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "focusRadius",
       "name": "Focus Radius",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "blurStrength",
       "name": "Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "angleOffset",
       "name": "Angle Offset",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

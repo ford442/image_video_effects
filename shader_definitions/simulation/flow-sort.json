@@ -2,7 +2,6 @@
   "id": "flow-sort",
   "name": "Streamline Pixel Sort",
   "url": "shaders/flow-sort.wgsl",
-  "category": "image",
   "description": "Pixel sorting along vector field lines derived from luminance gradients.",
   "params": [
     {

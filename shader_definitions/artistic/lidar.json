@@ -2,7 +2,6 @@
   "id": "lidar",
   "name": "LiDAR Scanner Pro",
   "url": "shaders/lidar.wgsl",
-  "category": "image",
   "description": "Multi-mode LiDAR with point clouds, persistence trails, and 3D edge detection. Modes: Linear/Radial/Spiral scan.",
   "params": [
     {

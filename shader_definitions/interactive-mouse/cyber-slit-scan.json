@@ -1,7 +1,6 @@
 {
   "id": "cyber-slit-scan",
   "url": "shaders/cyber-slit-scan.wgsl",
-  "category": "interactive-mouse",
   "features": [
     "mouse-driven",
     "webcam"
@@ -12,32 +11,32 @@
       "name": "Scan Speed",
       "type": "float",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "id": "scan_speed"
     },
     {
       "name": "Bit Crush",
       "type": "float",
       "default": 0.1,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "id": "bit_crush"
     },
     {
       "name": "Hue Shift",
       "type": "float",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 0,
+      "min": 0,
+      "max": 1,
       "id": "hue_shift"
     },
     {
       "name": "Unused",
       "type": "float",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
+      "default": 0,
+      "min": 0,
+      "max": 1,
       "id": "unused"
     }
   ],

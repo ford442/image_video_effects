@@ -2,7 +2,6 @@
   "id": "gen-grok4-perlin",
   "name": "Stratified Erosion Terrain",
   "url": "shaders/gen_grok4_perlin.wgsl",
-  "category": "generative",
   "description": "Depth-aware terrain with sediment transport, layered rock hardness, reflective valley water tables, wind abrasion, and bass-driven seismic uplift.",
   "features": [
     "upgraded-rgba",

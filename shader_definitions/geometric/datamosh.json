@@ -2,7 +2,6 @@
   "id": "datamosh",
   "name": "Datamosh",
   "url": "shaders/datamosh.wgsl",
-  "category": "image",
   "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
   "features": [
     "mouse-driven",
@@ -26,8 +25,8 @@
       "id": "motion_strength",
       "name": "Motion Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Strength of motion vector displacement (creates smearing trails)"
     },
@@ -35,8 +34,8 @@
       "id": "iframe_interval",
       "name": "I-Frame Interval",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Time between full frame refreshes (0=often, 1=rarely)"
     },
@@ -44,8 +43,8 @@
       "id": "blend_amount",
       "name": "Smear Blend",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "How much displaced pixels blend with current frame"
     },
@@ -53,8 +52,8 @@
       "id": "feedback_decay",
       "name": "Trail Decay",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "How long motion trails persist (higher=longer trails)"
     }

@@ -2,15 +2,14 @@
   "id": "cyber-hex-armor",
   "name": "Cyber Hex Armor",
   "url": "shaders/cyber-hex-armor.wgsl",
-  "category": "image",
   "description": "A hexagonal tech armor overlay that retracts when the mouse approaches.",
   "params": [
     {
       "id": "hex_size",
       "name": "Hex Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Size of the hexagonal grid cells"
@@ -19,8 +18,8 @@
       "id": "glow_intensity",
       "name": "Glow Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Intensity of the hex edge glow"
@@ -29,8 +28,8 @@
       "id": "reveal_radius",
       "name": "Reveal Radius",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Radius around mouse where armor retracts"
@@ -39,8 +38,8 @@
       "id": "border_thickness",
       "name": "Border Thickness",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Thickness of hexagon borders"

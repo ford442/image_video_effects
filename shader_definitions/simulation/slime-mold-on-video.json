@@ -2,14 +2,54 @@
   "id": "slime-mold-on-video",
   "name": "Slime Mold on Video",
   "url": "shaders/slime-mold-on-video.wgsl",
-  "category": "simulation",
   "description": "Video luminance acts as a food field for a slime-mold style trail simulation with persistent tendrils.",
-  "features": ["simulation", "temporal", "video-driven", "trail-feedback", "webcam-friendly"],
-  "tags": ["slime", "physarum", "video", "food-map", "tendrils", "glow"],
+  "features": [
+    "simulation",
+    "temporal",
+    "video-driven",
+    "trail-feedback",
+    "webcam-friendly"
+  ],
+  "tags": [
+    "slime",
+    "physarum",
+    "video",
+    "food-map",
+    "tendrils",
+    "glow"
+  ],
   "params": [
-    { "id": "follow", "name": "Trail Follow", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "decay", "name": "Trail Decay", "default": 0.65, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "food_gain", "name": "Food Gain", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "glow", "name": "Glow", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "follow",
+      "name": "Trail Follow",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "decay",
+      "name": "Trail Decay",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "food_gain",
+      "name": "Food Gain",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
   ]
 }

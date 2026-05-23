@@ -2,7 +2,6 @@
   "id": "sim-slime-mold-growth-em",
   "name": "Slime Mold Growth + EM Field",
   "url": "shaders/sim-slime-mold-growth-em.wgsl",
-  "category": "simulation",
   "description": "Physarum slime mold simulation with mouse electromagnetic field interaction. Agents steer along electric field lines; click ripples spawn secondary charges.",
   "features": [
     "simulation",
@@ -17,8 +16,8 @@
       "id": "sensor_angle",
       "name": "Sensor Angle",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Steering sensitivity and EM charge strength"
@@ -27,8 +26,8 @@
       "id": "decay",
       "name": "Trail Decay",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Trail decay rate and field visualization"
@@ -37,8 +36,8 @@
       "id": "em_influence",
       "name": "EM Influence",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "How much EM field steers agents"
@@ -47,8 +46,8 @@
       "id": "ripple_charge",
       "name": "Ripple Charge",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Secondary charge strength from clicks"

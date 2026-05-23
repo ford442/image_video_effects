@@ -2,7 +2,6 @@
   "id": "quantum-wormhole",
   "name": "Quantum Wormhole",
   "url": "shaders/quantum-wormhole.wgsl",
-  "category": "image",
   "description": "Wormhole-like spacetime distortion effects.",
   "features": [
     "mouse-driven"

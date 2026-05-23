@@ -2,7 +2,6 @@
   "id": "pixel-wind-chimes",
   "name": "Pixel Wind Chimes",
   "url": "shaders/pixel-wind-chimes.wgsl",
-  "category": "image",
   "description": "Slices the image into hanging vertical strips that swing like wind chimes when pushed by the mouse.",
   "params": [
     {

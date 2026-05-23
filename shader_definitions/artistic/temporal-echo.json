@@ -2,7 +2,6 @@
   "id": "temporal-echo",
   "name": "Temporal Echo",
   "url": "shaders/temporal-echo.wgsl",
-  "category": "image",
   "description": "Feedback buffer and history texture for temporally offset echoes.",
   "features": [
     "mouse-driven",

@@ -1,7 +1,6 @@
 {
   "id": "directional-blur-wipe",
   "name": "Directional Blur Wipe",
-  "category": "image",
   "description": "Splits the screen with a directional blur. Mouse controls split position and angle.",
   "url": "shaders/directional-blur-wipe.wgsl",
   "params": [

@@ -2,36 +2,35 @@
   "id": "hyper-chromatic-delay",
   "name": "Hyper-Chromatic Delay",
   "url": "shaders/hyper-chromatic-delay.wgsl",
-  "category": "image",
   "description": "Spectral Multi-Tap Echo with wavelength-dependent refraction, per-channel lens distortion, motion-aware temporal blur, and audio-reverb-inspired feedback echoes.",
   "params": [
     {
       "id": "sepStrength",
       "name": "RGB Split",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "decay",
       "name": "Trail Decay",
       "default": 0.8,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "speed",
       "name": "Shift Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "mouseInf",
       "name": "Mouse Influence",
       "default": 0.8,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

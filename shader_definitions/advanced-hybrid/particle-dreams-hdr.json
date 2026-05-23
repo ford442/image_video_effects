@@ -2,7 +2,6 @@
   "id": "particle-dreams-hdr",
   "name": "Particle Dreams HDR",
   "url": "shaders/particle-dreams-hdr.wgsl",
-  "category": "advanced-hybrid",
   "description": "Multi-layer depth particle accumulation with HDR bloom chain. 5 depth layers with flow noise and vortex distortion, combined with exposure-based radial bloom and ACES tone mapping.",
   "features": [
     "advanced-hybrid",
@@ -18,8 +17,8 @@
       "id": "bloom_radius",
       "name": "Bloom Radius",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Radius of HDR bloom kernel"
@@ -28,8 +27,8 @@
       "id": "bloom_intensity",
       "name": "Bloom Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Intensity of bloom accumulation"
@@ -38,8 +37,8 @@
       "id": "exposure",
       "name": "Tone Map Exposure",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "ACES tone mapping exposure bias"
@@ -48,8 +47,8 @@
       "id": "fog_density",
       "name": "Fog Density",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Volumetric fog density"

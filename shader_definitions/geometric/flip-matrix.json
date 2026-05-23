@@ -1,7 +1,6 @@
 {
   "id": "flip-matrix",
   "name": "Flip Matrix",
-  "category": "image",
   "url": "shaders/flip-matrix.wgsl",
   "description": "Grid of tiles that flip vertically in pseudo-3D based on mouse proximity.",
   "features": [
@@ -13,32 +12,32 @@
       "name": "Grid Density",
       "type": "float",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "radius",
       "name": "Effect Radius",
       "type": "float",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "rotation",
       "name": "Flip Intensity",
       "type": "float",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "gap",
       "name": "Tile Gap",
       "type": "float",
       "default": 0.1,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

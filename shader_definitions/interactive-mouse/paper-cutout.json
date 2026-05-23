@@ -2,36 +2,35 @@
   "id": "paper-cutout",
   "name": "Paper Cutout",
   "url": "shaders/paper-cutout.wgsl",
-  "category": "image",
   "description": "Quantizes the image into paper layers with drop shadows controlled by the mouse.",
   "params": [
     {
       "id": "layers",
       "name": "Layers",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "shadowDist",
       "name": "Shadow Dist",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "softness",
       "name": "Softness",
       "default": 0.1,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "separation",
       "name": "Separation",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

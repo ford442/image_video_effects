@@ -1,254 +1,8 @@
 [
   {
-    "id": "poincare-tile",
-    "name": "Hyperbolic Tiling",
-    "url": "shaders/poincare-tile.wgsl",
-    "category": "geometric",
-    "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
-    "params": [
-      {
-        "id": "curvature",
-        "name": "Curvature",
-        "default": 0.7,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "symmetry",
-        "name": "Symmetry",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "animSpeed",
-        "name": "Animation Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "tileScale",
-        "name": "Tile Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "interactive",
-      "mathematical",
-      "mouse-driven"
-    ],
-    "tags": [
-      "geometric",
-      "pattern"
-    ]
-  },
-  {
-    "id": "voronoi-dynamics",
-    "name": "Voronoi Bubbles",
-    "url": "shaders/voronoi-dynamics.wgsl",
-    "category": "geometric",
-    "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
-    "params": [
-      {
-        "id": "centroidCount",
-        "name": "Bubble Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "repulsion",
-        "name": "Repulsion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "attraction",
-        "name": "Attraction",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "edgeWidth",
-        "name": "Edge Width",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "interactive",
-      "depth-aware",
-      "physics",
-      "mouse-driven"
-    ],
-    "tags": [
-      "geometric",
-      "pattern"
-    ]
-  },
-  {
-    "id": "voronoi",
-    "name": "Voronoi Tessellation",
-    "url": "shaders/voronoi.wgsl",
-    "category": "geometric",
-    "description": "Animated Voronoi reconstruction (simplified feature detection).",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
-    ],
-    "tags": [
-      "geometric",
-      "pattern"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "log-polar-droste",
-    "name": "Log-Polar Droste",
-    "url": "shaders/log-polar-droste.wgsl",
-    "category": "geometric",
-    "description": "Infinite recursive zoom with spiral distortion creating Droste/Escher-like effects.",
-    "params": [
-      {
-        "id": "zoomSpeed",
-        "name": "Zoom Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "spiralFactor",
-        "name": "Spiral Factor",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "recursionDepth",
-        "name": "Recursion Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "branchCount",
-        "name": "Branch Count",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "interactive",
-      "mathematical",
-      "recursive",
-      "mouse-driven"
-    ],
-    "tags": [
-      "geometric",
-      "pattern"
-    ]
-  },
-  {
-    "id": "audio_geometric_pulse",
-    "name": "Geometric Pulse",
-    "url": "shaders/audio_geometric_pulse.wgsl",
-    "category": "geometric",
-    "description": "Audio-reactive geometric patterns with kaleidoscope symmetry, shape morphing, neon glow, and frequency band visualization",
-    "tags": [
-      "geometric",
-      "audio",
-      "kaleidoscope",
-      "neon",
-      "sacred-geometry"
-    ],
-    "features": [
-      "audio-reactive",
-      "mouse-control",
-      "kaleidoscope",
-      "neon"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Symmetry",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Shape Morph",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Pulse Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "Complexity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.6
-  },
-  {
     "id": "adaptive-mosaic",
     "name": "Adaptive Mosaic",
     "url": "shaders/adaptive-mosaic.wgsl",
-    "category": "geometric",
     "description": "Depth-adaptive tile mosaic: near objects render as fine tiles, far objects as coarse blocks. SDF bevel on every tile edge, Voronoi crackle overlay at coarse sizes, mouse-focus zone, and audio-reactive tile-size pulse.",
     "features": [
       "mouse-driven",
@@ -303,10 +57,225 @@
     ]
   },
   {
+    "id": "ascii-glyph",
+    "name": "ASCII Glyphs",
+    "url": "shaders/ascii-glyph.wgsl",
+    "description": "ASCII / SDF glyph morphing and atlas-based rendering.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "datamosh",
+    "name": "Datamosh",
+    "url": "shaders/datamosh.wgsl",
+    "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
+    "features": [
+      "mouse-driven",
+      "multi-pass",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "datamosh",
+      "glitch",
+      "compression",
+      "motion-vectors",
+      "retro",
+      "video-artifacts",
+      "smear",
+      "trail"
+    ],
+    "params": [
+      {
+        "id": "motion_strength",
+        "name": "Motion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Strength of motion vector displacement (creates smearing trails)"
+      },
+      {
+        "id": "iframe_interval",
+        "name": "I-Frame Interval",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Time between full frame refreshes (0=often, 1=rarely)"
+      },
+      {
+        "id": "blend_amount",
+        "name": "Smear Blend",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How much displaced pixels blend with current frame"
+      },
+      {
+        "id": "feedback_decay",
+        "name": "Trail Decay",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How long motion trails persist (higher=longer trails)"
+      }
+    ]
+  },
+  {
+    "id": "flip-matrix",
+    "name": "Flip Matrix",
+    "url": "shaders/flip-matrix.wgsl",
+    "description": "Grid of tiles that flip vertically in pseudo-3D based on mouse proximity.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Effect Radius",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Flip Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gap",
+        "name": "Tile Gap",
+        "type": "float",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "hyperbolic-dreamweaver",
+    "name": "Hyperbolic Dreamweaver",
+    "url": "shaders/hyperbolic-dreamweaver.wgsl",
+    "description": "Infinite non-Euclidean Poincaré disk tilings weaving the image through psychedelic Möbius transformations, depth-aware curvature, chromatic aberration, and glowing symmetry lines. Mouse centers the dream; ripples perturb the fabric.",
+    "params": [
+      {
+        "name": "Tile Count",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "desc": "Number of hyperbolic tiles (3-9)",
+        "id": "tile_count"
+      },
+      {
+        "name": "Curvature",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "desc": "Hyperbolic bending strength (depth-modulated)",
+        "id": "curvature"
+      },
+      {
+        "name": "Aberration",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "desc": "Chromatic splitting in curved space",
+        "id": "aberration"
+      },
+      {
+        "name": "Glow Intensity",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "desc": "Symmetry line luminescence",
+        "id": "glow_intensity"
+      }
+    ],
+    "features": [
+      "geometric",
+      "psychedelic",
+      "depth-aware",
+      "non-euclidean",
+      "interactive",
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "interactive-origami",
     "name": "Interactive Origami",
     "url": "shaders/interactive-origami.wgsl",
-    "category": "geometric",
     "description": "Simulates folded paper with triangle-wave crease planes radiating from the mouse. Normal-map facet shading, depth-aware fold amplitude (far objects fold more), audio-reactive bass amplitude, and ripple-triggered expanding crease rings.",
     "features": [
       "mouse-driven",
@@ -364,7 +333,6 @@
     "id": "kaleido-scope-grokcf1",
     "name": "Kaleido-Scope Prism grokcf1",
     "url": "shaders/kaleido-scope-grokcf1.wgsl",
-    "category": "geometric",
     "description": "Kaleidoscope with spring-damper mouse follow, attack/release audio envelope, and temporal feedback trails.",
     "features": [
       "mouse-driven",
@@ -413,7 +381,6 @@
     "id": "kaleido-scope",
     "name": "Kaleido-Scope",
     "url": "shaders/kaleido-scope.wgsl",
-    "category": "geometric",
     "features": [
       "mouse-driven"
     ],
@@ -453,10 +420,59 @@
     ]
   },
   {
+    "id": "kinetic-tiles",
+    "name": "Kinetic Tiles",
+    "url": "shaders/kinetic_tiles.wgsl",
+    "description": "Grid of tiles that rotate and scale responsively to mouse proximity.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Mouse Radius",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation Amt",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Tile Scale",
+        "type": "float",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "neon-poly-grid",
     "name": "Neon Poly Grid",
     "url": "shaders/neon-poly-grid.wgsl",
-    "category": "geometric",
     "description": "A futuristic hexagonal grid that lights up when you touch it, leaving a fading trail.",
     "features": [
       "mouse-driven"
@@ -500,7 +516,6 @@
     "id": "spec-hypercube-projection",
     "name": "Hypercube Projection",
     "url": "shaders/spec-hypercube-projection.wgsl",
-    "category": "geometric",
     "description": "Animated 4D tesseract projected into 2D using double rotation in XW and YZ planes. 32 edges are rendered with depth-based glow and input image texture-mapped onto faces.",
     "tags": [
       "hypercube",
@@ -553,43 +568,92 @@
     "target_rating": 4.7
   },
   {
-    "id": "tesseract-fold",
-    "name": "Tesseract Fold",
-    "url": "shaders/tesseract-fold.wgsl",
-    "category": "geometric",
-    "description": "A 4D kaleidoscopic folding effect centered on the mouse. Features HDR tone mapping, iridescent color grading, atmospheric vignette, treble-driven edge glow, and bloom-weight alpha for chained rendering.",
+    "id": "time-lag-map",
+    "name": "Time-Lag Map",
+    "url": "shaders/time-lag-map.wgsl",
+    "description": "Per-pixel temporal delay creating echo, smear, and time-displacement effects.",
     "params": [
       {
-        "id": "param1",
-        "name": "4D Rotation Speed",
+        "id": "bufferLength",
+        "name": "Delay Length",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param2",
-        "name": "Projection Scale",
-        "default": 0.5,
+        "id": "mappingFunction",
+        "name": "Delay Pattern",
+        "default": 0,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param3",
-        "name": "Edge Glow Width",
+        "id": "feedbackMix",
+        "name": "Feedback Mix",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param4",
-        "name": "Face Opacity",
+        "id": "motionSense",
+        "name": "Motion Sensitivity",
         "default": 0.5,
         "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "motion-detection",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "voronoi-zoom-turbulence",
+    "name": "Voronoi Zoom Turbulence",
+    "url": "shaders/voronoi-zoom-turbulence.wgsl",
+    "description": "Divides the screen into Voronoi cells where each cell applies a chaotic, time-varying zoom. Mouse proximity calms or agitates the turbulence.",
+    "params": [
+      {
+        "name": "Cell Density",
+        "type": "float",
+        "default": 1,
+        "min": 1,
+        "max": 5,
+        "target": "zoom_params.x",
+        "id": "cell_density"
+      },
+      {
+        "name": "Turbulence Speed",
+        "type": "float",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "target": "zoom_params.y",
+        "id": "turbulence_speed"
+      },
+      {
+        "name": "Zoom Intensity",
+        "type": "float",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "target": "zoom_params.z",
+        "id": "zoom_intensity"
+      },
+      {
+        "name": "Mouse Influence",
+        "type": "float",
+        "default": 1,
+        "min": -1,
         "max": 1,
-        "step": 0.01
+        "target": "zoom_params.w",
+        "id": "mouse_influence"
       }
     ],
     "features": [
@@ -600,64 +664,7 @@
     ],
     "tags": [
       "filter",
-      "image-processing",
-      "kaleidoscope",
-      "geometric",
-      "folding",
-      "iridescent",
-      "atmospheric"
-    ]
-  },
-  {
-    "id": "quad-mirror",
-    "name": "Quad Mirror",
-    "url": "shaders/quad-mirror.wgsl",
-    "category": "geometric",
-    "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
-    "params": [
-      {
-        "id": "hOffset",
-        "name": "H Mirror Offset",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "vOffset",
-        "name": "V Mirror Offset",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "seamWarp",
-        "name": "Seam Warp",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "rotation",
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "geometry",
-      "upgraded-rgba",
-      "fbm-domain-warp",
-      "audio-reactive"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "kaleidoscope",
-      "mirror",
-      "geometric",
-      "audio-reactive"
+      "image-processing"
     ]
   }
 ]

@@ -2,7 +2,6 @@
   "id": "turing-veins",
   "name": "Turing Veins",
   "url": "shaders/generative-turing-veins.wgsl",
-  "category": "image",
   "description": "Generative multiscale reaction-diffusion Turing patterns forming organic vein/networks with bioluminescent glow. Procedurally evolves over time; depth increases complexity; mouse perturbs fields. Subtly distorts and overlays input image.",
   "params": [
     {

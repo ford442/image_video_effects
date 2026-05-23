@@ -2,9 +2,15 @@
   "id": "sim-fluid-feedback-field",
   "name": "Fluid Feedback Field",
   "url": "shaders/sim-fluid-feedback-field-pass1.wgsl",
-  "category": "simulation",
   "description": "Multi-pass Navier-Stokes fluid simulation with feedback trails. Glowing fluid that swirls and mixes.",
-  "features": ["simulation", "multi-pass", "navier-stokes", "velocity-advection", "density-advection", "randomization-safe"],
+  "features": [
+    "simulation",
+    "multi-pass",
+    "navier-stokes",
+    "velocity-advection",
+    "density-advection",
+    "randomization-safe"
+  ],
   "multipass": {
     "pass": 1,
     "totalPasses": 3,
@@ -31,8 +37,8 @@
       "id": "viscosity",
       "name": "Viscosity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Flow resistance (viscosity)"
@@ -41,8 +47,8 @@
       "id": "turbulence",
       "name": "Turbulence",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Turbulence amount"
@@ -51,8 +57,8 @@
       "id": "fade_rate",
       "name": "Fade Rate",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Density fade rate"
@@ -61,8 +67,8 @@
       "id": "glow",
       "name": "Glow Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Glow intensity"

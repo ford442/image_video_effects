@@ -3,7 +3,6 @@
   "coordinate": 857,
   "type": "wgsl",
   "url": "shaders/gen-physarum-sacred-geometry.wgsl",
-  "category": "generative",
   "name": "Physarum (Slime Mold) Sacred Geometry",
   "description": "A psychedelic organic simulation where millions of microscopic agents feed on video input, leaving vibrant, glowing, fractal trails that pulse with audio.",
   "tags": [
@@ -30,10 +29,10 @@
     {
       "id": "sensorDistance",
       "name": "Sensor Distance",
-      "default": 10.0,
-      "min": 1.0,
-      "max": 50.0,
-      "step": 1.0,
+      "default": 10,
+      "min": 1,
+      "max": 50,
+      "step": 1,
       "param": "zoom_params.y"
     },
     {
@@ -48,9 +47,9 @@
     {
       "id": "diffusionStrength",
       "name": "Diffusion Strength",
-      "default": 1.0,
+      "default": 1,
       "min": 0.1,
-      "max": 5.0,
+      "max": 5,
       "step": 0.1,
       "param": "zoom_params.w"
     }

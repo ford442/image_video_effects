@@ -2,36 +2,35 @@
   "id": "ferrofluid",
   "name": "Magnetic Ferrofluid",
   "url": "shaders/ferrofluid.wgsl",
-  "category": "image",
   "description": "Simulates magnetic ferrofluid spikes attracted to the mouse.",
   "params": [
     {
       "id": "spikeScale",
       "name": "Spike Scale",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "attraction",
       "name": "Attraction",
       "default": 0.8,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "viscosity",
       "name": "Viscosity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "colorShift",
       "name": "Color Shift",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

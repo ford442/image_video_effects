@@ -2,7 +2,6 @@
   "id": "chroma-threads",
   "name": "Chroma Threads",
   "url": "shaders/chroma-threads.wgsl",
-  "category": "image",
   "features": [
     "mouse-driven"
   ],
@@ -15,8 +14,8 @@
       "id": "thread_density",
       "name": "Thread Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Density of chromatic threads"
@@ -25,8 +24,8 @@
       "id": "vibration_amp",
       "name": "Vibration Amp",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Amplitude of thread vibration"
@@ -35,8 +34,8 @@
       "id": "rgb_split",
       "name": "RGB Split",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Chromatic aberration strength"
@@ -45,8 +44,8 @@
       "id": "decay",
       "name": "Decay",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Trail decay factor"

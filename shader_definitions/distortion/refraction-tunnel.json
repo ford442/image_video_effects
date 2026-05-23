@@ -2,7 +2,6 @@
   "id": "refraction-tunnel",
   "name": "Refraction Tunnel",
   "url": "shaders/refraction-tunnel.wgsl",
-  "category": "image",
   "description": "Infinite refractive tunnel effect.",
   "params": [
     {

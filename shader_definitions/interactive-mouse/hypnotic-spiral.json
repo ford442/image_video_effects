@@ -2,7 +2,6 @@
   "id": "hypnotic-spiral",
   "name": "Hypnotic Spiral",
   "url": "shaders/hypnotic-spiral.wgsl",
-  "category": "image",
   "description": "Breathing, rotating spirals with color cycling; mouse warps and twists the spiral geometry.",
   "params": [
     {

@@ -2,7 +2,6 @@
   "id": "anaglyph-3d",
   "name": "Anaglyph 3D",
   "url": "shaders/anaglyph-3d.wgsl",
-  "category": "visual-effects",
   "description": "Red-cyan stereoscopic anaglyph from a single camera feed. The red channel is sampled at a leftward horizontal offset and cyan (G+B) at a rightward offset, creating the classic red/cyan 3D glasses effect. Separation widens with distance from the mouse focal point; a secondary ghost layer adds fringing depth. Bass pulses the split width; mids warm the left ghost; mouse controls the depth focal centre.",
   "tags": [
     "stereoscopic",
@@ -22,8 +21,8 @@
       "id": "separation",
       "name": "Stereo Separation",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x"
     },
@@ -31,8 +30,8 @@
       "id": "depthCurve",
       "name": "Depth Falloff",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y"
     },
@@ -40,8 +39,8 @@
       "id": "ghostStrength",
       "name": "Ghost Fringing",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z"
     },
@@ -49,8 +48,8 @@
       "id": "grain",
       "name": "Film Grain",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w"
     }

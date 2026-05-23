@@ -2,36 +2,35 @@
   "id": "entropy-grid",
   "name": "Entropy Grid",
   "url": "shaders/entropy-grid.wgsl",
-  "category": "image",
   "description": "Scrambles the image into a chaotic grid using domain-warped FBM, Voronoi cellular ridges, and Clifford strange-attractor chaos. Mouse restores order (or creates chaos) with audio-reactive entropy.",
   "params": [
     {
       "id": "gridSize",
       "name": "Grid Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "chaos",
       "name": "Chaos Level",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "radius",
       "name": "Radius",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "invert",
       "name": "Invert Effect",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

@@ -2,7 +2,6 @@
   "id": "prismatic-3d-compositor",
   "name": "Prismatic 3D Compositor (Pass 2)",
   "url": "shaders/prismatic-3d-compositor.wgsl",
-  "category": "image",
   "description": "Adds parallax shifting, volumetric glow, chromatic aberration and final composite with depth-aware blending.",
   "params": [
     {

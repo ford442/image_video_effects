@@ -1,7 +1,6 @@
 {
   "id": "ripple-blocks",
   "name": "Ripple Blocks",
-  "category": "image",
   "description": "Grid blocks that scale based on a wave pattern from the mouse.",
   "url": "shaders/ripple-blocks.wgsl",
   "params": [

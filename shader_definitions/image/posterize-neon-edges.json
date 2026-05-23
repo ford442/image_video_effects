@@ -2,41 +2,50 @@
   "id": "posterize-neon-edges",
   "name": "Posterize Neon Edges",
   "url": "/shaders/posterize-neon-edges.wgsl",
-  "category": "image",
   "description": "Posterization combined with Sobel edge detection and neon glow for a stylized comic-book look.",
-  "tags": ["posterize", "neon", "edge", "glow", "comic", "stylized", "artistic"],
-  "features": ["upgraded-rgba"],
+  "tags": [
+    "posterize",
+    "neon",
+    "edge",
+    "glow",
+    "comic",
+    "stylized",
+    "artistic"
+  ],
+  "features": [
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "levels",
       "name": "Posterize Levels",
-      "default": 6.0,
-      "min": 2.0,
-      "max": 16.0,
-      "step": 1.0
+      "default": 6,
+      "min": 2,
+      "max": 16,
+      "step": 1
     },
     {
       "id": "edge_threshold",
       "name": "Edge Threshold",
       "default": 0.3,
       "min": 0.05,
-      "max": 1.0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "glow_intensity",
       "name": "Glow Intensity",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 3.0,
+      "default": 1,
+      "min": 0,
+      "max": 3,
       "step": 0.01
     },
     {
       "id": "hue_shift",
       "name": "Hue Shift",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 10.0,
+      "default": 0,
+      "min": 0,
+      "max": 10,
       "step": 0.1
     }
   ]

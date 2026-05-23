@@ -2,7 +2,6 @@
   "id": "thermal-vision",
   "name": "Thermal Vision",
   "url": "shaders/thermal-vision.wgsl",
-  "category": "image",
   "description": "Heat signature camera view.",
   "params": [
     {

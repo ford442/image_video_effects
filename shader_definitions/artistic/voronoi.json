@@ -2,7 +2,6 @@
   "id": "voronoi",
   "name": "Voronoi Tessellation",
   "url": "shaders/voronoi.wgsl",
-  "category": "geometric",
   "description": "Animated Voronoi reconstruction (simplified feature detection).",
   "features": [
     "mouse-driven",

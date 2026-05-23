@@ -2,39 +2,38 @@
   "id": "liquid-displacement",
   "name": "Liquid Displacement",
   "url": "shaders/liquid-displacement.wgsl",
-  "category": "liquid-effects",
   "description": "Navier-Stokes fluid simulation for realistic water-like displacement. Features swirling eddies, vortices, and volume-conserving flow with pressure projection.",
   "params": [
     {
       "id": "viscosity",
       "name": "Viscosity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "pressure_iterations",
       "name": "Pressure Iterations",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "flow_speed",
       "name": "Flow Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "turbulence",
       "name": "Turbulence",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

@@ -2,7 +2,6 @@
   "id": "gen-fluffy-raincloud",
   "name": "Vorticity Raincloud",
   "url": "shaders/gen_fluffy_raincloud.wgsl",
-  "category": "generative",
   "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
   "features": [
     "upgraded-rgba",

@@ -2,7 +2,6 @@
   "id": "ascii-flow-structure",
   "name": "ASCII Flow + Structure Tensor",
   "url": "shaders/ascii-flow-structure.wgsl",
-  "category": "advanced-hybrid",
   "description": "ASCII glyph rendering driven by structure tensor flow field. Glyphs align with image edges and orientations instead of random noise. Line Integral Convolution modulates brightness.",
   "tags": [
     "ascii",

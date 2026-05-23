@@ -2,7 +2,6 @@
   "id": "liquid-metal-prismatic",
   "name": "Liquid Metal Prismatic",
   "url": "shaders/liquid-metal-prismatic.wgsl",
-  "category": "advanced-hybrid",
   "description": "Liquid metal ripple distortion combined with 4-band spectral prismatic dispersion. Curved metal surface acts as a dynamic liquid prism — ripples create varying curvature that refracts light into separated wavelength bands via Cauchy's equation.",
   "tags": [
     "prismatic",
@@ -25,32 +24,32 @@
       "id": "ripple_speed",
       "name": "Ripple Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "ripple_intensity",
       "name": "Ripple Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "curvature",
       "name": "Prism Curvature",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "spectral_sat",
       "name": "Spectral Saturation",
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

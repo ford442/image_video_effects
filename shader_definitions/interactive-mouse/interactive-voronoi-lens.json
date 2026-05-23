@@ -2,15 +2,14 @@
   "id": "interactive-voronoi-lens",
   "name": "Interactive Voronoi Lens",
   "url": "shaders/interactive-voronoi-lens.wgsl",
-  "category": "image",
   "description": "Breaks the image into Voronoi cells that act as lenses. Mouse proximity intensifies the effect.",
   "params": [
     {
       "id": "cell_density",
       "name": "Cell Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Density of Voronoi cells"
@@ -19,8 +18,8 @@
       "id": "lens_strength",
       "name": "Lens Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Strength of the lens distortion"
@@ -29,8 +28,8 @@
       "id": "chaos",
       "name": "Chaos",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Randomness of cell point movement"
@@ -39,8 +38,8 @@
       "id": "lens_curve",
       "name": "Lens Curve",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Curvature of the lens bulge effect"

@@ -1,7 +1,6 @@
 {
   "id": "magnetic-rgb",
   "name": "Magnetic RGB",
-  "category": "image",
   "url": "shaders/magnetic-rgb.wgsl",
   "params": [
     {

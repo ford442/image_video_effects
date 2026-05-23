@@ -2,17 +2,29 @@
   "id": "gen-zeta-function-landscape",
   "name": "Zeta Function Landscape",
   "url": "shaders/gen-zeta-function-landscape.wgsl",
-  "category": "generative",
   "description": "Riemann zeta function visualization on the critical line. Magnitude creates landscape height, zeros form valleys. Audio reactivity modulates term count and color cycling.",
-  "tags": ["generative", "mathematical", "zeta", "riemann", "landscape", "abstract", "audio", "music"],
-  "features": ["generative", "audio-reactive", "upgraded-rgba"],
+  "tags": [
+    "generative",
+    "mathematical",
+    "zeta",
+    "riemann",
+    "landscape",
+    "abstract",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "sigma",
       "name": "Sigma Offset",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Deviation from critical line (0.5)"
     },
@@ -20,8 +32,8 @@
       "id": "range",
       "name": "T Range",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Width of t-axis exploration"
     },
@@ -29,8 +41,8 @@
       "id": "heightScale",
       "name": "Height Scale",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Vertical exaggeration of landscape"
     },
@@ -38,8 +50,8 @@
       "id": "terms",
       "name": "Term Precision",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Zeta series term count"
     }

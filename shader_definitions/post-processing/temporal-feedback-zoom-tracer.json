@@ -2,7 +2,6 @@
   "id": "temporal-feedback-zoom-tracer",
   "name": "Temporal Feedback Zoom Tracer",
   "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
-  "category": "post-processing",
   "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
   "tags": [
     "temporal",

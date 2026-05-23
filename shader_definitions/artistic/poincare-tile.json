@@ -2,7 +2,6 @@
   "id": "poincare-tile",
   "name": "Hyperbolic Tiling",
   "url": "shaders/poincare-tile.wgsl",
-  "category": "geometric",
   "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
   "params": [
     {

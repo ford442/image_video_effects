@@ -1,7 +1,6 @@
 {
   "id": "graphic-novel",
   "name": "Graphic Novel",
-  "category": "image",
   "description": "Transforms image into a comic book style with edge detection and halftone patterns.",
   "url": "shaders/graphic_novel.wgsl",
   "params": [

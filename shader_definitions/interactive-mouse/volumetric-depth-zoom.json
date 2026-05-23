@@ -2,7 +2,6 @@
   "id": "volumetric-depth-zoom",
   "name": "Volumetric Depth Zoom (Pass 1)",
   "url": "shaders/volumetric-depth-zoom.wgsl",
-  "category": "image",
   "description": "Raymarched volumetric zoom using multiple depth slices, DOF, parallax and edge specular lighting.",
   "params": [
     {

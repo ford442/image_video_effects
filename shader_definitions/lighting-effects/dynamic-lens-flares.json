@@ -2,36 +2,35 @@
   "id": "dynamic-lens-flares",
   "name": "Dynamic Lens Flares",
   "url": "shaders/dynamic-lens-flares.wgsl",
-  "category": "image",
   "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
   "params": [
     {
       "id": "intensity",
       "name": "Flare Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "threshold",
       "name": "Brightness Filter",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "spread",
       "name": "Ghost Spread",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "ghost_count",
       "name": "Ghost Count",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

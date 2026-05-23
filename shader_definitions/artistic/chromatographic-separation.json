@@ -2,7 +2,6 @@
   "id": "chromatographic-separation",
   "name": "Chromatographic Separation",
   "url": "shaders/chromatographic-separation.wgsl",
-  "category": "simulation",
   "description": "RGB channel fluid simulation with separate viscosities, wind forces, and inter-layer drag.",
   "params": [
     {

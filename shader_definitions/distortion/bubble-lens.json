@@ -2,7 +2,6 @@
   "id": "bubble-lens",
   "name": "Bubble Lens",
   "url": "shaders/bubble-lens.wgsl",
-  "category": "image",
   "features": [
     "mouse-driven"
   ],

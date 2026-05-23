@@ -1,6 +1,5 @@
 {
   "id": "data-scanner",
-  "category": "visual-effects",
   "url": "shaders/data-scanner.wgsl",
   "features": [
     "mouse-driven",

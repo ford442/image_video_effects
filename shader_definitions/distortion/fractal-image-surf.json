@@ -2,7 +2,6 @@
   "id": "fractal-image-surf",
   "name": "Fractal Image Surf",
   "url": "shaders/fractal-image-surf.wgsl",
-  "category": "image",
   "description": "Maps the image onto a Julia Set fractal coordinate system, controlled by the mouse.",
   "params": [
     {

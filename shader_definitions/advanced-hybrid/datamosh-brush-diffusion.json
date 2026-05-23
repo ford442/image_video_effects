@@ -2,7 +2,6 @@
   "id": "datamosh-brush-diffusion",
   "name": "Datamosh Brush Diffusion",
   "url": "shaders/datamosh-brush-diffusion.wgsl",
-  "category": "advanced-hybrid",
   "description": "Interactive datamoshing brush with anisotropic diffusion. Paint to freeze or corrupt pixels while Perona-Malik diffusion smooths along edges, creating oil-painted MPEG artifact trails with temporal persistence.",
   "features": [
     "advanced-hybrid",
@@ -17,8 +16,8 @@
       "id": "brush_size",
       "name": "Brush Size",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Datamosh brush radius"
@@ -27,8 +26,8 @@
       "id": "kappa",
       "name": "Edge Sensitivity",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Perona-Malik edge stopping threshold"
@@ -37,8 +36,8 @@
       "id": "diffusion_rate",
       "name": "Diffusion Rate",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Anisotropic diffusion time step"
@@ -47,8 +46,8 @@
       "id": "ghosting",
       "name": "Ghost Intensity",
       "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Alpha ghost trail intensity"

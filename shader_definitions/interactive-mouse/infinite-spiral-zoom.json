@@ -2,14 +2,49 @@
   "id": "infinite-spiral-zoom",
   "name": "Möbius–Droste Spiral",
   "url": "shaders/infinite-spiral-zoom.wgsl",
-  "category": "image",
   "description": "Möbius transformation f(z)=(az+b)/(cz+d) composed with log-polar mapping for a Droste self-similar infinite zoom. Animated parameter orbit, audio-driven rotation, multi-fold symmetry, chromatic ring fringing.",
   "params": [
-    { "id": "zoomSpeed",   "name": "Zoom Speed",       "default": 0.55, "min": 0.0, "max": 1.0 },
-    { "id": "mobStrength", "name": "Möbius Strength",  "default": 0.4,  "min": 0.0, "max": 1.0 },
-    { "id": "branches",    "name": "Symmetry Folds",   "default": 0.2,  "min": 0.0, "max": 1.0 },
-    { "id": "chromatic",   "name": "Chromatic Fringe",  "default": 0.3,  "min": 0.0, "max": 1.0 }
+    {
+      "id": "zoomSpeed",
+      "name": "Zoom Speed",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "mobStrength",
+      "name": "Möbius Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "branches",
+      "name": "Symmetry Folds",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Fringe",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
   ],
-  "features": ["mouse-driven", "audio-reactive", "temporal"],
-  "tags": ["warp", "distort", "fractal", "mobius", "droste", "spiral", "zoom"]
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal"
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "fractal",
+    "mobius",
+    "droste",
+    "spiral",
+    "zoom"
+  ]
 }

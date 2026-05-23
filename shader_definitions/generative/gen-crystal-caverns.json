@@ -2,7 +2,6 @@
   "id": "gen-crystal-caverns",
   "name": "Crystal Caverns",
   "url": "shaders/gen-crystal-caverns.wgsl",
-  "category": "generative",
   "description": "Infinite procedural cave system with glowing crystals featuring physical light transmission. Crystals have IOR-based Fresnel reflection and variable purity affecting their glow transparency.",
   "tags": [
     "crystal",
@@ -31,8 +30,8 @@
       "id": "scale",
       "name": "Cave Scale",
       "default": 0.25,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Size of cave structures"
     },
@@ -40,8 +39,8 @@
       "id": "density",
       "name": "Crystal Purity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Crystal clarity affecting transmission and glow"
     },
@@ -49,8 +48,8 @@
       "id": "glow",
       "name": "Glow Intensity",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "description": "Brightness of crystal glow"
     },
@@ -58,8 +57,8 @@
       "id": "fogDensity",
       "name": "Fog Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
+      "min": 0,
+      "max": 2,
       "step": 0.01,
       "description": "Volumetric fog density"
     }

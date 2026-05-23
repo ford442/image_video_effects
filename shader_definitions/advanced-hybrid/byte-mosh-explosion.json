@@ -2,7 +2,6 @@
   "id": "byte-mosh-explosion",
   "name": "Byte Mosh Explosion",
   "url": "shaders/byte-mosh-explosion.wgsl",
-  "category": "advanced-hybrid",
   "description": "Bitwise pixel corruption meets chromatic prism explosion. XOR, AND, shift and rotate operations are applied to spectrally displaced channels radiating from mouse and ripple shockwaves.",
   "features": [
     "advanced-hybrid",
@@ -17,8 +16,8 @@
       "id": "operation_mix",
       "name": "Operation Mix",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Bitwise operation variety"
@@ -27,8 +26,8 @@
       "id": "bit_shift",
       "name": "Bit Shift",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Bit shift amount"
@@ -37,8 +36,8 @@
       "id": "error_rate",
       "name": "Error Rate",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Glitch probability"
@@ -47,8 +46,8 @@
       "id": "prism_strength",
       "name": "Prism Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Chromatic dispersion strength"

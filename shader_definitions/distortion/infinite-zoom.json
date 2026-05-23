@@ -2,7 +2,6 @@
   "id": "infinite-zoom",
   "name": "Infinite Zoom",
   "url": "shaders/infinite-zoom.wgsl",
-  "category": "image",
   "features": [
     "mouse-driven"
   ],
@@ -15,8 +14,8 @@
       "id": "zoom_speed",
       "name": "Zoom Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Speed of infinite zoom"
@@ -25,8 +24,8 @@
       "id": "distortion",
       "name": "Distortion",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Hyperbolic distortion amount"
@@ -35,8 +34,8 @@
       "id": "rotation",
       "name": "Rotation",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Rotation of the zoom tunnel"
@@ -45,8 +44,8 @@
       "id": "max_iterations",
       "name": "Max Iterations",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Maximum fractal iterations"

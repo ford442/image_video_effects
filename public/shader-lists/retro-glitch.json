@@ -1,235 +1,6 @@
 [
   {
-    "id": "retro_phosphor_dream",
-    "name": "Phosphor Dream",
-    "url": "shaders/retro_phosphor_dream.wgsl",
-    "category": "retro-glitch",
-    "description": "Authentic CRT simulation with RGB phosphor triads, persistence afterglow, interlaced flicker, barrel distortion, and chromatic aberration",
-    "tags": [
-      "crt",
-      "retro",
-      "phosphor",
-      "analog",
-      "vintage"
-    ],
-    "features": [
-      "temporal-persistence",
-      "audio-reactive",
-      "phosphor-glow"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Curvature",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Phosphor Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Scanlines",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "Flicker",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.6
-  },
-  {
-    "id": "scanline-tear",
-    "name": "Scanline Tear",
-    "url": "shaders/scanline-tear.wgsl",
-    "category": "retro-glitch",
-    "description": "Authentic analog video interlacing simulation with field-based temporal offset, HSync/VSync modeling, and VHS-style tracking errors.",
-    "params": [
-      {
-        "id": "interlaceStrength",
-        "name": "Interlace Strength",
-        "description": "Controls interlacing artifact intensity, field persistence, and combing on motion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "hsyncError",
-        "name": "HSync Error",
-        "description": "Horizontal sync instability - creates rolling bars and horizontal displacement",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "vsyncError",
-        "name": "VSync Error",
-        "description": "Vertical sync roll - creates image rolling and retrace bars",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "colorBurstError",
-        "name": "Color Burst Error",
-        "description": "Chroma phase errors causing hue shifts and chroma noise",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "features": [
-      "multi-pass",
-      "glitch",
-      "temporal"
-    ],
-    "tags": [
-      "interlacing",
-      "vhs",
-      "analog",
-      "retro",
-      "scanlines",
-      "sync-loss",
-      "tracking",
-      "video",
-      "ntsc"
-    ]
-  },
-  {
-    "id": "synthwave-grid-warp",
-    "name": "Synthwave Grid Warp",
-    "url": "shaders/synthwave-grid-warp.wgsl",
-    "category": "retro-glitch",
-    "description": "3D perspective-projected synthwave floor with atmospheric fog, sun, and mountain silhouettes.",
-    "features": [
-      "mouse-driven",
-      "audio-reactive"
-    ],
-    "params": [
-      {
-        "id": "camY",
-        "name": "Camera Height",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "fogDensity",
-        "name": "Fog Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "fogFalloff",
-        "name": "Fog Falloff",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "mountainScale",
-        "name": "Mountain Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
-    ],
-    "tags": [
-      "retro",
-      "synthwave",
-      "3d",
-      "fog",
-      "atmospheric"
-    ]
-  },
-  {
-    "id": "matrix_digital_rain",
-    "name": "Matrix Digital Rain",
-    "url": "shaders/matrix_digital_rain.wgsl",
-    "category": "retro-glitch",
-    "description": "Matrix digital rain with cascading characters, decoding effect, trail fades, and glow. Alpha tracks character brightness.",
-    "tags": [
-      "matrix",
-      "digital",
-      "rain",
-      "cyberpunk",
-      "retro",
-      "code"
-    ],
-    "features": [
-      "rgba",
-      "matrix",
-      "digital-rain",
-      "decoding",
-      "retro"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param2",
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param3",
-        "name": "Glow Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "id": "param4",
-        "name": "Scanlines",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.6
-  },
-  {
     "id": "ascii-flow",
-    "category": "retro-glitch",
     "url": "shaders/ascii-flow.wgsl",
     "features": [
       "mouse-driven"
@@ -278,7 +49,6 @@
   {
     "id": "bayer-dither-interactive",
     "name": "Bayer Dither Interactive",
-    "category": "retro-glitch",
     "url": "shaders/bayer-dither-interactive.wgsl",
     "description": "Applies an ordered 8x8 Bayer dithering effect with adjustable bit depth and pixelation scale.",
     "features": [
@@ -334,10 +104,55 @@
     ]
   },
   {
+    "id": "byte-mosh",
+    "name": "Byte-Mosh Glitch",
+    "url": "shaders/byte-mosh.wgsl",
+    "description": "Bitwise XOR, AND, shift, and rotate operations creating digital corruption effects.",
+    "params": [
+      {
+        "id": "operationMix",
+        "name": "Operation Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "bitShift",
+        "name": "Bit Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "errorRate",
+        "name": "Error Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blockSize",
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "interactive",
+      "chromatic-aberration",
+      "glitch",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "crt-magnet",
     "name": "CRT Magnet",
     "url": "shaders/crt-magnet.wgsl",
-    "category": "retro-glitch",
     "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse using unified displacement fields and alpha translucency blending. Features spring-damper mouse tracking, bass-driven magnet pulse via audio envelope, curl-noise field lines, barrel distortion, and bloom.",
     "params": [
       {
@@ -390,7 +205,6 @@
     "id": "crt-phosphor-decay",
     "name": "CRT Phosphor Decay",
     "url": "shaders/crt-phosphor-decay.wgsl",
-    "category": "retro-glitch",
     "description": "Simulates CRT phosphor persistence with per-channel RGB decay rates, scanline masking, sub-pixel triad rendering, and halation bloom. Audio-reactive brightness flash and scanline flutter. Touch cursor adds static.",
     "features": [
       "mouse-driven",
@@ -449,7 +263,6 @@
     "id": "crt-tv",
     "name": "CRT TV - Phosphor Physics",
     "url": "shaders/crt-tv.wgsl",
-    "category": "retro-glitch",
     "description": "Authentic CRT phosphor physics simulation with aperture grille shadow mask, per-channel phosphor decay (R>G>B persistence rates), halation glow from glass scattering, barrel distortion, and realistic scanlines",
     "tags": [
       "crt",
@@ -502,7 +315,6 @@
   {
     "id": "cyber-rain-interactive",
     "name": "Cyber Rain",
-    "category": "retro-glitch",
     "url": "shaders/cyber-rain-interactive.wgsl",
     "description": "Matrix-style digital rain that reacts to image luminance and mouse.",
     "features": [
@@ -545,10 +357,111 @@
     ]
   },
   {
+    "id": "cyber-terminal-ascii",
+    "name": "Cyber Terminal ASCII",
+    "url": "shaders/cyber-terminal-ascii.wgsl",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the ASCII character grid"
+      },
+      {
+        "id": "color_mode",
+        "name": "Color Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Blend between monochrome and full color"
+      },
+      {
+        "id": "glow_strength",
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Glow strength of the ASCII characters"
+      },
+      {
+        "id": "decoder_radius",
+        "name": "Decoder Radius",
+        "default": 0.3,
+        "min": 0.05,
+        "max": 0.4,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Radius of the binary decoder lens around the mouse"
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "datamosh-brush",
+    "name": "Datamosh Brush",
+    "url": "shaders/datamosh-brush.wgsl",
+    "description": "Interactive datamosh effect. Mouse drags and corrupts pixels like P-frame compression artifacts.",
+    "params": [
+      {
+        "id": "brush_size",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "block_size",
+        "name": "Block Crush",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "threshold",
+        "name": "Effect Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "glitch",
+      "stateful",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "digital-decay",
     "name": "Digital Decay",
     "url": "shaders/digital-decay.wgsl",
-    "category": "retro-glitch",
     "description": "Simulates data corruption: block displacement, sub-pixel jitter, chromatic aberration, bit-flip channel noise, scanline static, and ghost-frame persistence — all scaling with audio bass and depth.",
     "features": [
       "audio-reactive",
@@ -602,10 +515,220 @@
     ]
   },
   {
+    "id": "digital-glitch-pass1",
+    "name": "Digital Glitch (Pass 1)",
+    "url": "shaders/digital-glitch-pass1.wgsl",
+    "description": "Glitch field generation: block displacement, scanline tearing, bitwise corruption seeds, and per-pixel corruption masks. Outputs glitch field to dataTextureA.",
+    "tags": [
+      "glitch",
+      "bitwise",
+      "corruption",
+      "multi-pass",
+      "digital"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "digital-glitch-pass2"
+    },
+    "params": [
+      {
+        "id": "corruption_intensity",
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bit_manipulation",
+        "name": "Bit Manipulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "error_propagation",
+        "name": "Error Propagation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "digital-glitch-pass2",
+    "name": "Digital Glitch (Pass 2)",
+    "url": "shaders/digital-glitch-pass2.wgsl",
+    "description": "Error propagation and compositing pass: neighbor error spreading, digital decay with bit-depth reduction, chromatic aberration, scanline artifacts, and block inversion. Reads glitch field from dataTextureC.",
+    "tags": [
+      "glitch",
+      "decay",
+      "chromatic-aberration",
+      "multi-pass"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "corruption_intensity",
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bit_manipulation",
+        "name": "Bit Manipulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "error_propagation",
+        "name": "Error Propagation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "digital-glitch",
+    "name": "Digital Glitch",
+    "url": "shaders/digital-glitch.wgsl",
+    "description": "",
+    "params": [
+      {
+        "id": "corruption_intensity",
+        "name": "Corruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Intensity of digital corruption effects"
+      },
+      {
+        "id": "bit_manipulation",
+        "name": "Bit Manipulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Type and amount of bitwise corruption"
+      },
+      {
+        "id": "error_propagation",
+        "name": "Error Propagation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Spread of corruption to neighboring pixels"
+      },
+      {
+        "id": "decay_rate",
+        "name": "Decay Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Rate of digital bit-depth decay"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "digital-waves",
+    "name": "Digital Waves",
+    "url": "shaders/digital-waves.wgsl",
+    "description": "Digital wave interference patterns.",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "halftone",
     "name": "Retro Halftone",
     "url": "shaders/halftone.wgsl",
-    "category": "retro-glitch",
     "description": "Classic newspaper halftone dot pattern with adjustable scale, contrast, and color mode. Audio-reactive bass pulse modulates dot intensity.",
     "params": [
       {
@@ -658,10 +781,61 @@
     ]
   },
   {
+    "id": "holographic-glitch",
+    "name": "Holographic Glitch",
+    "url": "shaders/holographic-glitch.wgsl",
+    "description": "Futuristic holographic projection with RGB chromatic aberration, scanlines, digital artifacts, and unstable flickering. Perfect for sci-fi aesthetics.",
+    "params": [
+      {
+        "id": "glitchIntensity",
+        "name": "Glitch Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scanlineSpeed",
+        "name": "Scanline Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rgbShift",
+        "name": "RGB Shift",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "flicker",
+        "name": "Flicker",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "chromatic-aberration",
+      "sci-fi",
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
     "id": "holographic-projection-failure",
     "name": "Holo-Projection Failure",
     "url": "shaders/holographic-projection-failure.wgsl",
-    "category": "retro-glitch",
     "description": "A failing holographic transmission. Glitches stabilize when the mouse 'tunes' the signal locally.",
     "params": [
       {
@@ -708,10 +882,69 @@
     ]
   },
   {
+    "id": "neon-edges",
+    "name": "Neon Edges",
+    "url": "shaders/neon-edges.wgsl",
+    "description": "Multi-scale Mach-band edge enhancement colorized by blackbody temperature and depth-aware spotlighting.",
+    "params": [
+      {
+        "id": "edge_sensitivity",
+        "name": "Edge Sensitivity",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Scales the multi-resolution Sobel response"
+      },
+      {
+        "id": "mach_strength",
+        "name": "Mach Strength",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Boosts the directional second-derivative Mach bands"
+      },
+      {
+        "id": "spotlight_radius",
+        "name": "Spotlight Radius",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Controls how tightly the mouse reveals depth edges"
+      },
+      {
+        "id": "neon_gain",
+        "name": "Neon Gain",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Overall blackbody glow intensity"
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "mach-band",
+      "blackbody"
+    ],
+    "features": [
+      "audio-reactive",
+      "depth-aware",
+      "mouse-driven"
+    ]
+  },
+  {
     "id": "phosphor-decay",
     "name": "Phosphor Decay",
     "url": "shaders/phosphor-decay.wgsl",
-    "category": "retro-glitch",
     "description": "CRT phosphor persistence with per-channel decay rates, color bloom, shadow mask, scan-line blanking, depth haze, and bass-reactive bloom burst.",
     "params": [
       {
@@ -761,6 +994,55 @@
     ]
   },
   {
+    "id": "pixel-rain",
+    "name": "Pixel Rain",
+    "url": "shaders/pixel-rain.wgsl",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "description": "Matrix-style digital rain. Mouse repels and highlights drops.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Rain Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glitch",
+        "name": "Glitch / Tint",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "trail_fade",
+        "name": "Trail Fade",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Trail persistence/fade rate"
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "pixelate-blast",
     "url": "shaders/pixelate-blast.wgsl",
     "icon": "blur_on",
@@ -800,7 +1082,6 @@
         "max": 1
       }
     ],
-    "category": "retro-glitch",
     "tags": [
       "glitch",
       "retro",
@@ -809,10 +1090,55 @@
     "name": "Pixelate Blast"
   },
   {
+    "id": "pixelation-drift",
+    "name": "Pixelation Drift",
+    "url": "shaders/pixelation-drift.wgsl",
+    "description": "Dynamic pixelated mosaic with organic drifting motion and depth-aware pixel sizing. Watch as chunky pixels slowly morph and flow across the image.",
+    "params": [
+      {
+        "id": "pixelSize",
+        "name": "Pixel Size",
+        "default": 0.15,
+        "min": 0.01,
+        "max": 1
+      },
+      {
+        "id": "driftSpeed",
+        "name": "Drift Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "colorBleed",
+        "name": "Color Bleed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "depthInfluence",
+        "name": "Depth Influence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "organic-motion",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "rgb-glitch-displacement",
     "name": "RGB Glitch Displacement",
     "url": "shaders/rgb-glitch-displacement.wgsl",
-    "category": "retro-glitch",
     "description": "Digital glitch effect with RGB channel displacement, block glitches, scanlines, pixel sorting, and datamosh effects. Mouse-reactive wave displacement and chromatic aberration. Audio reactivity pulses glitch intensity and adds beat-synchronized flashes.",
     "tags": [
       "glitch",
@@ -860,10 +1186,56 @@
     ]
   },
   {
+    "id": "rgb-glitch-trail",
+    "name": "RGB Glitch Trail",
+    "url": "shaders/rgb-glitch-trail.wgsl",
+    "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence.",
+    "params": [
+      {
+        "id": "decay_rate",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Effect Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "shift_strength",
+        "name": "RGB Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chaos",
+        "name": "Chaos / Noise",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic",
+      "trail",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "scan-distort",
     "name": "Scan Distort",
     "url": "shaders/scan-distort.wgsl",
-    "category": "retro-glitch",
     "description": "CRT-style scanline distortion with unified displacement fields and alpha translucency blending. Features temporal feedback accumulation, bass-driven audio envelope, mouse-reactive glitch bursts, and block-edge quantization artifacts.",
     "features": [
       "mouse-driven",
@@ -924,7 +1296,6 @@
   {
     "id": "scanline-drift",
     "name": "Scanline Drift",
-    "category": "retro-glitch",
     "url": "shaders/scanline-drift.wgsl",
     "description": "Horizontal segments of the image drift left and right, simulating a bad video signal or tracking error.",
     "params": [
@@ -972,7 +1343,6 @@
     "id": "signal-noise",
     "name": "Signal Noise",
     "url": "shaders/signal-noise.wgsl",
-    "category": "retro-glitch",
     "description": "Multi-octave analog noise with VHS head-switching bands, DCT block artifacts, datamoshing smear, and directional chromatic aberration with YUV chroma noise.",
     "features": [
       "temporal"
@@ -1023,7 +1393,6 @@
     "id": "spectral-glitch-sort",
     "name": "Spectral Glitch Sort",
     "url": "shaders/spectral-glitch-sort.wgsl",
-    "category": "retro-glitch",
     "features": [
       "mouse-driven",
       "chromatic-aberration",
@@ -1068,10 +1437,150 @@
     ]
   },
   {
+    "id": "spectrum-bleed",
+    "name": "Spectrum Bleed",
+    "url": "shaders/spectrum-bleed.wgsl",
+    "description": "Color channel separation and bleeding effects.",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "vhs-tracking",
+    "name": "VHS Tracking Error",
+    "url": "shaders/vhs-tracking.wgsl",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "description": "Simulates VCR tracking errors with scanline tearing and chromatic aberration.",
+    "params": [
+      {
+        "name": "Tracking Error",
+        "id": "zoomParam1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Noise Level",
+        "id": "zoomParam2",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Color Drift",
+        "id": "zoomParam3",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Scanlines",
+        "id": "zoomParam4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "vinyl-scratch",
+    "name": "Vinyl Scratch",
+    "url": "shaders/vinyl-scratch.wgsl",
+    "description": "Vintage vinyl record scratch effect.",
+    "params": [
+      {
+        "id": "scratch_density",
+        "name": "Scratch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dust",
+        "name": "Dust Particles",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "warping",
+        "name": "Record Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "sepia",
+        "name": "Vintage Tone",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "retro",
+      "texture",
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
-    "category": "retro-glitch",
     "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
     "features": [
       "temporal",
@@ -1135,7 +1644,6 @@
     "id": "xerox-degrade",
     "name": "Xerox Degrade",
     "url": "shaders/xerox-degrade.wgsl",
-    "category": "retro-glitch",
     "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
     "params": [
       {

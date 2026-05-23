@@ -2,7 +2,6 @@
   "id": "mirror-drag",
   "name": "Mirror Drag",
   "url": "shaders/mirror-drag.wgsl",
-  "category": "interactive-mouse",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -13,30 +12,30 @@
     {
       "id": "side",
       "name": "Flip Side",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "flipY",
       "name": "Mirror Y",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "smoothness",
       "name": "Edge Smoothness",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "mode",
       "name": "Mode",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

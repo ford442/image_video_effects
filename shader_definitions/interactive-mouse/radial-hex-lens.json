@@ -2,7 +2,6 @@
   "id": "radial-hex-lens",
   "name": "Radial Hex Lens",
   "url": "shaders/radial-hex-lens.wgsl",
-  "category": "image",
   "description": "A hexagonal mosaic that distorts and magnifies around the mouse position.",
   "features": [
     "mouse-driven"
@@ -12,8 +11,8 @@
       "id": "scale",
       "name": "Hex Scale",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Size of hexagonal pixels"
@@ -22,8 +21,8 @@
       "id": "radius",
       "name": "Lens Radius",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Radius of the lens effect"
@@ -32,8 +31,8 @@
       "id": "distortion",
       "name": "Distortion",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Amount of magnification distortion"
@@ -42,8 +41,8 @@
       "id": "edge_hardness",
       "name": "Hex Edge Hardness",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Hardness of hexagon cell edges"

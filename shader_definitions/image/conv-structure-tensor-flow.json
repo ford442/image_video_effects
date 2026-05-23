@@ -3,7 +3,6 @@
   "name": "Structure Tensor Flow",
   "description": "Computes structure tensor, extracts eigenvectors for dominant texture orientation, and visualizes flow via Line Integral Convolution. RGBA32FLOAT packs eigenvector components, coherency, and LIC intensity. Mouse creates vortices in the flow field.",
   "url": "shaders/conv-structure-tensor-flow.wgsl",
-  "category": "image",
   "features": [
     "advanced-convolution",
     "rgba32float-exploiting",
@@ -14,8 +13,8 @@
       "id": "lic_steps",
       "name": "LIC Steps",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x"
     },
@@ -23,8 +22,8 @@
       "id": "coherency_boost",
       "name": "Coherency Boost",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y"
     },
@@ -32,8 +31,8 @@
       "id": "flow_speed",
       "name": "Flow Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z"
     },
@@ -41,8 +40,8 @@
       "id": "mouse_influence",
       "name": "Mouse Vortex",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w"
     }

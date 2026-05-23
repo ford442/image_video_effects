@@ -1,7 +1,6 @@
 {
   "id": "gen-chronodynamic-aether-weaver-automata",
   "name": "Chronodynamic Aether-Weaver Automata",
-  "category": "generative",
   "tags": [
     "cosmic",
     "mechanical",
@@ -20,15 +19,15 @@
     },
     {
       "name": "Loom Rotation Speed",
-      "min": -5.0,
-      "max": 5.0,
+      "min": -5,
+      "max": 5,
       "step": 0.1,
-      "default": 1.0
+      "default": 1
     },
     {
       "name": "Aether Bloom",
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "default": 0.5
     },

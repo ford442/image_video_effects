@@ -2,36 +2,35 @@
   "id": "pixel-focus",
   "name": "Pixel Focus",
   "url": "shaders/pixel-focus.wgsl",
-  "category": "interactive-mouse",
   "description": "Applies a mosaic effect everywhere except for a clear focus area around the mouse. Audio-reactive density adds rhythmic pulse to pixelation.",
   "params": [
     {
       "id": "mosaicSize",
       "name": "Block Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "radius",
       "name": "Focus Radius",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "hardness",
       "name": "Edge Hardness",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "chromatic",
       "name": "Aberration",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

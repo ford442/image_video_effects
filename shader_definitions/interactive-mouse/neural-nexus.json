@@ -2,7 +2,6 @@
   "id": "neural-nexus",
   "name": "Neural Nexus",
   "url": "shaders/neural-nexus.wgsl",
-  "category": "image",
   "description": "Biological neural network simulation with pulsing electrical signals; mouse sends shockwaves through synapses.",
   "params": [
     {

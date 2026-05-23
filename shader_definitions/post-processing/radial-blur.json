@@ -2,7 +2,6 @@
   "id": "radial-blur",
   "name": "Radial Blur",
   "url": "shaders/radial-blur.wgsl",
-  "category": "post-processing",
   "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
   "params": [
     {
@@ -10,7 +9,7 @@
       "name": "Blur Sigma",
       "default": 0.3,
       "min": 0.01,
-      "max": 1.0,
+      "max": 1,
       "step": 0.01
     },
     {
@@ -20,22 +19,26 @@
       "min": 0,
       "max": 2,
       "step": 1,
-      "labels": ["Circle", "Hexagon", "Star"]
+      "labels": [
+        "Circle",
+        "Hexagon",
+        "Star"
+      ]
     },
     {
       "id": "focalDepth",
       "name": "Focal Depth",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     },
     {
       "id": "maxBlur",
       "name": "Max Blur",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],

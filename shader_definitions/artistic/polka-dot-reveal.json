@@ -2,7 +2,6 @@
   "id": "polka-dot-reveal",
   "name": "Polka Dot Reveal",
   "url": "shaders/polka-dot-reveal.wgsl",
-  "category": "artistic",
   "description": "Interactive halftone effect with spring-damped mouse follow, attack/release audio envelope driving dot radius and saturation, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
   "features": [
     "mouse-driven",

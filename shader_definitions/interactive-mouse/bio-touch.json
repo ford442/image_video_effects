@@ -2,36 +2,35 @@
   "id": "bio-touch",
   "name": "Bio-Luminescent Touch",
   "url": "shaders/bio-touch.wgsl",
-  "category": "interactive-mouse",
   "description": "Reveals organic, glowing cellular structures beneath the image where you touch. Audio-reactive cell density and pulse speed respond to bass.",
   "params": [
     {
       "id": "radius",
       "name": "Glow Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "density",
       "name": "Cell Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "shift",
       "name": "Color Shift",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "speed",
       "name": "Pulse Speed",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

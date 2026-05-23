@@ -2,7 +2,6 @@
   "id": "chromatic-folds",
   "name": "Chromatic Folds",
   "url": "shaders/chromatic-folds.wgsl",
-  "category": "image",
   "description": "Geometric color folding and warping effects.",
   "features": [
     "mouse-driven"

@@ -2,7 +2,6 @@
   "id": "biomimetic-scales",
   "name": "Biomimetic Scales",
   "url": "shaders/biomimetic-scales.wgsl",
-  "category": "image",
   "features": [
     "mouse-driven"
   ],
@@ -11,29 +10,29 @@
       "id": "scale_size",
       "name": "Scale Size",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "roughness",
       "name": "Roughness",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "reaction_radius",
       "name": "Reaction Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "lift",
       "name": "Lift Strength",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

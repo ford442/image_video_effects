@@ -2,7 +2,6 @@
   "id": "quantum-foam-pass2",
   "name": "Quantum Foam (Pass 2: Particle Advection)",
   "url": "shaders/quantum-foam-pass2.wgsl",
-  "category": "simulation",
   "description": "Advects particles through the quantum field. Second pass of 3-pass system.",
   "features": [
     "multi-pass-2",

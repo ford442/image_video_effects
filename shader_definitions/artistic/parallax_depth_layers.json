@@ -2,7 +2,6 @@
   "id": "parallax_depth_layers",
   "name": "Parallax Layers RGBA",
   "url": "shaders/parallax_depth_layers.wgsl",
-  "category": "visual-effects",
   "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
   "tags": [
     "parallax",

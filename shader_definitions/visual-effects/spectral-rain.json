@@ -1,6 +1,5 @@
 {
   "id": "spectral-rain",
-  "category": "visual-effects",
   "url": "shaders/spectral-rain.wgsl",
   "features": [
     "mouse-driven",
@@ -12,8 +11,8 @@
       "id": "density",
       "name": "Rain Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Density of rain streaks"
@@ -22,8 +21,8 @@
       "id": "chromatic_strength",
       "name": "Chromatic Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Strength of chromatic displacement"
@@ -32,8 +31,8 @@
       "id": "trail_length",
       "name": "Trail Length",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Length of raindrop trails"
@@ -42,7 +41,7 @@
       "id": "rain_angle_scale",
       "name": "Rain Angle Scale",
       "default": 0.5,
-      "min": 0.0,
+      "min": 0,
       "max": 1.5,
       "step": 0.01,
       "mapping": "zoom_params.w",

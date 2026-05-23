@@ -2,7 +2,6 @@
   "id": "anisotropic-kuwahara",
   "name": "Van Gogh Flow",
   "url": "shaders/anisotropic-kuwahara.wgsl",
-  "category": "artistic",
   "description": "Anisotropic Kuwahara filter creating painterly Van Gogh-style brushstroke effects.",
   "params": [
     {

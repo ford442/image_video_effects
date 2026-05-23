@@ -2,7 +2,6 @@
   "id": "neon-light",
   "name": "Neon Light",
   "url": "shaders/neon-light.wgsl",
-  "category": "image",
   "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
   "params": [
     {

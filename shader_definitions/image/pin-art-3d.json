@@ -1,7 +1,6 @@
 {
   "id": "pin-art-3d",
   "name": "Pin Art 3D",
-  "category": "image",
   "description": "Simulates a 3D pin art toy where image brightness controls pin height. Mouse pushes pins down.",
   "url": "shaders/pin-art-3d.wgsl",
   "params": [

@@ -2,7 +2,6 @@
   "id": "pp-sharpen",
   "name": "PP Sharpen",
   "url": "shaders/pp-sharpen.wgsl",
-  "category": "post-processing",
   "description": "Unsharp mask sharpening with edge detection, halo control, and multiple enhancement modes",
   "tags": [
     "post-process",

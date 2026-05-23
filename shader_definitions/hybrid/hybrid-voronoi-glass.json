@@ -2,16 +2,23 @@
   "id": "hybrid-voronoi-glass",
   "name": "Hybrid Voronoi Glass",
   "url": "shaders/hybrid-voronoi-glass.wgsl",
-  "category": "distortion",
   "description": "Voronoi diagram rendered as glass blocks with chromatic dispersion and physically-inspired refraction",
-  "features": ["mouse-driven", "hybrid", "voronoi", "glass-refraction", "chromatic-dispersion", "fresnel", "randomization-safe"],
+  "features": [
+    "mouse-driven",
+    "hybrid",
+    "voronoi",
+    "glass-refraction",
+    "chromatic-dispersion",
+    "fresnel",
+    "randomization-safe"
+  ],
   "params": [
     {
       "id": "cell_density",
       "name": "Cell Density",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Number of Voronoi cells"
@@ -20,8 +27,8 @@
       "id": "ior",
       "name": "Refraction Index",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Index of refraction (glass to diamond)"
@@ -30,8 +37,8 @@
       "id": "dispersion",
       "name": "Chromatic Dispersion",
       "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "RGB channel separation on refraction"
@@ -40,14 +47,17 @@
       "id": "thickness",
       "name": "Glass Thickness",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Virtual thickness of glass blocks"
     }
   ],
-  "tags": ["interactive", "cursor"],
+  "tags": [
+    "interactive",
+    "cursor"
+  ],
   "chunks_used": [
     "hash22 (voronoi-glass.wgsl)",
     "fresnelSchlick (crystal-facets.wgsl)",

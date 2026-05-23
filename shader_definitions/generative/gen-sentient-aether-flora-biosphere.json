@@ -3,7 +3,6 @@
   "name": "Sentient Aether-Flora Biosphere",
   "author": "Jules",
   "description": "A hyper-organic, bioluminescent extraterrestrial terrarium where fractal aether-spores drift and blossom into complex, sentient crystalline flora that pulse with cosmic energy in sync with ambient audio.",
-  "category": "generative",
   "type": "wgsl",
   "coordinate": 880,
   "url": "shaders/gen-sentient-aether-flora-biosphere.wgsl",

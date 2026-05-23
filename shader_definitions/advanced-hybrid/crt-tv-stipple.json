@@ -2,7 +2,6 @@
   "id": "crt-tv-stipple",
   "name": "CRT TV Stipple",
   "url": "shaders/crt-tv-stipple.wgsl",
-  "category": "advanced-hybrid",
   "description": "Authentic CRT TV simulation with blue-noise stippled phosphor dots. Combines barrel distortion, chromatic aberration, scanlines, and phosphor decay with perceptually optimal blue-noise dot placement for each RGB subpixel triad.",
   "features": [
     "advanced-hybrid",
@@ -20,8 +19,8 @@
       "id": "scanlines",
       "name": "Scanline Intensity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "CRT scanline darkness"
@@ -30,8 +29,8 @@
       "id": "phosphor_glow",
       "name": "Phosphor Glow",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Phosphor bloom around bright areas"
@@ -40,8 +39,8 @@
       "id": "stipple_density",
       "name": "Stipple Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Density of blue-noise stipple dots"
@@ -50,8 +49,8 @@
       "id": "barrel",
       "name": "Barrel Distortion",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "CRT screen curvature amount"
@@ -62,7 +61,7 @@
     "Blue-noise offset, stipple placement (spec-blue-noise-stipple.wgsl)"
   ],
   "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent CB-13 \u2014 Retro & Glitch Enhancer",
+  "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
   "created_date": "2026-04-18",
   "tags": [
     "crt",

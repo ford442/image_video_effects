@@ -2,7 +2,6 @@
   "id": "predator-camouflage",
   "name": "Predator Camouflage",
   "url": "shaders/predator-camouflage.wgsl",
-  "category": "distortion",
   "features": [
     "mouse-driven"
   ],
@@ -12,8 +11,8 @@
       "id": "radius",
       "name": "Cloak Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Radius of the camouflage cloaking field"
@@ -22,8 +21,8 @@
       "id": "distortion",
       "name": "Refraction Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Strength of refraction distortion"
@@ -32,8 +31,8 @@
       "id": "shimmer",
       "name": "Shimmer Speed",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Speed of the shimmer animation"
@@ -42,8 +41,8 @@
       "id": "noise_scale",
       "name": "Noise Scale",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Scale of the camouflage noise pattern"

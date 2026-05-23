@@ -2,36 +2,35 @@
   "id": "voronoi-glass",
   "name": "Voronoi Glass",
   "url": "shaders/voronoi-glass.wgsl",
-  "category": "image",
   "description": "Refractive glass cells based on Voronoi patterns that shift with the mouse.",
   "params": [
     {
       "id": "density",
       "name": "Cell Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "refract",
       "name": "Refraction",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "border",
       "name": "Border Width",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "attract",
       "name": "Mouse Attract",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

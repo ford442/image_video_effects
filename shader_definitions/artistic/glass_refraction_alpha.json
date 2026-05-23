@@ -2,7 +2,6 @@
   "id": "glass_refraction_alpha",
   "name": "Glass Refraction RGBA",
   "url": "shaders/glass_refraction_alpha.wgsl",
-  "category": "distortion",
   "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
   "tags": [
     "interactive",

@@ -2,7 +2,6 @@
   "id": "temporal_echo",
   "name": "Temporal Echo",
   "url": "shaders/temporal_echo.wgsl",
-  "category": "lighting-effects",
   "description": "Multi-frame echo accumulation with hue-rotating trails, chromatic aberration on older echoes, depth-layered decay, and audio-reactive beat flash.",
   "tags": [
     "temporal",

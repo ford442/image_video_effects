@@ -2,36 +2,35 @@
   "id": "selective-color",
   "name": "Voronoi Multi-Focal Selective",
   "url": "shaders/selective-color.wgsl",
-  "category": "image",
   "description": "Voronoi multi-focal selective desaturation with chromatic aberration, fractal noise masking, polar sectors, SDF shapes, ripple propagation, and depth-aware edge detection.",
   "params": [
     {
       "id": "radius",
       "name": "Radius",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "softness",
       "name": "Edge Softness",
       "default": 0.1,
-      "min": 0.0,
+      "min": 0,
       "max": 0.5
     },
     {
       "id": "desat",
       "name": "Desat. Strength",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 1,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "mask_feather",
       "name": "Mask Feather",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
       "description": "Softness exponent for the mask edge"

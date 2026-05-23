@@ -2,7 +2,6 @@
   "id": "dla-crystals",
   "name": "DLA Crystal Growth",
   "url": "shaders/dla-crystals.wgsl",
-  "category": "simulation",
   "description": "Diffusion-limited aggregation creating fractal crystal structures that grow from click points.",
   "params": [
     {

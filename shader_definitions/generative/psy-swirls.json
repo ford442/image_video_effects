@@ -2,7 +2,6 @@
   "id": "psy-swirls",
   "name": "Psychedelic Rainbow Swirls",
   "url": "shaders/generative-psy-swirls.wgsl",
-  "category": "image",
   "description": "Generative swirling vortex fields with multi-layer procedural noise flow, spectral rainbow HSV cycles from polar angles, temporal twisting, and psychedelic distortion. Mouse attracts swirls; ripples spawn color bursts.",
   "params": [
     {

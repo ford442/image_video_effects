@@ -1,7 +1,6 @@
 {
   "id": "circular-pixelate",
   "name": "Circular Pixelate",
-  "category": "image",
   "description": "Renders the image as a grid of circles. Mouse controls density and radius.",
   "url": "shaders/circular-pixelate.wgsl",
   "params": [

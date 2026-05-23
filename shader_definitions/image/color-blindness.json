@@ -2,36 +2,35 @@
   "id": "color-blindness",
   "name": "Color Blindness Sim",
   "url": "shaders/color-blindness.wgsl",
-  "category": "image",
   "description": "Simulates various forms of color blindness (Protanopia, Deuteranopia, Tritanopia) with split-screen comparison.",
   "params": [
     {
       "id": "type",
       "name": "Type (P/D/T)",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "severity",
       "name": "Severity",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 1,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "split",
       "name": "Split Screen",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 1,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "unused",
       "name": "Unused",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "default": 0,
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

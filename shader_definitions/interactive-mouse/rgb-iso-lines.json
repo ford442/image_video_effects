@@ -2,15 +2,14 @@
   "id": "rgb-iso-lines",
   "name": "RGB Iso Lines",
   "url": "shaders/rgb-iso-lines.wgsl",
-  "category": "image",
   "description": "Visualizes the R, G, and B channels as separated contour maps. Mouse controls the parallax separation.",
   "params": [
     {
       "id": "thickness",
       "name": "Line Thickness",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
       "description": "Thickness of contour lines"
@@ -19,8 +18,8 @@
       "id": "frequency",
       "name": "Contour Density",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
       "description": "Density of contour lines"
@@ -29,8 +28,8 @@
       "id": "parallax",
       "name": "Parallax Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
       "description": "Amount of RGB channel parallax separation"
@@ -39,7 +38,7 @@
       "id": "bg_opacity",
       "name": "Background Opacity",
       "default": 0.2,
-      "min": 0.0,
+      "min": 0,
       "max": 0.5,
       "step": 0.01,
       "mapping": "zoom_params.w",

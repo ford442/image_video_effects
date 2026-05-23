@@ -3,7 +3,6 @@
   "name": "Silica Tsunami",
   "description": "A slow-motion wave of refractive glass-like particles that crests and shatters, dynamically reshaping around the mouse and reacting to audio amplitude.",
   "type": "generative",
-  "category": "generative",
   "coordinate": 855,
   "url": "shaders/gen-silica-tsunami.wgsl",
   "params": [

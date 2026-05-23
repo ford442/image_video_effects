@@ -2,14 +2,49 @@
   "id": "fractal-glass-distort",
   "name": "IFS Attractor Glass",
   "url": "shaders/fractal-glass-distort.wgsl",
-  "category": "distortion",
   "description": "Iterated Function System (IFS) attractor density field drives refraction index. Barnsley-style 4-contraction IFS evaluated per-pixel with iridescent chromatic dispersion through the fractal structure. Audio-driven contraction modulation.",
-  "features": ["mouse-driven", "audio-reactive", "temporal", "upgraded-rgba"],
-  "params": [
-    { "id": "contraction", "name": "Contraction",  "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "rotation",    "name": "IFS Rotation",  "default": 0.3, "min": 0.0, "max": 1.0 },
-    { "id": "refraction",  "name": "Refraction",    "default": 0.5, "min": 0.0, "max": 1.0 },
-    { "id": "aberration",  "name": "Aberration",    "default": 0.3, "min": 0.0, "max": 1.0 }
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
   ],
-  "tags": ["warp", "distort", "fractal", "ifs", "attractor", "glass"]
+  "params": [
+    {
+      "id": "contraction",
+      "name": "Contraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "rotation",
+      "name": "IFS Rotation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "fractal",
+    "ifs",
+    "attractor",
+    "glass"
+  ]
 }

@@ -2,7 +2,6 @@
   "id": "chromatic-crawler",
   "name": "Chromatic Crawler",
   "url": "shaders/chromatic-crawler.wgsl",
-  "category": "image",
   "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending.",
   "features": [
     "mouse-driven",

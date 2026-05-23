@@ -2,36 +2,35 @@
   "id": "strip-scan-glitch",
   "name": "Strip Scan Glitch",
   "url": "shaders/strip-scan-glitch.wgsl",
-  "category": "image",
   "description": "Slices the image into vertical strips that drift and jitter, controlled by mouse position.",
   "params": [
     {
       "id": "strips",
       "name": "Strip Count",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "speed",
       "name": "Scroll Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "jitter",
       "name": "Glitch Jitter",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "rgb",
       "name": "RGB Split",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [

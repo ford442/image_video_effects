@@ -2,7 +2,6 @@
   "id": "crystal-illuminator",
   "name": "Crystal Illuminator",
   "url": "shaders/crystal-illuminator.wgsl",
-  "category": "interactive-mouse",
   "description": "Faceted glass/gemstone surface with physical light transmission. Features Voronoi-based facets with mouse-controlled lighting, Fresnel reflection, and purity-based scattering for realistic crystal appearance.",
   "features": [
     "mouse-driven",
@@ -15,8 +14,8 @@
       "name": "Crystal Size",
       "type": "float",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "description": "Size of Voronoi crystal facets"
     },
     {
@@ -24,8 +23,8 @@
       "name": "Refractive Index",
       "type": "float",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "description": "IOR: Quartz (1.54) to Diamond (2.42)"
     },
     {
@@ -33,8 +32,8 @@
       "name": "Light Intensity",
       "type": "float",
       "default": 0.6,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "description": "Mouse light brightness"
     },
     {
@@ -42,8 +41,8 @@
       "name": "Crystal Purity",
       "type": "float",
       "default": 0.8,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "description": "Crystal clarity: Pure transmits more, impure scatters more"
     }
   ],

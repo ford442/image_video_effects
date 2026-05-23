@@ -2,7 +2,6 @@
   "id": "vinyl-scratch",
   "name": "Vinyl Scratch",
   "url": "shaders/vinyl-scratch.wgsl",
-  "category": "image",
   "description": "Vintage vinyl record scratch effect.",
   "params": [
     {

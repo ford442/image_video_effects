@@ -2,7 +2,6 @@
   "id": "chromatic-folds-2",
   "name": "Chromatic Folds V2",
   "url": "shaders/chromatic-folds-2.wgsl",
-  "category": "image",
   "description": "Enhanced geometric color folding with improved warping.",
   "features": [
     "mouse-driven"

@@ -2,7 +2,6 @@
   "id": "gen-reaction-diffusion",
   "name": "FitzHugh-Nagumo Excitable Media",
   "url": "shaders/gen_reaction_diffusion.wgsl",
-  "category": "generative",
   "description": "Dual-mode excitable media: Gray-Scott morphogenesis or FitzHugh-Nagumo action-potential waves with mouse/current injection and bass-triggered pulses.",
   "features": [
     "upgraded-rgba",
@@ -47,7 +46,7 @@
     {
       "id": "param4",
       "name": "Model Blend",
-      "default": 1.0,
+      "default": 1,
       "min": 0,
       "max": 1,
       "step": 0.01,

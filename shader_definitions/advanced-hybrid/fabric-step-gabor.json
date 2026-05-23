@@ -2,7 +2,6 @@
   "id": "fabric-step-gabor",
   "name": "Fabric Step Gabor",
   "url": "shaders/fabric-step-gabor.wgsl",
-  "category": "advanced-hybrid",
   "description": "Mass-spring cloth simulation deforms the image into flowing folds, then Gabor filter banks detect oriented texture patterns across the fabric. Strain creates visual texture mapped to psychedelic orientation colors. Mouse pulls and tears the textile.",
   "features": [
     "mouse-driven",

@@ -2,7 +2,6 @@
   "id": "mouse-fluid-coupling",
   "name": "Fluid Coupling",
   "url": "shaders/mouse-fluid-coupling.wgsl",
-  "category": "interactive-mouse",
   "features": [
     "mouse-driven",
     "temporal"
@@ -13,29 +12,29 @@
       "id": "viscosity",
       "name": "Viscosity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "mouseRadius",
       "name": "Stir Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "colorShift",
       "name": "Color Absorption",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "vortexStrength",
       "name": "Vortex Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [

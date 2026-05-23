@@ -3,7 +3,6 @@
     "id": "audio-reactive-pyramid",
     "name": "Audio Reactive Pyramid",
     "url": "shaders/audio-reactive-pyramid.wgsl",
-    "category": "post-processing",
     "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
       "audio-reactive",
@@ -57,7 +56,6 @@
     "id": "audio-reactive-rgb-dispersion",
     "name": "Audio Reactive RGB Dispersion",
     "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
-    "category": "post-processing",
     "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
       "audio-reactive",
@@ -111,7 +109,6 @@
     "id": "audio-reactive-temporal-decay",
     "name": "Audio Reactive Temporal Decay",
     "url": "shaders/audio-reactive-temporal-decay.wgsl",
-    "category": "post-processing",
     "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range. Low-band energy → long ghostly trails; high-band energy → fast fade. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
       "audio-reactive",
@@ -166,7 +163,6 @@
     "id": "long-exposure",
     "name": "Long Exposure Light Painting",
     "url": "shaders/long-exposure.wgsl",
-    "category": "post-processing",
     "description": "Simulates an open camera shutter accumulating light over time. Bright regions of each frame persist and blend into a glowing exposure buffer stored in dataTextureC; darker regions fade slowly, leaving luminous light-painting trails. Mouse click resets the exposure. Bass brightens incoming frames for punchier accumulation; mids control bloom halo radius; treble adds sparkle to the brightest traces.",
     "tags": [
       "long-exposure",
@@ -227,7 +223,6 @@
     "id": "luma-pixel-sort",
     "name": "Luma Pixel Sort",
     "url": "shaders/luma-pixel-sort.wgsl",
-    "category": "post-processing",
     "description": "Fibonacci disk neighborhood pixel sorting with depth-aware blending, audio-reactive threshold modulation, and luminance-keyed alpha.",
     "features": [
       "upgraded-rgba",
@@ -281,7 +276,6 @@
     "id": "pixel-depth-sort",
     "name": "Pixel Depth Sort",
     "url": "shaders/pixel-depth-sort.wgsl",
-    "category": "post-processing",
     "description": "Directional pixel sorting by depth with mouse-following sort angle, chromatic aberration at boundaries, bass-driven sort length, and depth-layered alpha.",
     "features": [
       "upgraded-rgba",
@@ -335,7 +329,6 @@
     "id": "pp-bloom",
     "name": "PP Bloom",
     "url": "shaders/pp-bloom.wgsl",
-    "category": "post-processing",
     "description": "High-quality HDR bloom with multi-tap Gaussian blur, anamorphic stretch, and lens dirt effects",
     "tags": [
       "post-process",
@@ -378,7 +371,6 @@
     "id": "pp-chromatic",
     "name": "PP Chromatic",
     "url": "shaders/pp-chromatic.wgsl",
-    "category": "post-processing",
     "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
     "tags": [
       "post-process",
@@ -421,7 +413,6 @@
     "id": "pp-sharpen",
     "name": "PP Sharpen",
     "url": "shaders/pp-sharpen.wgsl",
-    "category": "post-processing",
     "description": "Unsharp mask sharpening with edge detection, halo control, and multiple enhancement modes",
     "tags": [
       "post-process",
@@ -464,7 +455,6 @@
     "id": "pp-ssao",
     "name": "PP SSAO",
     "url": "shaders/pp-ssao.wgsl",
-    "category": "post-processing",
     "description": "Screen-space ambient occlusion for added depth, with color bleeding from occluding surfaces",
     "tags": [
       "post-process",
@@ -507,7 +497,6 @@
     "id": "pp-tone-map",
     "name": "PP Tone Map",
     "url": "shaders/pp-tone-map.wgsl",
-    "category": "post-processing",
     "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
     "tags": [
       "post-process",
@@ -550,7 +539,6 @@
     "id": "pp-vignette",
     "name": "PP Vignette",
     "url": "shaders/pp-vignette.wgsl",
-    "category": "post-processing",
     "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
     "tags": [
       "post-process",
@@ -594,7 +582,6 @@
     "id": "radial-blur",
     "name": "Radial Blur",
     "url": "shaders/radial-blur.wgsl",
-    "category": "post-processing",
     "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
     "params": [
       {
@@ -651,7 +638,6 @@
     "id": "temporal-decay-multiresolution",
     "name": "Temporal Decay Multiresolution",
     "url": "shaders/temporal-decay-multiresolution.wgsl",
-    "category": "post-processing",
     "description": "Four-timescale temporal decomposition. R=fast (ages 1–2), G=medium (ages 4–5), B=slow (age 7), A=ultra-slow (full average). Per-channel independent decay rates create psychedelic rainbow splits where motion speed maps to color. Stacks cleanly behind sim-decay-system-rgba.",
     "tags": [
       "temporal",
@@ -709,7 +695,6 @@
     "id": "temporal-feedback-zoom-tracer",
     "name": "Temporal Feedback Zoom Tracer",
     "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
-    "category": "post-processing",
     "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
     "tags": [
       "temporal",
@@ -767,7 +752,6 @@
     "id": "temporal-frequency-decomposition",
     "name": "Temporal Frequency Decomposition",
     "url": "shaders/temporal-frequency-decomposition.wgsl",
-    "category": "post-processing",
     "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
     "tags": [
       "temporal",
@@ -825,7 +809,6 @@
     "id": "temporal-layered-time-stamps",
     "name": "Temporal Layered Time-Stamps",
     "url": "shaders/temporal-layered-time-stamps.wgsl",
-    "category": "post-processing",
     "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
     "tags": [
       "temporal",
@@ -875,7 +858,6 @@
     "id": "temporal-phosphor-burn-motion-adaptive",
     "name": "Temporal Phosphor Burn (Motion Adaptive)",
     "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
-    "category": "post-processing",
     "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
     "tags": [
       "temporal",
@@ -934,7 +916,6 @@
     "id": "temporal-phosphor-burn",
     "name": "Temporal Phosphor Burn",
     "url": "shaders/temporal-phosphor-burn.wgsl",
-    "category": "post-processing",
     "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
     "tags": [
       "temporal",
@@ -992,7 +973,6 @@
     "id": "temporal-rgb-ghost",
     "name": "Temporal RGB Ghost",
     "url": "shaders/temporal-rgb-ghost.wgsl",
-    "category": "post-processing",
     "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
     "tags": [
       "temporal",
@@ -1050,7 +1030,6 @@
     "id": "temporal-slit-scan",
     "name": "Temporal Slit Scan",
     "url": "shaders/temporal-slit-scan.wgsl",
-    "category": "post-processing",
     "description": "Classic slit-scan time-smear: each column (or row) samples a different point in the 8-frame history ring. One edge shows the current frame, the opposite edge shows 7 frames ago. Creates the flowing painterly time-smear of Radiohead's Street Spirit video on any motion.",
     "tags": [
       "temporal",
@@ -1108,7 +1087,6 @@
     "id": "tone-histogram-apply",
     "name": "Tone Histogram (Pass 2: Apply)",
     "url": "shaders/tone-histogram-apply.wgsl",
-    "category": "post-processing",
     "description": "Reads histogram buckets, computes auto-exposure and tone curve, and applies histogram-driven grading.",
     "features": [
       "multi-pass-2",
@@ -1167,7 +1145,6 @@
     "id": "tone-histogram",
     "name": "Tone Histogram (Pass 1)",
     "url": "shaders/tone-histogram.wgsl",
-    "category": "post-processing",
     "description": "Builds a 256-bucket luminance histogram in extraBuffer using atomics for auto-exposure.",
     "features": [
       "multi-pass-1",

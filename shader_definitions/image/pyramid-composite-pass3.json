@@ -2,7 +2,6 @@
   "id": "pyramid-composite-pass3",
   "name": "Gaussian-Laplacian Pyramid (Pass 3: ROI Magnifying Glass)",
   "url": "shaders/pyramid-composite-pass3.wgsl",
-  "category": "image",
   "description": "Pass 3 of 3: Final composite with ROI magnifying-glass effect. Inside the mouse-tracked circle (radius = zoom_params.w) all frequency bands are amplified 2.5×+, creating a psychedelic detail magnifier. Outside the circle, effects are subtle. A pulsing ring marks the ROI boundary.",
   "features": [
     "multi-pass-3",

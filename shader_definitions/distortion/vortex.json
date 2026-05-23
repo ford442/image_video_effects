@@ -2,7 +2,6 @@
   "id": "vortex",
   "name": "Clean Vortex",
   "url": "shaders/vortex.wgsl",
-  "category": "image",
   "features": [
     "mouse-driven",
     "audio-reactive",
