@@ -1,0 +1,57 @@
+{
+  "id": "gen-plasma-mandala",
+  "name": "Plasma Mandala",
+  "url": "shaders/gen-plasma-mandala.wgsl",
+  "category": "generative",
+  "description": "A psychedelic plasma mandala with audio-driven radial symmetry, spinning petal folds, and mouse-attracted center. Bass drives spin speed, mids shift hue, treble adds sparkle.",
+  "tags": [
+    "mandala",
+    "plasma",
+    "generative",
+    "radial",
+    "psychedelic",
+    "audio-reactive",
+    "colorful",
+    "abstract",
+    "neon"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "symmetry",
+      "name": "Symmetry",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "spinSpeed",
+      "name": "Spin Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "glowScale",
+      "name": "Glow Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}
