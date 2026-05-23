@@ -63,6 +63,8 @@ var<workgroup> tile: array<array<vec3<f32>, 18>, 18>;  // [row][col]
 const K0: f32 = 0.375;   // centre weight
 const K1: f32 = 0.25;    // ±1 neighbour weight
 const K2: f32 = 0.0625;  // ±2 neighbour weight  (clamped to ±1 in shared tile)
+// Pre-computed normalization: (K1+K0+K1)^2 = 0.875^2 = 0.765625
+const NORM_FACTOR: f32 = 0.765625;
 
 // Load one vec3 pixel from readTexture using integer coords (fast path).
 fn loadPixelRGB(coord: vec2<i32>) -> vec3<f32> {
@@ -74,8 +76,11 @@ fn loadPixelRGB(coord: vec2<i32>) -> vec3<f32> {
 // Fill the 18×18 shared tile cooperatively.
 // Each of the 256 threads loads its own texel plus any needed halo pixels.
 fn fillTile(gid: vec3<u32>, lid: vec3<u32>) {
-  // Pixel coordinate of top-left corner of the 16×16 block (pre-halo).
-  let base = vec2<i32>(gid.xy) - vec2<i32>(i32(HALO));
+  // Pixel coordinate of the top-left corner of this workgroup's 16×16 block,
+  // offset by HALO so the tile covers a 1-pixel border on every side.
+  // Using (gid.xy - lid.xy) gives the workgroup origin so all 256 threads
+  // share exactly the same base and cooperate on ONE 18×18 tile.
+  let base = vec2<i32>(gid.xy - lid.xy) - vec2<i32>(i32(HALO));
 
   // Centre texel for this thread (at tile[lid.y+1][lid.x+1]).
   tile[lid.y + HALO][lid.x + HALO] = loadPixelRGB(base + vec2<i32>(lid.xy));
@@ -133,8 +138,8 @@ fn gaussBlur(lid: vec3<u32>) -> vec3<f32> {
   let r2 = K1 * tileAt(lid, -1,  1) + K0 * tileAt(lid, 0,  1) + K1 * tileAt(lid, 1,  1);
   // Column blur (Y direction) over the 3 row results
   let blur = K1 * r0 + K0 * r1 + K1 * r2;
-  // Re-normalize (sum of weights in 2D: (K1+K0+K1)^2 = (0.875)^2 ≈ 0.766)
-  return blur / ((K1 + K0 + K1) * (K1 + K0 + K1));
+  // Re-normalize (sum of weights in 2D: (K1+K0+K1)^2 = 0.875^2 = NORM_FACTOR)
+  return blur / NORM_FACTOR;
 }
 
 @compute @workgroup_size(16, 16, 1)

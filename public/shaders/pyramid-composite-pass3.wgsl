@@ -153,7 +153,9 @@ fn applyPyramid(
   return clamp(result, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// Width of the ROI boundary ring expressed as a fraction of the ROI radius
+// (i.e. the ring occupies the zone from normDist = 1 ± RING_WIDTH/2).
+const RING_WIDTH: f32 = 0.06;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -184,9 +186,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   // ── ROI radial distance (aspect-ratio corrected) ─────────────────────────
-  // Correct for non-square canvas by scaling Y difference by the aspect ratio.
+  // Scale the X component by the aspect ratio so that a given normalised
+  // offset in X covers the same number of screen pixels as the same offset
+  // in Y.  Scaling by vec2(aspect, 1.0) achieves a circular ROI regardless
+  // of canvas dimensions (wider-than-tall canvases have aspect > 1).
   let aspect  = resolution.x / resolution.y;
-  let delta   = (uv - mousePos) * vec2<f32>(1.0, aspect);
+  let delta   = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let dist    = length(delta);
 
   // Normalised distance relative to roiR (0 = centre, 1 = rim, >1 = outside).
@@ -220,8 +225,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var composed = mix(innerResult, outerResult, blend);
 
   // ── ROI border ring — thin luminous outline ──────────────────────────────
-  // Peaks at normDist ≈ 1.0, width ≈ 0.06 of roiR.
-  let ringPeak   = 1.0 - abs(normDist - 1.0) / 0.06;
+  // Peaks at normDist ≈ 1.0, width = RING_WIDTH of the normalised radius.
+  let ringPeak   = 1.0 - abs(normDist - 1.0) / RING_WIDTH;
   let ringAlpha  = clamp(ringPeak, 0.0, 1.0) * 0.6;
   // Ring colour pulses gently with time and bass.
   let ringHue    = fract(time * 0.08 + bass * 0.3);
