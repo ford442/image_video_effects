@@ -74,6 +74,59 @@ window.__rendererManager?.getActiveRendererType(); // 'webgpu' | 'wasm' | 'js'
 
 ---
 
+## Diagnostic API
+
+### Get Overall Renderer Status
+
+```js
+const diagnostics = window.__rendererManager?.getDiagnostics();
+console.log(diagnostics);
+```
+
+**Output example (WASM active):**
+```json
+{
+  "rendererType": "wasm",
+  "metrics": {
+    "fps": 60,
+    "frameTime": 16.67,
+    "agentCount": 50000,
+    "isWASM": true
+  },
+  "timestamp": "2026-05-23T16:04:33Z",
+  "wasm": {
+    "initialized": true,
+    "initAttempts": 1,
+    "errorCount": 0,
+    "lastErrorTime": null,
+    "fps": 60,
+    "hasModule": true
+  }
+}
+```
+
+### Check WASM Bridge Diagnostics
+
+```js
+// Get low-level WASM bridge status
+const bridgeDiag = window.__rendererManager?.currentRenderer?.getDiagnostics?.();
+console.log(bridgeDiag);
+```
+
+**Output example:**
+```json
+{
+  "initialized": true,
+  "initAttempts": 1,
+  "errorCount": 0,
+  "lastErrorTime": null,
+  "fps": 59.8,
+  "hasModule": true
+}
+```
+
+---
+
 ## UI Toggle (Live Studio Tab)
 
 The **Live Studio** tab (`?tab=live-studio`) contains a `RendererToggle` component
@@ -88,7 +141,9 @@ When the WASM renderer is active (`?renderer=wasm`), verify the following:
 
 ### Core
 - [ ] Console shows `✅ Using C++ WASM renderer`
+- [ ] `getDiagnostics()` shows `"rendererType": "wasm"` and `initialized: true`
 - [ ] Canvas renders the default shader without errors
+- [ ] FPS is > 0 and stable
 
 ### Shader loading
 - [ ] Select a shader from the dropdown — it compiles and renders
@@ -114,6 +169,36 @@ When the WASM renderer is active (`?renderer=wasm`), verify the following:
 - [ ] Resizing the browser window does not crash the renderer
 - [ ] Screenshot / recording works
 
+### Error resilience
+- [ ] Switch to WebGPU and back without errors
+- [ ] Load multiple shaders in sequence without hanging
+- [ ] Handle network timeouts gracefully
+
+---
+
+## Automated Smoke Test
+
+For a quick check, run this in the browser console:
+
+```js
+async function wasmQuickTest() {
+  const rm = window.__rendererManager;
+  console.log('🧪 WASM Quick Test');
+  console.log('Current renderer:', rm?.getActiveRendererType?.());
+  console.log('Diagnostics:', rm?.getDiagnostics?.());
+  
+  if (rm?.getActiveRendererType?.() === 'wasm') {
+    console.log('✅ WASM is active');
+  } else {
+    console.log('❌ WASM is not active');
+  }
+}
+
+wasmQuickTest();
+```
+
+For comprehensive testing, see [WASM_SMOKE_TEST.md](./WASM_SMOKE_TEST.md).
+
 ---
 
 ## Known Limitations (May 2026)
@@ -133,5 +218,6 @@ open an issue and include:
 
 1. Browser + version
 2. The exact URL used (including query params)
-3. The DevTools console output
+3. The DevTools console output (especially `getDiagnostics()` result)
 4. Steps to reproduce
+5. Whether the same shader works in the TypeScript WebGPU renderer (`?renderer=webgpu`)

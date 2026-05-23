@@ -1,6 +1,6 @@
 import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
-import { WASMRenderer } from './WASMRenderer';
+import { WASMRenderer, WASMDiagnostics } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { ShaderEntry } from './types';
 
@@ -9,6 +9,14 @@ export interface RendererMetrics {
   frameTime: number;
   agentCount: number;
   isWASM: boolean;
+}
+
+export interface RendererDiagnostics {
+  rendererType: RendererType;
+  metrics: RendererMetrics;
+  timestamp: string;
+  wasm?: WASMDiagnostics;
+  webgpu?: Record<string, any>;
 }
 
 /** Supported renderer backend identifiers. */
@@ -262,6 +270,39 @@ export class RendererManager {
     if (this.currentRenderer instanceof WASMRenderer) return 'wasm';
     if (this.currentRenderer instanceof WebGPURenderer) return 'webgpu';
     return 'js';
+  }
+
+  /**
+   * Get diagnostic information about the currently active renderer.
+   * Useful for debugging, testing, and monitoring renderer health.
+   */
+  getDiagnostics(): RendererDiagnostics {
+    const rendererType = this.getActiveRendererType();
+    const baseDiagnostics: RendererDiagnostics = {
+      rendererType,
+      metrics: this.metrics,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Get renderer-specific diagnostics
+    if (this.currentRenderer instanceof WASMRenderer) {
+      return {
+        ...baseDiagnostics,
+        wasm: (this.currentRenderer as WASMRenderer).getDiagnostics(),
+      };
+    }
+
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      return {
+        ...baseDiagnostics,
+        webgpu: {
+          initialized: (this.currentRenderer as any).initialized ?? false,
+          fps: (this.currentRenderer as any).getFPS?.() ?? 0,
+        },
+      };
+    }
+
+    return baseDiagnostics;
   }
 
   /**
