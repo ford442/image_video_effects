@@ -37,7 +37,8 @@
   "features": [
     "mouse-driven",
     "glow",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

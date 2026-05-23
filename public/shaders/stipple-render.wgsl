@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Stipple Render
 //  Category: artistic
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Low
-//  Chunks From: stipple-render (original)
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,12 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  config: vec4<f32>,
-  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_config: vec4<f32>,
-  // x=Param1, y=Param2, z=Param3, w=Param4
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -37,25 +33,27 @@ fn hash21(p: vec2<f32>) -> f32 {
     return max(fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453), 0.001);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+    let texel = vec2<i32>(global_id.xy);
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
     let aspect = resolution.x / max(resolution.y, 0.001);
 
     // Audio reactivity
-    let bass = plasmaBuffer[0].x;
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Params
-    let dotScale = mix(1.0, 4.0, u.zoom_params.x); // Noise frequency
-    let contrast = mix(0.5, 2.0, u.zoom_params.y) * (1.0 + bass * 0.5);
-    let mouseRadius = mix(0.1, 0.5, u.zoom_params.z);
-    let detailMix = u.zoom_params.w; // Blend original color
+    let dotScale    = mix(1.0, 4.0, clamp(u.zoom_params.x * (1.0 + mids * 0.2), 0.0, 1.0));
+    let contrast    = mix(0.5, 2.0, clamp(u.zoom_params.y * (1.0 + bass * 0.5), 0.0, 1.0));
+    let mouseRadius = mix(0.1, 0.5, clamp(u.zoom_params.z * (1.0 + treble * 0.15), 0.0, 1.0));
+    let detailMix   = u.zoom_params.w;
 
     // Mouse
-    var mouse = u.zoom_config.yz;
+    let mouse = u.zoom_config.yz;
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
     let mouseFactor = smoothstep(mouseRadius, 0.0, dist);
 
@@ -64,34 +62,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
     // Dynamic Density: Higher density near mouse
-    // We achieve this by scaling the UV fed into the hash function
-    // High scale = smaller dots (conceptually, though here we are doing probability stippling)
-    // Far from mouse: Coarse grain (low frequency noise)
     let localScale = mix(max(resolution.y * 0.5, 0.001), max(resolution.y * 2.0, 0.001), mouseFactor * 0.8 + 0.2) * dotScale;
-
     let noise = hash21(floor(uv * localScale));
 
     // Adjust luma contrast
     let adjustedLuma = (luma - 0.5) * contrast + 0.5;
-
-    // Stipple Logic
-    // If noise < adjustedLuma, pixel is white (paper). Else black (ink).
-    // Or: Ink density = 1.0 - luma. If rand < density -> draw dot.
     let inkDensity = 1.0 - clamp(adjustedLuma, 0.0, 1.0);
 
-    var outColor = vec3<f32>(1.0); // Paper white
-    if (noise < inkDensity) {
-        outColor = vec3<f32>(0.05, 0.05, 0.1); // Ink dark blue/black
-    }
+    // Stipple Logic (branchless)
+    let inkColor = vec3<f32>(0.05, 0.05, 0.1);
+    let paperColor = vec3<f32>(1.0);
+    let outColor = select(paperColor, inkColor, noise < inkDensity);
 
-    // Mix with original color based on mouse?
-    // Let's mix in a bit of original color near mouse to "reveal" detail
+    // Mix with original color based on mouse
     let stippleAlpha = mix(0.15, 0.95, inkDensity);
     let stippleColor = vec4<f32>(outColor, stippleAlpha);
     let finalColor = mix(stippleColor, color, mouseFactor * detailMix);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-
+    // Depth read and mandatory writes
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(writeTexture, texel, finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

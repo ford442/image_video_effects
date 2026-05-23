@@ -10,7 +10,10 @@
     "blue-noise",
     "stippling",
     "barrel-distortion",
-    "randomization-safe"
+    "randomization-safe",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "params": [
     {
@@ -59,7 +62,7 @@
     "Blue-noise offset, stipple placement (spec-blue-noise-stipple.wgsl)"
   ],
   "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
+  "created_by": "Agent CB-13 \u2014 Retro & Glitch Enhancer",
   "created_date": "2026-04-18",
   "tags": [
     "crt",

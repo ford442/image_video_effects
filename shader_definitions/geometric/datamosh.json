@@ -6,7 +6,10 @@
   "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
   "features": [
     "mouse-driven",
-    "multi-pass"
+    "multi-pass",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "datamosh",

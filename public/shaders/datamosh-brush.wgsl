@@ -36,17 +36,23 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let aspect = resolution.x / resolution.y;
   var uv = vec2<f32>(global_id.xy) / resolution;
 
+  // Audio: bass widens brush, mids crushes bitrate, treble lengthens ghost trails
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
   // Params
-  let brushSize = mix(0.02, 0.2, u.zoom_params.x);
-  let blockSize = mix(0.0, 0.1, u.zoom_params.y); // Bitrate crush
+  let brushSize = mix(0.02, 0.2, u.zoom_params.x) * (1.0 + bass * 0.5);
+  let blockSize = mix(0.0, 0.1, u.zoom_params.y) * (1.0 + mids * 0.6); // Bitrate crush
   let decay = mix(0.0, 0.1, u.zoom_params.z);
-  let alphaGhost = mix(0.3, 1.0, u.zoom_params.w); // Alpha ghosting intensity
+  let alphaGhost = clamp(mix(0.3, 1.0, u.zoom_params.w) + treble * 0.2, 0.0, 1.0); // Alpha ghosting intensity
 
   var mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;

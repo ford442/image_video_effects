@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Feedback Zoom Tracer
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-05-23
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
@@ -55,11 +56,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
 
-  // Map params to affine warp values
-  let zoomFactor  = 1.0 + u.zoom_params.x * 0.01;             // 1.0 – 1.01
-  let rotAngle    = (u.zoom_params.y - 0.5) * 0.004;           // -0.002 – +0.002 rad
-  let persistence = 0.92 + u.zoom_params.z * 0.07;             // 0.92 – 0.99
-  let blendAmt    = 0.05 + u.zoom_params.w * 0.35;             // 0.05 – 0.40
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
+  // Map params to affine warp values; bass drives zoom energy, mids add rotation
+  let zoomFactor  = 1.0 + u.zoom_params.x * 0.01 * (1.0 + bass * 0.5); // 1.0 – 1.01+
+  let rotAngle    = (u.zoom_params.y - 0.5) * 0.004 + mids * 0.001;     // -0.002 – +0.002 rad
+  let persistence = 0.92 + u.zoom_params.z * 0.07;                        // 0.92 – 0.99
+  let blendAmt    = 0.05 + u.zoom_params.w * 0.35;                        // 0.05 – 0.40
 
   // Affine warp: zoom + rotation about canvas centre
   let uvC = uv - 0.5;
@@ -83,6 +87,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Blend: weighted history + current  (matches: mix(history*decay, current, blend))
   let output = mix(histWarp * persistence, current, blendAmt);
-
-  textureStore(writeTexture, coord, vec4<f32>(output.rgb, 1.0));
+  let motionMag = length(histWarp.rgb - current.rgb);
+  let alpha = clamp(motionMag * 4.0 + bass * 0.25 + 0.25, 0.0, 1.0);
+  let finalOut = vec4<f32>(output.rgb, alpha);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, finalOut);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalOut);
 }

@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Frequency Decomposition
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-05-23
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
@@ -67,11 +68,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
 
-  // Parameters
-  let freq       = 0.05 + u.zoom_params.x * 0.45;  // 0.05–0.50 cycles/frame
-  let glowBright = u.zoom_params.y * 2.0;            // 0–2 brightness multiplier
-  let glowHue    = u.zoom_params.z;                   // 0–1 hue of glow colour
-  let baseBlend  = u.zoom_params.w;                   // 0–1 mix of base image
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
+  // Parameters; bass boosts glow brightness, mids rotate hue for spectral color
+  let freq       = 0.05 + u.zoom_params.x * 0.45;
+  let glowBright = u.zoom_params.y * 2.0 * (1.0 + bass * 0.6);
+  let glowHue    = fract(u.zoom_params.z + mids * 0.15);
+  let baseBlend  = u.zoom_params.w;
 
   let historyHead = u32(extraBuffer[4]);
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -101,6 +105,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Composite: base + glow
   let base   = current.rgb * baseBlend;
   let output = base + glowColor;
-
-  textureStore(writeTexture, coord, vec4<f32>(output, 1.0));
+  let alpha = clamp(energy * 2.5 + baseBlend * 0.3 + bass * 0.2, 0.0, 1.0);
+  let finalOut = vec4<f32>(output, alpha);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, finalOut);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalOut);
 }

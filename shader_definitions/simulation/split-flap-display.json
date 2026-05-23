@@ -6,7 +6,10 @@
   "features": [
     "interactive",
     "simulation",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "description": "Simulates a mechanical split-flap display where the image is made of rotating tiles.",
   "params": [

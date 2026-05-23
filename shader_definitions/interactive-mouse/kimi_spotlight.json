@@ -9,7 +9,8 @@
     "interactive",
     "spotlight",
     "reveal",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

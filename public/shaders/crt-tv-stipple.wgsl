@@ -127,16 +127,21 @@ fn crt_vignette(uv: vec2<f32>, strength: f32) -> f32 {
     return vig * (1.0 - corner * 0.15 * strength);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
     let uv = vec2<f32>(gid.xy) / res;
     let time = u.config.x;
 
-    let scanline_intensity = u.zoom_params.x;
-    let phosphor_glow = u.zoom_params.y;
-    let stipple_density = mix(20.0, 80.0, u.zoom_params.z);
+    // Audio: bass drives phosphor bloom, mids feeds scanlines, treble shimmers stipple
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let scanline_intensity = u.zoom_params.x * (1.0 + mids * 0.5);
+    let phosphor_glow = u.zoom_params.y * (1.0 + bass * 0.7);
+    let stipple_density = mix(20.0, 80.0, u.zoom_params.z) + treble * 20.0;
     let barrel_amount = u.zoom_params.w;
 
     let curvature = barrel_amount * 0.15;
@@ -151,7 +156,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Bounds check
     if (crt_uv.x < 0.0 || crt_uv.x > 1.0 || crt_uv.y < 0.0 || crt_uv.y > 1.0) {
-        textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
         let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
         textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
@@ -191,7 +196,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = pow(color, vec3<f32>(1.0 / 2.2));
     color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color, 1.0));
+    // Luminance-key alpha modulated by aperture grille mask
+    let maskScalar = dot(mask, vec3<f32>(0.3333));
+    let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) * (0.5 + maskScalar * 0.5) + vignette * 0.2, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

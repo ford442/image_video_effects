@@ -3771,7 +3771,10 @@
     "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
     "features": [
       "mouse-driven",
-      "multi-pass"
+      "multi-pass",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "datamosh",
@@ -8457,7 +8460,9 @@
     "category": "image",
     "url": "shaders/digital-haze.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10476,7 +10481,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "depth-aware"
     ],
     "params": [
       {
@@ -11035,7 +11042,10 @@
     "url": "shaders/molten-glass.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Melts the image under the mouse cursor like hot glass.",
     "params": [
@@ -11155,7 +11165,10 @@
     ],
     "features": [
       "mouse-driven",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -11247,7 +11260,9 @@
       "mouse-driven",
       "image",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -11648,7 +11663,10 @@
     ],
     "features": [
       "mouse-driven",
-      "image"
+      "image",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -11826,7 +11844,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -12942,7 +12963,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -13099,7 +13122,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -13698,7 +13724,10 @@
     ],
     "features": [
       "mouse-driven",
-      "history"
+      "history",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -14125,7 +14154,10 @@
     ],
     "features": [
       "mouse-driven",
-      "image"
+      "image",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -16065,7 +16097,10 @@
     "features": [
       "mouse-driven",
       "glitch",
-      "stateful"
+      "stateful",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -16407,7 +16442,10 @@
     "url": "shaders/pixel-rain.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Matrix-style digital rain. Mouse repels and highlights drops.",
     "params": [
@@ -16597,7 +16635,10 @@
     "url": "shaders/vhs-tracking.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Simulates VCR tracking errors with scanline tearing and chromatic aberration.",
     "params": [
@@ -16674,7 +16715,10 @@
     "features": [
       "retro",
       "texture",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -16882,7 +16926,10 @@
     "features": [
       "interactive",
       "simulation",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Simulates a mechanical split-flap display where the image is made of rotating tiles.",
     "params": [

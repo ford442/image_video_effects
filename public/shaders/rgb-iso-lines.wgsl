@@ -47,7 +47,7 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
     return exp(-thickness * absorption);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
@@ -56,10 +56,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
+  // Audio: mids thickens lines, bass adds contour frequency, treble widens parallax split
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
   // Parameters
-  let thickness = mix(0.01, 0.45, u.zoom_params.x);
-  let freq = mix(5.0, 50.0, u.zoom_params.y);
-  let parallax_amt = mix(0.0, 0.1, u.zoom_params.z);
+  let thickness = mix(0.01, 0.45, u.zoom_params.x) * (1.0 + mids * 0.4);
+  let freq = mix(5.0, 50.0, u.zoom_params.y) * (1.0 + bass * 0.5);
+  let parallax_amt = mix(0.0, 0.1, u.zoom_params.z) * (1.0 + treble * 0.5);
 
   // Mouse
   var mouse = u.zoom_config.yz;

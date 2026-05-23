@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Kinetic Dispersion
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Phase A Upgrade Swarm
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Sensitivity, y=Scatter, z=Aberration, w=Granularity
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -34,55 +34,49 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     let coords = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let currMouse = u.zoom_config.yz;
+    var uv = vec2<f32>(global_id.xy) / u.config.zw;
     let time = u.config.x;
-
-    let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(currMouse, 0.0, 0.0));
-    }
+    let mouse = u.zoom_config.yz;
 
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let sensitivity = u.zoom_params.x * 50.0;
     let scatter = u.zoom_params.y * 0.1;
     let aberration = u.zoom_params.z * 0.05;
     let granularity = max(1.0, u.zoom_params.w * 50.0);
 
-    var velocity = 0.0;
-    if (prevMouse.x > 0.0 || prevMouse.y > 0.0) {
-        velocity = distance(currMouse, prevMouse) * (1.0 + bass * 0.3);
-    }
+    let mouseDist = distance(uv, mouse);
+    let velocity = (1.0 - smoothstep(0.0, 0.3, mouseDist)) * (1.0 + bass * 0.3 + mids * 0.15);
     let intensity = clamp(velocity * sensitivity, 0.0, 1.0);
 
-    let blockUV = floor(uv * resolution / granularity) * granularity / resolution;
+    let blockUV = floor(uv * u.config.zw / granularity) * granularity / u.config.zw;
     let safeTime = max(time, 0.001);
     let rnd = hash12(blockUV + vec2<f32>(safeTime * 10.0, safeTime * 20.0));
 
     let displacement = (rnd - 0.5) * intensity * scatter;
     let rgbSplit = intensity * aberration;
 
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(displacement - rgbSplit, displacement), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(displacement, displacement), 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(displacement + rgbSplit, displacement), 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(displacement - rgbSplit, displacement), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(displacement, displacement), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(displacement + rgbSplit, displacement), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
     var color = vec3<f32>(r, g, b);
     let noise = hash12(uv * safeTime);
     color = mix(color, vec3<f32>(noise), intensity * 0.2);
 
-    // Alpha encodes dispersion activity: high velocity = higher effect blend
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(0.5 + intensity * 0.35 + luma * 0.15, 0.0, 1.0);
 
-    textureStore(writeTexture, coords, vec4<f32>(color, alpha));
-
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let finalRGBA = vec4<f32>(color, alpha);
+
+    textureStore(writeTexture, coords, finalRGBA);
+    textureStore(dataTextureA, coords, finalRGBA);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

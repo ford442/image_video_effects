@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Phosphor Burn — Motion Adaptive
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-05-23
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
@@ -55,11 +56,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
 
-  // Parameters
-  let motionSens = 1.0 + u.zoom_params.x * 9.0;   // multiplier on motion signal
-  let decayMax   = 0.90 + u.zoom_params.y * 0.099; // decay when fast-moving (slow decay)
-  let decayMin   = 0.70 + u.zoom_params.z * 0.20;  // decay when still (fast decay)
-  let warmStrength = u.zoom_params.w;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
+  // Parameters; bass amplifies motion sensitivity for reactive trails
+  let motionSens  = (1.0 + u.zoom_params.x * 9.0) * (1.0 + bass * 0.5);
+  let decayMax    = clamp(0.90 + u.zoom_params.y * 0.099 + bass * 0.03, 0.0, 0.999);
+  let decayMin    = 0.70 + u.zoom_params.z * 0.20;
+  let warmStrength = u.zoom_params.w * (1.0 + mids * 0.4);
 
   let historyHead = u32(extraBuffer[4]);
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -88,5 +92,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glowAmt  = clamp(motion * 1.5, 0.0, 1.0) * warmStrength;
   burned = mix(burned, burned * warmTint, glowAmt);
 
-  textureStore(writeTexture, coord, vec4<f32>(burned, current.a));
+  let alpha = clamp(motion * 0.5 + current.a * 0.4 + bass * 0.15, 0.0, 1.0);
+  let finalOut = vec4<f32>(burned, alpha);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, finalOut);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalOut);
 }

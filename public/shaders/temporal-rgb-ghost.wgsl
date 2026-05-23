@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal RGB Ghost
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Low
+//  Upgraded: 2026-05-23
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
@@ -55,11 +56,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
 
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
   // Map params [0,1] to history age [1,7]
   let ageG = 1u + u32(clamp(u.zoom_params.x, 0.0, 0.999) * 7.0);
   let ageB = 1u + u32(clamp(u.zoom_params.y, 0.0, 0.999) * 7.0);
-  let blendAmt   = u.zoom_params.z;
-  let lumaBoost  = 1.0 + u.zoom_params.w;
+  let blendAmt   = clamp(u.zoom_params.z * (1.0 + bass * 0.4), 0.0, 1.0);
+  let lumaBoost  = 1.0 + u.zoom_params.w * (1.0 + mids * 0.5);
 
   let historyHead = u32(extraBuffer[4]);
 
@@ -75,13 +79,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let histB  = textureSampleLevel(historyTexture, u_sampler, uv, i32(layerB), 0.0);
 
   // Assemble RGB ghost: each channel from a different moment in time
+  let ghostAlpha = clamp(blendAmt + bass * 0.15, 0.0, 1.0);
   let ghost = vec4<f32>(
     current.r,
     histG.g   * lumaBoost,
     histB.b   * lumaBoost,
-    1.0,
+    ghostAlpha,
   );
 
   let output = mix(current, ghost, blendAmt);
-  textureStore(writeTexture, coord, output);
+  let ghostSpread = length(output.rgb - current.rgb);
+  let alpha = clamp(current.a * 0.4 + ghostSpread * 3.0 + bass * 0.1, 0.0, 1.0);
+  let finalOut = vec4<f32>(output.rgb, alpha);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, finalOut);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalOut);
 }

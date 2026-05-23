@@ -4,8 +4,23 @@
   "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
   "category": "post-processing",
   "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
-  "tags": ["temporal", "crt", "phosphor", "motion", "adaptive", "glow", "amber", "reactive"],
-  "features": ["temporal", "history-ring"],
+  "tags": [
+    "temporal",
+    "crt",
+    "phosphor",
+    "motion",
+    "adaptive",
+    "glow",
+    "amber",
+    "reactive"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "requiresHistoryRing": true,
   "params": [
     {

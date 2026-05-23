@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cursor Aura
 //  Category: interactive-mouse
-//  Features: mouse-driven, glow, audio-reactive
+//  Features: mouse-driven, glow, audio-reactive, upgraded-rgba
 //  Complexity: Low
-//  Chunks From: cursor-aura (original)
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,31 +22,32 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+  let texel = vec2<i32>(global_id.xy);
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
   let time = u.config.x;
 
   // Audio reactivity
-  let bass = plasmaBuffer[0].x;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Params
-  let radius = u.zoom_params.x * 0.5;
-  let intensity = u.zoom_params.y;
-  let mixVal = u.zoom_params.z;
-  let pulseSpeed = u.zoom_params.w * 5.0;
+  let radius     = clamp(u.zoom_params.x * (1.0 + bass * 0.2), 0.0, 1.0) * 0.5;
+  let intensity  = clamp(u.zoom_params.y * (1.0 + mids * 0.15), 0.0, 1.0);
+  let mixVal     = u.zoom_params.z;
+  let pulseSpeed = clamp(u.zoom_params.w * (1.0 + treble * 0.1), 0.0, 1.0) * 5.0;
 
-  var mousePos = u.zoom_config.yz;
+  let mousePos = u.zoom_config.yz;
 
   // Aspect ratio correction with guard
   let aspect = resolution.x / max(resolution.y, 0.001);
@@ -67,10 +67,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Effect Color (Edge Detection / High Pass)
   let offset = 1.0 / max(resolution.x, 0.001);
-  let left = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-offset, 0.0), 0.0);
-  let right = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(offset, 0.0), 0.0);
-  let top = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -offset), 0.0);
-  let bottom = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, offset), 0.0);
+  let left   = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(-offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let right  = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>( offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let top    = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, -offset), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let bottom = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0,  offset), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
   let edges = abs(left - right) + abs(top - bottom);
   let glowStrength = intensity * (1.0 + bass * 0.5);
@@ -84,12 +84,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let ringStrength = ring * intensity * 2.0 * (1.0 + bass);
   let ringColor = vec4<f32>(ringStrength, ringStrength, ringStrength, ringStrength);
 
-  var finalColor = mix(baseColor, inside, mask) + ringColor;
-  finalColor.a = clamp(finalColor.a, 0.0, 1.0);
+  let preFinal = mix(baseColor, inside, mask) + ringColor;
+  let finalAlpha = clamp(preFinal.a, 0.0, 1.0);
+  let finalColor = vec4<f32>(preFinal.rgb, finalAlpha);
 
-  // Pass through depth
+  // Depth read and mandatory writes
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  textureStore(writeTexture, texel, finalColor);
+  textureStore(dataTextureA, global_id.xy, finalColor);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

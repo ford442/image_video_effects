@@ -36,7 +36,10 @@
   ],
   "features": [
     "mouse-driven",
-    "image"
+    "image",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",

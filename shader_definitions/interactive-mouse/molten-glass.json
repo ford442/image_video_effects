@@ -4,7 +4,10 @@
   "url": "shaders/molten-glass.wgsl",
   "category": "image",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "description": "Melts the image under the mouse cursor like hot glass.",
   "params": [

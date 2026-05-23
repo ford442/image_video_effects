@@ -1343,7 +1343,10 @@
       "blue-noise",
       "stippling",
       "barrel-distortion",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "params": [
       {

@@ -21,7 +21,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -30,10 +30,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
+    // Audio: bass drives auto-flip bursts, mids widens interaction, treble adds kick
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Params
     let rows = 5.0 + u.zoom_params.x * 40.0; // Number of rows
-    let interaction_radius = 0.1 + u.zoom_params.y * 0.3;
-    let auto_flip_speed = u.zoom_params.z;
+    let interaction_radius = (0.1 + u.zoom_params.y * 0.3) * (1.0 + mids * 0.4);
+    let auto_flip_speed = u.zoom_params.z * (1.0 + bass * 1.5);
 
     // Grid Setup (Square cells)
     let cell_h = 1.0 / rows;
@@ -61,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (dist_to_mouse < interaction_radius) {
         // Add velocity based on mouse movement or just proximity
         // Let's just spin them if mouse is near
-        velocity = velocity + 0.02;
+        velocity = velocity + 0.02 + treble * 0.05;
     }
 
     // Auto flip (idle animation)
@@ -151,6 +156,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
          }
     }
 
+    // Tile-presence alpha: card surface opaque, gaps semi-transparent
+    let onTile = step(abs(texture_local_y), 0.5);
+    final_color.a = mix(0.25, 1.0, onTile);
     textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
 
     // Write depth

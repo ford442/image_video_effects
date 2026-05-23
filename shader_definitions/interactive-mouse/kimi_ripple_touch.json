@@ -9,7 +9,8 @@
     "interactive",
     "ripple",
     "water",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

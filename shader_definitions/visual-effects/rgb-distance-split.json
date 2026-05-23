@@ -2,7 +2,9 @@
   "id": "rgb-distance-split",
   "category": "visual-effects",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "url": "shaders/rgb-distance-split.wgsl",
   "description": "Chromatic aberration that intensifies with distance from the mouse.",

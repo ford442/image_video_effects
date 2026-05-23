@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Tunnel Interactive
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Phase A Upgrade Swarm
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,39 +22,34 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
+  ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     let texel = vec2<i32>(global_id.xy);
+    let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
     let aspect = resolution.x / max(resolution.y, 0.001);
 
-    // Depth pass-through
-    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, texel, vec4<f32>(depthVal, 0.0, 0.0, 1.0));
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters
-    let tunnelStrength = u.zoom_params.x; // 0.0 to 1.0 (Zoom strength)
-    let aberration = u.zoom_params.y;     // 0.0 to 1.0 (Color split)
-    let pulseSpeed = u.zoom_params.z;     // 0.0 to 1.0
-    let spiral = u.zoom_params.w;         // 0.0 to 1.0 (Twist)
-
-    // Audio reactivity (bass)
-    let bass = plasmaBuffer[0].x;
+    let tunnelStrength = clamp(u.zoom_params.x * (1.0 + bass * 0.2), 0.0, 1.0);
+    let aberration     = clamp(u.zoom_params.y * (1.0 + mids * 0.15), 0.0, 1.0);
+    let pulseSpeed     = clamp(u.zoom_params.z * (1.0 + treble * 0.1), 0.0, 1.0);
+    let spiral         = u.zoom_params.w;
 
     // Mouse Interaction
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-
     var center = mouse;
 
     // Correct for aspect ratio for distance calculation
@@ -76,9 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let zoom = 1.0 - (tunnelStrength * 0.5 * smoothstep(1.0, 0.0, dist));
 
     // Chromatic Aberration: Sample R, G, B at different scales/twists
-    let abbrScale = aberration * 0.05 * dist; // More aberration at edges
-
-    var color: vec4<f32>;
+    let abbrScale = aberration * 0.05 * dist;
 
     let rR = dist * (zoom - abbrScale);
     let rG = dist * zoom;
@@ -100,12 +93,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Luminance-based alpha
     let luminance = dot(vec3<f32>(cR, cG, cB), vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luminance + tunnelStrength * 0.3, 0.0, 1.0);
-    color = vec4<f32>(cR, cG, cB, alpha);
+    var color = vec4<f32>(cR, cG, cB, alpha);
 
     // Glow at the mouse cursor (audio-reactive)
     let glow = 1.0 - smoothstep(0.0, 0.1, dist);
     let glowColor = vec3<f32>(0.2, 0.4, 1.0) * (1.0 + bass * 2.0);
     color = vec4<f32>(color.rgb + glowColor * glow * tunnelStrength, color.a);
 
-    textureStore(writeTexture, texel, color);
+    // Depth read and mandatory writes
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let finalColor = color;
+
+    textureStore(writeTexture, texel, finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
