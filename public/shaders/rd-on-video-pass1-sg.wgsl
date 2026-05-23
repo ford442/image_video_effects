@@ -27,6 +27,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// Short bootstrap window for cold-start seeding; zero-state check below
+// also re-seeds when this pass is loaded after startup.
 const RESET_TIME: f32 = 0.1;
 
 var<workgroup> tileA: array<f32, 256>;

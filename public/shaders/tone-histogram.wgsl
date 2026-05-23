@@ -31,10 +31,17 @@ fn main(
   @builtin(local_invocation_index) lidx: u32,
   @builtin(workgroup_id) wid: vec3<u32>,
 ) {
+  // Intentional single-workgroup reducer: binding(10) is shared with generic
+  // float storage usage across the renderer, so this pass uses one cooperative
+  // workgroup to avoid requiring a separate atomic histogram buffer binding.
   if (wid.x != 0u || wid.y != 0u) { return; }
 
   let res = vec2<u32>(u32(max(u.config.z, 1.0)), u32(max(u.config.w, 1.0)));
   let totalPixels = max(1u, res.x * res.y);
+  let targetBias = (clamp(u.zoom_params.x, 0.0, 1.0) - 0.5) * 0.12;
+  let contrastGamma = mix(0.85, 1.25, clamp(u.zoom_params.y, 0.0, 1.0));
+  let saturationBias = mix(0.0, 0.12, clamp(u.zoom_params.z, 0.0, 1.0));
+  let psychoMode = u.zoom_params.w > 0.5;
 
   if (lidx < 256u) {
     atomicStore(&extraBuffer[3u + lidx], 0u);
@@ -51,7 +58,11 @@ fn main(
     let y = idx / res.x;
     let uv = (vec2<f32>(vec2<u32>(x, y)) + 0.5) / vec2<f32>(res);
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let luma = clamp(dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
+    let baseLuma = dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let sat = max(src.r, max(src.g, src.b)) - min(src.r, min(src.g, src.b));
+    let tunedLuma = clamp(baseLuma + targetBias + sat * saturationBias, 0.0, 1.0);
+    let psychLuma = max(src.r, max(src.g, src.b));
+    let luma = pow(select(tunedLuma, psychLuma, psychoMode), contrastGamma);
     let bucket = min(255u, u32(luma * 255.0));
 
     atomicAdd(&extraBuffer[3u + bucket], 1u);

@@ -89,7 +89,11 @@ fn main(
     foodU = lumaAt(uv + vec2<f32>(0.0, px.y));
   }
 
-  let blur = (centerTrail + trailL + trailR + trailD + trailU) * 0.2;
+  let trailDL = trailAt(uv + vec2<f32>(-px.x, -px.y));
+  let trailDR = trailAt(uv + vec2<f32>(px.x, -px.y));
+  let trailUL = trailAt(uv + vec2<f32>(-px.x, px.y));
+  let trailUR = trailAt(uv + vec2<f32>(px.x, px.y));
+  let blur = (centerTrail + trailL + trailR + trailD + trailU + trailDL + trailDR + trailUL + trailUR) / 9.0;
   let gradFood = vec2<f32>(foodR - foodL, foodU - foodD);
   let gradTrail = vec2<f32>(trailR - trailL, trailU - trailD);
 

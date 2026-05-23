@@ -55,8 +55,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let upB = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0, 0), maxCoord), 0).g;
   let edge = clamp(abs((leftB + rightB + downB + upB) - 4.0 * b) * 4.0, 0.0, 1.0);
 
-  let pattern = clamp(pow(b, 0.8) + edge * 0.35 + lumaSeed * 0.20, 0.0, 1.0);
-  let colorized = palette(pattern);
+  let concentrationGamma = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let edgeGain = mix(0.10, 0.70, clamp(u.zoom_params.y, 0.0, 1.0));
+  let seedGain = mix(0.05, 0.35, clamp(u.zoom_params.z, 0.0, 1.0));
+  let hueOffset = (u.zoom_params.w - 0.5) * 0.35;
+
+  let pattern = clamp(pow(b, concentrationGamma) + edge * edgeGain + lumaSeed * seedGain, 0.0, 1.0);
+  let colorized = palette(fract(pattern + hueOffset));
 
   textureStore(dataTextureB, coord, vec4<f32>(colorized, pattern));
   textureStore(writeTexture, coord, vec4<f32>(colorized, 1.0));
