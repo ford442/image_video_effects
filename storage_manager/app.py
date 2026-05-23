@@ -1497,15 +1497,21 @@ async def upload_shader(
     description: str = Form(""),
     tags: str = Form(""),
     author: str = Form("ford442"),
-    coordinate: Optional[int] = Form(None)
+    coordinate: Optional[int] = Form(None),
+    shader_id: Optional[str] = Form(None)
 ):
-    """Upload a .wgsl shader file with metadata."""
+    """Upload a .wgsl shader file with metadata.
+    
+    If shader_id is provided, it is used as the primary identifier and filename stem
+    (enables idempotent uploads for known shader IDs like 'liquid', 'neon-pulse').
+    Otherwise a UUID is generated.
+    """
     if not file.filename.endswith(".wgsl"):
         raise HTTPException(400, "Only .wgsl files allowed")
     if thumbnail is not None and not thumbnail.filename.lower().endswith(".png"):
         raise HTTPException(400, "Only .png thumbnails are supported")
     
-    shader_id = str(uuid.uuid4())
+    shader_id = (shader_id or "").strip() or str(uuid.uuid4())
     storage_filename = f"{shader_id}.wgsl"
     config = STORAGE_MAP["shader"]
     full_path = f"{config['folder']}{storage_filename}"
@@ -1539,10 +1545,12 @@ async def upload_shader(
                 meta["thumbnail"] = f"{shader_id}.png"
                 meta["thumbnail_url"] = thumb_blob.public_url
             
-            # Add to index
+            # Add or replace in index (prevent duplicates on re-upload)
             index = await run_io(_read_json_sync, config["index"])
             if not isinstance(index, list):
                 index = []
+            # Remove existing entry with same id
+            index = [s for s in index if s.get("id") != shader_id]
             index.insert(0, meta)
             await run_io(_write_json_sync, config["index"], index)
             
@@ -1550,6 +1558,87 @@ async def upload_shader(
             return {"success": True, "id": shader_id, "meta": meta}
         except Exception as e:
             raise HTTPException(500, f"Upload failed: {str(e)}")
+
+
+@app.post("/api/admin/bulk-upload-shaders")
+async def bulk_upload_shaders(
+    files: List[UploadFile] = File(...),
+    metadata_json: Optional[str] = Form(None)
+):
+    """Bulk upload multiple .wgsl shader files.
+    
+    - Each file's basename (without .wgsl) is used as the shader_id.
+    - Optional metadata_json is a dict mapping shader_id -> {name, description, tags, category}.
+    - Returns a summary of added, updated, and failed uploads.
+    """
+    config = STORAGE_MAP["shader"]
+    parsed_meta = {}
+    if metadata_json:
+        try:
+            parsed_meta = json.loads(metadata_json)
+        except json.JSONDecodeError:
+            raise HTTPException(400, "metadata_json must be valid JSON")
+
+    report = {"added": 0, "updated": 0, "failed": 0, "errors": []}
+
+    async with get_resource_lock("shader"):
+        index = await run_io(_read_json_sync, config["index"])
+        if not isinstance(index, list):
+            index = []
+
+        for file in files:
+            if not file.filename.endswith(".wgsl"):
+                report["failed"] += 1
+                report["errors"].append({"file": file.filename, "error": "Not a .wgsl file"})
+                continue
+
+            shader_id = file.filename.replace(".wgsl", "")
+            meta_override = parsed_meta.get(shader_id, {})
+            storage_filename = f"{shader_id}.wgsl"
+            full_path = f"{config['folder']}{storage_filename}"
+
+            meta = {
+                "id": shader_id,
+                "name": meta_override.get("name", shader_id.replace("-", " ").replace("_", " ").title()),
+                "author": meta_override.get("author", "ford442"),
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "type": "shader",
+                "description": meta_override.get("description", ""),
+                "tags": meta_override.get("tags", []),
+                "filename": storage_filename,
+                "coordinate": meta_override.get("coordinate"),
+                "stars": 0.0,
+                "rating_count": 0,
+                "play_count": 0,
+                "thumbnail": None,
+                "thumbnail_url": None
+            }
+
+            try:
+                blob = bucket.blob(full_path)
+                await run_io(blob.upload_from_file, file.file, content_type="text/plain")
+
+                # Remove existing entry with same id
+                existed = any(s.get("id") == shader_id for s in index)
+                index = [s for s in index if s.get("id") != shader_id]
+                index.insert(0, meta)
+
+                if existed:
+                    report["updated"] += 1
+                else:
+                    report["added"] += 1
+            except Exception as e:
+                report["failed"] += 1
+                report["errors"].append({"file": file.filename, "error": str(e)})
+
+        try:
+            await run_io(_write_json_sync, config["index"], index)
+            await clear_cache_for_type("shader")
+        except Exception as e:
+            raise HTTPException(500, f"Failed to save index after bulk upload: {str(e)}")
+
+    report["total_in_index"] = len(index)
+    return report
 
 @app.get("/api/shaders/{shader_id}/thumbnail")
 async def get_shader_thumbnail(shader_id: str):

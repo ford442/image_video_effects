@@ -33,6 +33,10 @@
     "audit:shaders": "bash scripts/wgsl-audit-swarm.sh 4",
     "audit:shaders:sample": "bash scripts/wgsl-audit-swarm.sh 4 --sample",
     "deploy": "python scripts/deploy.py",
+    "deploy:app": "python scripts/deploy_app_only.py",
+    "deploy:full": "npm run build && python scripts/deploy_app_only.py && python scripts/sync_shaders_to_storage.py",
+    "sync:shaders": "python scripts/sync_shaders_to_storage.py",
+    "sync:shaders:dry": "python scripts/sync_shaders_to_storage.py --dry-run",
     "swarm:upgrade": "node scripts/run-upgrade-swarm.js"
   },
   "eslintConfig": {

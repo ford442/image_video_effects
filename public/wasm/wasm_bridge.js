@@ -20,8 +20,31 @@ const state = {
   mouseY: 0.5,
   mouseDown: false,
   zoomParams: [0.5, 0.5, 0.5, 0.5],
-  ripples: []
+  ripples: [],
+  // Diagnostic tracking
+  loadErrorCount: 0,
+  lastLoadError: null,
+  initStartTime: 0,
+  initEndTime: 0,
 };
+
+/**
+ * Get diagnostic information about WASM bridge status
+ * @returns {Object} Diagnostic data
+ */
+export function getDiagnostics() {
+  return {
+    initialized: state.initialized,
+    hasModule: wasmModule !== null,
+    hasCanvas: canvas !== null,
+    moduleHasCCall: wasmModule ? typeof wasmModule.ccall === 'function' : false,
+    canvasResolution: state.canvasWidth > 0 ? `${state.canvasWidth}x${state.canvasHeight}` : 'unset',
+    loadErrorCount: state.loadErrorCount,
+    lastLoadError: state.lastLoadError,
+    initTime: state.initEndTime > 0 ? `${state.initEndTime - state.initStartTime}ms` : 'pending',
+    loadPath: canvas ? `${window.location.origin}/wasm/` : 'not available',
+  };
+}
 
 /**
  * Initialize the WASM renderer
@@ -30,13 +53,14 @@ const state = {
  */
 export async function initWasmRenderer(canvasElement) {
   if (state.initialized) {
-    console.warn('WASM renderer already initialized');
+    console.warn('[WASM] Renderer already initialized');
     return true;
   }
 
   canvas = canvasElement;
   state.canvasWidth = canvas.width || 2048;
   state.canvasHeight = canvas.height || 2048;
+  state.initStartTime = performance.now();
 
   return new Promise((resolve) => {
     const pathname = window.location.pathname;
@@ -47,6 +71,7 @@ export async function initWasmRenderer(canvasElement) {
     const wasmBinaryPath = basePath + '/wasm/pixelocity_wasm.wasm';
 
     console.log('[WASM] Loading from:', wasmJsPath);
+    console.log('[WASM] Canvas size:', `${state.canvasWidth}x${state.canvasHeight}`);
 
     if (window.PixelocityWASM) {
       initializeModule(window.PixelocityWASM, wasmBinaryPath, resolve);
@@ -59,7 +84,10 @@ export async function initWasmRenderer(canvasElement) {
 
     script.onload = () => {
       if (!window.PixelocityWASM) {
-        console.error('[WASM] PixelocityWASM not found on window after script load');
+        const error = 'PixelocityWASM not found on window after script load (stub module?)';
+        console.error('[WASM]', error);
+        state.lastLoadError = error;
+        state.loadErrorCount++;
         resolve(false);
         return;
       }
@@ -67,7 +95,10 @@ export async function initWasmRenderer(canvasElement) {
     };
 
     script.onerror = (err) => {
-      console.error('[WASM] Failed to load script:', err);
+      const error = `Failed to load WASM script: ${err}`;
+      console.error('[WASM]', error);
+      state.lastLoadError = error;
+      state.loadErrorCount++;
       resolve(false);
     };
 
@@ -80,19 +111,38 @@ export async function initWasmRenderer(canvasElement) {
  */
 async function initializeModule(factory, wasmBinaryPath, resolve) {
   try {
+    console.log('[WASM] Creating module from factory...');
     wasmModule = await factory({
       locateFile: (path) => {
         if (path.endsWith('.wasm')) return wasmBinaryPath;
         return path;
+      },
+      onAbort: (msg) => {
+        console.error('[WASM] Module aborted:', msg);
+        state.lastLoadError = `Module abort: ${msg}`;
+        state.loadErrorCount++;
       }
     });
 
-    if (typeof wasmModule.ccall !== 'function') {
-      console.warn('[WASM] Module loaded but ccall unavailable — stub build detected. Upload a real emcc binary to public/wasm/.');
+    if (!wasmModule) {
+      const error = 'Module factory returned null';
+      console.error('[WASM]', error);
+      state.lastLoadError = error;
+      state.loadErrorCount++;
       resolve(false);
       return;
     }
 
+    if (typeof wasmModule.ccall !== 'function') {
+      const error = 'Module loaded but ccall unavailable — stub build detected (missing Emscripten binaries)';
+      console.warn('[WASM]', error);
+      state.lastLoadError = error;
+      state.loadErrorCount++;
+      resolve(false);
+      return;
+    }
+
+    console.log('[WASM] Calling initWasmRenderer(', state.canvasWidth, ',', state.canvasHeight, ')');
     // Use { async: true } so ccall returns a Promise that resolves after the
     // Asyncify-suspended C++ function completes.  Without this, ccall returns 0
     // immediately when WASM suspends inside wgpuInstanceWaitAny (waiting for the
@@ -105,17 +155,26 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
       { async: true }
     );
 
+    state.initEndTime = performance.now();
+
     if (!result) {
-      console.error('[WASM] Failed to initialize WASM renderer (C++ returned 0)');
+      const error = 'C++ initWasmRenderer returned 0 (device creation failed)';
+      console.error('[WASM]', error);
+      state.lastLoadError = error;
+      state.loadErrorCount++;
       resolve(false);
       return;
     }
 
     state.initialized = true;
-    console.log('✅ WASM Renderer initialized');
+    console.log('[WASM] ✅ Initialization complete in', state.initEndTime - state.initStartTime, 'ms');
     resolve(true);
   } catch (err) {
-    console.error('[WASM] Failed to initialize module:', err);
+    const error = `Module initialization exception: ${err instanceof Error ? err.message : String(err)}`;
+    console.error('[WASM]', error);
+    state.lastLoadError = error;
+    state.loadErrorCount++;
+    state.initEndTime = performance.now();
     resolve(false);
   }
 }
@@ -126,10 +185,15 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
 export function shutdownWasmRenderer() {
   if (!state.initialized || !wasmModule) return;
 
-  wasmModule.ccall('shutdownWasmRenderer', null, [], []);
+  try {
+    wasmModule.ccall('shutdownWasmRenderer', null, [], []);
+    console.log('[WASM] Shutdown complete');
+  } catch (err) {
+    console.error('[WASM] Shutdown error:', err);
+  }
+
   wasmModule = null;
   state.initialized = false;
-  console.log('🛑 WASM Renderer shutdown');
 }
 
 /**
@@ -140,7 +204,7 @@ export function shutdownWasmRenderer() {
  */
 export function loadShader(id, wgslCode) {
   if (!state.initialized || !wasmModule) {
-    console.error('Renderer not initialized');
+    console.error('[WASM] Renderer not initialized');
     return false;
   }
 

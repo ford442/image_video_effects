@@ -1,0 +1,162 @@
+{
+  "asset-manifest.json": {
+    "hash": "c703b236f8a94588a537f17a14c666db",
+    "size": 374
+  },
+  "b3cursor.gif": {
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "size": 0
+  },
+  "cursor.cur": {
+    "hash": "d5a45bda9b7db65596c7c23f89217730",
+    "size": 766
+  },
+  "cursors/README.md": {
+    "hash": "b3dc2dfcfc0d7fda27c9159c1dea17ee",
+    "size": 1183
+  },
+  "cursors/crosshair.svg": {
+    "hash": "cb91c0c417babbf6123850855f6f2eb5",
+    "size": 381
+  },
+  "cursors/cursor.cur": {
+    "hash": "d5a45bda9b7db65596c7c23f89217730",
+    "size": 766
+  },
+  "custom-cursor.css": {
+    "hash": "f55ae70efff38e5b4a37de12d88eb0dc",
+    "size": 797
+  },
+  "favicon.gif": {
+    "hash": "4781f2e3d4b4fcccb6fb5d33c3be25c6",
+    "size": 177
+  },
+  "favicon.ico": {
+    "hash": "cb6992b50102af332e5b35450f1356f6",
+    "size": 766
+  },
+  "image_manifest.json": {
+    "hash": "2e5d8866617f7545c9dd9ad4787f98c4",
+    "size": 230522
+  },
+  "image_suggestions.md": {
+    "hash": "4e5e9e7326a4c3772d00461eeb7f15b0",
+    "size": 485495
+  },
+  "image_suggestions_archive.md": {
+    "hash": "553b939a8b666406c9338a149770e7f5",
+    "size": 322989
+  },
+  "index.html": {
+    "hash": "46728495fc64515c67d3cd0f5a91f3b8",
+    "size": 445
+  },
+  "reports/shader_params_extracted.json": {
+    "hash": "c2dff88207bcf8fbe0f3aa3fb7c24f4f",
+    "size": 407864
+  },
+  "shader-lists/advanced-hybrid.json": {
+    "hash": "4a1d7d1f09e049bad926fe476da6ff4c",
+    "size": 115088
+  },
+  "shader-lists/artistic.json": {
+    "hash": "a33da8af4b63e58b6457ba7732e602cd",
+    "size": 39913
+  },
+  "shader-lists/distortion.json": {
+    "hash": "05d17459925c37bdd132cbc57132ae51",
+    "size": 63127
+  },
+  "shader-lists/generative.json": {
+    "hash": "74f8603c2424a8af58a7e2e17e0b6973",
+    "size": 206488
+  },
+  "shader-lists/geometric.json": {
+    "hash": "ff2991ca9fbb113020160a1508c1e10b",
+    "size": 14077
+  },
+  "shader-lists/image.json": {
+    "hash": "d65020fbf4de9257a9953a1779bc64d7",
+    "size": 377541
+  },
+  "shader-lists/interactive-mouse.json": {
+    "hash": "eba80edeec717f7fe9c012ff09060b67",
+    "size": 87510
+  },
+  "shader-lists/interactive.json": {
+    "hash": "71a4d6dbf9293b8b1c86e2dcde23df80",
+    "size": 34372
+  },
+  "shader-lists/lighting-effects.json": {
+    "hash": "1cac81ebecd9f7c76f939679dcf31781",
+    "size": 19711
+  },
+  "shader-lists/liquid-effects.json": {
+    "hash": "ebdcf9bb42fe94bff85653a4ecb0df7f",
+    "size": 11844
+  },
+  "shader-lists/liquid.json": {
+    "hash": "f4e26ff9422090628e21724d2ccb651c",
+    "size": 2429
+  },
+  "shader-lists/post-processing.json": {
+    "hash": "6b319cdf258b056baac6f4c8e1b05c3e",
+    "size": 8812
+  },
+  "shader-lists/retro-glitch.json": {
+    "hash": "80af73bcd46725ee630d1d3ba3207c57",
+    "size": 26533
+  },
+  "shader-lists/simulation.json": {
+    "hash": "6e3b5c7f02b7028735c3dc9e47542d2a",
+    "size": 70920
+  },
+  "shader-lists/visual-effects.json": {
+    "hash": "95b3a11ad8ecb6ecd977d44a2c80ae23",
+    "size": 31069
+  },
+  "shader-manifest-unified.json": {
+    "hash": "986ae6588a674691ee658762642d55da",
+    "size": 1168369
+  },
+  "shader_coordinates.json": {
+    "hash": "92104a1739bfd7eff07c2d690d594cb3",
+    "size": 188497
+  },
+  "static/css/main.9a40ed5e.css": {
+    "hash": "90dd426740d81b228239ac1ca58d5689",
+    "size": 61297
+  },
+  "static/css/main.9a40ed5e.css.map": {
+    "hash": "6d213499fd6be9751307c3381cebfd1b",
+    "size": 130458
+  },
+  "static/js/main.a6a3c33b.js": {
+    "hash": "825e59372a4ed8f368a5eb04ef7034db",
+    "size": 7876763
+  },
+  "static/js/main.a6a3c33b.js.LICENSE.txt": {
+    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
+    "size": 1210
+  },
+  "static/js/main.a6a3c33b.js.map": {
+    "hash": "46f77250c6569b96c1b0de8a052ad1b2",
+    "size": 14256769
+  },
+  "video_manifest.json": {
+    "hash": "cceb5b62edf63acb3a2cbb106a5f07a5",
+    "size": 5183
+  },
+  "wasm/pixelocity_wasm.js": {
+    "hash": "6334fd22a4f6ab421e19b8331dc957d8",
+    "size": 67071
+  },
+  "wasm/pixelocity_wasm.wasm": {
+    "hash": "3a755924fba805b1b50c14ac912508bf",
+    "size": 97826
+  },
+  "wasm/wasm_bridge.js": {
+    "hash": "ebaf16ec30cc882668af170452e03f66",
+    "size": 24512
+  }
+}
