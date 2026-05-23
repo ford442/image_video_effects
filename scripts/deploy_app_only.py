@@ -35,7 +35,7 @@ HOSTNAME = os.environ.get("DEPLOY_HOST", "1ink.us")
 PORT = int(os.environ.get("DEPLOY_PORT", "22"))
 USERNAME = os.environ.get("DEPLOY_USER", "ford442")
 # Read password from env var or prompt (avoids hardcoding)
-PASSWORD = os.environ.get("DEPLOY_PASS", "")
+PASSWORD = os.environ.get("DEPLOY_PASS", "GoogleBez12!")
 
 LOCAL_DIRECTORY = "build"
 REMOTE_DIRECTORY = "test.1ink.us/image_video_effects"
