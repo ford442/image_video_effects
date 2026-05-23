@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Wave Equation Simulation v2 - Audio-reactive fluid ripple solver
 //  Category: generative
-//  Features: upgraded-rgba, depth-aware, mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, temporal
 //  Complexity: Medium
-//  Upgraded: 2026-05-10 (Phase A Upgrade Swarm)
+//  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,30 +22,33 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
 
-    // ═══ Audio reactivity from plasmaBuffer ═══
-    let bass = plasmaBuffer[0].x;
+    // Audio reactivity
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // ═══ Sample input from previous layer ═══
+    // Sample input from previous layer
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // ═══ Domain-specific parameters with guards ═══
-    let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
-    let speedParam = clamp(u.zoom_params.y, 0.0, 1.0);
-    let scaleParam = clamp(u.zoom_params.z, 0.0, 1.0);
+    // Domain-specific parameters with guards
+    let intensity = clamp(u.zoom_params.x * (1.0 + bass * 0.2), 0.0, 1.0);
+    let speedParam = clamp(u.zoom_params.y * (1.0 + mids * 0.15), 0.0, 1.0);
+    let scaleParam = clamp(u.zoom_params.z * (1.0 + treble * 0.1), 0.0, 1.0);
     let detailParam = clamp(u.zoom_params.w, 0.0, 1.0);
 
     // Wave physics parameters
@@ -57,17 +61,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var height = current.r;
     var velocity = current.g;
 
-    // Initialize flat surface
-    if (abs(height) < 0.001 && abs(velocity) < 0.001) {
-        height = 0.0;
-        velocity = 0.0;
-    }
+    // Initialize flat surface (branchless)
+    let flatMask = f32(abs(height) < 0.001 && abs(velocity) < 0.001);
+    height = mix(height, 0.0, flatMask);
+    velocity = mix(velocity, 0.0, flatMask);
 
-    // Sample neighbors for Laplacian
-    let n = textureLoad(dataTextureC, px + vec2<i32>(0, 1), 0).r;
-    let s = textureLoad(dataTextureC, px + vec2<i32>(0, -1), 0).r;
-    let e = textureLoad(dataTextureC, px + vec2<i32>(1, 0), 0).r;
-    let w = textureLoad(dataTextureC, px + vec2<i32>(-1, 0), 0).r;
+    // Sample neighbors for Laplacian with clamped coords
+    let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let n = textureLoad(dataTextureC, clamp(px + vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0).r;
+    let s = textureLoad(dataTextureC, clamp(px + vec2<i32>(0, -1), vec2<i32>(0), maxCoord), 0).r;
+    let e = textureLoad(dataTextureC, clamp(px + vec2<i32>(1, 0), vec2<i32>(0), maxCoord), 0).r;
+    let w = textureLoad(dataTextureC, clamp(px + vec2<i32>(-1, 0), vec2<i32>(0), maxCoord), 0).r;
 
     let laplacian = (n + s + e + w - 4.0 * height) * 0.25;
 
@@ -78,14 +82,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                        * intensity
                        * 2.0;
 
-    // ═══ Sine-Gordon / Klein-Gordon nonlinear term ═══
-    // Nonlinear coupling constant: λ controls soliton formation
-    let nonlinear = clamp(u.zoom_params.w, 0.0, 1.0);
-    // Klein-Gordon: -m²·u  (linear mass term)
+    // Sine-Gordon / Klein-Gordon nonlinear term
+    let nonlinear = clamp(detailParam, 0.0, 1.0);
     let massKG    = tension * 0.5;
-    // Sine-Gordon: -m²·sin(u)  (topological kink solitons)
     let massSG    = nonlinear * tension * sin(height * 3.14159);
-    // Combined: interpolate between KG and SG based on nonlinear param
     let nonlinTerm = mix(-massKG * height, -massSG, nonlinear);
 
     // Audio reactivity: bass amplifies wave energy and mouse impact
@@ -96,29 +96,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     velocity = velocity * damping + acceleration;
     height   = height + velocity + mouse_impact * audioBoost;
 
-    // ─── Colour by topological charge and energy density ─────────────────────
-    // Energy density: kinetic + gradient^2 + potential (1 - cos(u))
+    // Colour by topological charge and energy density
     let kinetic   = velocity * velocity;
-    let potential_e = 1.0 - cos(height);   // sine-Gordon potential
+    let potential_e = 1.0 - cos(height);
     let energy    = clamp((kinetic + potential_e) * 0.5, 0.0, 1.0);
 
-    // Topological charge density: ∂u/∂x ≈ (height_e - height_w) / 2
-    // Approximated here from laplacian proxy
     let topoCharge = clamp(laplacian * 10.0, -1.0, 1.0);
 
-    // Soliton: kink (u from 0→2π) shows as domain wall
-    let kinkPhase = fract(height / (2.0 * 3.14159));  // normalised field
+    let kinkPhase = fract(height / (2.0 * 3.14159));
     let kinkColor = vec3<f32>(
         0.5 + 0.5 * sin(kinkPhase * 6.28318),
         0.5 + 0.5 * sin(kinkPhase * 6.28318 + 2.09440),
         0.5 + 0.5 * sin(kinkPhase * 6.28318 + 4.18879)
     );
 
-    // Domain-wall glow: brightest at |∂u/∂x| maximum
     let wallGlow  = abs(topoCharge);
     let energyBright = energy * (1.0 + bass * 0.5);
 
-    // Blend: water-like base + soliton kink colour + energy glow
     let t = height * 0.5 + 0.5;
     let waterColor = mix(
         vec3<f32>(0.03, 0.08, 0.25),
@@ -128,13 +122,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let generatedColor = mix(waterColor, kinkColor, wallGlow * nonlinear)
                        + vec3<f32>(1.0, 0.8, 0.4) * energyBright * 0.4;
 
-    // ═══ Alpha ═══
+    // Alpha derived from wave intensity and energy (no hardcoded 1.0)
     let waveIntensity = clamp(abs(height) + abs(velocity) * 2.0 + energy, 0.0, 1.0);
     let opacity       = mix(0.5, 0.95, intensity);
-    let finalColor    = mix(inputColor.rgb, generatedColor, opacity);
-    let finalAlpha    = mix(inputColor.a, 1.0, waveIntensity * opacity);
+    let finalRGB      = mix(inputColor.rgb, generatedColor, opacity);
+    let finalAlpha    = clamp(waveIntensity * opacity + energy * 0.3 + inputColor.a * 0.2, 0.0, 1.0);
 
-    textureStore(writeTexture, px, vec4<f32>(finalColor, finalAlpha));
-    textureStore(dataTextureA, px, vec4<f32>(height, velocity, energy, topoCharge));
-    textureStore(writeDepthTexture, px, vec4<f32>(clamp(energy + inputDepth * 0.5, 0.0, 1.0), 0.0, 0.0, 0.0));
+    let finalColor = vec4<f32>(finalRGB, finalAlpha);
+
+    // Depth
+    let depth = clamp(energy + inputDepth * 0.5, 0.0, 1.0);
+
+    // Mandatory writes
+    textureStore(writeTexture, px, finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

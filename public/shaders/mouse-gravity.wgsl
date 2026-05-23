@@ -21,19 +21,25 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
 
     // Mouse coords are in u.zoom_config.yz
     // The renderer maps them 0-1.
     var mousePos = u.zoom_config.yz;
 
+    // Audio: bass deepens the well, mids widens its reach, treble splits chromatic aberration
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Params
-    let strength = u.zoom_params.x * 2.0;    // 0.0 to 2.0
-    let radius = max(0.01, u.zoom_params.y * 0.5); // 0.01 to 0.5
-    let aberration = u.zoom_params.z * 0.05; // 0.0 to 0.05
+    let strength = u.zoom_params.x * 2.0 * (1.0 + bass * 0.4);    // 0.0 to 2.0
+    let radius = max(0.01, u.zoom_params.y * 0.5 * (1.0 + mids * 0.3)); // 0.01 to 0.5
+    let aberration = u.zoom_params.z * 0.05 * (1.0 + treble * 0.8); // 0.0 to 0.05
     let darkness = u.zoom_params.w;          // 0.0 to 1.0
 
     // Vector from UV to Mouse
@@ -86,7 +92,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // if (any(uvR < vec2(0.0)) || any(uvR > vec2(1.0))) { r = 0.0; } etc.
     // But sampler is usually set to repeat or clamp. Renderer sets it to 'repeat'.
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    // Lensing-mask alpha: brighter near the warped core, luma-keyed elsewhere
+    let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) + (1.0 - core) * darkness * 0.5, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 
     // Passthrough depth for now, or warp it too?
     // Warping depth might be more correct for compositing.

@@ -37,7 +37,7 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -46,11 +46,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
+    // Audio: bass speeds the grid, mids glows the lines, treble warps the sky
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
-    let grid_speed = u.zoom_params.x; // Grid movement speed
-    let glow_intensity = u.zoom_params.y; // Brightness of grid
+    let grid_speed = u.zoom_params.x * (1.0 + bass * 0.6); // Grid movement speed
+    let glow_intensity = u.zoom_params.y * (1.0 + mids * 0.7); // Brightness of grid
     let grid_scale = u.zoom_params.z; // Size of grid squares
-    let warp_amt = u.zoom_params.w;   // Curvature of grid/sky
+    let warp_amt = u.zoom_params.w * (1.0 + treble * 0.4);   // Curvature of grid/sky
 
     // Mouse Interaction
     let mouse_y = u.zoom_config.z;

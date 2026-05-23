@@ -19,7 +19,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -31,12 +31,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
 
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Params
+    // Params (mids speeds hue shift, treble lifts smear intensity)
     let trailDecay = u.zoom_params.x; // 0.0 to 1.0 (Higher = longer trail)
     let brushSize = u.zoom_params.y * (1.0 + bass * 0.2);
-    let shiftSpeed = u.zoom_params.z; // Hue shift speed
-    let intensity = u.zoom_params.w;  // Mix intensity
+    let shiftSpeed = u.zoom_params.z * (1.0 + mids * 0.8); // Hue shift speed
+    let intensity = u.zoom_params.w * (1.0 + treble * 0.5);  // Mix intensity
 
     // Check mouse distance
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);

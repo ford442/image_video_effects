@@ -1,12 +1,10 @@
-// ═══════════════════════════════════════════════════════════════
-//  Digital Haze - Volumetric Alpha Upgrade
-//  A thick pixelated fog with physically-based optical depth
-//  
-//  Scientific Implementation:
-//  - Distance-based fog density with Beer-Lambert extinction
-//  - Pixelation creates volumetric "cells" with depth
-//  - Mouse clears fog by locally reducing optical depth
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Digital Haze
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture:    texture_2d<f32>;
 @group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
@@ -49,14 +47,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
     let aspect = dims.x / dims.y;
 
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
     var mouse = u.zoom_config.yz;
     let dVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dVec);
 
-    // Params
-    let pixelStrength = u.zoom_params.x * 100.0 + 10.0; // Grid size
+    // Params; bass pulses the haze density, mids vary the noise texture
+    let pixelStrength = u.zoom_params.x * 100.0 + 10.0;
     let clearRadius = u.zoom_params.y * 0.4 + 0.05;
-    let noiseAmt = u.zoom_params.z;
+    let noiseAmt = u.zoom_params.z * (1.0 + mids * 0.4);
 
     // ═══════════════════════════════════════════════════════════════
     //  Calculate Grid-based "Volumetric Cells"
@@ -86,9 +87,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  Volumetric Fog Calculation
     // ═══════════════════════════════════════════════════════════════
     
-    // Calculate optical depth based on mask (haze density)
-    // Near mouse: low density (clear), Far from mouse: high density (haze)
-    let hazeDensity = mask * SIGMA_T_HAZE + (1.0 - mask) * SIGMA_T_CLEAR;
+    // Calculate optical depth based on mask (haze density); bass pulses fog thickness
+    let hazeDensity = (mask * SIGMA_T_HAZE + (1.0 - mask) * SIGMA_T_CLEAR) * (1.0 + bass * 0.5);
     
     // Optical depth through the haze layer
     let opticalDepth = hazeDensity * STEP_SIZE * (1.0 + noiseAmt * 0.5);
@@ -110,8 +110,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     let finalColor = inScattered + transmittedClear + transmittedHaze;
 
-    // Output with volumetric alpha
-    // RGB: Combined in-scattered + transmitted light
-    // A: Opacity based on optical depth
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
+    // Output with volumetric alpha; A = Beer-Lambert optical opacity
+    let finalOut = vec4<f32>(finalColor, alpha);
+    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, gid.xy, finalOut);
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), finalOut);
 }

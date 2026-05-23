@@ -4,8 +4,22 @@
   "url": "shaders/temporal-phosphor-burn.wgsl",
   "category": "post-processing",
   "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
-  "tags": ["temporal", "crt", "phosphor", "persistence", "glow", "retro", "amber"],
-  "features": ["temporal", "history-ring"],
+  "tags": [
+    "temporal",
+    "crt",
+    "phosphor",
+    "persistence",
+    "glow",
+    "retro",
+    "amber"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "requiresHistoryRing": true,
   "params": [
     {

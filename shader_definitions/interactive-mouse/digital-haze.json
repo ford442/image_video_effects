@@ -3,7 +3,9 @@
   "category": "image",
   "url": "shaders/digital-haze.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

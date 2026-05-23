@@ -37,7 +37,10 @@
   "features": [
     "retro",
     "texture",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",

@@ -4,8 +4,22 @@
   "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
   "category": "post-processing",
   "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
-  "tags": ["temporal", "feedback", "zoom", "tunnel", "psychedelic", "warp", "abstract"],
-  "features": ["temporal", "history-ring"],
+  "tags": [
+    "temporal",
+    "feedback",
+    "zoom",
+    "tunnel",
+    "psychedelic",
+    "warp",
+    "abstract"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "requiresHistoryRing": true,
   "params": [
     {

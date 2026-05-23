@@ -4,7 +4,10 @@
   "url": "shaders/pixel-rain.wgsl",
   "category": "image",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "description": "Matrix-style digital rain. Mouse repels and highlights drops.",
   "params": [

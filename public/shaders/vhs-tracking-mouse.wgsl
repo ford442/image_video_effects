@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  VHS Tracking (Mouse)
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Low
-//  Chunks From: vhs-tracking-mouse (original)
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BarHeight, y=DistortionStrength, z=NoiseAmount, w=ColorShift
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -34,56 +33,49 @@ fn rand(co: vec2<f32>) -> f32 {
     return fract(sin(seed) * 43758.5453);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     let coords = vec2<i32>(global_id.xy);
+    let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let mousePos = vec2<f32>(u.zoom_config.y, select(0.5, u.zoom_config.z, u.zoom_config.z >= 0.0));
 
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let barHeight = u.zoom_params.x * 0.3 + 0.05;
-    let strength = u.zoom_params.y * 0.1 * (1.0 + bass * 0.2);
+    let strength = u.zoom_params.y * 0.1 * (1.0 + bass * 0.2 + mids * 0.1);
     let noiseAmt = u.zoom_params.z;
     let colorShift = u.zoom_params.w * 0.02;
 
-    var finalUV = uv;
     let distY = abs(uv.y - mousePos.y);
     let in_bar = distY < barHeight;
-    var bar_intensity = 0.0;
+    let bar_intensity = smoothstep(barHeight, 0.0, distY) * f32(in_bar);
 
-    if (in_bar) {
-        bar_intensity = smoothstep(barHeight, 0.0, distY);
-        let shift = sin(uv.y * 50.0 + time * 20.0) * strength * bar_intensity;
-        let noiseShift = (rand(vec2<f32>(uv.y, time)) - 0.5) * strength * 2.0 * bar_intensity;
-        finalUV.x += shift + noiseShift;
-        finalUV = clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0));
-    }
+    let shift = sin(uv.y * 50.0 + time * 20.0) * strength * bar_intensity;
+    let noiseShift = (rand(vec2<f32>(uv.y, time)) - 0.5) * strength * 2.0 * bar_intensity;
+    let displacedUV = clamp(uv + vec2<f32>(shift + noiseShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampleUV = select(uv, displacedUV, in_bar);
 
-    var color = vec3<f32>(0.0);
-    if (in_bar) {
-        let r = textureSampleLevel(readTexture, u_sampler, finalUV + vec2<f32>(colorShift, 0.0), 0.0).r;
-        let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
-        let b = textureSampleLevel(readTexture, u_sampler, finalUV - vec2<f32>(colorShift, 0.0), 0.0).b;
-        color = vec3<f32>(r, g, b);
-        if (noiseAmt > 0.0) {
-            let n = rand(uv + vec2<f32>(time, time));
-            color += (n - 0.5) * noiseAmt;
-        }
-    } else {
-        color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    }
+    let r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(colorShift, 0.0), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(colorShift, 0.0), 0.0).b;
+    var color = vec3<f32>(r, g, b);
 
-    // Alpha: bar zone = VHS glitch activity drives blend weight
+    let n = rand(uv + vec2<f32>(time, time));
+    let noiseValue = (n - 0.5) * noiseAmt * f32(in_bar);
+    color = color + noiseValue;
+
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.5 + bar_intensity * 0.35 + luma * 0.15, 0.0, 1.0);
+    let alpha = clamp(0.5 + bar_intensity * 0.35 + luma * 0.15 + treble * 0.05, 0.0, 1.0);
 
-    textureStore(writeTexture, coords, vec4<f32>(color, alpha));
+    let finalRGBA = vec4<f32>(color, alpha);
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coords, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coords, finalRGBA);
+    textureStore(dataTextureA, global_id.xy, finalRGBA);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

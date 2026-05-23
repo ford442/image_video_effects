@@ -4,7 +4,10 @@
   "url": "shaders/vhs-tracking.wgsl",
   "category": "image",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "description": "Simulates VCR tracking errors with scanline tearing and chromatic aberration.",
   "params": [

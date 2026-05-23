@@ -37,7 +37,10 @@
   "features": [
     "mouse-driven",
     "glitch",
-    "stateful"
+    "stateful",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",

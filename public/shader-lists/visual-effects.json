@@ -548,7 +548,8 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "crt",
@@ -907,7 +908,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1156,7 +1158,9 @@
     "id": "rgb-distance-split",
     "category": "visual-effects",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "url": "shaders/rgb-distance-split.wgsl",
     "description": "Chromatic aberration that intensifies with distance from the mouse.",

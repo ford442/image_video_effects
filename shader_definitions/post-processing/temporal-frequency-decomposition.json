@@ -4,8 +4,22 @@
   "url": "shaders/temporal-frequency-decomposition.wgsl",
   "category": "post-processing",
   "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
-  "tags": ["temporal", "frequency", "fourier", "glow", "analysis", "psychedelic", "abstract"],
-  "features": ["temporal", "history-ring"],
+  "tags": [
+    "temporal",
+    "frequency",
+    "fourier",
+    "glow",
+    "analysis",
+    "psychedelic",
+    "abstract"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "requiresHistoryRing": true,
   "params": [
     {

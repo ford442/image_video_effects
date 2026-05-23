@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chroma Kinetic
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: chroma-kinetic (original)
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,86 +22,68 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Radius, z=LumaInfluence, w=Rotation
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+    let coords = vec2<i32>(global_id.xy);
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / max(resolution.y, 0.001);
 
-    // Params
     let bass = plasmaBuffer[0].x;
-    let strength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.3);
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let strength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.3 + mids * 0.15);
     let radius = u.zoom_params.y;
     let luma_inf = u.zoom_params.z;
-    let rotation = u.zoom_params.w * 6.28318; // 0-1 -> 0-2PI
+    let rotation = u.zoom_params.w * 6.28318;
 
-    // Mouse Interaction
-    var mousePos = u.zoom_config.yz;
+    let mousePos = u.zoom_config.yz;
 
-    // Vector from Mouse to Pixel
     let diff = uv - mousePos;
     let diffAspect = diff * vec2<f32>(aspect, 1.0);
     let dist = length(diffAspect);
 
-    // Normalize direction
-    var dir = vec2<f32>(0.0);
-    if (dist > 0.001) {
-        dir = normalize(diffAspect);
-    }
+    let dir = select(vec2<f32>(0.0), normalize(diffAspect), dist > 0.001);
 
-    // Rotate the direction
     let c = cos(rotation);
     let s = sin(rotation);
     let rotDir = vec2<f32>(dir.x * c - dir.y * s, dir.x * s + dir.y * c);
 
-    // Convert back to UV space offset
-    // X offset in UV should be scaled by 1/Aspect to represent same physical distance as Y
     let uvOffsetDir = vec2<f32>(rotDir.x / max(aspect, 0.001), rotDir.y);
 
-    // Get Base Color & Luma
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = dot(baseColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Calculate Offset Amount
-    // Falloff based on radius
-    let falloff = smoothstep(max(radius, 0.001), 0.0, dist); // 1.0 at mouse, 0.0 at radius
+    let falloff = smoothstep(max(radius, 0.001), 0.0, dist);
 
-    // Modulate by Luma
-    // luma_inf controls how much brightness affects the shift
     let modFactor = max(0.0, 1.0 + (luma - 0.5) * luma_inf * 2.0);
 
     let finalOffset = uvOffsetDir * strength * falloff * modFactor;
 
-    // Sample RGB Split
-    let uvR = uv - finalOffset;
-    let uvB = uv + finalOffset;
+    let uvR = clamp(uv - finalOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(uv + finalOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = baseColor.g; // Center sample
+    let g = baseColor.g;
     let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
     var color = vec3<f32>(r, g, b);
 
-    // Alpha: kinetic dispersion weight — scatter intensity drives compositing blend
     let dispersion = length(finalOffset) / max(strength, 0.001);
-    let alpha = clamp(falloff * modFactor * 0.6 + dispersion * 0.3 + 0.1, 0.0, 1.0);
+    let alpha = clamp(falloff * modFactor * 0.6 + dispersion * 0.3 + 0.1 + treble * 0.05, 0.0, 1.0);
 
-    // Write Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    let finalRGBA = vec4<f32>(color, alpha);
 
-    // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-
-    // Pass through history to keep loop alive
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(0.0));
+    textureStore(writeTexture, coords, finalRGBA);
+    textureStore(dataTextureA, global_id.xy, finalRGBA);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -37,7 +37,8 @@
   "features": [
     "mouse-driven",
     "temporal-persistence",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

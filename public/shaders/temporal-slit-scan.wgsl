@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Slit Scan
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Low
+//  Upgraded: 2026-05-23
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
@@ -56,9 +57,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
 
-  // Parameters
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
+  // Parameters; bass widens the temporal spread for more smear on beats
   let useVertical  = u.zoom_params.x > 0.5;
-  let spread       = clamp(u.zoom_params.y, 0.0, 1.0);   // 0–1 → 0–7 frames
+  let spread       = clamp(u.zoom_params.y * (1.0 + bass * 0.3), 0.0, 1.0); // 0–1 → 0–7 frames
   let doReverse    = u.zoom_params.z > 0.5;
   let origBlend    = u.zoom_params.w;
 
@@ -84,5 +88,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let output = mix(scanColor, current, origBlend);
-  textureStore(writeTexture, coord, vec4<f32>(output.rgb, 1.0));
+  let slitDiff = length(scanColor.rgb - current.rgb);
+  let alpha = clamp(slitDiff * 3.0 + (1.0 - origBlend) * 0.5 + bass * 0.2, 0.0, 1.0);
+  let finalOut = vec4<f32>(output.rgb, alpha);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, finalOut);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalOut);
 }

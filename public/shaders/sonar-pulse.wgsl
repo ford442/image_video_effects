@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sonar Pulse
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Low
-//  Phase A Upgrade Swarm
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,29 +22,29 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
   var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001, 0.001));
   let time = u.config.x;
 
-  // Audio reactivity
-  let bass = plasmaBuffer[0].x;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let waveSpeed = mix(1.0, 10.0, u.zoom_params.x);              // Param 1: Speed
-  let waveFreq = mix(10.0, 100.0, u.zoom_params.y);             // Param 2: Frequency
-  let intensity = clamp(u.zoom_params.z, 0.0, 1.0);             // Param 3: Intensity
-  let waveWidth = max(mix(0.1, 0.5, u.zoom_params.w), 0.001);   // Param 4: Width
+  let waveSpeed = mix(1.0, 10.0, u.zoom_params.x) * (1.0 + bass * 0.2);
+  let waveFreq = mix(10.0, 100.0, u.zoom_params.y) + mids * 10.0;
+  let intensity = clamp(u.zoom_params.z + treble * 0.1, 0.0, 1.0);
+  let waveWidth = max(mix(0.1, 0.5, u.zoom_params.w), 0.001);
 
   // Mouse Position (corrected for aspect ratio)
   let aspect = resolution.x / max(resolution.y, 0.001);
@@ -56,47 +56,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dist = distance(uv_corrected, mouse_corrected);
 
   // Sonar Pulse Logic
-  // A series of expanding rings
   let phase = dist * waveFreq - time * waveSpeed;
-  // Use a sawtooth or sharp sine for "sonar" look
   let wave = sin(phase);
-
-  // Sharpen the wave to make it look like a pulse
   let pulse = smoothstep(1.0 - waveWidth, 1.0, wave);
-
-  // Falloff with distance so it doesn't cover the whole screen equally
   let falloff = 1.0 / (1.0 + dist * 2.0);
 
-  // Audio-reactive boost
   let audioBoost = 1.0 + bass * 0.5;
   let pulseStrength = pulse * intensity * falloff * audioBoost;
 
-  // Calculate Color Shift
-  // We displace the UV slightly or add brightness
-  let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Branchless UV distortion
+  let safeDist = max(dist, 0.001);
+  let offsetDir = (uv_corrected - mouse_corrected) / safeDist;
+  let distortAmt = 0.02 * pulse * intensity;
+  let distortedUV = clamp(uv - offsetDir * distortAmt, vec2<f32>(0.0), vec2<f32>(1.0));
+  let distortedColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
 
   // Add a green/blue tint based on pulse
   let pulseColor = vec4<f32>(0.0, 1.0, 0.5, 0.0);
-
-  // Also distort UV slightly
-  let distortAmt = 0.02 * pulse * intensity;
-  var offsetDir = vec2<f32>(0.0, 0.0);
-  if (dist > 0.001) {
-    offsetDir = normalize(uv_corrected - mouse_corrected);
-  }
-  let distortedUV = uv - offsetDir * distortAmt;
-  let distortedColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
-
-  // Mix original with pulse
   var finalColor = mix(distortedColor, distortedColor + pulseColor * pulseStrength, 0.5);
 
   // Meaningful alpha based on luminance and effect intensity
   let luminance = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
   finalColor.a = clamp(luminance + pulseStrength * 0.3, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-
-  // Passthrough depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  textureStore(dataTextureA, global_id.xy, finalColor);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

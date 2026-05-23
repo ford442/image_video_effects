@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Decay Multiresolution
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-05-23
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
@@ -58,11 +59,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
 
-  // Per-channel decay rates
-  let decayFast   = 0.82 + u.zoom_params.x * 0.15;  // 0.82–0.97
-  let decayMedium = 0.88 + u.zoom_params.y * 0.10;  // 0.88–0.98
-  let decaySlow   = 0.93 + u.zoom_params.z * 0.06;  // 0.93–0.99
-  let origBlend   = u.zoom_params.w;                  // blend back to original
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
+  // Per-channel decay rates; bass lengthens the fast-decay trail on beats
+  let decayFast   = clamp(0.82 + u.zoom_params.x * 0.15 + bass * 0.05, 0.0, 0.999);
+  let decayMedium = clamp(0.88 + u.zoom_params.y * 0.10 + mids * 0.02, 0.0, 0.999);
+  let decaySlow   = 0.93 + u.zoom_params.z * 0.06;
+  let origBlend   = u.zoom_params.w;
 
   let historyHead = u32(extraBuffer[4]);
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -102,6 +106,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let multiRes = vec4<f32>(r, g, b, a);
   let output   = mix(multiRes, current, origBlend);
-
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, output);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, output);
 }

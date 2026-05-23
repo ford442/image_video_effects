@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Spectral Distortion
 //  Category: interactive-mouse
-//  Features: mouse-driven, temporal-persistence, glitch, audio-reactive
+//  Features: mouse-driven, temporal-persistence, glitch, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: (original)
 //  Created: 2026-05-10
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -33,7 +32,6 @@ fn noise(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-// Simple value noise
 fn value_noise(st: vec2<f32>) -> f32 {
     let i = floor(st);
     let f = fract(st);
@@ -44,33 +42,34 @@ fn value_noise(st: vec2<f32>) -> f32 {
                    noise(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
+  let resolution = u.config.zw;
   var uv = vec2<f32>(global_id.xy) / resolution;
   var mousePos = u.zoom_config.yz;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
 
-  let separation = u.zoom_params.x * 0.1 * (1.0 + bass * 0.3); // Max 0.1 UV units
-  let warpScale = u.zoom_params.y * 20.0 + 1.0;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let separation = clamp(u.zoom_params.x * 0.1 * (1.0 + bass * 0.3), 0.0, 0.2);
+  let warpScale = u.zoom_params.y * 20.0 + 1.0 + mids * 5.0;
   let mouseInf = u.zoom_params.z;
   let speed = u.zoom_params.w * 2.0;
 
-  var warpStr = 0.02; // Base warp strength
+  var warpStr = 0.02 + treble * 0.01;
 
-  // Increase warp near mouse
-  if (mousePos.x >= 0.0) {
-      let aspect = resolution.x / resolution.y;
-      let dVec = uv - mousePos;
-      let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
-
-      let influenceRadius = 0.3;
-      let influence = 1.0 - smoothstep(0.0, influenceRadius, dist);
-      warpStr += influence * mouseInf * 0.1;
-  }
+  // Branchless mouse influence
+  let mouseActive = step(0.0, mousePos.x);
+  let aspect = resolution.x / max(resolution.y, 0.001);
+  let dVec = uv - mousePos;
+  let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+  let influenceRadius = 0.3;
+  let influence = 1.0 - smoothstep(0.0, influenceRadius, dist);
+  warpStr += influence * mouseInf * 0.1 * mouseActive;
 
   // Generate warp fields for R, G, B
   let t = time * speed;
@@ -90,9 +89,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let warpMag = length(offR - offB);
   let luma = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(warpMag * 8.0 + separation * 6.0 + luma * 0.2, 0.0, 1.0);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, alpha));
+  let finalColor = vec4<f32>(r, g, b, alpha);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  textureStore(dataTextureA, global_id.xy, finalColor);
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

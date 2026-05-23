@@ -6,7 +6,8 @@
   "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

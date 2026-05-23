@@ -2095,7 +2095,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2958,7 +2959,8 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3771,7 +3773,10 @@
     "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
     "features": [
       "mouse-driven",
-      "multi-pass"
+      "multi-pass",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "datamosh",
@@ -4188,6 +4193,61 @@
     ]
   },
   {
+    "id": "analog-film-degrade",
+    "name": "Analog Film Degrade",
+    "url": "/shaders/analog-film-degrade.wgsl",
+    "category": "image",
+    "description": "Vintage film degradation with grain, dust, scratches, color fading, and vignette.",
+    "tags": [
+      "film",
+      "vintage",
+      "grain",
+      "dust",
+      "scratches",
+      "sepia",
+      "vignette",
+      "retro"
+    ],
+    "features": [
+      "upgraded-rgba",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "grain_intensity",
+        "name": "Grain Intensity",
+        "default": 0.15,
+        "min": 0,
+        "max": 0.6,
+        "step": 0.01
+      },
+      {
+        "id": "fade_amount",
+        "name": "Fade Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "scratch_freq",
+        "name": "Scratch Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "vignette_strength",
+        "name": "Vignette Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "bismuth-crystallizer",
     "name": "Bismuth Crystallizer",
     "url": "shaders/bismuth-crystallizer.wgsl",
@@ -4399,7 +4459,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
     "params": [
@@ -5365,6 +5426,62 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "crt-scanline-damage",
+    "name": "CRT Scanline Damage",
+    "url": "/shaders/crt-scanline-damage.wgsl",
+    "category": "image",
+    "description": "Damaged CRT monitor simulation with scanlines, phosphor mask, barrel distortion, flicker, and occasional vertical roll.",
+    "tags": [
+      "crt",
+      "scanline",
+      "retro",
+      "distortion",
+      "glitch",
+      "phosphor",
+      "monitor",
+      "damaged"
+    ],
+    "features": [
+      "upgraded-rgba",
+      "temporal",
+      "glitch"
+    ],
+    "params": [
+      {
+        "id": "scanline_intensity",
+        "name": "Scanline Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "id": "distortion_amount",
+        "name": "Distortion Amount",
+        "default": 0.15,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "id": "flicker_speed",
+        "name": "Flicker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "rgb_separation",
+        "name": "RGB Separation",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
         "step": 0.01
       }
     ]
@@ -6753,6 +6870,55 @@
         "min": 0.05,
         "max": 0.5,
         "step": 0.01
+    "id": "posterize-neon-edges",
+    "name": "Posterize Neon Edges",
+    "url": "/shaders/posterize-neon-edges.wgsl",
+    "category": "image",
+    "description": "Posterization combined with Sobel edge detection and neon glow for a stylized comic-book look.",
+    "tags": [
+      "posterize",
+      "neon",
+      "edge",
+      "glow",
+      "comic",
+      "stylized",
+      "artistic"
+    ],
+    "features": [
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "levels",
+        "name": "Posterize Levels",
+        "default": 6,
+        "min": 2,
+        "max": 16,
+        "step": 1
+      },
+      {
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
+        "default": 0.3,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01
+      },
+      {
+        "id": "hue_shift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
       }
     ]
   },
@@ -6978,6 +7144,59 @@
     "tags": [
       "filter",
       "image-processing"
+    ]
+  },
+  {
+    "id": "soft-vignette-bloom",
+    "name": "Soft Vignette Bloom",
+    "url": "/shaders/soft-vignette-bloom.wgsl",
+    "category": "image",
+    "description": "Cinematic soft vignette with selective bloom on bright areas and adjustable color temperature.",
+    "tags": [
+      "vignette",
+      "bloom",
+      "cinematic",
+      "warm",
+      "cool",
+      "soft",
+      "dreamy"
+    ],
+    "features": [
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "vignette_strength",
+        "name": "Vignette Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "id": "bloom_radius",
+        "name": "Bloom Radius",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01
+      },
+      {
+        "id": "temperature",
+        "name": "Temperature",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloom_intensity",
+        "name": "Bloom Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -7456,6 +7675,62 @@
     "tags": [
       "filter",
       "image-processing"
+    ]
+  },
+  {
+    "id": "vhs-chroma-bleed",
+    "name": "VHS Chroma Bleed",
+    "url": "/shaders/vhs-chroma-bleed.wgsl",
+    "category": "image",
+    "description": "VHS tape aesthetic with horizontal chroma separation, luma noise, tracking jitter, and color burst errors.",
+    "tags": [
+      "vhs",
+      "retro",
+      "glitch",
+      "chroma",
+      "noise",
+      "jitter",
+      "tape",
+      "analog"
+    ],
+    "features": [
+      "upgraded-rgba",
+      "temporal",
+      "glitch"
+    ],
+    "params": [
+      {
+        "id": "chroma_shift",
+        "name": "Chroma Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "noise_intensity",
+        "name": "Noise Intensity",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "id": "jitter_amount",
+        "name": "Jitter Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bleed_width",
+        "name": "Bleed Width",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -8642,7 +8917,9 @@
     "category": "image",
     "url": "shaders/digital-haze.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8731,7 +9008,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -8973,7 +9251,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -10661,7 +10941,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "depth-aware"
     ],
     "params": [
       {
@@ -11220,7 +11502,10 @@
     "url": "shaders/molten-glass.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Melts the image under the mouse cursor like hot glass.",
     "params": [
@@ -11340,7 +11625,10 @@
     ],
     "features": [
       "mouse-driven",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -11432,7 +11720,9 @@
       "mouse-driven",
       "image",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -11833,7 +12123,10 @@
     ],
     "features": [
       "mouse-driven",
-      "image"
+      "image",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -12011,7 +12304,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -13127,7 +13423,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -13284,7 +13582,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -13883,7 +14184,10 @@
     ],
     "features": [
       "mouse-driven",
-      "history"
+      "history",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -14310,7 +14614,10 @@
     ],
     "features": [
       "mouse-driven",
-      "image"
+      "image",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -16250,7 +16557,10 @@
     "features": [
       "mouse-driven",
       "glitch",
-      "stateful"
+      "stateful",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -16592,7 +16902,10 @@
     "url": "shaders/pixel-rain.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Matrix-style digital rain. Mouse repels and highlights drops.",
     "params": [
@@ -16782,7 +17095,10 @@
     "url": "shaders/vhs-tracking.wgsl",
     "category": "image",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Simulates VCR tracking errors with scanline tearing and chromatic aberration.",
     "params": [
@@ -16859,7 +17175,10 @@
     "features": [
       "retro",
       "texture",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -17067,7 +17386,10 @@
     "features": [
       "interactive",
       "simulation",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
     ],
     "description": "Simulates a mechanical split-flap display where the image is made of rotating tiles.",
     "params": [

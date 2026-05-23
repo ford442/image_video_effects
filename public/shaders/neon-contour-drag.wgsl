@@ -61,18 +61,24 @@ fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
     return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<f32>(u.config.zw);
+    if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / dims;
     let aspect = dims.x / dims.y;
 
+    // Audio: bass thickens edges, mids feeds glow, treble cycles hue
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
     // x: edgeStrength, y: dragRadius, z: glowIntensity, w: colorShift
-    let edgeStrength = u.zoom_params.x * 5.0;
+    let edgeStrength = u.zoom_params.x * 5.0 * (1.0 + bass * 0.5);
     let dragRadius = u.zoom_params.y;
-    let glowIntensity = u.zoom_params.z * 2.0;
-    let colorShift = u.zoom_params.w;
+    let glowIntensity = u.zoom_params.z * 2.0 * (1.0 + mids * 0.6);
+    let colorShift = u.zoom_params.w + treble * 0.2;
     let occlusionBalance = 0.5;
 
     // Mouse interaction

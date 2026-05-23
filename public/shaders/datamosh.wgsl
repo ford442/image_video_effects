@@ -115,25 +115,30 @@ fn quantize_to_block(coord: vec2<i32>, block_size: i32) -> vec2<i32> {
   );
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   let dim = vec2<i32>(textureDimensions(readTexture));
-  
+
   // Bounds check
   if (coord.x >= dim.x || coord.y >= dim.y) {
     return;
   }
-  
+
   let resolution = vec2<f32>(dim);
   let uv = vec2<f32>(coord) / resolution;
   let time = u.config.x;
   let frame_count = u.config.y;
-  
+
+  // Audio: bass amplifies motion smear, mids deepens blend, treble shortens I-frames
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
   // Parameters
-  let motion_strength = u.zoom_params.x * 20.0;      // Scale motion vectors
-  let iframe_interval = u.zoom_params.y * 120.0 + 5.0; // Frames between I-frames (5-125)
-  let blend_amount = u.zoom_params.z * 0.95 + 0.05;    // How much to blend (0.05-1.0)
+  let motion_strength = u.zoom_params.x * 20.0 * (1.0 + bass * 0.8);      // Scale motion vectors
+  let iframe_interval = (u.zoom_params.y * 120.0 + 5.0) * (1.0 - treble * 0.4); // Frames between I-frames
+  let blend_amount = clamp(u.zoom_params.z * 0.95 + 0.05 + mids * 0.2, 0.05, 1.0);    // How much to blend
   let feedback_decay = u.zoom_params.w * 0.1;          // Decay rate for old smears
   
   // Macroblock size (like MPEG compression blocks)

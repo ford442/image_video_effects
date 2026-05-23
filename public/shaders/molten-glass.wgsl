@@ -25,7 +25,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);
@@ -37,10 +37,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(coord) / resolution;
     let time = u.config.x;
 
+    // Audio: bass adds heat injection, mids feeds viscosity wobble, treble sharpens refraction
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Parameters
     let heatRadius = u.zoom_params.x * 0.2;
-    let viscosity = u.zoom_params.y;
-    let refraction = u.zoom_params.z * 0.1;
+    let viscosity = u.zoom_params.y * (1.0 + mids * 0.5);
+    let refraction = u.zoom_params.z * 0.1 * (1.0 + treble * 0.6);
     let coolingRate = 0.01 + u.zoom_params.w * 0.1;
     let glassDensity = 0.5 + u.zoom_params.w * 2.0; // Beer-Lambert density
 
@@ -57,9 +62,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Decay heat
     heat = max(0.0, heat - coolingRate);
 
-    // Add heat from mouse
+    // Add heat from mouse (bass pulses the injection)
     let influence = smoothstep(heatRadius, 0.0, dist);
-    heat = min(1.0, heat + influence * 0.5);
+    heat = min(1.0, heat + influence * (0.5 + bass * 0.4));
 
     // Write new heat state
     textureStore(dataTextureA, coord, vec4<f32>(heat, 0.0, 0.0, 1.0));
@@ -113,4 +118,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + vec4<f32>(gloss, gloss, gloss, 0.0);
 
     textureStore(writeTexture, coord, color);
+
+    // Depth pass-through, brought slightly forward where glass is hottest
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth - heat * 0.1, 0.0, 0.0, 0.0));
 }

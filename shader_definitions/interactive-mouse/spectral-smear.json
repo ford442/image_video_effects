@@ -36,7 +36,10 @@
   ],
   "features": [
     "mouse-driven",
-    "history"
+    "history",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",

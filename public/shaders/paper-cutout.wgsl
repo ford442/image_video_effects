@@ -23,7 +23,7 @@ fn getLuma(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<i32>(textureDimensions(writeTexture));
   if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
@@ -32,10 +32,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   var uv = vec2<f32>(coord) / vec2<f32>(dims);
 
+  // Audio: bass deepens layering, mids lengthens shadows, treble softens edges
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
   // Params
-  let num_layers = mix(2.0, 10.0, u.zoom_params.x);
-  let shadow_dist = u.zoom_params.y * 0.1;
-  let softness = u.zoom_params.z;
+  let num_layers = mix(2.0, 10.0, u.zoom_params.x) * (1.0 + bass * 0.3);
+  let shadow_dist = u.zoom_params.y * 0.1 * (1.0 + mids * 0.5);
+  let softness = clamp(u.zoom_params.z + treble * 0.3, 0.0, 1.0);
   let separation = u.zoom_params.w;
 
   // Mouse interaction for light direction
@@ -97,7 +102,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Apply shadow
   let final_color = paper_color * (1.0 - shadow);
 
-  textureStore(writeTexture, coord, vec4<f32>(final_color, 1.0));
+  // Layer-aware alpha: shadowed valleys recede, lit layers stay opaque
+  let alpha = clamp(quantized_luma * (1.0 - shadow * 0.5) + 0.2, 0.0, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;

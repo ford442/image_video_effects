@@ -31,7 +31,7 @@ fn get_mouse() -> vec2<f32> {
     return mouse;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
@@ -46,12 +46,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = get_mouse();
     let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
 
-    let radius = u.zoom_params.x;
-    let beam_width = u.zoom_params.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let radius = u.zoom_params.x * (1.0 + mids * 0.3);
+    let beam_width = u.zoom_params.y * (1.0 + treble * 0.4);
     let softness = u.zoom_params.z;
     let ambient = u.zoom_params.w;
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
 
     let dist = distance(uv_aspect, mouse_aspect);
     let angle = atan2(uv_aspect.y - mouse_aspect.y, uv_aspect.x - mouse_aspect.x);

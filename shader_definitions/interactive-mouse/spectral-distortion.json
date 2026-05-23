@@ -38,7 +38,8 @@
     "mouse-driven",
     "temporal-persistence",
     "glitch",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

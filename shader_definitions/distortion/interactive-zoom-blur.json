@@ -6,7 +6,8 @@
   "description": "Radial zoom blur centered on the mouse cursor with audio-reactive intensity and chromatic aberration.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

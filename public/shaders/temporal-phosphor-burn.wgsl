@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Phosphor Burn
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-05-23
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
@@ -54,11 +55,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
 
-  // Per-channel CRT decay rates — map [0,1] param to [0.85,0.99]
-  let decayR = 0.85 + u.zoom_params.x * 0.14;
-  let decayG = 0.85 + u.zoom_params.y * 0.14;
-  let decayB = 0.85 + u.zoom_params.z * 0.14;
-  let lumFloor = u.zoom_params.w * 0.10;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
+  // Per-channel CRT decay rates — bass extends phosphor persistence
+  let decayR = clamp(0.85 + u.zoom_params.x * 0.14 + bass * 0.04, 0.0, 0.999);
+  let decayG = clamp(0.85 + u.zoom_params.y * 0.14 + bass * 0.02, 0.0, 0.999);
+  let decayB = clamp(0.85 + u.zoom_params.z * 0.14, 0.0, 0.999);
+  let lumFloor = u.zoom_params.w * 0.10 + mids * 0.02;
 
   // Current input frame
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -86,5 +90,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Optional global luminance floor
   burned = max(burned, vec3<f32>(lumFloor));
 
-  textureStore(writeTexture, coord, vec4<f32>(burned, current.a));
+  // Alpha: luminance of the burn excess above current, boosted by bass
+  let burnLuma = dot(max(burned - current.rgb, vec3<f32>(0.0)), vec3<f32>(0.299, 0.587, 0.114));
+  let alpha = clamp(current.a * 0.5 + burnLuma * 2.0 + bass * 0.15, 0.0, 1.0);
+  let finalOut = vec4<f32>(burned, alpha);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, finalOut);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, finalOut);
 }

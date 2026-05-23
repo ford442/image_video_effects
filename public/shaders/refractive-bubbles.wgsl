@@ -1,8 +1,10 @@
-// ═══════════════════════════════════════════════════════════════
-// Refractive Bubbles - Physical glass transmission with Beer-Lambert law
-// Category: distortion
-// Features: bubble refraction, specular highlights, physically-based alpha
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Refractive Bubbles
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -28,15 +30,21 @@ struct Uniforms {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    let coord = vec2<i32>(global_id.xy);
+    if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     var mouse = u.zoom_config.yz;
 
-    let size = u.zoom_params.x * 0.15 + 0.01;
-    let refrStrength = u.zoom_params.y * 0.2;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Bass pulses bubble size and refraction strength
+    let size = (u.zoom_params.x * 0.15 + 0.01) * (1.0 + bass * 0.3);
+    let refrStrength = u.zoom_params.y * 0.2 * (1.0 + mids * 0.4);
     let count = i32(u.zoom_params.z * 15.0) + 1;
     let wobble = u.zoom_params.w;
-    let glassDensity = 0.8 + u.zoom_params.w * 1.5; // Beer-Lambert density
+    let glassDensity = 0.8 + u.zoom_params.w * 1.5;
 
     let aspect = resolution.x / resolution.y;
 
@@ -45,6 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var bubbleNormal = vec3<f32>(0.0, 0.0, 1.0);
     var bubbleDepth = 0.0;
     var bubbleThickness = 0.0;
+    var minBubbleDist = 9.9;
 
     for (var i = 0; i < count; i++) {
         let fi = f32(i);
@@ -61,6 +70,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Distance to this bubble center
         let dVec = (uv - bubblePos) * vec2<f32>(aspect, 1.0);
         let d = length(dVec);
+        minBubbleDist = min(minBubbleDist, d);
 
         if (d < size) {
             // Sphere normal approximation
@@ -115,9 +125,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fresnelEdge = pow(length(bubbleNormal.xy), 3.0);
         color = mix(color, vec4<f32>(0.8, 0.9, 1.0, 1.0), fresnelEdge * 0.3);
     } else {
-        // Outside bubble - fully transparent
-        color = vec4<f32>(color.rgb, 1.0);
+        // Outside bubble — alpha encodes proximity to nearest bubble edge
+        let edgeProx = clamp(1.0 - minBubbleDist / max(size, 0.001) * 0.5, 0.0, 1.0) * 0.2 + bass * 0.05;
+        color = vec4<f32>(color.rgb, clamp(edgeProx, 0.0, 1.0));
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, coord, color);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, color);
 }

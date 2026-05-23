@@ -3,11 +3,12 @@
   "name": "Neon Pulse Edge",
   "url": "shaders/neon-pulse-edge.wgsl",
   "category": "lighting-effects",
-  "description": "3×3 Sobel edge detection with multi-layer bloom (tight core + wide halo + diffuse), direction-based hue cycling, depth-aware glow intensity, and audio-reactive pulsing.",
+  "description": "3\u00d73 Sobel edge detection with multi-layer bloom (tight core + wide halo + diffuse), direction-based hue cycling, depth-aware glow intensity, and audio-reactive pulsing.",
   "features": [
     "mouse-driven",
     "depth-aware",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
