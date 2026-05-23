@@ -49,6 +49,8 @@ export interface ShaderEntry {
     params?: ShaderParam[];
     advanced_params?: ShaderParam[];
     features?: string[];
+    /** When true, shader requires @workgroup_size(16,16,4) = 1024-invocation support. */
+    requiresDeepWorkgroup?: boolean;
 }
 
 export interface SlotParams {

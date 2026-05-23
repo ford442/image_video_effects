@@ -342,6 +342,8 @@ export interface ApiShaderEntry {
   tags: string[];
   url?: string;
   params?: ShaderParam[];  // Shader parameter definitions for UI sliders
+  /** When true, shader requires @workgroup_size(16,16,4) = 1024-invocation support. */
+  requiresDeepWorkgroup?: boolean;
 }
 
 export interface ShaderCoordinateData {
@@ -444,6 +446,7 @@ class ShaderApiService {
       'image', 'generative', 'distortion', 'simulation', 'visual-effects',
       'artistic', 'retro-glitch', 'geometric', 'lighting-effects',
       'liquid-effects', 'interactive-mouse', 'post-processing',
+      'advanced-hybrid', 'hybrid',
     ];
 
     const allShaders: ApiShaderEntry[] = [];
@@ -464,6 +467,7 @@ class ShaderApiService {
           category: shader.category || category,  // Use shader's own category or the file category
           tags: shader.tags || [],
           url: shader.url ? `./${shader.url}` : `./shaders/${shader.id}.wgsl`,
+          requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
           params: (shader.params || []).map((p: any, idx: number) => ({
             id: p.id || p.name || `param${idx + 1}`,
             name: p.label || p.name || `Parameter ${idx + 1}`,

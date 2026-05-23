@@ -203,7 +203,14 @@ export class WebGPURenderer implements Renderer {
   // Subgroup operations support (Chrome 128+)
   private supportsSubgroups: boolean = false;
 
+  // Deep-workgroup support: @workgroup_size(16,16,4) = 1024 invocations
+  // True on Apple M1/M2/M3, NVIDIA RTX, AMD RDNA2+; false on Intel UHD / older mobile
+  private supportsDeepWorkgroup: boolean = false;
+
   constructor(private config: RendererConfig) {}
+
+  /** Returns true if the GPU supports 1024-invocation workgroups (16×16×4). */
+  getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
 
   // ── Initialisation ─────────────────────────────────────────────────────────
 
@@ -276,6 +283,19 @@ export class WebGPURenderer implements Renderer {
       console.log('[WebGPU] Subgroup operations enabled — fast -sg variants will be preferred');
     }
 
+    // Deep-workgroup capability: @workgroup_size(16,16,4) = 1024 invocations.
+    // Supported on Apple M1+, NVIDIA RTX, AMD RDNA2+; NOT on Intel UHD (limit=256).
+    // We query the adapter limits before the device is created so we use
+    // adapter.limits (the actual hardware limit) rather than device.limits
+    // (which may be capped to the default requested limit).
+    const maxInvocations = (adapter as any).limits?.maxComputeInvocationsPerWorkgroup ?? 256;
+    this.supportsDeepWorkgroup = maxInvocations >= 1024;
+    if (this.supportsDeepWorkgroup) {
+      console.log('[WebGPU] Deep-workgroup (16×16×4 = 1024 invocations) supported');
+    } else {
+      console.log(`[WebGPU] Deep-workgroup NOT supported (maxComputeInvocationsPerWorkgroup=${maxInvocations}); requiresDeepWorkgroup shaders will be filtered out`);
+    }
+
     // Forward uncaptured GPU errors to console during development
     this.device.addEventListener('uncapturederror', (ev) => {
       console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
@@ -342,7 +362,8 @@ export class WebGPURenderer implements Renderer {
       `✅ TypeScript WebGPU renderer initialized ` +
       `(${this.canvasW}×${this.canvasH}` +
       `${hasF32Filt ? ', float32-filterable' : ''}` +
-      `${this.supportsSubgroups ? ', subgroups' : ''})`
+      `${this.supportsSubgroups ? ', subgroups' : ''}` +
+      `${this.supportsDeepWorkgroup ? ', deep-workgroup' : ''})`
     );
     return true;
   }

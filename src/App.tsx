@@ -280,6 +280,9 @@ function MainApp() {
     const [shadersReady, setShadersReady] = useState(false);
     const initialBootAppliedRef = useRef(false);
 
+    // --- State: GPU Capabilities ---
+    const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
+
     // --- Refs ---
     const rendererRef = useRef<Renderer | null>(null);
 
@@ -511,6 +514,7 @@ function MainApp() {
                     tags: shader.tags || [],
                     rating: shader.rating,
                     hasErrors: shader.has_errors,
+                    requiresDeepWorkgroup: (shader as any).requiresDeepWorkgroup === true,
                     params: (shader.params || []).map((p: any, idx: number) => ({
                         id: p.id || p.name || `param${idx + 1}`,
                         name: p.label || p.name || `Parameter ${idx + 1}`,
@@ -563,6 +567,30 @@ function MainApp() {
         loadShaders();
         return () => { isMounted = false; };
     }, []);
+
+    // --- Filter shaders that require unsupported GPU capabilities ---
+    // Runs reactively: after renderer init (rendererReady) or after shader list changes.
+    // Self-terminating: once deep-workgroup shaders are removed, the list no longer
+    // contains any requiresDeepWorkgroup entries, so subsequent runs are no-ops.
+    useEffect(() => {
+        if (!rendererReady) return;
+        const skipped: string[] = [];
+        const filtered = availableModes.filter(s => {
+            if (s.requiresDeepWorkgroup && !supportsDeepWorkgroup) {
+                skipped.push(s.id);
+                return false;
+            }
+            return true;
+        });
+        if (skipped.length > 0) {
+            console.log(
+                `[Shaders] ${skipped.length} shader(s) require deep-workgroup (16×16×4) ` +
+                `which is not supported on this GPU — hiding from list: ${skipped.join(', ')}`
+            );
+            setAvailableModes(filtered);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rendererReady, supportsDeepWorkgroup, availableModes]);
 
     // --- Image Loading ---
     const runDepthAnalysis = useCallback(async (imageUrl: string) => {
@@ -739,6 +767,9 @@ function MainApp() {
             if (rendererRef.current.getAvailableModes) {
                 setAvailableModes(rendererRef.current.getAvailableModes());
             }
+            // Record deep-workgroup hardware capability so we can filter shaders
+            const deepWg = rendererRef.current.getSupportsDeepWorkgroup?.() ?? false;
+            setSupportsDeepWorkgroup(deepWg);
             setRendererReady(true);
         }
     }, []);
