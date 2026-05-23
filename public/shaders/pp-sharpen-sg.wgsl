@@ -1,39 +1,46 @@
 // ═══════════════════════════════════════════════════════════════════
 //  pp-sharpen-sg
 //  Category: post-processing
-//  Features: sharpening, subgroups, edge-enhancement
+//  Features: sharpening, subgroups, shared-memory, edge-enhancement
 //  Complexity: Medium
 //  Chunks From: pp-sharpen.wgsl
 //  Created: 2026-05-23
 //  By: Copilot — Subgroup Ops Pioneer
 // ═══════════════════════════════════════════════════════════════════
-//  Subgroup variant of pp-sharpen.wgsl.
+//  Subgroup + shared-memory variant of pp-sharpen.wgsl.
 //
-//  KEY OPTIMISATION — 5-point Laplacian neighbor reads:
-//    Base shader (pp-sharpen.wgsl): blur3x3 uses 9 textureSampleLevel
-//    calls per thread to gather all 8 neighbors + center.
+//  OPTIMISATION STRATEGY
+//  ─────────────────────
+//  Base shader (pp-sharpen.wgsl): blur3x3 issues 9 textureSampleLevel
+//  calls per thread (8 neighbours + centre).
 //
-//    This shader: each thread samples only its own center pixel (1 sample).
-//    The four cardinal neighbors are obtained via subgroupShuffle:
-//      • left  / right : subgroupShuffleUp/Down( , 1 )  — horizontal stride 1
-//      • up    / down  : subgroupShuffleUp/Down( , 16)  — vertical stride 16
+//  This shader uses two complementary techniques to reduce that to ~2:
 //
-//    For @workgroup_size(16,16,1) the local invocation index of thread (x,y)
-//    is y*16+x, so thread (x,y-1) lives at lidx-16 and (x,y+1) at lidx+16.
-//    Both are in the same 32-lane subgroup for all interior rows (y∈[1,14]).
+//  A) var<workgroup> sharedLuma  (18×18 NOT needed here; 16×16 suffices
+//     for the vertical 3-tap because we only need ±1 row of the *current*
+//     tile, which is always present in the same workgroup).
 //
-//    At tile borders (x==0, x==15, y==0, y==15) the shuffle result is
-//    undefined for out-of-bounds lanes; those positions fall back to a
-//    regular texture sample.  Border pixels amount to ≈24% of the workgroup
-//    (the outer ring), so ≈76% of threads use zero extra samples.
+//     Each thread loads its centre luminance into shared memory once, then
+//     reads sharedLuma[lid.y±1][lid.x] for the up/down neighbours.  This
+//     eliminates 2 texture samples for ≈87% of threads (all except top/
+//     bottom rows of the tile).
 //
-//  Average texture samples per thread:
-//    Base:  ~9  (blur3x3 full neighborhood)
-//    -sg:   ~1.5 (1 center + ~0.25 border boundary samples × 2 axes)
+//  B) subgroupShuffleUp/Down(val, 1)  for left/right neighbours.
+//     Within a 16-wide row the WGSL local_invocation_index stride is 1,
+//     and all known WebGPU implementations assign subgroup lanes in
+//     local_invocation_index order within a workgroup.  On hardware that
+//     exposes the `subgroups` feature this is therefore reliable in
+//     practice, though the WGSL spec does not formally guarantee it.
+//     At horizontal tile borders (lid.x == 0 or 15) we fall back to a
+//     texture sample; these account for 2/16 ≈ 12.5% of threads.
 //
-//  The `enable subgroups;` directive makes this module fail on browsers
-//  without subgroup support.  The renderer probes this file first and
-//  falls back to pp-sharpen.wgsl when unsupported.
+//  Net average texture samples per thread (interior 14×14 block):
+//    Base  : ~9 (full 3×3 blur neighbourhood)
+//    -sg   : ~1.25 (1 centre + 0 V-reads from shared + ≤0.25 H-fallbacks)
+//
+//  The `enable subgroups;` directive makes this module fail compilation
+//  on browsers without subgroup support.  The renderer probes this file
+//  first and falls back to pp-sharpen.wgsl transparently.
 // ═══════════════════════════════════════════════════════════════════
 
 enable subgroups;
@@ -60,93 +67,103 @@ struct Uniforms {
 };
 
 const LUMA_WEIGHT: vec3<f32> = vec3<f32>(0.299, 0.587, 0.114);
+const TILE_W: u32 = 16u;
+const TILE_H: u32 = 16u;
 
-// ═══════════════════════════════════════════════════════════════════
-// Subgroup shuffle helpers
-//
-// subgroupShuffleUp(val, delta)   → value from lane (thisLane - delta)
-// subgroupShuffleDown(val, delta) → value from lane (thisLane + delta)
-//
-// For a 16×16 workgroup the linear invocation index is  lidx = y*16 + x.
-// Stride-1  shuffles move ±1 pixel horizontally (within the same row).
-// Stride-16 shuffles move ±1 pixel vertically   (within a 32-lane subgroup
-// that spans exactly two consecutive rows of 16 threads).
-// ═══════════════════════════════════════════════════════════════════
+// ── Shared memory ─────────────────────────────────────────────────
+// 16×16 luminance tile.  Each thread writes its own luma, then reads
+// neighbours from adjacent rows after the workgroupBarrier.
+var<workgroup> sharedLuma: array<f32, 256>;  // TILE_W * TILE_H
 
 @compute @workgroup_size(16, 16, 1)
 fn main(
     @builtin(global_invocation_id) gid: vec3<u32>,
     @builtin(local_invocation_id)  lid: vec3<u32>,
+    @builtin(local_invocation_index) lidx: u32,
 ) {
     let res    = u.config.zw;
     let invRes = 1.0 / res;
     let uv     = (vec2<f32>(gid.xy) + 0.5) / res;
 
-    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) {
-        return;
-    }
+    let inBounds = gid.x < u32(res.x) && gid.y < u32(res.y);
 
     let strength     = mix(0.0, 2.0, u.zoom_params.x);
     let haloControl  = mix(0.0, 1.0, u.zoom_params.y);
     let edgeBoost    = mix(0.0, 1.0, u.zoom_params.z);
     let colorPreserve = u.zoom_params.w;
 
-    // ── 1. Load center pixel (1 texture sample per thread) ──────────────────
+    // ── 1. Load centre pixel (1 texture sample per thread) ──────────────────
     let center    = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let centerLum = dot(center.rgb, LUMA_WEIGHT);
 
-    // ── 2. Gather cardinal neighbors via subgroup shuffles ───────────────────
-    //
-    //  ±1  → horizontal neighbors (left / right within the same row)
-    //  ±16 → vertical neighbors   (up / down — stride matches row width=16)
-    //
-    //  For edge lanes the shuffle returns data from the last/first active lane
-    //  of the subgroup (undefined/clamp semantics vary by GPU).  We always
-    //  replace boundary results with a proper texture sample below.
+    // ── 2. Write luminance into shared memory for cross-row reads ────────────
+    sharedLuma[lidx] = centerLum;
+    workgroupBarrier();
 
+    // ── 3. Vertical neighbours from shared memory (0 extra texture samples
+    //       for interior rows; 1 texture sample only at tile top/bottom) ──────
+    //
+    //  Safe index: when lid.y == 0, upIdx == lidx (reads the centre itself,
+    //  result is then overridden by the fallback texture sample via select).
+    let upIdx = select(lidx, lidx - TILE_W, lid.y > 0u);
+    let dnIdx = select(lidx, lidx + TILE_W, lid.y < TILE_H - 1u);
+    let lum_u_sm = sharedLuma[upIdx];
+    let lum_d_sm = sharedLuma[dnIdx];
+
+    var lum_u: f32;
+    var lum_d: f32;
+    if (lid.y == 0u) {
+        lum_u = dot(textureSampleLevel(readTexture, u_sampler,
+            uv - vec2<f32>(0.0, invRes.y), 0.0).rgb, LUMA_WEIGHT);
+    } else {
+        lum_u = lum_u_sm;
+    }
+    if (lid.y == TILE_H - 1u) {
+        lum_d = dot(textureSampleLevel(readTexture, u_sampler,
+            uv + vec2<f32>(0.0, invRes.y), 0.0).rgb, LUMA_WEIGHT);
+    } else {
+        lum_d = lum_d_sm;
+    }
+
+    // ── 4. Horizontal neighbours via subgroup shuffle (stride-1) ─────────────
+    //
+    //  subgroupShuffleUp(val, 1)   → value from lane (thisLane - 1)  i.e. left
+    //  subgroupShuffleDown(val, 1) → value from lane (thisLane + 1)  i.e. right
+    //
+    //  This relies on the de-facto mapping where subgroup lane N corresponds to
+    //  local_invocation_index N within each workgroup — true for all known
+    //  WebGPU implementations on hardware that exposes the 'subgroups' feature.
+    //  At tile borders the shuffle result is undefined; we replace it with a
+    //  regular texture sample (≈12.5% of threads).
     let lum_l_shuf = subgroupShuffleUp  (centerLum, 1u);
     let lum_r_shuf = subgroupShuffleDown(centerLum, 1u);
-    let lum_u_shuf = subgroupShuffleUp  (centerLum, 16u);
-    let lum_d_shuf = subgroupShuffleDown(centerLum, 16u);
 
-    // ── 3. Boundary fallbacks (only for the outer ring of each tile) ─────────
-    //  These branches affect ≈24% of threads; the GPU predicts them well.
+    var lum_l: f32;
+    var lum_r: f32;
+    if (lid.x == 0u) {
+        lum_l = dot(textureSampleLevel(readTexture, u_sampler,
+            uv - vec2<f32>(invRes.x, 0.0), 0.0).rgb, LUMA_WEIGHT);
+    } else {
+        lum_l = lum_l_shuf;
+    }
+    if (lid.x == TILE_W - 1u) {
+        lum_r = dot(textureSampleLevel(readTexture, u_sampler,
+            uv + vec2<f32>(invRes.x, 0.0), 0.0).rgb, LUMA_WEIGHT);
+    } else {
+        lum_r = lum_r_shuf;
+    }
 
-    let atLeft  = (lid.x == 0u);
-    let atRight = (lid.x == 15u);
-    let atTop   = (lid.y == 0u);
-    let atBot   = (lid.y == 15u);
-
-    let lum_l = select(lum_l_shuf,
-        dot(textureSampleLevel(readTexture, u_sampler,
-            uv - vec2<f32>(invRes.x, 0.0), 0.0).rgb, LUMA_WEIGHT), atLeft);
-
-    let lum_r = select(lum_r_shuf,
-        dot(textureSampleLevel(readTexture, u_sampler,
-            uv + vec2<f32>(invRes.x, 0.0), 0.0).rgb, LUMA_WEIGHT), atRight);
-
-    let lum_u = select(lum_u_shuf,
-        dot(textureSampleLevel(readTexture, u_sampler,
-            uv - vec2<f32>(0.0, invRes.y), 0.0).rgb, LUMA_WEIGHT), atTop);
-
-    let lum_d = select(lum_d_shuf,
-        dot(textureSampleLevel(readTexture, u_sampler,
-            uv + vec2<f32>(0.0, invRes.y), 0.0).rgb, LUMA_WEIGHT), atBot);
-
-    // ── 4. 5-point Laplacian ─────────────────────────────────────────────────
-    //  laplacian > 0 → local maximum (bright peak)
-    //  laplacian < 0 → local minimum (dark valley)
+    // ── 5. 5-point Laplacian ─────────────────────────────────────────────────
     let laplacian = lum_l + lum_r + lum_u + lum_d - 4.0 * centerLum;
 
-    // ── 5. Unsharp mask with halo control ────────────────────────────────────
-    //  haloControl > 0.5 clamps the boost to avoid bright haloes
+    // ── 6. Unsharp mask with halo control ────────────────────────────────────
     let rawBoost  = -laplacian * strength;
+    // haloControl > 0.5 suppresses negative overshoots that create bright haloes
     let safeBoost = select(rawBoost, max(rawBoost, 0.0), haloControl > 0.5 && laplacian < 0.0);
 
-    // ── 6. Apply to color channels ───────────────────────────────────────────
+    // ── 7. Apply to colour channels ──────────────────────────────────────────
     var outColor: vec3<f32>;
     if (colorPreserve > 0.5) {
-        // Luma-only sharpening: adjust luminance, preserve hue/saturation
         let newLum   = clamp(centerLum + safeBoost, 0.0, 1.0);
         let lumRatio = select(1.0, newLum / max(centerLum, 0.001), centerLum > 0.001);
         outColor = center.rgb * lumRatio;
@@ -154,14 +171,14 @@ fn main(
         outColor = center.rgb + safeBoost;
     }
 
-    // Optional edge boost — brightens detected edges slightly
-    let edgeMag  = abs(laplacian) * edgeBoost;
-    outColor    += vec3<f32>(edgeMag);
+    let edgeMag = abs(laplacian) * edgeBoost;
+    outColor   += vec3<f32>(edgeMag);
+    outColor    = clamp(outColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    outColor = clamp(outColor, vec3<f32>(0.0), vec3<f32>(1.0));
-
-    textureStore(writeTexture, gid.xy, vec4<f32>(outColor, center.a));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(laplacian, centerLum, safeBoost, 1.0));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    if (inBounds) {
+        textureStore(writeTexture, gid.xy, vec4<f32>(outColor, center.a));
+        textureStore(dataTextureA, gid.xy, vec4<f32>(laplacian, centerLum, safeBoost, 1.0));
+        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    }
 }

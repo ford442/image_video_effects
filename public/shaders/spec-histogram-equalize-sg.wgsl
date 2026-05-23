@@ -85,9 +85,17 @@ fn main(
     // votes into a single count, and only the elected (first active)
     // lane writes one atomicAdd for the whole subgroup.
     //
-    // Worst-case atomic ops = 256 (all threads in unique bins, same as
-    // base).  Typical-case savings ≈ subgroupSize× for dense bins,
-    // which is the common case for natural-image luma distributions.
+    // Each thread contributes to exactly one bin (its own luma bucket),
+    // so in the worst case (all threads in unique bins) the loop still
+    // performs 256 subgroupAdd + subgroupElect calls per thread — the
+    // same number of atomic ops as the base shader.  The benefit accrues
+    // when multiple threads in a subgroup share the same bin value
+    // (common for natural-image luma distributions), reducing atomics by
+    // up to subgroupSize×.
+    //
+    // A further optimisation (using subgroupBallot to identify unique
+    // bins first) would reduce the loop to ~uniqueBins iterations but
+    // is deferred to a future revision for clarity.
     // ═══════════════════════════════════════════════════════════════
     for (var b = 0u; b < 256u; b++) {
         let myContrib = select(0u, 1u, bin == b);

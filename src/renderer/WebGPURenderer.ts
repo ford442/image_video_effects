@@ -681,7 +681,7 @@ export class WebGPURenderer implements Renderer {
     // cannot be inlined alongside non-subgroup code in the same module.
     // We compile it under the same base ID so all downstream code (setSlotShader,
     // pipeline cache, bind-group lookups) requires zero changes.
-    if (this.supportsSubgroups && !id.endsWith('-sg')) {
+    if (this.supportsSubgroups && !id.endsWith('-sg') && url.endsWith('.wgsl')) {
       const sgUrl = url.replace(/\.wgsl$/, '-sg.wgsl');
       const wgsl = await tryFetch(sgUrl) ?? await tryFetch(`./shaders/${id}-sg.wgsl`);
       if (wgsl) {
@@ -693,14 +693,15 @@ export class WebGPURenderer implements Renderer {
           return true;
         }
       }
+      // -sg variant absent or failed to compile — fall through to base variant below
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[WebGPU] "${id}": no -sg variant found, using base variant`);
+      }
     }
 
     // Base variant (also serves as silent fallback when -sg is absent or fails)
     const wgsl = await tryFetch(url) ?? await tryFetch(`./shaders/${id}.wgsl`);
     if (!wgsl) return false;
-    if (this.supportsSubgroups && process.env.NODE_ENV !== 'production') {
-      console.log(`[WebGPU] "${id}": using base variant (no -sg found)`);
-    }
     return this.compileShader(id, wgsl);
   }
 
