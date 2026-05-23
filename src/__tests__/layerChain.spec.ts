@@ -186,7 +186,7 @@ describe('N-slot stacks', () => {
     expect(plan.copies.some((c) => c.from === 'writeTex' && c.to === 'readTex')).toBe(true);
   });
 
-  test('N=5: orchestrator flags physical slot limit but still produces plan', () => {
+  test('N=5: five chained slots produce a valid plan within the 6-slot limit', () => {
     const ids = Object.values(CATEGORY_REPS).slice(0, 5);
     const wgslMap: Record<string, string> = {};
     for (const id of ids) {
@@ -198,12 +198,48 @@ describe('N-slot stacks', () => {
       (sid) => wgslMap[sid] ?? null
     );
 
-    // Plan is produced but flagged as invalid due to slot limit
+    // 5 slots fit within PHYSICAL_SLOT_LIMIT=6 — plan should be valid
+    expect(plan.errors.some((e) => e.includes('exceeds physical renderer limit'))).toBe(false);
+    expectValidPlan(plan);
+    expect(plan.dispatches).toHaveLength(5);
+  });
+
+  test('N=6: six chained slots produce a valid plan exactly at the limit', () => {
+    const ids = Object.values(CATEGORY_REPS).slice(0, 6);
+    const wgslMap: Record<string, string> = {};
+    for (const id of ids) {
+      wgslMap[id] = loadWgsl(id)!;
+    }
+
+    const plan = orchestrateSlots(
+      ids.map((id, idx) => makeSlot(idx, id, 'chained')),
+      (sid) => wgslMap[sid] ?? null
+    );
+
+    expect(plan.errors.some((e) => e.includes('exceeds physical renderer limit'))).toBe(false);
+    expectValidPlan(plan);
+    expect(plan.dispatches).toHaveLength(6);
+  });
+
+  test('N=7: seven slots exceed PHYSICAL_SLOT_LIMIT=6 and are flagged invalid', () => {
+    // Use 7 distinct shader IDs (repeat some since we only have 14 category reps)
+    const allIds = Object.values(CATEGORY_REPS);
+    const ids = [...allIds.slice(0, 6), allIds[0]]; // 7 entries
+    const wgslMap: Record<string, string> = {};
+    for (const id of ids) {
+      if (!wgslMap[id]) wgslMap[id] = loadWgsl(id)!;
+    }
+
+    const plan = orchestrateSlots(
+      ids.map((id, idx) => makeSlot(idx, id, 'chained')),
+      (sid) => wgslMap[sid] ?? null
+    );
+
+    // 7 > PHYSICAL_SLOT_LIMIT=6 → error + invalid
     expect(plan.errors.some((e) => e.includes('exceeds physical renderer limit'))).toBe(true);
     expect(plan.valid).toBe(false);
-
-    // Still dispatches all 5 (theoretical)
-    expect(plan.dispatches).toHaveLength(5);
+    // Dispatches are still produced for all 7 (theoretical ordering preserved)
+    expect(plan.dispatches).toHaveLength(7);
   });
 });
 

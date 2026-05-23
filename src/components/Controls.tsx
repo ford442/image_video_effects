@@ -105,7 +105,7 @@ const Controls: React.FC<ControlsProps> = ({
     modes, setMode,
     activeSlot, setActiveSlot,
     slotParams, updateSlotParam,
-    slotShaderStatus = ['idle', 'idle', 'idle'],
+    slotShaderStatus = ['idle', 'idle', 'idle', 'idle', 'idle', 'idle'],
     shaderCategory, setShaderCategory,
     onNewImage,
     autoChangeEnabled, setAutoChangeEnabled,
@@ -695,7 +695,7 @@ const Controls: React.FC<ControlsProps> = ({
             {/* --- Stack / Slot Selection --- */}
             <div className="glass-panel" style={{padding: '12px'}}>
                 <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Shader Slots</div>
-                {[0, 1, 2].map(i => {
+                {modes.map((_, i) => {
                     const slotStatus = slotShaderStatus[i] || 'idle';
                     const borderColor = slotStatus === 'error' ? '#ff4757'
                         : slotStatus === 'loading' ? '#ffa502'

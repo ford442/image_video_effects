@@ -201,19 +201,22 @@ function MainApp() {
 
     // --- State: General & Stacking ---
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
-    const [modes, setModes] = useState<RenderMode[]>(['none', 'none', 'none']);
+    const [modes, setModes] = useState<RenderMode[]>(['none', 'none', 'none', 'none', 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
     const [slotParams, setSlotParams] = useState<SlotParams[]>([
         defaultSlotParams,
         defaultSlotParams,
-        defaultSlotParams
+        defaultSlotParams,
+        defaultSlotParams,
+        defaultSlotParams,
+        defaultSlotParams,
     ]);
 
     // --- State: Automation & Status ---
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
     const [status, setStatus] = useState('Ready.');
-    const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle']);
+    const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
     
     // --- State: AI Models & VJ ---
     const [depthEstimator, setDepthEstimator] = useState<any>(null);
@@ -300,7 +303,7 @@ function MainApp() {
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
     // Mirrors slotShaderStatus state so setMode can read it without being in its dep array
-    const slotShaderStatusRef = useRef<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle']);
+    const slotShaderStatusRef = useRef<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
     // Direct ref to the WebGPU canvas — set via onCanvasRef callback (avoids fragile querySelector)
     const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -972,7 +975,7 @@ function MainApp() {
         }
 
         const names: string[] = [];
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < modes.length; i++) {
             const randomShader = getRandomShader();
             if (randomShader) {
                 setMode(i, randomShader.id as RenderMode);
@@ -984,7 +987,7 @@ function MainApp() {
         setStatus(`🎲 All slots randomized: ${names.join(', ')}`);
         setIsRouletteActive(true);
         setTimeout(() => setIsRouletteActive(false), 500);
-    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam]);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, modes.length]);
 
     // Chaos Mode effect
     useEffect(() => {

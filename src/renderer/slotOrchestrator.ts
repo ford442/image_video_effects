@@ -59,7 +59,7 @@ export interface SlotOrchestration {
 }
 
 /** Maximum physical slots supported by the current renderer */
-export const PHYSICAL_SLOT_LIMIT = 3;
+export const PHYSICAL_SLOT_LIMIT = 6;
 
 /**
  * Build a dispatch + copy plan for the given slot configuration.

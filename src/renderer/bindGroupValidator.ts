@@ -3,6 +3,11 @@
  *
  * Static WGSL validation against the fixed 13-binding compute layout.
  * Fails loudly with readable errors BEFORE pipeline creation.
+ *
+ * Subgroup variants (`-sg.wgsl`):
+ *   Files that begin with `enable subgroups;` are treated identically to their
+ *   base counterparts.  The validator only checks bind-group declarations and
+ *   the entry-point signature — module-level `enable` directives are ignored.
  */
 
 export interface BindGroupValidationResult {

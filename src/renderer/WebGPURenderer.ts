@@ -30,6 +30,7 @@ import { createUniformBufferView, UniformBufferView, Ripple, UNIFORM_FLOATS, MAX
 import { reportError, getBrowserWarning } from './ErrorHandling';
 import { compileShader } from './ShaderCompilation';
 import { BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
+import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 
 // ── Constants matching C++ renderer ─────────────────────────────────────────
 
@@ -140,14 +141,12 @@ export class WebGPURenderer implements Renderer {
   private pipelineHashes = new Map<string, string>(); // shader-id → content hash
   private workgroupSizes = new Map<string, { x: number; y: number }>(); // shader-id → parsed workgroup size
 
-  // Multi-slot state with parallelization support
+  // Multi-slot state with parallelization support (PHYSICAL_SLOT_LIMIT slots)
   // Slot 0: Usually chained (background/base effect)
-  // Slot 1 & 2: Can be parallel (independent overlays) or chained
-  private slots: ShaderSlot[] = [
-    { shaderId: null, enabled: false, mode: 'chained' },
-    { shaderId: null, enabled: false, mode: 'chained' },
-    { shaderId: null, enabled: false, mode: 'chained' },
-  ];
+  // Slots 1–5: Can be parallel (independent overlays) or chained
+  private slots: ShaderSlot[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => ({
+    shaderId: null, enabled: false, mode: 'chained' as SlotMode,
+  }));
 
   // Per-frame uniforms
   private currentTime = 0;
@@ -201,6 +200,9 @@ export class WebGPURenderer implements Renderer {
   private videoCopyBindGroupLayout: GPUBindGroupLayout | null = null;
   private supportsExternalTexture: boolean = false;
 
+  // Subgroup operations support (Chrome 128+)
+  private supportsSubgroups: boolean = false;
+
   constructor(private config: RendererConfig) {}
 
   // ── Initialisation ─────────────────────────────────────────────────────────
@@ -243,6 +245,19 @@ export class WebGPURenderer implements Renderer {
       wantFeatures.push('float32-filterable');
     }
 
+    // Opt into subgroup operations (Chrome 128+) if the adapter supports them.
+    // Subgroup ops enable -sg shader variants that replace multiple texture
+    // samples with intra-subgroup data shuffles for significant bandwidth savings.
+    const subgroupFeatureName: GPUFeatureName | null =
+      adapter.features.has('subgroups')
+        ? 'subgroups'
+        : adapter.features.has('chromium-experimental-subgroups' as GPUFeatureName)
+          ? ('chromium-experimental-subgroups' as GPUFeatureName)
+          : null;
+    if (subgroupFeatureName) {
+      wantFeatures.push(subgroupFeatureName);
+    }
+
     try {
       this.device = await adapter.requestDevice({
         label: 'PixelocityDevice',
@@ -251,6 +266,14 @@ export class WebGPURenderer implements Renderer {
     } catch (e) {
       console.warn('[WebGPU] requestDevice failed:', e);
       return false;
+    }
+
+    // Record whether subgroup operations are available
+    this.supportsSubgroups = !!(
+      subgroupFeatureName && this.device.features.has(subgroupFeatureName)
+    );
+    if (this.supportsSubgroups) {
+      console.log('[WebGPU] Subgroup operations enabled — fast -sg variants will be preferred');
     }
 
     // Forward uncaptured GPU errors to console during development
@@ -318,7 +341,8 @@ export class WebGPURenderer implements Renderer {
     console.log(
       `✅ TypeScript WebGPU renderer initialized ` +
       `(${this.canvasW}×${this.canvasH}` +
-      `${hasF32Filt ? ', float32-filterable' : ''})`
+      `${hasF32Filt ? ', float32-filterable' : ''}` +
+      `${this.supportsSubgroups ? ', subgroups' : ''})`
     );
     return true;
   }
@@ -644,20 +668,41 @@ export class WebGPURenderer implements Renderer {
   // ── Shader management ──────────────────────────────────────────────────────
 
   async loadShader(id: string, url: string): Promise<boolean> {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return this.compileShader(id, await res.text());
-    } catch {
-      // Fallback to local shaders/<id>.wgsl (relative path works for subdirectory deployments)
+    // Helper: fetch a URL, returning text on success or null on any failure.
+    const tryFetch = async (u: string): Promise<string | null> => {
       try {
-        const res = await fetch(`./shaders/${id}.wgsl`);
-        if (!res.ok) return false;
-        return this.compileShader(id, await res.text());
-      } catch {
-        return false;
+        const r = await fetch(u);
+        return r.ok ? await r.text() : null;
+      } catch { return null; }
+    };
+
+    // If subgroup operations are supported, probe the -sg sibling variant first.
+    // The -sg file uses `enable subgroups;` and subgroupAdd/Shuffle ops that
+    // cannot be inlined alongside non-subgroup code in the same module.
+    // We compile it under the same base ID so all downstream code (setSlotShader,
+    // pipeline cache, bind-group lookups) requires zero changes.
+    if (this.supportsSubgroups && !id.endsWith('-sg') && url.endsWith('.wgsl')) {
+      const sgUrl = url.replace(/\.wgsl$/, '-sg.wgsl');
+      const wgsl = await tryFetch(sgUrl) ?? await tryFetch(`./shaders/${id}-sg.wgsl`);
+      if (wgsl) {
+        const ok = this.compileShader(id, wgsl);
+        if (ok) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[WebGPU] "${id}": loaded subgroup variant (-sg.wgsl)`);
+          }
+          return true;
+        }
+      }
+      // -sg variant absent or failed to compile — fall through to base variant below
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[WebGPU] "${id}": no -sg variant found, using base variant`);
       }
     }
+
+    // Base variant (also serves as silent fallback when -sg is absent or fails)
+    const wgsl = await tryFetch(url) ?? await tryFetch(`./shaders/${id}.wgsl`);
+    if (!wgsl) return false;
+    return this.compileShader(id, wgsl);
   }
 
   /** Wrapper for shader compilation that uses extracted ShaderCompilation module */
@@ -674,16 +719,17 @@ export class WebGPURenderer implements Renderer {
     );
   }
 
-  /** Set a single active shader (slot 0). Clears slots 1 and 2. */
+  /** Set a single active shader (slot 0). Clears all other slots. */
   setActiveShader(id: string): void {
     this.slots[0] = { shaderId: id, enabled: true, mode: 'chained' };
-    this.slots[1] = { shaderId: null, enabled: false, mode: 'chained' };
-    this.slots[2] = { shaderId: null, enabled: false, mode: 'chained' };
+    for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
+      this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
+    }
   }
 
-  /** Set which shader is bound to a specific slot (0-2). */
+  /** Set which shader is bound to a specific slot (0–PHYSICAL_SLOT_LIMIT-1). */
   setSlotShader(index: number, id: string): void {
-    if (index >= 0 && index < 3) {
+    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) {
       const mode = this.slots[index]?.mode ?? 'chained';
       this.slots[index] = { shaderId: id, enabled: !!id, mode };
       console.log(`[WebGPURenderer] Slot ${index} set to "${id}" (enabled: ${!!id}, mode: ${mode})`);
@@ -692,7 +738,7 @@ export class WebGPURenderer implements Renderer {
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
-    if (index >= 0 && index < 3) this.slots[index].enabled = enabled;
+    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) this.slots[index].enabled = enabled;
   }
 
   /** 
@@ -702,14 +748,14 @@ export class WebGPURenderer implements Renderer {
    * Parallel: All parallel slots read from same input. Use for independent overlays.
    */
   setSlotMode(index: number, mode: SlotMode): void {
-    if (index >= 0 && index < 3) {
+    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) {
       this.slots[index].mode = mode;
     }
   }
 
   /** Get current slot mode */
   getSlotMode(index: number): SlotMode | null {
-    if (index >= 0 && index < 3) {
+    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) {
       return this.slots[index].mode;
     }
     return null;
@@ -717,7 +763,7 @@ export class WebGPURenderer implements Renderer {
 
   /** Get full slot state for UI display */
   getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
-    if (index >= 0 && index < 3) {
+    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) {
       const slot = this.slots[index];
       return { shaderId: slot.shaderId, enabled: slot.enabled, mode: slot.mode };
     }
