@@ -68,12 +68,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
 
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Parameters
+  // Parameters (mids → chromatic split, treble → cell boundary distortion)
   let cellSizeBase = mix(8.0, 80.0, u.zoom_params.x);
   let cellSize = cellSizeBase * (1.0 + bass * 0.2);
-  let chromaticStrength = u.zoom_params.y * 0.06;
-  let voronoiDistort = u.zoom_params.z * 0.4;
+  let chromaticStrength = u.zoom_params.y * 0.06 * (1.0 + mids * 1.5);
+  let voronoiDistort = u.zoom_params.z * 0.4 * (1.0 + treble * 0.8);
   let projectionAngle = (u.zoom_params.w - 0.5) * 1.0;
 
   let voro = voronoi(uv, cellSize, voronoiDistort, time);

@@ -61,14 +61,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
+  let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Parameters
+  // Parameters (bass → slit width pulse, treble → edge feather shimmer)
   let slitCountRaw = u.zoom_params.x;
   let slitCount = mix(2.0, 3.0, slitCountRaw);
-  let baseWidth = u.zoom_params.y * 0.08 + 0.002;
+  let baseWidth = (u.zoom_params.y * 0.08 + 0.002) * (1.0 + bass * 0.5);
   let slitSpeed = u.zoom_params.z * 0.6 + 0.05;
-  let feather = u.zoom_params.w * 0.5 + 0.01;
+  let feather = (u.zoom_params.w * 0.5 + 0.01) * (1.0 + treble * 0.6);
 
   // Mids → slit speed modulation
   let audioPulse = mids * 0.3 + 1.0;

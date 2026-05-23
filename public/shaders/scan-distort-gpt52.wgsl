@@ -113,9 +113,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let band2 = smoothstep(0.33, 0.66, bandY) * (1.0 - smoothstep(0.66, 0.67, bandY));
   let band3 = smoothstep(0.66, 1.0, bandY);
 
-  // Mids drive band distortion amount
+  // Audio: mids drive band distortion, bass spikes glitch, treble boosts aberration
+  let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
-  let bandDistort = 1.0 + mids * 3.0;
+  let treble = plasmaBuffer[0].z;
+  let bandDistort = (1.0 + mids * 3.0) * (1.0 + bass * 0.6);
 
   let linePhase = (warped.y + roll + fbmPerturb) * lines;
   let scan = sin(linePhase) * 0.5 + 0.5;
@@ -136,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let offset3 = vec2<f32>((jitter3 + blockJitter) * band3, 0.0);
   let totalOffset = offset1 + offset2 + offset3;
 
-  let aberr = scanIntensity * 0.01 + 0.002;
+  let aberr = (scanIntensity * 0.01 + 0.002) * (1.0 + treble * 1.5);
   let r = textureSampleLevel(readTexture, u_sampler, warped + totalOffset + vec2<f32>(aberr, 0.0), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, warped + totalOffset, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, warped + totalOffset - vec2<f32>(aberr, 0.0), 0.0).b;

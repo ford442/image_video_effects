@@ -46,11 +46,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
 
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Parameters
+  // Parameters (mids → dispersion, treble → vignette breathing)
   let k1 = (u.zoom_params.x - 0.5) * 2.0 * (1.0 + bass * 0.3);
-  let dispersion = u.zoom_params.y * 0.04;
-  let vignetteStrength = u.zoom_params.z;
+  let dispersion = u.zoom_params.y * 0.04 * (1.0 + mids * 1.2);
+  let vignetteStrength = u.zoom_params.z * (1.0 - treble * 0.25);
   let focusPoint = u.zoom_params.w;
 
   // Normalized centered coords with aspect correction
