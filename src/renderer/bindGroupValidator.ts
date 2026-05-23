@@ -112,7 +112,18 @@ export function validateBindGroup(
     result.valid = false;
   }
 
-  // 4. Warn on extended bindings (13+)
+  // 4. Check optional binding 13 (historyTexture — history ring, opt-in)
+  const has13 = /@group\(0\)\s*@binding\(13\)/.test(wgsl);
+  if (has13) {
+    const validHistoryTex = /var\s+historyTexture\s*:\s*texture_2d_array<f32>/.test(wgsl);
+    if (!validHistoryTex) {
+      result.warnings.push(
+        'Binding 13 declared but not as `historyTexture: texture_2d_array<f32>` — history-ring contract violated'
+      );
+    }
+  }
+
+  // 5. Warn on truly unexpected extended bindings (>13)
   const extendedBinding = wgsl.match(/@group\(0\)\s*@binding\((\d+)\)/g);
   if (extendedBinding) {
     const maxBinding = Math.max(
@@ -121,8 +132,8 @@ export function validateBindGroup(
         return m ? parseInt(m[1], 10) : 0;
       })
     );
-    if (maxBinding > 12) {
-      result.warnings.push(`Uses extended binding(s): ${maxBinding}`);
+    if (maxBinding > 13) {
+      result.warnings.push(`Uses unexpected extended binding(s) beyond 13: ${maxBinding}`);
     }
   }
 
