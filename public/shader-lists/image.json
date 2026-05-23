@@ -6572,6 +6572,191 @@
     ]
   },
   {
+    "id": "pyramid-bandprocess-pass2",
+    "name": "Gaussian-Laplacian Pyramid (Pass 2: Band Processing)",
+    "url": "shaders/pyramid-bandprocess-pass2.wgsl",
+    "category": "image",
+    "description": "Pass 2 of 3: Extracts Laplacian (high-freq residual = original − prev-frame blur) and applies per-band creative effects: neon edge saturation (L0), audio-bass hue rotation (L1), slow LFO colour breathing (L2). Audio-reactive via plasmaBuffer.",
+    "features": [
+      "multi-pass-2",
+      "audio-reactive",
+      "compute-shader",
+      "frequency-domain"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 3,
+      "prevShader": "pyramid-downsample-pass1",
+      "nextShader": "pyramid-composite-pass3"
+    },
+    "tags": [
+      "pyramid",
+      "laplacian",
+      "frequency",
+      "neon",
+      "audio-reactive",
+      "multipass",
+      "hue-rotation"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "High Freq Amp",
+        "default": 0.7,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Mid Freq Amp",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Low Freq Amp",
+        "default": 0.3,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "ROI Radius",
+        "default": 0.2,
+        "min": 0.05,
+        "max": 0.5,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "pyramid-composite-pass3",
+    "name": "Gaussian-Laplacian Pyramid (Pass 3: ROI Magnifying Glass)",
+    "url": "shaders/pyramid-composite-pass3.wgsl",
+    "category": "image",
+    "description": "Pass 3 of 3: Final composite with ROI magnifying-glass effect. Inside the mouse-tracked circle (radius = zoom_params.w) all frequency bands are amplified 2.5×+, creating a psychedelic detail magnifier. Outside the circle, effects are subtle. A pulsing ring marks the ROI boundary.",
+    "features": [
+      "multi-pass-3",
+      "mouse-driven",
+      "audio-reactive",
+      "compute-shader",
+      "roi"
+    ],
+    "multipass": {
+      "pass": 3,
+      "totalPasses": 3,
+      "prevShader": "pyramid-bandprocess-pass2"
+    },
+    "tags": [
+      "pyramid",
+      "roi",
+      "magnify",
+      "mouse-driven",
+      "frequency",
+      "neon",
+      "audio-reactive",
+      "multipass",
+      "composite"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "High Freq Amp",
+        "default": 0.7,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Mid Freq Amp",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Low Freq Amp",
+        "default": 0.3,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "ROI Radius",
+        "default": 0.2,
+        "min": 0.05,
+        "max": 0.5,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "pyramid-downsample-pass1",
+    "name": "Gaussian-Laplacian Pyramid (Pass 1: Gaussian Blur)",
+    "url": "shaders/pyramid-downsample-pass1.wgsl",
+    "category": "image",
+    "description": "Pass 1 of 3: Separable Gaussian blur via 18×18 shared-memory tile. Stores the blurred image for the next frame's Laplacian decomposition. Chain with pyramid-bandprocess-pass2.",
+    "features": [
+      "multi-pass-1",
+      "shared-memory",
+      "compute-shader"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 3,
+      "nextShader": "pyramid-bandprocess-pass2"
+    },
+    "tags": [
+      "pyramid",
+      "gaussian",
+      "blur",
+      "frequency",
+      "laplacian",
+      "multipass"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "High Freq Amp",
+        "default": 0.7,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Mid Freq Amp",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Low Freq Amp",
+        "default": 0.3,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "ROI Radius",
+        "default": 0.2,
+        "min": 0.05,
+        "max": 0.5,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "retro-gameboy",
     "name": "Retro Game Boy",
     "category": "image",

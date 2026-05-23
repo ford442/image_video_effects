@@ -8,6 +8,41 @@ export interface MultipassInfo {
 }
 
 export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
+  "spectrogram-displace-pass1": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "spectrogram-displace-pass2"
+  },
+  "spectrogram-displace-pass2": {
+    "pass": 2,
+    "totalPasses": 2,
+    "nextShader": null
+  },
+  "vortex-pass1": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "vortex-pass2"
+  },
+  "vortex-pass2": {
+    "pass": 2,
+    "totalPasses": 2,
+    "nextShader": null
+  },
+  "pyramid-bandprocess-pass2": {
+    "pass": 2,
+    "totalPasses": 3,
+    "nextShader": "pyramid-composite-pass3"
+  },
+  "pyramid-composite-pass3": {
+    "pass": 3,
+    "totalPasses": 3,
+    "nextShader": null
+  },
+  "pyramid-downsample-pass1": {
+    "pass": 1,
+    "totalPasses": 3,
+    "nextShader": "pyramid-bandprocess-pass2"
+  },
   "aurora-rift-2-pass1": {
     "pass": 1,
     "totalPasses": 2,
@@ -24,6 +59,36 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
     "nextShader": "aurora-rift-pass2"
   },
   "aurora-rift-pass2": {
+    "pass": 2,
+    "totalPasses": 2,
+    "nextShader": null
+  },
+  "liquid-optimized-pass1": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "liquid-optimized-pass2"
+  },
+  "liquid-optimized-pass2": {
+    "pass": 2,
+    "totalPasses": 2,
+    "nextShader": null
+  },
+  "liquid-pass1": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "liquid-pass2"
+  },
+  "liquid-pass2": {
+    "pass": 2,
+    "totalPasses": 2,
+    "nextShader": null
+  },
+  "digital-glitch-pass1": {
+    "pass": 1,
+    "totalPasses": 2,
+    "nextShader": "digital-glitch-pass2"
+  },
+  "digital-glitch-pass2": {
     "pass": 2,
     "totalPasses": 2,
     "nextShader": null
