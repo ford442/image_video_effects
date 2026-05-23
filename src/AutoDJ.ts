@@ -44,6 +44,7 @@ export class Alucinate {
   public statusMessage: string = "AI Not Initialized";
   public onStatusChange: ((status: AIStatus, message: string) => void) | null = null;
   private lastVibeText: string = '';
+  private activeShaderIds: string[] = [];
   
   // Callbacks
   private onNextImage: (url: string) => void;
@@ -195,6 +196,7 @@ export class Alucinate {
                 return s ? s.name : id;
             }).join(' + ');
             this.setStatus('generating', `Mixing stack: ${readableStack}`);
+            this.activeShaderIds = ids;
             this.onUpdateStack(ids);
             if (this.onUpdateParams) {
                 this.onUpdateParams(params);
@@ -246,6 +248,7 @@ export class Alucinate {
             }).join(' + ');
             
             this.setStatus('generating', `Mixing stack: ${readableStack}`);
+            this.activeShaderIds = ids;
             this.onUpdateStack(ids);
             if (this.onUpdateParams) {
                 this.onUpdateParams(params);
@@ -409,6 +412,15 @@ Your Selection:
         console.error('LLM shader selection failed:', error);
         return null;
     }
+  }
+
+  public async randomizeActiveParams(): Promise<void> {
+    if (!this.shaderManifest || this.activeShaderIds.length === 0) return;
+    const { randomizeParams } = await import('./services/vjPresets');
+    const { buildCatalog } = await import('./services/shaderCatalog');
+    const catalog = await buildCatalog();
+    const params = randomizeParams(this.activeShaderIds, catalog);
+    if (this.onUpdateParams) this.onUpdateParams(params);
   }
 
   private async getNextImageThemeFromLLM(currentCaption: string, currentShader: string): Promise<string | null> {

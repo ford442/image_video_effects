@@ -27,7 +27,7 @@ struct Uniforms {
     config: vec4<f32>,
     zoom_config: vec4<f32>,
     zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 32>,
+    ripples: array<vec4<f32>, 50>,
 };
 
 fn hash12(p: vec2<f32>) -> f32 {
@@ -90,10 +90,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let px = 1.0 / vec2<f32>(dimensions);
     let time = u.config.x;
 
-    let decayBase = u.zoom_params.x * 0.5 + 0.4;
-    let brushBase = u.zoom_params.y * 0.3;
-    let shiftBase = u.zoom_params.z * 0.3;
-    let flowStrength = u.zoom_params.w;
+    let predictionHorizon = mix(0.0, 0.12, u.zoom_params.x);
+    let velocitySmoothing = mix(0.1, 0.95, u.zoom_params.y);
+    let trailDeformation = u.zoom_params.z;
+    let velocityThreshold = mix(0.0, 2.5, u.zoom_params.w);
 
     let audioBass = plasmaBuffer[0].x;
     let audioMids = plasmaBuffer[0].y;
@@ -106,48 +106,72 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
 
     var mouseVel = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
-    if (rippleCount > 1u && rippleCount <= 32u) {
+    var prevVel = vec2<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    if (rippleCount > 1u) {
         let latest = u.ripples[rippleCount - 1u];
         let prev = u.ripples[rippleCount - 2u];
-        let dt = max(time - prev.z, 0.016);
+        let dt = max(latest.z - prev.z, 0.016);
         mouseVel = (latest.xy - prev.xy) / dt;
+        if (rippleCount > 2u) {
+            let older = u.ripples[rippleCount - 3u];
+            let olderDt = max(prev.z - older.z, 0.016);
+            prevVel = (prev.xy - older.xy) / olderDt;
+        }
     }
-    let mouseSpeed = length(mouseVel);
-    let brushSize = brushBase * (1.0 + mouseSpeed * 2.0);
+    let predictedVel = mouseVel + (mouseVel - prevVel) * predictionHorizon * 6.0;
+    let smoothedVel = mix(mouseVel, predictedVel, velocitySmoothing);
+    let mouseSpeed = max(length(smoothedVel) - velocityThreshold, 0.0);
+    let velocityActive = smoothstep(0.0, 0.35, mouseSpeed);
+    let velDir = select(vec2<f32>(0.0, 1.0), normalize(smoothedVel * vec2<f32>(aspect, 1.0)), mouseSpeed > 0.0001);
+    let velPerp = vec2<f32>(-velDir.y, velDir.x);
+    let brushSize = mix(0.035, 0.22, trailDeformation) * (1.0 + velocityActive * mouseSpeed * 0.18);
 
     let st = structureTensor(uv, readTexture, u_sampler, px);
     let trace = st[0][0] + st[1][1];
     let eigenDir = vec2<f32>(st[0][0] - st[1][1] + 0.001, 2.0 * st[0][1]);
     let anisoDir = select(vec2<f32>(0.0), normalize(eigenDir), trace > 0.001);
 
-    let flow = curlNoise(uv * 3.0 + time * 0.1, 0.01) * flowStrength * 0.02;
-    let advectUV = uv + flow + anisoDir * trace * 0.008 * (1.0 + audioMids);
+    let flowStrength = mix(0.2, 1.2, trailDeformation) * (0.6 + 0.4 * velocityActive);
+    let flow = curlNoise(uv * 3.0 + time * 0.1, 0.01) * flowStrength * 0.02 +
+        velDir * mouseSpeed * predictionHorizon * 0.006;
+    let advectUV = uv + flow +
+        anisoDir * trace * (0.004 + trailDeformation * 0.014) * (1.0 + audioMids) +
+        velDir * mouseSpeed * predictionHorizon * 0.01;
 
     let history = textureLoad(dataTextureC, coords, 0);
 
     let echo1 = textureSampleLevel(dataTextureC, filteringSampler, advectUV, 0.0);
-    let echo2UV = advectUV + flow * 0.7 + vec2<f32>(sin(time * 0.3), cos(time * 0.2)) * 0.005 * audioReactivity;
+    let echo2UV = advectUV + flow * 0.6 +
+        velDir * mouseSpeed * (0.005 + predictionHorizon * 0.02) +
+        vec2<f32>(sin(time * 0.3), cos(time * 0.2)) * 0.005 * audioReactivity;
     let echo2 = textureSampleLevel(dataTextureC, filteringSampler, echo2UV, 0.0);
-    let echo3UV = advectUV - flow * 0.5 + vec2<f32>(cos(time * 0.4), sin(time * 0.5)) * 0.008;
+    let echo3UV = advectUV - flow * 0.4 +
+        velDir * mouseSpeed * (0.01 + trailDeformation * 0.02) +
+        vec2<f32>(cos(time * 0.4), sin(time * 0.5)) * 0.008;
     let echo3 = textureSampleLevel(dataTextureC, filteringSampler, echo3UV, 0.0);
 
     let currentVideo = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let currentDepth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
     let videoLuma = dot(currentVideo.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    let decay1 = decayBase;
-    let decay2 = decayBase * 0.92;
-    let decay3 = decayBase * 0.82;
+    let decay1 = mix(0.94, 0.82, velocityActive);
+    let decay2 = mix(0.90, 0.72, velocityActive * trailDeformation);
+    let decay3 = mix(0.86, 0.62, velocityActive * trailDeformation);
 
     var acc = history.rgb * decay3;
     acc = mix(acc, echo1.rgb, (1.0 - decay1) * 0.45);
     acc = mix(acc, echo2.rgb, (1.0 - decay2) * 0.30);
     acc = mix(acc, echo3.rgb, (1.0 - decay3) * 0.20);
 
-    let warpHue = shiftBase + audioHueShift + mouseSpeed * 0.1 + fbm(uv * 2.0 + time * 0.05, 3) * 0.05;
+    let warpHue = trailDeformation * 0.25 + audioHueShift + velocityActive * mouseSpeed * 0.04 +
+        fbm(uv * 2.0 + time * 0.05, 3) * 0.05;
     acc = hueShift(acc, warpHue);
 
-    let dist = length(mouseVec);
+    let brushParallel = dot(mouseVec, velDir) / max(1.0 + trailDeformation * velocityActive * 3.5, 1.0);
+    let brushOrtho = dot(mouseVec, velPerp);
+    let stretchedDist = length(vec2<f32>(brushParallel, brushOrtho));
+    let dist = mix(length(mouseVec), stretchedDist, velocityActive);
     let brushMask = smoothstep(brushSize, brushSize * 0.25, dist);
     acc = mix(acc, currentVideo.rgb, brushMask * (0.25 + audioBass * 0.35));
 
@@ -164,5 +188,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, coords, outColor);
     textureStore(dataTextureA, coords, outColor);
-    textureStore(writeDepthTexture, coords, vec4<f32>(0.0));
+    textureStore(writeDepthTexture, coords, vec4<f32>(currentDepth, 0.0, 0.0, 0.0));
 }

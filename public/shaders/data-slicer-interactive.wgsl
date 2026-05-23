@@ -2,7 +2,7 @@
 //  Data Slicer Interactive — May 2026 Batch D Upgrade
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, temporal, glitch, upgraded-rgba
-//  Upgraded: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -82,12 +82,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distMouse = length(uv - mouse);
     let gravity = 1.0 - smoothstep(0.0, 0.35, distMouse);
 
-    var offset = 0.0;
-    var split = 0.0;
-    var strength = 0.0;
-    var alphaMod = 1.0;
-
-    // Slice-based distortion with FBM-warped edges
     let sliceIndex = floor(uv.y * sliceCount);
     let sliceY = sliceIndex / sliceCount;
     let nextSliceY = (sliceIndex + 1.0) / sliceCount;
@@ -97,40 +91,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warpedSliceWidth = sliceWidth + edgeNoise * fbmWarpAmt;
 
     let distToSlice = min(abs(uv.y - sliceY), abs(uv.y - nextSliceY));
-    let inSliceBoundary = distToSlice < warpedSliceWidth;
+    // strength naturally 0 outside boundary — no branch needed
+    let strength = 1.0 - smoothstep(0.0, max(warpedSliceWidth, 1e-3), distToSlice);
 
-    if (inSliceBoundary) {
-        strength = smoothstep(warpedSliceWidth, 0.0, distToSlice);
-
-        // Click-triggered slice bursts from u.ripples
-        var burst = 0.0;
-        let rippleCount = u32(u.config.y);
-        for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-            let rp = u.ripples[i];
-            let rDist = length(uv - rp.xy);
-            let rAge = time - rp.z;
-            let rRad = rAge * 0.5;
-            let rBand = abs(rDist - rRad);
-            if (rBand < 0.04 && rAge < 1.2) {
-                burst += (1.0 - rAge / 1.2) * 0.15 * sin(rDist * 50.0 - rAge * 20.0);
-            }
-        }
-
-        // Quantized jitter modulated by mids
-        let quant = mix(20.0, 70.0, mids);
-        let quantY = floor(uv.y * quant) / quant;
-        let t = time * 3.0 * (1.0 + treble);
-        let n = noise(vec2(quantY * 10.0, t));
-
-        offset = (n - 0.5) * 0.3 * strength + burst * strength;
-        split = colorShift * strength * (1.0 + bass * 2.0);
-
-        // Reduce alpha at slice boundaries
-        alphaMod = 1.0 - strength * 0.35;
+    // Click-triggered slice bursts — branchless
+    var burst = 0.0;
+    let rippleCount = u32(u.config.y);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let rDist = length(uv - rp.xy);
+        let rAge = time - rp.z;
+        let rRad = rAge * 0.5;
+        let rBand = abs(rDist - rRad);
+        let rippleActive = select(0.0, 1.0, rBand < 0.04 && rAge >= 0.0 && rAge < 1.2);
+        let rippleDecay = clamp(1.0 - rAge / 1.2, 0.0, 1.0);
+        burst += rippleActive * rippleDecay * 0.15 * sin(rDist * 50.0 - rAge * 20.0);
     }
 
+    // Quantized jitter modulated by mids
+    let quant = mix(20.0, 70.0, mids);
+    let quantY = floor(uv.y * quant) / quant;
+    let t = time * 3.0 * (1.0 + treble);
+    let n = noise(vec2<f32>(quantY * 10.0, t));
+
+    var offset = (n - 0.5) * 0.3 * strength + burst * strength;
+    var split = colorShift * strength * (1.0 + bass * 2.0);
+    let alphaMod = 1.0 - strength * 0.35;
+
     // Gravity deformation on offset
-    let gravityDist = abs(uv.y - mouse.y + gravity * 0.08);
     offset += gravity * 0.02 * sin(uv.x * 20.0 + time);
 
     // Depth-driven parallax on RGB split

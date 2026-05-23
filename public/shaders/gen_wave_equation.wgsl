@@ -78,33 +78,63 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                        * intensity
                        * 2.0;
 
+    // ═══ Sine-Gordon / Klein-Gordon nonlinear term ═══
+    // Nonlinear coupling constant: λ controls soliton formation
+    let nonlinear = clamp(u.zoom_params.w, 0.0, 1.0);
+    // Klein-Gordon: -m²·u  (linear mass term)
+    let massKG    = tension * 0.5;
+    // Sine-Gordon: -m²·sin(u)  (topological kink solitons)
+    let massSG    = nonlinear * tension * sin(height * 3.14159);
+    // Combined: interpolate between KG and SG based on nonlinear param
+    let nonlinTerm = mix(-massKG * height, -massSG, nonlinear);
+
     // Audio reactivity: bass amplifies wave energy and mouse impact
     let audioBoost = 1.0 + bass * detailParam * 2.0;
 
-    // Wave equation integration
-    let acceleration = laplacian * wave_speed * wave_speed - height * tension;
+    // Wave equation integration with nonlinear term
+    let acceleration = laplacian * wave_speed * wave_speed + nonlinTerm;
     velocity = velocity * damping + acceleration;
-    height = height + velocity + mouse_impact * audioBoost;
+    height   = height + velocity + mouse_impact * audioBoost;
 
-    // Visualize: deep water to foamy crests
+    // ─── Colour by topological charge and energy density ─────────────────────
+    // Energy density: kinetic + gradient^2 + potential (1 - cos(u))
+    let kinetic   = velocity * velocity;
+    let potential_e = 1.0 - cos(height);   // sine-Gordon potential
+    let energy    = clamp((kinetic + potential_e) * 0.5, 0.0, 1.0);
+
+    // Topological charge density: ∂u/∂x ≈ (height_e - height_w) / 2
+    // Approximated here from laplacian proxy
+    let topoCharge = clamp(laplacian * 10.0, -1.0, 1.0);
+
+    // Soliton: kink (u from 0→2π) shows as domain wall
+    let kinkPhase = fract(height / (2.0 * 3.14159));  // normalised field
+    let kinkColor = vec3<f32>(
+        0.5 + 0.5 * sin(kinkPhase * 6.28318),
+        0.5 + 0.5 * sin(kinkPhase * 6.28318 + 2.09440),
+        0.5 + 0.5 * sin(kinkPhase * 6.28318 + 4.18879)
+    );
+
+    // Domain-wall glow: brightest at |∂u/∂x| maximum
+    let wallGlow  = abs(topoCharge);
+    let energyBright = energy * (1.0 + bass * 0.5);
+
+    // Blend: water-like base + soliton kink colour + energy glow
     let t = height * 0.5 + 0.5;
     let waterColor = mix(
-        vec3<f32>(0.05, 0.15, 0.3),
-        vec3<f32>(0.9, 0.95, 1.0),
+        vec3<f32>(0.03, 0.08, 0.25),
+        vec3<f32>(0.85, 0.95, 1.0),
         smoothstep(0.0, 1.0, t)
     );
-    let generatedColor = waterColor + vec3<f32>(0.3, 0.6, 1.0)
-                         * smoothstep(0.05, 0.15, abs(velocity))
-                         * 0.5
-                         * (1.0 + bass * 0.5);
+    let generatedColor = mix(waterColor, kinkColor, wallGlow * nonlinear)
+                       + vec3<f32>(1.0, 0.8, 0.4) * energyBright * 0.4;
 
-    // ═══ Meaningful alpha based on wave intensity ═══
-    let waveIntensity = clamp(abs(height) + abs(velocity) * 2.0, 0.0, 1.0);
-    let opacity = mix(0.5, 0.95, intensity);
-    let finalColor = mix(inputColor.rgb, generatedColor, opacity);
-    let finalAlpha = mix(inputColor.a, 1.0, waveIntensity * opacity);
+    // ═══ Alpha ═══
+    let waveIntensity = clamp(abs(height) + abs(velocity) * 2.0 + energy, 0.0, 1.0);
+    let opacity       = mix(0.5, 0.95, intensity);
+    let finalColor    = mix(inputColor.rgb, generatedColor, opacity);
+    let finalAlpha    = mix(inputColor.a, 1.0, waveIntensity * opacity);
 
     textureStore(writeTexture, px, vec4<f32>(finalColor, finalAlpha));
-    textureStore(dataTextureA, px, vec4<f32>(height, velocity, 0.0, waveIntensity));
-    textureStore(writeDepthTexture, px, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, px, vec4<f32>(height, velocity, energy, topoCharge));
+    textureStore(writeDepthTexture, px, vec4<f32>(clamp(energy + inputDepth * 0.5, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

@@ -36,7 +36,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let aspect = resolution.x / max(resolution.y, 0.001);
 
     // Params
     let bass = plasmaBuffer[0].x;
@@ -66,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Convert back to UV space offset
     // X offset in UV should be scaled by 1/Aspect to represent same physical distance as Y
-    let uvOffsetDir = vec2<f32>(rotDir.x / aspect, rotDir.y);
+    let uvOffsetDir = vec2<f32>(rotDir.x / max(aspect, 0.001), rotDir.y);
 
     // Get Base Color & Luma
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);

@@ -1,35 +1,35 @@
 {
   "id": "echo-trace",
-  "name": "Structure Tensor Echo Field",
+  "name": "Temporal Velocity Echo",
   "url": "shaders/echo-trace.wgsl",
   "category": "artistic",
-  "description": "Anisotropic echo smearing via structure tensor analysis, flow-field advection with curl noise, multi-octave temporal feedback, audio-driven hue rotation, and luminance-gradient feedback displacement.",
+  "description": "Predictive velocity echo field combining structure-tensor advection, smoothed mouse-motion extrapolation, deformed brush trails, curl-noise flow, and temporal feedback displacement.",
   "params": [
     {
-      "id": "decay",
-      "name": "Trace Decay",
-      "default": 0.96,
-      "min": 0.8,
-      "max": 0.999
-    },
-    {
-      "id": "size",
-      "name": "Brush Size",
-      "default": 0.15,
-      "min": 0.01,
-      "max": 0.4
-    },
-    {
-      "id": "shift",
-      "name": "Color Shift",
-      "default": 0.05,
+      "id": "prediction_horizon",
+      "name": "Prediction Horizon",
+      "default": 0.35,
       "min": 0.0,
-      "max": 0.2
+      "max": 1.0
     },
     {
-      "id": "flow",
-      "name": "Flow Strength",
-      "default": 0.5,
+      "id": "velocity_smoothing",
+      "name": "Velocity Smoothing",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "trail_deformation",
+      "name": "Trail Deformation",
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "id": "velocity_threshold",
+      "name": "Velocity Threshold",
+      "default": 0.15,
       "min": 0.0,
       "max": 1.0
     }
@@ -42,6 +42,7 @@
     "flow-advection",
     "multi-octave-echo",
     "velocity-sensing",
+    "predictive-echo",
     "feedback-displacement",
     "curl-noise"
   ],
@@ -51,6 +52,8 @@
     "echo",
     "flow",
     "anisotropic",
-    "audio-reactive"
+    "audio-reactive",
+    "velocity",
+    "motion-blur"
   ]
 }

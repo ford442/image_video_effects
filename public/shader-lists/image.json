@@ -2518,52 +2518,6 @@
     ]
   },
   {
-    "id": "elastic-surface",
-    "name": "Elastic Surface",
-    "url": "shaders/elastic-surface.wgsl",
-    "category": "image",
-    "description": "Bouncy rubber-like surface distortion.",
-    "params": [
-      {
-        "id": "elasticity",
-        "name": "Elasticity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "frequency",
-        "name": "Wave Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "amplitude",
-        "name": "Wave Height",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "damping",
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "animated",
-      "wave",
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "ethereal-swirl",
     "name": "Ethereal Swirl",
     "url": "shaders/ethereal-swirl.wgsl",
@@ -2807,49 +2761,6 @@
       "voronoi",
       "physical"
     ]
-  },
-  {
-    "id": "glass-brick-distortion",
-    "category": "image",
-    "url": "shaders/glass-brick-distortion.wgsl",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Brick Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param2",
-        "name": "Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param3",
-        "name": "Grout Width",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param4",
-        "name": "Clear Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "name": "Glass Brick Wall"
   },
   {
     "id": "infinite-zoom-lens",
@@ -4013,50 +3924,6 @@
       "audio",
       "music",
       "reactive"
-    ]
-  },
-  {
-    "id": "interactive-origami",
-    "name": "Interactive Origami",
-    "url": "shaders/interactive-origami.wgsl",
-    "category": "image",
-    "description": "Simulates folded paper creases that react to mouse position.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "foldScale",
-        "name": "Fold Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "foldDepth",
-        "name": "Fold Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "lightIntensity",
-        "name": "Light Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "unused",
-        "name": "Unused",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -6418,7 +6285,7 @@
       "depth-aware",
       "upgraded-rgba"
     ],
-    "description": "Interactive page curl with audio-reactive RGB splitting, click shockwaves, depth-aware shadows, and temporal feedback trails.",
+    "description": "Interactive page curl with audio-reactive RGB chromatic split on the curl face, click shockwaves, depth-aware shadows, and temporal feedback trails.",
     "params": [
       {
         "id": "param1",
@@ -6453,7 +6320,10 @@
       "filter",
       "image-processing",
       "interactive",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal",
+      "curl",
+      "chromatic"
     ]
   },
   {
@@ -9787,46 +9657,53 @@
   },
   {
     "id": "infinite-spiral-zoom",
-    "name": "Infinite Spiral Zoom",
+    "name": "Möbius–Droste Spiral",
     "url": "shaders/infinite-spiral-zoom.wgsl",
     "category": "image",
-    "description": "Applies a complex log-polar mapping to create an infinite spiral zoom into the mouse cursor.",
+    "description": "Möbius transformation f(z)=(az+b)/(cz+d) composed with log-polar mapping for a Droste self-similar infinite zoom. Animated parameter orbit, audio-driven rotation, multi-fold symmetry, chromatic ring fringing.",
     "params": [
       {
-        "id": "zoom_speed",
+        "id": "zoomSpeed",
         "name": "Zoom Speed",
-        "default": 0.5,
+        "default": 0.55,
         "min": 0,
         "max": 1
       },
       {
-        "id": "spiral_angle",
-        "name": "Spiral Twist",
-        "default": 0.5,
+        "id": "mobStrength",
+        "name": "Möbius Strength",
+        "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
         "id": "branches",
-        "name": "Branches",
+        "name": "Symmetry Folds",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "center_offset",
-        "name": "Center Offset",
-        "default": 0,
+        "id": "chromatic",
+        "name": "Chromatic Fringe",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "warp",
+      "distort",
+      "fractal",
+      "mobius",
+      "droste",
+      "spiral",
+      "zoom"
     ]
   },
   {
@@ -10018,36 +9895,36 @@
   },
   {
     "id": "interactive-fisheye",
-    "name": "Interactive Fisheye",
+    "name": "Fluid Lens Dynamics",
     "url": "shaders/interactive-fisheye.wgsl",
     "category": "image",
-    "description": "Branchless barrel distortion lens that magnifies the area under the mouse with audio-reactive radius and depth-aware alpha modulation.",
+    "description": "Velocity-sensitive fluid lens with spring-mass response, viscosity-controlled damping, impulse-driven splash ripples, and depth-aware refractive magnification.",
     "params": [
       {
-        "id": "strength",
-        "name": "Distortion",
+        "id": "surface_tension",
+        "name": "Surface Tension",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "radius",
-        "name": "Lens Radius",
-        "default": 0.4,
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.35,
         "min": 0,
         "max": 1
       },
       {
-        "id": "curve",
-        "name": "Bulge Curve",
-        "default": 0.5,
+        "id": "mass",
+        "name": "Lens Mass",
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "vignette",
-        "name": "Edge Vignette",
-        "default": 0.3,
+        "id": "splash_threshold",
+        "name": "Splash Threshold",
+        "default": 0.35,
         "min": 0,
         "max": 1
       }
@@ -10057,14 +9934,19 @@
       "geometry",
       "audio-reactive",
       "audio-driven",
-      "depth-aware"
+      "depth-aware",
+      "spring-mass",
+      "velocity-sensitive",
+      "splash-response"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "lens",
+      "fluid"
     ]
   },
   {
@@ -10285,7 +10167,9 @@
     ],
     "features": [
       "mouse-driven",
-      "artistic"
+      "artistic",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -11620,55 +11504,6 @@
     ]
   },
   {
-    "id": "neon-strings",
-    "name": "Neon Strings",
-    "url": "shaders/neon-strings.wgsl",
-    "category": "image",
-    "description": "Vibrating neon strings generated from edge detection, agitated by the mouse.",
-    "params": [
-      {
-        "id": "thickness",
-        "name": "Edge Threshold",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "vibration",
-        "name": "Vibration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "neon",
-        "name": "Neon Intensity",
-        "default": 1,
-        "min": 0,
-        "max": 2
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
     "id": "neon-warp",
     "name": "Neon Warp",
     "url": "shaders/neon-warp.wgsl",
@@ -12542,46 +12377,52 @@
   },
   {
     "id": "quantized-ripples",
-    "name": "Quantized Ripples",
+    "name": "Haptic Ripple Field",
     "url": "shaders/quantized-ripples.wgsl",
     "category": "image",
-    "description": "Quantizes the image (posterization) with levels that ripple out from the mouse position.",
+    "description": "Piezo-inspired ripple interference field with velocity-sensitive impulse strength, blended damping models, rough touch-texture modulation, and quantized color bands.",
     "params": [
       {
-        "id": "frequency",
-        "name": "Ripple Frequency",
-        "default": 0.5,
+        "id": "stiffness",
+        "name": "Surface Stiffness",
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "amplitude",
-        "name": "Ripple Amplitude",
-        "default": 0.5,
+        "id": "damping",
+        "name": "Damping Ratio",
+        "default": 0.35,
         "min": 0,
         "max": 1
       },
       {
-        "id": "speed",
-        "name": "Ripple Speed",
-        "default": 0.5,
+        "id": "texture",
+        "name": "Touch Texture",
+        "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
-        "id": "depth",
-        "name": "Color Depth",
+        "id": "decay_mode",
+        "name": "Decay Mode",
         "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "haptic-response",
+      "multi-touch-interference"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "haptic",
+      "ripple",
+      "posterize"
     ]
   },
   {
@@ -14995,55 +14836,6 @@
     ]
   },
   {
-    "id": "neon-pulse-edge",
-    "name": "Neon Pulse Edge",
-    "url": "shaders/neon-pulse-edge.wgsl",
-    "category": "image",
-    "description": "Edge detection with neon glow that reveals near the mouse.",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "threshold",
-        "name": "Edge Threshold",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Pulse Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "shift",
-        "name": "Color Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
     "id": "glass-wipes",
     "name": "Rainy Window",
     "url": "shaders/glass-wipes.wgsl",
@@ -15306,59 +15098,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Color manipulation amount"
-      }
-    ]
-  },
-  {
-    "id": "liquid-metal",
-    "name": "Liquid Metal",
-    "url": "shaders/liquid-metal.wgsl",
-    "category": "image",
-    "description": "",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },
@@ -16317,50 +16056,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ]
-  },
-  {
-    "id": "digital-decay",
-    "name": "Digital Decay",
-    "url": "shaders/digital-decay.wgsl",
-    "category": "image",
-    "description": "",
-    "params": [
-      {
-        "id": "decayIntensity",
-        "name": "Decay Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "blockSize",
-        "name": "Block Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "corruptionSpeed",
-        "name": "Corruption Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "depthFocus",
-        "name": "Depth Focus",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "features": [
-      "mouse-driven"
     ]
   },
   {
@@ -17714,7 +17409,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

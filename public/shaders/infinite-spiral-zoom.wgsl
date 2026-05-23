@@ -1,161 +1,122 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Infinite Spiral Zoom with Alpha Physics
-//  Scientific: Log-polar transformation with spiral warping and light transmission
-//  
-//  ALPHA PHYSICS:
-//  - Log-polar transform creates radial distortion affecting opacity
-//  - Spiral twist creates angular shear = scattered alpha
-//  - Tiling/branching creates repetitive opacity patterns
-//  - Zoom speed affects motion blur alpha
+//  Möbius–Droste Infinite Spiral
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, temporal
+//  Complexity: High
+//  Scientific: Möbius transformation f(z)=(az+b)/(cz+d) in ℂ composed with
+//              log-polar map for Droste self-similar zoom effect,
+//              audio-driven rotation of Möbius parameters,
+//              multi-fold rotational symmetry, chromatic ring fringing
+//  Upgraded: Phase B
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(0)  var u_sampler: sampler;
+@group(0) @binding(1)  var readTexture: texture_2d<f32>;
+@group(0) @binding(2)  var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3)  var<uniform> u: Uniforms;
+@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5)  var non_filtering_sampler: sampler;
+@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ZoomSpeed, y=SpiralTwist, z=Branches, w=CenterOffset
-  ripples: array<vec4<f32>, 50>,
-};
-
-// Calculate spiral distortion magnitude
-fn calculateSpiralDistortion(
-    r: f32,
-    twist: f32,
-    zoomSpeed: f32,
-    branches: f32
-) -> vec2<f32> {
-    // Twist creates angular distortion
-    let twistDistortion = abs(twist) * log(r + 1.0);
-    
-    // Zoom speed creates radial motion blur
-    let zoomDistortion = abs(zoomSpeed) * 0.1;
-    
-    // Branching creates repetitive distortion
-    let branchDistortion = branches * 0.05;
-    
-    return vec2<f32>(twistDistortion, zoomDistortion + branchDistortion);
+    config:      vec4<f32>,  // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=ZoomSpeed, y=MobiusStrength, z=Symmetry, w=Chromatic
+    ripples:     array<vec4<f32>, 50>,
 }
 
-// Calculate log-polar transform alpha
-fn calculateLogPolarAlpha(
-    baseAlpha: f32,
-    distortionMag: vec2<f32>,
-    r: f32,
-    isNearSingularity: bool
-) -> f32 {
-    // Near singularity = extreme distortion = scattered light
-    if (isNearSingularity) {
-        return 0.3; // Very transparent near center
-    }
-    
-    // Twist creates shear which reduces coherence
-    let shearFactor = 1.0 - distortionMag.x * 0.1;
-    
-    // Zoom motion creates blur
-    let motionBlur = 1.0 - distortionMag.y * 0.2;
-    
-    // Radial distance affects focus (log transform depth cue)
-    let depthFactor = 1.0 / (1.0 + log(r + 1.0) * 0.1);
-    
-    return clamp(baseAlpha * shearFactor * motionBlur * depthFactor, 0.3, 1.0);
+// Complex multiply
+fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
+}
+// Complex divide
+fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let d = dot(b, b);
+    return vec2<f32>((a.x*b.x + a.y*b.y)/d, (a.y*b.x - a.x*b.y)/d);
 }
 
-// Calculate tiling alpha pattern
-fn calculateTilingAlpha(
-    baseAlpha: f32,
-    uv_mapped: vec2<f32>,
-    branches: f32
-) -> f32 {
-    // Seam between tiles has slight transparency
-    let seamX = smoothstep(0.0, 0.02, uv_mapped.x) * (1.0 - smoothstep(0.98, 1.0, uv_mapped.x));
-    let seamY = smoothstep(0.0, 0.02, uv_mapped.y) * (1.0 - smoothstep(0.98, 1.0, uv_mapped.y));
-    
-    // More branches = more seams = slightly more scattered
-    let seamFactor = 1.0 - (1.0 - seamX * seamY) * (branches / 6.0) * 0.1;
-    
-    return baseAlpha * seamFactor;
+// Möbius transformation: f(z) = (a·z + b) / (c·z + d)
+// a,b,c,d encoded as complex pairs
+fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
+    return cdiv(cmul(a, z) + b, cmul(c, z) + d);
+}
+
+// Log-polar → UV (Droste tile)
+fn logPolarUV(z: vec2<f32>, zoomSpeed: f32, twist: f32, time: f32, branches: f32) -> vec2<f32> {
+    let r = length(z);
+    if (r < 0.0001) { return vec2<f32>(0.5); }
+    var u_c = log(r) - time * zoomSpeed;
+    var v_c = atan2(z.y, z.x) / 6.28318;
+    v_c += u_c * twist * 0.15;
+    return fract(vec2<f32>(u_c, v_c * branches));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    let time = u.config.x;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    // Normalize coordinates
-    var uv = vec2<f32>(global_id.xy) / resolution;
-
-    // Mouse position
-    var mouse = u.zoom_config.yz;
-
-    // Parameters
-    let zoom_speed = (u.zoom_params.x - 0.5) * 4.0;
-    let twist = (u.zoom_params.y - 0.5) * 3.14159;
-    let branches = floor(u.zoom_params.z * 5.0) + 1.0;
-    let offset_val = u.zoom_params.w;
-
+    let uv     = vec2<f32>(global_id.xy) / resolution;
+    let time   = u.config.x;
     let aspect = resolution.x / resolution.y;
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Vector from mouse to pixel
-    var p = uv - mouse;
-    p.x *= aspect;
+    let zoomSpeed  = (u.zoom_params.x - 0.5) * 4.0;
+    let mobStrength= mix(0.0, 0.8, u.zoom_params.y);
+    let branches   = floor(u.zoom_params.z * 5.0) + 1.0;
+    let chromatic  = u.zoom_params.w * 0.08 + treble * 0.02;
 
-    // Avoid singularity
-    let r = length(p);
-    if (r < 0.001) {
-        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 0.3));
-        return;
-    }
+    let mouse = u.zoom_config.yz;
 
-    let angle = atan2(p.y, p.x);
+    // Pixel in centered aspect-correct space
+    var p = (uv - mouse) * vec2<f32>(aspect, 1.0);
 
-    // Calculate distortion magnitude
-    let distortionMag = calculateSpiralDistortion(r, twist, zoom_speed, branches);
+    // ─── Möbius transformation ───
+    // Animated parameter orbit: a = 1, b = mob·exp(iθ), c = mob·exp(-iθ), d = 1
+    let theta = time * 0.4 + bass * 0.8;
+    let bVec  = mobStrength * vec2<f32>(cos(theta), sin(theta));
+    let cVec  = mobStrength * vec2<f32>(cos(-theta), sin(-theta));
+    p = mobius(p, vec2<f32>(1.0, 0.0), bVec, cVec, vec2<f32>(1.0, 0.0));
 
-    // Log-Polar Transformation
-    var u_coord = log(r);
-    var v_coord = angle / 6.28318;
+    // ─── Log-polar Droste tiling ───
+    let twist  = (mids - 0.5) * 1.5 + 0.3;
+    let uvBase = logPolarUV(p, zoomSpeed, twist, time, branches);
 
-    // Apply twist (shear in log-polar space)
-    v_coord += u_coord * twist * 0.2;
+    // Chromatic aberration via slightly offset Möbius params for R and B
+    let dtheta = chromatic;
+    let bR = (mobStrength + chromatic * 0.1) * vec2<f32>(cos(theta + dtheta), sin(theta + dtheta));
+    let cR = (mobStrength + chromatic * 0.1) * vec2<f32>(cos(-theta - dtheta), sin(-theta - dtheta));
+    var pR = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    pR = mobius(pR, vec2<f32>(1.0, 0.0), bR, cR, vec2<f32>(1.0, 0.0));
+    let uvR = logPolarUV(pR, zoomSpeed, twist, time, branches);
 
-    // Apply zoom
-    u_coord -= time * zoom_speed;
+    let bB = (mobStrength - chromatic * 0.1) * vec2<f32>(cos(theta - dtheta), sin(theta - dtheta));
+    let cB = (mobStrength - chromatic * 0.1) * vec2<f32>(cos(-theta + dtheta), sin(-theta + dtheta));
+    var pB = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    pB = mobius(pB, vec2<f32>(1.0, 0.0), bB, cB, vec2<f32>(1.0, 0.0));
+    let uvB = logPolarUV(pB, zoomSpeed, twist, time, branches);
 
-    // Scale for tiling
-    let uv_mapped = vec2<f32>(u_coord, v_coord * branches);
+    let sR  = textureSampleLevel(readTexture, u_sampler, uvR,   0.0);
+    let sG  = textureSampleLevel(readTexture, u_sampler, uvBase, 0.0);
+    let sB2 = textureSampleLevel(readTexture, u_sampler, uvB,   0.0);
+    let color = vec3<f32>(sR.r, sG.g, sB2.b);
 
-    // Convert back to wrapping UVs
-    var final_uv = fract(uv_mapped);
+    // Tile-seam edge glow (interference rings at tiling boundaries)
+    let fx = fract(uvBase.x * 8.0);
+    let fy = fract(uvBase.y * 8.0);
+    let edgeGlow = smoothstep(0.48, 0.5, fx) * smoothstep(0.48, 0.5, fy) * 0.3 * treble;
+    let finalColor = color + vec3<f32>(0.6, 0.3, 1.0) * edgeGlow;
 
-    // Add center offset distortion
-    final_uv += vec2<f32>(offset_val * 0.1 * sin(v_coord * 10.0), 0.0);
-    final_uv = fract(final_uv);
-
-    // Sample texture
-    let warpedSample = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
-    
-    // Calculate alphas
-    let logPolarAlpha = calculateLogPolarAlpha(warpedSample.a, distortionMag, r, r < 0.01);
-    let finalAlpha = calculateTilingAlpha(logPolarAlpha, uv_mapped, branches);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(warpedSample.rgb, finalAlpha));
-
-    // Preserve depth with distortion
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, final_uv, 0.0).r;
-    // Spiral distortion affects depth perception
-    let depthMod = 1.0 + distortionMag.x * 0.1 + distortionMag.y * 0.05;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d * depthMod, 0.0, 0.0, 0.0));
+    let dep = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(uvBase, length(p), mobStrength));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(dep, 0.0, 0.0, 0.0));
 }

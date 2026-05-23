@@ -24,7 +24,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Speed, y=Density, z=ChromaSep, w=FogCenter
+  zoom_params: vec4<f32>,  // x=Speed, y=Density, z=ChromaSep, w=CenterFade
   ripples: array<vec4<f32>, 50>,
 };
 

@@ -2,60 +2,54 @@
   "id": "temporal_echo",
   "name": "Temporal Echo",
   "url": "shaders/temporal_echo.wgsl",
-  "category": "distortion",
-  "description": "Time-warp effect with multi-frame temporal accumulation, RGB channel time offsets, ghost trails, motion-based displacement, and audio-reactive feedback pulses",
+  "category": "lighting-effects",
+  "description": "Multi-frame echo accumulation with hue-rotating trails, chromatic aberration on older echoes, depth-layered decay, and audio-reactive beat flash.",
   "tags": [
     "temporal",
     "echo",
-    "time",
-    "ghost",
     "trail",
-    "warp",
+    "hue",
+    "chromatic",
     "audio",
-    "music"
+    "depth"
   ],
   "features": [
-    "rgba",
     "temporal",
-    "echo",
-    "motion",
-    "feedback",
-    "time-warp",
+    "depth-aware",
     "audio-reactive"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Echo Count",
-      "default": 0.5,
+      "id": "decay_rate",
+      "name": "Decay Rate",
+      "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.1
+      "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Time Offset",
+      "id": "hue_shift_speed",
+      "name": "Hue Shift Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chroma_spread",
+      "name": "Chroma Spread",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.1
+      "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Decay",
-      "default": 0.7,
+      "id": "depth_influence",
+      "name": "Depth Influence",
+      "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.1
-    },
-    {
-      "id": "param4",
-      "name": "Displacement",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
+      "step": 0.01
     }
-  ],
-  "target_rating": 4.7
+  ]
 }

@@ -1,0 +1,58 @@
+{
+  "id": "gen-torus-knot-rainbow",
+  "name": "Torus Knot Rainbow",
+  "url": "shaders/gen-torus-knot-rainbow.wgsl",
+  "category": "generative",
+  "description": "A (p,q) torus knot projected onto the 2D plane with perspective. The knotted curve is rendered as a thick rainbow-hued ribbon that rotates and morphs its winding numbers over time. Audio modulates the longitude frequency for reactive topology shifts.",
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "psychedelic",
+    "colorful",
+    "torus",
+    "knot",
+    "rainbow",
+    "3d",
+    "generative",
+    "abstract",
+    "neon"
+  ],
+  "params": [
+    {
+      "id": "speed",
+      "name": "Spin Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "knotp",
+      "name": "P Winds",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "knotq",
+      "name": "Q Winds",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "tube",
+      "name": "Tube Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

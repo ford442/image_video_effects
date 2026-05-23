@@ -860,6 +860,63 @@
     ]
   },
   {
+    "id": "gen-acid-lissajous",
+    "name": "Acid Lissajous",
+    "url": "shaders/gen-acid-lissajous.wgsl",
+    "category": "generative",
+    "description": "Seven Lissajous curve strands rendered as glowing neon tubes with continuous acid-trip color cycling, harmonic drift, and soft bloom. Each strand traces a different frequency ratio pair that slowly evolves for ever-changing knotted patterns.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "neon",
+      "colorful",
+      "lissajous",
+      "oscilloscope",
+      "generative",
+      "abstract",
+      "glow"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Animation Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "complexity",
+        "name": "Harmonic Complexity",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedback",
+        "name": "Persistence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-alien-flora",
     "name": "Alien Flora",
     "url": "shaders/gen-alien-flora.wgsl",
@@ -2235,6 +2292,61 @@
     ]
   },
   {
+    "id": "gen-crystalline-mandala-bloom",
+    "name": "Crystalline Mandala Bloom",
+    "url": "shaders/gen-crystalline-mandala-bloom.wgsl",
+    "category": "generative",
+    "description": "Audio-reactive kaleidoscopic mandala that folds the source image through a rotating polar symmetry. Crystalline petal SDFs, hue-rotated chroma, concentric bass-rings, and treble sparkles bloom outward from a mouse-anchored center.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "generative",
+      "mandala",
+      "kaleidoscope",
+      "crystal",
+      "bloom",
+      "audio-reactive"
+    ],
+    "coordinate": 885,
+    "params": [
+      {
+        "id": "symmetry",
+        "name": "Symmetry Segments",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "facet_zoom",
+        "name": "Facet Zoom",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloom_strength",
+        "name": "Bloom Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "hue_rotation",
+        "name": "Hue Rotation",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-cyber-terminal",
     "name": "Procedural Cyber Terminal (ASCII)",
     "url": "shaders/gen-cyber-terminal.wgsl",
@@ -2391,6 +2503,65 @@
         "min": 1,
         "max": 8,
         "step": 1
+      }
+    ]
+  },
+  {
+    "id": "gen-cycloid-bloom",
+    "name": "Cycloid Bloom",
+    "url": "shaders/gen-cycloid-bloom.wgsl",
+    "category": "generative",
+    "description": "Five nested hypotrochoid (Spirograph-style) curves layered into a blooming floral mandala. Each layer uses a different gear ratio that slowly evolves, petal glowing with prismatic hues that respond to audio. Feedback accumulation burns bright arcs.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural",
+      "spirograph"
+    ],
+    "tags": [
+      "psychedelic",
+      "colorful",
+      "spirograph",
+      "cycloid",
+      "mandala",
+      "floral",
+      "generative",
+      "abstract",
+      "prismatic"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Spin Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "petals",
+        "name": "Petal Multiplier",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedback",
+        "name": "Persistence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -2873,7 +3044,7 @@
     "name": "Gravitational Strain Field",
     "url": "shaders/gen-gravitational-strain.wgsl",
     "category": "generative",
-    "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide \u2014 dark matter visualization as art.",
+    "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide — dark matter visualization as art.",
     "tags": [
       "gravity",
       "lensing",
@@ -2900,7 +3071,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of gravity wells (maps to 1\u20136)."
+        "description": "Number of gravity wells (maps to 1–6)."
       },
       {
         "id": "param2",
@@ -2909,7 +3080,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Mass of each gravity well \u2014 controls bending strength."
+        "description": "Mass of each gravity well — controls bending strength."
       },
       {
         "id": "param3",
@@ -3309,7 +3480,7 @@
     "name": "Hyperbolic Tessellation Engine",
     "url": "shaders/gen-hyperbolic-tessellation.wgsl",
     "category": "generative",
-    "description": "Non-Euclidean Poincar\u00e9-disk tessellation in real-time. Hyperbolic tiles subdivide infinitely toward the boundary disk, colored by recursive depth \u2014 M.C. Escher meets fractals.",
+    "description": "Non-Euclidean Poincaré-disk tessellation in real-time. Hyperbolic tiles subdivide infinitely toward the boundary disk, colored by recursive depth — M.C. Escher meets fractals.",
     "tags": [
       "hyperbolic",
       "tessellation",
@@ -3335,7 +3506,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of sides in the fundamental tile (maps to p=3\u20138)."
+        "description": "Number of sides in the fundamental tile (maps to p=3–8)."
       },
       {
         "id": "param2",
@@ -3362,7 +3533,7 @@
         "max": 1,
         "default": 0.7,
         "step": 0.01,
-        "description": "Brightness of the glow near the Poincar\u00e9 disk boundary."
+        "description": "Brightness of the glow near the Poincaré disk boundary."
       }
     ]
   },
@@ -3398,7 +3569,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Maximum iteration count (maps to 20\u201380)."
+        "description": "Maximum iteration count (maps to 20–80)."
       },
       {
         "id": "param2",
@@ -3425,7 +3596,7 @@
         "max": 1,
         "default": 0.3,
         "step": 0.01,
-        "description": "Escape radius \u2014 lower values create more intricate boundaries."
+        "description": "Escape radius — lower values create more intricate boundaries."
       }
     ]
   },
@@ -3995,6 +4166,63 @@
     ]
   },
   {
+    "id": "gen-magnetic-storm",
+    "name": "Magnetic Storm",
+    "url": "shaders/gen-magnetic-storm.wgsl",
+    "category": "generative",
+    "description": "A dynamic magnetic field storm using divergence-free curl noise to render flowing field lines. The mouse sets the magnetic pole; bass drives flow speed and storm intensity; mids shift field-line color; treble adds sparkle.",
+    "tags": [
+      "magnetic",
+      "field-lines",
+      "storm",
+      "generative",
+      "fluid",
+      "audio-reactive",
+      "abstract",
+      "particles",
+      "warp"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "fieldScale",
+        "name": "Field Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "lineDensity",
+        "name": "Line Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "stormPower",
+        "name": "Storm Power",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-micro-cosmos",
     "name": "Micro-Cosmos",
     "url": "shaders/gen-micro-cosmos.wgsl",
@@ -4271,7 +4499,7 @@
     "name": "Neural Fractal",
     "url": "shaders/gen-neural-fractal.wgsl",
     "category": "generative",
-    "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z\u00b2+c iterations",
+    "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z²+c iterations",
     "tags": [
       "generative",
       "fractal",
@@ -4643,6 +4871,63 @@
     ]
   },
   {
+    "id": "gen-plasma-mandala",
+    "name": "Plasma Mandala",
+    "url": "shaders/gen-plasma-mandala.wgsl",
+    "category": "generative",
+    "description": "A psychedelic plasma mandala with audio-driven radial symmetry, spinning petal folds, and mouse-attracted center. Bass drives spin speed, mids shift hue, treble adds sparkle.",
+    "tags": [
+      "mandala",
+      "plasma",
+      "generative",
+      "radial",
+      "psychedelic",
+      "audio-reactive",
+      "colorful",
+      "abstract",
+      "neon"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "spinSpeed",
+        "name": "Spin Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowScale",
+        "name": "Glow Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-prismatic-aether-loom",
     "name": "Prismatic Aether-Loom",
     "url": "shaders/gen-prismatic-aether-loom.wgsl",
@@ -4763,7 +5048,7 @@
     "name": "Prismatic Crystal Growth",
     "url": "shaders/gen-prismatic-crystal-growth.wgsl",
     "category": "generative",
-    "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness \u2014 thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
+    "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness — thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -4865,6 +5150,61 @@
         "default": 1,
         "min": 0,
         "max": 3,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-prismatic-ion-cascade",
+    "name": "Prismatic Ion Cascade",
+    "url": "shaders/gen-prismatic-ion-cascade.wgsl",
+    "category": "generative",
+    "description": "Mouse-anchored cascade of prismatic ion streams. Curl-warped angular bands radiate from the cursor with chromatic spectral split, fbm-driven shimmer, and audio-reactive flicker. Bass pulses the radial core, mids drive flow speed, treble adds sparkle.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "generative",
+      "prismatic",
+      "ion",
+      "cascade",
+      "spectral",
+      "audio-reactive"
+    ],
+    "coordinate": 884,
+    "params": [
+      {
+        "id": "stream_density",
+        "name": "Stream Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "cascade_speed",
+        "name": "Cascade Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ion_thickness",
+        "name": "Ion Thickness",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       }
     ]
@@ -5108,7 +5448,7 @@
     "name": "Quantum Superposition Lattice",
     "url": "shaders/gen-quantum-superposition.wgsl",
     "category": "generative",
-    "description": "Particles exist in quantum superposition \u2014 visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
+    "description": "Particles exist in quantum superposition — visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
     "tags": [
       "quantum",
       "superposition",
@@ -5136,7 +5476,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of quantum particles (maps to 1\u20138)."
+        "description": "Number of quantum particles (maps to 1–8)."
       },
       {
         "id": "param2",
@@ -5275,6 +5615,63 @@
         "min": 0,
         "max": 1,
         "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "gen-rgb-diffraction",
+    "name": "RGB Diffraction",
+    "url": "shaders/gen-rgb-diffraction.wgsl",
+    "category": "generative",
+    "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "colorful",
+      "diffraction",
+      "prismatic",
+      "spectral",
+      "interference",
+      "rainbow",
+      "generative",
+      "abstract"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Evolution Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "freq",
+        "name": "Fringe Frequency",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromab",
+        "name": "Chromatic Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -5549,6 +5946,65 @@
     ]
   },
   {
+    "id": "gen-strange-field-flow",
+    "name": "Strange Field Flow",
+    "url": "shaders/gen-strange-field-flow.wgsl",
+    "category": "generative",
+    "description": "A strange-attractor flow field blending Peter de Jong and Clifford attractor maps. Each pixel evaluates iterated orbit density and paints acid-neon whorls. Attractor coefficients pulse to bass and treble, morphing the topology. Temporal persistence burns psychedelic trails.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "attractor",
+      "chaos",
+      "colorful",
+      "acid",
+      "neon",
+      "flow",
+      "generative",
+      "abstract",
+      "fractal"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Drift Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chaos",
+        "name": "Chaos Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Orbit Density",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedback",
+        "name": "Trail Persistence",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-string-theory",
     "name": "String Theory",
     "url": "shaders/gen-string-theory.wgsl",
@@ -5763,6 +6219,64 @@
         "id": "trailPersistence",
         "name": "Trail Persistence",
         "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-torus-knot-rainbow",
+    "name": "Torus Knot Rainbow",
+    "url": "shaders/gen-torus-knot-rainbow.wgsl",
+    "category": "generative",
+    "description": "A (p,q) torus knot projected onto the 2D plane with perspective. The knotted curve is rendered as a thick rainbow-hued ribbon that rotates and morphs its winding numbers over time. Audio modulates the longitude frequency for reactive topology shifts.",
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "procedural"
+    ],
+    "tags": [
+      "psychedelic",
+      "colorful",
+      "torus",
+      "knot",
+      "rainbow",
+      "3d",
+      "generative",
+      "abstract",
+      "neon"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Spin Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "knotp",
+        "name": "P Winds",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "knotq",
+        "name": "Q Winds",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "tube",
+        "name": "Tube Radius",
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -6192,7 +6706,7 @@
     "name": "Domain-Warped FBM Grid",
     "url": "shaders/gen_grid.wgsl",
     "category": "generative",
-    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moir\u00e9 sub-grids, chromatic dispersion edges, and temporal motion blur.",
+    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -6367,96 +6881,106 @@
   },
   {
     "id": "gen-grok4-life",
-    "name": "Grok4 Cellular Life",
+    "name": "SmoothLife Predator-Prey",
     "url": "shaders/gen_grok4_life.wgsl",
     "category": "generative",
-    "description": "Conway's Game of Life simulation with mouse drawing and random seeding.",
+    "description": "Two-species SmoothLife cellular automaton with Lotka-Volterra predator-prey dynamics. Species A (green prey) uses Rafler 2011 birth/survival rules; species B (red predator) grows on prey density and decays without it. Audio bass drives prey birth-rate, treble drives predator decay, mids control coupling strength.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "simulation",
+      "life",
+      "predator-prey",
+      "audio-reactive",
+      "organic"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "id": "timeStep",
+        "name": "Time Step",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 1
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "sharpness",
+        "name": "Sharpness",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "colorSpeed",
+        "name": "Colour Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "initDensity",
+        "name": "Init Density",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       }
     ]
   },
   {
     "id": "gen-grok4-perlin",
-    "name": "Grok4 Perlin Terrain",
+    "name": "Eroded Perlin Terrain",
     "url": "shaders/gen_grok4_perlin.wgsl",
     "category": "generative",
-    "description": "Multi-octave Perlin noise generating animated terrain with mouse offset.",
+    "description": "Erosion-inspired terrain synthesis with domain-warped noise, hydraulic flow carving, sediment deposition, stratified coloring, and depth-aware relief.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
       "procedural",
-      "mouse-driven"
+      "mouse-driven",
+      "erosion-inspired",
+      "hydraulic-flow",
+      "terrain"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "terrain",
+      "erosion",
+      "sediment",
+      "landscape"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "id": "erosion",
+        "name": "Erosion",
+        "default": 0.55,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "id": "waterline",
+        "name": "Waterline",
+        "default": 0.35,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "id": "terrain_scale",
+        "name": "Terrain Scale",
+        "default": 0.45,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "sediment",
+        "name": "Sediment Contrast",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6466,61 +6990,55 @@
   },
   {
     "id": "gen-grokcf-interference",
-    "name": "Chladni Plate Cymatics",
+    "name": "Cylindrical Drum Modes",
     "url": "shaders/gen_grokcf_interference.wgsl",
     "category": "generative",
-    "description": "Audio-reactive Chladni cymatics with modal synthesis, iridescent oil-slick interference, and Fibonacci spiral self-organization at high audio energy.",
+    "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring.",
     "features": [
-      "mouse-driven",
-      "depth-aware",
       "upgraded-rgba",
+      "depth-aware",
       "audio-reactive",
       "procedural",
-      "organic",
       "animated"
     ],
     "tags": [
       "procedural",
       "generative",
       "cymatics",
-      "interference",
+      "bessel",
+      "drum",
       "audio-reactive",
-      "stained-glass",
-      "vibration",
-      "vj"
+      "chladni",
+      "physics"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Sweep Speed",
+        "id": "modeScale",
+        "name": "Mode Scale",
         "default": 0.4,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param2",
+        "id": "colorMode",
+        "name": "Colour Mode",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "nodeSharpness",
+        "name": "Node Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "modeCount",
         "name": "Mode Count",
         "default": 0.6,
         "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Pattern Sharpness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Sand Density",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       }
     ]
   },
@@ -6634,49 +7152,52 @@
   },
   {
     "id": "gen-julia-set",
-    "name": "Julia Set",
+    "name": "Julia Set — Orbit Trap",
     "url": "shaders/gen_julia_set.wgsl",
     "category": "generative",
-    "description": "Animated Julia Set fractal controlled by mouse position.",
+    "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth (continuous) iteration count μ=i−log₂(log₂|z|), multi-trap orbit colouring (circle, line, cross traps), and animated Julia parameter c orbiting a Mandelbrot cardioid boundary. Audio-driven trap scale.",
     "features": [
-      "mouse-driven"
+      "audio-reactive",
+      "procedural",
+      "animated"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "fractal",
+      "julia",
+      "orbit-trap",
+      "abstract",
+      "colorful"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.35,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "id": "power",
+        "name": "Exponent n",
+        "default": 0,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "id": "trapMode",
+        "name": "Trap Mode",
+        "default": 0,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "trapScale",
+        "name": "Trap Scale",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01
+        "max": 1
       }
     ]
   },
@@ -6849,7 +7370,7 @@
     "name": "Lorenz Strange Attractor",
     "url": "shaders/gen_orb.wgsl",
     "category": "generative",
-    "description": "Audio-reactive Lorenz strange attractor (\u03c3, \u03c1, \u03b2) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
+    "description": "Audio-reactive Lorenz strange attractor (σ, ρ, β) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -6872,7 +7393,7 @@
     "params": [
       {
         "id": "param1",
-        "name": "Sigma (\u03c3)",
+        "name": "Sigma (σ)",
         "default": 0.45,
         "min": 0,
         "max": 1,
@@ -6880,7 +7401,7 @@
       },
       {
         "id": "param2",
-        "name": "Rho (\u03c1)",
+        "name": "Rho (ρ)",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6888,7 +7409,7 @@
       },
       {
         "id": "param3",
-        "name": "Beta (\u03b2)",
+        "name": "Beta (β)",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -6906,51 +7427,57 @@
   },
   {
     "id": "gen-psychedelic-spiral",
-    "name": "Psychedelic Spiral",
+    "name": "Superformula Spirograph Spiral",
     "url": "shaders/gen_psychedelic_spiral.wgsl",
     "category": "generative",
-    "description": "Hypnotic spiral with intense feedback and mouse warping.",
+    "description": "Superformula-driven spirograph spiral with nested epicycles, audio-reactive petal modulation, mouse-centered orbit drift, and temporal feedback warping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal",
+      "spirograph",
+      "superformula"
     ],
     "tags": [
       "procedural",
       "generative",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "spirograph",
+      "spiral",
+      "fractal-floral"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "intensity",
+        "name": "Orbit Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "spin",
+        "name": "Spin Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "petals",
+        "name": "Petal Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "id": "feedback",
+        "name": "Feedback Warp",
+        "default": 0.45,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -8336,101 +8863,6 @@
       }
     ],
     "target_rating": 4.8
-  },
-  {
-    "id": "cymatic-sand",
-    "name": "Cymatic Sand",
-    "description": "Simulates Chladni plate patterns where sand accumulates on nodal lines of standing waves. Mouse X/Y controls the frequency modes.",
-    "url": "shaders/cymatic-sand.wgsl",
-    "category": "generative",
-    "features": [
-      "mouse-driven",
-      "simulation",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "amount",
-        "name": "Sand Amount",
-        "default": 0.5,
-        "min": 0.1,
-        "max": 1
-      },
-      {
-        "id": "width",
-        "name": "Line Width",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "grain",
-        "name": "Grain Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "contrast",
-        "name": "Contrast",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "procedural",
-      "generative",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
-    "id": "lichtenberg-fractal",
-    "name": "Lichtenberg Fractal",
-    "description": "Simulates high-voltage electrical branching patterns (Lichtenberg figures) that grow from the mouse cursor.",
-    "url": "shaders/lichtenberg-fractal.wgsl",
-    "category": "generative",
-    "features": [
-      "mouse-driven",
-      "simulation"
-    ],
-    "params": [
-      {
-        "id": "speed",
-        "name": "Growth Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "branching",
-        "name": "Branching Factor",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Burn Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "clear",
-        "name": "Clear Canvas",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "procedural",
-      "generative"
-    ]
   },
   {
     "id": "predator-prey",

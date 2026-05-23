@@ -24,7 +24,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=TileSize, y=Radius, z=EdgeHardness, w=SaturationBoost
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -101,5 +101,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Passthrough depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

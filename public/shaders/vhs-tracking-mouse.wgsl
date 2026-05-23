@@ -43,8 +43,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coords = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    var mousePos = u.zoom_config.yz;
-    if (mousePos.y < 0.0) { mousePos.y = 0.5; }
+    let mousePos = vec2<f32>(u.zoom_config.y, select(0.5, u.zoom_config.z, u.zoom_config.z >= 0.0));
 
     let bass = plasmaBuffer[0].x;
     let barHeight = u.zoom_params.x * 0.3 + 0.05;
@@ -67,9 +66,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(0.0);
     if (in_bar) {
-        color.r = textureSampleLevel(readTexture, u_sampler, finalUV + vec2<f32>(colorShift, 0.0), 0.0).r;
-        color.g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
-        color.b = textureSampleLevel(readTexture, u_sampler, finalUV - vec2<f32>(colorShift, 0.0), 0.0).b;
+        let r = textureSampleLevel(readTexture, u_sampler, finalUV + vec2<f32>(colorShift, 0.0), 0.0).r;
+        let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
+        let b = textureSampleLevel(readTexture, u_sampler, finalUV - vec2<f32>(colorShift, 0.0), 0.0).b;
+        color = vec3<f32>(r, g, b);
         if (noiseAmt > 0.0) {
             let n = rand(uv + vec2<f32>(time, time));
             color += (n - 0.5) * noiseAmt;

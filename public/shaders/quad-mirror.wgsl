@@ -5,6 +5,7 @@
 //            audio-reactive, seam-warp
 //  Complexity: Medium
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -62,13 +63,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let time = u.config.x;
 
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
   // Parameters
   let hOffset = (u.zoom_params.x - 0.5) * 0.4;
   let vOffset = (u.zoom_params.y - 0.5) * 0.4;
   let seamWarpAmt = u.zoom_params.z * 0.05;
-  let rotation = u.zoom_params.w * TAU + time * 0.1;
+  // Bass boosts rotation speed for beat-locked spin
+  let rotation = u.zoom_params.w * TAU + time * 0.1 * (1.0 + bass * 0.3);
 
   // Treble → seam warp shimmer
   let warpShimmer = seamWarpAmt * (1.0 + treble * 0.5);
@@ -100,8 +104,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let seamAlphaReduction = warpShimmer * nearSeam * 2.0;
   color.a = max(0.3, color.a - seamAlphaReduction);
 
+  // Mids → saturation boost for audio-reactive colour pop
+  let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let satBoost = 1.0 + mids * 0.4;
+  color = vec4<f32>(mix(vec3<f32>(luma), color.rgb, satBoost), color.a);
+
   textureStore(writeTexture, px, color);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, px, color);
 }

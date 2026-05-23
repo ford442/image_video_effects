@@ -1,50 +1,56 @@
 {
   "id": "gen-psychedelic-spiral",
-  "name": "Psychedelic Spiral",
+  "name": "Superformula Spirograph Spiral",
   "url": "shaders/gen_psychedelic_spiral.wgsl",
   "category": "generative",
-  "description": "Hypnotic spiral with intense feedback and mouse warping.",
+  "description": "Superformula-driven spirograph spiral with nested epicycles, audio-reactive petal modulation, mouse-centered orbit drift, and temporal feedback warping.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "temporal",
+    "spirograph",
+    "superformula"
   ],
   "tags": [
     "procedural",
     "generative",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "spirograph",
+    "spiral",
+    "fractal-floral"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "intensity",
+      "name": "Orbit Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "spin",
+      "name": "Spin Speed",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "petals",
+      "name": "Petal Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "id": "feedback",
+      "name": "Feedback Warp",
+      "default": 0.45,
       "min": 0,
       "max": 1,
       "step": 0.01

@@ -1,8 +1,8 @@
 # image_video_effects — Weekly Plan
 
 ## Today's focus
-**2026-05-16 — AI VJ stack persistence + history panel.**
-kimi-cli adds localStorage save/load of generated VJ stacks to `src/AutoDJ.ts` (intercept `onUpdateStack` / `onUpdateParams` callbacks to persist `{vibeText, shaderIds, params, timestamp}[]`), extracts a thin `src/services/vjHistory.ts` service (get/save/clear, max 20 entries), and wires a collapsible "VJ History" panel into `src/components/Controls.tsx` immediately below the vibe-prompt section — showing last N stacks with vibe text, shader IDs, timestamp, a one-click restore button, and a "regenerate variation" button that re-fires `generateFromVibe` with the same vibe string. Do not touch `src/renderer/`, `reports/`, or `public/shaders/`.
+**2026-05-23 — Per-shader param presets + AI VJ randomizer.**
+kimi-cli builds a preset system (keyed off `shaderCatalog`) and a live-randomizer operator for the AI VJ stack. Specifically: create `src/services/vjPresets.ts` (VJPreset interface, localStorage save/load/delete, `randomizeParams(shaderIds, catalog)` that samples each param uniformly within [min, max] snapped to step); add a `randomizeActiveParams()` public method to `src/AutoDJ.ts`; wire a "Randomize Params" button and collapsible "Presets" panel (save current stack as named preset, restore/delete) into `src/components/Controls.tsx`. Do not touch `src/renderer/`, `reports/`, or `public/shaders/`.
 
 ## Ideas
 <!--
@@ -17,9 +17,10 @@ Routine will mark picked items as "[in progress — YYYY-MM-DD]".
 - [x] Shader metadata normalization + full-text search over 700+ library
   Reconcile `params_missing.md`, `SHADER_PARAMETER_AUDIT.md`, and `shader_params_extracted.json` into a single canonical metadata schema so the scanner/rating/AI-VJ paths share one source of truth. Full-day.
   → Completed 2026-05-02 (shaderCatalog.ts built, wired into ShaderBrowserWithRatings + AutoDJ.buildShaderManifest)
-- [in progress — 2026-05-16] AI VJ stack persistence + history panel
+- [x] AI VJ stack persistence + history panel
   Add localStorage save/load of generated stacks, a "VJ history" panel showing last N stacks with their vibe prompts, and a one-click "regenerate variation" button. Surface live shader IDs in the UI. Half-day.
-- [ ] Per-shader param presets + AI VJ randomizer
+  → Completed 2026-05-23 (vjHistory.ts service, saveVJStack in AutoDJ.ts, collapsible VJ History panel with Restore + Regen buttons in Controls.tsx)
+- [in progress — 2026-05-23] Per-shader param presets + AI VJ randomizer
   Build a preset system for param combos (keyed off shaderCatalog), add a "randomize params" operator that samples within min/max/step ranges for each shader in the active AI VJ stack. Enables live-performance use. Full-day.
 
 ## Backlog
@@ -39,6 +40,7 @@ Routine maintains this automatically — you can add items too.
 Completed items, routine archives here with date.
 Prune occasionally when this gets long.
 -->
+- 2026-05-23: AI VJ stack persistence + history panel — vjHistory.ts service (save/load/clear/removeEntry, max 20 entries, localStorage), saveVJStack wired into AutoDJ.generateFromVibe, collapsible "VJ History" panel in Controls.tsx with per-entry Restore (exact stack+params) and Regen (re-fires generateFromVibe with same vibe string) buttons, Clear History button.
 - 2026-05-16: WGSL runtime-error fix pass — all 49 critical shaders in `reports/runtime_errors_report.json` fixed and validated via naga. Patterns: bulk canonical binding renames (videoSampler→u_sampler, outTex→writeTexture, etc.) resolved the majority; false-positive invalid_binding flags cleared for 8 multi-pass shaders; array_bounds ripple clamps added where needed. 49/49 naga OK per `.swarm-state.md`.
 - 2026-05-09: Shader metadata normalization — `shaderCatalog.ts` service built (merges 15 category JSONs + shader_params_extracted.json, in-memory full-text index, module-level cache), wired into `ShaderBrowserWithRatings` (search) and `AutoDJ.buildShaderManifest()` (AI VJ path). Single source of truth confirmed in code audit.
 - 2026-05-02: AI VJ Mode — Alucinate full-library manifest (all 15 categories, 918 shaders), LLM param suggestion (`selectShadersFromLLM` returns `{id, params}[]`), `onUpdateParams` callback, `generateFromVibe()` one-shot method, vibe-prompt text input + Generate button in Controls.tsx (kimi-cli swarm, confirmed via `.swarm-state.md` + code audit)
@@ -51,7 +53,7 @@ Prune occasionally when this gets long.
 
 ## Last run
 <!-- Routine writes summary here each run. Overwrites previous. -->
-Date: 2026-05-16
+Date: 2026-05-23
 Mode: User Idea
-Focus: AI VJ stack persistence + history panel (localStorage save/load, VJ history panel in Controls.tsx, regenerate-variation button)
+Focus: Per-shader param presets + AI VJ randomizer (vjPresets.ts service, randomizeActiveParams() on Alucinate, Randomize Params button + Presets panel in Controls.tsx)
 Outcome: pending

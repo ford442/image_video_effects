@@ -2,48 +2,54 @@
   "id": "neon-pulse-edge",
   "name": "Neon Pulse Edge",
   "url": "shaders/neon-pulse-edge.wgsl",
-  "category": "image",
-  "description": "Edge detection with neon glow that reveals near the mouse.",
+  "category": "lighting-effects",
+  "description": "3×3 Sobel edge detection with multi-layer bloom (tight core + wide halo + diffuse), direction-based hue cycling, depth-aware glow intensity, and audio-reactive pulsing.",
   "features": [
     "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+    "depth-aware",
+    "audio-reactive"
   ],
   "params": [
     {
-      "id": "threshold",
+      "id": "edge_threshold",
       "name": "Edge Threshold",
       "default": 0.3,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "intensity",
-      "name": "Glow Intensity",
-      "default": 0.5,
+      "id": "glow_radius",
+      "name": "Glow Radius",
+      "default": 0.4,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "id": "pulse_speed",
       "name": "Pulse Speed",
-      "default": 0.5,
+      "default": 0.4,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "shift",
-      "name": "Color Shift",
-      "default": 0.0,
+      "id": "color_cycle_rate",
+      "name": "Color Cycle Rate",
+      "default": 0.5,
       "min": 0.0,
-      "max": 1.0
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "tags": [
-    "filter",
-    "image-processing",
+    "neon",
+    "edge",
+    "glow",
+    "bloom",
     "audio",
-    "music",
-    "reactive"
+    "reactive",
+    "colorful"
   ]
 }

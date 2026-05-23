@@ -1,0 +1,57 @@
+{
+  "id": "gen-acid-lissajous",
+  "name": "Acid Lissajous",
+  "url": "shaders/gen-acid-lissajous.wgsl",
+  "category": "generative",
+  "description": "Seven Lissajous curve strands rendered as glowing neon tubes with continuous acid-trip color cycling, harmonic drift, and soft bloom. Each strand traces a different frequency ratio pair that slowly evolves for ever-changing knotted patterns.",
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "psychedelic",
+    "neon",
+    "colorful",
+    "lissajous",
+    "oscilloscope",
+    "generative",
+    "abstract",
+    "glow"
+  ],
+  "params": [
+    {
+      "id": "speed",
+      "name": "Animation Speed",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "complexity",
+      "name": "Harmonic Complexity",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow Width",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "feedback",
+      "name": "Persistence",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

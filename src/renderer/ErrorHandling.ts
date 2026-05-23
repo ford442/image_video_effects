@@ -5,7 +5,7 @@
  */
 
 export interface RendererError {
-  type: 'webgpu-unavailable' | 'shader-compile' | 'media-load' | 'device-lost';
+  type: 'webgpu-unavailable' | 'shader-compile' | 'media-load' | 'device-lost' | 'wasm-unavailable' | 'wasm-init' | 'wasm-device-lost';
   message: string;
   recoverable: boolean;
 }

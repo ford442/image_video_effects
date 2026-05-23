@@ -1,60 +1,15 @@
 {
   "id": "gen-grokcf-interference",
-  "name": "Chladni Plate Cymatics",
+  "name": "Cylindrical Drum Modes",
   "url": "shaders/gen_grokcf_interference.wgsl",
   "category": "generative",
-  "description": "Audio-reactive Chladni cymatics with modal synthesis, iridescent oil-slick interference, and Fibonacci spiral self-organization at high audio energy.",
-  "features": [
-    "mouse-driven",
-    "depth-aware",
-    "upgraded-rgba",
-    "audio-reactive",
-    "procedural",
-    "organic",
-    "animated"
-  ],
-  "tags": [
-    "procedural",
-    "generative",
-    "cymatics",
-    "interference",
-    "audio-reactive",
-    "stained-glass",
-    "vibration",
-    "vj"
-  ],
+  "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring.",
+  "features": ["upgraded-rgba", "depth-aware", "audio-reactive", "procedural", "animated"],
+  "tags": ["procedural", "generative", "cymatics", "bessel", "drum", "audio-reactive", "chladni", "physics"],
   "params": [
-    {
-      "id": "param1",
-      "name": "Sweep Speed",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param2",
-      "name": "Mode Count",
-      "default": 0.6,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param3",
-      "name": "Pattern Sharpness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param4",
-      "name": "Sand Density",
-      "default": 0.55,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
+    { "id": "modeScale",    "name": "Mode Scale",     "default": 0.4, "min": 0.0, "max": 1.0 },
+    { "id": "colorMode",    "name": "Colour Mode",    "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "nodeSharpness","name": "Node Sharpness", "default": 0.5, "min": 0.0, "max": 1.0 },
+    { "id": "modeCount",    "name": "Mode Count",     "default": 0.6, "min": 0.0, "max": 1.0 }
   ]
 }

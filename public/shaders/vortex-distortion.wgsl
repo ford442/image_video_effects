@@ -1,144 +1,141 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Vortex Distortion with Alpha Physics
-//  Scientific: Twisting deformation with light scattering
-//  
-//  ALPHA PHYSICS:
-//  - Twist strength creates local distortion gradients
-//  - Higher twist = more light path deviation = scattered alpha
-//  - Chromatic aberration affects per-channel opacity
+//  Lamb-Oseen Vortex Fluid with Kelvin-Helmholtz Shear Instability
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, temporal
+//  Complexity: High
+//  Scientific: Lamb-Oseen vortex u_θ = (Γ/2πr)(1−exp(−r²/4νt)),
+//              Kelvin-Helmholtz instability at vortex boundary,
+//              multiple interacting vortices from ripple history,
+//              streamline color coding by velocity magnitude + vorticity
+//  Upgraded: Phase B
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(0)  var u_sampler: sampler;
+@group(0) @binding(1)  var readTexture: texture_2d<f32>;
+@group(0) @binding(2)  var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3)  var<uniform> u: Uniforms;
+@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5)  var non_filtering_sampler: sampler;
+@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
-
-// Calculate distortion magnitude from twist parameters
-fn calculateDistortionMagnitude(
-    percent: f32,           // 0-1 based on distance from center
-    twistStrength: f32,     // -10 to 10
-    theta: f32              // rotation angle
-) -> f32 {
-    // Distortion increases with twist strength and is stronger at center
-    let twistMag = abs(twistStrength) * 0.1;
-    let centerFocus = percent * percent; // Stronger at center
-    return twistMag * centerFocus;
+    config:      vec4<f32>,  // x=Time, y=ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Circulation, y=Viscosity, z=KHAmplitude, w=Aberration
+    ripples:     array<vec4<f32>, 50>,
 }
 
-// Calculate alpha based on physical distortion
-// Higher distortion = more light scattering = reduced alpha
-fn calculatePhysicalAlpha(
-    baseAlpha: f32,
-    distortionMag: f32,
-    aberration: f32
-) -> f32 {
-    // Light scattering due to distortion gradient
-    let scattering = distortionMag * 0.5;
-    
-    // Chromatic aberration contributes to alpha separation
-    let chromaticScatter = aberration * 10.0 * distortionMag;
-    
-    // Combined alpha reduction
-    return clamp(baseAlpha * (1.0 - scattering) - chromaticScatter * 0.1, 0.4, 1.0);
+// Lamb-Oseen azimuthal velocity: u_θ = Γ/(2πr) · (1 − exp(−r²/(4νt)))
+fn lambOseen(p: vec2<f32>, center: vec2<f32>, circulation: f32, nu: f32, age: f32) -> vec2<f32> {
+    let d    = p - center;
+    let r    = length(d);
+    if (r < 0.0001) { return vec2<f32>(0.0); }
+    let r2   = r * r;
+    let t    = max(age, 0.001);
+    // Azimuthal velocity magnitude
+    let uTheta = (circulation / (6.28318 * r)) * (1.0 - exp(-r2 / (4.0 * nu * t)));
+    // Tangential direction (perpendicular to radial)
+    let tangent = vec2<f32>(-d.y, d.x) / r;
+    return tangent * uTheta;
+}
+
+// Kelvin-Helmholtz sinusoidal perturbation at shear radius
+fn khPerturbation(p: vec2<f32>, center: vec2<f32>, shearR: f32, amplitude: f32, time: f32) -> vec2<f32> {
+    let d  = p - center;
+    let r  = length(d);
+    // KH instability is strongest at the viscous core radius
+    let envelope = exp(-abs(r - shearR) * abs(r - shearR) / (shearR * shearR * 0.1));
+    let angle    = atan2(d.y, d.x);
+    // Sinusoidal instability at azimuthal wavenumber m=6
+    let perturb  = amplitude * envelope * sin(angle * 6.0 + time * 3.0) * 0.01;
+    return normalize(d + vec2<f32>(0.0001)) * perturb;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  var mousePos = u.zoom_config.yz; // Mouse (0-1)
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-  // Params
-  let twistStrength = (u.zoom_params.x - 0.5) * 20.0; // -10 to 10
-  let radius = u.zoom_params.y * 0.8 + 0.1; // 0.1 to 0.9
-  let aberration = u.zoom_params.z * 0.05;
-  let darkness = u.zoom_params.w;
+    let uv     = vec2<f32>(global_id.xy) / resolution;
+    let time   = u.config.x;
+    let aspect = resolution.x / resolution.y;
+    let bass   = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
 
-  // Vector from mouse
-  let aspect = resolution.x / resolution.y;
-  let dVec = uv - mousePos;
-  let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+    let circulation = mix(-8.0, 8.0, u.zoom_params.x);  // Γ, signed (CW vs CCW)
+    let nu          = mix(0.0005, 0.02, u.zoom_params.y); // kinematic viscosity
+    let khAmp       = mix(0.0, 1.0, u.zoom_params.z) * (1.0 + bass * 0.5);
+    let aberration  = u.zoom_params.w * 0.03;
 
-  var finalColor = vec4<f32>(0.0);
-  var distortionMag = 0.0;
-  var warpedAlpha = 1.0;
+    var p = vec2<f32>(uv.x * aspect, uv.y);
 
-  if (dist < radius) {
-      // Calculate twist amount based on distance (stronger at center)
-      let percent = (radius - dist) / radius;
-      let theta = percent * percent * twistStrength;
-      
-      // Calculate distortion magnitude for alpha physics
-      distortionMag = calculateDistortionMagnitude(percent, twistStrength, theta);
-      
-      let s = sin(theta);
-      let c = cos(theta);
+    // ─── Sum velocity from all active vortices (ripple history) ───
+    var vel      = vec2<f32>(0.0);
+    var vorticity = 0.0;
+    let numV     = min(i32(u.config.y), 20);   // cap at 20 vortices for performance
 
-      // Rotate coordinates
-      var centered = vec2<f32>(dVec.x * aspect, dVec.y);
-      let rotated = vec2<f32>(
-          centered.x * c - centered.y * s,
-          centered.x * s + centered.y * c
-      );
-      let uvOffset = vec2<f32>(rotated.x / aspect, rotated.y);
-      let twistedUV = mousePos + uvOffset;
+    // Always include mouse vortex
+    var mouseCenter = u.zoom_config.yz;
+    mouseCenter.x *= aspect;
+    let mouseV = lambOseen(p, mouseCenter, circulation * (1.0 + bass * 0.3), nu, time * 0.1 + 0.001);
+    vel += mouseV;
+    // KH instability at viscous core
+    let coreR = sqrt(4.0 * nu * max(time * 0.1, 0.001));
+    vel += khPerturbation(p, mouseCenter, coreR, khAmp, time);
 
-      // Chromatic Aberration with per-channel alpha
-      if (aberration > 0.001) {
-          let rUV = twistedUV + vec2<f32>(aberration * percent, 0.0);
-          let gUV = twistedUV;
-          let bUV = twistedUV - vec2<f32>(aberration * percent, 0.0);
+    for (var i = 0; i < 20; i++) {
+        if (i >= numV) { break; }
+        let rip = u.ripples[i];
+        let src = vec2<f32>(rip.x * aspect, rip.y);
+        let age = time - rip.z;
+        if (age < 0.0 || age > 6.0) { continue; }
+        // Alternate CW / CCW for visual variety
+        let circ = circulation * select(-0.6, 0.6, (i & 1) == 0) * exp(-age * 0.3);
+        vel += lambOseen(p, src, circ, nu, age + 0.001);
+        let vcore = sqrt(4.0 * nu * (age + 0.001));
+        vel += khPerturbation(p, src, vcore, khAmp * exp(-age * 0.4), time);
+    }
 
-          let rSample = textureSampleLevel(readTexture, u_sampler, rUV, 0.0);
-          let gSample = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
-          let bSample = textureSampleLevel(readTexture, u_sampler, bUV, 0.0);
+    // Approximate vorticity: ω ≈ |∇×v| from circulation strength
+    vorticity = length(vel) * sign(circulation);
 
-          // Per-channel alpha with distortion physics
-          let rAlpha = calculatePhysicalAlpha(rSample.a, distortionMag, aberration);
-          let gAlpha = calculatePhysicalAlpha(gSample.a, distortionMag, aberration);
-          let bAlpha = calculatePhysicalAlpha(bSample.a, distortionMag, aberration);
-          
-          // Combine channels with their respective alphas
-          let avgAlpha = (rAlpha + gAlpha + bAlpha) / 3.0;
-          finalColor = vec4<f32>(rSample.r, gSample.g, bSample.b, avgAlpha);
-      } else {
-          let sample = textureSampleLevel(readTexture, u_sampler, twistedUV, 0.0);
-          warpedAlpha = calculatePhysicalAlpha(sample.a, distortionMag, 0.0);
-          finalColor = vec4<f32>(sample.rgb, warpedAlpha);
-      }
+    // ─── Displace sample UV ───
+    let speed  = length(vel);
+    // Chromatic aberration by velocity magnitude
+    let uvBase = uv - vec2<f32>(vel.x / aspect, vel.y) * 0.04;
+    let uvR    = uvBase + vec2<f32>(aberration, 0.0);
+    let uvB    = uvBase - vec2<f32>(aberration, 0.0);
 
-      // Darkness at center (absorption effect)
-      let absorption = darkness * percent;
-      finalColor = vec4<f32>(finalColor.rgb * (1.0 - absorption), finalColor.a);
-      
-      // Physical: higher absorption = slightly more opaque
-      finalColor.a = min(finalColor.a + absorption * 0.2, 1.0);
+    let sR  = textureSampleLevel(readTexture, u_sampler, clamp(uvR, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
+    let sG  = textureSampleLevel(readTexture, u_sampler, clamp(uvBase, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
+    let sB  = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
+    var color = vec3<f32>(sR.r, sG.g, sB.b);
 
-  } else {
-      finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  }
+    // ─── Vorticity color overlay ───
+    // Red = CW vortex, Blue = CCW, Green = irrotational
+    let vNorm = clamp(vorticity, -1.0, 1.0);
+    let vCol  = mix(
+        mix(vec3<f32>(0.1, 0.3, 1.0), vec3<f32>(0.0, 0.8, 0.3), 0.5 + vNorm * 0.5),
+        vec3<f32>(1.0, 0.15, 0.05),
+        clamp(vNorm, 0.0, 1.0)
+    );
+    let vIntensity = smoothstep(0.0, 0.5, speed) * 0.35;
+    color = mix(color, vCol, vIntensity);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    // Streamline brightness at high-speed regions
+    color += vec3<f32>(1.0, 0.8, 0.5) * clamp(speed - 0.3, 0.0, 0.5) * 0.4;
 
-  // Depth Pass-through with distortion-based modification
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  // Distorted regions have depth uncertainty
-  let depthUncertainty = distortionMag * 0.1;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d * (1.0 + depthUncertainty), 0.0, 0.0, 0.0));
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthUncertainty = speed * 0.08;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(vel.x, vel.y, vorticity, speed));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy),
+        vec4<f32>(d * (1.0 + depthUncertainty), 0.0, 0.0, 0.0));
 }
+
