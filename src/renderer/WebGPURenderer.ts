@@ -285,7 +285,9 @@ export class WebGPURenderer implements Renderer {
 
     // Deep-workgroup capability: @workgroup_size(16,16,4) = 1024 invocations.
     // Supported on Apple M1+, NVIDIA RTX, AMD RDNA2+; NOT on Intel UHD (limit=256).
-    // GPUAdapter.limits is defined in the WebGPU spec and @webgpu/types as GPUSupportedLimits.
+    // The WebGPU spec guarantees maxComputeInvocationsPerWorkgroup >= 256 for all
+    // compliant devices, so 256 is the safe conservative fallback if the property
+    // is unexpectedly absent (e.g. in older type stubs or non-standard environments).
     const maxInvocations = adapter.limits?.maxComputeInvocationsPerWorkgroup ?? 256;
     this.supportsDeepWorkgroup = maxInvocations >= 1024;
     if (this.supportsDeepWorkgroup) {

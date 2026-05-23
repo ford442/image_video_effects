@@ -570,13 +570,12 @@ function MainApp() {
 
 
     // --- Filter shaders that require unsupported GPU capabilities ---
-    // After renderer init (rendererReady=true), scan the shader list and remove any
-    // shaders flagged requiresDeepWorkgroup when the GPU lacks 1024-invocation support.
-    //
-    // The effect runs whenever availableModes or rendererReady changes.  It is
-    // self-terminating: after the first filter pass, no requiresDeepWorkgroup entries
-    // remain in availableModes, so subsequent runs find skipped.length===0 and never
-    // call setAvailableModes, ending the cycle without an infinite loop.
+    // Runs when the renderer is ready (capabilities known) or when the shader list
+    // grows (new shaders added after renderer init).  Using availableModes.length as
+    // the dep — rather than the full array reference — prevents re-triggering on the
+    // reference change caused by the setAvailableModes(filtered) call below, because
+    // filtering *reduces* the length: after the first pass the length is smaller and
+    // the effect only re-runs if more shaders are subsequently added.
     useEffect(() => {
         if (!rendererReady || supportsDeepWorkgroup) return;  // nothing to filter
         const skipped: string[] = [];
@@ -594,8 +593,11 @@ function MainApp() {
             );
             setAvailableModes(filtered);
         }
+    // availableModes.length (not the full array) is intentional: we react when the
+    // list grows, but filtering reduces length, so subsequent runs are prevented until
+    // more shaders are added.  supportsDeepWorkgroup is stable after renderer init.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rendererReady, supportsDeepWorkgroup, availableModes]);
+    }, [rendererReady, supportsDeepWorkgroup, availableModes.length]);
 
     // --- Image Loading ---
     const runDepthAnalysis = useCallback(async (imageUrl: string) => {

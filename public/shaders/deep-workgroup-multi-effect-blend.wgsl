@@ -40,7 +40,7 @@
 struct Uniforms {
     config      : vec4<f32>,  // x=time, y=clickCount, z=resX, w=resY
     zoom_config : vec4<f32>,  // x=time, y=mouseX, z=mouseY, w=mouseDown
-    zoom_params : vec4<f32>,  // x=blend, y=hueSpeed, z=bloomThresh, w=phosphorDecay
+    zoom_params : vec4<f32>,  // x=blend, y=hueSpeed, z=bloomThresh, w=phosphorAmt
     ripples     : array<vec4<f32>, 50>,
 }
 
