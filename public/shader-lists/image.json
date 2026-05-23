@@ -6418,7 +6418,7 @@
       "depth-aware",
       "upgraded-rgba"
     ],
-    "description": "Interactive page curl with audio-reactive RGB splitting, click shockwaves, depth-aware shadows, and temporal feedback trails.",
+    "description": "Interactive page curl with audio-reactive RGB chromatic split on the curl face, click shockwaves, depth-aware shadows, and temporal feedback trails.",
     "params": [
       {
         "id": "param1",
@@ -6453,7 +6453,10 @@
       "filter",
       "image-processing",
       "interactive",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal",
+      "curl",
+      "chromatic"
     ]
   },
   {
