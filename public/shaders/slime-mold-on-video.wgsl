@@ -29,6 +29,10 @@ fn lumaAt(uv: vec2<f32>) -> f32 {
   return dot(textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+fn trailAt(uv: vec2<f32>) -> f32 {
+  return textureSampleLevel(dataTextureC, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -44,7 +48,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var blur = 0.0;
   for (var y: i32 = -1; y <= 1; y = y + 1) {
     for (var x: i32 = -1; x <= 1; x = x + 1) {
-      blur = blur + textureLoad(dataTextureC, coord + vec2<i32>(x, y), 0).r;
+      let sampleUV = uv + vec2<f32>(f32(x), f32(y)) * px;
+      blur = blur + trailAt(sampleUV);
     }
   }
   blur = blur / 9.0;
@@ -55,10 +60,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let foodD = lumaAt(uv - vec2<f32>(0.0, px.y));
   let foodU = lumaAt(uv + vec2<f32>(0.0, px.y));
 
-  let trailL = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let trailR = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let trailD = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let trailU = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let trailL = trailAt(uv - vec2<f32>(px.x, 0.0));
+  let trailR = trailAt(uv + vec2<f32>(px.x, 0.0));
+  let trailD = trailAt(uv - vec2<f32>(0.0, px.y));
+  let trailU = trailAt(uv + vec2<f32>(0.0, px.y));
 
   let gradFood = vec2<f32>(foodR - foodL, foodU - foodD);
   let gradTrail = vec2<f32>(trailR - trailL, trailU - trailD);
@@ -70,7 +75,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let drift = normalize(gradFood * 2.3 + gradTrail * 1.2 + jitter + vec2<f32>(1e-4));
   let aheadUV = clamp(uv + drift * px * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
-  let aheadTrail = textureSampleLevel(dataTextureC, u_sampler, aheadUV, 0.0).r;
+  let aheadTrail = trailAt(aheadUV);
 
   let follow = mix(0.05, 0.80, clamp(u.zoom_params.x, 0.0, 1.0));
   let decay = mix(0.88, 0.995, clamp(u.zoom_params.y, 0.0, 1.0));
