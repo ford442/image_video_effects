@@ -318,8 +318,46 @@ hr {
     font-size: 11px;
     padding: 5px 10px;
     pointer-events: none;
-    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     z-index: 20;
+}
+
+/* Renderer backend badge shown in the status bar */
+.renderer-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    transition: opacity 0.15s ease;
+}
+.renderer-badge:hover { opacity: 0.8; }
+
+/* WebGPU (TypeScript native) — full gold: this is the recommended default */
+.renderer-badge--webgpu {
+    background: rgba(255, 215, 0, 0.15);
+    color: var(--color-primary-gold, #FFD700);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+}
+
+/* C++ WASM renderer — antique gold (D4AF37): experimental path */
+.renderer-badge--wasm {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--color-gold-light, #D4AF37);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+/* Canvas2D fallback — dim gold (B8860B): degraded / no-shader mode */
+.renderer-badge--js {
+    background: rgba(184, 134, 11, 0.12);
+    color: var(--color-gold-dark, #B8860B);
+    border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
 /* Scrollbar for sidebar and remote content */

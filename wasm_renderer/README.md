@@ -196,6 +196,111 @@ await renderer.initWasmRenderer(canvas);
 - **Uniform updates**: Direct memory writes (no JS→WASM boundary crossing)
 - **Texture operations**: Native C++ WebGPU calls
 
+## Error Visibility & Diagnostics (Phase 2)
+
+The WASM renderer now provides detailed diagnostic information to help troubleshoot issues:
+
+### Browser Console Diagnostics
+
+**Check overall renderer status:**
+```js
+window.__rendererManager?.getDiagnostics()
+```
+
+**Output (example):**
+```json
+{
+  "rendererType": "wasm",
+  "metrics": { "fps": 60, "isWASM": true, ... },
+  "wasm": {
+    "initialized": true,
+    "initAttempts": 1,
+    "errorCount": 0,
+    "lastErrorTime": null,
+    "fps": 60,
+    "hasModule": true
+  }
+}
+```
+
+### WASM Bridge Diagnostics
+
+The `wasm_bridge.js` module tracks:
+- Module initialization time
+- Load error count and details
+- Last error message
+- Canvas resolution
+- Whether the Emscripten `ccall` interface is available (indicates real binary vs. stub)
+
+**Access via:**
+```js
+// Internal diagnostic API (development only)
+// Check wasm_renderer/wasm_bridge.js getDiagnostics() function
+```
+
+### Error Types
+
+The enhanced error handling reports:
+- `wasm-unavailable` — WASM binary missing or not buildable
+- `wasm-init` — Device creation or initialization failed
+- `wasm-device-lost` — GPU device was lost (driver crash, tab backgrounded, etc.)
+
+### Console Output Examples
+
+#### Successful initialization:
+```
+🔧 WASM renderer explicitly requested via ?renderer=wasm
+[WASM] Loading from: http://localhost:3000/wasm/pixelocity_wasm.js
+[WASM] Canvas size: 2048x2048
+[WASM] Creating module from factory...
+[WASM] Calling initWasmRenderer( 2048 , 2048 )
+[WASM] ✅ Initialization complete in 125ms
+✅ Using C++ WASM renderer (forced via ?renderer=wasm)
+```
+
+#### Stub module detected:
+```
+[WASM] Loading from: http://localhost:3000/wasm/pixelocity_wasm.js
+[WASM] PixelocityWASM found on window after script load (stub module?)
+⚠️ WASM renderer requested but failed to initialize — falling back to TypeScript WebGPU
+```
+
+#### Build missing:
+```
+[WASM] Failed to load WASM script: 404 Not Found
+⚠️ WASM renderer requested but failed to initialize — falling back to TypeScript WebGPU
+```
+
+### Runtime Switching for Testing
+
+You can dynamically test the WASM path without rebuilding:
+
+```js
+// Switch to WASM (will fail gracefully if not built)
+const success = await window.__rendererManager?.switchRenderer('wasm');
+console.log('WASM switch result:', success);
+
+// Get the active renderer type
+window.__rendererManager?.getActiveRendererType();  // 'wasm' | 'webgpu' | 'js'
+
+// Check for errors
+const diagnostics = window.__rendererManager?.getDiagnostics();
+if (diagnostics.wasm?.errorCount > 0) {
+  console.log('WASM errors:', diagnostics.wasm.lastLoadError);
+}
+```
+
+### Testing Checklist
+
+See [`../WASM_TESTING.md`](../WASM_TESTING.md) for comprehensive testing procedures.
+
+Quick smoke test:
+1. Open `http://localhost:3000/?renderer=wasm`
+2. Check console for `✅ Using C++ WASM renderer`
+3. Run: `window.__rendererManager?.getDiagnostics()`
+4. Verify `fps > 0` and `errorCount === 0`
+5. Select a shader and verify it renders
+
 ## Troubleshooting
 
 ### "WebGPU not available"
