@@ -265,6 +265,39 @@ export class RendererManager {
   }
 
   /**
+   * Get diagnostic information about the currently active renderer.
+   * Useful for debugging, testing, and monitoring renderer health.
+   */
+  getDiagnostics(): Record<string, any> {
+    const rendererType = this.getActiveRendererType();
+    const baseDiagnostics = {
+      rendererType,
+      metrics: this.metrics,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Get renderer-specific diagnostics
+    if (this.currentRenderer instanceof WASMRenderer) {
+      return {
+        ...baseDiagnostics,
+        wasm: (this.currentRenderer as any).getDiagnostics?.() ?? {},
+      };
+    }
+
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      return {
+        ...baseDiagnostics,
+        webgpu: {
+          initialized: (this.currentRenderer as any).initialized ?? false,
+          fps: (this.currentRenderer as any).getFPS?.() ?? 0,
+        },
+      };
+    }
+
+    return baseDiagnostics;
+  }
+
+  /**
    * Render method called by WebGPUCanvas animation loop.
    * The actual rendering is handled internally by the active renderer's own loop.
    * This method exists to satisfy the interface expected by WebGPUCanvas.

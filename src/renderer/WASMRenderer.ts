@@ -1,5 +1,6 @@
 import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
+import { reportError } from './ErrorHandling';
 
 export class WASMRenderer implements Renderer {
   private config: RendererConfig;
@@ -15,15 +16,30 @@ export class WASMRenderer implements Renderer {
   private offscreenCanvas: HTMLCanvasElement | null = null;
   private offscreenCtx: CanvasRenderingContext2D | null = null;
 
+  // Diagnostic tracking
+  private lastErrorTime = 0;
+  private errorCount = 0;
+  private initAttempts = 0;
+  private maxInitAttempts = 3;
+
   constructor(config: RendererConfig) {
     this.config = config;
   }
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
+    this.initAttempts++;
     try {
+      console.log(`[WASM] Init attempt ${this.initAttempts}/${this.maxInitAttempts}...`);
+      
       const ok = await WasmBridge.initWasmRenderer(canvas);
       if (!ok) {
-        console.error('❌ WASM Renderer init failed');
+        const error = `WASM Renderer init failed (attempt ${this.initAttempts}/${this.maxInitAttempts})`;
+        console.error(`❌ ${error}`);
+        reportError({
+          type: 'wasm-init',
+          message: error,
+          recoverable: true
+        });
         return false;
       }
 
@@ -31,12 +47,33 @@ export class WASMRenderer implements Renderer {
       this.startTime = performance.now() / 1000;
       this.startRenderLoop();
 
-      console.log('✅ WASM Renderer initialized');
+      console.log('✅ WASM Renderer initialized successfully');
       return true;
     } catch (err) {
-      console.error('❌ WASM Renderer init error:', err);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(`❌ WASM Renderer init error: ${errorMsg}`);
+      reportError({
+        type: 'wasm-init',
+        message: `WASM initialization exception: ${errorMsg}`,
+        recoverable: true
+      });
       return false;
     }
+  }
+
+  /**
+   * Get diagnostic information about the WASM renderer status.
+   * Useful for debugging and verifying renderer health.
+   */
+  getDiagnostics(): Record<string, any> {
+    return {
+      initialized: this.initialized,
+      initAttempts: this.initAttempts,
+      errorCount: this.errorCount,
+      lastErrorTime: this.lastErrorTime > 0 ? new Date(this.lastErrorTime).toISOString() : null,
+      fps: WasmBridge.getFPS?.() ?? 0,
+      hasModule: !!WasmBridge,
+    };
   }
 
   /**
@@ -242,12 +279,18 @@ export class WASMRenderer implements Renderer {
       if (!this.initialized) return;
 
       const time = performance.now() / 1000 - this.startTime;
-      WasmBridge.updateUniforms({
-        time,
-        mouseX: this.mouseX,
-        mouseY: this.mouseY,
-        mouseDown: this.mouseDown,
-      });
+      try {
+        WasmBridge.updateUniforms({
+          time,
+          mouseX: this.mouseX,
+          mouseY: this.mouseY,
+          mouseDown: this.mouseDown,
+        });
+      } catch (err) {
+        this.errorCount++;
+        this.lastErrorTime = Date.now();
+        console.error('[WASM] Error during render loop update:', err);
+      }
 
       this.animationId = requestAnimationFrame(loop);
     };
