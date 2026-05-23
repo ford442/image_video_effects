@@ -32,7 +32,9 @@ export interface SlotDispatch {
 
 export interface CopyOperation {
   from: 'writeTex' | 'dataTexA' | 'dataTexB';
-  to: 'readTex' | 'dataTexC';
+  to: 'readTex' | 'dataTexC' | 'historyTex';
+  /** Destination array layer index — only used when to === 'historyTex' */
+  layerIndex?: number;
   /** Reason for the copy, for debugging */
   reason: string;
 }

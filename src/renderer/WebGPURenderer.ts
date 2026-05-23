@@ -18,9 +18,10 @@
  *   7  texture_storage …    dataTextureA  (rgba32float, write-only)
  *   8  texture_storage …    dataTextureB  (rgba32float, write-only)
  *   9  texture_2d<f32>      dataTextureC  (readable copy of A from prev frame)
- *  10  storage read_write   extraBuffer   (256 floats; [0-2] = bass/mid/treble)
+ *  10  storage read_write   extraBuffer   (256 floats; [0-2] = bass/mid/treble; [4] = historyHead)
  *  11  sampler_comparison   comparison sampler
  *  12  storage read         plasmaBuffer
+ *  13  texture_2d_array<f32> historyTexture  (HISTORY_DEPTH=8 past frames; opt-in)
  */
 
 import { Renderer, RendererConfig } from './Renderer';
@@ -35,6 +36,9 @@ import { BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
 const MAX_PLASMA_BALLS   = 50;
 const EXTRA_FLOATS       = 256;                     // 1024 bytes
 const PLASMA_BYTES       = MAX_PLASMA_BALLS * 48;   // 2400 bytes
+
+/** Number of frames kept in the temporal history ring buffer (binding 13). */
+const HISTORY_DEPTH = 8;
 
 // ── Compute Shader Workgroup Configuration ───────────────────────────────────
 // Optimized for 2D image processing effects (liquid, distortion, generative)
@@ -96,15 +100,17 @@ export class WebGPURenderer implements Renderer {
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
 
   // Compute textures
-  private sourceTex!: GPUTexture;  // original image/video source (rgba32float) - never modified by shaders
-  private readTex!: GPUTexture;    // current input  (rgba32float)
-  private writeTex!: GPUTexture;   // current output (rgba32float)
-  private dataTexA!: GPUTexture;   // per-frame scratch A (rgba32float)
-  private dataTexB!: GPUTexture;   // per-frame scratch B (rgba32float)
-  private dataTexC!: GPUTexture;   // previous-frame copy of A (rgba32float)
-  private depthRead!: GPUTexture;  // depth input  (r32float)
-  private depthWrite!: GPUTexture; // depth output (r32float)
-  private emptyTex!: GPUTexture;   // 1×1 black placeholder (r32float)
+  private sourceTex!: GPUTexture;   // original image/video source (rgba32float) - never modified by shaders
+  private readTex!: GPUTexture;     // current input  (rgba32float)
+  private writeTex!: GPUTexture;    // current output (rgba32float)
+  private dataTexA!: GPUTexture;    // per-frame scratch A (rgba32float)
+  private dataTexB!: GPUTexture;    // per-frame scratch B (rgba32float)
+  private dataTexC!: GPUTexture;    // previous-frame copy of A (rgba32float)
+  private historyTex!: GPUTexture;  // N-frame ring buffer (2d_array, HISTORY_DEPTH layers, rgba32float)
+  private historyHead: number = 0;  // Ring write pointer (next layer to write)
+  private depthRead!: GPUTexture;   // depth input  (r32float)
+  private depthWrite!: GPUTexture;  // depth output (r32float)
+  private emptyTex!: GPUTexture;    // 1×1 black placeholder (r32float)
 
   // Samplers
   private filterSampler!: GPUSampler;
@@ -388,6 +394,19 @@ export class WebGPURenderer implements Renderer {
       usage: USAGE_STANDARD
     });
 
+    // History ring buffer: HISTORY_DEPTH layers, one frame per layer
+    this.historyTex = d.createTexture({
+      label: 'historyTex',
+      size: { width: scaledW, height: scaledH, depthOrArrayLayers: HISTORY_DEPTH },
+      format: 'rgba32float',
+      usage: GPUTextureUsage.TEXTURE_BINDING |
+             GPUTextureUsage.STORAGE_BINDING |
+             GPUTextureUsage.COPY_DST |
+             GPUTextureUsage.COPY_SRC,
+    });
+    // Reset ring head whenever textures are (re)created (e.g. resolution change)
+    this.historyHead = 0;
+
     // Depth textures
     this.depthRead = d.createTexture({
       label: 'depthRead',
@@ -480,6 +499,8 @@ export class WebGPURenderer implements Renderer {
         { binding: 10, visibility: V, buffer:         { type: 'storage' } },
         { binding: 11, visibility: V, sampler:        { type: 'comparison' } },
         { binding: 12, visibility: V, buffer:         { type: 'read-only-storage' } },
+        // Binding 13: opt-in history ring (HISTORY_DEPTH-layer 2d-array of past frames)
+        { binding: 13, visibility: V, texture:        { sampleType: fST, viewDimension: '2d-array' } },
       ],
     });
 
@@ -507,6 +528,13 @@ export class WebGPURenderer implements Renderer {
         { binding: 10, resource: { buffer: this.extraBuf } },
         { binding: 11, resource: this.compSampler },
         { binding: 12, resource: { buffer: this.plasmaBuf } },
+        // Binding 13: temporal history ring (2d-array view of all HISTORY_DEPTH layers)
+        { binding: 13, resource: this.historyTex.createView({
+            dimension: '2d-array',
+            baseArrayLayer: 0,
+            arrayLayerCount: HISTORY_DEPTH,
+          })
+        },
       ],
     });
   }
@@ -1113,7 +1141,7 @@ export class WebGPURenderer implements Renderer {
     this.workgroupSizes.clear();
 
     for (const t of [this.sourceTex, this.readTex, this.writeTex, this.dataTexA, this.dataTexB,
-                     this.dataTexC, this.depthRead, this.depthWrite, this.emptyTex]) {
+                     this.dataTexC, this.historyTex, this.depthRead, this.depthWrite, this.emptyTex]) {
       t?.destroy();
     }
     for (const b of [this.uniformBuf, this.extraBuf, this.plasmaBuf]) {
@@ -1256,7 +1284,19 @@ export class WebGPURenderer implements Renderer {
       );
     }
 
+    // Post-chain: archive the final composited frame into the history ring.
+    // Same encoder as the slot chain — no extra queue.submit() needed.
+    encoder.copyTextureToTexture(
+      { texture: this.readTex },
+      { texture: this.historyTex, origin: [0, 0, this.historyHead] },
+      [this.scaledW, this.scaledH, 1],
+    );
+
     this.device.queue.submit([encoder.finish()]);
+
+    // Advance ring head (CPU-side, after GPU submit)
+    this.historyHead = (this.historyHead + 1) % HISTORY_DEPTH;
+
     this.blitToCanvas();
 
     // FPS tracking with adaptive quality
@@ -1337,10 +1377,10 @@ export class WebGPURenderer implements Renderer {
     
     this.device.queue.writeBuffer(this.uniformBuf, 0, u.data);
 
-    // First 3 floats of extraBuf carry audio (bass, mid, treble)
+    // Extra buffer: [0]=bass, [1]=mid, [2]=treble, [3]=reserved, [4]=historyHead
     this.device.queue.writeBuffer(
       this.extraBuf, 0,
-      new Float32Array([this.audioBass, this.audioMid, this.audioTreble]),
+      new Float32Array([this.audioBass, this.audioMid, this.audioTreble, 0, this.historyHead]),
     );
   }
 }
