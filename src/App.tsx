@@ -280,6 +280,9 @@ function MainApp() {
     const [shadersReady, setShadersReady] = useState(false);
     const initialBootAppliedRef = useRef(false);
 
+    // --- State: GPU Capabilities ---
+    const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
+
     // --- Refs ---
     const rendererRef = useRef<Renderer | null>(null);
 
@@ -511,6 +514,7 @@ function MainApp() {
                     tags: shader.tags || [],
                     rating: shader.rating,
                     hasErrors: shader.has_errors,
+                    requiresDeepWorkgroup: (shader as any).requiresDeepWorkgroup === true,
                     params: (shader.params || []).map((p: any, idx: number) => ({
                         id: p.id || p.name || `param${idx + 1}`,
                         name: p.label || p.name || `Parameter ${idx + 1}`,
@@ -563,6 +567,37 @@ function MainApp() {
         loadShaders();
         return () => { isMounted = false; };
     }, []);
+
+
+    // --- Filter shaders that require unsupported GPU capabilities ---
+    // Runs when the renderer is ready (capabilities known) or when the shader list
+    // grows (new shaders added after renderer init).  Using availableModes.length as
+    // the dep — rather than the full array reference — prevents re-triggering on the
+    // reference change caused by the setAvailableModes(filtered) call below, because
+    // filtering *reduces* the length: after the first pass the length is smaller and
+    // the effect only re-runs if more shaders are subsequently added.
+    useEffect(() => {
+        if (!rendererReady || supportsDeepWorkgroup) return;  // nothing to filter
+        const skipped: string[] = [];
+        const filtered = availableModes.filter(s => {
+            if (s.requiresDeepWorkgroup) {
+                skipped.push(s.id);
+                return false;
+            }
+            return true;
+        });
+        if (skipped.length > 0) {
+            console.log(
+                `[Shaders] ${skipped.length} shader(s) require deep-workgroup (16×16×4) ` +
+                `which is not supported on this GPU — hiding from list: ${skipped.join(', ')}`
+            );
+            setAvailableModes(filtered);
+        }
+    // availableModes.length (not the full array) is intentional: we react when the
+    // list grows, but filtering reduces length, so subsequent runs are prevented until
+    // more shaders are added.  supportsDeepWorkgroup is stable after renderer init.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rendererReady, supportsDeepWorkgroup, availableModes.length]);
 
     // --- Image Loading ---
     const runDepthAnalysis = useCallback(async (imageUrl: string) => {
@@ -739,6 +774,9 @@ function MainApp() {
             if (rendererRef.current.getAvailableModes) {
                 setAvailableModes(rendererRef.current.getAvailableModes());
             }
+            // Record deep-workgroup hardware capability so we can filter shaders
+            const deepWg = rendererRef.current.getSupportsDeepWorkgroup?.() ?? false;
+            setSupportsDeepWorkgroup(deepWg);
             setRendererReady(true);
         }
     }, []);

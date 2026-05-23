@@ -25,6 +25,8 @@ export interface Renderer {
   getSlotMode?: (index: number) => SlotMode | null;
   getSlotState?: (index: number) => { shaderId: string | null; enabled: boolean; mode: SlotMode } | null;
   getGPUTimings?: () => { parallelTime: number; chainedTime: number; totalTime: number; available: boolean };
+  /** Returns true when the GPU supports 16×16×4 (1024-invocation) workgroups. */
+  getSupportsDeepWorkgroup?: () => boolean;
 
   // Added optionally implemented methods used by app
   setImageList?: (urls: string[]) => void;

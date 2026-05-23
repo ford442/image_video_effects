@@ -40,7 +40,9 @@ function validateWgslContent(wgslContent, id) {
     }
 
     // Warning: flag uncommon workgroup sizes (renderer supports any, but these are typical)
-    if (!/@workgroup_size\s*\(\s*(8|16|64|256)\s*,\s*(1|8|16)\s*,\s*1\s*\)/.test(wgslContent)) {
+    // Also allow (16,16,4) = 1024-invocation deep-workgroup shaders (requiresDeepWorkgroup flag)
+    if (!/@workgroup_size\s*\(\s*(8|16|64|256)\s*,\s*(1|8|16)\s*,\s*1\s*\)/.test(wgslContent) &&
+        !/@workgroup_size\s*\(\s*16\s*,\s*16\s*,\s*4\s*\)/.test(wgslContent)) {
         const ws = wgslContent.match(/@workgroup_size\s*\([^)]+\)/);
         const detail = ws ? `found ${ws[0]}` : 'no @workgroup_size attribute found';
         warnings.push(`unexpected workgroup_size: ${detail} (expected common sizes like 8x8x1 or 16x16x1)`);
