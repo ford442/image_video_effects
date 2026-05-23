@@ -1,0 +1,44 @@
+{
+  "id": "temporal-frequency-decomposition",
+  "name": "Temporal Frequency Decomposition",
+  "url": "shaders/temporal-frequency-decomposition.wgsl",
+  "category": "post-processing",
+  "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
+  "tags": ["temporal", "frequency", "fourier", "glow", "analysis", "psychedelic", "abstract"],
+  "features": ["temporal", "history-ring"],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "Target Frequency",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Glow Brightness",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Glow Hue",
+      "default": 0.17,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Base Blend",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

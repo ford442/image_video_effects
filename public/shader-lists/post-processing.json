@@ -424,6 +424,171 @@
     ]
   },
   {
+    "id": "temporal-decay-multiresolution",
+    "name": "Temporal Decay Multiresolution",
+    "url": "shaders/temporal-decay-multiresolution.wgsl",
+    "category": "post-processing",
+    "description": "Four-timescale temporal decomposition. R=fast (ages 1–2), G=medium (ages 4–5), B=slow (age 7), A=ultra-slow (full average). Per-channel independent decay rates create psychedelic rainbow splits where motion speed maps to color. Stacks cleanly behind sim-decay-system-rgba.",
+    "tags": [
+      "temporal",
+      "multiresolution",
+      "decay",
+      "timescale",
+      "psychedelic",
+      "rainbow",
+      "motion"
+    ],
+    "features": [
+      "temporal",
+      "history-ring"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Fast Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Medium Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Slow Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Original Blend",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-feedback-zoom-tracer",
+    "name": "Temporal Feedback Zoom Tracer",
+    "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
+    "category": "post-processing",
+    "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
+    "tags": [
+      "temporal",
+      "feedback",
+      "zoom",
+      "tunnel",
+      "psychedelic",
+      "warp",
+      "abstract"
+    ],
+    "features": [
+      "temporal",
+      "history-ring"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Zoom Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Rotation",
+        "default": 0.625,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Persistence",
+        "default": 0.71,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Current Blend",
+        "default": 0.29,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-frequency-decomposition",
+    "name": "Temporal Frequency Decomposition",
+    "url": "shaders/temporal-frequency-decomposition.wgsl",
+    "category": "post-processing",
+    "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
+    "tags": [
+      "temporal",
+      "frequency",
+      "fourier",
+      "glow",
+      "analysis",
+      "psychedelic",
+      "abstract"
+    ],
+    "features": [
+      "temporal",
+      "history-ring"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Target Frequency",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Glow Brightness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Glow Hue",
+        "default": 0.17,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Base Blend",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "temporal-layered-time-stamps",
     "name": "Temporal Layered Time-Stamps",
     "url": "shaders/temporal-layered-time-stamps.wgsl",
@@ -470,6 +635,227 @@
         "default": 0.5,
         "min": 0,
         "max": 1
+      }
+    ]
+  },
+  {
+    "id": "temporal-phosphor-burn-motion-adaptive",
+    "name": "Temporal Phosphor Burn (Motion Adaptive)",
+    "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
+    "category": "post-processing",
+    "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
+    "tags": [
+      "temporal",
+      "crt",
+      "phosphor",
+      "motion",
+      "adaptive",
+      "glow",
+      "amber",
+      "reactive"
+    ],
+    "features": [
+      "temporal",
+      "history-ring"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Motion Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Max Decay (Fast)",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Min Decay (Still)",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Warm Tint",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-phosphor-burn",
+    "name": "Temporal Phosphor Burn",
+    "url": "shaders/temporal-phosphor-burn.wgsl",
+    "category": "post-processing",
+    "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
+    "tags": [
+      "temporal",
+      "crt",
+      "phosphor",
+      "persistence",
+      "glow",
+      "retro",
+      "amber"
+    ],
+    "features": [
+      "temporal",
+      "history-ring"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "R Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "G Decay",
+        "default": 0.79,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "B Decay",
+        "default": 0.93,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Luma Floor",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-rgb-ghost",
+    "name": "Temporal RGB Ghost",
+    "url": "shaders/temporal-rgb-ghost.wgsl",
+    "category": "post-processing",
+    "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
+    "tags": [
+      "temporal",
+      "ghost",
+      "chromatic",
+      "comet",
+      "rainbow",
+      "psychedelic",
+      "motion"
+    ],
+    "features": [
+      "temporal",
+      "history-ring"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "G Channel Delay",
+        "default": 0.17,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "B Channel Delay",
+        "default": 0.67,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Ghost Blend",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Luma Boost",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-slit-scan",
+    "name": "Temporal Slit Scan",
+    "url": "shaders/temporal-slit-scan.wgsl",
+    "category": "post-processing",
+    "description": "Classic slit-scan time-smear: each column (or row) samples a different point in the 8-frame history ring. One edge shows the current frame, the opposite edge shows 7 frames ago. Creates the flowing painterly time-smear of Radiohead's Street Spirit video on any motion.",
+    "tags": [
+      "temporal",
+      "slit-scan",
+      "time-smear",
+      "painterly",
+      "classic",
+      "retro",
+      "smear"
+    ],
+    "features": [
+      "temporal",
+      "history-ring"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Scan Axis",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Temporal Spread",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Reverse",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 1
+      },
+      {
+        "id": "param4",
+        "name": "Original Blend",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   }
