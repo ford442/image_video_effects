@@ -66,9 +66,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var scanPos = select(uv.x, uv.y, useVertical);
   if (doReverse) { scanPos = 1.0 - scanPos; }
 
-  // Map scan position to temporal offset: left=0(current), right=maxOffset(oldest)
+  // Map scan position to temporal offset: left=maxOffset(oldest), right=0(current)
   let maxOffset = u32(spread * f32(MAX_OFFSET) + 0.5);
-  // t_offset: 0 at right edge (current), maxOffset at left edge (oldest)
+  // (1-scanPos): scanPos=0(left) → t_offset=maxOffset(oldest); scanPos=1(right) → t_offset=0(current)
   let t_offset = u32((1.0 - scanPos) * f32(maxOffset));
 
   let historyHead = u32(extraBuffer[4]);
