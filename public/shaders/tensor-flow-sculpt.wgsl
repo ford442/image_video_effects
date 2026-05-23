@@ -1,16 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Tensor Flow Sculpting
-//  Category: EFFECT | Complexity: VERY_HIGH
-//  Uses depth as a 4D tensor field to warp and sculpt the image like clay.
-//  High-frequency details remain sharp while bulk geometry bends dramatically.
-//  3D topology wrapped onto 2D—depth ridges become mountain ranges, valleys
-//  become rivers of displaced color.
-//  Mathematical approach: Structure tensor (Hessian of depth), eigenvalue-
-//  driven anisotropic warping, bilateral frequency separation, geodesic
-//  flow along principal curvature directions.
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Tensor Flow Sculpt
+//  Category: distortion
+//  Features: depth-aware, tensor-warp, audio-reactive
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -215,7 +211,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // High frequency (detail) — stays anchored to original position
     let lowFreqOriginal = blurSample(uv, texel, freqSep);
-    let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let srcColorFull = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let srcColor = srcColorFull.rgb;
     let highFreq = srcColor - lowFreqOriginal;
 
     // Recombine: warped bulk + original detail
@@ -249,11 +246,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // ─────────────────────────────────────────────────────────────────────────
     //  Output
     // ─────────────────────────────────────────────────────────────────────────
-    // Alpha: tensor warp magnitude + persistence drives sculpt compositing weight
     let warpDist = length(warpedUV - uv);
-    let lumaOut = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.4 + lumaOut * 0.3 + warpDist * 6.0 + persistence * 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalColor, alpha));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let effectIntensity = clamp(warpDist * 6.0 + persistence * 0.2, 0.0, 1.0);
+    let finalAlpha = mix(srcColorFull.a, 1.0, effectIntensity * 0.7);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

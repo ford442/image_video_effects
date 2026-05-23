@@ -3,9 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, overlay, hdr-ready
 //  Complexity: Low
-//  Chunks From: original oscilloscope-overlay
-//  Created: 2026-05-03
-//  By: Optimizer
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -92,11 +91,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = col + PHOSPHOR_COLOR * waveVal;
   col = col + GRID_COLOR * gridVal;
 
-  // HDR-ready: alpha carries bloom weight for downstream tone mapping
-  let bloomWeight = scanLine * 0.5 + waveVal * 0.8 + gridVal * 0.15;
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // HDR-ready: bloom weight drives effect intensity
+  let effectIntensity = scanLine * 0.5 + waveVal * 0.8 + gridVal * 0.15;
+  let finalAlpha = mix(baseColor.a, 1.0, effectIntensity * 0.7);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, bloomWeight));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, finalAlpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

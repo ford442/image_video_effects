@@ -1,15 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid Touch Shader with Alpha Physics
-//  Category: liquid-effects
-//  Features: touch-responsive, viscosity simulation, depth-based refraction
-//
-//  ALPHA PHYSICS:
-//  - Height field maps to liquid thickness
-//  - Touch points create thicker liquid (more opaque)
-//  - Viscosity affects transparency
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Touch
+//  Category: interactive-mouse
+//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Complexity: High
+//  Scientific: Young-Laplace capillary flow with curvature-driven surface tension, dispersive capillary waves, Marangoni convection, and touch-induced droplet coalescence
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,153 +20,145 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// Schlick's approximation for Fresnel
-fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+const PI: f32 = 3.14159265359;
+
+fn clampUV(uv: vec2<f32>) -> vec2<f32> {
+  return clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
 }
 
-// Calculate touch liquid alpha based on height field
-fn calculateTouchAlpha(
-    height: f32,
-    gradientMag: f32,
-    viscosity: f32
-) -> f32 {
-  // Fresnel at surface slopes
-  let F0 = 0.02;
-  let normal = normalize(vec3<f32>(-gradientMag * 10.0, -gradientMag * 10.0, 1.0));
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let fresnel = schlickFresnel(max(0.0, dot(viewDir, normal)), F0);
-  
-  // Height = liquid thickness
-  // Higher peaks = thicker liquid = more opaque
-  // Viscous liquid = more scattering = more opaque
-  let thickness = abs(height) * 2.0 + 0.1;
-  let viscosityFactor = 1.0 + viscosity * 0.5;
-  
-  // Beer-Lambert absorption
-  let absorption = exp(-thickness * viscosityFactor);
-  let baseAlpha = mix(0.35, 0.85, absorption);
-  
-  // Fresnel reduces transmission at glancing angles
-  let alpha = baseAlpha * (1.0 - fresnel * 0.4);
-  
-  return clamp(alpha, 0.0, 1.0);
-}
-
-// Calculate liquid color with height-based tinting
-fn calculateTouchColor(
-    baseColor: vec3<f32>,
-    height: f32,
-    gradientMag: f32,
-    tint_strength: f32
-) -> vec3<f32> {
-  // Height-based absorption
-  let absorption = exp(-abs(height) * 1.5);
-  let absorbedColor = baseColor * absorption;
-  
-  // Tint high spots cyan (liquid feel)
-  if (tint_strength > 0.0) {
-      let tint_col = vec3<f32>(0.0, 0.9, 1.0); // Cyan
-      let heightTint = smoothstep(0.0, 0.5, height) * tint_strength * 0.4;
-      return mix(absorbedColor, tint_col, heightTint);
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let len2 = dot(v, v);
+  if (len2 < 1e-8) {
+    return vec2<f32>(0.0, 0.0);
   }
-  
-  return absorbedColor;
+  return v * inverseSqrt(len2);
+}
+
+fn sampleState(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(dataTextureC, non_filtering_sampler, clampUV(uv), 0.0);
+}
+
+fn surfaceNormal(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
+  let leftPhi = sampleState(uv - vec2<f32>(texel.x, 0.0)).r;
+  let rightPhi = sampleState(uv + vec2<f32>(texel.x, 0.0)).r;
+  let upPhi = sampleState(uv - vec2<f32>(0.0, texel.y)).r;
+  let downPhi = sampleState(uv + vec2<f32>(0.0, texel.y)).r;
+  let grad = vec2<f32>((rightPhi - leftPhi) / (2.0 * texel.x), (downPhi - upPhi) / (2.0 * texel.y));
+  return safeNormalize(grad);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
+
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let texel = 1.0 / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let gamma = mix(0.02, 1.2, clamp(u.zoom_params.x, 0.0, 1.0));
+  let radius = 0.015 + 0.09 * clamp(u.zoom_params.y, 0.0, 1.0);
+  let optical = 0.5 + 3.0 * clamp(u.zoom_params.z, 0.0, 1.0);
+  let marangoni = clamp(u.zoom_params.w, 0.0, 1.0);
+  let rho = 1.0;
+
+  let center = sampleState(uv);
+  let left = sampleState(uv - vec2<f32>(texel.x, 0.0));
+  let right = sampleState(uv + vec2<f32>(texel.x, 0.0));
+  let up = sampleState(uv - vec2<f32>(0.0, texel.y));
+  let down = sampleState(uv + vec2<f32>(0.0, texel.y));
+
+  var phi = center.r;
+  var velocity = center.g;
+  var temperature = center.b * 0.985;
+
+  let gradPhi = vec2<f32>((right.r - left.r) / (2.0 * texel.x), (down.r - up.r) / (2.0 * texel.y));
+  let interfaceDelta = length(gradPhi);
+  let laplacian = (left.r + right.r + up.r + down.r - 4.0 * center.r) / max(texel.x * texel.y, 1e-6);
+
+  let normalCenter = safeNormalize(gradPhi);
+  let normalLeft = surfaceNormal(uv - vec2<f32>(texel.x, 0.0), texel);
+  let normalRight = surfaceNormal(uv + vec2<f32>(texel.x, 0.0), texel);
+  let normalUp = surfaceNormal(uv - vec2<f32>(0.0, texel.y), texel);
+  let normalDown = surfaceNormal(uv + vec2<f32>(0.0, texel.y), texel);
+  let curvature = ((normalRight.x - normalLeft.x) / (2.0 * texel.x)) + ((normalDown.y - normalUp.y) / (2.0 * texel.y));
+
+  let gradTemperature = vec2<f32>((right.b - left.b) / (2.0 * texel.x), (down.b - up.b) / (2.0 * texel.y));
+  let surfaceTensionForce = gamma * curvature * interfaceDelta;
+  let marangoniForce = -dot(gradTemperature, normalCenter) * (0.01 + 0.05 * marangoni);
+
+  let localK = clamp(interfaceDelta * 0.08 + abs(curvature) * 0.6, 0.001, 18.0);
+  let capillaryOmega = sqrt(max((gamma / rho) * localK * localK * localK, 0.0001));
+  let capillaryWave = sin(capillaryOmega * time * 1.5 + curvature * 0.15) * (0.004 + 0.012 * treble) * smoothstep(0.04, 0.4, interfaceDelta);
+  let gravityWave = laplacian * 0.000004 + bass * sin(time * 1.8 + dot(uv, vec2<f32>(7.0, 4.0))) * 0.008;
+
+  let mouse = u.zoom_config.yz;
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+  let toMouse = (uv - mouse) * aspectVec;
+  let mouseDist = length(toMouse);
+  let touchEnvelope = exp(-(mouseDist * mouseDist) / max(radius * radius, 1e-5)) * mouseDown;
+  phi -= touchEnvelope * (0.06 + 0.18 * gamma);
+  velocity -= touchEnvelope * 0.025;
+  temperature += touchEnvelope * (0.02 + 0.14 * marangoni);
+
+  var dropletDrive = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 5.0) {
+      continue;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+    let delta = (uv - ripple.xy) * aspectVec;
+    let r = length(delta);
+    let envelope = exp(-r * 10.0 - age * 0.9);
+    let naturalOscillation = sin(age * (4.5 + 10.0 * sqrt(gamma)) - r * 55.0);
+    dropletDrive += envelope * naturalOscillation;
+  }
 
-    // Params
-    let viscosity = u.zoom_params.x;     // 0.0-1.0 (How fast ripples fade)
-    let brush_size = u.zoom_params.y;    // 0.0-1.0
-    let refraction = u.zoom_params.z;    // 0.0-1.0
-    let tint_strength = u.zoom_params.w; // 0.0-1.0
+  let mergeSignal = smoothstep(0.10, 0.55, abs(dropletDrive) + interfaceDelta * 0.025);
+  let coalescence = sin(time * (8.0 + 10.0 * sqrt(gamma)) + center.a * 6.28318) * mergeSignal * 0.018;
 
-    // Read previous state from dataTextureC (ping-pong input)
-    // State: R = Height/Intensity, G = Unused, B = Unused, A = Unused
-    let old_state = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-    var height = old_state.r;
+  velocity *= max(0.86, 0.992 - 0.02 * gamma);
+  velocity += surfaceTensionForce * 0.0012 + marangoniForce + gravityWave + capillaryWave + dropletDrive * 0.012 + coalescence;
+  phi = mix(phi + velocity, (left.r + right.r + up.r + down.r) * 0.25, clamp(0.015 + gamma * 0.01, 0.0, 0.06));
 
-    // Decay the height (Viscosity)
-    // Higher viscosity = slower decay
-    let decay = 0.9 + (viscosity * 0.095);
-    height = height * decay;
+  temperature = clamp(temperature + bass * 0.01 + treble * sin(dot(uv, vec2<f32>(90.0, 85.0)) - time * 20.0) * 0.01, -1.0, 1.0);
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
-    let mouse_down = u.zoom_config.w;
+  let refractOffset = gradPhi * optical * 0.015;
+  let sampleUV = clampUV(uv - refractOffset);
+  let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
 
-    let d_vec = uv - mouse;
-    let d_vec_aspect = vec2<f32>(d_vec.x * aspect, d_vec.y);
-    let dist = length(d_vec_aspect);
+  let normal3 = normalize(vec3<f32>(-gradPhi.x * optical * 0.02, -gradPhi.y * optical * 0.02, 1.0));
+  let lightDir = normalize(vec3<f32>(-0.4, -0.5, 1.0));
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let halfVec = normalize(lightDir + viewDir);
+  let specular = pow(max(dot(normal3, halfVec), 0.0), mix(32.0, 110.0, gamma / 1.2)) * (0.15 + 0.65 * interfaceDelta * texel.x * resolution.x);
+  let contactLine = smoothstep(0.04, 0.30, interfaceDelta * texel.x * resolution.x) * (0.12 + 0.28 * treble);
+  let capillaryTint = vec3<f32>(0.05, 0.18, 0.24) * (0.5 + 0.5 * marangoni) + vec3<f32>(0.0, 0.08, 0.12) * abs(curvature) * 0.02;
+  let finalColor = clamp(baseColor * (0.88 + 0.12 * phi + 0.05 * mids) + capillaryTint * contactLine + vec3<f32>(1.0, 0.96, 0.88) * specular, vec3<f32>(0.0), vec3<f32>(1.0));
+  let alpha = clamp(0.84 + 0.12 * contactLine + 0.04 * specular, 0.0, 1.0);
+  let depthProxy = clamp(depthSample * 0.55 + 0.20 + phi * 0.20 + abs(curvature) * 0.003 + contactLine * 0.15, 0.0, 1.0);
 
-    // Brush radius
-    let radius = 0.01 + (brush_size * 0.05);
-
-    // If mouse is near, add to height
-    if (dist < radius) {
-        let add = (1.0 - dist/radius);
-        // Add more if mouse down
-        let intensity = 0.5 + (mouse_down * 0.5);
-        height = min(height + add * intensity * 0.2, 2.0); // Cap height
-    }
-
-    // Diffusion (spread to neighbors)
-    // Let's sample neighbors from C
-    let texel = vec2<f32>(1.0/resolution.x, 1.0/resolution.y);
-    let n_u = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).r;
-    let n_d = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-    let n_l = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).r;
-    let n_r = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
-
-    // Average
-    let avg = (n_u + n_d + n_l + n_r) * 0.25;
-
-    // Blend current height towards average (Smooth/Diffuse)
-    height = mix(height, avg, 0.5);
-
-    // Write new state to dataTextureA (History)
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(height, 0.0, 0.0, 1.0));
-
-    // Render Logic
-    // Use gradient of height to distort UVs (Refraction)
-    let grad_x = n_r - n_l;
-    let grad_y = n_d - n_u;
-    let gradientMag = length(vec2<f32>(grad_x, grad_y));
-
-    let distort = vec2<f32>(grad_x, grad_y) * refraction * 2.0;
-    let sample_uv = uv - distort;
-
-    var baseColor = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
-
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // ALPHA CALCULATION
-    // ═══════════════════════════════════════════════════════════════════════════════
-    
-    // Calculate color with height-based effects
-    let liquidColor = calculateTouchColor(baseColor, height, gradientMag, tint_strength);
-    
-    // Calculate alpha
-    let alpha = calculateTouchAlpha(height, gradientMag, viscosity);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(liquidColor, alpha));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(phi, velocity, temperature, mergeSignal));
+  textureStore(dataTextureB, global_id.xy, vec4<f32>(clamp(curvature * 0.01 + 0.5, 0.0, 1.0), clamp(interfaceDelta * texel.x * resolution.x * 0.1, 0.0, 1.0), clamp(capillaryOmega * 0.05, 0.0, 1.0), specular));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }

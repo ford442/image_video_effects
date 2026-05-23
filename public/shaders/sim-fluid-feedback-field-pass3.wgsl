@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: simulation, multi-pass-3, composite, glow, color-grading
 //  Complexity: Very High
-//  Created: 2026-03-22
-//  By: Agent 3B - Advanced Hybrid Creator
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 //  Pass 3: Read density from Pass 2
 //  Add glow, color grading, volumetric rendering approximation
@@ -68,7 +68,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let densityMag = length(density);
     
     // Sample original image
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let baseColorSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let baseColor = baseColorSample.rgb;
     
     // Calculate glow
     let glow = calculateGlow(uv, glowAmount);
@@ -96,8 +97,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = mix(vec3<f32>(luma), color, 1.3);
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.7, 1.0, densityMag);
+    let effectIntensity = clamp(densityMag, 0.0, 1.0);
+    let finalAlpha = mix(baseColorSample.a, 1.0, effectIntensity * 0.7);
     
-    textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - densityMag * 0.2), 0.0, 0.0, 0.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - densityMag * 0.2), 0.0, 0.0, 1.0));
 }

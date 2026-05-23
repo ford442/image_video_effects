@@ -654,7 +654,7 @@
     {
       "id": "speed-lines-focus",
       "size": 3760,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Interactivist",
       "target_lines": 144,
@@ -663,7 +663,7 @@
     {
       "id": "scanline-drift",
       "size": 3768,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 144,
@@ -699,7 +699,7 @@
     {
       "id": "moire-interference",
       "size": 3845,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 146,
@@ -933,7 +933,7 @@
     {
       "id": "moire-interference",
       "size": 3845,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Optimizer",
       "target_lines": 156,
@@ -942,7 +942,7 @@
     {
       "id": "navier-stokes-dye",
       "size": 3902,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 158,
@@ -960,7 +960,7 @@
     {
       "id": "holographic-shatter",
       "size": 3953,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Interactivist",
       "target_lines": 159,
@@ -978,7 +978,7 @@
     {
       "id": "oscilloscope-overlay",
       "size": 3968,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 159,
@@ -1131,7 +1131,7 @@
     {
       "id": "sim-fluid-feedback-field-pass3",
       "size": 4410,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Visualist",
       "target_lines": 170,
@@ -1149,7 +1149,7 @@
     {
       "id": "temporal_echo",
       "size": 4427,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 171,
@@ -1266,7 +1266,7 @@
     {
       "id": "tensor-flow-sculpt",
       "size": 17876,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 398,
@@ -1275,7 +1275,7 @@
     {
       "id": "spectral-bleed-confinement",
       "size": 17814,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 396,
@@ -1284,7 +1284,7 @@
     {
       "id": "liquid-displacement",
       "size": 17361,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 387,
@@ -1293,7 +1293,7 @@
     {
       "id": "chromatic-phase-inversion",
       "size": 17088,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 382,
@@ -1302,7 +1302,7 @@
     {
       "id": "recursion-mirror-vortex",
       "size": 16968,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 379,
@@ -1311,7 +1311,7 @@
     {
       "id": "tensor-flow-sculpting",
       "size": 16512,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Algorithmist",
       "target_lines": 370,
@@ -1374,7 +1374,7 @@
     {
       "id": "gen-chromodynamic-plasma-collider",
       "size": 5480,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 1,
       "agent_role": "Visualist",
       "target_lines": 217,
@@ -1428,7 +1428,7 @@
     {
       "id": "gen-magnetic-ferrofluid",
       "size": 5834,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Visualist",
       "target_lines": 226,
@@ -1455,7 +1455,7 @@
     {
       "id": "gen-bioluminescent-aether-pulsar",
       "size": 5946,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 2,
       "agent_role": "Algorithmist",
       "target_lines": 229,
@@ -1509,7 +1509,7 @@
     {
       "id": "gen-abyssal-chrono-coral",
       "size": 6330,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 238,
@@ -1581,7 +1581,7 @@
     {
       "id": "gen-audio-spirograph",
       "size": 6799,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 250,

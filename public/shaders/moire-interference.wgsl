@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Moiré Interference
+//  Category: image
+//  Features: [mouse-driven, audio-reactive, upgraded-rgba]
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -82,15 +90,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = vec3<f32>(r, g, b);
 
-  // Alpha: interference pattern intensity drives moire compositing weight
-  let dispMag = length(displacement);
-  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(dispMag * 15.0 + abs(interference) * 0.1 + luma * 0.2, 0.0, 1.0);
-
   // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+  // Alpha: preserve input transparency, blend to opaque based on effect intensity
+  let dispMag = length(displacement);
+  let effectIntensity = clamp(dispMag * 10.0 + abs(interference) * 0.2, 0.0, 1.0);
+  let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
+
+  textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(color, finalAlpha));
 }

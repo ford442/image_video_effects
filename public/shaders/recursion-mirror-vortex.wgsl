@@ -1,14 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 //  Recursion Mirror Vortex
-//  Category: EFFECT
-//  Complexity: HIGH
-//  Visual concept: Nested fractal-like mirrors fold the image into itself at
-//    precise "singularity" points, creating infinite-hallway illusions that
-//    remain spatially coherent and visually non-noisy.
-//  Mathematical approach: Iterated Möbius-like fold maps applied k times to UV
-//    coordinates; each iteration scales/reflects around a dynamic center;
-//    depth used to modulate fold intensity; mouse steers singularity origin.
-// ─────────────────────────────────────────────────────────────────────────────
+//  Category: artistic
+//  Features: [mouse-driven]
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -211,6 +208,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Depth-based blend: near objects fold more ─────────────────────────
     let depth   = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let blend   = mirrorBlend * (0.4 + depth * 0.6);
 
     // ── Vortex edge darkening for depth ───────────────────────────────────
@@ -250,12 +248,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthLift = 1.0 + depth * 0.08;
     let liftedMirror = vec4<f32>(clamp(finalMirror.rgb * depthLift, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
 
-    // Alpha: fold seam glow + mirror blend + edge vignette drives compositing weight
+    // Alpha: preserve input transparency, blend to opaque based on effect intensity
     let foldDist = length(uv - foldedUV);
-    let lumaOut = dot(liftedMirror.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.4 + lumaOut * 0.3 + length(sGlow) * 0.4 + foldDist * 0.5, 0.0, 1.0);
+    let effectIntensity = clamp(mirrorBlend * 0.8 + foldDist * 0.5, 0.0, 1.0);
+    let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(liftedMirror.rgb, alpha));
+    textureStore(writeTexture, gid.xy, vec4<f32>(liftedMirror.rgb, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(foldedUV, foldDist, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

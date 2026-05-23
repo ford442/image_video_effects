@@ -87,7 +87,7 @@
     {
       "id": "quantum-ripples",
       "size": 3331,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Algorithmist",
       "target_lines": 120
@@ -95,7 +95,7 @@
     {
       "id": "oscilloscope-overlay",
       "size": 3340,
-      "status": "in_progress",
+      "status": "completed",
       "priority": 3,
       "agent_role": "Optimizer",
       "target_lines": 115

@@ -86,25 +86,25 @@ for s in ['pending', 'in_progress', 'completed']:
 
 | # | Shader | Linear | Agent | Status |
 |---|--------|--------|-------|--------|
-| 1 | `chromatic-phase-inversion` | JUL-258 | Optimizer | 🟡 In Progress |
-| 2 | `holographic-shatter` | JUL-259 | Visualist | 🟡 In Progress |
-| 3 | `liquid-displacement` | JUL-260 | Algorithmist | 🟡 In Progress |
-| 4 | `navier-stokes-dye` | JUL-261 | Algorithmist | 🟡 In Progress |
-| 5 | `recursion-mirror-vortex` | JUL-262 | Optimizer | 🟡 In Progress |
-| 6 | `spectral-bleed-confinement` | JUL-263 | Visualist | 🟡 In Progress |
-| 7 | `temporal_echo` | JUL-264 | Interactivist | 🟡 In Progress |
-| 8 | `tensor-flow-sculpt` | JUL-265 | Algorithmist | 🟡 In Progress |
-| 9 | `tensor-flow-sculpting` | JUL-266 | Algorithmist | 🟡 In Progress |
-| 10 | `moire-interference` | JUL-267 | Optimizer | 🟡 In Progress |
-| 11 | `scanline-drift` | JUL-268 | Interactivist | 🟡 In Progress |
-| 12 | `speed-lines-focus` | JUL-269 | Optimizer | 🟡 In Progress |
-| 13 | `gen-magnetic-ferrofluid` | JUL-270 | Algorithmist | 🟡 In Progress |
-| 14 | `oscilloscope-overlay` | JUL-271 | Interactivist | 🟡 In Progress |
-| 15 | `quantum-ripples` | JUL-272 | Interactivist | 🟡 In Progress |
-| 16 | `sim-fluid-feedback-field-pass3` | JUL-273 | Algorithmist | 🟡 In Progress |
-| 17 | `gen-abyssal-chrono-coral` | JUL-274 | Algorithmist | 🟡 In Progress |
-| 18 | `gen-audio-spirograph` | JUL-275 | Interactivist | 🟡 In Progress |
-| 19 | `gen-bioluminescent-aether-pulsar` | JUL-276 | Visualist | 🟡 In Progress |
-| 20 | `gen-chromodynamic-plasma-collider` | JUL-277 | Visualist | 🟡 In Progress |
+| 1 | `chromatic-phase-inversion` | JUL-258 | Optimizer | ✅ Done |
+| 2 | `holographic-shatter` | JUL-259 | Visualist | ✅ Done |
+| 3 | `liquid-displacement` | JUL-260 | Algorithmist | ✅ Done |
+| 4 | `navier-stokes-dye` | JUL-261 | Algorithmist | ✅ Done |
+| 5 | `recursion-mirror-vortex` | JUL-262 | Optimizer | ✅ Done |
+| 6 | `spectral-bleed-confinement` | JUL-263 | Visualist | ✅ Done |
+| 7 | `temporal_echo` | JUL-264 | Interactivist | ✅ Done |
+| 8 | `tensor-flow-sculpt` | JUL-265 | Algorithmist | ✅ Done |
+| 9 | `tensor-flow-sculpting` | JUL-266 | Algorithmist | ✅ Done |
+| 10 | `moire-interference` | JUL-267 | Optimizer | ✅ Done |
+| 11 | `scanline-drift` | JUL-268 | Interactivist | ✅ Done |
+| 12 | `speed-lines-focus` | JUL-269 | Optimizer | ✅ Done |
+| 13 | `gen-magnetic-ferrofluid` | JUL-270 | Algorithmist | ✅ Done |
+| 14 | `oscilloscope-overlay` | JUL-271 | Interactivist | ✅ Done |
+| 15 | `quantum-ripples` | JUL-272 | Interactivist | ✅ Done |
+| 16 | `sim-fluid-feedback-field-pass3` | JUL-273 | Algorithmist | ✅ Done |
+| 17 | `gen-abyssal-chrono-coral` | JUL-274 | Algorithmist | ✅ Done |
+| 18 | `gen-audio-spirograph` | JUL-275 | Interactivist | ✅ Done |
+| 19 | `gen-bioluminescent-aether-pulsar` | JUL-276 | Visualist | ✅ Done |
+| 20 | `gen-chromodynamic-plasma-collider` | JUL-277 | Visualist | ✅ Done |
 
 **Parent:** JUL-257

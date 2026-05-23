@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Temporal Echo — Phase A Upgrade
+//  Temporal Echo
 //  Category: lighting-effects
 //  Features: temporal, depth-aware, audio-reactive
 //  Complexity: Medium
-//  Chunks From: original temporal_echo.wgsl
-//  Created: 2026-05-23
-//  By: Claude (Sonnet 4.6)
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 //
 //  Param1: decay_rate       — how fast echoes fade (high=fast trails)
@@ -119,7 +118,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let newColor = mix(decayedEcho, current.rgb + vec3<f32>(beatFlash), blendFactor);
     let newAcc   = clamp(echoAlpha + newAlpha * 0.3, 0.0, 1.0);
 
-    let result = vec4<f32>(newColor, newAcc);
+    let finalAlpha = mix(current.a, 1.0, newAcc * 0.7);
+    let result = vec4<f32>(newColor, finalAlpha);
 
     textureStore(dataTextureA, vec2<i32>(global_id.xy), result);
     textureStore(writeTexture,  vec2<i32>(global_id.xy), result);

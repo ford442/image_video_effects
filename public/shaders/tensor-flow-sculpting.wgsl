@@ -1,17 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  Tensor Flow Sculpting - Advanced Alpha (OPTIMIZED)
-//  Category: EFFECT
-//  Complexity: VERY HIGH
-//  Alpha Mode: Effect Intensity Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Tensor Flow Sculpting
+//  Category: distortion
 //  Features: advanced-alpha, depth-aware, tensor-warp
-//  
-//  OPTIMIZATIONS APPLIED:
-//  - Cached eigenvalue calculations (reused 3x instead of recalculating)
-//  - Precomputed rotation matrices outside loop
-//  - Added distance-based LOD for edge detection
-//  - Early exit for minimal distortion regions
-//  - Branchless alpha calculation
-// ─────────────────────────────────────────────────────────────────────────────
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -326,10 +320,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalResult = finalResult * NdotL + sColor * clamp(sBlend, 0.0, 0.15);
     finalResult = clamp(finalResult, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    // ═══ ADVANCED ALPHA CALCULATION ═══
-    let alpha = calculateAdvancedAlpha(finalResult, uv, warpedUV, colWarped.a, u.zoom_params);
+    // ═══ INPUT-AWARE ALPHA ═══
+    let effectIntensity = clamp(warpMag, 0.0, 1.0);
+    let finalAlpha = mix(colCenter.a, 1.0, effectIntensity * 0.7);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalResult, alpha));
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalResult, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(eigen.lam_pos, eigen.lam_neg, warpMag, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(h, 0.0, 0.0, 1.0));
 }

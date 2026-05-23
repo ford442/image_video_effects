@@ -1,8 +1,11 @@
-// ----------------------------------------------------------------
-// Abyssal Chrono-Coral
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Abyssal Chrono-Coral
+//  Category: generative
+//  Features: raymarched, mouse-driven, audio-reactive, bioluminescence
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -193,5 +196,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coord, vec4<f32>(col, _alpha));
     let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(_depth, 0.0, 0.0, 1.0));
 }

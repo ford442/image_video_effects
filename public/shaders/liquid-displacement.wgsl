@@ -1,20 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Navier-Stokes Fluid Displacement with Alpha Physics
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Displacement
 //  Category: liquid-effects
 //  Features: mouse-driven, multi-pass, depth-aware, fluid transparency
-//
-//  Implements simplified Navier-Stokes equations for incompressible flow:
-//  - ∂v/∂t = -(v·∇)v - ∇p + ν∇²v + f
-//  - ∇·v = 0 (incompressibility via pressure projection)
-//
-//  Velocity field stored in dataTextureA (RG channels)
-//  Pressure field stored in dataTextureA (B channel)
-//
-//  ALPHA PHYSICS:
-//  - Velocity magnitude maps to liquid thickness
-//  - Beer-Lambert absorption based on flow density
-//  - Fresnel reflection at flow boundaries
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -283,8 +274,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let velMag = length(velocity);
     let chromaticOffset = velMag * 0.002 * u.zoom_params.z;
     
+    let baseSample = textureSampleLevel(readTexture, u_sampler, clampedUV, 0.0);
     let r = textureSampleLevel(readTexture, u_sampler, clampedUV + vec2<f32>(chromaticOffset, 0.0), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, clampedUV, 0.0).g;
+    let g = baseSample.g;
     let b = textureSampleLevel(readTexture, u_sampler, clampedUV - vec2<f32>(chromaticOffset, 0.0), 0.0).b;
     let baseColor = vec3<f32>(r, g, b);
 
@@ -301,12 +293,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate flow color with absorption
     let flowColor = calculateFlowColor(baseColor, velocity, pressure, turbidity);
     
-    // Calculate alpha
-    let alpha = calculateFlowAlpha(velMag, pressure, turbidity, viewDotNormal);
+    // Input-aware alpha blending
+    let effectIntensity = velMag;
+    let finalAlpha = mix(baseSample.a, 1.0, effectIntensity * 0.7);
 
     // ═════════════════════════════════════════════════════════════════════════
     // OUTPUT with ALPHA
     // ═════════════════════════════════════════════════════════════════════════
-    textureStore(writeTexture, coord, vec4<f32>(flowColor, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(flowColor, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

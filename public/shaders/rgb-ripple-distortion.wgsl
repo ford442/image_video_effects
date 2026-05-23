@@ -1,14 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-//  RGB Ripple Distortion - Wave-based RGB separation with wavelength-alpha
-//  Category: distortion
-//  Features: mouse-driven, wave-dispersion, wavelength-dependent-alpha
-//
-//  SCIENTIFIC MODEL:
-//  - Dispersion affects both wave phase AND alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  RGB Ripple Distortion
+//  Category: image
+//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Complexity: High
+//  Scientific: Photoelastic birefringence from principal-stress eigenmodes with Maxwell stress modulation, isochromatic fringe orders, and polarized-light isoclinics
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,92 +22,156 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  SPECTRAL PHYSICS CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const WAVELENGTH_RED:    f32 = 650.0;  // nm
-const WAVELENGTH_GREEN:  f32 = 550.0;  // nm  
-const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
+const PI: f32 = 3.14159265359;
 
-// ═══════════════════════════════════════════════════════════════
-//  WAVELENGTH-DEPENDENT ALPHA
-// ═══════════════════════════════════════════════════════════════
-fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
-    let lambda_norm = (800.0 - wavelength) / 400.0;
-    let absorption = mix(0.3, 1.0, lambda_norm);
-    return exp(-thickness * absorption);
+fn clampUV(uv: vec2<f32>) -> vec2<f32> {
+  return clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
+}
+
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let len2 = dot(v, v);
+  if (len2 < 1e-8) {
+    return vec2<f32>(0.0, 0.0);
+  }
+  return v * inverseSqrt(len2);
+}
+
+fn fieldAt(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(dataTextureC, u_sampler, clampUV(uv), 0.0);
+}
+
+fn fringePalette(order: f32) -> vec3<f32> {
+  let p = fract(order);
+  let c0 = vec3<f32>(1.0, 0.10, 0.75);
+  let c1 = vec3<f32>(1.0, 0.52, 0.12);
+  let c2 = vec3<f32>(0.98, 0.94, 0.22);
+  let c3 = vec3<f32>(0.20, 0.92, 0.34);
+  let c4 = vec3<f32>(0.14, 0.86, 1.0);
+  let c5 = vec3<f32>(0.18, 0.28, 1.0);
+
+  if (p < 0.2) {
+    return mix(c0, c1, p / 0.2);
+  }
+  if (p < 0.4) {
+    return mix(c1, c2, (p - 0.2) / 0.2);
+  }
+  if (p < 0.6) {
+    return mix(c2, c3, (p - 0.4) / 0.2);
+  }
+  if (p < 0.8) {
+    return mix(c3, c4, (p - 0.6) / 0.2);
+  }
+  return mix(c4, c5, (p - 0.8) / 0.2);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
+
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let texel = 1.0 / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let freq = 10.0 + 55.0 * clamp(u.zoom_params.x, 0.0, 1.0);
+  let amp = 0.002 + 0.028 * clamp(u.zoom_params.y, 0.0, 1.0);
+  let speed = 1.0 + 8.0 * clamp(u.zoom_params.z, 0.0, 1.0);
+  let stressOptic = 0.05 + 0.45 * clamp(u.zoom_params.w, 0.0, 1.0);
+
+  let previous = fieldAt(uv);
+  var displacement = previous.rg * 0.94;
+
+  let mouse = u.zoom_config.yz;
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+  let mouseDelta = (uv - mouse) * aspectVec;
+  let mouseDist = length(mouseDelta);
+  let mouseEnvelope = exp(-mouseDist * 18.0);
+  displacement += safeNormalize(mouseDelta) * (-mouseEnvelope * mouseDown * amp * 2.2);
+  displacement += safeNormalize(vec2<f32>(-mouseDelta.y, mouseDelta.x)) * mouseEnvelope * mouseDown * amp * 0.9;
+
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 4.5) {
+      continue;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let delta = (uv - ripple.xy) * aspectVec;
+    let r = length(delta);
+    let phase = r * freq - age * speed * 4.0;
+    let envelope = exp(-r * 9.0 - age * 0.9);
+    let radial = safeNormalize(delta);
+    displacement += radial * sin(phase) * envelope * amp * (1.0 + 1.2 * bass);
+  }
 
-    // Params
-    let freq = u.zoom_params.x * 50.0 + 10.0;
-    let amp = u.zoom_params.y * 0.05;
-    let speed = u.zoom_params.z * 5.0;
-    let separation = u.zoom_params.w * 0.5;
+  let left = fieldAt(uv - vec2<f32>(texel.x, 0.0)).rg;
+  let right = fieldAt(uv + vec2<f32>(texel.x, 0.0)).rg;
+  let up = fieldAt(uv - vec2<f32>(0.0, texel.y)).rg;
+  let down = fieldAt(uv + vec2<f32>(0.0, texel.y)).rg;
 
-    // Mouse
-    var mouse = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
+  let dux_dx = (right.x - left.x) / (2.0 * texel.x);
+  let dux_dy = (down.x - up.x) / (2.0 * texel.y);
+  let duy_dx = (right.y - left.y) / (2.0 * texel.x);
+  let duy_dy = (down.y - up.y) / (2.0 * texel.y);
 
-    let to_mouse = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(to_mouse);
+  var sigma_xx = dux_dx + displacement.x * 20.0;
+  var sigma_yy = duy_dy - displacement.y * 20.0;
+  var sigma_xy = 0.5 * (dux_dy + duy_dx);
 
-    // Wave function
-    let phase = dist * freq - u.config.x * speed;
-    let decay = exp(-dist * 3.0);
+  let electricField = vec2<f32>(dux_dx - duy_dy, dux_dy + duy_dx) * (1.0 + 0.5 * treble);
+  let e2 = dot(electricField, electricField);
+  let epsilon0 = 0.018 + 0.035 * bass;
+  sigma_xx += epsilon0 * (electricField.x * electricField.x - 0.5 * e2);
+  sigma_yy += epsilon0 * (electricField.y * electricField.y - 0.5 * e2);
+  sigma_xy += epsilon0 * (electricField.x * electricField.y);
 
-    // RGB split logic with phase offsets
-    let wave_r = sin(phase) * amp * decay;
-    let wave_g = sin(phase + separation) * amp * decay;
-    let wave_b = sin(phase + separation * 2.0) * amp * decay;
+  let trace = sigma_xx + sigma_yy;
+  let diff = sigma_xx - sigma_yy;
+  let rad = sqrt(max(diff * diff + 4.0 * sigma_xy * sigma_xy, 0.0));
+  let sigma1 = 0.5 * (trace + rad);
+  let sigma2 = 0.5 * (trace - rad);
+  let principalAngle = 0.5 * atan2(2.0 * sigma_xy, diff + 1e-6);
 
-    var dir = normalize(to_mouse);
-    let safe_dir = select(dir, vec2<f32>(1.0, 0.0), dist < 0.001);
+  let deltaN = stressOptic * (sigma1 - sigma2) * 0.02;
+  let thickness = 0.9 + 0.5 * mouseDown + 0.35 * bass;
+  let deltaR = 2.0 * PI * thickness * deltaN / 0.650;
+  let deltaG = 2.0 * PI * thickness * deltaN / 0.550;
+  let deltaB = 2.0 * PI * thickness * deltaN / 0.450;
 
-    let uv_r = uv + safe_dir * wave_r;
-    let uv_g = uv + safe_dir * wave_g;
-    let uv_b = uv + safe_dir * wave_b;
+  let fringeOrder = abs(deltaG) / PI;
+  let isoclinic = abs(sin(2.0 * principalAngle));
+  let fringeColor = fringePalette(fringeOrder * 0.18 + previous.b * 0.25 + mids * 0.05);
+  let spectral = vec3<f32>(sin(0.5 * deltaR) * sin(0.5 * deltaR), sin(0.5 * deltaG) * sin(0.5 * deltaG), sin(0.5 * deltaB) * sin(0.5 * deltaB));
+  let photoelastic = fringeColor * spectral * (0.15 + 0.85 * isoclinic);
 
-    let col_r = textureSampleLevel(readTexture, u_sampler, uv_r, 0.0).r;
-    let col_g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
-    let col_b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
+  let stressMag = clamp(abs(sigma1 - sigma2) * 0.05, 0.0, 1.0);
+  let chromaShift = displacement * (0.6 + 0.8 * stressMag + 0.6 * treble);
+  let r = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement - chromaShift * 0.4), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement + chromaShift * 0.4), 0.0).b;
+  let base = vec3<f32>(r, g, b);
 
-    // ═══════════════════════════════════════════════════════════════
-    //  WAVELENGTH-DEPENDENT ALPHA
-    //  Thickness derived from wave amplitude and decay
-    // ═══════════════════════════════════════════════════════════════
-    let waveThickness = (abs(wave_r) + abs(wave_g) + abs(wave_b)) * 10.0;
-    let dispersionThickness = waveThickness + decay * 2.0;
-    
-    let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
-    let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
-    let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
-    
-    let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
-    let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
-    
-    let finalColor = vec3<f32>(
-        col_r * alphaR,
-        col_g * alphaG,
-        col_b * alphaB
-    );
+  let finalColor = clamp(mix(base, base * 0.35 + photoelastic, clamp(0.35 + 0.55 * stressMag + 0.20 * bass, 0.0, 1.0)), vec3<f32>(0.0), vec3<f32>(1.0));
+  let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv + displacement * 0.2), 0.0).r;
+  let alpha = clamp(0.82 + 0.12 * stressMag + 0.06 * isoclinic, 0.0, 1.0);
+  let depthProxy = clamp(depthSample * 0.45 + stressMag * 0.45 + clamp(fringeOrder * 0.08, 0.0, 0.3), 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-    
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(displacement, clamp(fringeOrder * 0.1, 0.0, 1.0), stressMag));
+  textureStore(dataTextureB, global_id.xy, vec4<f32>(clamp((sigma1 - sigma2) * 0.05 + 0.5, 0.0, 1.0), fract(principalAngle / PI + 0.5), isoclinic, 1.0));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }

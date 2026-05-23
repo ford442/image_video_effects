@@ -3,7 +3,8 @@
 //  Category: simulation
 //  Features: dye-advection, vorticity-confinement, audio-reactive, mouse-source
 //  Complexity: Medium
-//  Phase B / Algorithmist
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -113,14 +114,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let blended = mix(cur.rgb, dyed, 0.15 + bass * 0.1);
     textureStore(dataTextureB, coord, vec4<f32>(blended, 1.0));
 
-    // Alpha: vorticity magnitude + dye saturation drives compositing weight
-    let lumaOut = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.4 + lumaOut * 0.3 + abs(curl) * 0.4 + saturation * 0.3, 0.0, 1.0);
+    // Input-aware alpha blending
+    let effectIntensity = saturation;
+    let finalAlpha = mix(src.a, 1.0, effectIntensity * 0.7);
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, vec4<f32>(blended, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(blended, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(blended, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(blended, finalAlpha));
 }

@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Audio Spirograph - Audio-reactive spirograph with harmonic resonance
+//  Audio Spirograph
 //  Category: generative
 //  Features: audio-reactive, procedural, epitrochoid curves
-//  Created: 2026-03-22
-//  By: Agent 4A
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -184,5 +185,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _luma_as = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let _alpha_as = clamp(_luma_as * 0.7 + 0.2, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, _alpha_as));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+
+    let texUV = vec2<f32>(global_id.xy) / resolution;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, texUV, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

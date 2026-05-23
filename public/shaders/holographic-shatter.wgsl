@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Holographic Shatter - Advanced Alpha with Depth-Layered
-//  Category: complex-multi-effect
-//  Alpha Mode: Depth-Layered Alpha + Effect Intensity
-//  Features: advanced-alpha, holographic, shatter, glass
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Holographic Shatter
+//  Category: image
+//  Features: advanced-alpha, holographic, shatter, glass, mouse-driven, audio-reactive
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -79,6 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let warpedUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
     let sample = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Shard edge glow (pseudo-cracked-glass refraction)
     let edgeDist = min(min(shardUv.x, 1.0 - shardUv.x), min(shardUv.y, 1.0 - shardUv.y));
@@ -92,9 +95,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let foil = mix(holographic, holographic * (0.6 + palette * 0.7), 0.4);
 
     let finalColor = mix(sample.rgb, foil, edgeGlow * holographicIntensity);
-    let alpha = clamp(depthLayeredAlpha(finalColor, uv, depthWeight) * (0.8 + edgeGlow * 0.2)
-                      + impact * 0.1 + bass * 0.05, 0.0, 1.0);
+    let effectIntensity = edgeGlow * holographicIntensity + shatterAmount * 0.5;
+    let finalAlpha = mix(baseColor.a, 1.0, clamp(effectIntensity * 0.7, 0.0, 1.0));
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 1));
 }

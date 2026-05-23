@@ -3,7 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, interactive, audio-reactive
 //  Complexity: Medium
-//  Chunks: hash21, fbm2, waveField
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -103,9 +104,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let audio = plasmaBuffer[0].x;
   out += vec3<f32>(energy * audio * 0.15);
 
-  textureStore(writeTexture, gid.xy,
-               vec4<f32>(out, energy * (0.5 + audio * 0.5)));
+  let effectIntensity = energy * (0.5 + audio * 0.5);
+  let finalAlpha = mix(color.a, 1.0, effectIntensity * 0.7);
+  textureStore(writeTexture, gid.xy, vec4<f32>(out, finalAlpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

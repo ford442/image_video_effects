@@ -1,14 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  Spectral Bleed & Confinement + Audio Reactive
-//  Category: artistic
-//  Complexity: HIGH
-//  Visual concept: Specific color bands leak outward from edges while being
-//    electromagnetically confined by competing channels, creating glowing
-//    halos that feel physically constrained — like color plasma trapped by
-//    invisible magnetic fields.
-//  Audio reactivity: Bleed radius pulses with bass; beat flashes intensify
-//    the electromagnetic confinement field.
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Bleed & Confinement
+//  Category: image
+//  Features: audio-reactive, edge-detection, color-bleed, electromagnetic
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -269,9 +266,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     outG += isBeat * 0.08;
     outB += isBeat * 0.04;
 
-    // ── Advanced Alpha: Luminance Key ─────────────────────────────────────
-    let alpha = calculateAdvancedAlpha(vec3<f32>(outR, outG, outB), uv, depth);
+    // ── Input-aware alpha ─────────────────────────────────────────────────
+    let effectIntensity = clamp(u.zoom_params.x + u.zoom_params.y * 0.5, 0.0, 1.0);
+    let finalAlpha = mix(orig.a, 1.0, effectIntensity * 0.7);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, alpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, finalAlpha));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0, 0, 1));
 }

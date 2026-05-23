@@ -1,14 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-//  RGB Split Glitch - Digital glitch effect with wavelength-dependent alpha
-//  Category: retro-glitch
-//  Features: mouse-driven, chromatic-dispersion, wavelength-alpha
-//  
-//  SCIENTIFIC MODEL:
-//  - Dispersion affects both color position AND alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  RGB Split Glitch
+//  Category: image
+//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Complexity: High
+//  Scientific: YUV 4:2:0 chroma subsampling with delayed chroma planes, Nyquist alias fold-back, MPEG-style block ringing, and mouse-driven color bleed
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,110 +22,132 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  SPECTRAL PHYSICS CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const WAVELENGTH_RED:    f32 = 650.0;  // nm - longest wavelength
-const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
-const WAVELENGTH_BLUE:   f32 = 450.0;  // nm - shortest wavelength
+const PI: f32 = 3.14159265359;
 
-// Absorption coefficients (Beer-Lambert law)
-// Red transmits better, blue scatters/absorbs more
-const ABSORPTION_RED:    f32 = 0.3;
-const ABSORPTION_GREEN:  f32 = 0.5;
-const ABSORPTION_BLUE:   f32 = 0.8;
-
-fn hash12(p: vec2<f32>) -> f32 {
-    var p3  = fract(vec3<f32>(p.xyx) * .1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+fn clampUV(uv: vec2<f32>) -> vec2<f32> {
+  return clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  WAVELENGTH-DEPENDENT ALPHA CALCULATION
-//  Returns alpha for each channel based on dispersion thickness
-// ═══════════════════════════════════════════════════════════════
-fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
-    // Adjust absorption by wavelength (shorter wavelength = more absorption)
-    // Normalize wavelength to 0-1 range for weighting
-    let lambda_norm = (800.0 - wavelength) / 400.0; // Blue=0.875, Red=0.375
-    let absorption = mix(0.3, 1.0, lambda_norm);
-    return exp(-thickness * absorption);
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let len2 = dot(v, v);
+  if (len2 < 1e-8) {
+    return vec2<f32>(0.0, 0.0);
+  }
+  return v * inverseSqrt(len2);
+}
+
+fn rgbToYCbCr(rgb: vec3<f32>) -> vec3<f32> {
+  return vec3<f32>(
+    dot(rgb, vec3<f32>(0.299, 0.587, 0.114)),
+    dot(rgb, vec3<f32>(-0.169, -0.331, 0.500)),
+    dot(rgb, vec3<f32>(0.500, -0.419, -0.081))
+  );
+}
+
+fn yCbCrToRgb(yuv: vec3<f32>) -> vec3<f32> {
+  return vec3<f32>(
+    yuv.x + 1.402 * yuv.z,
+    yuv.x - 0.344136 * yuv.y - 0.714136 * yuv.z,
+    yuv.x + 1.772 * yuv.y
+  );
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+  let h = sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123;
+  return fract(h);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
 
-    // Parameters
-    let splitDist = u.zoom_params.x * 0.1;
-    let angleOffset = u.zoom_params.y * 6.28;
-    let noiseAmt = u.zoom_params.z;
-    let radius = 0.1 + (u.zoom_params.w * 0.5);
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let coord = vec2<f32>(global_id.xy);
+  let texel = 1.0 / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
 
-    let aspect = resolution.x / resolution.y;
-    var mousePos = u.zoom_config.yz;
-    let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Influence factor based on mouse distance
-    let influence = smoothstep(radius, 0.0, dist);
+  let glitch = 0.10 + 1.80 * clamp(u.zoom_params.x, 0.0, 1.0) + 1.20 * bass;
+  let temporalOffset = clamp(u.zoom_params.y, 0.0, 1.0);
+  let aliasSeverity = clamp(u.zoom_params.z, 0.0, 1.0);
+  let radius = 0.08 + 0.35 * clamp(u.zoom_params.w, 0.0, 1.0);
 
-    var offsetR = vec2<f32>(0.0);
-    var offsetG = vec2<f32>(0.0);
-    var offsetB = vec2<f32>(0.0);
+  let baseRgb = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let baseYuv = rgbToYCbCr(baseRgb);
 
-    // Calculate dispersion thickness based on influence
-    let dispersionThickness = influence * 2.0;
+  let chromaCoord = floor(coord / 2.0) * 2.0 + vec2<f32>(0.5, 0.5);
+  let chromaUV = clampUV(chromaCoord / resolution);
+  let blockRgb = textureSampleLevel(readTexture, u_sampler, chromaUV, 0.0).rgb;
+  let blockYuv = rgbToYCbCr(blockRgb);
 
-    if (influence > 0.001) {
-        let t = u.config.x;
+  let previous = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let cbDelayed1 = previous.g;
+  let crDelayed1 = previous.b;
+  let crDelayed2 = previous.a;
 
-        // Jitter/Noise
-        let noise = (hash12(uv * 100.0 + t) - 0.5) * noiseAmt * influence * 0.1;
+  var y = baseYuv.x;
+  var cb = mix(blockYuv.y, cbDelayed1, clamp(0.30 + 0.45 * temporalOffset + 0.15 * bass, 0.0, 1.0));
+  var cr = mix(blockYuv.z, crDelayed2, clamp(0.45 + 0.45 * temporalOffset, 0.0, 1.0));
 
-        // Directional Split
-        var dir = vec2<f32>(cos(angleOffset), sin(angleOffset));
-        let shift = dir * splitDist * influence;
+  let leftY = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, clampUV(uv - vec2<f32>(texel.x, 0.0)), 0.0).rgb).x;
+  let rightY = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, clampUV(uv + vec2<f32>(texel.x, 0.0)), 0.0).rgb).x;
+  let upY = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, clampUV(uv - vec2<f32>(0.0, texel.y)), 0.0).rgb).x;
+  let downY = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, clampUV(uv + vec2<f32>(0.0, texel.y)), 0.0).rgb).x;
+  let diagA = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, clampUV(uv + vec2<f32>(texel.x, texel.y)), 0.0).rgb).x;
+  let diagB = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, clampUV(uv + vec2<f32>(-texel.x, texel.y)), 0.0).rgb).x;
 
-        offsetR = shift + vec2<f32>(noise);
-        offsetG = -shift * 0.5;
-        offsetB = -shift + vec2<f32>(-noise);
-    }
+  let freqMeasure = abs(rightY - leftY) + abs(downY - upY) + abs(diagA - diagB);
+  let aliasStrength = smoothstep(0.15, 0.70, freqMeasure * (1.0 + glitch));
+  let herringbone = sin((uv.x + uv.y) * resolution.x * (0.28 + 1.3 * aliasSeverity) + time * (6.0 + 12.0 * treble)) *
+                    sin((uv.x - uv.y) * resolution.y * (0.24 + 1.4 * aliasSeverity) - time * 4.0);
+  cb += herringbone * aliasStrength * (0.02 + 0.08 * aliasSeverity + 0.05 * bass);
+  cr -= herringbone * aliasStrength * (0.03 + 0.10 * aliasSeverity + 0.04 * bass);
+  y += herringbone * aliasStrength * 0.04;
 
-    // Sample color channels at displaced positions
-    let r = textureSampleLevel(readTexture, u_sampler, uv + offsetR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv + offsetG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + offsetB, 0.0).b;
+  let blockCenterUV = clampUV((floor(coord / 8.0) * 8.0 + vec2<f32>(4.0, 4.0)) / resolution);
+  let blockCenterY = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, blockCenterUV, 0.0).rgb).x;
+  let blockFrac = abs(fract((coord + 0.5) / 8.0) - 0.5);
+  let boundary = exp(-min(blockFrac.x, blockFrac.y) * 28.0);
+  let ringing = cos(blockFrac.x * PI * 2.0) * cos(blockFrac.y * PI * 2.0) * boundary * (blockCenterY - y) * (0.10 + 0.18 * glitch);
+  y += ringing;
 
-    // ═══════════════════════════════════════════════════════════════
-    //  WAVELENGTH-DEPENDENT ALPHA
-    // ═══════════════════════════════════════════════════════════════
-    // Calculate per-channel alpha based on dispersion thickness
-    let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
-    let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
-    let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
-    
-    // Luminance-weighted final alpha (red contributes more to perceived brightness)
-    let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
-    let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
-    
-    // Apply channel alphas to color (premultiplied style)
-    let finalColor = vec3<f32>(
-        r * alphaR,
-        g * alphaG,
-        b * alphaB
-    );
+  let mouse = u.zoom_config.yz;
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+  let mouseDelta = (uv - mouse) * aspectVec;
+  let bleed = mouseDown * smoothstep(radius, 0.0, length(mouseDelta));
+  let bleedDirection = safeNormalize(mouseDelta + vec2<f32>(0.001, 0.0));
+  let bleedSample = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, clampUV(uv + bleedDirection * 0.015 * glitch), 0.0).rgb);
+  cb = mix(cb, bleedSample.y, bleed * 0.85);
+  cr = mix(cr, bleedSample.z, bleed * 0.85);
+  y = mix(y, mix(y, baseYuv.x, 0.6), bleed * 0.5);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+  cb += (hash12(coord + time) - 0.5) * 0.02 * glitch;
+  cr += (hash12(coord.yx - time) - 0.5) * 0.02 * glitch;
 
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let reconstructed = clamp(yCbCrToRgb(vec3<f32>(y, cb, cr)), vec3<f32>(0.0), vec3<f32>(1.0));
+  let digitalDamage = clamp(aliasStrength * (0.25 + 0.45 * glitch) + boundary * 0.15 + bleed * 0.25, 0.0, 1.0);
+  let finalColor = clamp(mix(baseRgb, reconstructed, clamp(0.58 + digitalDamage, 0.0, 1.0)), vec3<f32>(0.0), vec3<f32>(1.0));
+
+  let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let alpha = clamp(0.82 + 0.10 * digitalDamage + 0.04 * bass, 0.0, 1.0);
+  let depthProxy = clamp(depthSample * 0.40 + aliasStrength * 0.35 + digitalDamage * 0.35, 0.0, 1.0);
+
+  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(y, blockYuv.y, blockYuv.z, crDelayed1));
+  textureStore(dataTextureB, global_id.xy, vec4<f32>(aliasStrength, boundary, bleed, digitalDamage));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }

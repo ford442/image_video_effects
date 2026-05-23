@@ -1,17 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  Chromatic Phase Inversion + Audio Reactive
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Phase Inversion
 //  Category: artistic
-//  Complexity: HIGH
-//  Visual concept: Individual color channels are inverted by a slowly evolving
-//    temporal phase, causing color to appear spatially offset from reality —
-//    color "ghosts" that drift ahead or behind the true image.
-//  Mathematical approach: Each channel's inversion is modulated by a
-//    sinusoidal phase function with distinct frequencies; spatial offset
-//    is computed from phase-gradient to keep coherence; depth controls
-//    how much phase each region accumulates over time.
-//  Audio reactivity: Phase speed and ghost offset pulse with the beat;
-//    hue shifts respond to overall audio energy.
-// ─────────────────────────────────────────────────────────────────────────────
+//  Features: [mouse-driven, audio-reactive]
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -174,6 +168,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Depth at this pixel ───────────────────────────────────────────────
     let depth     = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depthPhase = depth * invDepth;
 
     // ── Spatial phase field ───────────────────────────────────────────────
@@ -265,11 +260,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     outG += isBeat * 0.05;
     outB += isBeat * 0.03;
 
-    // Alpha: phase variance + ghosting offset drives chromatic inversion compositing weight
+    // Alpha: preserve input transparency, blend to opaque based on effect intensity
     let lumaOut = dot(vec3<f32>(outR, outG, outB), vec3<f32>(0.299, 0.587, 0.114));
     let phaseVar = abs(phR - phB);
-    let alpha = clamp(0.45 + lumaOut * 0.3 + phaseVar * 0.4 + audioBass * 0.1, 0.0, 1.0);
-    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, alpha));
+    let effectIntensity = clamp(phaseVar * 0.5 + ghostBlend * 2.0, 0.0, 1.0);
+    let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
+    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(phR, phG, phB, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

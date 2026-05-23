@@ -1,29 +1,19 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid Viscous Shader with Alpha Physics
-//  Category: liquid-effects
-//  Features: vortex physics, chromatic aberration, cohesion effects
-//
-//  ALPHA PHYSICS:
-//  - Viscous liquid = more scattering = more opaque
-//  - Vortex strength affects thickness
-//  - Chromatic dispersion affects per-channel opacity
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Viscous
+//  Category: image
+//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Complexity: Very High
+//  Scientific: 2D incompressible Navier-Stokes with vorticity confinement, turbulence cascade, semi-Lagrangian advection, and dye roll-up
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
@@ -31,246 +21,188 @@ struct Uniforms {
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-// Hash function for per-vortex variation based on click position
-fn hash2(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
+
+const PI: f32 = 3.14159265359;
+
+fn clampUV(uv: vec2<f32>) -> vec2<f32> {
+  return clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
 }
 
-// Multi-octave noise-like function for ambient flow
-fn noise2D(p: vec2<f32>) -> vec2<f32> {
-  var i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f); // smoothstep
-
-  var a = hash2(i);
-  var b = hash2(i + vec2<f32>(1.0, 0.0));
-  let c = hash2(i + vec2<f32>(0.0, 1.0));
-  let d = hash2(i + vec2<f32>(1.0, 1.0));
-
-  let h = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-
-  // Return derivative-like vector for flow direction
-  return vec2<f32>(
-    cos(h * 6.283185),
-    sin(h * 6.283185)
-  );
-}
-
-// Multi-octave flow pattern
-fn flowPattern(p: vec2<f32>, time: f32) -> vec2<f32> {
-  var flow = vec2<f32>(0.0);
-  var amplitude = 1.0;
-  var frequency = 1.0;
-
-  for (var i = 0; i < 3; i++) {
-    flow += noise2D(p * frequency + time * 0.1) * amplitude;
-    amplitude *= 0.5;
-    frequency *= 2.0;
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let len2 = dot(v, v);
+  if (len2 < 1e-8) {
+    return vec2<f32>(0.0, 0.0);
   }
-
-  return flow;
+  return v * inverseSqrt(len2);
 }
 
-fn hash2_to_vec2(h: f32) -> vec2<f32> {
-  var a = fract(h * 0.1031);
-  var b = fract(h * 0.11369);
-  return vec2<f32>(a, b) * 2.0 - 1.0;
+fn hash12(p: vec2<f32>) -> f32 {
+  let h = sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123;
+  return fract(h);
 }
 
-fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
-  var uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
-  let noiseValue = sin(uv.x * 3.14159) * cos(uv.y * 3.14159);
-  var flow = hash2_to_vec2(fract(noiseValue * 43758.5453));
-  return flow * exp(-length(p) * 0.5);
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// Schlick's approximation for Fresnel
-fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+fn curlNoise(p: vec2<f32>) -> vec2<f32> {
+  let e = 0.05;
+  let dx = valueNoise(p + vec2<f32>(e, 0.0)) - valueNoise(p - vec2<f32>(e, 0.0));
+  let dy = valueNoise(p + vec2<f32>(0.0, e)) - valueNoise(p - vec2<f32>(0.0, e));
+  return safeNormalize(vec2<f32>(dy, -dx));
 }
 
-// Calculate viscous liquid alpha
-fn calculateViscousAlpha(
-    vortexStrength: f32,
-    chromaticMag: f32,
-    viewDotNormal: f32,
-    depthFactor: f32
-) -> f32 {
-  // Viscous liquid has higher base F0 due to density
-  let F0 = 0.04;
-  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
-  
-  // Viscous = more scattering = more opaque
-  let viscosityFactor = 1.0 + vortexStrength * 0.5;
-  
-  // Chromatic dispersion affects effective thickness
-  let chromaticThickness = chromaticMag * 2.0 + 0.2;
-  
-  // Depth factor: more viscous in foreground
-  let depthOpacity = mix(0.95, 0.5, depthFactor);
-  
-  // Absorption with viscosity
-  let absorption = exp(-chromaticThickness * viscosityFactor);
-  let baseAlpha = mix(0.4, depthOpacity, absorption);
-  
-  let alpha = baseAlpha * (1.0 - fresnel * 0.3);
-  
-  return clamp(alpha, 0.0, 1.0);
+fn sampleState(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(dataTextureC, u_sampler, clampUV(uv), 0.0);
 }
 
-// Calculate viscous color with cohesion effects
-fn calculateViscousColor(
-    r: f32,
-    g: f32,
-    b: f32,
-    vortexStrength: f32,
-    chromaticOffset: f32
-) -> vec3<f32> {
-  // Viscous liquid slightly desaturates colors (scattering)
-  let avg = (r + g + b) / 3.0;
-  let saturation = 1.0 - vortexStrength * 0.1;
-  
-  let desaturated = vec3<f32>(
-      mix(avg, r, saturation),
-      mix(avg, g, saturation),
-      mix(avg, b, saturation)
-  );
-  
-  // Add viscous "glow" at vortex centers
-  let glow = vec3<f32>(0.02, 0.03, 0.04) * vortexStrength;
-  
-  return desaturated + glow;
+fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
+  let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(vec3<f32>(c.x) + k.xyz) * 6.0 - vec3<f32>(k.www));
+  return c.z * mix(vec3<f32>(k.x), clamp(p - vec3<f32>(k.x), vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+fn vorticityAt(uv: vec2<f32>, texel: vec2<f32>) -> f32 {
+  let leftState = sampleState(uv - vec2<f32>(texel.x, 0.0));
+  let rightState = sampleState(uv + vec2<f32>(texel.x, 0.0));
+  let upState = sampleState(uv - vec2<f32>(0.0, texel.y));
+  let downState = sampleState(uv + vec2<f32>(0.0, texel.y));
+  let dvdx = (rightState.y - leftState.y) / (2.0 * texel.x);
+  let dudy = (downState.x - upState.x) / (2.0 * texel.y);
+  return dvdx - dudy;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let currentTime = u.config.x;
-  let pixelSize = 1.0 / resolution;
-  let center_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let depthFactor = 1.0 - center_depth;
-
-  // Ambient displacement and gravity bias
-  var ambientDisplacement = vec2<f32>(0.0);
-  let background_factor = smoothstep(0.0, 0.25, depthFactor);
-  if (background_factor > 0.0) {
-    let time = currentTime * 0.2 + depthFactor * 2.0;
-    let noiseuv = uv * vec2<f32>(9.0, 7.0) + vec2<f32>(currentTime * 0.05, currentTime * 0.04);
-    var flow = flowPattern(noiseuv, time);
-    let gravity = vec2<f32>(0.0, 0.0006);
-    ambientDisplacement = (flow * 0.003 + gravity) * background_factor * (0.2 + depthFactor);
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
   }
 
-  // Vortex calculation
-  var mouseDisplacement = vec2<f32>(0.0);
-  var chromaticAccumulator = 0.0;
-  var totalVortexStrength: f32 = 0.0;
-  let rippleCount = u32(u.config.y);
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let texel = 1.0 / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
 
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let viscosity = clamp(u.zoom_params.x, 0.001, 1.0);
+  let confinement = max(u.zoom_params.y, 0.0);
+  let injectionScale = 0.35 + 1.65 * clamp(u.zoom_params.z, 0.0, 1.0);
+  let hueShift = u.zoom_params.w;
+  let dt = 0.55;
+
+  let centerState = sampleState(uv);
+  let leftState = sampleState(uv - vec2<f32>(texel.x, 0.0));
+  let rightState = sampleState(uv + vec2<f32>(texel.x, 0.0));
+  let upState = sampleState(uv - vec2<f32>(0.0, texel.y));
+  let downState = sampleState(uv + vec2<f32>(0.0, texel.y));
+
+  let departure = clampUV(uv - centerState.rg * dt);
+  let advectedState = sampleState(departure);
+  var velocity = advectedState.rg;
+  var dye = advectedState.b * exp(-viscosity * 0.025);
+
+  let omega = vorticityAt(uv, texel);
+  let omegaL = abs(vorticityAt(uv - vec2<f32>(texel.x, 0.0), texel));
+  let omegaR = abs(vorticityAt(uv + vec2<f32>(texel.x, 0.0), texel));
+  let omegaU = abs(vorticityAt(uv - vec2<f32>(0.0, texel.y), texel));
+  let omegaD = abs(vorticityAt(uv + vec2<f32>(0.0, texel.y), texel));
+
+  let eta = safeNormalize(vec2<f32>(omegaR - omegaL, omegaD - omegaU));
+  let confinementForce = vec2<f32>(eta.y, -eta.x) * clamp(omega, -40.0, 40.0) * confinement * 0.00003;
+
+  var cascadeForce = vec2<f32>(0.0, 0.0);
+  cascadeForce += curlNoise(uv * 3.0 + vec2<f32>(time * 0.07, -time * 0.03)) * (0.00025 + 0.0018 * bass);
+  cascadeForce += curlNoise(uv * 8.0 + vec2<f32>(-time * 0.11, time * 0.05)) * (0.00018 + 0.0011 * mids);
+  cascadeForce += curlNoise(uv * 18.0 + vec2<f32>(time * 0.19, time * 0.13)) * (0.00012 + 0.0010 * treble);
+  cascadeForce *= injectionScale * (1.15 - 0.65 * viscosity);
+
+  let mouse = u.zoom_config.yz;
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+  let toMouse = (uv - mouse) * aspectVec;
+  let mouseDist = length(toMouse);
+  let mouseEnvelope = exp(-mouseDist * 22.0) * mouseDown;
+  let mouseCurl = safeNormalize(vec2<f32>(-toMouse.y, toMouse.x)) * mouseEnvelope * (0.0015 + 0.0075 * treble);
+
+  var rippleForce = vec2<f32>(0.0, 0.0);
+  let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rippleData = u.ripples[i];
-    let timeSinceClick = currentTime - rippleData.z;
-
-    if (timeSinceClick <= 0.0) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age < 0.0 || age > 4.0) {
       continue;
     }
-    let vortexSeed = hash2(rippleData.xy * 100.0);
-    let vortexDuration = mix(3.0, 6.0, vortexSeed);
-    let chromaticStrength = mix(0.001, 0.005, hash2(rippleData.xy * 200.0));
-
-    if (timeSinceClick < vortexDuration) {
-      let direction_vec = uv - rippleData.xy;
-      let dist = length(direction_vec);
-
-      if (dist > 0.0001) {
-        let rippleOriginDepthFactor = 1.0 - textureSampleLevel(readDepthTexture, non_filtering_sampler, rippleData.xy, 0.0).r;
-
-        // Vortex calculation: tangential velocity (perpendicular to radius)
-        let tangent = vec2<f32>(-direction_vec.y, direction_vec.x); // Perpendicular vector
-
-        // Angular velocity with quadratic decay (fast initial spin)
-        let normalizedTime = timeSinceClick / vortexDuration;
-        let angularVelocity = (1.0 - normalizedTime * normalizedTime) * 8.0; // Quadratic decay
-
-        // Vortex strength modulated by depth
-        let vortex_amplitude = mix(0.008, 0.022, rippleOriginDepthFactor);
-
-        // Tighter falloff (60% radius reduction: 20.0 -> 33.0)
-        let falloff = 1.0 / (dist * 33.0 + 1.0);
-
-        // Time-based attenuation
-        let attenuation = 1.0 - smoothstep(0.0, 1.0, normalizedTime);
-
-        // Add spiral component (inward/outward motion based on time)
-        let spiralFactor = sin(normalizedTime * 3.14159) * 0.3;
-        let radialComponent = (direction_vec / dist) * spiralFactor;
-
-        // Combine tangential and radial motion
-        let vortexDisplacement = (tangent * angularVelocity + radialComponent) * vortex_amplitude * falloff * attenuation;
-
-        mouseDisplacement += vortexDisplacement;
-        chromaticAccumulator += chromaticStrength * length(vortexDisplacement) * 100.0;
-        totalVortexStrength += length(vortexDisplacement) * 100.0;
-      }
-    }
+    let delta = (uv - ripple.xy) * aspectVec;
+    let r = length(delta);
+    let ring = sin(r * 42.0 - age * 7.0) * exp(-r * 11.0 - age * 0.8);
+    rippleForce += safeNormalize(vec2<f32>(-delta.y, delta.x)) * ring * (0.0006 + 0.0030 * bass);
+    dye += exp(-r * 18.0 - age * 1.2) * (0.04 + 0.12 * bass);
   }
 
-  // 4 tap smoothing
-  let smoothedDisplacement = mouseDisplacement * 0.7; // 70% original
+  var audioVortices = vec2<f32>(0.0, 0.0);
+  let audioPhase = floor(time * 0.7);
+  for (var j: i32 = 0; j < 3; j = j + 1) {
+    let jf = f32(j);
+    let seed = audioPhase + jf * 17.0;
+    let center = vec2<f32>(hash12(vec2<f32>(seed, 1.37)), hash12(vec2<f32>(seed, 9.19)));
+    let delta = (uv - center) * aspectVec;
+    let r = length(delta);
+    let envelope = exp(-r * (10.0 + jf * 3.0));
+    audioVortices += safeNormalize(vec2<f32>(-delta.y, delta.x)) * envelope * bass * (0.0014 + jf * 0.0005);
+  }
 
-  // Sample 4 cardinal neighbors
-  let right = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0);
-  let left = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-pixelSize.x, 0.0), 0.0);
-  let up = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -pixelSize.y), 0.0);
-  let down = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0);
+  velocity += (confinementForce + cascadeForce + mouseCurl + rippleForce + audioVortices) * dt;
+  velocity *= 1.0 / (1.0 + 10.0 * viscosity * dt);
 
-  // Average neighbor effect for cohesion
-  let neighborAvg = (right + left + up + down) * 0.25;
-  let centerColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let cohesionEffect = (neighborAvg - centerColor) * 0.3; // 30% smoothing
+  let divergence = ((rightState.x - leftState.x) / (2.0 * texel.x)) + ((downState.y - upState.y) / (2.0 * texel.y));
+  let pL = leftState.a;
+  let pR = rightState.a;
+  let pU = upState.a;
+  let pD = downState.a;
+  var pressure = centerState.a;
+  for (var iter: i32 = 0; iter < 4; iter = iter + 1) {
+    pressure = (pL + pR + pU + pD - divergence) * 0.25;
+  }
+  let gradPressure = vec2<f32>((pR - pL) / (2.0 * texel.x), (pD - pU) / (2.0 * texel.y));
+  velocity -= gradPressure * 0.0004;
 
-  // Apply smoothing to displacement
-  let finalMouseDisplacement = smoothedDisplacement + cohesionEffect.xy * 0.01;
+  let advectedColor = textureSampleLevel(readTexture, u_sampler, clampUV(uv + velocity * 0.35), 0.0);
+  let sourceDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv + velocity * 0.2), 0.0).r;
+  let luma = dot(advectedColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  dye = clamp(mix(dye, luma, 0.05) + mouseEnvelope * 0.18 + bass * 0.06 + abs(omega) * 0.0004, 0.0, 1.0);
 
-  // --- Chromatic Aberration ---
-  let totalDisplacement = finalMouseDisplacement + ambientDisplacement;
-  let displacementMagnitude = length(totalDisplacement);
-  let chromaticOffset = chromaticAccumulator * (1.0 - center_depth) * 0.5;
+  let vorticityVisual = clamp(abs(omega) * 0.02, 0.0, 1.0);
+  let hue = fract(0.58 + hueShift * 0.25 + dye * 0.22 + vorticityVisual * 0.30 + treble * 0.08 + sin(time * 0.13) * 0.04);
+  let saturation = clamp(0.55 + 0.25 * dye + 0.35 * vorticityVisual + 0.15 * mids, 0.0, 1.0);
+  let value = clamp(0.35 + 0.55 * dye + 0.45 * vorticityVisual + 0.20 * luma, 0.0, 1.0);
+  let iridescent = hsv2rgb(vec3<f32>(hue, saturation, value));
+  let rollupGlow = vec3<f32>(0.20, 0.10, 0.32) * vorticityVisual + vec3<f32>(0.10, 0.18, 0.28) * dye;
+  let blend = clamp(0.32 + 0.45 * dye + 0.28 * vorticityVisual, 0.0, 1.0);
+  let finalColor = clamp(mix(advectedColor.rgb, iridescent + rollupGlow, blend), vec3<f32>(0.0), vec3<f32>(1.0));
+  let alpha = clamp(0.78 + 0.18 * dye, 0.0, 1.0);
+  let depthProxy = clamp(max(sourceDepth * 0.65, vorticityVisual * 0.9 + dye * 0.2), 0.0, 1.0);
 
-  // Sample each color channel at slightly different offsets
-  let redUV = uv + totalDisplacement * (1.0 + chromaticOffset);
-  let greenUV = uv + totalDisplacement;
-  let blueUV = uv + totalDisplacement * (1.0 - chromaticOffset);
-
-  let redChannel = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
-  let greenChannel = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).g;
-  let blueChannel = textureSampleLevel(readTexture, u_sampler, blueUV, 0.0).b;
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // ALPHA CALCULATION
-  // ═══════════════════════════════════════════════════════════════════════════════
-  
-  // Approximate normal from displacement
-  let normal = normalize(vec3<f32>(
-      -totalDisplacement.x * 20.0,
-      -totalDisplacement.y * 20.0,
-      1.0
-  ));
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let viewDotNormal = dot(viewDir, normal);
-  
-  // Calculate viscous color
-  let viscousColor = calculateViscousColor(redChannel, greenChannel, blueChannel, totalVortexStrength, chromaticOffset);
-  
-  // Calculate alpha
-  let alpha = calculateViscousAlpha(totalVortexStrength, chromaticOffset, viewDotNormal, center_depth);
-
-  // --- Final Output ---
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(viscousColor, alpha));
-
-  // Update depth texture for next frame
-  let depthDisplacedUV = uv + finalMouseDisplacement;
-  let displacedDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthDisplacedUV, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(displacedDepth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(velocity, dye, pressure));
+  textureStore(dataTextureB, global_id.xy, vec4<f32>(vorticityVisual, clamp(abs(divergence) * 0.01, 0.0, 1.0), clamp(length(velocity) * 90.0, 0.0, 1.0), 1.0));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }

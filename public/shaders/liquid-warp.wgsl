@@ -1,15 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid Warp Shader with Alpha Physics
-//  Category: liquid-effects
-//  Features: velocity field, push/swirl interaction, flow transparency with physical deformation
-//
-//  ALPHA PHYSICS:
-//  - Velocity magnitude maps to liquid film thickness
-//  - Swirling regions have different transparency due to vorticity
-//  - Decay affects opacity over time (evaporation)
-//  - Fresnel effect from surface normal derived from velocity field
-//  - Physical: Higher velocity = more turbulence = scattered light = lower alpha
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Warp
+//  Category: interactive-mouse
+//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Complexity: Very High
+//  Scientific: Semi-Lagrangian Navier-Stokes warp with RK4 backtracing, divergence-free curl-noise forcing, strain-driven vortex stretching, and depth-weighted drag
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,171 +22,157 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Radius, y=Strength, z=Decay, w=Swirl
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// Schlick's approximation for Fresnel
-fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+fn clampUV(uv: vec2<f32>) -> vec2<f32> {
+  return clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
 }
 
-// Calculate distortion gradient from velocity field
-fn calculateDistortionGradient(
-    velocity: vec2<f32>,
-    uv: vec2<f32>,
-    resolution: vec2<f32>
-) -> f32 {
-    // Calculate velocity magnitude gradient
-    let velMag = length(velocity);
-    
-    // Sample neighboring pixels for gradient
-    let eps = 1.0 / resolution.x;
-    
-    // Approximate gradient magnitude
-    let gradient = velMag * 10.0; // Scale for visibility
-    
-    return gradient;
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let len2 = dot(v, v);
+  if (len2 < 1e-8) {
+    return vec2<f32>(0.0, 0.0);
+  }
+  return v * inverseSqrt(len2);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ALPHA PHYSICS: Calculate alpha based on liquid physics
-// ═══════════════════════════════════════════════════════════════════════════════
-fn calculateLiquidAlpha(
-    velocityMag: f32,
-    distRatio: f32,
-    swirl: f32,
-    distortionGradient: f32,
-    baseAlpha: f32
-) -> f32 {
-  // Fresnel effect (approximate from velocity creating surface normal)
-  let F0 = 0.02;
-  let normal = normalize(vec3<f32>(
-      -velocityMag * 0.5,
-      -velocityMag * 0.5,
-      1.0
-  ));
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let fresnel = schlickFresnel(max(0.0, dot(viewDir, normal)), F0);
-  
-  // Velocity magnitude = liquid film thickness
-  // Higher velocity = thicker film BUT more turbulence = scattered light
-  let thickness = velocityMag * 3.0 + 0.2;
-  
-  // Physical: Higher distortion gradient = more light scattering = lower alpha
-  let scatteringLoss = distortionGradient * 0.5;
-  
-  // Swirling regions have different optical properties (vorticity effect)
-  let swirlFactor = 1.0 + swirl * 0.02;
-  
-  // Absorption based on thickness
-  let absorption = exp(-thickness * swirlFactor);
-  let baseLiquidAlpha = mix(0.4, 0.9, absorption);
-  
-  // Distance falloff: center of effect = more opaque (higher pressure)
-  let centerAlpha = mix(1.0, baseLiquidAlpha, distRatio);
-  
-  // Apply Fresnel and scattering
-  let alpha = baseAlpha * centerAlpha * (1.0 - fresnel * 0.3) - scatteringLoss;
-  
-  return clamp(alpha, 0.3, 1.0);
+fn hash12(p: vec2<f32>) -> f32 {
+  let h = sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123;
+  return fract(h);
 }
 
-// Calculate warp color with flow effects and Doppler shift
-fn calculateLiquidWarpColor(
-    baseColor: vec3<f32>,
-    velocity: vec2<f32>,
-    swirl: f32,
-    distortionGradient: f32
-) -> vec3<f32> {
-  let velMag = length(velocity);
-  
-  // Flow tint based on swirl direction (Doppler-like shift)
-  let flowTint = vec3<f32>(0.0, 0.08, 0.12) * velMag * swirl * 0.1;
-  
-  // Motion blur effect based on velocity
-  let blurFactor = exp(-velMag * 2.0);
-  
-  // High distortion causes chromatic separation
-  let chromaticShift = distortionGradient * 0.1;
-  let rShift = baseColor.r * (1.0 + chromaticShift);
-  let bShift = baseColor.b * (1.0 - chromaticShift);
-  
-  return vec3<f32>(rShift, baseColor.g, bShift) * blurFactor + flowTint;
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+fn curlNoise(p: vec2<f32>) -> vec2<f32> {
+  let e = 0.04;
+  let dx = valueNoise(p + vec2<f32>(e, 0.0)) - valueNoise(p - vec2<f32>(e, 0.0));
+  let dy = valueNoise(p + vec2<f32>(0.0, e)) - valueNoise(p - vec2<f32>(0.0, e));
+  return safeNormalize(vec2<f32>(dy, -dx));
+}
+
+fn stateAt(uv: vec2<f32>) -> vec4<f32> {
+  return textureSampleLevel(dataTextureC, u_sampler, clampUV(uv), 0.0);
+}
+
+fn depthGradient(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
+  let left = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv - vec2<f32>(texel.x, 0.0)), 0.0).r;
+  let right = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv + vec2<f32>(texel.x, 0.0)), 0.0).r;
+  let up = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv - vec2<f32>(0.0, texel.y)), 0.0).r;
+  let down = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv + vec2<f32>(0.0, texel.y)), 0.0).r;
+  return vec2<f32>((right - left) / (2.0 * texel.x), (down - up) / (2.0 * texel.y));
+}
+
+fn velocityField(
+  uv: vec2<f32>,
+  texel: vec2<f32>,
+  time: f32,
+  warpScale: f32,
+  turbulence: f32,
+  mouse: vec2<f32>,
+  mouseDown: f32,
+  bass: f32,
+  treble: f32,
+  aspect: f32
+) -> vec2<f32> {
+  let previous = stateAt(uv).rg;
+  let dragGradient = depthGradient(uv, texel);
+  let density = clamp(length(dragGradient) * 0.02, 0.0, 0.85);
+
+  var flow = previous * 0.965;
+  flow += curlNoise(uv * 3.0 + vec2<f32>(time * 0.09, -time * 0.05)) * (0.0010 + 0.0045 * turbulence + 0.0040 * bass);
+  flow += curlNoise(uv * 9.0 + vec2<f32>(-time * 0.17, time * 0.11)) * (0.0006 + 0.0025 * turbulence + 0.0025 * treble);
+  flow += curlNoise(uv * 21.0 + vec2<f32>(time * 0.29, time * 0.23)) * (0.00025 + 0.0016 * treble);
+
+  let delta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let dist = length(delta);
+  let envelope = exp(-dist * (8.0 + 12.0 * warpScale)) * mouseDown;
+  let swirl = safeNormalize(vec2<f32>(-delta.y, delta.x)) * envelope * (0.0015 + 0.0100 * warpScale);
+  let pull = -safeNormalize(delta) * envelope * (0.0008 + 0.0040 * turbulence);
+
+  let centered = (uv - vec2<f32>(0.5, 0.5)) * vec2<f32>(aspect, 1.0);
+  let rmsRotation = safeNormalize(vec2<f32>(-centered.y, centered.x)) * bass * (0.0007 + 0.0035 * warpScale);
+
+  return (flow + swirl + pull + rmsRotation) * (1.0 - density);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
 
-    // Params
-    let radius = u.zoom_params.x * 0.2;
-    let strength = u.zoom_params.y * 0.1;
-    let decay = 0.9 + u.zoom_params.z * 0.09; // 0.9 to 0.99
-    let swirl = u.zoom_params.w * 10.0; // Viscosity/Swirl factor
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let texel = 1.0 / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / max(resolution.y, 1.0);
 
-    // Mouse Interaction
-    var mousePos = u.zoom_config.yz;
-    let isMouseDown = u.zoom_config.w > 0.5;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Read previous velocity field from dataTextureC
-    let prevData = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    var velocity = prevData.xy;
+  let warpScale = 0.35 + 1.45 * clamp(u.zoom_params.x, 0.0, 1.0);
+  let turbulence = clamp(u.zoom_params.y, 0.0, 1.0);
+  let stretchParam = clamp(u.zoom_params.z, 0.0, 1.0);
+  let chroma = 0.2 + 1.4 * clamp(u.zoom_params.w, 0.0, 1.0);
+  let mouse = u.zoom_config.yz;
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
+  let dt = 0.7;
 
-    let aspect = resolution.x / resolution.y;
-    let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
-    let distRatio = min(dist / radius, 1.0);
+  let k1 = velocityField(uv, texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
+  let k2 = velocityField(clampUV(uv - 0.5 * dt * k1), texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
+  let k3 = velocityField(clampUV(uv - 0.5 * dt * k2), texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
+  let k4 = velocityField(clampUV(uv - dt * k3), texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
+  let departure = clampUV(uv - (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4));
 
-    if (isMouseDown && dist < radius) {
-        // Add velocity away from mouse (push)
-        let pushDir = normalize(distVec + vec2<f32>(0.0001, 0.0));
-        let force = (1.0 - dist / radius) * strength;
+  let advectedState = stateAt(departure);
+  var velocity = mix(advectedState.rg, k1, 0.45 + 0.25 * bass);
 
-        // Add swirl based on distance (vorticity)
-        let swirlDir = vec2<f32>(-pushDir.y, pushDir.x);
+  let leftVel = velocityField(uv - vec2<f32>(texel.x, 0.0), texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
+  let rightVel = velocityField(uv + vec2<f32>(texel.x, 0.0), texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
+  let upVel = velocityField(uv - vec2<f32>(0.0, texel.y), texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
+  let downVel = velocityField(uv + vec2<f32>(0.0, texel.y), texel, time, warpScale, turbulence, mouse, mouseDown, bass, treble, aspect);
 
-        velocity = velocity + pushDir * force + swirlDir * force * (swirl * 0.1);
-    }
+  let du_dx = (rightVel.x - leftVel.x) / (2.0 * texel.x);
+  let dv_dy = (downVel.y - upVel.y) / (2.0 * texel.y);
+  let du_dy = (downVel.x - upVel.x) / (2.0 * texel.y);
+  let dv_dx = (rightVel.y - leftVel.y) / (2.0 * texel.x);
+  let shear = du_dy + dv_dx;
+  let vorticity = dv_dx - du_dy;
+  let stretch = 1.0 + stretchParam * clamp(abs(shear) * 0.01, 0.0, 2.0);
+  velocity *= stretch * (0.95 + 0.05 * mids);
 
-    // Decay velocity (viscosity)
-    velocity = velocity * decay;
+  let displaced = uv - departure;
+  let displacementMag = length(displaced);
+  let omegaVisual = clamp(abs(vorticity) * 0.015, 0.0, 1.0);
 
-    // Calculate distortion gradient for physical alpha
-    let distortionGradient = calculateDistortionGradient(velocity, uv, resolution);
+  let aberration = safeNormalize(displaced + velocity * 0.5) * displacementMag * chroma * (1.6 + 1.4 * treble);
+  let sampleR = textureSampleLevel(readTexture, u_sampler, clampUV(departure - aberration), 0.0).r;
+  let sampleG = textureSampleLevel(readTexture, u_sampler, departure, 0.0).g;
+  let sampleB = textureSampleLevel(readTexture, u_sampler, clampUV(departure + aberration), 0.0).b;
+  let warpedColor = vec3<f32>(sampleR, sampleG, sampleB);
 
-    // Apply velocity to UV for sampling the image
-    let distortedUV = uv - velocity;
+  let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, departure, 0.0).r;
+  let highlight = vec3<f32>(0.10, 0.18, 0.30) * omegaVisual + vec3<f32>(0.06, 0.02, 0.14) * displacementMag * 3.5;
+  let finalColor = clamp(warpedColor + highlight, vec3<f32>(0.0), vec3<f32>(1.0));
+  let alpha = clamp(0.82 + 0.10 * omegaVisual + 0.05 * displacementMag * resolution.x, 0.0, 1.0);
+  let depthProxy = clamp(depthSample * 0.55 + displacementMag * 6.0 + omegaVisual * 0.35, 0.0, 1.0);
 
-    // Sample source with warped coordinates
-    let warpedSample = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
-
-    // Store velocity for next frame
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(velocity, 0.0, 1.0));
-
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // ALPHA AND COLOR CALCULATION with Physical Deformation
-    // ═══════════════════════════════════════════════════════════════════════════════
-    
-    let velocityMag = length(velocity);
-    
-    // Calculate color with flow effects and Doppler shift
-    let warpColor = calculateLiquidWarpColor(warpedSample.rgb, velocity, swirl, distortionGradient);
-    
-    // Calculate alpha with liquid physics
-    let alpha = calculateLiquidAlpha(velocityMag, distRatio, swirl, distortionGradient, warpedSample.a);
-
-    // Output color with alpha
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(warpColor, alpha));
-    
-    // Store depth with velocity-based modulation
-    let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, distortedUV, 0.0);
-    let depthModulation = 1.0 + velocityMag * 0.2;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthSample.r * depthModulation, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(velocity, clamp(displacementMag * 6.0, 0.0, 1.0), omegaVisual));
+  textureStore(dataTextureB, global_id.xy, vec4<f32>(clamp(abs(shear) * 0.01, 0.0, 1.0), clamp(stretch * 0.25, 0.0, 1.0), clamp(length(velocity) * 80.0, 0.0, 1.0), 1.0));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));
 }
