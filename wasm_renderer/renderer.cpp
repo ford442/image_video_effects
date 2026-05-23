@@ -199,6 +199,8 @@ bool WebGPURenderer::CreateDevice() {
     WGPURequestAdapterOptions adapterOpts = {};
     adapterOpts.nextInChain = nullptr;
     adapterOpts.compatibleSurface = nullptr;
+    // Prefer the high-performance GPU (discrete GPU) to match the TypeScript renderer.
+    adapterOpts.powerPreference = WGPUPowerPreference_HighPerformance;
 
     WGPUAdapter rawAdapter = nullptr;
     auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,

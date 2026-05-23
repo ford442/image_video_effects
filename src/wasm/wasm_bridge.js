@@ -93,15 +93,20 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
       return;
     }
 
-    const result = wasmModule.ccall(
+    // Use { async: true } so ccall returns a Promise that resolves after the
+    // Asyncify-suspended C++ function completes.  Without this, ccall returns 0
+    // immediately when WASM suspends inside wgpuInstanceWaitAny (waiting for the
+    // browser WebGPU adapter/device Promise), causing a false "init failed" error.
+    const result = await wasmModule.ccall(
       'initWasmRenderer',
       'number',
       ['number', 'number'],
-      [state.canvasWidth, state.canvasHeight]
+      [state.canvasWidth, state.canvasHeight],
+      { async: true }
     );
 
     if (!result) {
-      console.error('Failed to initialize WASM renderer (C++ returned 0)');
+      console.error('[WASM] Failed to initialize WASM renderer (C++ returned 0)');
       resolve(false);
       return;
     }
@@ -110,7 +115,7 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
     console.log('✅ WASM Renderer initialized');
     resolve(true);
   } catch (err) {
-    console.error('Failed to initialize module:', err);
+    console.error('[WASM] Failed to initialize module:', err);
     resolve(false);
   }
 }

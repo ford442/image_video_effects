@@ -105,8 +105,8 @@ export class RendererManager {
     // Preserve video reference across renderer switches
     const video = (this.currentRenderer as any)?.['video'] as HTMLVideoElement | undefined;
 
-    this.currentRenderer?.destroy();
-
+    // Destroy the old renderer only after the new one is ready, so we don't
+    // leave the app without a renderer if initialization fails.
     let renderer: Renderer;
     if (type === 'webgpu') {
       renderer = new WebGPURenderer(this.config);
@@ -119,11 +119,16 @@ export class RendererManager {
     const success = await renderer.init(this.canvas);
 
     if (success) {
+      this.currentRenderer?.destroy();
       this.currentRenderer = renderer;
       this.metrics.isWASM  = type === 'wasm';
 
       if (video) renderer.setVideo(video);
       this.startMetricsCollection();
+    } else {
+      // If initialization failed, discard the new renderer.
+      // The previous renderer (if any) is still active.
+      console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
     }
 
     return success;

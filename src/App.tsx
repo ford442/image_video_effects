@@ -6,6 +6,7 @@ import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
 import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
+import { RendererType } from './renderer/RendererManager';
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
@@ -280,13 +281,19 @@ function MainApp() {
     const rendererRef = useRef<Renderer | null>(null);
 
     // --- Renderer backend state ---
-    const [activeRendererType, setActiveRendererType] = useState<'webgpu' | 'wasm' | 'js'>('webgpu');
-    const handleSwitchRenderer = useCallback(async (type: 'webgpu' | 'wasm' | 'js') => {
+    const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
+    const handleSwitchRenderer = useCallback(async (type: RendererType) => {
         const manager = rendererRef.current as any;
         if (!manager?.switchRenderer) return;
+        setStatus(`Switching to ${type} renderer…`);
         const ok = await manager.switchRenderer(type);
-        if (ok) setActiveRendererType(type);
-    }, []);
+        if (ok) {
+            setActiveRendererType(type);
+            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
+        } else {
+            setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
+        }
+    }, [activeRendererType]);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
     const channelRef = useRef<BroadcastChannel | null>(null);
@@ -1447,7 +1454,21 @@ function MainApp() {
                         onCanvasRef={(el) => { webgpuCanvasRef.current = el; }}
                     />
                     <div className="status-bar">
-                        {isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}
+                        <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
+                        <span
+                            className={`renderer-badge renderer-badge--${activeRendererType}`}
+                            title="Click to cycle renderer: WebGPU → C++ WASM → Canvas2D (or use Dev Tools)"
+                            onClick={() => {
+                                const cycle: Record<RendererType, RendererType> = {
+                                    webgpu: 'wasm',
+                                    wasm: 'js',
+                                    js: 'webgpu',
+                                };
+                                handleSwitchRenderer(cycle[activeRendererType]);
+                            }}
+                        >
+                            {activeRendererType === 'wasm' ? '⚡ C++ WASM' : activeRendererType === 'js' ? '🎨 Canvas2D' : '🔷 WebGPU'}
+                        </span>
                     </div>
                 </main>
             </div>
