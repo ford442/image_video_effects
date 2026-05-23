@@ -112,12 +112,12 @@ fn main(
         let tr = luminance(textureSampleLevel(readTexture, u_sampler, uv + texelSize * vec2<f32>( 1.0, -1.0), 0.0).rgb);
         let ml = luminance(textureSampleLevel(readTexture, u_sampler, uv + texelSize * vec2<f32>(-1.0,  0.0), 0.0).rgb);
         let mr = luminance(textureSampleLevel(readTexture, u_sampler, uv + texelSize * vec2<f32>( 1.0,  0.0), 0.0).rgb);
-        let bl2= luminance(textureSampleLevel(readTexture, u_sampler, uv + texelSize * vec2<f32>(-1.0,  1.0), 0.0).rgb);
+        let bl = luminance(textureSampleLevel(readTexture, u_sampler, uv + texelSize * vec2<f32>(-1.0,  1.0), 0.0).rgb);
         let bc = luminance(textureSampleLevel(readTexture, u_sampler, uv + texelSize * vec2<f32>( 0.0,  1.0), 0.0).rgb);
         let br = luminance(textureSampleLevel(readTexture, u_sampler, uv + texelSize * vec2<f32>( 1.0,  1.0), 0.0).rgb);
 
-        let gx = -tl - 2.0*ml - bl2 + tr + 2.0*mr + br;
-        let gy = -tl - 2.0*tc - tr  + bl2 + 2.0*bc + br;
+        let gx = -tl - 2.0*ml - bl + tr + 2.0*mr + br;
+        let gy = -tl - 2.0*tc - tr  + bl + 2.0*bc + br;
         let edge = clamp(sqrt(gx*gx + gy*gy) * 3.0, 0.0, 1.0);
 
         // Colour edges with a neon cyan tint

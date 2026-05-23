@@ -261,10 +261,7 @@ export class RendererManager {
 
   /** Forwards deep-workgroup capability query to the active renderer. */
   getSupportsDeepWorkgroup(): boolean {
-    if (this.currentRenderer && typeof (this.currentRenderer as any).getSupportsDeepWorkgroup === 'function') {
-      return (this.currentRenderer as any).getSupportsDeepWorkgroup();
-    }
-    return false;
+    return this.currentRenderer?.getSupportsDeepWorkgroup?.() ?? false;
   }
 
   getMetrics(): RendererMetrics {

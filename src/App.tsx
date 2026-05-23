@@ -568,15 +568,20 @@ function MainApp() {
         return () => { isMounted = false; };
     }, []);
 
+
     // --- Filter shaders that require unsupported GPU capabilities ---
-    // Runs reactively: after renderer init (rendererReady) or after shader list changes.
-    // Self-terminating: once deep-workgroup shaders are removed, the list no longer
-    // contains any requiresDeepWorkgroup entries, so subsequent runs are no-ops.
+    // After renderer init (rendererReady=true), scan the shader list and remove any
+    // shaders flagged requiresDeepWorkgroup when the GPU lacks 1024-invocation support.
+    //
+    // The effect runs whenever availableModes or rendererReady changes.  It is
+    // self-terminating: after the first filter pass, no requiresDeepWorkgroup entries
+    // remain in availableModes, so subsequent runs find skipped.length===0 and never
+    // call setAvailableModes, ending the cycle without an infinite loop.
     useEffect(() => {
-        if (!rendererReady) return;
+        if (!rendererReady || supportsDeepWorkgroup) return;  // nothing to filter
         const skipped: string[] = [];
         const filtered = availableModes.filter(s => {
-            if (s.requiresDeepWorkgroup && !supportsDeepWorkgroup) {
+            if (s.requiresDeepWorkgroup) {
                 skipped.push(s.id);
                 return false;
             }
