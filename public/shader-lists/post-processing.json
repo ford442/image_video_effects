@@ -160,6 +160,64 @@
     ]
   },
   {
+    "id": "chrono-luma-slit-scan",
+    "name": "Chrono Luma Slit Scan",
+    "url": "shaders/chrono-luma-slit-scan.wgsl",
+    "category": "post-processing",
+    "description": "Luminance-driven 3D-texture slit scan: each pixel's brightness determines which frame in the history ring it samples. Bright pixels snap to the present; dark pixels reveal the deep past. Moving subjects leave temporal halos as their bright edges exist in the now while dark backgrounds drift through time.",
+    "tags": [
+      "temporal",
+      "slit-scan",
+      "chrono",
+      "luminance",
+      "history",
+      "time",
+      "psychedelic",
+      "abstract"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Temporal Spread",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Warp Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Luma Gamma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Original Blend",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "long-exposure",
     "name": "Long Exposure Light Painting",
     "url": "shaders/long-exposure.wgsl",
@@ -266,6 +324,65 @@
         "id": "param4",
         "name": "Noise Mix",
         "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "optical-flow-tracer",
+    "name": "Optical Flow Tracer",
+    "url": "shaders/optical-flow-tracer.wgsl",
+    "category": "post-processing",
+    "description": "Lucas-Kanade optical flow tracer: computes per-pixel motion vectors between the current frame and the previous history frame, then warps after-images along those trajectories. Moving objects leave physically-accurate ghost trails that follow actual motion paths rather than fading in place.",
+    "tags": [
+      "temporal",
+      "optical-flow",
+      "motion",
+      "tracer",
+      "ghost",
+      "after-image",
+      "motion-vector"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "audio-reactive",
+      "mouse-driven",
+      "optical-flow",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Trail Decay",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Flow Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Trail Age",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Current Blend",
+        "default": 0.35,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -632,6 +749,70 @@
       "depth-of-field",
       "post-processing",
       "chromatic"
+    ]
+  },
+  {
+    "id": "spatio-temporal-3d-conv",
+    "name": "Spatio-Temporal 3D Convolution",
+    "url": "shaders/spatio-temporal-3d-conv.wgsl",
+    "category": "post-processing",
+    "description": "3×3×T spatio-temporal convolution using the history ring buffer. A Gaussian spatial kernel is applied at each of T past frames and blended with temporal weights. Param 3 selects the operation mode: Temporal Noise Reduction (averages frames to kill flicker), Motion Blur (exponential frame accumulation), or Temporal Sharpening (subtracts the temporal mean to amplify transient changes).",
+    "tags": [
+      "temporal",
+      "convolution",
+      "noise-reduction",
+      "motion-blur",
+      "sharpening",
+      "3d-kernel",
+      "spatio-temporal"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "advanced-convolution",
+      "audio-reactive",
+      "upgraded-rgba",
+      "spatio-temporal"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Spatial Sigma",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Temporal Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Mode (0=Denoise 0.5=MotionBlur 1=Sharpen)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "labels": [
+          "Denoise",
+          "Motion Blur",
+          "Sharpen"
+        ]
+      },
+      {
+        "id": "param4",
+        "name": "Effect Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
