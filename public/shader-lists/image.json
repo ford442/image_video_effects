@@ -2518,52 +2518,6 @@
     ]
   },
   {
-    "id": "elastic-surface",
-    "name": "Elastic Surface",
-    "url": "shaders/elastic-surface.wgsl",
-    "category": "image",
-    "description": "Bouncy rubber-like surface distortion.",
-    "params": [
-      {
-        "id": "elasticity",
-        "name": "Elasticity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "frequency",
-        "name": "Wave Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "amplitude",
-        "name": "Wave Height",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "damping",
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "animated",
-      "wave",
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "ethereal-swirl",
     "name": "Ethereal Swirl",
     "url": "shaders/ethereal-swirl.wgsl",
@@ -10018,36 +9972,36 @@
   },
   {
     "id": "interactive-fisheye",
-    "name": "Interactive Fisheye",
+    "name": "Fluid Lens Dynamics",
     "url": "shaders/interactive-fisheye.wgsl",
     "category": "image",
-    "description": "Branchless barrel distortion lens that magnifies the area under the mouse with audio-reactive radius and depth-aware alpha modulation.",
+    "description": "Velocity-sensitive fluid lens with spring-mass response, viscosity-controlled damping, impulse-driven splash ripples, and depth-aware refractive magnification.",
     "params": [
       {
-        "id": "strength",
-        "name": "Distortion",
+        "id": "surface_tension",
+        "name": "Surface Tension",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "radius",
-        "name": "Lens Radius",
-        "default": 0.4,
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.35,
         "min": 0,
         "max": 1
       },
       {
-        "id": "curve",
-        "name": "Bulge Curve",
-        "default": 0.5,
+        "id": "mass",
+        "name": "Lens Mass",
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "vignette",
-        "name": "Edge Vignette",
-        "default": 0.3,
+        "id": "splash_threshold",
+        "name": "Splash Threshold",
+        "default": 0.35,
         "min": 0,
         "max": 1
       }
@@ -10057,14 +10011,19 @@
       "geometry",
       "audio-reactive",
       "audio-driven",
-      "depth-aware"
+      "depth-aware",
+      "spring-mass",
+      "velocity-sensitive",
+      "splash-response"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "lens",
+      "fluid"
     ]
   },
   {
@@ -12544,46 +12503,52 @@
   },
   {
     "id": "quantized-ripples",
-    "name": "Quantized Ripples",
+    "name": "Haptic Ripple Field",
     "url": "shaders/quantized-ripples.wgsl",
     "category": "image",
-    "description": "Quantizes the image (posterization) with levels that ripple out from the mouse position.",
+    "description": "Piezo-inspired ripple interference field with velocity-sensitive impulse strength, blended damping models, rough touch-texture modulation, and quantized color bands.",
     "params": [
       {
-        "id": "frequency",
-        "name": "Ripple Frequency",
-        "default": 0.5,
+        "id": "stiffness",
+        "name": "Surface Stiffness",
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "amplitude",
-        "name": "Ripple Amplitude",
-        "default": 0.5,
+        "id": "damping",
+        "name": "Damping Ratio",
+        "default": 0.35,
         "min": 0,
         "max": 1
       },
       {
-        "id": "speed",
-        "name": "Ripple Speed",
-        "default": 0.5,
+        "id": "texture",
+        "name": "Touch Texture",
+        "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
-        "id": "depth",
-        "name": "Color Depth",
+        "id": "decay_mode",
+        "name": "Decay Mode",
         "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "haptic-response",
+      "multi-touch-interference"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "haptic",
+      "ripple",
+      "posterize"
     ]
   },
   {
@@ -14997,55 +14962,6 @@
     ]
   },
   {
-    "id": "neon-pulse-edge",
-    "name": "Neon Pulse Edge",
-    "url": "shaders/neon-pulse-edge.wgsl",
-    "category": "image",
-    "description": "Edge detection with neon glow that reveals near the mouse.",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "threshold",
-        "name": "Edge Threshold",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Pulse Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "shift",
-        "name": "Color Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
     "id": "glass-wipes",
     "name": "Rainy Window",
     "url": "shaders/glass-wipes.wgsl",
@@ -15308,59 +15224,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Color manipulation amount"
-      }
-    ]
-  },
-  {
-    "id": "liquid-metal",
-    "name": "Liquid Metal",
-    "url": "shaders/liquid-metal.wgsl",
-    "category": "image",
-    "description": "",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music",
-      "reactive"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },

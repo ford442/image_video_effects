@@ -11,6 +11,7 @@
       "min": 0,
       "max": 1,
       "default": 0.5,
+      "step": 0.01,
       "id": "distortion"
     },
     {
@@ -19,15 +20,17 @@
       "min": 0,
       "max": 1,
       "default": 0.3,
+      "step": 0.01,
       "id": "aberration"
     },
     {
-      "name": "Zone Size",
+      "name": "Clear Radius",
       "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.3,
-      "id": "zone_size"
+      "step": 0.01,
+      "id": "clear_radius"
     },
     {
       "name": "Scanlines",
@@ -35,6 +38,7 @@
       "min": 0,
       "max": 1,
       "default": 0.5,
+      "step": 0.01,
       "id": "scanlines"
     }
   ],

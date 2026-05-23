@@ -1,8 +1,16 @@
-// ═══════════════════════════════════════════════════════════════
-// Glass Brick Distortion - Physical glass transmission with Beer-Lambert law
-// Category: distortion
-// Features: refraction, physically-based alpha, depth-aware
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Glass Brick Distortion — Phase A Upgrade
+//  Category: distortion
+//  Features: mouse-driven, depth-aware, audio-reactive, temporal
+//  Complexity: Medium
+//  Created: 2026-05-23
+//  By: Claude (Sonnet 4.6)
+// ═══════════════════════════════════════════════════════════════════
+//
+//  Param1: brick_size           — number of bricks across (more = smaller bricks)
+//  Param2: ior_strength         — index-of-refraction / lens curvature
+//  Param3: chromatic_aberration — per-channel IOR spread (RGB dispersion)
+//  Param4: depth_influence      — near glass (depth→1) thicker → stronger refraction
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,102 +27,120 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BrickSize, y=Refraction, z=Grout, w=GlassDensity
+  zoom_params: vec4<f32>,  // x=BrickSize, y=IORStrength, z=ChromaticAberration, w=DepthInfluence
   ripples: array<vec4<f32>, 50>,
 };
 
+// Schlick Fresnel approximation
+fn schlick(cosTheta: f32, R0: f32) -> f32 {
+    return R0 + (1.0 - R0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
-
-    let brick_count = u.zoom_params.x * 40.0 + 5.0;
-    let refraction = u.zoom_params.y * 0.1;
-    let grout_width = u.zoom_params.z * 0.1;
-    let mouse_clear_radius = 0.2;
-    let glass_density = u.zoom_params.w * 3.0 + 0.5; // Beer-Lambert density
-
+    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+    let uv    = vec2<f32>(gid.xy) / resolution;
+    let time  = u.config.x;
     let aspect = resolution.x / resolution.y;
-    let uv_scaled = uv * vec2<f32>(brick_count * aspect, brick_count);
 
-    let brick_id = floor(uv_scaled);
-    let brick_uv = fract(uv_scaled);
+    // Params
+    let brickCount = u.zoom_params.x * 38.0 + 4.0;
+    let iorStr     = u.zoom_params.y * 0.14 + 0.01;
+    let chromaStr  = u.zoom_params.z * 0.08;
+    let depthInfl  = u.zoom_params.w;
 
-    // Center of the brick in UV space
-    let brick_center_uv = (brick_id + 0.5) / vec2<f32>(brick_count * aspect, brick_count);
+    // Audio
+    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
+    let bass = select(0.0, plasmaBuffer[0].x, hasAudio);
 
-    // Mouse distance to pixel
-    let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(dist_vec);
+    // Depth — near glass (depth→1) is thicker → more refraction
+    let depth     = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let thickness = 0.08 + depth * depthInfl * 0.12;
+    let iorEff    = iorStr * (1.0 + thickness) * (1.0 + bass * 0.25);
 
-    // Mask for mouse clearing effect
-    let clear_mask = smoothstep(mouse_clear_radius, mouse_clear_radius * 0.5, dist);
+    // Mouse clear zone — cursor melts the glass to reveal source
+    let mouse     = u.zoom_config.yz;
+    let mDist     = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+    let clearMask = smoothstep(0.18, 0.09, mDist);
 
-    // Grout logic
-    var is_grout = 0.0;
-    if (brick_uv.x < grout_width || brick_uv.x > 1.0 - grout_width ||
-        brick_uv.y < grout_width || brick_uv.y > 1.0 - grout_width) {
-        is_grout = 1.0;
+    // Brick grid
+    let uvS      = uv * vec2<f32>(brickCount * aspect, brickCount);
+    let brickId  = floor(uvS);
+    let brickUV  = fract(uvS);
+    let bCenter  = (brickId + 0.5) / vec2<f32>(brickCount * aspect, brickCount);
+
+    // Grout lines
+    let groutW  = 0.04;
+    let isGrout = f32(brickUV.x < groutW || brickUV.x > 1.0 - groutW ||
+                      brickUV.y < groutW || brickUV.y > 1.0 - groutW);
+
+    // Plano-convex lens offset — Snell-inspired refraction from brick-center
+    let bCentered  = brickUV - 0.5;
+    let lensMag    = dot(bCentered, bCentered);
+    let baseOffset = bCentered * (0.5 - lensMag) * iorEff;
+
+    // Per-channel IOR dispersion — red bends least, blue most (realistic glass)
+    let offR = baseOffset * 1.0;
+    let offG = baseOffset * (1.0 + chromaStr);
+    let offB = baseOffset * (1.0 + chromaStr * 2.1);
+
+    // activeMask: zero at grout lines and mouse clear zone
+    let activeMask = (1.0 - clearMask) * (1.0 - isGrout);
+    let uvR = clamp(mix(uv, bCenter + offR, activeMask), vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvG = clamp(mix(uv, bCenter + offG, activeMask), vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(mix(uv, bCenter + offB, activeMask), vec2<f32>(0.0), vec2<f32>(1.0));
+
+    // Sample each channel through its own refracted UV
+    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    var color = vec3<f32>(r, g, b);
+
+    // Fresnel highlight at glancing angles (edge of each brick)
+    let cosTheta = 1.0 - lensMag * 4.0;
+    let fresnel  = schlick(max(cosTheta, 0.0), 0.04) * activeMask;
+    color = mix(color, vec3<f32>(0.92, 0.96, 1.0), fresnel * 0.35);
+
+    // Beer-Lambert absorption through glass thickness (blue tint typical of glass)
+    let glassColor = vec3<f32>(0.96, 0.98, 1.0);
+    let absorbed   = exp(-(1.0 - glassColor) * thickness * 2.0);
+    color *= mix(vec3<f32>(1.0), absorbed, activeMask);
+
+    // Grout — dark mortar lines
+    color = mix(color, color * 0.25, isGrout * (1.0 - clearMask));
+
+    // Ripple wobble — ripple waves distort bricks as they pass through
+    let rippleCount = min(u32(u.config.y), 50u);
+    var rippleDisp  = vec2<f32>(0.0);
+    for (var i = 0u; i < rippleCount; i++) {
+        let rp   = u.ripples[i].xy;
+        let rt   = u.ripples[i].z;
+        let rAge = time - rt;
+        if (rAge < 0.0 || rAge > 2.5) { continue; }
+        let rDist  = length((uv - rp) * vec2<f32>(aspect, 1.0));
+        let rFront = rAge * 0.45;
+        let rRing  = sin((rDist - rFront) * 30.0)
+                   * exp(-abs(rDist - rFront) * 12.0)
+                   * exp(-rAge * 1.5);
+        rippleDisp += normalize(uv - rp + vec2<f32>(0.0001)) * rRing * 0.008;
+    }
+    if (dot(rippleDisp, rippleDisp) > 0.000001) {
+        let rSample = clamp(uv + rippleDisp, vec2<f32>(0.0), vec2<f32>(1.0));
+        color = mix(color, textureSampleLevel(readTexture, u_sampler, rSample, 0.0).rgb, 0.3);
     }
 
-    // Calculate normal for lens distortion inside brick
-    let b_uv_centered = brick_uv - 0.5;
-    let lens = dot(b_uv_centered, b_uv_centered);
-    let distort_offset = b_uv_centered * (0.5 - lens) * refraction;
+    color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    var sample_uv = brick_center_uv + distort_offset;
-    sample_uv = mix(sample_uv, uv, clear_mask);
+    // Temporal persistence
+    let prev  = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+    color = mix(color, prev * 0.94, 0.1);
 
-    // Physical glass properties
-    var transmission = 1.0;
-    var glass_color = vec3<f32>(0.96, 0.98, 1.0);
-    
-    if (is_grout < 0.5 && clear_mask < 0.5) {
-        // Inside glass brick - calculate physical properties
-        // Normal based on lens distortion
-        let normal_xy = distort_offset * 10.0; // Approximate normal from distortion
-        let normal_z = sqrt(max(0.0, 1.0 - dot(normal_xy, normal_xy)));
-        let normal = normalize(vec3<f32>(normal_xy, normal_z));
-        
-        // View direction
-        let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-        
-        // Fresnel reflection at glancing angles
-        let cos_theta = max(dot(viewDir, normal), 0.0);
-        let R0 = 0.04; // Glass-air interface
-        let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
-        
-        // Glass thickness approximation based on lens height
-        let thickness = 0.1 + lens * 0.2; // Thicker at edges of bulge
-        
-        // Beer-Lambert absorption
-        let absorption = exp(-(1.0 - glass_color) * thickness * glass_density);
-        
-        // Transmission combines absorption and fresnel
-        transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
-    }
+    let alpha = clamp(dot(color, vec3<f32>(0.33)) * 0.5 + 0.5 + fresnel * 0.3 + depth * 0.1, 0.0, 1.0);
 
-    var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
-
-    // Apply glass tint and alpha for grout vs glass
-    if (is_grout > 0.5 && clear_mask < 0.5) {
-        // Grout - mostly opaque with some transmission
-        color = color * 0.3;
-        transmission = 0.3;
-    } else if (clear_mask < 0.5) {
-        // Glass brick - apply Beer-Lambert tint
-        color = vec4<f32>(color.rgb * glass_color, transmission);
-    } else {
-        // Cleared area - fully transparent
-        transmission = 1.0;
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Depth pass-through
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sample_uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

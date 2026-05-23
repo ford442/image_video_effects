@@ -56,7 +56,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberration = u.zoom_params.z * 0.05;
     let granularity = max(1.0, u.zoom_params.w * 50.0);
 
-    let velocity = distance(currMouse, prevMouse) * (1.0 + bass * 0.3);
+    var velocity = 0.0;
+    if (prevMouse.x > 0.0 || prevMouse.y > 0.0) {
+        velocity = distance(currMouse, prevMouse) * (1.0 + bass * 0.3);
+    }
     let intensity = clamp(velocity * sensitivity, 0.0, 1.0);
 
     let blockUV = floor(uv * resolution / granularity) * granularity / resolution;

@@ -55,15 +55,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = length(p - mousePos);
 
+    let rippleCount = max(i32(u.zoom_params.x * 10.0), 1);
     let rippleSpeed = max(u.zoom_params.y * 5.0 + 1.0, 0.001);
     let rippleStrength = u.zoom_params.z * 0.1 * (1.0 + bass * 0.3);
     let rippleDecay = max(u.zoom_params.w * 2.0 + 0.5, 0.001);
 
     var ripple = 0.0;
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < rippleCount; i++) {
         let fi = f32(i);
         let wavePhase = time * rippleSpeed - dist * 10.0 + fi * 1.5;
-        let waveAmp = exp(-dist * rippleDecay) * (1.0 - fi / 5.0);
+        let waveAmp = exp(-dist * rippleDecay) * (1.0 - fi / f32(rippleCount));
         ripple += sin(wavePhase) * waveAmp;
     }
 

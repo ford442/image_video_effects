@@ -1,11 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Fisheye
+//  Fluid Lens Dynamics
 //  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware
-//  Complexity: Low
-//  Chunks From: interactive-fisheye (original)
-//  Created: 2026-05-17
-//  By: The Optimizer
+//  Features: mouse-driven, audio-reactive, depth-aware, spring-mass,
+//            velocity-sensitive, splash-response
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,68 +21,95 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+    let len = length(v);
+    return select(vec2<f32>(0.0, 1.0), v / len, len > 0.0001);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
 
-  let coords = vec2<i32>(global_id.xy);
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let mouse = u.zoom_config.yz;
-  let aspect = resolution.x / resolution.y;
+    let coords = vec2<i32>(global_id.xy);
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let bass = plasmaBuffer[0].x;
 
-  // Parameters
-  let strength = u.zoom_params.x;
-  let radius = u.zoom_params.y;
-  let curve = u.zoom_params.z * 2.0 + 0.5;
-  let vignetteStrength = u.zoom_params.w;
+    let surfaceTension = u.zoom_params.x;
+    let viscosity = u.zoom_params.y;
+    let mass = u.zoom_params.z;
+    let splashThreshold = mix(0.2, 4.0, u.zoom_params.w);
 
-  // Early exit when effect is fully disabled
-  if (strength < 0.001 && vignetteStrength < 0.001 && radius < 0.001) {
-    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, coords, color);
+    let rippleCount = min(u32(u.config.y), 50u);
+    var velocity = vec2<f32>(0.0);
+    var acceleration = vec2<f32>(0.0);
+    var impulseAge = 0.0;
+
+    if (rippleCount > 1u) {
+        let latest = u.ripples[rippleCount - 1u];
+        let prev = u.ripples[rippleCount - 2u];
+        let dt1 = max(latest.z - prev.z, 0.016);
+        velocity = (latest.xy - prev.xy) / dt1;
+        impulseAge = max(time - latest.z, 0.0);
+
+        if (rippleCount > 2u) {
+            let older = u.ripples[rippleCount - 3u];
+            let dt2 = max(prev.z - older.z, 0.016);
+            let prevVelocity = (prev.xy - older.xy) / dt2;
+            acceleration = (velocity - prevVelocity) / max(dt1, dt2);
+        }
+    }
+
+    let velocityAspect = velocity * vec2<f32>(aspect, 1.0);
+    let speed = length(velocityAspect);
+    let accelMag = length(acceleration * vec2<f32>(aspect, 1.0));
+    let velDir = safeNormalize(velocityAspect);
+    let perpDir = vec2<f32>(-velDir.y, velDir.x);
+
+    let baseRadius = mix(0.14, 0.42, 0.55 + surfaceTension * 0.35 - mass * 0.15) * (1.0 + bass * 0.18);
+    let stretch = 1.0 + speed * mix(0.02, 0.10, 1.0 - viscosity) / max(mix(0.5, 2.0, mass), 0.05);
+    let rel = uv - mouse;
+    let relAspect = vec2<f32>(rel.x * aspect, rel.y);
+    let parallel = dot(relAspect, velDir) / max(stretch, 0.2);
+    let orthogonal = dot(relAspect, perpDir) * mix(1.0, 1.25, viscosity);
+    let radial = length(vec2<f32>(parallel, orthogonal));
+
+    let naturalFreq = mix(2.5, 10.0, surfaceTension) / mix(0.6, 2.4, mass);
+    let damping = mix(0.25, 3.0, viscosity);
+    let springPulse = exp(-impulseAge * damping) * sin(impulseAge * naturalFreq * 6.2831853);
+    let splashTrigger = smoothstep(splashThreshold, splashThreshold * 2.5, accelMag);
+    let splashWave = sin(radial * (28.0 + surfaceTension * 20.0) - impulseAge * (8.0 + naturalFreq * 2.0)) *
+        exp(-impulseAge * (1.5 + damping)) * splashTrigger;
+
+    let lensProfile = smoothstep(baseRadius, 0.0, radial);
+    let distortionWeight = lensProfile * (0.35 + surfaceTension * 0.75) * (1.0 + springPulse * 0.35);
+    let radialDir = safeNormalize(relAspect);
+
+    var sampleAspect = relAspect * (1.0 - distortionWeight * 0.65);
+    sampleAspect = sampleAspect + radialDir * splashWave * 0.012 * splashTrigger;
+    sampleAspect = sampleAspect + velDir * springPulse * 0.01 * speed;
+    let sampleUV = mouse + vec2<f32>(sampleAspect.x / aspect, sampleAspect.y);
+
+    let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+
+    let rim = smoothstep(baseRadius, baseRadius * 0.65, radial) * (1.0 - lensProfile);
+    let rimGlow = vec3<f32>(0.05, 0.07, 0.10) * rim * (0.5 + abs(springPulse));
+    let finalRgb = color.rgb + rimGlow;
+    let finalAlpha = clamp(color.a * mix(1.0, 0.92 + rim * 0.08, lensProfile) * mix(0.94, 1.02, depth), 0.0, 1.0);
+
+    textureStore(writeTexture, coords, vec4<f32>(finalRgb, finalAlpha));
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    return;
-  }
-
-  // Audio reactivity: bass expands the lens radius
-  let bass = plasmaBuffer[0].x;
-  let reactiveRadius = radius * (1.0 + bass * 0.2);
-
-  // Fisheye distortion logic — branchless
-  let uvCentered = uv - mouse;
-  let uvAspect = vec2<f32>(uvCentered.x * aspect, uvCentered.y);
-  let dist = length(uvAspect);
-
-  let inLens = f32(dist < reactiveRadius && reactiveRadius > 0.001);
-  let normDist = min(dist / max(reactiveRadius, 0.0001), 1.0);
-  let distortionWeight = pow(1.0 - normDist, curve) * inLens;
-  let factor = 1.0 - strength * distortionWeight;
-  let sampleUV = mouse + uvCentered * factor;
-
-  let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
-
-  // ── Meaningful Alpha ──
-  // Branchless vignette, depth modulation, and intensity scaling
-  let edgeFade = smoothstep(reactiveRadius * 0.85, reactiveRadius, dist);
-  let vignetteAlpha = color.a * mix(1.0, 0.85, edgeFade);
-  let depthMod = mix(0.92, 1.0, depth);
-  let intensityMod = mix(1.0, 1.05, strength * distortionWeight);
-  let modulatedAlpha = vignetteAlpha * depthMod * intensityMod;
-  let finalAlpha = mix(color.a, modulatedAlpha, vignetteStrength * inLens);
-
-  textureStore(writeTexture, coords, vec4<f32>(color.rgb, clamp(finalAlpha, 0.0, 1.0)));
-
-  // Depth pass-through
-  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(distortionWeight, rim, splashTrigger, finalAlpha));
 }

@@ -6415,48 +6415,55 @@
   },
   {
     "id": "gen-grok4-perlin",
-    "name": "Grok4 Perlin Terrain",
+    "name": "Eroded Perlin Terrain",
     "url": "shaders/gen_grok4_perlin.wgsl",
     "category": "generative",
-    "description": "Multi-octave Perlin noise generating animated terrain with mouse offset.",
+    "description": "Erosion-inspired terrain synthesis with domain-warped noise, hydraulic flow carving, sediment deposition, stratified coloring, and depth-aware relief.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
       "procedural",
-      "mouse-driven"
+      "mouse-driven",
+      "erosion-inspired",
+      "hydraulic-flow",
+      "terrain"
     ],
     "tags": [
       "procedural",
-      "generative"
+      "generative",
+      "terrain",
+      "erosion",
+      "sediment",
+      "landscape"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
+        "id": "erosion",
+        "name": "Erosion",
+        "default": 0.55,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
+        "id": "waterline",
+        "name": "Waterline",
+        "default": 0.35,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
+        "id": "terrain_scale",
+        "name": "Terrain Scale",
+        "default": 0.45,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "sediment",
+        "name": "Sediment Contrast",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6906,51 +6913,57 @@
   },
   {
     "id": "gen-psychedelic-spiral",
-    "name": "Psychedelic Spiral",
+    "name": "Superformula Spirograph Spiral",
     "url": "shaders/gen_psychedelic_spiral.wgsl",
     "category": "generative",
-    "description": "Hypnotic spiral with intense feedback and mouse warping.",
+    "description": "Superformula-driven spirograph spiral with nested epicycles, audio-reactive petal modulation, mouse-centered orbit drift, and temporal feedback warping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal",
+      "spirograph",
+      "superformula"
     ],
     "tags": [
       "procedural",
       "generative",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "spirograph",
+      "spiral",
+      "fractal-floral"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "intensity",
+        "name": "Orbit Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "spin",
+        "name": "Spin Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "petals",
+        "name": "Petal Count",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
+        "id": "feedback",
+        "name": "Feedback Warp",
+        "default": 0.45,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -8336,101 +8349,6 @@
       }
     ],
     "target_rating": 4.8
-  },
-  {
-    "id": "cymatic-sand",
-    "name": "Cymatic Sand",
-    "description": "Simulates Chladni plate patterns where sand accumulates on nodal lines of standing waves. Mouse X/Y controls the frequency modes.",
-    "url": "shaders/cymatic-sand.wgsl",
-    "category": "generative",
-    "features": [
-      "mouse-driven",
-      "simulation",
-      "audio-reactive",
-      "audio-driven"
-    ],
-    "params": [
-      {
-        "id": "amount",
-        "name": "Sand Amount",
-        "default": 0.5,
-        "min": 0.1,
-        "max": 1
-      },
-      {
-        "id": "width",
-        "name": "Line Width",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "grain",
-        "name": "Grain Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "contrast",
-        "name": "Contrast",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "procedural",
-      "generative",
-      "audio",
-      "music",
-      "reactive"
-    ]
-  },
-  {
-    "id": "lichtenberg-fractal",
-    "name": "Lichtenberg Fractal",
-    "description": "Simulates high-voltage electrical branching patterns (Lichtenberg figures) that grow from the mouse cursor.",
-    "url": "shaders/lichtenberg-fractal.wgsl",
-    "category": "generative",
-    "features": [
-      "mouse-driven",
-      "simulation"
-    ],
-    "params": [
-      {
-        "id": "speed",
-        "name": "Growth Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "branching",
-        "name": "Branching Factor",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "intensity",
-        "name": "Burn Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "clear",
-        "name": "Clear Canvas",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "procedural",
-      "generative"
-    ]
   },
   {
     "id": "predator-prey",

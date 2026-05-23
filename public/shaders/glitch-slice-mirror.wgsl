@@ -25,7 +25,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Detail
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -95,7 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Scanline darkening
         if (sin(uv.y * (50.0 + paramDetail * 300.0)) > 0.9) {
-            color.rgb = color.rgb * 0.5;
+            color = vec4<f32>(color.rgb * 0.5, color.a);
         }
     } else {
         color = textureSampleLevel(readTexture, u_sampler, target_uv, 0.0);
