@@ -5,7 +5,7 @@
 //  Complexity: Medium
 //  Chunks From: elastic-chromatic (original)
 //  Created: 2026-04-25
-//  Upgraded: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -50,8 +50,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
 
-    // Audio: bass drives elastic spring constant
-    let bass = plasmaBuffer[0].x;
+    // Audio: bass drives elastic spring constant, mids drives Lissajous speed, treble adds sparkle
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters: x=Elasticity, y=Chromatic Scale, z=Lissajous Ratio, w=Damping
     let elasticity = mix(0.1, 1.0, u.zoom_params.x) * (1.0 + bass * 0.5);
@@ -60,8 +62,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let damping = mix(0.1, 0.9, u.zoom_params.w);
 
     // Lissajous-based secondary chromatic source oscillating around mouse
-    let lissFreqX = 1.0;
-    let lissFreqY = lissajousRatio;
+    // mids modulate oscillation frequency for richer audio coupling
+    let lissFreqX = 1.0 + mids * 0.3;
+    let lissFreqY = lissajousRatio + mids * 0.2;
     let lissAmp = chromaticScale * 0.08;
     let lissPos = mouse + vec2<f32>(
         lissAmp * sin(time * lissFreqX * 2.0 * (1.0 + elasticity)),
@@ -92,10 +95,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let outG = ema(curr.g, history.g, lagG);
     let outB = ema(curr.b, history.b, lagB);
 
-    // Effect-mask alpha: stronger aberration = higher alpha at edges
+    // Effect-mask alpha: stronger aberration = higher alpha at edges; treble adds sparkle
     let aberration = abs(lagR - lagB) + lissInfluence;
-    let edgeBoost = smoothstep(0.0, 0.3, aberration);
-    let alpha = mix(curr.a * 0.75, curr.a, edgeBoost);
+    let edgeBoost = smoothstep(0.0, 0.3, aberration + treble * 0.1);
+    let alpha = clamp(mix(curr.a * 0.75, curr.a, edgeBoost) + treble * 0.05, 0.0, 1.0);
 
     let finalColor = vec4<f32>(outR, outG, outB, alpha);
 

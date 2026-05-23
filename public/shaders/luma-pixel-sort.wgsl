@@ -5,7 +5,7 @@
 //  Complexity: Medium
 //  Chunks From: luma-pixel-sort
 //  Created: 2026-05-02
-//  Upgraded: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -53,12 +53,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
 
   let threshold = u.zoom_params.x;
-  let sortLength = u.zoom_params.y * 64.0;
   let depthBlend = u.zoom_params.z;
   let noiseMix = u.zoom_params.w;
 
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let localThreshold = threshold - treble * 0.25;
+  let localThreshold = threshold - treble * 0.25 - mids * 0.1;
+
+  // Bass expands sort radius for beat-locked scatter
+  let sortLength = u.zoom_params.y * 64.0 * (1.0 + bass * 0.3);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -101,17 +105,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sortedIdx = u32(mix(4.0, 8.0, sortFactor));
   let sortedColor = colors[clamp(sortedIdx, 0u, 8u)];
 
-  var finalColor: vec3<f32>;
-  var outAlpha: f32;
-
-  if (centerLuma >= localThreshold) {
-    finalColor = mix(centerColor.rgb, sortedColor.rgb, sortFactor);
-    outAlpha = clamp(dot(finalColor, LUMA_WEIGHTS) * 2.0, 0.2, 1.0);
-  } else {
-    finalColor = centerColor.rgb;
-    outAlpha = centerColor.a * 0.3;
-  }
+  // Branchless threshold selection
+  let aboveThreshold = centerLuma >= localThreshold;
+  let sortedRGB = mix(centerColor.rgb, sortedColor.rgb, sortFactor);
+  let sortedAlpha = clamp(dot(sortedRGB, LUMA_WEIGHTS) * 2.0, 0.2, 1.0);
+  let finalColor = select(centerColor.rgb, sortedRGB, aboveThreshold);
+  let outAlpha = select(centerColor.a * 0.3, sortedAlpha, aboveThreshold);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, outAlpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, outAlpha));
 }
