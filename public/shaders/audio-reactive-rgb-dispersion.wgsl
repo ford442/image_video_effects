@@ -112,14 +112,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let scaledDisp = dispersion * radialScale;
 
-  // Per-channel offsets: R shifted along dir, B counter to dir
-  // The shift magnitudes use centroid to scale each channel differently.
+  // Per-channel offsets: R and B are displaced in opposite directions along
+  // the centroid-driven direction; G is sampled at the undisplaced UV to
+  // serve as a stable luminance anchor (no net hue shift at rest).
   let offR = dir * scaledDisp * (1.0 - centroid * 0.5);   // red: broader at low centroid
-  let offG = dir * scaledDisp * 0.0;                        // green: anchor (no shift)
   let offB = -dir * scaledDisp * (0.5 + centroid * 0.5);  // blue: broader at high centroid
+  // Green is anchored at the original UV — no offset needed.
 
   let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offR, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + offG, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;
+  let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;  // anchor
   let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + offB, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
   let a = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
 

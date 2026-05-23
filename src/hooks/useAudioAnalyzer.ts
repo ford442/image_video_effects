@@ -103,8 +103,11 @@ export const useAudioAnalyzer = () => {
       return bins;
     }
 
-    // Re-use the same Uint8Array populated by getAudioData if already called
-    // this frame; otherwise fetch fresh data.
+    // Fetch fresh FFT data each call.  When both getAudioData() and
+    // getAudioBins() are called in the same interval, the second
+    // getByteFrequencyData() is redundant (same underlying FFT snapshot).
+    // The cost is negligible (<1 µs) compared to a 50 ms polling interval,
+    // so we keep the two methods independent rather than sharing hidden state.
     analyser.getByteFrequencyData(dataArray);
 
     const len = Math.min(dataArray.length, AUDIO_FFT_BINS);

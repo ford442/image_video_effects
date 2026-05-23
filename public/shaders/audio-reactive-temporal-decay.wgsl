@@ -85,8 +85,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Frequency energy in the selected bin range ───────────────────
   let energy = avgBins(binLo, binHi);
 
-  // Decay rate increases with energy: more energy → faster fade
-  let decay = clamp(decayBase + energy * audioDrive * 0.4, 0.001, 0.99);
+  // Decay rate increases with energy: more energy → faster fade.
+  // The factor 0.4 caps the audio-driven modulation to a 40 percentage-point
+  // maximum above the base rate, keeping trails visible even at full drive
+  // while still allowing clear beat-synchronised fades.
+  let AUDIO_DRIVE_CEILING = 0.4;
+  let decay = clamp(decayBase + energy * audioDrive * AUDIO_DRIVE_CEILING, 0.001, 0.99);
 
   // ── Sample current and previous-frame colour ─────────────────────
   let current  = textureSampleLevel(readTexture, u_sampler, uv, 0.0);

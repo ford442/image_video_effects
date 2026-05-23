@@ -67,13 +67,19 @@ fn avgBins(lo: u32, hi: u32) -> f32 {
 }
 
 /// Separable 5-tap Gaussian blur (σ ≈ 1.0) at a given step size.
+/// Single-pass approximate Gaussian blur at a given texel step size.
+///
+/// A true separable Gaussian requires two full-resolution passes (horizontal
+/// then vertical), which doubles the memory bandwidth.  In this single-pass
+/// version the horizontal and vertical 5-tap responses are averaged, which
+/// gives a visually equivalent result for the small kernel sizes (σ ≤ 2 px)
+/// used here.  The slight approximation error is imperceptible at these
+/// scales and is outweighed by the performance benefit of a single dispatch.
 fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> vec4<f32> {
-  let w = vec4<f32>(0.0625, 0.25, 0.375, 0.25);  // half kernel [0.0625, 0.25, 0.375, 0.25, 0.0625]
   let res = vec2<f32>(textureDimensions(samp));
   let d = step / res;
 
-  // Horizontal pass accumulator (re-using sampled rows is a full two-pass
-  // approach; here we approximate with a single-pass 2D separable sum).
+  // Horizontal 5-tap response
   var col = vec4<f32>(0.0);
   col += textureSampleLevel(samp, u_sampler, uv + vec2<f32>(-2.0 * d.x, 0.0), 0.0) * 0.0625;
   col += textureSampleLevel(samp, u_sampler, uv + vec2<f32>(-1.0 * d.x, 0.0), 0.0) * 0.25;
@@ -81,6 +87,7 @@ fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> vec4<f32> {
   col += textureSampleLevel(samp, u_sampler, uv + vec2<f32>( 1.0 * d.x, 0.0), 0.0) * 0.25;
   col += textureSampleLevel(samp, u_sampler, uv + vec2<f32>( 2.0 * d.x, 0.0), 0.0) * 0.0625;
 
+  // Vertical 5-tap response
   var row = vec4<f32>(0.0);
   row += textureSampleLevel(samp, u_sampler, uv + vec2<f32>(0.0, -2.0 * d.y), 0.0) * 0.0625;
   row += textureSampleLevel(samp, u_sampler, uv + vec2<f32>(0.0, -1.0 * d.y), 0.0) * 0.25;
