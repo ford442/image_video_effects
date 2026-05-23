@@ -143,11 +143,16 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
     }
 
     console.log('[WASM] Calling initWasmRenderer(', state.canvasWidth, ',', state.canvasHeight, ')');
-    const result = wasmModule.ccall(
+    // Use { async: true } so ccall returns a Promise that resolves after the
+    // Asyncify-suspended C++ function completes.  Without this, ccall returns 0
+    // immediately when WASM suspends inside wgpuInstanceWaitAny (waiting for the
+    // browser WebGPU adapter/device Promise), causing a false "init failed" error.
+    const result = await wasmModule.ccall(
       'initWasmRenderer',
       'number',
       ['number', 'number'],
-      [state.canvasWidth, state.canvasHeight]
+      [state.canvasWidth, state.canvasHeight],
+      { async: true }
     );
 
     state.initEndTime = performance.now();

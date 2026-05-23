@@ -318,8 +318,46 @@ hr {
     font-size: 11px;
     padding: 5px 10px;
     pointer-events: none;
-    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     z-index: 20;
+}
+
+/* Renderer backend badge shown in the status bar */
+.renderer-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    transition: opacity 0.15s ease;
+}
+.renderer-badge:hover { opacity: 0.8; }
+
+/* WebGPU (TypeScript native) — blue */
+.renderer-badge--webgpu {
+    background: rgba(41, 121, 255, 0.2);
+    color: #448aff;
+    border: 1px solid rgba(41, 121, 255, 0.4);
+}
+
+/* C++ WASM renderer — green */
+.renderer-badge--wasm {
+    background: rgba(0, 200, 83, 0.2);
+    color: #00c853;
+    border: 1px solid rgba(0, 200, 83, 0.4);
+}
+
+/* Canvas2D fallback — amber */
+.renderer-badge--js {
+    background: rgba(255, 165, 0, 0.2);
+    color: #ffa500;
+    border: 1px solid rgba(255, 165, 0, 0.4);
 }
 
 /* Scrollbar for sidebar and remote content */
