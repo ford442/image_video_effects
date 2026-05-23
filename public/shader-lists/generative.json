@@ -3952,7 +3952,8 @@
       "bioluminescent"
     ],
     "features": [
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "A mesmerizing, bioluminescent liquid surface that physically organizes itself into hyper-complex, evolving Chladni resonant figures driven by low-frequency audio interference patterns.",
     "coordinate": 880,

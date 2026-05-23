@@ -5,7 +5,8 @@
   "category": "distortion",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

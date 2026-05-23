@@ -1,17 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Luma Flow Field — Phase A Upgrade
+//  Luma Flow Field
 //  Category: simulation
-//  Features: gradient-flow, audio-reactive, depth-aware, temporal
+//  Features: gradient-flow, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: original luma-flow-field.wgsl
 //  Created: 2026-05-23
-//  By: Claude (Sonnet 4.6)
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
-//
-//  Param1: flow_scale       — spatial scale of the curl-noise layer
-//  Param2: trail_decay      — persistence of streakline trails
-//  Param3: curl_strength    — how much curl noise adds to luma gradient
-//  Param4: audio_sensitivity — bass → flow speed, treble → turbulence
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -28,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FlowScale, y=TrailDecay, z=CurlStrength, w=AudioSensitivity
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -40,10 +34,10 @@ fn getLuma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-// Value noise for curl field
 fn hash2(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
+
 fn vnoise(p: vec2<f32>) -> f32 {
     let i = floor(p); let f = fract(p);
     let u = f*f*(3.0-2.0*f);
@@ -51,7 +45,6 @@ fn vnoise(p: vec2<f32>) -> f32 {
                mix(hash2(i+vec2<f32>(0,1)), hash2(i+vec2<f32>(1,1)), u.x), u.y);
 }
 
-// Multi-octave curl noise (divergence-free)
 fn curlNoise(p: vec2<f32>, octaves: i32) -> vec2<f32> {
     var curl = vec2<f32>(0.0);
     var amp = 1.0; var freq = 1.0; var pp = p;
@@ -66,28 +59,25 @@ fn curlNoise(p: vec2<f32>, octaves: i32) -> vec2<f32> {
     return curl / f32(octaves);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = vec2<f32>(textureDimensions(readTexture));
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
+    let resolution = vec2<f32>(u.config.z, u.config.w);
     let coord = vec2<i32>(global_id.xy);
-    if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
-
-    let uv   = vec2<f32>(coord) / resolution;
+    let uv = vec2<f32>(coord) / resolution;
     let time = u.config.x;
-    let e    = 1.0 / resolution;
+    let e = 1.0 / resolution;
 
-    // Params
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let flowScale     = u.zoom_params.x * 5.0 + 1.0;
     let trailDecay    = 0.93 + u.zoom_params.y * 0.065;
-    let curlStrength  = u.zoom_params.z;
+    let curlStrength  = u.zoom_params.z * (1.0 + mids * 0.3);
     let audioSens     = u.zoom_params.w;
 
-    // Audio
-    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
-    let bass   = select(0.0, plasmaBuffer[0].x, hasAudio) * audioSens;
-    let treble = select(0.0, plasmaBuffer[0].z, hasAudio) * audioSens;
-
-    // Full 3×3 Sobel on luma
     let l00 = getLuma(textureSampleLevel(readTexture, u_sampler, uv+vec2<f32>(-e.x,-e.y),0.0).rgb);
     let l10 = getLuma(textureSampleLevel(readTexture, u_sampler, uv+vec2<f32>( 0.0,-e.y),0.0).rgb);
     let l20 = getLuma(textureSampleLevel(readTexture, u_sampler, uv+vec2<f32>( e.x,-e.y),0.0).rgb);
@@ -102,44 +92,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grad    = vec2<f32>(gx, gy);
     let gradMag = length(grad);
 
-    // Curl-perpendicular flow from luma iso-curves
     let lumaFlow = vec2<f32>(-gy, gx);
-
-    // Multi-octave curl noise overlay — adds organic turbulence
     let curlUV  = uv * flowScale + vec2<f32>(time * 0.04, time * 0.03);
     let curlVec = curlNoise(curlUV, 3);
 
-    // Depth: near objects (depth→1) create stronger vortices in the curl layer
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthVortex = depth * 0.6;
 
-    // Combine: luma gradient dominates, curl adds turbulence
-    let totalFlow = lumaFlow * (0.06 + bass * 0.04)
-                  + curlVec  * curlStrength * (0.025 + depthVortex * 0.02 + treble * 0.015);
+    let totalFlow = lumaFlow * (0.06 + bass * audioSens * 0.04)
+                  + curlVec  * curlStrength * (0.025 + depthVortex * 0.02 + treble * audioSens * 0.015);
 
     let sampleUV = clamp(uv + totalFlow, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
 
-    // Palette by flow direction (angle) — uses plasmaBuffer as colour LUT
     let angle  = atan2(grad.y + curlVec.y * curlStrength, grad.x + curlVec.x * curlStrength);
     let palShift = u.zoom_params.x * 0.1 + time * 0.02;
     let palIdx = u32(clamp(fract(angle/TAU + 0.5 + palShift) * 255.0, 0.0, 255.0));
-    let palette = select(vec3<f32>(1.0), plasmaBuffer[palIdx % 256u].rgb, hasAudio && arrayLength(&plasmaBuffer) >= 256u);
+    let bufLen = arrayLength(&plasmaBuffer);
+    let palette = plasmaBuffer[palIdx % max(1u, bufLen)].rgb;
     let iridBlend = curlStrength * 0.7 * smoothstep(0.0, 0.25, gradMag);
     color = mix(color, color * (0.5 + palette * 0.9), iridBlend);
 
-    // Trail persistence — blend with previous frame
     let history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    let decay   = trailDecay * (1.0 - bass * 0.04);
+    let decay   = trailDecay * (1.0 - bass * audioSens * 0.04);
     color = mix(color, history * decay, 0.5 + curlStrength * 0.1);
     color *= decay;
 
-    // Bloom alpha: HDR shoulder + flow magnitude + depth weighting
     let luma  = getLuma(color);
     let bloom = max(0.0, luma - 0.7) * 3.0;
     let alpha = clamp(luma*0.4 + bloom*0.5 + gradMag*1.5 + depth*0.15 + bass*0.1, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
-    textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    let finalColor = vec4<f32>(color, alpha);
+
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

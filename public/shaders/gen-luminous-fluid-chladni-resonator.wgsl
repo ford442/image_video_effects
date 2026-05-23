@@ -1,7 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luminous-Fluid Chladni-Resonator
-//  Category: generative | Features: audio-reactive, Chladni, curl-fluid, Voronoi
-//  Visualist upgrades: blackbody, OkLab, ACES, IGN
+//  Category: generative
+//  Features: audio-reactive, Chladni, curl-fluid, Voronoi, upgraded-rgba
+//  Complexity: High
+//  Created: 2026-05-09
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ModeN, y=ModeM, z=FluidStrength, w=Glow
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -47,7 +50,18 @@ fn curl2D(p: vec2<f32>) -> vec2<f32> {
 }
 fn voronoiRidge(p: vec2<f32>) -> f32 {
     let ip = floor(p); let fp = fract(p); var F1 = 1e9; var F2 = 1e9;
-    for (var j = -1; j <= 1; j++) { for (var i = -1; i <= 1; i++) { let n = vec2<f32>(f32(i), f32(j)); let d = length(n + vec2<f32>(hash21(ip + n), hash21(ip + n + 17.0)) - fp); if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; } } }
+    for (var j = -1; j <= 1; j++) {
+        for (var i = -1; i <= 1; i++) {
+            let n = vec2<f32>(f32(i), f32(j));
+            let d = length(n + vec2<f32>(hash21(ip + n), hash21(ip + n + 17.0)) - fp);
+            let updateF1 = step(d, F1);
+            let oldF1 = F1;
+            F1 = mix(F1, d, updateF1);
+            F2 = mix(F2, oldF1, updateF1);
+            let updateF2 = step(d, F2) * (1.0 - updateF1);
+            F2 = mix(F2, d, updateF2);
+        }
+    }
     return F2 - F1;
 }
 fn chladni_multi(uv: vec2<f32>, n: f32, m: f32, t: f32) -> f32 {
@@ -56,7 +70,6 @@ fn chladni_multi(uv: vec2<f32>, n: f32, m: f32, t: f32) -> f32 {
     return cos(t) * a1 + sin(t) * a2 + (cos(t * PHI) * b1 + sin(t * PHI) * b2) * 0.4;
 }
 
-// ── Visualist toolkit ──
 fn blackbodyRGB(T: f32) -> vec3<f32> {
     let t = clamp(T, 1000.0, 40000.0) * 0.01;
     var r = select(clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0), 1.0, t <= 66.0);
@@ -83,16 +96,27 @@ fn ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     let res = vec2<f32>(u.config.z, u.config.w);
-    let coord = vec2<i32>(i32(id.x), i32(id.y));
-    if (coord.x >= i32(res.x) || coord.y >= i32(res.y)) { return; }
-    let uv = vec2<f32>(coord) / res; let t = u.config.x * 0.5; let bass = plasmaBuffer[0].x;
-    let param_n = u.zoom_params.x; let param_m = u.zoom_params.y; let param_fluid = u.zoom_params.z; let param_glow = u.zoom_params.w;
+    let coord = vec2<i32>(global_id.xy);
+    let uv = vec2<f32>(coord) / res;
+    let t = u.config.x * 0.5;
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let param_n = u.zoom_params.x;
+    let param_m = u.zoom_params.y;
+    let param_fluid = u.zoom_params.z;
+    let param_glow = u.zoom_params.w;
+
     let velocity = curl2D(uv * 5.0 + vec2<f32>(t * 0.3));
-    let uv_dist = uv + velocity * param_fluid * 0.05 * (1.0 + bass * 0.5);
-    let n = param_n + bass * 2.0 * sin(t); let m = param_m + bass * 2.0 * cos(t * PHI);
+    let uv_dist = uv + velocity * param_fluid * 0.05 * (1.0 + bass * 0.5 + mids * 0.3);
+    let n = param_n + bass * 2.0 * sin(t);
+    let m = param_m + bass * 2.0 * cos(t * PHI);
     let c_val = chladni_multi(uv_dist * 2.0 - vec2<f32>(1.0), n, m, t * 2.0);
     let ridge = 1.0 - smoothstep(0.0, 0.18, voronoiRidge(uv * 8.0 + velocity * 0.2));
     let mouse_uv = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -102,16 +126,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let final_val = abs(c_val) * damp + ridge * 0.35 * depthAttn;
     let prior = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
     let settled = mix(prior, final_val, 0.35);
-    let intensity = smoothstep(0.18, 0.0, settled) * param_glow * (1.0 + bass);
+    let intensity = smoothstep(0.18, 0.0, settled) * param_glow * (1.0 + bass + treble * 0.3);
     let warm = blackbodyRGB(3500.0 + bass * 3000.0 + sin(t * 0.7) * 1000.0) * intensity * 3.0;
     let cool = blackbodyRGB(8500.0 + cos(t * 0.4) * 2000.0) * (intensity * 0.6 + ridge * 0.8);
     let hdr = mixOkLab(warm, cool, ridge * 0.5 + 0.25) * (1.0 + intensity);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
     let alpha = clamp(intensity * 0.7 + luma * 0.25 + ridge * 0.15, 0.0, 1.0);
     let mapped = aces(hdr) + vec3<f32>((ign(vec2<f32>(coord)) - 0.5) / 255.0);
     let gamma = pow(mapped, vec3<f32>(1.0 / 2.2));
-    textureStore(writeTexture, coord, vec4<f32>(gamma * alpha, alpha));
-    textureStore(dataTextureA, coord, vec4<f32>(settled, ridge, intensity, 1.0));
+    let finalColor = vec4<f32>(gamma * alpha, alpha);
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

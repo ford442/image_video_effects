@@ -1016,7 +1016,8 @@
       "animated",
       "atmospheric",
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1796,7 +1797,8 @@
     "category": "distortion",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2165,7 +2167,8 @@
     "features": [
       "multi-pass-2",
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "multipass": {
       "pass": 2,

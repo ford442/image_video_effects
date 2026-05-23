@@ -4,7 +4,7 @@
   "category": "generative",
   "url": "/shaders/gen-luminous-fluid-chladni-resonator.wgsl",
   "tags": ["chladni", "cymatics", "fluid", "resonance", "audio-reactive", "bioluminescent"],
-  "features": ["audio-reactive"],
+  "features": ["audio-reactive", "upgraded-rgba"],
   "description": "A mesmerizing, bioluminescent liquid surface that physically organizes itself into hyper-complex, evolving Chladni resonant figures driven by low-frequency audio interference patterns.",
   "coordinate": 880,
   "params": [

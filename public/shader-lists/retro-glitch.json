@@ -652,7 +652,8 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -694,7 +695,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "glitch",
@@ -1165,7 +1167,8 @@
       "glitch",
       "branchless",
       "texture",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

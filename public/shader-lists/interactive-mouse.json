@@ -3375,7 +3375,8 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3428,7 +3429,8 @@
     "features": [
       "mouse-driven",
       "sorting",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

@@ -3,7 +3,10 @@
   "name": "Phantom Lag",
   "url": "shaders/phantom-lag.wgsl",
   "category": "image",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "description": "Creates trailing echoes of movement by blending past frames with spatial offsets.",
   "params": [
     {

@@ -38,7 +38,8 @@
     "glitch",
     "branchless",
     "texture",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
